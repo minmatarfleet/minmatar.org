@@ -2,24 +2,28 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { login_redirect, login_return_url, login_url } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
 
+// Logged-out visitors see the mentors read-only; every action needs a login.
 const { auth_token, user } = get_request_user(Astro)
+const is_guest = !user
 
-if (!user)
-    return HTTP_403_Forbidden()
+if (is_guest && (Astro.request.method !== 'GET' || Astro.url.searchParams.get('view') === 'past'))
+    return login_redirect(Astro)
+
+const login_href = is_guest ? login_url(Astro, login_return_url(Astro.request)) : null
 
 import type { MentorRequest, MentorsHome } from '@dtypes/api.minmatar.org'
 import { get_mentors_home, get_mentors_past } from '@helpers/api.minmatar.org/mentors'
 import { MENTORS_HOME_PARTIAL, MENTOR_FEEDBACK_MODAL, mentors_url, modal_click } from '@helpers/mentors'
 import { handle_mentor_post } from '@helpers/mentors_actions'
 
-const token = auth_token as string
+const token = auth_token || ''
 const view = Astro.url.searchParams.get('view') === 'past' ? 'past' : 'home'
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
-const result = await handle_mentor_post(Astro.request, Astro.url, token)
+const result = is_guest ? null : await handle_mentor_post(Astro.request, Astro.url, token)
 
 let home: MentorsHome | null = null
 let past: MentorRequest[] = []
@@ -74,11 +78,14 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
     >
         {fetch_error || !home ?
             <ErrorRefetch args={{ partial: self_url, error: fetch_error || new Error(''), delay, target: '#mentors-home' }} />
-            : !home.can_request ?
+            : !home.can_request && !is_guest ?
             <EmptyState title={t('mentors.no_access')} hint="" />
             :
             <>
                 <MentorsNav active="find" me={home} />
+                {is_guest && home.mentors.length > 0 &&
+                    <p class="[ mentors-muted ]"><a href={login_href}>{t('mentors.guest_lead')}</a></p>
+                }
                 <MentorsNotice result={result?.mentor_name ? { ok: true, message: t('mentors.request.sent').replace('{name}', result.mentor_name) } : result} />
 
                 {(home.classes.length > 0 || home.past_count > 0) &&
@@ -127,21 +134,21 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                         {fit.length > 0 &&
                             <MentorsSection title={t('mentors.fit_heading')}>
                                 <Grid class="[ w-full grid-fill ]" row_gap="var(--space-s)" column_gap="var(--space-s)" min_item_width="max(300px, calc((100% - 2 * var(--space-s)) / 3))">
-                                    {fit.map(card => <MentorCard card={card} />)}
+                                    {fit.map(card => <MentorCard card={card} login_href={login_href} />)}
                                 </Grid>
                             </MentorsSection>
                         }
                         {other.length > 0 &&
-                            <MentorsSection title={t('mentors.other_heading')} hint={t('mentors.other_lead')}>
+                            <MentorsSection title={is_guest ? t('mentors.page_title') : t('mentors.other_heading')} hint={is_guest ? undefined : t('mentors.other_lead')}>
                                 <Grid class="[ w-full grid-fill ]" row_gap="var(--space-s)" column_gap="var(--space-s)" min_item_width="max(300px, calc((100% - 2 * var(--space-s)) / 3))">
-                                    {other.map(card => <MentorCard card={card} />)}
+                                    {other.map(card => <MentorCard card={card} login_href={login_href} />)}
                                 </Grid>
                             </MentorsSection>
                         }
                     </>
                 }
 
-                {!home.is_mentor && (home.mentor_status === 'applied' ?
+                {!is_guest && !home.is_mentor && (home.mentor_status === 'applied' ?
                     <p class="[ mentors-muted ]">{t('mentors.become_sent')}</p>
                     : !home.mentor_status &&
                     <MentorsSection title={t('mentors.become')} hint={t('mentors.become_lead')}>

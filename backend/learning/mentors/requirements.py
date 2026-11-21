@@ -275,3 +275,20 @@ def check(user, rows) -> list[Check]:
             )
         )
     return checks
+
+
+def unchecked(rows) -> list[Check]:
+    """A class's requirements listed for a visitor who is not logged in:
+    nothing is checked, so none is met."""
+
+    return [
+        Check(
+            kind=row.get("kind"),
+            value=str(row.get("value", "")),
+            label=describe(row),
+            met=False,
+            detail="",
+        )
+        for row in rows or []
+        if row.get("kind") in KIND_LABELS
+    ]

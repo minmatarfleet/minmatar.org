@@ -2,13 +2,10 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { login_redirect } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
 
-const { auth_token, user } = get_request_user(Astro)
-
-if (!user)
-    return login_redirect(Astro)
+// Public: logged-out visitors read the class and log in to ask for it.
+const { auth_token } = get_request_user(Astro)
 
 import { get_mentor_class } from '@helpers/api.minmatar.org/mentors'
 import { MENTOR_CLASS_PARTIAL, mentor_class_cover, mentors_url } from '@helpers/mentors'
@@ -21,7 +18,7 @@ const partial_url = translatePath(mentors_url(MENTOR_CLASS_PARTIAL, { slug }))
 let cover_image_url = ''
 let class_title = ''
 try {
-    const detail = await get_mentor_class(auth_token as string, slug)
+    const detail = await get_mentor_class(auth_token || '', slug)
     cover_image_url = detail.cover_image_url
     class_title = detail.title
 } catch {

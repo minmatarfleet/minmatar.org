@@ -361,6 +361,50 @@ class MentorApiTestCase(TestCase):
         self.assertEqual("multi-boxing", mentors[0]["classes"][0]["slug"])
         self.assertFalse(mentors[0]["is_you"])
 
+    def test_guests_see_mentors_without_discord_details(self, *_):
+        response = self.client.get(BASE)
+        self.assertEqual(200, response.status_code)
+        body = response.json()
+        self.assertFalse(body["can_request"])
+        self.assertEqual([], body["classes"])
+        mentor = body["mentors"][0]
+        self.assertEqual("Orion", mentor["person"]["name"])
+        self.assertEqual("none", mentor["fit"])
+        self.assertFalse(mentor["is_you"])
+        self.assertIsNone(mentor["person"]["discord_id"])
+        self.assertEqual("", mentor["person"]["discord_handle"])
+        self.assertEqual(0, mentor["person"]["user_id"])
+
+    def test_guests_read_a_published_class(self, *_):
+        response = self.client.get(f"{BASE}/classes/multi-boxing")
+        self.assertEqual(200, response.status_code)
+        body = response.json()
+        self.assertEqual(
+            ["accounts"], [r["kind"] for r in body["requirements"]]
+        )
+        self.assertFalse(body["requirements"][0]["met"])
+        self.assertEqual("", body["requirements"][0]["detail"])
+        self.assertFalse(body["can_edit"])
+        self.assertIsNone(body["open_request_id"])
+        self.assertIsNone(body["author"]["discord_id"])
+        self.assertIsNone(body["mentors"][0]["person"]["discord_id"])
+
+    def test_guests_cannot_see_drafts_or_act(self, *_):
+        self.mc.status = MentorClass.STATUS_DRAFT
+        self.mc.save()
+        response = self.client.get(f"{BASE}/classes/multi-boxing")
+        self.assertEqual(404, response.status_code)
+        for path in ("/me", "/past", "/mentoring", "/settings"):
+            self.assertEqual(401, self.client.get(f"{BASE}{path}").status_code)
+        response = self.client.post(
+            f"{BASE}/requests", data={}, content_type="application/json"
+        )
+        self.assertEqual(401, response.status_code)
+        response = self.client.post(
+            f"{BASE}/apply", data={"note": ""}, content_type="application/json"
+        )
+        self.assertEqual(401, response.status_code)
+
     def test_a_mentor_sees_their_own_card(self, *_):
         response = self.client.get(BASE, **auth_headers(self.orion))
         mentors = response.json()["mentors"]

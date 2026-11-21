@@ -78714,7 +78714,7 @@
         },
         "security": [
           {
-            "AuthBearer": []
+            "AuthLenient": []
           }
         ],
         "summary": "Find a mentor: your classes and mentors sorted by fit.",
@@ -79767,7 +79767,7 @@
         },
         "security": [
           {
-            "AuthBearer": []
+            "AuthLenient": []
           }
         ],
         "summary": "A class, its requirements for you, and its mentors.",

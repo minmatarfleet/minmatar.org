@@ -2,14 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { login_redirect } from '@helpers/http_responses'
-import { get_request_user } from '@helpers/request_user'
-
-const { user } = get_request_user(Astro)
-
-if (!user)
-    return login_redirect(Astro)
-
+// Public: logged-out visitors see the mentors read-only and log in to ask.
 import { MENTORS_HOME_PARTIAL, mentors_url } from '@helpers/mentors'
 
 const partial_url = translatePath(mentors_url(MENTORS_HOME_PARTIAL, {}))
