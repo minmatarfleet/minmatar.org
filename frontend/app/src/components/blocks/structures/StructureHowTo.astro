@@ -1,0 +1,120 @@
+---
+/**
+ * How to get a structure's details out of the EVE client, for the fields on
+ * the current step of a structure dialog. One chip per topic; each shows a
+ * short clip recorded in the client and three numbered steps. Shared by Add
+ * a structure and Report a structure.
+ */
+import { i18n, t_key } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { StructureHowToTopic } from '@dtypes/layout_components'
+
+interface Props {
+    topics:             StructureHowToTopic[];
+    [propName: string]: any;
+}
+
+const { topics, ...attributes } = Astro.props
+
+delete attributes.class
+
+// Clips cut from a recording of the client; width and height match the file.
+const CLIPS: Partial<Record<StructureHowToTopic, { src: string, width: number, height: number }>> = {
+    name:       { src: '/images/structure-guide/copy-name.gif', width: 360, height: 160 },
+    owner:      { src: '/images/structure-guide/show-info.gif', width: 400, height: 329 },
+    reinforce:  { src: '/images/structure-guide/hack-reinforce.gif', width: 400, height: 292 },
+    fitting:    { src: '/images/structure-guide/ship-scan-copy.gif', width: 276, height: 420 },
+}
+---
+
+{topics.length > 0 &&
+    <div class:list={['[ structure-howto ]', Astro.props.class]} x-data={`{ topic: '${topics[0]}' }`} {...attributes}>
+        <span class="[ manage-field__label ]">{t('structures.guide.title')}</span>
+        {topics.length > 1 &&
+            <div class="[ manage-chips ]" role="tablist" aria-label={t('structures.guide.title')}>
+                {topics.map((topic) => (
+                    <button type="button" role="tab" class="[ manage-chip ]"
+                        x-bind:aria-selected={`topic === '${topic}'`}
+                        x-bind:class={`{ 'is-on': topic === '${topic}' }`}
+                        x-on:click={`topic = '${topic}'`}>
+                        {t(t_key('structures.guide.tab_', topic))}
+                    </button>
+                ))}
+            </div>
+        }
+
+        {topics.map((topic, index) => {
+            const clip = CLIPS[topic]
+            return (
+                <div class:list={['[ structure-howto__panel ]', { 'no-clip': !clip }]} role="tabpanel" x-show={`topic === '${topic}'`} x-cloak={index > 0 ? '' : undefined}>
+                    {clip &&
+                        <figure class="[ structure-howto__clip ]">
+                            <img src={clip.src} width={clip.width} height={clip.height} loading="lazy" alt={t(t_key('structures.guide.clip_', topic))} />
+                        </figure>
+                    }
+                    <ol class="[ structure-howto__how ]">
+                        {[1, 2, 3].map((n) => <li>{t(t_key('structures.guide.', `${topic}_${n}`))}</li>)}
+                    </ol>
+                </div>
+            )
+        })}
+    </div>
+}
+
+<style lang="scss" is:global>
+    .structure-howto {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+
+        .manage-chip.is-on {
+            color: var(--background);
+            background-color: var(--fleet-yellow);
+            border-color: var(--fleet-yellow);
+        }
+    }
+
+    .structure-howto__panel {
+        display: grid;
+        grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
+        align-items: center;
+        gap: var(--space-s);
+        padding: var(--space-s);
+        background-color: var(--surface-sunken);
+        border: 1px solid var(--hairline-medium);
+
+        &.no-clip {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        @media (max-width: 40rem) {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    .structure-howto__clip {
+        display: flex;
+        justify-content: center;
+        margin: 0;
+
+        img {
+            display: block;
+            max-width: 100%;
+            max-height: 18rem;
+            width: auto;
+            height: auto;
+            border: 1px solid var(--hairline-strong);
+        }
+    }
+
+    .structure-howto__how {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        margin: 0;
+        padding-left: 1.4em;
+        font-size: var(--step--1);
+        color: var(--highlight);
+    }
+</style>

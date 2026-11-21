@@ -27,7 +27,6 @@ const {
 delete attributes.class
 
 const ADD_TIMER_URL = translatePath(`/intel/timers/add/?campaign_slug=${slug}`)
-const REPORT_URL = translatePath(`/intel/add_structure/?campaign_slug=${slug}`)
 
 const status_color = (status:string) => {
     if (status === 'destroyed') return 'green'
@@ -53,6 +52,7 @@ const rows = sort_campaign_structures(structures)
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
+import StructureReportDialog from '@components/blocks/structures/StructureReportDialog.astro'
 import Tag from '@components/blocks/Tag.astro'
 import Countdown from '@components/blocks/Countdown.astro'
 ---
@@ -66,9 +66,7 @@ import Countdown from '@components/blocks/Countdown.astro'
         </Flexblock>
         {show_add_timer &&
             <FlexInline gap='var(--space-3xs)'>
-                <Button size='sm' href={REPORT_URL}>
-                    {t('campaigns.structures.report')}
-                </Button>
+                <StructureReportDialog campaign_slug={slug} label={t('campaigns.structures.report')} />
                 <Button size='sm' href={ADD_TIMER_URL}>
                     {t('campaigns.structures.add_timer')}
                 </Button>

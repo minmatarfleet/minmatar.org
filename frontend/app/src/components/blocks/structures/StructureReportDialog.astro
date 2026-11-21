@@ -1,0 +1,44 @@
+---
+/**
+ * The Report a structure button and its stepped dialog (Find → Match →
+ * Details → Sent, with clips of each step in the client). Every page that
+ * reports an enemy structure opens this one: Universe > Structures, a
+ * campaign's Structures tab and the intel structure pages. Pass
+ * campaign_slug to attach the report to that campaign too.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components'
+
+interface Props {
+    campaign_slug?:     string;
+    label?:             string;
+    size?:              ButtonSizes;
+    color?:             ButtonColors;
+    [propName: string]: any;
+}
+
+const {
+    campaign_slug = '',
+    label,
+    size = 'sm',
+    color = 'fleet-red',
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const URL = translatePath('/partials/universe_structure_report_component/')
+
+import DialogButton from '@components/blocks/DialogButton.astro'
+import UniverseReportSteps from '@components/blocks/universe/UniverseReportSteps.astro'
+---
+
+<DialogButton size={size} color={color} max_width="52rem" id="universe-report-button" class={Astro.props.class} {...attributes}>
+    <slot name="icon" slot="icon" />
+    {label ?? t('universe.structures.report')}
+    <form slot="dialog" id="universe-report" hx-post={URL} hx-target="this" hx-swap="innerHTML" x-on:submit.prevent="">
+        <UniverseReportSteps step="find" state={{ campaign_slug }} />
+    </form>
+</DialogButton>

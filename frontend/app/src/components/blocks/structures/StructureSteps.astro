@@ -1,0 +1,191 @@
+---
+/**
+ * The shell every structure dialog shares: the title, the numbered step
+ * strip and, under it, the step's own body (the default slot). Add a
+ * structure (Locations) and Report a structure (Structures, campaigns,
+ * intel) both render through this, so they look and read the same.
+ */
+import type { StructureStep } from '@dtypes/layout_components'
+
+interface Props {
+    title:              string;
+    steps_label:        string;
+    steps:              StructureStep[];
+    current:            number;
+    [propName: string]: any;
+}
+
+const { title, steps_label, steps, current, ...attributes } = Astro.props
+
+delete attributes.class
+---
+
+<div class:list={['[ structure-add ]', Astro.props.class]} style={`--step_count: ${steps.length}`} {...attributes}>
+    <h2>{title}</h2>
+
+    <ol class="[ structure-steps ]" aria-label={steps_label}>
+        {steps.map((step, index) => (
+            <li class:list={[{ done: index < current, now: index === current }]} aria-current={index === current ? 'step' : undefined}>
+                <span class="[ structure-steps__node ]">
+                    {index < current
+                        ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg>
+                        : index + 1}
+                </span>
+                <span class="[ structure-steps__t ]">{step.label}</span>
+                <span class="[ structure-steps__s ]">{step.note}</span>
+            </li>
+        ))}
+    </ol>
+
+    <slot />
+</div>
+
+<style lang="scss" is:global>
+    .structure-add {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+    }
+
+    .structure-add__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .structure-steps {
+        display: grid;
+        grid-template-columns: repeat(var(--step_count, 4), minmax(0, 1fr));
+        margin: 0;
+        padding: var(--space-s) 0;
+        list-style: none;
+        border-block: 1px solid var(--hairline-medium);
+
+        li {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--space-3xs);
+            text-align: center;
+
+            &::before {
+                content: '';
+                position: absolute;
+                top: 1.15rem;
+                left: -50%;
+                width: 100%;
+                height: 3px;
+                background-color: var(--hairline-strong);
+            }
+
+            &:first-child::before {
+                display: none;
+            }
+
+            &.done::before,
+            &.now::before {
+                background-color: var(--green);
+            }
+        }
+    }
+
+    .structure-steps__node {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.4rem;
+        height: 2.4rem;
+        border-radius: 50%;
+        font-weight: 700;
+        color: var(--text-muted);
+        background-color: var(--component-background);
+        border: 2px solid var(--hairline-strong);
+
+        svg {
+            width: 1.2rem;
+            height: 1.2rem;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 3;
+        }
+
+        .done & {
+            color: var(--background);
+            background-color: var(--green);
+            border-color: var(--green);
+        }
+
+        .now & {
+            color: var(--background);
+            background-color: var(--fleet-yellow);
+            border-color: var(--fleet-yellow);
+            box-shadow: 0 0 0 5px color-mix(in srgb, var(--fleet-yellow) 18%, transparent);
+        }
+    }
+
+    .structure-steps__t {
+        font-weight: 700;
+        color: var(--text-muted);
+
+        .done &,
+        .now & {
+            color: var(--highlight);
+        }
+    }
+
+    .structure-steps__s {
+        min-height: 1.4em;
+        max-width: 16ch;
+        font-size: var(--step--2);
+        line-height: 1.35;
+
+        .done & {
+            color: var(--green);
+        }
+    }
+
+    .structure-add__result {
+        display: grid;
+        grid-template-columns: 3.5rem minmax(0, 1fr) auto;
+        align-items: center;
+        gap: var(--space-xs);
+        padding: var(--space-xs) var(--space-s);
+        background-color: var(--surface-sunken);
+        border: 1px solid var(--hairline-medium);
+
+        b {
+            display: block;
+            color: var(--highlight);
+        }
+
+        small {
+            color: var(--text-muted);
+        }
+    }
+
+    .structure-add__glyph {
+        width: 3.5rem;
+        height: 3.5rem;
+        background-color: var(--surface-sunken);
+    }
+
+    .structure-add__two {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+        gap: var(--space-s);
+    }
+
+    .structure-add__sent {
+        padding: var(--space-m);
+        text-align: center;
+        background-color: var(--surface-sunken);
+        border: 1px solid var(--hairline-medium);
+
+        p {
+            color: var(--text-muted);
+        }
+    }
+</style>

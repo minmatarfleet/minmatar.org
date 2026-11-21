@@ -33,6 +33,7 @@ import StructureFit from '@components/blocks/StructureFit.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import Button from '@components/blocks/Button.astro';
+import StructureReportDialog from '@components/blocks/structures/StructureReportDialog.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
 import ButtonStack from '@components/blocks/ButtonStack.astro';
 
@@ -67,10 +68,9 @@ const page_title = structure.name;
                     <MagnifierIcon slot="icon" />
                     {t('view_structures')}
                 </Button>
-                <Button color={'green'} href={translatePath('/intel/add_structure/')}>
+                <StructureReportDialog color="green" size="lg" label={t('add_structure')}>
                     <AddIcon slot="icon" />
-                    {t('add_structure')}
-                </Button>
+                </StructureReportDialog>
             </PageActions>
         </FlexInline>
 

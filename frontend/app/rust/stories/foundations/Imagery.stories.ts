@@ -49,6 +49,7 @@ export const Brand = { name: 'Brand marks', args: { collection: 'brand' }, play:
 export const Corporations = { name: 'Corporation art', args: { collection: 'corporations' }, play: shows('corporations') }
 export const UiIcons = { name: 'EVE UI icons', args: { collection: 'ui-icons' }, play: shows('ui-icons') }
 export const Guides = { name: 'Guides', args: { collection: 'guides' }, play: shows('guides') }
+export const StructureGuide = { name: 'Structure dialog clips', args: { collection: 'structure-guide' }, play: shows('structure-guide') }
 export const Newsletter = { name: 'Newsletter', args: { collection: 'newsletter' }, play: shows('newsletter') }
 export const Campaigns = { name: 'Campaigns', args: { collection: 'campaigns' }, play: shows('campaigns') }
 export const Warzone = { name: 'Warzone report', args: { collection: 'warzone' }, play: shows('warzone') }

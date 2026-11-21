@@ -58,7 +58,8 @@ export const WithIntelButtons = {
     args: { show_add_timer: true },
     play: async ({ canvasElement }: Ctx) => {
         const canvas = within(canvasElement)
-        await expect(canvas.getByRole('link', { name: 'Report structure' })).toHaveAttribute('href', '/intel/add_structure/?campaign_slug=snuffed-out-sovereignty')
+        // Report structure opens the shared Report a structure dialog, tied to this campaign.
+        await expect(canvas.getByRole('button', { name: 'Report structure' })).toBeVisible()
         await expect(canvas.getByRole('link', { name: 'Add timer' })).toHaveAttribute('href', '/intel/timers/add/?campaign_slug=snuffed-out-sovereignty')
     },
 }
@@ -91,7 +92,7 @@ export const Empty = {
         await expect(canvas.getByText('No structures under recon yet.')).toBeVisible()
         await expect(canvas.queryByRole('table')).toBeNull()
         // The buttons stay so a pilot can report the first one.
-        await expect(canvas.getByRole('link', { name: 'Report structure' })).toBeVisible()
+        await expect(canvas.getByRole('button', { name: 'Report structure' })).toBeVisible()
     },
 }
 
