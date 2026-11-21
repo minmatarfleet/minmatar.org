@@ -83,7 +83,7 @@ import ManageTable from '@components/blocks/manage/ManageTable.astro'
                             {overview.attention.map((item) => (
                                 <li>
                                     <div><b>{item.title}</b><small>{item.detail}</small></div>
-                                    {item.location_id && <a href={translatePath(`/structures/${item.location_id}/#settings`)}>{t('structures.fix_it')}</a>}
+                                    {item.location_id && <a href={translatePath(`/structures/${item.location_id}/#${item.kind === 'same_fitting' ? 'fitting' : 'settings'}`)}>{t('structures.fix_it')}</a>}
                                 </li>
                             ))}
                         </ul>

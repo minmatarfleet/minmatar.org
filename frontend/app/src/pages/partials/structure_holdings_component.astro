@@ -1,0 +1,290 @@
+---
+/**
+ * Alliance holdings in one structure, for structure managers: which pilots
+ * hold items there (alts grouped under their main) and which items. The
+ * By pilot / By item switch only flips between the two rendered lists.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { StructureLocationHoldings } from '@dtypes/api.minmatar.org'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_structure_holdings } from '@helpers/api.minmatar.org/structure_locations'
+import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token || !can(await get_gates(Astro), 'structures.locations.manage')) return HTTP_403_Forbidden()
+
+const location_id = parseInt(Astro.url.searchParams.get('id') ?? '0')
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+let holdings: StructureLocationHoldings | null = null
+let fetch_error: Error | null = null
+try {
+    holdings = await get_structure_holdings(auth_token, location_id)
+} catch (failure) {
+    fetch_error = failure as Error
+}
+
+const TOP_ITEMS = 8
+const pilots = holdings?.pilots ?? []
+const lead = pilots.length === 1
+    ? t('structures.holdings.lead_one').replace('~ITEMS', String(holdings?.items ?? 0))
+    : t('structures.holdings.lead').replace('~PILOTS', String(pilots.length)).replace('~ITEMS', String(holdings?.items ?? 0))
+
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{fetch_error
+    ? <ErrorRefetch args={{ partial: translatePath(`/partials/structure_holdings_component/?id=${location_id}`), error: fetch_error, delay }} />
+    : (
+        <section class="[ structure-holdings ]" aria-labelledby="structure-holdings-title" x-data="{ by: 'pilot' }">
+            <header class="[ structure-holdings__head ]">
+                <div>
+                    <h2 id="structure-holdings-title">
+                        {t('structures.holdings.title')}
+                        <span class="[ structure-holdings__who ]">{t('structures.holdings.managers')}</span>
+                    </h2>
+                    {pilots.length > 0 && <p>{lead}</p>}
+                </div>
+                {pilots.length > 0 &&
+                    <div class="[ structure-holdings__switch ]" role="group" aria-label={t('structures.holdings.group')}>
+                        <button type="button" x-bind:aria-pressed="by === 'pilot'" x-on:click="by = 'pilot'" aria-pressed="true">{t('structures.holdings.by_pilot')}</button>
+                        <button type="button" x-bind:aria-pressed="by === 'item'" x-on:click="by = 'item'" aria-pressed="false">{t('structures.holdings.by_item')}</button>
+                    </div>
+                }
+            </header>
+
+            {pilots.length === 0
+                ? <EmptyState title={t('structures.holdings.empty')} />
+                : (
+                    <>
+                        <ul class="[ structure-holdings__pilots ]" x-show="by === 'pilot'">
+                            {pilots.map((pilot) => (
+                                <li>
+                                    <details>
+                                        <summary aria-label={t('structures.holdings.show').replace('~NAME', pilot.name)}>
+                                            <img src={get_player_icon(pilot.character_id, 64)} alt="" width="44" height="44" loading="lazy" />
+                                            <span class="[ structure-holdings__name ]">
+                                                <b>{pilot.name}</b>
+                                                <small>{pilot.characters.length === 1
+                                                    ? t('structures.holdings.character')
+                                                    : t('structures.holdings.characters').replace('~COUNT', String(pilot.characters.length)).replace('~NAMES', pilot.characters.join(', '))}</small>
+                                            </span>
+                                            <span class="[ structure-holdings__n ]">{pilot.items}</span>
+                                        </summary>
+                                        <ul class="[ structure-holdings__items ]">
+                                            {pilot.top_items.slice(0, TOP_ITEMS).map((item) => (
+                                                <li><span>{item.type_name}</span><b>{item.count}</b></li>
+                                            ))}
+                                        </ul>
+                                        {pilot.top_items.length > TOP_ITEMS &&
+                                            <p class="[ structure-holdings__more ]">{t('structures.holdings.more').replace('~COUNT', String(pilot.top_items.length - TOP_ITEMS))}</p>
+                                        }
+                                    </details>
+                                </li>
+                            ))}
+                        </ul>
+                        <table class="[ structure-holdings__table ]" x-show="by === 'item'" x-cloak>
+                            <thead>
+                                <tr>
+                                    <th scope="col">{t('structures.holdings.item')}</th>
+                                    <th scope="col">{t('structures.holdings.holders')}</th>
+                                    <th scope="col">{t('structures.holdings.items')}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {holdings!.by_item.map((item) => (
+                                    <tr>
+                                        <th scope="row"><img src={get_item_icon(item.type_id, 32)} alt="" width="32" height="32" loading="lazy" />{item.type_name}</th>
+                                        <td>{item.holders}</td>
+                                        <td>{item.count}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </>
+                )
+            }
+        </section>
+    )
+}
+
+<style lang="scss">
+    .structure-holdings {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .structure-holdings__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: var(--space-s);
+
+        h2 {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+
+        p {
+            margin-top: var(--space-3xs);
+        }
+    }
+
+    .structure-holdings__who {
+        padding: var(--space-3xs) var(--space-xs);
+        font-family: var(--default-font);
+        font-size: var(--step--2);
+        font-weight: 700;
+        letter-spacing: 0;
+        text-transform: none;
+        color: var(--highlight);
+        background-color: color-mix(in srgb, var(--alliance-blue) 45%, transparent);
+        border: 1px solid var(--alliance-blue);
+    }
+
+    .structure-holdings__switch {
+        display: inline-flex;
+        border: 1px solid var(--hairline-strong);
+
+        button {
+            min-block-size: 2.5rem;
+            padding-inline: var(--space-s);
+            font-family: var(--button-font);
+            font-size: var(--step--1);
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            background: none;
+            border: 0;
+
+            &[aria-pressed="true"] {
+                color: var(--background);
+                background-color: var(--fleet-yellow);
+            }
+        }
+    }
+
+    .structure-holdings__pilots {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        background-color: var(--component-background);
+
+        > li {
+            border-bottom: 1px solid var(--hairline-medium);
+        }
+
+        summary {
+            display: grid;
+            grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+            align-items: center;
+            gap: var(--space-s);
+            padding: var(--space-xs) var(--space-m);
+            cursor: pointer;
+            list-style: none;
+
+            &::-webkit-details-marker {
+                display: none;
+            }
+        }
+
+        img {
+            display: block;
+        }
+    }
+
+    .structure-holdings__name {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        b {
+            color: var(--highlight);
+        }
+
+        small {
+            overflow: hidden;
+            font-size: var(--step--1);
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            color: var(--text-muted);
+        }
+    }
+
+    .structure-holdings__n {
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: var(--highlight);
+    }
+
+    .structure-holdings__items {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+        gap: var(--space-3xs) var(--space-m);
+        margin: 0;
+        padding: 0 var(--space-m) var(--space-s) calc(var(--space-m) + 2.75rem + var(--space-s));
+        list-style: none;
+
+        li {
+            display: flex;
+            justify-content: space-between;
+            gap: var(--space-s);
+            padding-block: var(--space-3xs);
+            color: var(--highlight);
+            border-bottom: 1px dotted var(--hairline-strong);
+        }
+
+        b {
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    .structure-holdings__more {
+        padding: 0 var(--space-m) var(--space-s) calc(var(--space-m) + 2.75rem + var(--space-s));
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
+    .structure-holdings__table {
+        inline-size: 100%;
+        border-collapse: collapse;
+        background-color: var(--component-background);
+
+        th,
+        td {
+            padding: var(--space-2xs) var(--space-m);
+            text-align: end;
+            font-variant-numeric: tabular-nums;
+            border-bottom: 1px solid var(--hairline-medium);
+        }
+
+        thead th {
+            font-size: var(--step--2);
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        th:first-child {
+            text-align: start;
+        }
+
+        tbody th {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+            font-weight: 500;
+            color: var(--highlight);
+        }
+    }
+</style>

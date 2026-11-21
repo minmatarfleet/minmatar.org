@@ -8677,6 +8677,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/structures/locations/{location_id}/holdings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Holdings
+         * @description Which alliance pilots hold items in this structure. Structure managers only: it names pilots.
+         */
+        get: operations["structures_location_router_get_holdings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/structures/locations/{location_id}/retire": {
         parameters: {
             query?: never;
@@ -20435,6 +20455,37 @@ export interface components {
             /** Tribe Name */
             tribe_name: string;
         };
+        /** HoldingItem */
+        HoldingItem: {
+            /** Count */
+            count: number;
+            /** Type Name */
+            type_name: string;
+        };
+        /** HoldingPilot */
+        HoldingPilot: {
+            /** Character Id */
+            character_id: number;
+            /** Characters */
+            characters: string[];
+            /** Items */
+            items: number;
+            /** Name */
+            name: string;
+            /** Top Items */
+            top_items: components["schemas"]["HoldingItem"][];
+        };
+        /** HoldingType */
+        HoldingType: {
+            /** Count */
+            count: number;
+            /** Holders */
+            holders: number;
+            /** Type Id */
+            type_id: number;
+            /** Type Name */
+            type_name: string;
+        };
         /**
          * HostGroupRef
          * @description The tribe group a fleet, post or event is published as.
@@ -21475,30 +21526,44 @@ export interface components {
             audience_groups: string[];
             /** Deployment */
             deployment: boolean;
+            /** Facility Tax */
+            facility_tax: number | null;
             /** Fitting Scanned At */
             fitting_scanned_at: string | null;
             /** Fleets */
             fleets: boolean;
             /** Freight */
             freight: boolean;
+            /** Freight Route */
+            freight_route: boolean;
             /** Freighter Dock */
             freighter_dock: boolean;
             /** Good For */
             good_for: string[];
+            /** Index Discount */
+            index_discount: number;
+            /** Industry */
+            industry: boolean;
             /** Industry Orders */
             industry_orders: number;
             /** Is Structure */
             is_structure: boolean;
             /** Location Id */
             location_id: number;
+            /** Manufacturing Index */
+            manufacturing_index: number | null;
             /** Market */
             market: boolean;
             /** Name */
             name: string;
+            /** Office Fee Isk */
+            office_fee_isk: number;
             /** Planner Facility */
             planner_facility: string | null;
             /** Prices */
             prices: boolean;
+            /** Reaction Index */
+            reaction_index: number | null;
             /** Reinforce Hour */
             reinforce_hour: number | null;
             /** Rigs */
@@ -21507,6 +21572,8 @@ export interface components {
             route_count: number;
             /** Security */
             security: number | null;
+            /** Service Modules */
+            service_modules: components["schemas"]["LocationService"][];
             /** Services */
             services: string[];
             /** Short Name */
@@ -21569,6 +21636,8 @@ export interface components {
             deployment: boolean;
             /** Description */
             description: string;
+            /** Facility Tax */
+            facility_tax: number | null;
             /** Fitting */
             fitting: components["schemas"]["LocationModule"][];
             /** Fitting Scanned At */
@@ -21577,32 +21646,50 @@ export interface components {
             fleets: boolean;
             /** Freight */
             freight: boolean;
+            /** Freight Route */
+            freight_route: boolean;
             /** Freighter Dock */
             freighter_dock: boolean;
             /** Good For */
             good_for: string[];
+            /** Index Discount */
+            index_discount: number;
+            /** Industry */
+            industry: boolean;
             /** Industry Orders */
             industry_orders: number;
             /** Is Structure */
             is_structure: boolean;
             /** Location Id */
             location_id: number;
+            /** Manufacturing Index */
+            manufacturing_index: number | null;
             /** Market */
             market: boolean;
             /** Name */
             name: string;
+            /** Office Fee Isk */
+            office_fee_isk: number;
             /** Planner Facility */
             planner_facility: string | null;
+            /** Planner Systems */
+            planner_systems: string[];
             /** Prices */
             prices: boolean;
+            /** Reaction Index */
+            reaction_index: number | null;
             /** Reinforce Hour */
             reinforce_hour: number | null;
             /** Rigs */
             rigs: components["schemas"]["LocationModule"][];
             /** Route Count */
             route_count: number;
+            /** Routes Here */
+            routes_here: components["schemas"]["LocationRouteHere"][];
             /** Security */
             security: number | null;
+            /** Service Modules */
+            service_modules: components["schemas"]["LocationService"][];
             /** Services */
             services: string[];
             /** Short Name */
@@ -21667,6 +21754,15 @@ export interface components {
             clones: number;
             /** Items */
             items: number;
+        };
+        /** LocationHoldings */
+        LocationHoldings: {
+            /** By Item */
+            by_item: components["schemas"]["HoldingType"][];
+            /** Items */
+            items: number;
+            /** Pilots */
+            pilots: components["schemas"]["HoldingPilot"][];
         };
         /** LocationList */
         LocationList: {
@@ -21743,10 +21839,25 @@ export interface components {
         /** LocationModule */
         LocationModule: {
             /**
+             * Best Tier
+             * @default
+             */
+            best_tier?: string;
+            /**
+             * Bonuses
+             * @default []
+             */
+            bonuses?: components["schemas"]["RigBonus"][];
+            /**
              * Group
              * @default
              */
             group?: string;
+            /**
+             * Is Best
+             * @default false
+             */
+            is_best?: boolean;
             /** Label */
             label: string;
             /** Name */
@@ -21755,6 +21866,21 @@ export interface components {
             size: string;
             /** Slot */
             slot: string;
+            /**
+             * Tier
+             * @default
+             */
+            tier?: string;
+            /**
+             * Upgrade
+             * @default []
+             */
+            upgrade?: components["schemas"]["RigBonus"][];
+            /**
+             * Use
+             * @default
+             */
+            use?: string;
         };
         /** LocationOption */
         LocationOption: {
@@ -21803,6 +21929,8 @@ export interface components {
             fleets_active?: boolean | null;
             /** Freight Active */
             freight_active?: boolean | null;
+            /** Freight Route Active */
+            freight_route_active?: boolean | null;
             /** Good For */
             good_for?: string[] | null;
             /** Market Active */
@@ -21853,6 +21981,24 @@ export interface components {
             location_id: number;
             /** Name */
             name: string;
+        };
+        /** LocationRouteHere */
+        LocationRouteHere: {
+            /** Isk Per M3 */
+            isk_per_m3: number;
+            /** Origin */
+            origin: string;
+            /** Route Type */
+            route_type: string;
+        };
+        /** LocationService */
+        LocationService: {
+            /** Label */
+            label: string;
+            /** Name */
+            name: string;
+            /** Type Id */
+            type_id: number | null;
         };
         /** LocationSubmissionRequest */
         LocationSubmissionRequest: {
@@ -27700,6 +27846,19 @@ export interface components {
             queue: components["schemas"]["QueueStatsSchema"];
             /** Suggestions */
             suggestions: components["schemas"]["AffiliationSchema"][];
+        };
+        /** RigBonus */
+        RigBonus: {
+            /** Category */
+            category: string;
+            /** Cost */
+            cost?: number | null;
+            /** Materials */
+            materials?: number | null;
+            /** Time */
+            time?: number | null;
+            /** Yield Bonus */
+            yield_bonus?: number | null;
         };
         /** RightNow */
         RightNow: {
@@ -53086,6 +53245,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    structures_location_router_get_holdings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationHoldings"];
                 };
             };
             /** @description Forbidden */

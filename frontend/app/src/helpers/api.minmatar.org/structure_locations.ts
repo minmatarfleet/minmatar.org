@@ -8,6 +8,7 @@ import type {
     StructureLocationSubmission,
     StructureLocationManage,
     StructureLocationRetired,
+    StructureLocationHoldings,
 } from '@dtypes/api.minmatar.org'
 import { api_request } from '@helpers/api.minmatar.org/client'
 
@@ -92,5 +93,12 @@ export async function retire_structure(access_token:string, location_id:number, 
         method: 'POST',
         token: access_token,
         body: { reason },
+    })
+}
+
+export async function get_structure_holdings(access_token:string, location_id:number) {
+    return await api_request<StructureLocationHoldings>(`${API_ENDPOINT}/${location_id}/holdings`, {
+        token: access_token,
+        error: 'Error fetching alliance holdings',
     })
 }

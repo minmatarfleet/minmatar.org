@@ -61,15 +61,15 @@ SERVICE_WORDS = (
 
 # Short rig labels for the card tags: (words in the rig name, label).
 RIG_LABELS = (
-    ("Thukker Advanced Component", "Adv. components"),
-    ("Thukker Structure and Component", "Components"),
+    ("Thukker Advanced Component", "Advanced components"),
+    ("Thukker Structure and Component", "Capital components"),
     ("Basic Capital Component", "Capital components"),
     ("Capital Ship Manufacturing", "Capital ship"),
     ("Ship Manufacturing", "Ship"),
     ("Equipment Manufacturing", "Equipment"),
     ("Ammunition Manufacturing", "Ammo"),
     ("Drone and Fighter Manufacturing", "Drones"),
-    ("Laboratory Optimization", "Lab"),
+    ("Laboratory Optimization", "Research & invention"),
     ("Invention", "Invention"),
     ("Reactor Efficiency", "Reactor"),
     ("Biochemical Reactor", "Biochem reactor"),
@@ -317,6 +317,114 @@ def holdings(user, location_ids: Iterable[int]) -> dict:
     for row in items:
         out[row["location_id"]]["items"] = row["n"]
     return out
+
+
+def alliance_holdings(location_id: int) -> dict:
+    """Who in the alliance holds items in one structure: one row per pilot
+    (their characters grouped by account) and one row per item type."""
+    rows = list(
+        EveCharacterAsset.objects.filter(location_id=location_id).values(
+            "type_id",
+            "type_name",
+            "character__character_id",
+            "character__character_name",
+            "character__user_id",
+        )
+    )
+    pilots = {}
+    items = {}
+    for row in rows:
+        key = row["character__user_id"] or f"c{row['character__character_id']}"
+        pilot = pilots.setdefault(
+            key,
+            {
+                "user_id": row["character__user_id"],
+                "characters": {},
+                "items": 0,
+                "types": {},
+            },
+        )
+        pilot["characters"][row["character__character_id"]] = row[
+            "character__character_name"
+        ]
+        pilot["items"] += 1
+        pilot["types"][row["type_name"]] = (
+            pilot["types"].get(row["type_name"], 0) + 1
+        )
+        item = items.setdefault(
+            row["type_id"],
+            {"type_id": row["type_id"], "type_name": row["type_name"]},
+        )
+        item.setdefault("holders", set()).add(key)
+        item["count"] = item.get("count", 0) + 1
+    return {
+        "items": len(rows),
+        "pilots": _pilot_rows(pilots),
+        "by_item": sorted(
+            (
+                {**item, "holders": len(item["holders"])}
+                for item in items.values()
+            ),
+            key=lambda item: (-item["count"], item["type_name"]),
+        ),
+    }
+
+
+def _pilot_rows(pilots: dict) -> List[dict]:
+    # pylint: disable=import-outside-toplevel
+    from eveonline.helpers.characters import user_primary_character
+    from django.contrib.auth.models import User
+
+    users = User.objects.in_bulk(
+        [p["user_id"] for p in pilots.values() if p["user_id"]]
+    )
+    out = []
+    for pilot in pilots.values():
+        primary = (
+            user_primary_character(users[pilot["user_id"]])
+            if pilot["user_id"] in users
+            else None
+        )
+        characters = sorted(pilot["characters"].items(), key=lambda c: c[1])
+        main_id, main_name = (
+            (primary.character_id, primary.character_name)
+            if primary
+            else characters[0]
+        )
+        out.append(
+            {
+                "character_id": main_id,
+                "name": main_name,
+                "characters": [name for _, name in characters],
+                "items": pilot["items"],
+                "top_items": [
+                    {"type_name": name, "count": count}
+                    for name, count in sorted(
+                        pilot["types"].items(), key=lambda t: (-t[1], t[0])
+                    )
+                ],
+            }
+        )
+    return sorted(out, key=lambda p: (-p["items"], p["name"]))
+
+
+def routes_here(location_id: int) -> List[dict]:
+    """Active freight routes that end at this location, with their price."""
+    # pylint: disable=import-outside-toplevel
+    from freight.models import EveFreightRoute
+
+    return [
+        {
+            "origin": route.origin_location.short_name,
+            "isk_per_m3": float(route.isk_per_m3 or 0),
+            "route_type": route.route_type or "rate",
+        }
+        for route in EveFreightRoute.objects.filter(
+            active=True, destination_location_id=location_id
+        )
+        .select_related("origin_location")
+        .order_by("isk_per_m3")
+    ]
 
 
 def open_order_counts(location_ids: Iterable[int]) -> dict:
@@ -621,6 +729,7 @@ def decline_submission(submission: LocationSubmission, user, reason: str = ""):
 RETIRE_FLAGS = (
     "deployment_active",
     "freight_active",
+    "freight_route_active",
     "fleets_active",
     "market_active",
     "prices_active",
@@ -674,6 +783,50 @@ def fitting_diff(old: List[dict], new: List[dict]) -> dict:
     }
 
 
+def _fit_key(location) -> tuple:
+    return tuple(
+        sorted(
+            m.get("name", "")
+            for m in (location.fitting or [])
+            if m.get("slot") in ("rig", "service")
+        )
+    )
+
+
+def same_fitting_items(locations) -> List[dict]:
+    """Structures in different systems with exactly the same rigs and
+    services: usually one scan pasted onto the wrong structure."""
+    by_fit = {}
+    for location in locations:
+        key = _fit_key(location)
+        if not any("-Set " in name for name in key):
+            continue
+        by_fit.setdefault(key, []).append(location)
+    items = []
+    for rows in by_fit.values():
+        systems = {row.solar_system_id for row in rows}
+        if len(rows) < 2 or len(systems) < 2:
+            continue
+        rows = sorted(
+            rows,
+            key=lambda row: (
+                row.fitting_scanned_at is None,
+                row.fitting_scanned_at,
+            ),
+        )
+        first = rows[0]
+        for row in rows[1:]:
+            items.append(
+                {
+                    "kind": "same_fitting",
+                    "title": f"{row.location_name} has the same fitting as {first.location_name}",
+                    "detail": "Paste a current scan, or retire it if it is gone.",
+                    "location_id": row.location_id,
+                }
+            )
+    return items
+
+
 def attention_items(locations) -> List[dict]:
     """Things a manager should fix, from real location data."""
     items = []
@@ -693,6 +846,7 @@ def attention_items(locations) -> List[dict]:
                     "location_id": rows[0].location_id,
                 }
             )
+    items.extend(same_fitting_items(locations))
     routes = route_counts(location.location_id for location in locations)
     for location in locations:
         if routes.get(location.location_id) and not location.freight_active:

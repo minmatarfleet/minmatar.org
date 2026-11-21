@@ -32,7 +32,9 @@ class ParsePasteTestCase(TestCase):
         self.assertEqual(slots.count("service"), 2)
         self.assertEqual(slots.count("defense"), 1)
         labels = [m.label for m in parsed.modules if m.slot == "rig"]
-        self.assertEqual(labels, ["Ship ME", "Components", "Lab"])
+        self.assertEqual(
+            labels, ["Ship ME", "Capital components", "Research & invention"]
+        )
         self.assertEqual(
             {m.size for m in parsed.modules if m.slot == "rig"}, {"XL"}
         )

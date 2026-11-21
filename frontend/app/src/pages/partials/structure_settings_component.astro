@@ -26,6 +26,7 @@ try {
         audience_tribe_group_ids: audience === 'groups' ? form.getAll('audience_tribe_group_ids').map((value) => parseInt(String(value))).filter(Number.isFinite) : [],
         good_for: form.getAll('good_for').map(String),
         freight_active: form.get('freight_active') === 'on',
+        freight_route_active: form.get('freight_route_active') === 'on',
         fleets_active: form.get('fleets_active') === 'on',
         market_active: form.get('market_active') === 'on',
         prices_active: form.get('prices_active') === 'on',

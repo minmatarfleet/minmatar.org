@@ -1,8 +1,8 @@
 ---
 /**
- * Status tags the site sets: Home, Deployment, Form-up, Freight, Market and
- * open Industry orders. Home and Deployment are filled; the rest are quiet
- * with an icon.
+ * Status tags the site sets: Home, Deployment, Form-up, Freight, Freight
+ * route and Market. Home and Deployment are filled; the rest are quiet with
+ * an icon. Browse cards show the same tags as icons only.
  */
 import { i18n, t_key } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
@@ -22,8 +22,8 @@ const ICONS: Record<StructureFlag, string> = {
     deployment: 'M5 21V4h11l-2 4 2 4H5',
     fleets: 'M4 17 12 5l8 12M8 17h8',
     freight: 'M3 7h11v9H3zM14 10h4l3 3v3h-7M7 19a1.6 1.6 0 1 0 0-.01M17 19a1.6 1.6 0 1 0 0-.01',
+    freight_route: 'M5 19a2 2 0 1 0 0-.01M19 5a2 2 0 1 0 0-.01M7 19h6a3 3 0 0 0 0-6H11a3 3 0 0 1 0-6h6',
     market: 'M4 20h16M7 16v-5M12 16V7M17 16v-3',
-    orders: 'M6 3h12v18H6zM9 8h6M9 12h6M9 16h3',
 }
 ---
 

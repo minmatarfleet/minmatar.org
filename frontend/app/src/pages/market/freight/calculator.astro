@@ -11,7 +11,11 @@ let fetch_freight_routes_error: Error | false = false
 
 try {
     freight_routes_data = await fetch_freight_routes()
-    default_route = freight_routes_data.routes[0]?.value ?? ''
+    // `?to=<location_id>` (the structure page's Send freight) opens the
+    // cheapest-listed route that ends there.
+    const to = Astro.url.searchParams.get('to')
+    const ending_there = to ? freight_routes_data.routes.find((route) => String(route.value).endsWith(`-${to}`)) : undefined
+    default_route = ending_there?.value ?? freight_routes_data.routes[0]?.value ?? ''
 } catch (error) {
     fetch_freight_routes_error = error
 }
