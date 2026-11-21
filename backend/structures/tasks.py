@@ -2,6 +2,7 @@ import json
 import logging
 from datetime import timedelta
 
+from django.db import transaction
 from django.utils import timezone
 from django.conf import settings
 
@@ -278,3 +279,22 @@ def notify_low_fuel_structures():
         channel_id,
         len(structures),
     )
+
+
+@app.task(expires=60 * 60, cooldown=60 * 60)
+def load_station_services(station_ids):
+    """Load NPC stations (type and services) from ESI into eveuniverse, for
+    station cards on the structure browser. eveuniverse only adds services,
+    so clear them first to drop ones the station no longer has."""
+    # pylint: disable=import-outside-toplevel
+    from eveuniverse.models import EveStation
+
+    for station_id in station_ids:
+        try:
+            with transaction.atomic():
+                station = EveStation.objects.filter(id=station_id).first()
+                if station is not None:
+                    station.services.clear()
+                EveStation.objects.update_or_create_esi(id=station_id)
+        except Exception:  # pylint: disable=broad-except
+            logger.warning("Could not load station %s", station_id)

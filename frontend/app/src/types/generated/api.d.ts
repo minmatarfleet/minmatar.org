@@ -8686,7 +8686,7 @@ export interface paths {
         };
         /**
          * Get Holdings
-         * @description Which alliance pilots hold items in this structure. Structure managers only: it names pilots.
+         * @description Which alliance pilots hold items in this structure, and which items. Superusers only for now: it names pilots and what they hold.
          */
         get: operations["structures_location_router_get_holdings"];
         put?: never;
@@ -8711,6 +8711,26 @@ export interface paths {
          * @description Retire a location: it leaves the site, but fleets, orders and history keep it. Approving the same structure again adds it back.
          */
         post: operations["structures_location_router_retire"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/structures/locations/{location_id}/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Users
+         * @description The corporations and pilots that use this location (items, clones, blueprints or recent industry jobs). Public to anyone who can see the location, so it names who, never how.
+         */
+        get: operations["structures_location_router_get_users"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -21630,6 +21650,8 @@ export interface components {
             audience_tribe_group_ids: number[];
             /** Can Manage */
             can_manage: boolean;
+            /** Can View Assets */
+            can_view_assets: boolean;
             /** Changes */
             changes: components["schemas"]["LocationChangeEntry"][];
             /** Deployment */
@@ -22075,6 +22097,33 @@ export interface components {
             type_id: number | null;
             /** Type Name */
             type_name: string;
+        };
+        /** LocationUserCorporation */
+        LocationUserCorporation: {
+            /** Corporation Id */
+            corporation_id: number;
+            /** Name */
+            name: string;
+            /** Pilots */
+            pilots: number;
+        };
+        /** LocationUserPilot */
+        LocationUserPilot: {
+            /** Character Id */
+            character_id: number;
+            /** Corporation Id */
+            corporation_id: number | null;
+            /** Corporation Name */
+            corporation_name: string;
+            /** Name */
+            name: string;
+        };
+        /** LocationUsers */
+        LocationUsers: {
+            /** Corporations */
+            corporations: components["schemas"]["LocationUserCorporation"][];
+            /** Pilots */
+            pilots: components["schemas"]["LocationUserPilot"][];
         };
         /**
          * LogAnalysis
@@ -53347,6 +53396,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    structures_location_router_get_users: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationUsers"];
                 };
             };
             /** @description Not Found */

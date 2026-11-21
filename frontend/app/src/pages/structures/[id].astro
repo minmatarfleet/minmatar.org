@@ -8,10 +8,8 @@ import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import { get_structure_location } from '@helpers/api.minmatar.org/structure_locations'
 import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
 import { structure_flags, security_colour, security_label, percent, short_isk } from '@helpers/structure_locations'
-import { get_gates, can } from '@helpers/gates'
 
 const { auth_token } = get_request_user(Astro)
-const can_manage_locations = can(await get_gates(Astro), 'structures.locations.manage')
 const location_id = parseInt(Astro.params.id ?? '0')
 
 let detail: StructureLocationDetail | null = null
@@ -27,13 +25,15 @@ const services = detail.fitting.filter((m) => m.slot === 'service')
 const defenses = detail.fitting.filter((m) => m.slot === 'defense')
 const groups: [string, StructureLocationModule[]][] = [['rigs', rigs], ['services', services], ['defenses', defenses]]
 const art = detail.type_id ? get_item_icon(detail.type_id, 512) : null
-const reinforce = detail.reinforce_hour !== null ? `${String(detail.reinforce_hour).padStart(2, '0')}:00 EVE` : null
 const has_fitting = detail.is_structure
 
 const tabs = [
     { id: 'overview', label: t('structures.tab.overview') },
     ...(has_fitting ? [{ id: 'fitting', label: t('structures.tab.fitting') }] : []),
     { id: 'history', label: t('structures.tab.history'), meta: String(detail.changes.length) },
+    { id: 'corporations', label: t('structures.tab.corporations') },
+    { id: 'pilots', label: t('structures.tab.pilots') },
+    ...(detail.can_view_assets ? [{ id: 'assets', label: t('structures.tab.assets') }] : []),
     ...(detail.can_manage ? [{ id: 'settings', label: t('structures.tab.settings'), icon: 'cog' as const }] : []),
 ]
 
@@ -112,11 +112,10 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
             <SectionTabPanel id="overview" id_prefix="structure" is_default={true}>
                 <Flexblock gap="var(--space-l)">
                     <div class="[ structure-stats ]">
-                        <ManageStatCard label={t('structures.stat.build_index')} value={percent(detail.manufacturing_index) ?? t('structures.stat.tax_unknown')} detail={paid(detail.manufacturing_index) ?? t('structures.stat.system_index')} />
-                        <ManageStatCard label={t('structures.stat.reactions_index')} value={percent(detail.reaction_index) ?? t('structures.stat.tax_unknown')} detail={paid(detail.reaction_index) ?? t('structures.stat.system_index')} />
-                        <ManageStatCard label={t('structures.stat.tax')} value={percent(detail.facility_tax) ?? t('structures.stat.tax_unknown')} detail={detail.facility_tax === null ? t('structures.stat.tax_unknown_hint') : undefined} />
+                        <ManageStatCard label={t('structures.stat.build_index')} value={percent(detail.manufacturing_index) ?? '—'} detail={paid(detail.manufacturing_index) ?? t('structures.stat.system_index')} />
+                        <ManageStatCard label={t('structures.stat.reactions_index')} value={percent(detail.reaction_index) ?? '—'} detail={paid(detail.reaction_index) ?? t('structures.stat.system_index')} />
+                        <ManageStatCard label={t('structures.stat.tax')} value={percent(detail.facility_tax) ?? '—'} detail={detail.facility_tax === null ? t('structures.stat.tax_unknown_hint') : undefined} />
                         <ManageStatCard label={t('structures.stat.office')} value={short_isk(detail.office_fee_isk)} detail={t('structures.stat.office_hint')} />
-                        <ManageStatCard label={t('structures.stat.reinforces')} value={reinforce ?? t('structures.card.not_set')} detail={reinforce ? undefined : t('structures.stat.reinforce_hint')} />
                     </div>
 
                     <section class="[ structure-section ]" aria-labelledby="structure-about">
@@ -178,9 +177,6 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
                         </div>
                     </section>
 
-                    {can_manage_locations &&
-                        <LazyPartial url={translatePath(`/partials/structure_holdings_component/?id=${detail.location_id}`)} trigger="reveal" />
-                    }
                     {auth_token &&
                         <section class="[ structure-section ]" aria-labelledby="structure-yours">
                             <h2 id="structure-yours">{t('structures.yours')}</h2>
@@ -250,6 +246,18 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
                     )
                 }
             </SectionTabPanel>
+
+            {(['corporations', 'pilots'] as const).map((view) => (
+                <SectionTabPanel id={view} id_prefix="structure">
+                    <LazyPartial url={translatePath(`/partials/structure_users_component/?id=${detail.location_id}&view=${view}`)} trigger="reveal" />
+                </SectionTabPanel>
+            ))}
+
+            {detail.can_view_assets &&
+                <SectionTabPanel id="assets" id_prefix="structure">
+                    <LazyPartial url={translatePath(`/partials/structure_holdings_component/?id=${detail.location_id}`)} trigger="reveal" />
+                </SectionTabPanel>
+            }
 
             {detail.can_manage &&
                 <SectionTabPanel id="settings" id_prefix="structure">
@@ -385,7 +393,7 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
 
     .structure-stats {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
         gap: var(--space-s);
     }
 

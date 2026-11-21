@@ -2,8 +2,8 @@
 /**
  * A structure on the browse page. The whole card opens the location. Every
  * card has the same rows, so cards in a row line up:
- * - the top band: build and reaction cost index and tax on industry
- *   structures, the Home or Deployment banner on stagings, empty otherwise;
+ * - the top band: the Home or Deployment banner on stagings, otherwise
+ *   build and reaction cost index and tax ("—" when not known);
  * - site tags as icons in the corner (Form-up, Freight, Freight route, Market);
  * - name with a copy button for the in-game name, then security, system and
  *   hull type;
@@ -27,7 +27,7 @@ delete attributes.class
 const href = translatePath(`/structures/${card.location_id}/`)
 const art = card.type_id ? get_item_icon(card.type_id, 512) : null
 const banner = structure_banner(card)
-const show_costs = !banner && card.industry
+const show_costs = !banner
 const flags = structure_flags(card, { banner: false })
 const costs = [
     { label: t('structures.card.build'), value: percent(card.manufacturing_index) },
@@ -438,6 +438,18 @@ import StructureRigChip from '@components/blocks/structures/StructureRigChip.ast
         }
     }
 
+    .structure-card__sys > * {
+        flex: none;
+    }
+
+    .structure-card__sys > .structure-card__type,
+    .structure-card__sys > .structure-card__aud {
+        flex: 0 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
     .structure-card__type {
         color: var(--text-muted);
 
@@ -472,9 +484,26 @@ import StructureRigChip from '@components/blocks/structures/StructureRigChip.ast
     }
 
     .structure-card__rigs {
-        position: relative;
-        z-index: 1;
         margin-inline-start: auto;
+    }
+
+    /* Rig details open over the card, inside its edges, not over the next card. */
+    .structure-card__caps {
+        position: relative;
+        pointer-events: none;
+
+        > * {
+            pointer-events: auto;
+        }
+
+        :global(.structure-rig-chip) {
+            position: static;
+        }
+
+        :global(.structure-rig-chip__pop) {
+            inset-inline: 0;
+            inline-size: auto;
+        }
     }
 
     .structure-card__unscanned {
