@@ -62,15 +62,14 @@ export function sides_summary(
     parties: { name: string, ticker?: string | null, side: string }[],
     sides: CampaignChoice[] | undefined,
 ): string {
+    // Counts, not names: the list below the summary already names every party.
     const order = (sides ?? []).map((side) => side.value)
-    const groups = new Map<string, string[]>()
-    for (const party of parties) {
-        const name = party.ticker ? `${party.name} [${party.ticker}]` : party.name
-        groups.set(party.side, [...(groups.get(party.side) ?? []), name])
-    }
-    return [...groups.entries()]
+    const counts = new Map<string, number>()
+    for (const party of parties)
+        counts.set(party.side, (counts.get(party.side) ?? 0) + 1)
+    return [...counts.entries()]
         .sort(([a], [b]) => order.indexOf(a) - order.indexOf(b))
-        .map(([side, names]) => `${choice_label(sides, side)}: ${names.join(', ')}`)
+        .map(([side, count]) => `${count} ${choice_label(sides, side).toLowerCase()}`)
         .join(' · ')
 }
 

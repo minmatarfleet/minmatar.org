@@ -2707,30 +2707,12 @@ export interface CampaignArea {
 export type CampaignKind = 'faction_warfare' | 'strategic'
 
 export type CampaignPartyKind = 'character' | 'corporation' | 'alliance' | 'faction'
-export type CampaignPartySide = 'enemy' | 'ally'
+export type CampaignPartySide = 'enemy' | 'ally' | 'third_party'
 export type CampaignStructureAffiliation = 'hostile' | 'friendly' | 'neutral'
 
-export interface CampaignParty {
-    id:                 number;
-    name:               string;
-    ticker:             string;
-    kind:               CampaignPartyKind;
-    side:               CampaignPartySide;
-    character_id:       number | null;
-    corporation_id:     number | null;
-    alliance_id:        number | null;
-    faction_id:         number | null;
-}
+export type CampaignParty = ApiResponse<'CampaignPartyOut'>
 
-export interface CampaignFitting {
-    id:                 number;
-    fitting_id:         number;
-    name:               string;
-    ship_name:          string;
-    role_label:         string;
-    srp_eligible:       boolean;
-    order:              number;
-}
+export type CampaignFitting = ApiResponse<'CampaignFittingOut'>
 
 export interface CampaignStructure {
     id:                 number;
@@ -2762,9 +2744,11 @@ export interface CampaignListItem {
     id:                     number;
     slug:                   string;
     name:                   string;
+    /** Managers and coordinators only; everyone else gets an Upcoming Campaign. */
+    undisclosed:            boolean;
     short_code:             string;
     tagline:                string;
-    kind:                   CampaignKind;
+    kind:                   CampaignKind | '';
     status:                 CampaignStatus;
     start_at:               string;
     end_at:                 string;
@@ -2801,11 +2785,17 @@ export interface CampaignDetail {
     id:                         number;
     slug:                       string;
     name:                       string;
+    undisclosed:                boolean;
+    /** This viewer gets only the Upcoming Campaign view. */
+    redacted:                   boolean;
+    viewer_role:                'manager' | 'coordinator' | 'member';
+    coordination_ready:         boolean;
+    coordinator_scopes:         string[];
     short_code:                 string;
     tagline:                    string;
     description_md:             string;
     cover_image_url:            string;
-    kind:                       CampaignKind;
+    kind:                       CampaignKind | '';
     status:                     CampaignStatus;
     start_at:                   string;
     end_at:                     string;
@@ -3290,6 +3280,11 @@ export type FreightRoutePatch = ApiRequest<'RoutePatchRequest'>
 export type CampaignSettings = ApiResponse<'CampaignSettingsOut'>
 export type CampaignCoordination = ApiResponse<'CampaignCoordinationOut'>
 export type CampaignCoordinationPut = ApiRequest<'CampaignCoordinationRequest'>
+export type CampaignDiscordLink = ApiResponse<'CampaignDiscordLinkOut'>
+export type CampaignDiscordLinkPatch = ApiRequest<'CampaignDiscordLinkRequest'>
+export type CampaignCoordinator = ApiResponse<'CampaignCoordinatorOut'>
+export type CampaignDoctrine = ApiResponse<'CampaignDoctrineOut'>
+export type CampaignDoctrines = ApiResponse<'CampaignDoctrinesOut'>
 export type CampaignFeatures = ApiResponse<'CampaignFeatures'>
 export type CampaignTimer = ApiResponse<'CampaignTimerOut'>
 export type CampaignDestruction = ApiResponse<'CampaignDestructionOut'>

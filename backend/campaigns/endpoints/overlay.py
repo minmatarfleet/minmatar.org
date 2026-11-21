@@ -29,7 +29,7 @@ from campaigns.models import (
     SiteKind,
     StructureStatus,
 )
-from campaigns.services import objectives, plan, timers
+from campaigns.services import disclosure, objectives, plan, timers
 from eveonline.helpers.characters.identity import (
     owner_user_ids,
     primary_refs_for_users,
@@ -68,11 +68,23 @@ OBJECTIVE_LABELS = {
 }
 
 
-def pick_campaign(user) -> Campaign | None:
-    """The live campaign the pilot is enlisted in, else the newest live one."""
+def _live(user):
+    """Live campaigns this pilot may see: undisclosed ones only for their
+    managers and coordinators."""
     live = Campaign.objects.filter(status__in=LIVE_STATUSES).order_by(
         "-start_at"
     )
+    hidden = [
+        campaign.id
+        for campaign in live.filter(undisclosed=True)
+        if not disclosure.sees_details(user, campaign)
+    ]
+    return live.exclude(id__in=hidden)
+
+
+def pick_campaign(user) -> Campaign | None:
+    """The live campaign the pilot is enlisted in, else the newest live one."""
+    live = _live(user)
     enlisted = live.filter(
         enlistments__user=user, enlistments__status="active"
     ).first()
@@ -93,7 +105,7 @@ def overlay(campaign: Campaign) -> dict:
     )
 
 
-def campaigns() -> list[dict]:
+def campaigns(user=None) -> list[dict]:
     """Every live campaign, newest first, for the window's switcher: what it
     shows, its destruction totals and its next timers."""
     return [
@@ -102,9 +114,7 @@ def campaigns() -> list[dict]:
             SUMMARY_LOCK_KEY.format(campaign_id=campaign.id),
             lambda campaign=campaign: summary(campaign),
         )
-        for campaign in Campaign.objects.filter(
-            status__in=LIVE_STATUSES
-        ).order_by("-start_at")
+        for campaign in _live(user)
     ]
 
 

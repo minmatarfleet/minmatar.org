@@ -1,0 +1,149 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import type { CampaignDetail } from '@dtypes/api.minmatar.org'
+import { features_on } from '@helpers/campaign_features'
+import { campaign_ready_steps } from '@helpers/campaign_ready'
+import { eve_day_short, eve_clock } from '@helpers/date'
+
+interface Props {
+    campaign:           CampaignDetail;
+    [propName: string]: any;
+}
+
+const {
+    campaign,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const weeks = Math.max(1, Math.round((new Date(campaign.end_at).getTime() - new Date(campaign.start_at).getTime()) / (7 * 86_400_000)))
+const dates = `${eve_day_short(lang, campaign.start_at, { weekday: true })} ${eve_clock(campaign.start_at)} → ${eve_day_short(lang, campaign.end_at, { weekday: true })} · ${weeks} ${t('weeks').toLowerCase()}`
+const steps = campaign_ready_steps(campaign, features_on(campaign.features), dates)
+const done = steps.filter((step) => step.done).length
+const percent = Math.round((done / steps.length) * 100)
+const PUBLISH_URL = translatePath(`/partials/campaign_publish_component?slug=${encodeURIComponent(campaign.slug)}`)
+
+const summary = (step: typeof steps[number]) => {
+    let text: string = t(step.summary_key)
+    for (const [key, value] of Object.entries(step.values ?? {}))
+        text = text.replace(`{${key}}`, String(value))
+    return text
+}
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Button from '@components/blocks/Button.astro'
+import CampaignMeter from '@components/blocks/CampaignMeter.astro'
+---
+
+<ComponentBlock
+    padding_inline='var(--space-m)'
+    padding_block='var(--space-m)'
+    class:list={['[ campaign-ready ]', Astro.props.class]}
+    {...attributes}
+>
+    <div class="[ campaign-ready__head ]">
+        <h2>{t('campaigns.ready.heading')}</h2>
+        <span>{t('campaigns.ready.count').replace('{done}', String(done)).replace('{total}', String(steps.length))}</span>
+        <CampaignMeter percent={percent} color='var(--green)' label={t('campaigns.ready.heading')} class="[ campaign-ready__meter ]" />
+    </div>
+
+    <ul class="[ campaign-ready__list ]" role="list">
+        {steps.map((step) =>
+            <li class="[ campaign-ready__row ]">
+                {step.done ?
+                    <svg class="[ campaign-ready__mark is-done ]" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label={t('campaigns.ready.done')}><path d="M4 12.5l5 5L20 6.5"></path></svg>
+                    :
+                    <span class="[ campaign-ready__mark ]" role="img" aria-label={t('campaigns.ready.todo')}></span>
+                }
+                <span class="[ campaign-ready__label ]">{t(step.label_key)}</span>
+                <span class="[ campaign-ready__summary ]">{summary(step)}</span>
+                <a href="#settings" class="[ campaign-ready__action ]">{t(step.done ? 'campaigns.ready.change' : 'campaigns.ready.set_up')}</a>
+            </li>
+        )}
+    </ul>
+
+    {campaign.status === 'draft' &&
+        <div class="[ campaign-ready__publish ]">
+            <Button color="green" hx-post={PUBLISH_URL} hx-swap="none">{t('campaigns.ready.publish')}</Button>
+        </div>
+    }
+</ComponentBlock>
+
+<style lang="scss">
+    .campaign-ready__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: var(--space-2xs) var(--space-s);
+
+        h2 {
+            margin: 0;
+        }
+    }
+
+    :global(.campaign-ready__meter) {
+        margin-inline-start: auto;
+        flex: 0 1 12rem;
+        align-self: center;
+    }
+
+    .campaign-ready__list {
+        display: flex;
+        flex-direction: column;
+        margin: var(--space-s) 0 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .campaign-ready__row {
+        display: grid;
+        grid-template-columns: 1.5rem minmax(7rem, 12rem) minmax(0, 1fr) auto;
+        align-items: center;
+        gap: var(--space-s);
+        padding-block: var(--space-2xs);
+        border-block-start: 1px solid var(--hairline);
+    }
+
+    .campaign-ready__mark {
+        inline-size: 1rem;
+        block-size: 1rem;
+        border: 2px solid color-mix(in srgb, var(--fleet-yellow) 60%, transparent);
+
+        &.is-done {
+            inline-size: 1.375rem;
+            block-size: 1.375rem;
+            border: 0;
+            color: var(--green);
+        }
+    }
+
+    .campaign-ready__label {
+        color: var(--highlight);
+        font-weight: 700;
+    }
+
+    .campaign-ready__action {
+        color: var(--highlight);
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .campaign-ready__publish {
+        padding-block-start: var(--space-s);
+        border-block-start: 1px solid var(--hairline);
+    }
+
+    @media (max-width: 48rem) {
+        .campaign-ready__row {
+            grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+        }
+
+        .campaign-ready__summary {
+            grid-column: 2 / -1;
+            grid-row: 2;
+        }
+    }
+</style>

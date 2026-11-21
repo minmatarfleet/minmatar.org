@@ -14,6 +14,7 @@ from campaigns.endpoints.base import router
 from campaigns.endpoints.manage import _can_manage, _denied
 from campaigns.endpoints.settings_helpers import _settings
 from campaigns.models import (
+    COORDINATOR_SCOPES,
     Campaign,
     CampaignStatus,
     feature_field,
@@ -29,6 +30,25 @@ def _track_pause(campaign: Campaign, status: str, fields: list) -> None:
     elif not paused and campaign.paused_at is not None:
         campaign.paused_at = None
         fields.append("paused_at")
+
+
+def _apply_disclosure(campaign: Campaign, payload, fields: list) -> str:
+    """Undisclose or disclose, and set what coordinators see. Returns an
+    error message, or "" when the payload is fine."""
+    if payload.undisclosed is not None:
+        campaign.undisclosed = payload.undisclosed
+        fields.append("undisclosed")
+    if payload.coordinator_scopes is not None:
+        unknown = set(payload.coordinator_scopes) - set(COORDINATOR_SCOPES)
+        if unknown:
+            return f"unknown scopes: {sorted(unknown)}"
+        campaign.coordinator_scopes = [
+            scope
+            for scope in COORDINATOR_SCOPES
+            if scope in payload.coordinator_scopes
+        ]
+        fields.append("coordinator_scopes")
+    return ""
 
 
 # Not "/{slug}": ninja pins a path's position at its first registration, and
@@ -77,6 +97,9 @@ def patch_campaign(request, slug: str, payload: schemas.CampaignPatchRequest):
             if value is not None:
                 setattr(campaign, feature_field(feature), value)
                 fields.append(feature_field(feature))
+    error = _apply_disclosure(campaign, payload, fields)
+    if error:
+        return 400, {"detail": error}
     campaign.start_at = start_at
     campaign.end_at = end_at
     campaign.save(update_fields=fields + ["start_at", "end_at"])

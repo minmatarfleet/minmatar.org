@@ -1,0 +1,149 @@
+---
+/**
+ * A coordinator's own Discord servers for a campaign: link one (the bot
+ * goes in through Discord's code grant), pick its timers and fleet pings
+ * channels, or stop forwarding. The API checks the coordinator.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { change_campaign, get_campaign_discord_links } from '@helpers/api.minmatar.org/campaigns'
+import type { CampaignDiscordLink } from '@dtypes/api.minmatar.org'
+import { form_text } from '@helpers/manage_forms'
+import { query_string } from '@helpers/string'
+import { refusal_text } from '@helpers/campaign_manage'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!user || !auth_token) return HTTP_403_Forbidden()
+
+const slug = Astro.url.searchParams.get('slug') ?? ''
+if (!/^[a-z0-9-]+$/.test(slug)) return HTTP_403_Forbidden()
+
+const PART_URL = translatePath(`/partials/campaign_discord_component?${query_string({ slug })}`)
+const CONNECT_URL = translatePath(`/redirects/campaign_discord_bot_connect_init?${query_string({ slug, purpose: 'link' })}`)
+
+let error_message = ''
+let saved = false
+
+if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    const field = (name: string) => form_text(form, name)
+    try {
+        if (field('op') === 'remove') {
+            await change_campaign(slug, auth_token, 'DELETE', `/discord-links/${parseInt(field('link_id'))}`)
+        } else {
+            for (const id of form.getAll('link_id').map(String)) {
+                await change_campaign(slug, auth_token, 'PATCH', `/discord-links/${parseInt(id)}`, {
+                    timers_channel_id: field(`link_timers_${id}`) || null,
+                    fleets_channel_id: field(`link_fleets_${id}`) || null,
+                })
+            }
+        }
+        saved = true
+    } catch (error) {
+        error_message = refusal_text(error, t('campaigns.action_failed'))
+    }
+}
+
+let links: CampaignDiscordLink[] = []
+let fetch_error: Error | false = false
+try {
+    links = await get_campaign_discord_links(slug, auth_token)
+} catch (error) {
+    fetch_error = error
+}
+
+const status = Astro.url.searchParams.get('discord_bot')
+
+import Button from '@components/blocks/Button.astro'
+import Select from '@components/blocks/Select.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+---
+
+{fetch_error ?
+    <ErrorRefetch args={{ partial: PART_URL, error: fetch_error, delay: 0 }} />
+    :
+    <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
+        <form class="[ campaign-discord manage-form ]" hx-post={PART_URL} hx-target="this" hx-swap="outerHTML">
+            {status === 'connected' && <p class="[ manage-saved ]">{t('campaigns.discord.connected')}</p>}
+            {links.length === 0 ?
+                <EmptyState title={t('campaigns.coordinators.no_discord')} />
+                :
+                <ul class="[ campaign-discord__list ]" role="list">
+                    {links.map((link) =>
+                        <li class="[ campaign-discord__row ]">
+                            <input type="hidden" name="link_id" value={String(link.id)} />
+                            <span class="[ campaign-discord__name ]">{link.guild_name || link.guild_id}</span>
+                            <ManageField label={t('campaigns.manage.coordination_timers')} for={`discord-timers-${link.id}`}>
+                                <Select id={`discord-timers-${link.id}`} size="sm" name={`link_timers_${link.id}`}>
+                                    <option value="">{t('campaigns.manage.coordination_none')}</option>
+                                    {link.channels.map((channel) => <option value={channel.id} selected={channel.id === link.timers_channel_id}>#{channel.name}</option>)}
+                                </Select>
+                            </ManageField>
+                            <ManageField label={t('campaigns.manage.coordination_fleets')} for={`discord-fleets-${link.id}`}>
+                                <Select id={`discord-fleets-${link.id}`} size="sm" name={`link_fleets_${link.id}`}>
+                                    <option value="">{t('campaigns.manage.coordination_none')}</option>
+                                    {link.channels.map((channel) => <option value={channel.id} selected={channel.id === link.fleets_channel_id}>#{channel.name}</option>)}
+                                </Select>
+                            </ManageField>
+                            <Button
+                                type="button"
+                                color="transparent"
+                                size="sm"
+                                hx-post={PART_URL}
+                                hx-vals={JSON.stringify({ op: 'remove', link_id: String(link.id) })}
+                            >{t('campaigns.discord.remove').replace('{name}', link.guild_name || link.guild_id)}</Button>
+                        </li>
+                    )}
+                </ul>
+            }
+            <div class="[ manage-actions ]">
+                {links.length > 0 && <Button type="submit" size="sm" color="green">{t('campaigns.manage.save')}</Button>}
+                <Button size="sm" href={CONNECT_URL}>{t('campaigns.discord.link_server')}</Button>
+                {error_message && <span class="[ manage-field__error ]" role="alert">{error_message}</span>}
+                {saved && <span class="[ manage-saved ]">{t('campaigns.manage.saved')}</span>}
+            </div>
+        </form>
+    </ComponentBlock>
+}
+
+<style lang="scss">
+    .campaign-discord {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .campaign-discord__list {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .campaign-discord__row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: var(--space-s);
+        padding-block: var(--space-2xs);
+        border-block-end: 1px solid var(--hairline);
+
+        > :global(.manage-field) {
+            flex: 1 1 12rem;
+        }
+    }
+
+    .campaign-discord__name {
+        flex: 1 1 12rem;
+        color: var(--highlight);
+        font-weight: 700;
+        align-self: center;
+    }
+</style>

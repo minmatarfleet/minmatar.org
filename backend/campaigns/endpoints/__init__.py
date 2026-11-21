@@ -28,5 +28,15 @@ from campaigns.endpoints import get_destruction  # noqa: F401
 from campaigns.endpoints import get_coordination  # noqa: F401
 from campaigns.endpoints import put_coordination  # noqa: F401
 from campaigns.endpoints import projects  # noqa: F401
+from campaigns.endpoints import post_coordinator  # noqa: F401
+from campaigns.endpoints import delete_coordinator  # noqa: F401
+from campaigns.endpoints import post_doctrine  # noqa: F401
+from campaigns.endpoints import delete_doctrine  # noqa: F401
+from campaigns.endpoints import patch_fitting  # noqa: F401
+from campaigns.endpoints import get_discord_bot_connect  # noqa: F401
+from campaigns.endpoints import get_discord_bot_callback  # noqa: F401
+from campaigns.endpoints import get_discord_links  # noqa: F401
+from campaigns.endpoints import patch_discord_link  # noqa: F401
+from campaigns.endpoints import delete_discord_link  # noqa: F401
 
 __all__ = ["router"]

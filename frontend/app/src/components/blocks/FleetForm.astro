@@ -113,7 +113,8 @@ const strategic_option_attributes = show_host_row ? {
 const PING_PREVIEW_PARTIAL_URL = translatePath('/partials/discord_preview_component/')
 const locations = Array.isArray(locations_prop) ? locations_prop : []
 const doctrines = Array.isArray(doctrines_prop) ? doctrines_prop : []
-const campaigns = Array.isArray(campaigns_prop) ? campaigns_prop : []
+// An undisclosed campaign this viewer may not see has no id to attach a fleet to.
+const campaigns = (Array.isArray(campaigns_prop) ? campaigns_prop : []).filter((campaign) => campaign.id > 0)
 
 const no_doctrine_option = {
     label: t('no_doctrine'),

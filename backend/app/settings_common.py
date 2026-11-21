@@ -260,6 +260,9 @@ DISCORD_CORP_BOT_REDIRECT_URL = os.environ.get(
 DISCORD_TRIBE_BOT_REDIRECT_URL = os.environ.get(
     "DISCORD_TRIBE_BOT_REDIRECT_URL", ""
 )
+DISCORD_CAMPAIGN_BOT_REDIRECT_URL = os.environ.get(
+    "DISCORD_CAMPAIGN_BOT_REDIRECT_URL", ""
+)
 # SDE sqlite for campaign area names; defaults to the newest
 # frontend/app/src/data/sde-*.sqlite.
 EVE_SDE_SQLITE_PATH = os.environ.get("EVE_SDE_SQLITE_PATH", "")

@@ -42,6 +42,28 @@ campaign fittings appear on the member-facing campaign pages; leave the
 order as draft until you publish it. Linking a structure timer to a campaign
 in admin (or via the timer API) creates the recon row and grows the theater.
 
+## Undisclosed campaigns and coordinators
+
+`Campaign.undisclosed` keeps a campaign to its managers and the coordinators
+they invite (`campaigns/services/disclosure.py`). Everyone else gets an
+Upcoming Campaign: the start time and Enlist, nothing more, reached by
+`public_key` because the slug spells the name. The API does the redaction:
+the list, the detail, every sub-resource (404), the desktop overlay, fleet
+detail, corporation projects and the timers board. The migration that added
+it marked every strategic campaign that had not started.
+
+Coordinators (`CampaignCoordinator`) are EVE characters invited by name, in
+the alliance or not; whoever owns the character on the site gets the
+coordinator view. They read only the parts in `coordinator_scopes` (sides,
+structures, timers, fleets, fittings) and can link their own Discord server
+(`CampaignDiscordLink`) with a timers and a fleet pings channel. Adding the
+bot goes through Discord's OAuth2 code grant
+(`DISCORD_CAMPAIGN_BOT_REDIRECT_URL`), for our server and theirs. Nothing
+posts to those channels yet; they are configuration for the ping fan-out.
+
+Doctrines attach with `CampaignDoctrine` and bring their fittings in as
+`CampaignFitting` rows; `CampaignFitting.enabled` hides one from the page.
+
 ## How a fact gets in
 
 | Fact | Path | Notes |

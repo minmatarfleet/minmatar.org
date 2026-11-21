@@ -71,20 +71,86 @@ def text_channels(server_id: int | None) -> list[dict] | None:
     )
 
 
-def invite_url() -> str:
-    """Discord's page for adding the bot to another server as an
-    administrator. Empty when the bot's client id is not configured."""
-    if not settings.DISCORD_CLIENT_ID:
-        return ""
+def bot_configured() -> bool:
+    return bool(
+        settings.DISCORD_CLIENT_ID
+        and settings.DISCORD_CAMPAIGN_BOT_REDIRECT_URL
+    )
+
+
+def authorize_url(state: str) -> str:
+    """Discord's page for adding the bot to a server as an administrator.
+
+    Our Discord application requires the OAuth2 code grant (the corporation
+    and tribe bot flows need it), so a plain ``scope=bot`` link is refused:
+    the install has to come back to our callback with a code.
+    """
     query = urlencode(
         {
             "client_id": settings.DISCORD_CLIENT_ID,
             "scope": "bot",
             "permissions": ADMINISTRATOR,
             "integration_type": 0,
+            "response_type": "code",
+            "redirect_uri": settings.DISCORD_CAMPAIGN_BOT_REDIRECT_URL,
+            "state": state,
         }
     )
     return f"https://discord.com/oauth2/authorize?{query}"
+
+
+def connect_path(campaign: Campaign, purpose: str) -> str:
+    """The API path that starts a bot install for this campaign; the page
+    adds the viewer's token."""
+    if not bot_configured():
+        return ""
+    return (
+        f"/api/campaigns/{campaign.slug}/discord/bot/connect?purpose={purpose}"
+    )
+
+
+def remember_guild(guild: dict) -> None:
+    """Note a server the bot was just added to, so it can be picked before
+    the next guild sync."""
+    DiscordGuild.objects.update_or_create(
+        guild_id=int(guild["id"]),
+        defaults={"name": guild.get("name") or "", "is_active": True},
+    )
+
+
+def link_out(link, with_channels: bool = True) -> dict:
+    channels = text_channels(link.guild_id) if with_channels else []
+    return {
+        "id": link.id,
+        "guild_id": str(link.guild_id),
+        "guild_name": link.guild_name,
+        "timers_channel_id": (
+            str(link.timers_channel_id) if link.timers_channel_id else None
+        ),
+        "fleets_channel_id": (
+            str(link.fleets_channel_id) if link.fleets_channel_id else None
+        ),
+        "linked_by": _linker_name(link),
+        "channels": channels or [],
+        "channels_unavailable": channels is None,
+    }
+
+
+def _linker_name(link) -> str:
+    user = link.linked_by
+    if user is None:
+        return ""
+    # Imported here: eveonline imports campaigns models at load time.
+    from eveonline.models import EvePlayer  # pylint: disable=C0415
+
+    player = (
+        EvePlayer.objects.filter(user=user)
+        .select_related("primary_character")
+        .first()
+    )
+    if player and player.primary_character:
+        return player.primary_character.character_name
+    return user.username
 
 
 def coordination_out(campaign: Campaign, server_id: int | None = None) -> dict:
@@ -111,5 +177,7 @@ def coordination_out(campaign: Campaign, server_id: int | None = None) -> dict:
         "servers": servers(),
         "channels": channels or [],
         "channels_unavailable": channels is None,
-        "invite_url": invite_url(),
+        "invite_url": connect_path(campaign, "ours"),
+        "link_url": connect_path(campaign, "link"),
+        "links": [link_out(link) for link in campaign.discord_links.all()],
     }

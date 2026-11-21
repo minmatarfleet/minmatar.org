@@ -71,6 +71,10 @@ class CampaignFittingOut(Schema):
     ship_name: str = ""
     role_label: str = ""
     srp_eligible: bool = True
+    enabled: bool = True
+    ship_id: int | None = None
+    doctrine_id: int | None = None
+    doctrine_name: str = ""
     order: int = 0
 
 
@@ -104,6 +108,9 @@ class CampaignListItem(Schema):
     id: int
     slug: str
     name: str
+    # Managers and coordinators only; everyone else gets an Upcoming
+    # Campaign with only its start time (slug is then the public key).
+    undisclosed: bool = False
     short_code: str
     tagline: str = ""
     kind: str = "faction_warfare"
@@ -167,6 +174,15 @@ class CampaignDetail(Schema):
     id: int
     slug: str
     name: str
+    undisclosed: bool = False
+    # True when this viewer gets only the Upcoming Campaign view.
+    redacted: bool = False
+    # manager, coordinator or member.
+    viewer_role: str = "member"
+    # Managers only: a timers or fleet pings channel is picked.
+    coordination_ready: bool = False
+    # Coordinators only: the parts of the campaign shared with them.
+    coordinator_scopes: list[str] = []
     short_code: str
     tagline: str = ""
     description_md: str = ""
@@ -248,6 +264,19 @@ class CoordinationChannelOut(Schema):
     name: str
 
 
+class CampaignDiscordLinkOut(Schema):
+    """Another server a coordinator forwards the campaign's pings to."""
+
+    id: int
+    guild_id: str
+    guild_name: str = ""
+    timers_channel_id: str | None = None
+    fleets_channel_id: str | None = None
+    linked_by: str = ""
+    channels: list[CoordinationChannelOut] = []
+    channels_unavailable: bool = False
+
+
 class CampaignCoordinationOut(Schema):
     """The campaign's coordination Discord (admins only)."""
 
@@ -260,13 +289,55 @@ class CampaignCoordinationOut(Schema):
     servers: list[CoordinationServerOut] = []
     channels: list[CoordinationChannelOut] = []
     channels_unavailable: bool = False
+    # API path that adds the bot to a server (the page adds ?token=).
     invite_url: str = ""
+    link_url: str = ""
+    links: list[CampaignDiscordLinkOut] = []
 
 
 class CampaignCoordinationRequest(Schema):
     guild_id: str | None = None
     timers_channel_id: str | None = None
     fleets_channel_id: str | None = None
+
+
+class CampaignDiscordLinkRequest(Schema):
+    timers_channel_id: str | None = None
+    fleets_channel_id: str | None = None
+
+
+class CampaignCoordinatorOut(Schema):
+    id: int
+    character_id: int
+    character_name: str
+    corporation_name: str = ""
+    alliance_name: str = ""
+    # The character belongs to someone on the site.
+    signed_in: bool = False
+    discord_servers: list[str] = []
+
+
+class CampaignCoordinatorInvite(Schema):
+    character_name: str = Field(min_length=3, max_length=255)
+
+
+class CampaignDoctrineOut(Schema):
+    id: int
+    doctrine_id: int
+    name: str
+
+
+class CampaignDoctrineAttach(Schema):
+    doctrine_id: int
+
+
+class CampaignFittingToggle(Schema):
+    enabled: bool
+
+
+class CampaignDoctrinesOut(Schema):
+    doctrines: list[CampaignDoctrineOut] = []
+    fittings: list[CampaignFittingOut] = []
 
 
 class RightNow(Schema):
@@ -757,6 +828,8 @@ class CampaignPatchRequest(Schema):
     start_at: datetime | None = None
     end_at: datetime | None = None
     features: CampaignFeaturesPatch | None = None
+    undisclosed: bool | None = None
+    coordinator_scopes: list[str] | None = None
 
 
 class SystemAddRequest(Schema):
@@ -825,6 +898,11 @@ class CampaignSettingsOut(Schema):
     week_targets: list[SettingsWeekTargetOut]
     daily_orders: list[SettingsOrderOut]
     features: CampaignFeatures = CampaignFeatures()
+    undisclosed: bool = False
+    public_key: str = ""
+    coordinator_scopes: list[str] = []
+    coordinators: list[CampaignCoordinatorOut] = []
+    doctrines: list[CampaignDoctrineOut] = []
 
 
 class PayoutCodeOut(Schema):

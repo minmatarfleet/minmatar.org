@@ -4,7 +4,7 @@ const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { CampaignListItem } from '@dtypes/api.minmatar.org'
 import type { TagColors } from '@dtypes/layout_components'
-import { days_diff, format_date_short } from '@helpers/date'
+import { days_diff, format_date_short, eve_day_short, eve_clock } from '@helpers/date'
 
 interface Props {
     campaign:           CampaignListItem;
@@ -22,10 +22,13 @@ delete attributes.index
 
 const is_upcoming = campaign.status === 'scheduled' || campaign.status === 'draft'
 const is_strategic = campaign.kind === 'strategic'
+/** Undisclosed and not for this viewer: the API sent only a start time. */
+const is_redacted = campaign.undisclosed && campaign.kind === ''
 const href = translatePath(`/campaigns/${campaign.slug}/`)
 const cover = campaign.cover_image_url || (
-    is_strategic ? '/images/home-auga-cover.jpg' : '/images/warzone-card.jpg'
+    is_strategic || is_redacted ? '/images/home-auga-cover.jpg' : '/images/warzone-card.jpg'
 )
+const start_time = `${eve_day_short(lang, campaign.start_at, { weekday: true })} ${eve_clock(campaign.start_at)}`
 
 const start_label = format_date_short(lang, campaign.start_at)
 const end_label = format_date_short(lang, campaign.end_at)
@@ -37,7 +40,7 @@ const upcoming_countdown = days_until_start === 0
         .replace('{unit}', days_until_start === 1 ? t('day') : t('days'))
 
 const period = is_upcoming
-    ? upcoming_countdown
+    ? `${upcoming_countdown} · ${start_time}`
     : `${start_label} – ${end_label}`
 
 const kind_label = t(t_key('campaigns.kind.', campaign.kind))
@@ -68,6 +71,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import PictureCard from '@components/blocks/PictureCard.astro'
 import Button from '@components/blocks/Button.astro'
 import Tag from '@components/blocks/Tag.astro'
+import CampaignSides from '@components/blocks/CampaignSides.astro'
 ---
 
 <PictureCard
@@ -83,34 +87,40 @@ import Tag from '@components/blocks/Tag.astro'
     {...attributes}
 >
     <FlexInline slot="header" gap='var(--space-3xs)' class="[ items-center ]">
-        <Tag text={kind_label} color={kind_color} />
-        {!is_upcoming && campaign.is_enlisted &&
+        {is_redacted ?
+            <Tag text={t('campaigns.coming_soon')} variant='outline' />
+            :
+            <Tag text={kind_label} color={kind_color} />
+        }
+        {!is_redacted && campaign.status === 'draft' &&
+            <Tag text={t('draft')} variant='outline' />
+        }
+        {!is_redacted && campaign.undisclosed &&
+            <Tag text={t('campaigns.undisclosed')} variant='outline' />
+        }
+        {campaign.is_enlisted &&
             <Tag text={t('campaigns.enlisted_already')} color='green' />
         }
     </FlexInline>
 
     <Flexblock gap='var(--space-2xs)'>
         <small class:list={[{ 'campaign-card-countdown': is_upcoming }]}>{period}</small>
-        {is_upcoming ?
+        <a href={href}>
             <h3>{campaign.name}</h3>
-            :
-            <a href={href}>
-                <h3>{campaign.name}</h3>
-            </a>
-        }
+        </a>
         {campaign.tagline &&
             <p class="[ campaign-card-tagline ]">{campaign.tagline}</p>
         }
-        {!is_upcoming && parties_label &&
-            <small class="[ campaign-card-parties ]">{parties_label}</small>
+        {is_upcoming ?
+            <CampaignSides parties={campaign.parties ?? []} compact={true} />
+            :
+            parties_label && <small class="[ campaign-card-parties ]">{parties_label}</small>
         }
-        {!is_upcoming &&
-            <FlexInline>
-                <Button href={href} size='sm'>
-                    {t('campaigns.view_campaign')}
-                </Button>
-            </FlexInline>
-        }
+        <FlexInline>
+            <Button href={href} size='sm'>
+                {t('campaigns.view_campaign')}
+            </Button>
+        </FlexInline>
     </Flexblock>
 </PictureCard>
 

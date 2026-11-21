@@ -8,12 +8,13 @@
  * part=basics     name, tagline, status, start and end (EVE time)
  * part=systems    goal, role and priority per system, retire, add by name; one Save
  *                 (op=preview re-renders with a picked system added as a New row)
- * part=sides      enemies and allies picked by name
- * part=fittings   the campaign's fittings
+ * part=sides      enemies, allies and third parties picked by name
+ * part=coordinators characters from outside the alliance who help run it
+ * part=fittings   attached doctrines, each fitting on or off, and one-off fittings
  * part=targets    this week's targets: accept, nudge, propose again
  * part=order      the commander's order: publish, draft from the week plan
  * part=structures the structures under recon (added from the Structures tab)
- * part=coordination the Discord server, timers and fleet pings channels (admins only)
+ * part=coordination our Discord server and the servers coordinators linked, with channels
  */
 import { i18n } from '@helpers/i18n'
 const { t, lang, translatePath } = i18n(Astro.url)
@@ -26,11 +27,15 @@ import {
     get_campaign_choices,
     get_campaign_coordination,
     put_campaign_coordination,
+    get_campaign_discord_links,
     change_campaign,
     type CampaignChoices,
 } from '@helpers/api.minmatar.org/campaigns'
 import { get_fittings } from '@helpers/api.minmatar.org/ships'
-import type { CampaignCoordination, CampaignSettings, Fitting } from '@dtypes/api.minmatar.org'
+import { get_doctrines } from '@helpers/api.minmatar.org/doctrines'
+import type { CampaignCoordination, CampaignDiscordLink, CampaignSettings, Doctrine, Fitting } from '@dtypes/api.minmatar.org'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { campaign_sides } from '@helpers/campaign_sides'
 import { form_text } from '@helpers/manage_forms'
 import { query_string } from '@helpers/string'
 import {
@@ -53,7 +58,8 @@ const params = Astro.url.searchParams
 const slug = params.get('slug') ?? ''
 if (!/^[a-z0-9-]+$/.test(slug)) return HTTP_403_Forbidden()
 
-const PARTS = ['features', 'basics', 'systems', 'sides', 'fittings', 'targets', 'order', 'structures', 'coordination'] as const
+const PARTS = ['features', 'basics', 'systems', 'sides', 'coordinators', 'fittings', 'targets', 'order', 'structures', 'coordination'] as const
+const COORDINATOR_SCOPES = ['sides', 'structures', 'timers', 'fleets', 'fittings'] as const
 type Part = typeof PARTS[number]
 const part = (PARTS as readonly string[]).includes(params.get('part') ?? '') ? params.get('part') as Part : 'basics'
 const has_structures_tab = params.get('tab') === '1'
@@ -100,6 +106,8 @@ let settings: CampaignSettings | null = null
 let choices: CampaignChoices | null = null
 let fittings: Fitting[] = []
 let coordination: CampaignCoordination | null = null
+let doctrines: Doctrine[] = []
+let links: CampaignDiscordLink[] = []
 let fetch_error: Error | false = false
 
 try {
@@ -165,6 +173,7 @@ if (is_post && settings && choices) {
                     status: field('status'),
                     start_at: field('start_at') || undefined,
                     end_at: field('end_at') || undefined,
+                    undisclosed: field('undisclosed') === 'on',
                 })
                 saved = true
                 break
@@ -223,23 +232,50 @@ if (is_post && settings && choices) {
                 if (op === 'remove') {
                     await change_campaign(slug, auth_token, 'DELETE', `/parties/${posted_number('party_id')}`)
                 } else {
-                    const kind = field('kind')
+                    // One add form per column: op is add_<side>, its fields end in _<side>.
+                    const side = op.startsWith('add_') ? op.slice(4) : ''
+                    if (!['enemy', 'ally', 'third_party'].includes(side)) throw new Error(t('campaigns.manage.pick_first'))
+                    const kind = field(`kind_${side}`)
                     if (!['alliance', 'corporation', 'character'].includes(kind)) throw new Error(t('campaigns.manage.pick_first'))
-                    const entity_id = posted_number(`${kind}_id`)
-                    const name = field(`${kind}_name`)
+                    const entity_id = posted_number(`${kind}_id_${side}`)
+                    const name = field(`${kind}_name_${side}`)
                     if (!entity_id || !name) throw new Error(t('campaigns.manage.pick_first'))
                     await change_campaign(slug, auth_token, 'POST', '/parties', {
                         name,
                         kind,
-                        side: field('side'),
+                        side,
                         [`${kind}_id`]: entity_id,
                     })
+                }
+                saved = true
+                break
+            case 'coordinators':
+                if (op === 'remove') {
+                    await change_campaign(slug, auth_token, 'DELETE', `/coordinators/${posted_number('coordinator_id')}`)
+                } else if (op === 'scope') {
+                    const scope = field('scope')
+                    const scopes = new Set(current.coordinator_scopes)
+                    if (scopes.has(scope)) scopes.delete(scope)
+                    else scopes.add(scope)
+                    await change_campaign(slug, auth_token, 'PATCH', '/settings', { coordinator_scopes: [...scopes] })
+                } else {
+                    const name = field('character_name').trim()
+                    if (name.length < 3) throw new Error(t('campaigns.coordinators.not_found'))
+                    await change_campaign(slug, auth_token, 'POST', '/coordinators', { character_name: name })
                 }
                 saved = true
                 break
             case 'fittings':
                 if (op === 'remove') {
                     await change_campaign(slug, auth_token, 'DELETE', `/fittings/${posted_number('row_id')}`)
+                } else if (op === 'toggle') {
+                    await change_campaign(slug, auth_token, 'PATCH', `/fittings/${posted_number('row_id')}`, { enabled: field('enabled') === 'true' })
+                } else if (op === 'add_doctrine') {
+                    const doctrine_id = posted_number('doctrine_id')
+                    if (!doctrine_id) throw new Error(t('campaigns.doctrines.add'))
+                    await change_campaign(slug, auth_token, 'POST', '/doctrines', { doctrine_id })
+                } else if (op === 'remove_doctrine') {
+                    await change_campaign(slug, auth_token, 'DELETE', `/doctrines/${posted_number('campaign_doctrine_id')}`)
                 } else {
                     const fitting_id = posted_number('fitting_id')
                     if (!fitting_id) throw new Error(t('campaigns.manage.pick_fitting'))
@@ -263,11 +299,21 @@ if (is_post && settings && choices) {
                 saved = true
                 break
             case 'coordination':
-                await put_campaign_coordination(slug, auth_token, {
-                    guild_id: field('guild_id') || null,
-                    timers_channel_id: field('timers_channel_id') || null,
-                    fleets_channel_id: field('fleets_channel_id') || null,
-                })
+                if (op === 'remove_link') {
+                    await change_campaign(slug, auth_token, 'DELETE', `/discord-links/${posted_number('link_id')}`)
+                } else {
+                    await put_campaign_coordination(slug, auth_token, {
+                        guild_id: field('guild_id') || null,
+                        timers_channel_id: field('timers_channel_id') || null,
+                        fleets_channel_id: field('fleets_channel_id') || null,
+                    })
+                    for (const id of (form?.getAll('link_id') ?? []).map(String)) {
+                        await change_campaign(slug, auth_token, 'PATCH', `/discord-links/${id}`, {
+                            timers_channel_id: field(`link_timers_${id}`) || null,
+                            fleets_channel_id: field(`link_fleets_${id}`) || null,
+                        })
+                    }
+                }
                 saved = true
                 break
             case 'order':
@@ -299,7 +345,9 @@ if (settings && part === 'systems' && !is_preview)
 
 if (settings && part === 'fittings') {
     try {
-        fittings = (await get_fittings()).sort((a, b) => a.name.localeCompare(b.name))
+        const [all_fittings, all_doctrines] = await Promise.all([get_fittings(), get_doctrines()])
+        fittings = all_fittings.sort((a, b) => a.name.localeCompare(b.name))
+        doctrines = all_doctrines.sort((a, b) => a.name.localeCompare(b.name))
     } catch (error) {
         console.log(`Could not load fittings: ${error.message}`)
     }
@@ -310,10 +358,15 @@ if (settings && part === 'coordination') {
         // A server picked in the form lists its own channels before it is saved.
         const picked = is_post ? '' : (params.get('guild_id') ?? '')
         coordination = await get_campaign_coordination(slug, auth_token, picked)
+        links = coordination.links ?? []
     } catch (error) {
         fetch_error = error
     }
 }
+
+const BOT_CONNECT_URL = (purpose: 'ours' | 'link') => translatePath(`/redirects/campaign_discord_bot_connect_init?${query_string({ slug, purpose })}`)
+const doctrine_ids = new Set((settings?.doctrines ?? []).map((row) => row.doctrine_id))
+const fittings_on = (settings?.fittings ?? []).filter((row) => row.enabled).length
 
 const retired = settings?.systems.filter((system) => system.retired && !rows.some((row) => row.solar_system_id === system.solar_system_id)) ?? []
 
@@ -332,8 +385,20 @@ function summary_for(current: CampaignSettings): string {
             return systems_summary(current.systems, choices?.goal) || t('campaigns.manage.none_yet')
         case 'sides':
             return sides_summary(current.parties, choices?.party_side) || t('campaigns.manage.none_yet')
-        case 'fittings':
-            return current.fittings.map((fitting) => fitting.role_label ? `${fitting.name} (${fitting.role_label})` : fitting.name).join(' · ') || t('campaigns.manage.none_yet')
+        case 'coordinators': {
+            const count = current.coordinators.length
+            if (count === 0) return t('campaigns.coordinators.none')
+            return t('campaigns.coordinators.summary')
+                .replace('{count}', String(count))
+                .replace('{signed_in}', String(current.coordinators.filter((row) => row.signed_in).length))
+        }
+        case 'fittings': {
+            if (current.fittings.length === 0) return t('campaigns.doctrines.none')
+            return t('campaigns.doctrines.summary')
+                .replace('{doctrines}', current.doctrines.map((row) => row.name).join(', ') || t('campaigns.doctrines.none'))
+                .replace('{on}', String(current.fittings.filter((row) => row.enabled).length))
+                .replace('{total}', String(current.fittings.length))
+        }
         case 'targets': {
             const count = current.week_targets.length
             if (count === 0) return t('campaigns.manage.targets_none')
@@ -348,7 +413,7 @@ function summary_for(current: CampaignSettings): string {
                 ? `${current.commander_order_text}${current.commander_order_is_draft ? ` ${t('campaigns.manage.order_draft_suffix')}` : ''}`
                 : t('campaigns.manage.order_none')
         case 'coordination':
-            return coordination?.guild_name ?? ''
+            return t('campaigns.discord.servers_summary').replace('{count}', String(1 + (coordination?.links?.length ?? 0)))
         case 'structures':
             return current.structures.length === 0
                 ? t('campaigns.manage.none_yet')
@@ -437,6 +502,12 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
                     <EveTimeInput id="campaign-basics-start" name="start_at" label={t('campaigns.manage.starts')} value={settings.start_at} required />
                     <EveTimeInput id="campaign-basics-end" name="end_at" label={t('campaigns.manage.ends')} value={settings.end_at} required />
                 </div>
+                <SwitchSquare
+                    name="undisclosed"
+                    label={t('campaigns.manage.undisclosed')}
+                    description={t('campaigns.manage.undisclosed_hint')}
+                    checked={settings.undisclosed}
+                />
                 <div class="[ manage-actions ]">
                     <Button type="submit" size="sm">{t('campaigns.manage.save')}</Button>
                     {error_message && <span class="[ manage-field__error ]" role="alert">{error_message}</span>}
@@ -547,53 +618,107 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
 
         {part === 'sides' &&
             <Fragment>
-                {settings.parties.length === 0 ?
-                    <p class="[ manage-muted ]">{t('campaigns.manage.no_sides')}</p>
-                    :
+                <div class="[ campaign-sides-grid ]">
+                    {campaign_sides(settings.parties).map((column) =>
+                        <div class="[ campaign-sides-col ]" data-side={column.side} x-data="{ kind: 'alliance' }">
+                            <span class="[ campaign-sides-col__label ]">{t(column.label_key)}</span>
+                            <ul class="[ campaign-list ]" role="list">
+                                {column.parties.map((party) => (
+                                    <li class="[ campaign-list__row ]">
+                                        <span class="[ campaign-list__name ]">
+                                            <span class="[ manage-who__name ]">{party.name}{party.ticker && ` [${party.ticker}]`}</span>
+                                            <span class="[ manage-who__sub ]">{party_kind_label(party.kind)}</span>
+                                        </span>
+                                        <button
+                                            type="button"
+                                            class="[ campaign-icon-button ]"
+                                            aria-label={`${t('campaigns.manage.remove')} ${party.name}`}
+                                            hx-post={PART_URL}
+                                            hx-vals={JSON.stringify({ op: 'remove', party_id: String(party.id) })}
+                                        ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                                    </li>
+                                ))}
+                            </ul>
+                            {column.parties.length === 0 &&
+                                <p class="[ manage-muted ]">{t('campaigns.parties.none')}</p>
+                            }
+                            <div class="[ campaign-sides-add ]">
+                                <ManageField label={t('campaigns.manage.party_kind')} for={`campaign-sides-kind-${column.side}`}>
+                                    <Select id={`campaign-sides-kind-${column.side}`} size="sm" name={`kind_${column.side}`} x-model="kind">
+                                        {PARTY_KINDS.map((kind) => <option value={kind}>{party_kind_label(kind)}</option>)}
+                                    </Select>
+                                </ManageField>
+                                {PARTY_KINDS.map((kind) => (
+                                    <EntityPicker
+                                        id={`campaign-sides-${column.side}-${kind}`}
+                                        kind={kind}
+                                        name={`${kind}_id_${column.side}`}
+                                        name_field={`${kind}_name_${column.side}`}
+                                        label={party_kind_label(kind)}
+                                        x-show={`kind === '${kind}'`}
+                                        style={kind === 'alliance' ? undefined : 'display: none'}
+                                    />
+                                ))}
+                                <Button type="submit" size="sm" name="op" value={`add_${column.side}`}>{t('campaigns.manage.add')}</Button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+                <div class="[ manage-actions ]">
+                    {error_message && <span class="[ manage-field__error ]" role="alert">{error_message}</span>}
+                    {saved && <span class="[ manage-saved ]">{t('campaigns.manage.saved')}</span>}
+                </div>
+            </Fragment>
+        }
+
+        {part === 'coordinators' &&
+            <Fragment>
+                {settings.coordinators.length > 0 &&
                     <ul class="[ campaign-list ]" role="list">
-                        {settings.parties.map((party) => (
+                        {settings.coordinators.map((row) => (
                             <li class="[ campaign-list__row ]">
+                                <img src={`https://images.evetech.net/characters/${row.character_id}/portrait?size=64`} alt="" width="40" height="40" class="[ campaign-portrait ]" />
                                 <span class="[ campaign-list__name ]">
-                                    <span class="[ manage-who__name ]">{party.name}{party.ticker && ` [${party.ticker}]`}</span>
-                                    <span class="[ manage-who__sub ]">{party_kind_label(party.kind)}</span>
+                                    <span class="[ manage-who__name ]">{row.character_name}</span>
+                                    <span class="[ manage-who__sub ]">{[row.corporation_name, row.alliance_name].filter(Boolean).join(' · ')}</span>
                                 </span>
-                                <Tag text={choice_label(choices.party_side, party.side)} color={party.side === 'enemy' ? 'fleet-red' : 'alliance-blue'} />
-                                <Button
+                                <span class:list={['[ campaign-coordinator__state ]', { 'is-on': row.signed_in }]}>
+                                    {row.signed_in ? t('campaigns.coordinators.signed_in') : t('campaigns.coordinators.invited')}
+                                </span>
+                                <span class="[ campaign-coordinator__discord ]">
+                                    {row.discord_servers.length > 0
+                                        ? t('campaigns.coordinators.discord').replace('{servers}', row.discord_servers.join(', '))
+                                        : t('campaigns.coordinators.no_discord')}
+                                </span>
+                                <button
                                     type="button"
-                                    color="transparent"
-                                    size="sm"
+                                    class="[ campaign-icon-button ]"
+                                    aria-label={t('campaigns.coordinators.remove').replace('{name}', row.character_name)}
                                     hx-post={PART_URL}
-                                    hx-vals={JSON.stringify({ op: 'remove', party_id: String(party.id) })}
-                                >{t('campaigns.manage.remove')}</Button>
+                                    hx-vals={JSON.stringify({ op: 'remove', coordinator_id: String(row.id) })}
+                                ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
                             </li>
                         ))}
                     </ul>
                 }
-                <div class="[ manage-fields ]" x-data="{ kind: 'alliance' }">
-                    <ManageField label={t('campaigns.manage.side')} for="campaign-sides-side">
-                        <Select id="campaign-sides-side" size="sm" name="side">
-                            {choices.party_side.map((choice) => <option value={choice.value}>{choice.label}</option>)}
-                        </Select>
-                    </ManageField>
-                    <ManageField label={t('campaigns.manage.party_kind')} for="campaign-sides-kind">
-                        <Select id="campaign-sides-kind" size="sm" name="kind" x-model="kind">
-                            {PARTY_KINDS.map((kind) => <option value={kind}>{party_kind_label(kind)}</option>)}
-                        </Select>
-                    </ManageField>
-                    {PARTY_KINDS.map((kind) => (
-                        <EntityPicker
-                            id={`campaign-sides-${kind}`}
-                            kind={kind}
-                            name={`${kind}_id`}
-                            name_field={`${kind}_name`}
-                            label={party_kind_label(kind)}
-                            x-show={`kind === '${kind}'`}
-                            style={kind === 'alliance' ? undefined : 'display: none'}
-                        />
-                    ))}
+                <div class="[ campaign-scopes ]">
+                    <span class="[ manage-muted ]">{t('campaigns.coordinators.can_see')}</span>
+                    {COORDINATOR_SCOPES.map((scope) =>
+                        <button
+                            type="button"
+                            class="[ campaign-chip ]"
+                            aria-pressed={settings.coordinator_scopes.includes(scope) ? 'true' : 'false'}
+                            hx-post={PART_URL}
+                            hx-vals={JSON.stringify({ op: 'scope', scope })}
+                        >{t(`campaigns.coordinators.scope.${scope}`)}</button>
+                    )}
+                </div>
+                <div class="[ campaign-invite ]">
+                    <label for="campaign-coordinator-name" class="[ visually-hidden ]">{t('campaigns.coordinators.invite_placeholder')}</label>
+                    <Input id="campaign-coordinator-name" size="sm" name="character_name" maxlength="255" placeholder={t('campaigns.coordinators.invite_placeholder')} />
+                    <Button type="submit" size="sm" name="op" value="invite">{t('campaigns.coordinators.invite')}</Button>
                 </div>
                 <div class="[ manage-actions ]">
-                    <Button type="submit" size="sm" name="op" value="add">{t('campaigns.manage.add_side')}</Button>
                     {error_message && <span class="[ manage-field__error ]" role="alert">{error_message}</span>}
                     {saved && <span class="[ manage-saved ]">{t('campaigns.manage.saved')}</span>}
                 </div>
@@ -602,31 +727,61 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
 
         {part === 'fittings' &&
             <Fragment>
-                {settings.fittings.length === 0 ?
-                    <p class="[ manage-muted ]">{t('campaigns.manage.no_fittings')}</p>
-                    :
+                <div class="[ campaign-doctrines ]">
+                    {settings.doctrines.map((row) =>
+                        <span class="[ campaign-doctrine-chip ]">
+                            {row.name}
+                            <button
+                                type="button"
+                                class="[ campaign-icon-button ]"
+                                aria-label={t('campaigns.doctrines.remove').replace('{name}', row.name)}
+                                hx-post={PART_URL}
+                                hx-vals={JSON.stringify({ op: 'remove_doctrine', campaign_doctrine_id: String(row.id) })}
+                            ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                        </span>
+                    )}
+                    <label for="campaign-doctrine" class="[ visually-hidden ]">{t('campaigns.doctrines.add')}</label>
+                    <Select id="campaign-doctrine" size="sm" name="doctrine_id">
+                        <option value="">{t('campaigns.doctrines.add')}</option>
+                        {doctrines.filter((doctrine) => !doctrine_ids.has(doctrine.id)).map((doctrine) => <option value={doctrine.id}>{doctrine.name}</option>)}
+                    </Select>
+                    <Button type="submit" size="sm" name="op" value="add_doctrine">{t('campaigns.manage.add')}</Button>
+                </div>
+                {settings.fittings.length > 0 &&
                     <ul class="[ campaign-list ]" role="list">
                         {settings.fittings.map((fitting) => (
-                            <li class="[ campaign-list__row ]">
+                            <li class:list={['[ campaign-list__row ]', { 'is-off': !fitting.enabled }]}>
+                                {fitting.ship_id && <img src={get_item_icon(fitting.ship_id, 64)} alt="" width="40" height="40" class="[ campaign-portrait ]" />}
                                 <span class="[ campaign-list__name ]">
                                     <span class="[ manage-who__name ]">{fitting.name}</span>
-                                    {(fitting.ship_name || fitting.role_label) &&
-                                        <span class="[ manage-who__sub ]">{[fitting.ship_name, fitting.role_label].filter(Boolean).join(' · ')}</span>
-                                    }
+                                    {fitting.doctrine_name && <span class="[ manage-who__sub ]">{fitting.doctrine_name}</span>}
                                 </span>
-                                <Button
+                                <span class="[ campaign-fitting__role ]">{fitting.role_label}</span>
+                                <button
                                     type="button"
-                                    color="transparent"
-                                    size="sm"
+                                    class="[ campaign-chip ]"
+                                    aria-pressed={fitting.enabled ? 'true' : 'false'}
+                                    aria-label={t('campaigns.doctrines.toggle').replace('{name}', fitting.name)}
                                     hx-post={PART_URL}
-                                    hx-vals={JSON.stringify({ op: 'remove', row_id: String(fitting.id) })}
-                                >{t('campaigns.manage.remove')}</Button>
+                                    hx-vals={JSON.stringify({ op: 'toggle', row_id: String(fitting.id), enabled: String(!fitting.enabled) })}
+                                >{fitting.enabled ? t('campaigns.doctrines.on') : t('campaigns.doctrines.off')}</button>
+                                {!fitting.doctrine_id ?
+                                    <button
+                                        type="button"
+                                        class="[ campaign-icon-button ]"
+                                        aria-label={`${t('campaigns.manage.remove')} ${fitting.name}`}
+                                        hx-post={PART_URL}
+                                        hx-vals={JSON.stringify({ op: 'remove', row_id: String(fitting.id) })}
+                                    ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                                    :
+                                    <span class="[ campaign-icon-spacer ]" aria-hidden="true"></span>
+                                }
                             </li>
                         ))}
                     </ul>
                 }
                 <div class="[ manage-fields ]">
-                    <ManageField label={t('campaigns.manage.fitting')} for="campaign-fittings-fitting">
+                    <ManageField label={t('campaigns.doctrines.outside')} for="campaign-fittings-fitting">
                         <Select id="campaign-fittings-fitting" size="sm" name="fitting_id">
                             <option value="">{t('campaigns.manage.pick_fitting')}</option>
                             {fittings.map((fitting) => <option value={fitting.id}>{fitting.name}</option>)}
@@ -749,43 +904,79 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
 
         {part === 'coordination' && coordination &&
             <Fragment>
-                <div class="[ manage-fields ]">
-                    <ManageField label={t('campaigns.manage.coordination_server')} for="campaign-coordination-server">
-                        <Select
-                            id="campaign-coordination-server"
-                            size="sm"
-                            name="guild_id"
-                            hx-get={PART_URL}
-                            hx-trigger="change"
-                            hx-include="this"
-                            hx-target={`#${body_id}`}
-                            hx-swap="outerHTML"
-                        >
-                            {coordination.servers.map((server) =>
-                                <option value={server.id} selected={server.id === coordination.guild_id}>
-                                    {server.name} · {server.is_administrator ? t('campaigns.manage.coordination_admin') : t('campaigns.manage.coordination_no_admin')}
-                                </option>
-                            )}
-                        </Select>
-                    </ManageField>
-                    {coordination.invite_url &&
-                        <Button color="transparent" size="sm" href={coordination.invite_url} target="_blank" rel="noopener noreferrer">{t('campaigns.manage.coordination_add_bot')}</Button>
-                    }
-                    <ManageField label={t('campaigns.manage.coordination_timers')} for="campaign-coordination-timers">
-                        <Select id="campaign-coordination-timers" size="sm" name="timers_channel_id">
-                            <option value="">{t('campaigns.manage.coordination_none')}</option>
-                            {coordination.channels.map((channel) => <option value={channel.id} selected={channel.id === coordination.timers_channel_id}>#{channel.name}</option>)}
-                        </Select>
-                    </ManageField>
-                    <ManageField label={t('campaigns.manage.coordination_fleets')} for="campaign-coordination-fleets">
-                        <Select id="campaign-coordination-fleets" size="sm" name="fleets_channel_id">
-                            <option value="">{t('campaigns.manage.coordination_none')}</option>
-                            {coordination.channels.map((channel) => <option value={channel.id} selected={channel.id === coordination.fleets_channel_id}>#{channel.name}</option>)}
-                        </Select>
-                    </ManageField>
-                </div>
+                <ul class="[ campaign-list ]" role="list">
+                    <li class="[ campaign-list__row campaign-server ]">
+                        <span class="[ campaign-list__name ]">
+                            <ManageField label={t('campaigns.manage.coordination_server')} for="campaign-coordination-server">
+                                <Select
+                                    id="campaign-coordination-server"
+                                    size="sm"
+                                    name="guild_id"
+                                    hx-get={PART_URL}
+                                    hx-trigger="change"
+                                    hx-include="this"
+                                    hx-target={`#${body_id}`}
+                                    hx-swap="outerHTML"
+                                >
+                                    {coordination.servers.map((server) =>
+                                        <option value={server.id} selected={server.id === coordination.guild_id}>{server.name}</option>
+                                    )}
+                                </Select>
+                            </ManageField>
+                            <span class="[ manage-who__sub ]">{t('campaigns.discord.ours')}</span>
+                        </span>
+                        <ManageField label={t('campaigns.manage.coordination_timers')} for="campaign-coordination-timers">
+                            <Select id="campaign-coordination-timers" size="sm" name="timers_channel_id" disabled={coordination.channels.length === 0}>
+                                <option value="">{coordination.channels.length === 0 ? t('campaigns.discord.needs_bot') : t('campaigns.manage.coordination_none')}</option>
+                                {coordination.channels.map((channel) => <option value={channel.id} selected={channel.id === coordination.timers_channel_id}>#{channel.name}</option>)}
+                            </Select>
+                        </ManageField>
+                        <ManageField label={t('campaigns.manage.coordination_fleets')} for="campaign-coordination-fleets">
+                            <Select id="campaign-coordination-fleets" size="sm" name="fleets_channel_id" disabled={coordination.channels.length === 0}>
+                                <option value="">{coordination.channels.length === 0 ? t('campaigns.discord.needs_bot') : t('campaigns.manage.coordination_none')}</option>
+                                {coordination.channels.map((channel) => <option value={channel.id} selected={channel.id === coordination.fleets_channel_id}>#{channel.name}</option>)}
+                            </Select>
+                        </ManageField>
+                        {coordination.invite_url && !(coordination.servers.find((server) => server.id === coordination.guild_id)?.is_administrator) ?
+                            <Button size="sm" href={BOT_CONNECT_URL('ours')}>{t('campaigns.discord.add_bot')}</Button>
+                            :
+                            <span class="[ campaign-icon-spacer ]" aria-hidden="true"></span>
+                        }
+                    </li>
+                    {links.map((link) =>
+                        <li class="[ campaign-list__row campaign-server ]">
+                            <input type="hidden" name="link_id" value={String(link.id)} />
+                            <span class="[ campaign-list__name ]">
+                                <span class="[ manage-who__name ]">{link.guild_name || link.guild_id}</span>
+                                {link.linked_by && <span class="[ manage-who__sub ]">{t('campaigns.discord.linked_by').replace('{name}', link.linked_by)}</span>}
+                            </span>
+                            <ManageField label={t('campaigns.manage.coordination_timers')} for={`campaign-link-timers-${link.id}`}>
+                                <Select id={`campaign-link-timers-${link.id}`} size="sm" name={`link_timers_${link.id}`}>
+                                    <option value="">{t('campaigns.manage.coordination_none')}</option>
+                                    {link.channels.map((channel) => <option value={channel.id} selected={channel.id === link.timers_channel_id}>#{channel.name}</option>)}
+                                </Select>
+                            </ManageField>
+                            <ManageField label={t('campaigns.manage.coordination_fleets')} for={`campaign-link-fleets-${link.id}`}>
+                                <Select id={`campaign-link-fleets-${link.id}`} size="sm" name={`link_fleets_${link.id}`}>
+                                    <option value="">{t('campaigns.manage.coordination_none')}</option>
+                                    {link.channels.map((channel) => <option value={channel.id} selected={channel.id === link.fleets_channel_id}>#{channel.name}</option>)}
+                                </Select>
+                            </ManageField>
+                            <button
+                                type="button"
+                                class="[ campaign-icon-button ]"
+                                aria-label={t('campaigns.discord.remove').replace('{name}', link.guild_name || link.guild_id)}
+                                hx-post={PART_URL}
+                                hx-vals={JSON.stringify({ op: 'remove_link', link_id: String(link.id) })}
+                            ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                        </li>
+                    )}
+                </ul>
                 <div class="[ manage-actions ]">
-                    <Button type="submit" size="sm">{t('campaigns.manage.save')}</Button>
+                    <Button type="submit" size="sm" color="green">{t('campaigns.manage.save')}</Button>
+                    {coordination.link_url &&
+                        <Button color="transparent" size="sm" href={BOT_CONNECT_URL('link')}>{t('campaigns.discord.link_server')}</Button>
+                    }
                     {error_message && <span class="[ manage-field__error ]" role="alert">{error_message}</span>}
                     {saved && <span class="[ manage-saved ]">{t('campaigns.manage.saved')}</span>}
                 </div>
@@ -879,6 +1070,137 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
         flex-direction: column;
         flex: 1 1 auto;
         min-width: 0;
+    }
+
+    .campaign-sides-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+        gap: var(--space-l);
+    }
+
+    .campaign-sides-col {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 0;
+    }
+
+    .campaign-sides-col__label {
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-size: var(--step--2);
+    }
+
+    [data-side='enemy'] > .campaign-sides-col__label { color: var(--fleet-red); }
+    [data-side='ally'] > .campaign-sides-col__label { color: color-mix(in srgb, var(--alliance-blue) 55%, var(--highlight)); }
+    [data-side='third_party'] > .campaign-sides-col__label { color: var(--fleet-yellow); }
+
+    .campaign-sides-add {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding-block-start: var(--space-2xs);
+    }
+
+    .campaign-icon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        inline-size: 2.75rem;
+        block-size: 2.75rem;
+        flex: none;
+        background: none;
+        border: 0;
+        color: var(--text-muted);
+        cursor: pointer;
+
+        @media (hover: hover) {
+            &:hover { color: var(--highlight); }
+        }
+    }
+
+    .campaign-icon-spacer {
+        inline-size: 2.75rem;
+        flex: none;
+    }
+
+    .campaign-portrait {
+        inline-size: 2.5rem;
+        block-size: 2.5rem;
+        flex: none;
+    }
+
+    .campaign-list__row.is-off > :not(.campaign-chip) {
+        opacity: 0.5;
+    }
+
+    .campaign-chip {
+        flex: none;
+        min-inline-size: 4.5rem;
+        min-block-size: 2.25rem;
+        padding-inline: var(--space-2xs);
+        font-family: var(--button-font);
+        font-size: var(--step--2);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+        background: none;
+        border: 1px solid var(--hairline-strong);
+        cursor: pointer;
+
+        &[aria-pressed='true'] {
+            color: var(--fleet-yellow);
+            background: var(--green);
+            border-color: var(--green);
+        }
+    }
+
+    .campaign-fitting__role {
+        flex: 0 0 8rem;
+    }
+
+    .campaign-doctrines,
+    .campaign-scopes,
+    .campaign-invite {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs);
+    }
+
+    .campaign-invite :global(input) {
+        flex: 1 1 18rem;
+    }
+
+    .campaign-doctrine-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        padding-inline-start: var(--space-xs);
+        background: var(--hairline-medium);
+        color: var(--highlight);
+        font-weight: 700;
+    }
+
+    .campaign-coordinator__state {
+        flex: 0 0 14rem;
+        color: var(--text-muted);
+
+        &.is-on { color: var(--green); }
+    }
+
+    .campaign-coordinator__discord {
+        flex: 1 1 14rem;
+    }
+
+    .campaign-server {
+        flex-wrap: wrap;
+        align-items: flex-end;
+
+        > :global(.manage-field) {
+            flex: 1 1 12rem;
+        }
     }
 
     @media (max-width: 48rem) {

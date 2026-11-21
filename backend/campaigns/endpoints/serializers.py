@@ -18,7 +18,7 @@ from campaigns.models import (
     KillmailOutcome,
     SystemGoal,
 )
-from campaigns.services import advantage, snapshots, stats
+from campaigns.services import advantage, disclosure, snapshots, stats
 from campaigns.services import structures as structure_service
 from campaigns.services.tickers import alliance_tickers, owner_alliance
 from eveonline.models import EveCorporation, EveCharacter, EvePlayer
@@ -178,6 +178,7 @@ def list_item(campaign: Campaign, user=None) -> dict:
         "id": campaign.id,
         "slug": campaign.slug,
         "name": campaign.name,
+        "undisclosed": campaign.undisclosed,
         "short_code": campaign.short_code,
         "tagline": campaign.tagline,
         "kind": campaign.kind,
@@ -195,6 +196,73 @@ def list_item(campaign: Campaign, user=None) -> dict:
         "kills": totals["kills"],
         "isk_destroyed": totals["isk_destroyed"],
         "is_enlisted": is_enlisted(campaign, user),
+    }
+
+
+def redacted_list_item(campaign: Campaign, user=None) -> dict:
+    """An undisclosed campaign for someone who may not see it: the start
+    time and their own enlistment, nothing else."""
+    return {
+        "id": 0,
+        "slug": campaign.public_key,
+        "name": disclosure.GENERIC_NAME,
+        "undisclosed": True,
+        "short_code": "",
+        "tagline": "",
+        "kind": "",
+        "status": campaign.status,
+        "start_at": campaign.start_at,
+        "end_at": campaign.start_at,
+        "cover_image_url": "",
+        "systems": [],
+        "areas": [],
+        "parties": [],
+        "structures_remaining": 0,
+        "structures_destroyed": 0,
+        "next_timer_at": None,
+        "enlisted": 0,
+        "kills": 0,
+        "isk_destroyed": 0,
+        "is_enlisted": is_enlisted(campaign, user),
+    }
+
+
+def redacted_detail(campaign: Campaign, user=None) -> dict:
+    """The Upcoming Campaign page: a countdown and Enlist."""
+    enlisted = is_enlisted(campaign, user)
+    return {
+        "id": 0,
+        "slug": campaign.public_key,
+        "name": disclosure.GENERIC_NAME,
+        "undisclosed": True,
+        "redacted": True,
+        "viewer_role": disclosure.MEMBER,
+        "coordination_ready": False,
+        "coordinator_scopes": [],
+        "short_code": "",
+        "tagline": "",
+        "description_md": "",
+        "cover_image_url": "",
+        "kind": "",
+        "status": campaign.status,
+        "start_at": campaign.start_at,
+        "end_at": campaign.start_at,
+        "commander_order_text": "",
+        "commander_order_is_draft": True,
+        "systems": [],
+        "areas": [],
+        "parties": [],
+        "structures": [],
+        "fittings": [],
+        "totals": {},
+        "is_enlisted": enlisted,
+        "characters_included": 0,
+        "characters_tracked": 0,
+        "standing_fleet_up": False,
+        "standing_fleet_members": 0,
+        "standing_fleet_boss": None,
+        "features": {feature: False for feature in campaign.features},
+        "paused_at": None,
     }
 
 
@@ -240,15 +308,21 @@ def fitting_out(row) -> dict:
         "ship_name": ship_name,
         "role_label": row.role_label or "",
         "srp_eligible": row.srp_eligible,
+        "enabled": row.enabled,
+        "ship_id": fitting.ship_id if fitting else None,
+        "doctrine_id": row.doctrine.doctrine_id if row.doctrine else None,
+        "doctrine_name": row.doctrine.doctrine.name if row.doctrine else "",
         "order": row.order,
     }
 
 
-def campaign_fittings(campaign: Campaign) -> list[dict]:
-    return [
-        fitting_out(row)
-        for row in campaign.fittings.select_related("fitting").all()
-    ]
+def campaign_fittings(campaign: Campaign, everything=False) -> list[dict]:
+    """The campaign's fittings that are switched on; ``everything`` adds the
+    ones switched off, for settings."""
+    rows = campaign.fittings.select_related("fitting", "doctrine__doctrine")
+    if not everything:
+        rows = rows.filter(enabled=True)
+    return [fitting_out(row) for row in rows]
 
 
 def structure_out(structure, parties=None, tickers=None) -> dict:

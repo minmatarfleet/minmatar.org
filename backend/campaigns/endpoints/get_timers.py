@@ -23,7 +23,7 @@ from campaigns.services import timers
 def get_campaign_timers(request, slug: str):
     """The campaign timerboard: upcoming soonest first, then done."""
     campaign = _get(request, slug)
-    denied = _may_read(request, campaign)
+    denied = _may_read(request, campaign, scope="timers")
     if denied:
         return denied
     return timers.campaign_timers(campaign)

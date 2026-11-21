@@ -1,0 +1,21 @@
+---
+import { login_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+import { get_public_api_url } from '@helpers/env'
+import { campaign_discord_bot_connect_url } from '@helpers/api.minmatar.org/campaigns' // pragma: allowlist secret
+
+const { auth_token } = get_request_user(Astro)
+
+if (!auth_token)
+    return login_redirect(Astro)
+
+// The backend checks the manager or coordinator, sends them to Discord's bot
+// install page (code grant), and Discord sends them back to the campaign.
+const slug = Astro.url.searchParams.get('slug') ?? ''
+const purpose = Astro.url.searchParams.get('purpose') === 'ours' ? 'ours' : 'link'
+if (!/^[a-z0-9-]+$/.test(slug))
+    return Astro.redirect('/campaigns/')
+
+return Astro.redirect(campaign_discord_bot_connect_url(get_public_api_url(), slug, purpose, auth_token))
+---

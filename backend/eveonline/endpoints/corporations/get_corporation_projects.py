@@ -18,10 +18,19 @@ from eveonline.models import EveCorporationProject
 router = Router(tags=["Corporations"])
 
 
-def _campaign_ref(campaign) -> dict:
+def disclosure_sees(campaign, user) -> bool:
+    from campaigns.services import disclosure  # pylint: disable=C0415
+
+    return disclosure.sees_details(user, campaign)
+
+
+def _campaign_ref(campaign, user=None) -> dict:
+    # Imported here: campaigns imports eveonline models at load time.
+    from campaigns.services import disclosure  # pylint: disable=C0415
+
     return {
-        "slug": campaign.slug,
-        "name": campaign.name,
+        "slug": disclosure.address(campaign, user),
+        "name": disclosure.display_name(campaign, user),
         "status": campaign.status,
     }
 
@@ -60,7 +69,7 @@ def get_corporation_projects(request, corporation_id: int):
         project__in=rows
     ).select_related("campaign"):
         attached.setdefault(link.project_id, []).append(
-            _campaign_ref(link.campaign)
+            _campaign_ref(link.campaign, request.user)
         )
     open_campaigns = Campaign.objects.filter(
         status__in=[
@@ -82,7 +91,11 @@ def get_corporation_projects(request, corporation_id: int):
             projects.project_out(row, attached.get(row.project_id))
             for row in rows
         ],
-        "campaigns": [_campaign_ref(c) for c in open_campaigns],
+        "campaigns": [
+            _campaign_ref(c, request.user)
+            for c in open_campaigns
+            if not c.undisclosed or disclosure_sees(c, request.user)
+        ],
     }
 
 

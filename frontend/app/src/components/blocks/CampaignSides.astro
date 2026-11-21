@@ -1,0 +1,159 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CampaignParty } from '@dtypes/api.minmatar.org'
+import { campaign_sides, party_label, party_logo } from '@helpers/campaign_sides'
+
+interface Props {
+    parties:            CampaignParty[];
+    /** Logos only, for the campaign card. */
+    compact?:           boolean;
+    /** Where "All sides" goes; left out when there is nowhere to send it. */
+    all_href?:          string | null;
+    [propName: string]: any;
+}
+
+const {
+    parties,
+    compact = false,
+    all_href = null,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const sides = campaign_sides(parties).filter((side) => !compact || side.parties.length > 0)
+---
+
+{sides.some((side) => side.parties.length > 0) &&
+    <div
+        class:list={['[ campaign-sides ]', { 'campaign-sides--compact': compact }, Astro.props.class]}
+        {...attributes}
+    >
+        {sides.map((side) =>
+            <div class="[ campaign-side ]" data-side={side.side}>
+                <small class="[ campaign-side-label ]">
+                    {t(side.label_key)}{!compact && ` · ${side.parties.length}`}
+                </small>
+                {side.parties.length > 0 &&
+                    <ul class="[ campaign-side-chips ]" role="list">
+                        {side.parties.map((party) =>
+                            <li class="[ campaign-side-chip ]" title={party.name}>
+                                {party_logo(party) &&
+                                    <img src={party_logo(party)} alt="" width="28" height="28" loading="lazy" />
+                                }
+                                {!compact && <span>{party_label(party)}</span>}
+                                {compact && <span class="[ visually-hidden ]">{party.name}</span>}
+                            </li>
+                        )}
+                    </ul>
+                }
+            </div>
+        )}
+        {all_href && !compact &&
+            <a href={all_href} class="[ campaign-sides-all ]">{t('campaigns.parties.all_sides')}</a>
+        }
+    </div>
+}
+
+<style lang="scss">
+    .campaign-sides {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: var(--space-s) var(--space-l);
+    }
+
+    .campaign-side {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+    }
+
+    .campaign-side-label {
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-size: var(--step--2);
+        white-space: nowrap;
+    }
+
+    [data-side='enemy'] .campaign-side-label {
+        color: var(--fleet-red);
+    }
+
+    [data-side='ally'] .campaign-side-label {
+        color: color-mix(in srgb, var(--alliance-blue) 55%, var(--highlight));
+    }
+
+    [data-side='third_party'] .campaign-side-label {
+        color: var(--fleet-yellow);
+    }
+
+    .campaign-side-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        /* Two rows of chips at most; the count above says how many there are. */
+        max-height: calc(2 * 2.25rem + var(--space-3xs));
+        overflow: hidden;
+    }
+
+    .campaign-side-chip {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        height: 2.25rem;
+        padding-inline: var(--space-3xs) var(--space-2xs);
+        background: var(--hairline);
+        color: var(--highlight);
+        font-weight: 700;
+        font-size: var(--step--1);
+        letter-spacing: 0.04em;
+        max-width: 16rem;
+
+        span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    .campaign-sides-all {
+        align-self: flex-end;
+        margin-inline-start: auto;
+        color: var(--highlight);
+        font-weight: 700;
+        white-space: nowrap;
+        line-height: 2.25rem;
+    }
+
+    .campaign-sides--compact {
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        .campaign-side {
+            flex-direction: row;
+            align-items: center;
+            gap: var(--space-2xs);
+        }
+
+        .campaign-side-label {
+            min-width: 4.5em;
+        }
+
+        .campaign-side-chips {
+            max-height: 1.75rem;
+        }
+
+        .campaign-side-chip {
+            height: 1.75rem;
+            padding: 0;
+            background: none;
+        }
+    }
+</style>

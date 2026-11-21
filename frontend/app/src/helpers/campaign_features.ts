@@ -25,6 +25,7 @@ export type CampaignTab =
     | 'pilots'
     | 'projects'
     | 'you'
+    | 'discord'
     | 'settings'
 
 export interface CampaignTabsOptions {
@@ -33,6 +34,10 @@ export interface CampaignTabsOptions {
     /** Systems or areas are attached: a strategic campaign shows Theater only then. */
     has_systems:    boolean;
     can_manage:     boolean;
+    /** Before the start nothing is counted yet: no Destruction, Activity, Pilots or You. */
+    before_start?:  boolean;
+    /** A coordinator from outside the alliance: only the parts shared with them, and their Discord. */
+    coordinator_scopes?: string[] | null;
 }
 
 /**
@@ -40,18 +45,28 @@ export interface CampaignTabsOptions {
  * Activity (the kill feed) gives way to Destruction on a strategic campaign,
  * where the feed is all it holds.
  */
-export function campaign_tabs({ kind, features, has_systems, can_manage }: CampaignTabsOptions): CampaignTab[] {
+export function campaign_tabs({ kind, features, has_systems, can_manage, before_start = false, coordinator_scopes = null }: CampaignTabsOptions): CampaignTab[] {
+    if (coordinator_scopes) {
+        const shared: CampaignTab[] = []
+        if (features.structures && coordinator_scopes.includes('structures')) shared.push('structures')
+        if (features.timers && coordinator_scopes.includes('timers')) shared.push('timers')
+        if (features.fleets && coordinator_scopes.includes('fleets')) shared.push('fleets')
+        shared.push('discord')
+        return shared
+    }
     const is_strategic = kind === 'strategic'
     const tabs: CampaignTab[] = []
     if (features.structures) tabs.push('structures')
     if (features.timers) tabs.push('timers')
     if (features.theater && (has_systems || !is_strategic)) tabs.push('systems')
     if (features.fleets) tabs.push('fleets')
-    if (features.destruction) tabs.push('destruction')
-    if (!(features.destruction && is_strategic)) tabs.push('activity')
-    if (features.pilots) tabs.push('pilots')
+    if (!before_start) {
+        if (features.destruction) tabs.push('destruction')
+        if (!(features.destruction && is_strategic)) tabs.push('activity')
+        if (features.pilots) tabs.push('pilots')
+    }
     if (features.projects) tabs.push('projects')
-    tabs.push('you')
+    if (!before_start) tabs.push('you')
     if (can_manage) tabs.push('settings')
     return tabs
 }

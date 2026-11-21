@@ -118,6 +118,7 @@ export const campaign_systems: CampaignSystemSummary[] = [
 // ---------------------------------------------------------------------------
 
 const list_item = (over: Partial<CampaignListItem> & Pick<CampaignListItem, 'id' | 'slug' | 'name'>): CampaignListItem => ({
+    undisclosed: false,
     short_code: 'AMA',
     tagline: 'Keep Amamake free and the complexes cycling.',
     kind: 'faction_warfare',
@@ -162,6 +163,13 @@ export const upcoming_campaign = list_item({
     start_at: iso(5.5 * DAY), end_at: iso(33 * DAY),
     enlisted: 0, kills: 0, isk_destroyed: 0,
 })
+/** An undisclosed campaign as a member gets it: a start time and nothing else. */
+export const undisclosed_campaign = list_item({
+    id: 0, slug: 'a1b2c3d4e5f6', name: 'Upcoming Campaign', short_code: '',
+    undisclosed: true, kind: '', status: 'scheduled', tagline: '',
+    start_at: iso(7 * DAY), end_at: iso(7 * DAY),
+    systems: [], parties: [], enlisted: 0, kills: 0, isk_destroyed: 0,
+})
 export const launching_campaign = list_item({
     id: 5, slug: 'vard-pickets', name: 'Vard Pickets', short_code: 'VAR',
     status: 'draft',
@@ -200,6 +208,7 @@ export const campaign_totals: CampaignTotals = {
 
 export const campaign_detail = (over: Partial<CampaignDetail> = {}): CampaignDetail => ({
     id: 1, slug: 'amamake-defense', name: 'Amamake Defense', short_code: 'AMA',
+    undisclosed: false, redacted: false, viewer_role: 'member', coordination_ready: false, coordinator_scopes: [],
     tagline: 'Keep Amamake free and the complexes cycling.',
     description_md: '', cover_image_url: '',
     kind: 'faction_warfare', status: 'active',
@@ -394,6 +403,7 @@ export const structures_edge: CampaignStructure[] = [
 
 const fitting = (id: number, order: number, ship_name: string, role_label: string, srp_eligible = true, fitting_id = 9000 + id): CampaignFitting => ({
     id, fitting_id, name: `${ship_name} - ${role_label || 'Fleet'}`, ship_name, role_label, srp_eligible, order,
+    enabled: true, ship_id: null, doctrine_id: null, doctrine_name: '',
 })
 
 export const fittings_typical: CampaignFitting[] = [
@@ -409,7 +419,7 @@ export const fittings_single: CampaignFitting[] = [fitting(1, 1, 'Stabber Fleet 
 export const fittings_edge: CampaignFitting[] = [
     fitting(1, 1, 'Typhoon', 'Doctrine Battleship With A Remarkably Long Role Label Nobody Asked For'),
     fitting(2, 2, 'Muninn', '', true),
-    { id: 3, fitting_id: 0, name: 'Broken link', ship_name: 'Ghost', role_label: 'Hidden because no fitting id', srp_eligible: true, order: 3 },
+    { id: 3, fitting_id: 0, name: 'Broken link', ship_name: 'Ghost', role_label: 'Hidden because no fitting id', srp_eligible: true, order: 3, enabled: true, ship_id: null, doctrine_id: null, doctrine_name: '' },
 ]
 
 // ---------------------------------------------------------------------------

@@ -100,9 +100,15 @@ import SettingsSection from '@components/blocks/manage/SettingsSection.astro'
         load="open"
     />
     <SettingsSection
+        id="campaign-settings-coordinators"
+        title={t('campaigns.coordinators.title')}
+        url={part_url('coordinators')}
+        load="open"
+    />
+    <SettingsSection
         id="campaign-settings-fittings"
-        title={t('campaigns.manage.fittings')}
-        summary={fittings.map((fitting) => fitting.role_label ? `${fitting.name} (${fitting.role_label})` : fitting.name).join(' · ') || none_yet}
+        title={t('campaigns.doctrines.title')}
+        summary={fittings.length ? t('campaigns.ready.fittings_summary').replace('{count}', String(fittings.length)) : none_yet}
         url={part_url('fittings')}
         load="open"
     />

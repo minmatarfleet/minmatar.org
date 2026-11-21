@@ -36,6 +36,7 @@ Do this while logged in as the discord user you wish to act as 'admin' (likely y
      - `http://localhost:8000/oauth2/login/redirect` (for admin login)
      - `http://localhost:8000/api/eveonline/corporations/corporations/discord/bot/callback` (corporations adding the bot, `DISCORD_CORP_BOT_REDIRECT_URL`)
      - `http://localhost:8000/api/tribes/discord/bot/callback` (tribe chiefs adding the bot, `DISCORD_TRIBE_BOT_REDIRECT_URL`)
+     - `http://localhost:8000/api/campaigns/discord/bot/callback` (campaign managers and coordinators adding the bot, `DISCORD_CAMPAIGN_BOT_REDIRECT_URL`)
 
 3. **Get Application Credentials**:
    - From "OAuth2":
@@ -171,10 +172,13 @@ approval covers only people flagged before it, no more than the held count,
 for six hours, and a pass that stops early keeps it. If the bot loses Manage
 Roles, the pass stops and Settings asks for the bot to be added again.
 
-- Set `DISCORD_CORP_BOT_REDIRECT_URL` and `DISCORD_TRIBE_BOT_REDIRECT_URL` to
-  the callbacks above (and list both under OAuth2 > Redirects). Without the
-  corporation URL the Settings tab offers only a pasted link. Without the
-  tribe URL the tribe page does not offer the bot.
+- Set `DISCORD_CORP_BOT_REDIRECT_URL`, `DISCORD_TRIBE_BOT_REDIRECT_URL` and
+  `DISCORD_CAMPAIGN_BOT_REDIRECT_URL` to the callbacks above (and list them
+  under OAuth2 > Redirects). Without the corporation URL the Settings tab
+  offers only a pasted link. Without the tribe URL the tribe page does not
+  offer the bot. Without the campaign URL a campaign's Coordination Discord
+  cannot add the bot (a plain `scope=bot` link is refused once Code Grant is
+  on).
 - The bot must stay a **Public Bot**, or nobody but the application owner can
   add it.
 - In production, turn on **Requires OAuth2 Code Grant**. The bot then joins a
