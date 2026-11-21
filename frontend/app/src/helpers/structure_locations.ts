@@ -1,12 +1,13 @@
-import type { StructureLocationCard } from '@dtypes/api.minmatar.org'
+import type { StructureLocationCard, StructureLocationModule } from '@dtypes/api.minmatar.org'
+import { get_item_icon } from '@helpers/eve_image_server'
 
-export type StructureView = 'all' | 'staging' | 'production' | 'reactions' | 'reprocessing' | 'freight' | 'market'
-export const STRUCTURE_VIEWS: StructureView[] = ['all', 'staging', 'production', 'reactions', 'reprocessing', 'freight', 'market']
+export type StructureView = 'all' | 'staging' | 'production' | 'reactions' | 'reprocessing'
+export const STRUCTURE_VIEWS: StructureView[] = ['all', 'staging', 'production', 'reactions', 'reprocessing']
 
-/** Old `?view=` values that still open the closest view (links pasted in Discord). */
+/** Old `?view=` values that still open the closest view (links pasted in
+ * Discord). Freight and Market are corner icons on the cards now, not views. */
 const VIEW_ALIASES: Record<string, StructureView> = {
     industry: 'production',
-    logistics: 'freight',
 }
 
 export function parse_structure_view(requested: string | null): StructureView {
@@ -15,13 +16,14 @@ export function parse_structure_view(requested: string | null): StructureView {
     return VIEW_ALIASES[name] ?? 'all'
 }
 
-export type StructureFlag = 'home' | 'deployment' | 'fleets' | 'freight' | 'market' | 'orders'
+export type StructureFlag = 'home' | 'deployment' | 'fleets' | 'freight' | 'freight_route' | 'market'
 
-/** Status tags the site derives from EveLocation and open orders. Browse
- * cards show Home and Deployment as a banner instead, so they ask for the
- * tags without them (`banner: false`). */
+/** Status tags the site derives from EveLocation. Browse cards show Home and
+ * Deployment as a banner instead, so they ask for the tags without them
+ * (`banner: false`). Open industry orders are not a tag: the location page
+ * has its own Industry orders tool. */
 export function structure_flags(
-    card: Pick<StructureLocationCard, 'staging' | 'deployment' | 'fleets' | 'freight' | 'market' | 'industry_orders'>,
+    card: Pick<StructureLocationCard, 'staging' | 'deployment' | 'fleets' | 'freight' | 'freight_route' | 'market'>,
     { banner = true }: { banner?: boolean } = {},
 ) {
     const flags: { kind: StructureFlag, count?: number }[] = []
@@ -29,9 +31,66 @@ export function structure_flags(
     if (banner && card.deployment) flags.push({ kind: 'deployment' })
     if (card.fleets) flags.push({ kind: 'fleets' })
     if (card.freight) flags.push({ kind: 'freight' })
+    if (card.freight_route) flags.push({ kind: 'freight_route' })
     if (card.market) flags.push({ kind: 'market' })
-    if (card.industry_orders > 0) flags.push({ kind: 'orders', count: card.industry_orders })
     return flags
+}
+
+/** The site's own icons for the corner tags on a card. */
+export const FLAG_ICONS: Record<StructureFlag, string> = {
+    home: '/images/icons/48px-Structurebrowser.png',
+    deployment: '/images/icons/48px-Structurebrowser.png',
+    fleets: '/images/icons/48px-Fleet.png',
+    freight: '/images/icons/48px-Cargo.png',
+    freight_route: '/images/icons/48px-Map.png',
+    market: '/images/icons/48px-Market.png',
+}
+
+/** EVE icons for what a rig builds: ship-tree class symbols for hulls, item
+ * icons for the rest. Battleship and titan symbols are left out on purpose:
+ * they are chevrons, like the tier marks next to them. */
+const RIG_USE_ICONS: Record<string, () => string> = {
+    subcap: () => '/images/icons/ships/Isis_cruiser.png',
+    capital: () => '/images/icons/ships/Isis_capital.png',
+    components: () => get_item_icon(21037, 64),
+    research: () => get_item_icon(20424, 64),
+    reactions: () => get_item_icon(16673, 64),
+    reprocessing: () => get_item_icon(1230, 64),
+    modules: () => get_item_icon(2048, 64),
+}
+
+export function rig_use_icon(use: string) {
+    return (RIG_USE_ICONS[use] ?? (() => '/images/icons/48px-Icon_fit_rig.png'))()
+}
+
+const TIER_LEVEL: Record<string, number> = { T1: 1, T2: 2, Faction: 3 }
+
+/** One chevron per tier up to the best tier this rig comes in; filled up to
+ * the fitted tier. */
+export function rig_steps(rig: Pick<StructureLocationModule, 'tier' | 'best_tier'>) {
+    const level = TIER_LEVEL[rig.tier] ?? 1
+    const best = TIER_LEVEL[rig.best_tier] ?? 2
+    return Array.from({ length: Math.max(best, level) }, (_, index) => index < level)
+}
+
+/** 0.1309 → "13.09%", 0.0075 → "0.75%", 0.01 → "1%". */
+export function percent(fraction: number | null | undefined, digits = 2) {
+    if (fraction === null || fraction === undefined) return null
+    const value = (fraction * 100).toFixed(digits).replace(/\.?0+$/, '')
+    return `${value}%`
+}
+
+/** 50_000_000 → "50m". */
+export function short_isk(isk: number) {
+    if (isk >= 1_000_000_000) return `${+(isk / 1_000_000_000).toFixed(1)}b`
+    if (isk >= 1_000_000) return `${+(isk / 1_000_000).toFixed(1)}m`
+    if (isk >= 1_000) return `${+(isk / 1_000).toFixed(1)}k`
+    return String(isk)
+}
+
+/** "Standup XL-Set Ship Manufacturing Efficiency I" → "Ship Manufacturing Efficiency I". */
+export function rig_title(name: string) {
+    return name.replace(/^Standup (M|L|XL)-Set /, '')
 }
 
 export type StructureBanner = 'home' | 'deployment'
@@ -93,8 +152,6 @@ export function in_view(card: StructureLocationCard, view: StructureView) {
             || (card.good_for.includes('industry') && card.rigs.length === 0 && card.services.length === 0)
         case 'reactions': return has_service(card, 'Reactor') || has_any(rig_groups_of(card), REACTION_GROUPS)
         case 'reprocessing': return has_service(card, 'Reprocessing') || has_any(rig_groups_of(card), PROCESSING_GROUPS)
-        case 'freight': return card.good_for.includes('logistics') || card.freight || card.route_count > 0
-        case 'market': return card.market
         default: return true
     }
 }

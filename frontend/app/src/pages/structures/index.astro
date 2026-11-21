@@ -51,7 +51,6 @@ import PageLanding from '@components/page/PageLanding.astro'
 import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import Button from '@components/blocks/Button.astro'
-import Textarea from '@components/blocks/Textarea.astro'
 import Input from '@components/blocks/Input.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import StructureCard from '@components/blocks/structures/StructureCard.astro'
@@ -146,24 +145,14 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
             : (
                 <div class="[ structures-grid ]">
                     {shown.map((card) => (
-                        <div data-structure-name={`${card.name} ${card.solar_system_name} ${card.rigs.map((r) => r.label).join(' ')}`.toLowerCase()}>
+                        <div data-structure-name={`${card.name} ${card.solar_system_name} ${card.rigs.map((r) => r.label).join(' ')} ${card.type_name}`.toLowerCase()}>
                             <StructureCard card={card} />
                         </div>
                     ))}
-                    {list?.can_add &&
-                        <div class="[ structures-paste ]" x-data="{ text: '' }">
-                            <label class="[ structures-paste__title ]" for="structures-paste">{t('structures.add.title')}</label>
-                            <Textarea id="structures-paste" rows="6" x-model="text" placeholder={t('structures.add.quick_placeholder')} />
-                            <Button type="button" size="sm" color="green"
-                                x-on:click="window.dispatchEvent(new CustomEvent('structure-add-paste', { detail: text }))">
-                                {t('structures.add.find_it')}
-                            </Button>
-                        </div>
-                    }
                 </div>
             )
         }
-        {!list_error && shown.length === 0 && !list?.can_add &&
+        {!list_error && shown.length === 0 &&
             <EmptyState title={t('structures.empty')} hint={auth_token ? undefined : t('structures.sign_in_hint')} />
         }
     </Flexblock>
@@ -417,26 +406,5 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
         gap: var(--space-s);
-    }
-
-    .structures-paste {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-xs);
-        min-height: 30rem;
-        padding: var(--space-m);
-        border: 1px dashed var(--hairline-strong);
-
-        :global(textarea) {
-            flex: 1;
-        }
-    }
-
-    .structures-paste__title {
-        font-family: var(--heading-font);
-        font-size: var(--step-1);
-        line-height: 1.05;
-        text-transform: uppercase;
-        color: var(--highlight);
     }
 </style>

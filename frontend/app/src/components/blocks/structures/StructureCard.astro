@@ -1,16 +1,20 @@
 ---
 /**
- * A structure on the browse page. Every card has the same rows, so cards in
- * a row line up: a banner slot (Home or Deployment, empty otherwise), the
- * type and status tags on one line, then name, system, fitting (two lines at
- * most) and a View location button. The render fills the card behind them.
+ * A structure on the browse page. The whole card opens the location. Every
+ * card has the same rows, so cards in a row line up:
+ * - the top band: build and reaction cost index and tax on industry
+ *   structures, the Home or Deployment banner on stagings, empty otherwise;
+ * - site tags as icons in the corner (Form-up, Freight, Freight route, Market);
+ * - name with a copy button for the in-game name, then security, system and
+ *   hull type;
+ * - one capabilities row: service modules on the left, rigs on the right.
  */
 import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { StructureLocationCard } from '@dtypes/api.minmatar.org'
 import { get_item_icon } from '@helpers/eve_image_server'
-import { structure_flags, structure_banner, security_colour, security_label } from '@helpers/structure_locations'
+import { FLAG_ICONS, percent, structure_flags, structure_banner, security_colour, security_label } from '@helpers/structure_locations'
 
 interface Props {
     card:           StructureLocationCard;
@@ -22,46 +26,99 @@ delete attributes.class
 
 const href = translatePath(`/structures/${card.location_id}/`)
 const art = card.type_id ? get_item_icon(card.type_id, 512) : null
-const scanned = card.fitting_scanned_at !== null
 const banner = structure_banner(card)
+const show_costs = !banner && card.industry
+const flags = structure_flags(card, { banner: false })
+const costs = [
+    { label: t('structures.card.build'), value: percent(card.manufacturing_index) },
+    { label: t('structures.card.reactions'), value: percent(card.reaction_index) },
+    { label: t('structures.card.tax'), value: percent(card.facility_tax) },
+]
 
-import Button from '@components/blocks/Button.astro'
-import StructureFlags from '@components/blocks/structures/StructureFlags.astro'
-import StructureFit from '@components/blocks/structures/StructureFit.astro'
+import StructureRigChip from '@components/blocks/structures/StructureRigChip.astro'
 ---
 
 <article class:list={['[ structure-card ]', { 'no-art': !art }, banner && `is-${banner}`, Astro.props.class]} {...attributes}>
-    {art && <img class="[ structure-card__art ]" src={art} alt="" loading="lazy" width="512" height="512" />}
-    <span class="[ structure-card__shade ]" aria-hidden="true"></span>
+    <div class="[ structure-card__media ]" aria-hidden="true">
+        {art && <img class="[ structure-card__art ]" src={art} alt="" loading="lazy" width="512" height="512" />}
+        <span class="[ structure-card__shade ]"></span>
+    </div>
 
-    <div class="[ structure-card__banner ]">
+    <div class="[ structure-card__band ]">
         {banner &&
-            <p class="[ structure-card__banner-bar ]">
+            <p class="[ structure-card__banner ]">
                 <b>{t(t_key('structures.banner.', banner))}</b>
                 <span>{t('structures.banner.staging')}</span>
             </p>
         }
+        {show_costs &&
+            <dl class="[ structure-card__costs ]">
+                {costs.map((cost) => (
+                    <div>
+                        <dt>{cost.label}</dt>
+                        <dd class:list={{ none: cost.value === null }}>{cost.value ?? '—'}</dd>
+                    </div>
+                ))}
+            </dl>
+        }
     </div>
 
-    <div class="[ structure-card__meta ]">
-        <span class="[ structure-card__kind ]">{card.type_name}</span>
-        <StructureFlags flags={structure_flags(card, { banner: false })} />
-    </div>
+    <ul class="[ structure-card__tags ]" aria-label={t('structures.card.tags')}>
+        {flags.map((flag) => (
+            <li class="[ structure-card__tag ]" tabindex="0">
+                <img src={FLAG_ICONS[flag.kind]} alt={t(t_key('structures.flag.', flag.kind))} width="48" height="48" loading="lazy" />
+                <span class="[ structure-card__tip ]" aria-hidden="true">{t(t_key('structures.flag.', flag.kind))}</span>
+            </li>
+        ))}
+    </ul>
 
     <div class="[ structure-card__body ]">
-        <h3 class="[ structure-card__name ]" title={card.short_name}>{card.short_name}</h3>
+        <div class="[ structure-card__namerow ]">
+            <h3 class="[ structure-card__name ]" title={card.short_name}>
+                <a href={href}>{card.short_name}</a>
+            </h3>
+            <button type="button" class="[ structure-card__copy ]"
+                data-name={card.name}
+                x-data="{ copied: false }"
+                x-on:click="navigator.clipboard.writeText($el.dataset.name).then(() => { copied = true; setTimeout(() => copied = false, 1500) })"
+                x-bind:class="{ 'is-copied': copied }"
+                aria-label={`${t('structures.card.copy')}: ${card.name}`}
+                title={card.name}>
+                <svg viewBox="0 0 24 24" aria-hidden="true" x-show="!copied"><rect x="9" y="9" width="12" height="12" /><path d="M5 15V3h12" /></svg>
+                <svg viewBox="0 0 24 24" aria-hidden="true" x-show="copied" x-cloak><path d="m5 12 5 5 9-10" /></svg>
+                <span class="[ structure-card__tip ]" role="status" x-show="copied" x-cloak>{t('structures.card.copied')}</span>
+            </button>
+        </div>
         <p class="[ structure-card__sys ]">
             {card.security !== null && <b style={`color: ${security_colour(card.security)}`}>{security_label(card.security)}</b>}
             <span>{card.solar_system_name}</span>
+            <span class="[ structure-card__type ]">{card.type_name}</span>
             {card.audience === 'groups' && card.audience_groups.length > 0 &&
                 <span class="[ structure-card__aud ]">{card.audience_groups.join(', ')}</span>
             }
         </p>
-        <StructureFit class="[ structure-card__fit ]" rigs={card.rigs} services={card.services} is_structure={card.is_structure} scanned={scanned} />
-        <Button class="[ structure-card__go ]" href={href} color="transparent" size="sm" narrow={true}>
-            {t('structures.card.view_location')}
-            <span class="[ visually-hidden ]">{card.short_name}</span>
-        </Button>
+        <div class="[ structure-card__caps ]">
+            {card.service_modules.length > 0 &&
+                <ul class="[ structure-card__svcs ]" aria-label={t('structures.card.services')}>
+                    {card.service_modules.map((service) => (
+                        <li class="[ structure-card__svc ]" tabindex="0">
+                            <img src={service.type_id ? get_item_icon(service.type_id, 64) : '/images/icons/48px-Industry.png'} alt={service.label} width="64" height="64" loading="lazy" />
+                            <span class="[ structure-card__tip ]" aria-hidden="true">{service.label}</span>
+                        </li>
+                    ))}
+                </ul>
+            }
+            {card.rigs.length > 0 &&
+                <ul class="[ structure-card__rigs ]" aria-label={t('structures.card.rigs')}>
+                    {card.rigs.map((rig, index) => (
+                        <StructureRigChip rig={rig} security={card.security} popover_id={`rig-${card.location_id}-${index}`} />
+                    ))}
+                </ul>
+            }
+            {card.is_structure && card.fitting_scanned_at === null && card.rigs.length === 0 && card.service_modules.length === 0 &&
+                <p class="[ structure-card__unscanned ]">{t('structures.fit.not_scanned')}</p>
+            }
+        </div>
     </div>
 </article>
 
@@ -71,8 +128,7 @@ import StructureFit from '@components/blocks/structures/StructureFit.astro'
         isolation: isolate;
         display: flex;
         flex-direction: column;
-        height: 30rem;
-        overflow: hidden;
+        height: 27rem;
         background-color: var(--component-background);
 
         &.no-art {
@@ -96,46 +152,66 @@ import StructureFit from '@components/blocks/structures/StructureFit.astro'
             outline: 2px solid var(--banner-color);
             outline-offset: -2px;
         }
+
+        &:focus-within,
+        &:hover {
+            z-index: 1;
+        }
+    }
+
+    /* Art is clipped to the card; popovers are not. */
+    .structure-card__media {
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        overflow: hidden;
     }
 
     .structure-card__art {
         position: absolute;
         inset: 0;
-        z-index: -2;
         width: 100%;
         height: 100%;
         object-fit: cover;
-        object-position: center 35%;
+        object-position: center 30%;
         transition: transform var(--slow-transition);
+    }
+
+    .structure-card__shade {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--background) 30%, transparent) 0%,
+            transparent 24%,
+            transparent 38%,
+            color-mix(in srgb, var(--background) 90%, transparent) 62%,
+            color-mix(in srgb, var(--background) 97%, transparent) 100%
+        );
     }
 
     @media (hover: hover) {
         .structure-card:hover .structure-card__art {
             transform: scale(1.04);
         }
+
+        .structure-card:not(.is-home, .is-deployment):hover {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: -2px;
+        }
+
+        .structure-card:hover .structure-card__name a {
+            color: var(--fleet-yellow);
+        }
     }
 
-    .structure-card__shade {
-        position: absolute;
-        inset: 0;
-        z-index: -1;
-        background: linear-gradient(
-            180deg,
-            color-mix(in srgb, var(--background) 60%, transparent) 0%,
-            transparent 24%,
-            transparent 38%,
-            color-mix(in srgb, var(--background) 88%, transparent) 58%,
-            color-mix(in srgb, var(--background) 97%, transparent) 100%
-        );
-    }
-
-    /* Same height on every card, empty unless Home or Deployment. */
-    .structure-card__banner {
+    /* Same height on every card: costs, a staging banner, or nothing. */
+    .structure-card__band {
         flex: none;
         block-size: var(--space-xl);
     }
 
-    .structure-card__banner-bar {
+    .structure-card__banner {
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -161,56 +237,198 @@ import StructureFit from '@components/blocks/structures/StructureFit.astro'
         }
     }
 
-    /* Type and status tags on one line; extra tags are clipped, not wrapped. */
-    .structure-card__meta {
+    .structure-card__costs {
         display: flex;
-        flex: none;
-        flex-wrap: nowrap;
-        align-items: stretch;
-        gap: var(--space-3xs);
-        margin: var(--space-xs) var(--space-s) 0;
-        overflow: hidden;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-s);
+        block-size: 100%;
+        margin: 0;
+        padding-inline: var(--space-s);
+        background-color: color-mix(in srgb, var(--background) 78%, transparent);
+        border-bottom: 1px solid var(--hairline-strong);
 
-        :global(.structure-flags) {
-            flex-wrap: nowrap;
+        div {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+        }
+
+        dt {
+            font-size: var(--step--2);
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        dd {
+            margin: 0;
+            font-size: var(--step-0);
+            font-weight: 700;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+            color: var(--highlight);
+
+            &.none {
+                font-weight: 500;
+                color: var(--text-muted);
+            }
         }
     }
 
-    .structure-card__kind {
-        display: inline-flex;
+    .structure-card__tags {
+        display: flex;
         flex: none;
+        gap: var(--space-3xs);
+        block-size: 2rem;
+        margin: var(--space-xs) var(--space-s) 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .structure-card__tag,
+    .structure-card__svc {
+        position: relative;
+        z-index: 1;
+        display: flex;
         align-items: center;
-        padding: 0.3em 0.6em;
-        font-family: var(--heading-font);
-        font-size: var(--step--1);
-        letter-spacing: 0.08em;
-        line-height: 1;
-        text-transform: uppercase;
-        color: var(--highlight);
+        justify-content: center;
+        inline-size: 2rem;
+        block-size: 2rem;
         background-color: color-mix(in srgb, var(--background) 70%, transparent);
+        border: 1px solid var(--hairline-strong);
+
+        img {
+            inline-size: 1.65rem;
+            block-size: 1.65rem;
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--highlight);
+            outline-offset: 1px;
+        }
+    }
+
+    .structure-card__tip {
+        position: absolute;
+        inset-inline-start: -1px;
+        z-index: 2;
+        display: none;
+        padding: var(--space-3xs) var(--space-xs);
+        font-size: var(--step--2);
+        font-weight: 700;
+        white-space: nowrap;
+        color: var(--background);
+        background-color: var(--highlight);
+    }
+
+    .structure-card__tag .structure-card__tip {
+        inset-block-start: calc(100% + var(--space-3xs));
+    }
+
+    .structure-card__svc .structure-card__tip,
+    .structure-card__copy .structure-card__tip {
+        inset-block-end: calc(100% + var(--space-3xs));
+    }
+
+    .structure-card__tag:is(:hover, :focus-visible) .structure-card__tip,
+    .structure-card__svc:is(:hover, :focus-visible) .structure-card__tip {
+        display: block;
     }
 
     .structure-card__body {
         display: flex;
         flex-direction: column;
+        gap: var(--space-3xs);
         margin-top: auto;
         padding: 0 var(--space-s) var(--space-s);
     }
 
+    .structure-card__namerow {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+    }
+
     .structure-card__name {
+        flex: 1;
+        min-width: 0;
         margin: 0;
         overflow: hidden;
         font-size: var(--step-1);
-        line-height: 1.2;
+        line-height: 1.3;
         white-space: nowrap;
         text-overflow: ellipsis;
-        color: var(--highlight);
+
+        a {
+            color: var(--highlight);
+            text-decoration: none;
+
+            /* The whole card is the link. */
+            &::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+            }
+
+            &:focus-visible {
+                outline: none;
+            }
+
+            &:focus-visible::after {
+                outline: 2px solid var(--highlight);
+                outline-offset: -2px;
+            }
+        }
+    }
+
+    .structure-card__copy {
+        position: relative;
+        z-index: 1;
+        display: inline-flex;
+        flex: none;
+        align-items: center;
+        justify-content: center;
+        inline-size: 2.25rem;
+        block-size: 2.25rem;
+        padding: 0;
+        color: var(--text-muted);
+        cursor: pointer;
+        background-color: color-mix(in srgb, var(--background) 50%, transparent);
+        border: 1px solid var(--hairline-strong);
+
+        svg {
+            inline-size: 1rem;
+            block-size: 1rem;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        &:hover {
+            color: var(--highlight);
+        }
+
+        &.is-copied {
+            color: var(--background);
+            background-color: var(--green);
+            border-color: var(--green);
+        }
+
+        .structure-card__tip {
+            display: block;
+            inset-inline-start: auto;
+            inset-inline-end: -1px;
+        }
     }
 
     .structure-card__sys {
         display: flex;
         gap: var(--space-2xs);
-        margin: var(--space-3xs) 0 0;
+        margin: 0;
         overflow: hidden;
         font-size: var(--step--1);
         white-space: nowrap;
@@ -220,38 +438,48 @@ import StructureFit from '@components/blocks/structures/StructureFit.astro'
         }
     }
 
+    .structure-card__type {
+        color: var(--text-muted);
+
+        &::before {
+            content: "·";
+            margin-inline-end: var(--space-2xs);
+        }
+    }
+
     .structure-card__aud {
         overflow: hidden;
         text-overflow: ellipsis;
         color: var(--highlight);
     }
 
-    /* Fitting box: two tag lines tall on every card. */
-    .structure-card__body :global(.structure-card__fit) {
-        --fit-row: 1.9em;
-
-        align-content: flex-start;
-        block-size: calc(2 * var(--fit-row) + var(--space-3xs));
-        margin-top: var(--space-xs);
-        overflow: hidden;
-        font-size: var(--step--2);
-    }
-
-    .structure-card__body :global(.structure-card__fit > li) {
-        box-sizing: border-box;
-        block-size: var(--fit-row);
-        line-height: 1;
-    }
-
-    .structure-card__body :global(.structure-card__fit .structure-rig > *) {
-        display: inline-flex;
+    /* One capabilities row: modules on the left, rigs on the right. */
+    .structure-card__caps {
+        display: flex;
         align-items: center;
+        gap: var(--space-xs);
+        min-block-size: 2rem;
+        margin-top: var(--space-xs);
     }
 
-    .structure-card__body :global(.structure-card__go) {
-        width: 100%;
-        margin-top: var(--space-s);
-        background-color: color-mix(in srgb, var(--background) 60%, transparent);
-        border: 1px solid var(--hairline-strong);
+    .structure-card__svcs,
+    .structure-card__rigs {
+        display: flex;
+        gap: var(--space-3xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .structure-card__rigs {
+        position: relative;
+        z-index: 1;
+        margin-inline-start: auto;
+    }
+
+    .structure-card__unscanned {
+        margin: 0;
+        font-size: var(--step--2);
+        color: var(--text-muted);
     }
 </style>

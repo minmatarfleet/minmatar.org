@@ -7,9 +7,11 @@ import { get_request_user } from '@helpers/request_user'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import { get_structure_location } from '@helpers/api.minmatar.org/structure_locations'
 import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
-import { structure_flags, security_colour, security_label } from '@helpers/structure_locations'
+import { structure_flags, security_colour, security_label, percent, short_isk } from '@helpers/structure_locations'
+import { get_gates, can } from '@helpers/gates'
 
 const { auth_token } = get_request_user(Astro)
+const can_manage_locations = can(await get_gates(Astro), 'structures.locations.manage')
 const location_id = parseInt(Astro.params.id ?? '0')
 
 let detail: StructureLocationDetail | null = null
@@ -40,6 +42,13 @@ const breadcrumbs = [
     { page_title: t('structures.page_title'), accumulated_path: translatePath('/structures/') },
     { page_title, accumulated_path: translatePath(`/structures/${detail.location_id}/`) },
 ]
+const paid = (index: number | null) => (index === null || !detail.index_discount
+    ? null
+    : t('structures.stat.discount').replace('~PAID', percent(index * (1 + detail.index_discount)) ?? ''))
+const routes_text = detail.routes_here
+    .map((route) => t('structures.tool.freight_route').replace('~ORIGIN', route.origin).replace('~PRICE', route.isk_per_m3.toLocaleString('en-US')))
+    .join(', ')
+
 const day = (iso: string) => new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })
 
 import Viewport from '@layouts/Viewport.astro'
@@ -54,7 +63,8 @@ import ManageField from '@components/blocks/manage/ManageField.astro'
 import SectionTabs from '@components/blocks/SectionTabs.astro'
 import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
 import StructureFlags from '@components/blocks/structures/StructureFlags.astro'
-import StructureFit from '@components/blocks/structures/StructureFit.astro'
+import StructureRigChip from '@components/blocks/structures/StructureRigChip.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
 import StructureSettingsForm from '@components/blocks/structures/StructureSettingsForm.astro'
 ---
 
@@ -70,22 +80,43 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
                 <StructureFlags flags={structure_flags(detail)} />
             </div>
             <h1>{detail.short_name}</h1>
-            <p class="[ structure-hero__sys ]">
-                {detail.security !== null && <b style={`color: ${security_colour(detail.security)}`}>{security_label(detail.security)}</b>}
-                <span>{detail.solar_system_name}</span>
-                {detail.name !== detail.short_name && <span class="[ structure-hero__full ]">{detail.name}</span>}
-            </p>
-            <StructureFit rigs={rigs} services={services.map((s) => s.label)} is_structure={detail.is_structure} scanned={detail.fitting_scanned_at !== null} />
+            <div class="[ structure-hero__line ]">
+                <p class="[ structure-hero__sys ]">
+                    {detail.security !== null && <b style={`color: ${security_colour(detail.security)}`}>{security_label(detail.security)}</b>}
+                    <span>{detail.solar_system_name}</span>
+                    <span class="[ structure-hero__type ]">{detail.type_name}</span>
+                </p>
+                <button type="button" class="[ structure-copyname ]"
+                    data-name={detail.name}
+                    x-data="{ copied: false }"
+                    x-on:click="navigator.clipboard.writeText($el.dataset.name).then(() => { copied = true; setTimeout(() => copied = false, 1500) })"
+                    aria-label={`${t('structures.card.copy')}: ${detail.name}`}>
+                    <span>{detail.name}</span>
+                    <kbd>
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" /><path d="M5 15V3h12" /></svg>
+                        <span x-text={`copied ? '${t('structures.card.copied')}' : '${t('structures.card.copy_button')}'`}>{t('structures.card.copy_button')}</span>
+                    </kbd>
+                </button>
+            </div>
+            {detail.rigs.length > 0 &&
+                <ul class="[ structure-hero__rigs ]" aria-label={t('structures.card.rigs')}>
+                    {detail.rigs.map((rig, index) => (
+                        <StructureRigChip rig={rig} security={detail.security} popover_id={`hero-rig-${index}`} show_label={true} />
+                    ))}
+                </ul>
+            }
+            {detail.is_structure && detail.fitting_scanned_at === null && <p class="[ structure-hero__full ]">{t('structures.fit.not_scanned')}</p>}
         </header>
 
         <SectionTabs aria_label={t('structures.tabs_label')} id_prefix="structure" tabs={tabs}>
             <SectionTabPanel id="overview" id_prefix="structure" is_default={true}>
                 <Flexblock gap="var(--space-l)">
                     <div class="[ structure-stats ]">
-                        <ManageStatCard label={t('structures.stat.reinforces')} value={reinforce ?? t('structures.card.not_set')} />
-                        <ManageStatCard label={t('structures.stat.rigs')} value={rigs.length} detail={rigs.map((r) => `${r.size} ${r.label}`).join(', ') || undefined} />
-                        <ManageStatCard label={t('structures.stat.routes')} value={detail.route_count} />
-                        <ManageStatCard label={t('structures.stat.orders')} value={detail.industry_orders} />
+                        <ManageStatCard label={t('structures.stat.build_index')} value={percent(detail.manufacturing_index) ?? t('structures.stat.tax_unknown')} detail={paid(detail.manufacturing_index) ?? t('structures.stat.system_index')} />
+                        <ManageStatCard label={t('structures.stat.reactions_index')} value={percent(detail.reaction_index) ?? t('structures.stat.tax_unknown')} detail={paid(detail.reaction_index) ?? t('structures.stat.system_index')} />
+                        <ManageStatCard label={t('structures.stat.tax')} value={percent(detail.facility_tax) ?? t('structures.stat.tax_unknown')} detail={detail.facility_tax === null ? t('structures.stat.tax_unknown_hint') : undefined} />
+                        <ManageStatCard label={t('structures.stat.office')} value={short_isk(detail.office_fee_isk)} detail={t('structures.stat.office_hint')} />
+                        <ManageStatCard label={t('structures.stat.reinforces')} value={reinforce ?? t('structures.card.not_set')} detail={reinforce ? undefined : t('structures.stat.reinforce_hint')} />
                     </div>
 
                     <section class="[ structure-section ]" aria-labelledby="structure-about">
@@ -99,20 +130,47 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
                     <section class="[ structure-section ]" aria-labelledby="structure-use">
                         <h2 id="structure-use">{t('structures.use_it')}</h2>
                         <div class="[ structure-tools ]">
-                            {detail.planner_facility &&
-                                <a class="[ structure-tool ]" href={translatePath(`/industry/orders/planner/?facility=${detail.planner_facility}`)}>
-                                    <h3>{t('structures.tool.plan')}</h3><p>{t('structures.tool.plan_body')}</p>
-                                </a>
+                            {detail.planner_facility
+                                ? (
+                                    <a class="[ structure-tool ]" href={translatePath(`/industry/orders/planner/?facility=${detail.planner_facility}`)}>
+                                        <h3>{t('structures.tool.plan')}</h3>
+                                        <p>{t('structures.tool.plan_freeport').replace('~SYSTEM', detail.solar_system_name)}</p>
+                                    </a>
+                                )
+                                : (
+                                    <div class="[ structure-tool off ]">
+                                        <h3>{t('structures.tool.plan')}</h3>
+                                        <p>{t('structures.tool.plan_none').replace('~SYSTEM', detail.solar_system_name).replace('~SYSTEMS', detail.planner_systems.join(', '))}</p>
+                                    </div>
+                                )
                             }
-                            {detail.freight && detail.route_count > 0 &&
-                                <a class="[ structure-tool ]" href={translatePath('/market/freight/')}>
-                                    <h3>{t('structures.tool.freight')}</h3><p>{t('structures.tool.freight_body').replace('~COUNT', String(detail.route_count))}</p>
-                                </a>
+                            {detail.routes_here.length > 0
+                                ? (
+                                    <a class="[ structure-tool ]" href={translatePath(`/market/freight/calculator/?to=${detail.location_id}`)}>
+                                        <h3>{t('structures.tool.freight')}</h3>
+                                        <p>{t('structures.tool.freight_routes').replace('~ROUTES', routes_text)}</p>
+                                    </a>
+                                )
+                                : (
+                                    <div class="[ structure-tool off ]">
+                                        <h3>{t('structures.tool.freight')}</h3>
+                                        <p>{t('structures.tool.freight_none')}</p>
+                                    </div>
+                                )
                             }
-                            {detail.industry_orders > 0 &&
-                                <a class="[ structure-tool ]" href={translatePath('/industry/orders/')}>
-                                    <h3>{t('structures.tool.orders')}</h3><p>{t('structures.tool.orders_body').replace('~COUNT', String(detail.industry_orders))}</p>
-                                </a>
+                            {detail.industry_orders > 0
+                                ? (
+                                    <a class="[ structure-tool ]" href={translatePath('/industry/orders/')}>
+                                        <h3>{t('structures.tool.orders')}</h3>
+                                        <p>{t('structures.tool.orders_body').replace('~COUNT', String(detail.industry_orders))}</p>
+                                    </a>
+                                )
+                                : (
+                                    <div class="[ structure-tool off ]">
+                                        <h3>{t('structures.tool.orders')}</h3>
+                                        <p>{t('structures.tool.orders_none')}</p>
+                                    </div>
+                                )
                             }
                             <a class="[ structure-tool ]" href={translatePath('/intel/')}>
                                 <h3>{t('structures.tool.timers')}</h3><p>{t('structures.tool.timers_body')}</p>
@@ -120,6 +178,9 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
                         </div>
                     </section>
 
+                    {can_manage_locations &&
+                        <LazyPartial url={translatePath(`/partials/structure_holdings_component/?id=${detail.location_id}`)} trigger="reveal" />
+                    }
                     {auth_token &&
                         <section class="[ structure-section ]" aria-labelledby="structure-yours">
                             <h2 id="structure-yours">{t('structures.yours')}</h2>
@@ -252,15 +313,79 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
         color: var(--text-muted);
     }
 
+    .structure-hero__line {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-s);
+    }
+
     .structure-hero__sys {
         display: flex;
         gap: var(--space-2xs);
         font-size: var(--step-0);
     }
 
+    .structure-hero__type {
+        color: var(--text-muted);
+
+        &::before {
+            content: "·";
+            margin-inline-end: var(--space-2xs);
+        }
+    }
+
+    .structure-copyname {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-xs);
+        min-block-size: 2.5rem;
+        padding-inline: var(--space-s) var(--space-3xs);
+        font-family: var(--default-font);
+        font-size: var(--step--1);
+        color: var(--highlight);
+        cursor: pointer;
+        background-color: var(--component-background);
+        border: 1px solid var(--hairline-strong);
+
+        kbd {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-3xs);
+            padding: var(--space-3xs) var(--space-xs);
+            font: inherit;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-inline-start: 1px solid var(--hairline-strong);
+        }
+
+        svg {
+            inline-size: 1em;
+            block-size: 1em;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        &:hover kbd {
+            color: var(--highlight);
+        }
+    }
+
+    .structure-hero__rigs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
     .structure-stats {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
         gap: var(--space-s);
     }
 
@@ -296,9 +421,18 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
             color: var(--text-muted);
         }
 
-        &:focus-visible,
-        &:hover {
+        &:is(a):focus-visible,
+        &:is(a):hover {
             border-color: var(--hairline-strong);
+        }
+
+        &.off {
+            background: none;
+            border: 1px dashed var(--hairline-strong);
+
+            h3 {
+                color: var(--text-muted);
+            }
         }
     }
 

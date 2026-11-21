@@ -63,6 +63,13 @@ class EveLocation(MinmatarSoftDeleteModel):
         help_text="A staging the alliance is deployed to, next to the home "
         "staging. Any number of locations may have it.",
     )
+    freight_route_active = models.BooleanField(
+        default=False,
+        db_default=False,
+        help_text="On a freight run but not a delivery point, such as a "
+        "midpoint or an office. Shown as a Freight route tag; routes are not "
+        "touched.",
+    )
     market_categories = models.JSONField(
         default=list,
         blank=True,

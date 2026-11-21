@@ -1,0 +1,241 @@
+---
+/**
+ * One rig: an EVE icon for what it builds and stacked chevrons for its tier,
+ * up to the best tier that rig comes in. Hover or focus shows the real bonus
+ * per build category in the structure's security band. The location page
+ * passes `show_label` to keep the short name next to the icon.
+ */
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { StructureLocationModule, StructureRigBonus } from '@dtypes/api.minmatar.org'
+import { rig_steps, rig_title, rig_use_icon } from '@helpers/structure_locations'
+
+interface Props {
+    rig:            StructureLocationModule;
+    security:       number | null;
+    popover_id:     string;
+    show_label?:    boolean;
+    [propName: string]: any;
+}
+
+const { rig, security, popover_id, show_label = false, ...attributes } = Astro.props
+delete attributes.class
+
+const steps = rig_steps(rig)
+const band = security === null ? 'low' : (Math.round(security * 10) >= 5 ? 'high' : (Math.round(security * 10) > 0 ? 'low' : 'null'))
+const tier_text = rig.is_best
+    ? t('structures.rig.tier_best').replace('~TIER', rig.tier)
+    : t('structures.rig.tier_of').replace('~TIER', rig.tier).replace('~BEST', rig.best_tier)
+
+type BonusKey = 'materials' | 'time' | 'cost' | 'yield_bonus'
+const COLUMNS: { key: BonusKey, label: string }[] = [
+    { key: 'materials', label: t('structures.rig.materials') },
+    { key: 'time', label: t('structures.rig.time') },
+    { key: 'cost', label: t('structures.rig.cost') },
+    { key: 'yield_bonus', label: t('structures.rig.yield') },
+]
+const columns = COLUMNS.filter((column) => rig.bonuses.some((bonus) => bonus[column.key] !== null))
+const cell = (bonus: StructureRigBonus, key: BonusKey) => {
+    const value = bonus[key]
+    if (value === null) return ''
+    return key === 'yield_bonus' ? `${value}%` : `−${value}%`
+}
+
+const upgrade = rig.upgrade[0]
+let upgrade_text = ''
+if (!rig.is_best && upgrade) {
+    if (upgrade.materials !== null) {
+        upgrade_text = t('structures.rig.upgrade').replace('~MATERIALS', cell(upgrade, 'materials')).replace('~TIME', cell(upgrade, 'time'))
+    } else if (upgrade.yield_bonus !== null) {
+        upgrade_text = t('structures.rig.upgrade_yield').replace('~YIELD', cell(upgrade, 'yield_bonus'))
+    } else if (upgrade.time !== null) {
+        upgrade_text = t('structures.rig.upgrade_time').replace('~TIME', cell(upgrade, 'time'))
+    }
+}
+const kind = t('structures.rig.kind')
+    .replace('~SIZE', rig.size)
+    .replace('~TIER', rig.tier)
+    .replace('~BAND', t(`structures.sec.${band}` as 'structures.sec.low'))
+---
+
+<li class:list={['[ structure-rig-chip ]', { 'has-label': show_label }, Astro.props.class]} tabindex="0" aria-describedby={popover_id} {...attributes}>
+    <img class="[ structure-rig-chip__use ]" src={rig_use_icon(rig.use)} alt="" width="24" height="24" loading="lazy" />
+    {show_label && <span class="[ structure-rig-chip__label ]"><b>{rig.size}</b> {rig.label}</span>}
+    <span class="[ structure-rig-chip__steps ]" aria-hidden="true">
+        {steps.map((on) => (
+            <svg class:list={{ on }} viewBox="0 0 12 6"><path d="M1.5 5 6 1.5 10.5 5" /></svg>
+        ))}
+    </span>
+    <span class="[ visually-hidden ]">{rig.size} {rig.label}, {tier_text}</span>
+    <div class="[ structure-rig-chip__pop ]" role="tooltip" id={popover_id}>
+        <p class="[ structure-rig-chip__title ]">{rig_title(rig.name)}</p>
+        <p class="[ structure-rig-chip__kind ]">{kind}</p>
+        {rig.bonuses.length > 0 &&
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">{t('structures.rig.builds')}</th>
+                        {columns.map((column) => <th scope="col">{column.label}</th>)}
+                    </tr>
+                </thead>
+                <tbody>
+                    {rig.bonuses.map((bonus) => (
+                        <tr>
+                            <th scope="row">{bonus.category}</th>
+                            {columns.map((column) => <td>{cell(bonus, column.key)}</td>)}
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        }
+        {rig.is_best
+            ? <p class="[ structure-rig-chip__foot best ]">{t('structures.rig.best')}</p>
+            : upgrade_text && <p class="[ structure-rig-chip__foot ]">{upgrade_text}</p>
+        }
+    </div>
+</li>
+
+<style lang="scss" is:global>
+    .structure-rig-chip {
+        position: relative;
+        display: inline-flex;
+        align-items: stretch;
+        block-size: 2rem;
+        color: var(--highlight);
+        background-color: color-mix(in srgb, var(--background) 60%, transparent);
+        border: 1px solid var(--hairline-strong);
+        cursor: default;
+
+        &:focus-visible {
+            outline: 2px solid var(--highlight);
+            outline-offset: 1px;
+        }
+    }
+
+    .structure-rig-chip__use {
+        align-self: center;
+        inline-size: 1.5rem;
+        block-size: 1.5rem;
+        margin-inline: var(--space-3xs);
+        object-fit: contain;
+    }
+
+    .structure-rig-chip__label {
+        align-self: center;
+        padding-inline-end: var(--space-xs);
+        font-size: var(--step--1);
+        font-weight: 600;
+        white-space: nowrap;
+
+        b {
+            color: var(--text-muted);
+        }
+    }
+
+    .structure-rig-chip__steps {
+        display: flex;
+        flex-direction: column-reverse;
+        align-items: center;
+        justify-content: center;
+        inline-size: 1.4rem;
+        border-inline-start: 1px solid var(--hairline-strong);
+
+        svg {
+            display: block;
+            inline-size: 0.7rem;
+            block-size: 0.35rem;
+            fill: none;
+            stroke: var(--hairline-strong);
+            stroke-width: 1.9;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+
+            &.on {
+                stroke: var(--highlight);
+            }
+        }
+    }
+
+    .structure-rig-chip__pop {
+        position: absolute;
+        inset-block-end: calc(100% + var(--space-2xs));
+        inset-inline-end: 0;
+        z-index: 2;
+        display: none;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        inline-size: min(21rem, 80vw);
+        padding: var(--space-s);
+        font-size: var(--step--1);
+        text-align: start;
+        color: var(--highlight);
+        background-color: var(--component-background);
+        border: 1px solid var(--hairline-strong);
+        box-shadow: 0 var(--space-s) var(--space-l) color-mix(in srgb, var(--background) 60%, transparent);
+
+        table {
+            inline-size: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding-block: var(--space-3xs);
+            text-align: end;
+            font-variant-numeric: tabular-nums;
+            border-top: 1px solid var(--hairline-strong);
+        }
+
+        thead th {
+            font-size: var(--step--2);
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            border-top: 0;
+        }
+
+        th:first-child {
+            text-align: start;
+            font-weight: 500;
+        }
+
+        thead th:first-child {
+            font-weight: 700;
+        }
+    }
+
+    .structure-rig-chip:hover .structure-rig-chip__pop,
+    .structure-rig-chip:focus-visible .structure-rig-chip__pop {
+        display: flex;
+    }
+
+    .structure-rig-chip__title {
+        font-weight: 700;
+        line-height: 1.3;
+    }
+
+    .structure-rig-chip__kind {
+        color: var(--text-muted);
+    }
+
+    .structure-rig-chip__foot {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        font-weight: 600;
+
+        &::before {
+            content: "";
+            flex: none;
+            inline-size: 0.5rem;
+            block-size: 0.5rem;
+            background-color: var(--attention);
+        }
+
+        &.best::before {
+            background-color: var(--green);
+        }
+    }
+</style>

@@ -6,6 +6,9 @@ import {
     in_view,
     parse_rig_groups,
     parse_structure_view,
+    percent,
+    rig_steps,
+    short_isk,
     structure_banner,
     structure_flags,
 } from '@helpers/structure_locations'
@@ -25,6 +28,7 @@ function card(changes: Partial<StructureLocationCard> = {}): StructureLocationCa
         deployment: false,
         fleets: false,
         freight: false,
+        freight_route: false,
         market: false,
         prices: false,
         industry_orders: 0,
@@ -33,6 +37,13 @@ function card(changes: Partial<StructureLocationCard> = {}): StructureLocationCa
         good_for: [],
         rigs: [],
         services: [],
+        service_modules: [],
+        industry: false,
+        manufacturing_index: null,
+        reaction_index: null,
+        facility_tax: null,
+        index_discount: 0,
+        office_fee_isk: 50_000_000,
         fitting_scanned_at: null,
         reinforce_hour: null,
         route_count: 0,
@@ -43,12 +54,17 @@ function card(changes: Partial<StructureLocationCard> = {}): StructureLocationCa
     }
 }
 
-const rig = (group: string) => ({ name: 'Standup L-Set ...', slot: 'rig', size: 'L', label: group, group })
+const rig = (group: string) => ({
+    name: 'Standup L-Set ...', slot: 'rig', size: 'L', label: group, group,
+    tier: 'T1', best_tier: 'T2', is_best: false, use: 'subcap', bonuses: [], upgrade: [],
+})
 
 describe('structure views', () => {
     it('keeps old links working', () => {
         expect(parse_structure_view('industry')).toBe('production')
-        expect(parse_structure_view('logistics')).toBe('freight')
+        // Freight and Market are corner icons now, not views.
+        expect(parse_structure_view('logistics')).toBe('all')
+        expect(parse_structure_view('market')).toBe('all')
         expect(parse_structure_view('clones')).toBe('all')
         expect(parse_structure_view(null)).toBe('all')
         expect(parse_structure_view('reactions')).toBe('reactions')
@@ -100,5 +116,26 @@ describe('banners and tags', () => {
         expect(structure_banner(card())).toBeNull()
         expect(structure_flags(home, { banner: false }).map((flag) => flag.kind)).toEqual(['fleets'])
         expect(structure_flags(home).map((flag) => flag.kind)).toEqual(['home', 'fleets'])
+    })
+
+    it('tags a freight route without freight, and never open orders', () => {
+        const stop = card({ freight_route: true, industry_orders: 3 })
+        expect(structure_flags(stop).map((flag) => flag.kind)).toEqual(['freight_route'])
+    })
+})
+
+describe('card figures', () => {
+    it('formats cost indices, tax and office fees', () => {
+        expect(percent(0.1309)).toBe('13.09%')
+        expect(percent(0.0075)).toBe('0.75%')
+        expect(percent(0.01)).toBe('1%')
+        expect(percent(null)).toBeNull()
+        expect(short_isk(50_000_000)).toBe('50m')
+    })
+
+    it('stacks one chevron per tier up to the best tier', () => {
+        expect(rig_steps({ tier: 'T1', best_tier: 'T2' })).toEqual([true, false])
+        expect(rig_steps({ tier: 'T2', best_tier: 'T2' })).toEqual([true, true])
+        expect(rig_steps({ tier: 'Faction', best_tier: 'Faction' })).toEqual([true, true, true])
     })
 })

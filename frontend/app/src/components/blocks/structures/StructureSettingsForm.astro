@@ -26,6 +26,7 @@ try {
 
 const FLAGS = [
     { name: 'freight_active', on: detail.freight, hint: t('structures.settings.freight_hint').replace('~COUNT', String(detail.route_count)) },
+    { name: 'freight_route_active', on: detail.freight_route, hint: t('structures.settings.freight_route_hint') },
     { name: 'fleets_active', on: detail.fleets, hint: t('structures.settings.fleets_hint') },
     { name: 'market_active', on: detail.market, hint: t('structures.settings.market_hint') },
     { name: 'prices_active', on: detail.prices, hint: t('structures.settings.prices_hint') },

@@ -11,10 +11,19 @@ from authentication import AuthBearer, AuthOptional
 from eveonline.models import EveLocation
 from industry.helpers.facility_api import facility_key_for_system
 
+from . import capabilities as caps
 from . import locations as svc
 from .models import LocationAudienceGroup, LocationChange, LocationSubmission
 
 router = Router(tags=["Structure browser"])
+
+
+class RigBonus(Schema):
+    category: str
+    materials: Optional[float] = None
+    time: Optional[float] = None
+    cost: Optional[float] = None
+    yield_bonus: Optional[float] = None
 
 
 class LocationModule(Schema):
@@ -23,6 +32,18 @@ class LocationModule(Schema):
     size: str
     label: str
     group: str = ""
+    tier: str = ""
+    best_tier: str = ""
+    is_best: bool = False
+    use: str = ""
+    bonuses: List[RigBonus] = []
+    upgrade: List[RigBonus] = []
+
+
+class LocationService(Schema):
+    name: str
+    label: str
+    type_id: Optional[int]
 
 
 class LocationHolding(Schema):
@@ -44,6 +65,7 @@ class LocationCard(Schema):
     deployment: bool
     fleets: bool
     freight: bool
+    freight_route: bool
     market: bool
     prices: bool
     industry_orders: int
@@ -52,6 +74,13 @@ class LocationCard(Schema):
     good_for: List[str]
     rigs: List[LocationModule]
     services: List[str]
+    service_modules: List[LocationService]
+    industry: bool
+    manufacturing_index: Optional[float]
+    reaction_index: Optional[float]
+    facility_tax: Optional[float]
+    index_discount: float
+    office_fee_isk: int
     fitting_scanned_at: Optional[datetime]
     reinforce_hour: Optional[int]
     route_count: int
@@ -76,8 +105,16 @@ class LocationChangeEntry(Schema):
     character_id: Optional[int]
 
 
+class LocationRouteHere(Schema):
+    origin: str
+    isk_per_m3: float
+    route_type: str
+
+
 class LocationDetail(LocationCard):
     description: str
+    planner_systems: List[str]
+    routes_here: List[LocationRouteHere]
     fitting: List[LocationModule]
     audience_tribe_group_ids: List[int]
     changes: List[LocationChangeEntry]
@@ -97,6 +134,7 @@ class LocationPatch(Schema):
     market_active: Optional[bool] = None
     prices_active: Optional[bool] = None
     deployment_active: Optional[bool] = None
+    freight_route_active: Optional[bool] = None
 
 
 class LocationFittingPaste(Schema):
@@ -185,6 +223,32 @@ class LocationAttention(Schema):
     location_id: Optional[int]
 
 
+class HoldingItem(Schema):
+    type_name: str
+    count: int
+
+
+class HoldingPilot(Schema):
+    character_id: int
+    name: str
+    characters: List[str]
+    items: int
+    top_items: List[HoldingItem]
+
+
+class HoldingType(Schema):
+    type_id: int
+    type_name: str
+    count: int
+    holders: int
+
+
+class LocationHoldings(Schema):
+    items: int
+    pilots: List[HoldingPilot]
+    by_item: List[HoldingType]
+
+
 class LocationManageRow(Schema):
     location_id: int
     name: str
@@ -257,12 +321,70 @@ def _station_types(rows) -> dict:
     )
 
 
-def _card(
-    location, you, orders, security=None, routes=None, stations=None
-) -> dict:
+class CardContext:
+    """Everything the cards need, fetched once for a list of locations."""
+
+    def __init__(self, user, rows):
+        ids = [row.location_id for row in rows]
+        self.you = svc.holdings(user, ids)
+        self.orders = svc.open_order_counts(ids)
+        self.security = _security_map(row.solar_system_id for row in rows)
+        self.routes = svc.route_counts(ids)
+        self.stations = _station_types(rows)
+        self.indices = caps.cost_indices(row.solar_system_id for row in rows)
+        self.service_ids = caps.service_type_ids(
+            m.get("name", "")
+            for row in rows
+            for m in (row.fitting or [])
+            if m.get("slot") == "service"
+        )
+
+
+def _rigs(fitting, sec) -> List[dict]:
+    return [
+        {
+            **m,
+            # Labels come from the rig name, so older scans pick up renames.
+            "label": svc.classify_module(m.get("name", "")).label
+            or m.get("label", ""),
+            "group": svc.rig_group(m.get("name", "")),
+            **caps.rig_details(m, sec),
+        }
+        for m in fitting
+        if m.get("slot") == "rig"
+    ]
+
+
+def _services(fitting, service_ids) -> List[dict]:
+    return [
+        {
+            "name": m.get("name", ""),
+            "label": m.get("label", ""),
+            "type_id": service_ids.get(m.get("name", "")),
+        }
+        for m in fitting
+        if m.get("slot") == "service"
+    ]
+
+
+def _costs(location, ctx: CardContext) -> dict:
+    facility = facility_key_for_system(location.solar_system_id)
+    manufacturing, reaction = ctx.indices.get(
+        location.solar_system_id, (None, None)
+    )
+    return {
+        "planner_facility": facility,
+        "manufacturing_index": manufacturing,
+        "reaction_index": reaction,
+        **caps.facility_costs(facility, location.location_name),
+        "office_fee_isk": caps.OFFICE_FEE_ISK,
+    }
+
+
+def _card(location, ctx: CardContext) -> dict:
     fitting = location.fitting or []
-    type_id = location.type_id or (stations or {}).get(location.location_id)
-    sec = (security or {}).get(location.solar_system_id)
+    type_id = location.type_id or ctx.stations.get(location.location_id)
+    sec = ctx.security.get(location.solar_system_id)
     return {
         "location_id": location.location_id,
         "name": location.location_name,
@@ -277,26 +399,25 @@ def _card(
         "deployment": location.deployment_active,
         "fleets": location.fleets_active,
         "freight": location.freight_active,
+        "freight_route": location.freight_route_active,
         "market": location.market_active,
         "prices": location.prices_active,
-        "industry_orders": orders.get(location.location_id, 0),
+        "industry_orders": ctx.orders.get(location.location_id, 0),
         "audience": location.audience,
         "audience_groups": _group_names(location),
         "good_for": location.good_for or [],
-        "rigs": [
-            {**m, "group": svc.rig_group(m.get("name", ""))}
-            for m in fitting
-            if m.get("slot") == "rig"
-        ],
+        "rigs": _rigs(fitting, sec),
         "services": [
             m.get("label", "") for m in fitting if m.get("slot") == "service"
         ],
+        "service_modules": _services(fitting, ctx.service_ids),
+        "industry": caps.is_industry(fitting),
         "fitting_scanned_at": location.fitting_scanned_at,
         "reinforce_hour": location.reinforce_hour,
-        "route_count": (routes or {}).get(location.location_id, 0),
-        "planner_facility": facility_key_for_system(location.solar_system_id),
+        "route_count": ctx.routes.get(location.location_id, 0),
         "freighter_dock": location.type_id not in MEDIUM_STRUCTURES,
-        "you": you.get(location.location_id, {"clones": 0, "items": 0}),
+        "you": ctx.you.get(location.location_id, {"clones": 0, "items": 0}),
+        **_costs(location, ctx),
     }
 
 
@@ -320,16 +441,9 @@ def list_locations(request):
         )
         .order_by("-staging_active", "-deployment_active", "location_name")
     )
-    ids = [row.location_id for row in rows]
-    you = svc.holdings(user, ids)
-    orders = svc.open_order_counts(ids)
-    security = _security_map(row.solar_system_id for row in rows)
-    routes = svc.route_counts(ids)
-    stations = _station_types(rows)
+    ctx = CardContext(user, rows)
     return {
-        "locations": [
-            _card(row, you, orders, security, routes, stations) for row in rows
-        ],
+        "locations": [_card(row, ctx) for row in rows],
         "can_manage": bool(user) and svc.can_manage(user),
         "can_add": bool(user) and svc.can_view_alliance(user),
     }
@@ -608,18 +722,12 @@ def get_location(request, location_id: int):
     )
     if location is None:
         return 404, {"detail": "Location not found."}
-    ids = [location.location_id]
-    card = _card(
-        location,
-        svc.holdings(user, ids),
-        svc.open_order_counts(ids),
-        _security_map([location.solar_system_id]),
-        svc.route_counts(ids),
-        _station_types([location]),
-    )
+    card = _card(location, CardContext(user, [location]))
     card.update(
         {
             "description": location.description,
+            "planner_systems": _planner_systems(),
+            "routes_here": svc.routes_here(location.location_id),
             "fitting": location.fitting or [],
             "audience_tribe_group_ids": [
                 row.tribe_group_id
@@ -631,6 +739,13 @@ def get_location(request, location_id: int):
         }
     )
     return card
+
+
+def _planner_systems() -> List[str]:
+    # pylint: disable=import-outside-toplevel
+    from industry.helpers.facility_api import FACILITY_SYSTEM_NAMES
+
+    return sorted(FACILITY_SYSTEM_NAMES.values())
 
 
 def _forbidden():
@@ -735,6 +850,7 @@ SITE_FLAGS = (
     ("market_active", "Market"),
     ("prices_active", "Price tracking"),
     ("deployment_active", "Deployment"),
+    ("freight_route_active", "Freight route"),
 )
 
 
@@ -786,6 +902,23 @@ def patch_location(request, location_id: int, payload: LocationPatch):
     _patch_audience(location, request.user, sent)
     location.save()
     return get_location(request, location_id)
+
+
+@router.get(
+    "/{location_id}/holdings",
+    auth=AuthBearer(),
+    response={200: LocationHoldings, 403: ErrorResponse, 404: ErrorResponse},
+    description=(
+        "Which alliance pilots hold items in this structure. Structure "
+        "managers only: it names pilots."
+    ),
+)
+def get_holdings(request, location_id: int):
+    if not svc.can_manage(request.user):
+        return _forbidden()
+    if not EveLocation.objects.filter(location_id=location_id).exists():
+        return 404, {"detail": "Location not found."}
+    return svc.alliance_holdings(location_id)
 
 
 @router.post(

@@ -23823,6 +23823,91 @@
         "title": "HelpTribeGroupOption",
         "type": "object"
       },
+      "HoldingItem": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "type_name": {
+            "title": "Type Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type_name",
+          "count"
+        ],
+        "title": "HoldingItem",
+        "type": "object"
+      },
+      "HoldingPilot": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "characters": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "items": {
+            "title": "Items",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "top_items": {
+            "items": {
+              "$ref": "#/components/schemas/HoldingItem"
+            },
+            "title": "Top Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "character_id",
+          "name",
+          "characters",
+          "items",
+          "top_items"
+        ],
+        "title": "HoldingPilot",
+        "type": "object"
+      },
+      "HoldingType": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "holders": {
+            "title": "Holders",
+            "type": "integer"
+          },
+          "type_id": {
+            "title": "Type Id",
+            "type": "integer"
+          },
+          "type_name": {
+            "title": "Type Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type_id",
+          "type_name",
+          "count",
+          "holders"
+        ],
+        "title": "HoldingType",
+        "type": "object"
+      },
       "HostGroupRef": {
         "description": "The tribe group a fleet, post or event is published as.",
         "properties": {
@@ -26517,6 +26602,17 @@
             "title": "Deployment",
             "type": "boolean"
           },
+          "facility_tax": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Facility Tax"
+          },
           "fitting_scanned_at": {
             "anyOf": [
               {
@@ -26537,6 +26633,10 @@
             "title": "Freight",
             "type": "boolean"
           },
+          "freight_route": {
+            "title": "Freight Route",
+            "type": "boolean"
+          },
           "freighter_dock": {
             "title": "Freighter Dock",
             "type": "boolean"
@@ -26547,6 +26647,14 @@
             },
             "title": "Good For",
             "type": "array"
+          },
+          "index_discount": {
+            "title": "Index Discount",
+            "type": "number"
+          },
+          "industry": {
+            "title": "Industry",
+            "type": "boolean"
           },
           "industry_orders": {
             "title": "Industry Orders",
@@ -26560,6 +26668,17 @@
             "title": "Location Id",
             "type": "integer"
           },
+          "manufacturing_index": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manufacturing Index"
+          },
           "market": {
             "title": "Market",
             "type": "boolean"
@@ -26567,6 +26686,10 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "office_fee_isk": {
+            "title": "Office Fee Isk",
+            "type": "integer"
           },
           "planner_facility": {
             "anyOf": [
@@ -26582,6 +26705,17 @@
           "prices": {
             "title": "Prices",
             "type": "boolean"
+          },
+          "reaction_index": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reaction Index"
           },
           "reinforce_hour": {
             "anyOf": [
@@ -26615,6 +26749,13 @@
               }
             ],
             "title": "Security"
+          },
+          "service_modules": {
+            "items": {
+              "$ref": "#/components/schemas/LocationService"
+            },
+            "title": "Service Modules",
+            "type": "array"
           },
           "services": {
             "items": {
@@ -26672,6 +26813,7 @@
           "deployment",
           "fleets",
           "freight",
+          "freight_route",
           "market",
           "prices",
           "industry_orders",
@@ -26680,6 +26822,13 @@
           "good_for",
           "rigs",
           "services",
+          "service_modules",
+          "industry",
+          "manufacturing_index",
+          "reaction_index",
+          "facility_tax",
+          "index_discount",
+          "office_fee_isk",
           "fitting_scanned_at",
           "reinforce_hour",
           "route_count",
@@ -26792,6 +26941,17 @@
             "title": "Description",
             "type": "string"
           },
+          "facility_tax": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Facility Tax"
+          },
           "fitting": {
             "items": {
               "$ref": "#/components/schemas/LocationModule"
@@ -26819,6 +26979,10 @@
             "title": "Freight",
             "type": "boolean"
           },
+          "freight_route": {
+            "title": "Freight Route",
+            "type": "boolean"
+          },
           "freighter_dock": {
             "title": "Freighter Dock",
             "type": "boolean"
@@ -26829,6 +26993,14 @@
             },
             "title": "Good For",
             "type": "array"
+          },
+          "index_discount": {
+            "title": "Index Discount",
+            "type": "number"
+          },
+          "industry": {
+            "title": "Industry",
+            "type": "boolean"
           },
           "industry_orders": {
             "title": "Industry Orders",
@@ -26842,6 +27014,17 @@
             "title": "Location Id",
             "type": "integer"
           },
+          "manufacturing_index": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manufacturing Index"
+          },
           "market": {
             "title": "Market",
             "type": "boolean"
@@ -26849,6 +27032,10 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "office_fee_isk": {
+            "title": "Office Fee Isk",
+            "type": "integer"
           },
           "planner_facility": {
             "anyOf": [
@@ -26861,9 +27048,27 @@
             ],
             "title": "Planner Facility"
           },
+          "planner_systems": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Planner Systems",
+            "type": "array"
+          },
           "prices": {
             "title": "Prices",
             "type": "boolean"
+          },
+          "reaction_index": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reaction Index"
           },
           "reinforce_hour": {
             "anyOf": [
@@ -26887,6 +27092,13 @@
             "title": "Route Count",
             "type": "integer"
           },
+          "routes_here": {
+            "items": {
+              "$ref": "#/components/schemas/LocationRouteHere"
+            },
+            "title": "Routes Here",
+            "type": "array"
+          },
           "security": {
             "anyOf": [
               {
@@ -26897,6 +27109,13 @@
               }
             ],
             "title": "Security"
+          },
+          "service_modules": {
+            "items": {
+              "$ref": "#/components/schemas/LocationService"
+            },
+            "title": "Service Modules",
+            "type": "array"
           },
           "services": {
             "items": {
@@ -26954,6 +27173,7 @@
           "deployment",
           "fleets",
           "freight",
+          "freight_route",
           "market",
           "prices",
           "industry_orders",
@@ -26962,6 +27182,13 @@
           "good_for",
           "rigs",
           "services",
+          "service_modules",
+          "industry",
+          "manufacturing_index",
+          "reaction_index",
+          "facility_tax",
+          "index_discount",
+          "office_fee_isk",
           "fitting_scanned_at",
           "reinforce_hour",
           "route_count",
@@ -26969,6 +27196,8 @@
           "freighter_dock",
           "you",
           "description",
+          "planner_systems",
+          "routes_here",
           "fitting",
           "audience_tribe_group_ids",
           "changes",
@@ -27103,6 +27332,35 @@
           "items"
         ],
         "title": "LocationHolding",
+        "type": "object"
+      },
+      "LocationHoldings": {
+        "properties": {
+          "by_item": {
+            "items": {
+              "$ref": "#/components/schemas/HoldingType"
+            },
+            "title": "By Item",
+            "type": "array"
+          },
+          "items": {
+            "title": "Items",
+            "type": "integer"
+          },
+          "pilots": {
+            "items": {
+              "$ref": "#/components/schemas/HoldingPilot"
+            },
+            "title": "Pilots",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items",
+          "pilots",
+          "by_item"
+        ],
+        "title": "LocationHoldings",
         "type": "object"
       },
       "LocationList": {
@@ -27325,10 +27583,28 @@
       },
       "LocationModule": {
         "properties": {
+          "best_tier": {
+            "default": "",
+            "title": "Best Tier",
+            "type": "string"
+          },
+          "bonuses": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/RigBonus"
+            },
+            "title": "Bonuses",
+            "type": "array"
+          },
           "group": {
             "default": "",
             "title": "Group",
             "type": "string"
+          },
+          "is_best": {
+            "default": false,
+            "title": "Is Best",
+            "type": "boolean"
           },
           "label": {
             "title": "Label",
@@ -27344,6 +27620,24 @@
           },
           "slot": {
             "title": "Slot",
+            "type": "string"
+          },
+          "tier": {
+            "default": "",
+            "title": "Tier",
+            "type": "string"
+          },
+          "upgrade": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/RigBonus"
+            },
+            "title": "Upgrade",
+            "type": "array"
+          },
+          "use": {
+            "default": "",
+            "title": "Use",
             "type": "string"
           }
         },
@@ -27525,6 +27819,17 @@
             ],
             "title": "Freight Active"
           },
+          "freight_route_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Freight Route Active"
+          },
           "good_for": {
             "anyOf": [
               {
@@ -27683,6 +27988,59 @@
           "name"
         ],
         "title": "LocationRetired",
+        "type": "object"
+      },
+      "LocationRouteHere": {
+        "properties": {
+          "isk_per_m3": {
+            "title": "Isk Per M3",
+            "type": "number"
+          },
+          "origin": {
+            "title": "Origin",
+            "type": "string"
+          },
+          "route_type": {
+            "title": "Route Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "origin",
+          "isk_per_m3",
+          "route_type"
+        ],
+        "title": "LocationRouteHere",
+        "type": "object"
+      },
+      "LocationService": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type Id"
+          }
+        },
+        "required": [
+          "name",
+          "label",
+          "type_id"
+        ],
+        "title": "LocationService",
         "type": "object"
       },
       "LocationSubmissionRequest": {
@@ -42167,6 +42525,63 @@
           "queue"
         ],
         "title": "ReviewResponse",
+        "type": "object"
+      },
+      "RigBonus": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost"
+          },
+          "materials": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Materials"
+          },
+          "time": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time"
+          },
+          "yield_bonus": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yield Bonus"
+          }
+        },
+        "required": [
+          "category"
+        ],
+        "title": "RigBonus",
         "type": "object"
       },
       "RightNow": {
@@ -84183,6 +84598,65 @@
           }
         ],
         "summary": "Post Fitting",
+        "tags": [
+          "Structures",
+          "Structure browser"
+        ]
+      }
+    },
+    "/api/structures/locations/{location_id}/holdings": {
+      "get": {
+        "description": "Which alliance pilots hold items in this structure. Structure managers only: it names pilots.",
+        "operationId": "structures_location_router_get_holdings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "location_id",
+            "required": true,
+            "schema": {
+              "title": "Location Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationHoldings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Holdings",
         "tags": [
           "Structures",
           "Structure browser"
