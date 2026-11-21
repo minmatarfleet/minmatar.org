@@ -207,15 +207,19 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         flex-direction: column;
         min-width: 0;
 
+        b,
+        small {
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
         b {
             color: var(--highlight);
         }
 
         small {
-            overflow: hidden;
             font-size: var(--step--1);
-            white-space: nowrap;
-            text-overflow: ellipsis;
             color: var(--text-muted);
         }
     }
