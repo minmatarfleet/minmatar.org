@@ -646,6 +646,13 @@
         }
     },
     {
+        "slug": "universe",
+        "path": "/universe/",
+        "publish": true,
+        "description": "page_finder.universe.description",
+        "keywords": ["universe", "map", "structures", "locations", "timers", "moons", "wormholes"]
+    },
+    {
         "slug": "structures",
         "path": "/structures/",
         "publish": true,

@@ -1,0 +1,128 @@
+---
+/** Loading placeholder for a Universe tab: a filter row, then cards or a table. */
+interface Props {
+    variant?: 'cards' | 'table';
+    rows?:    number;
+}
+
+const {
+    variant = 'table',
+    rows = 8,
+} = Astro.props
+---
+
+<div class="[ universe-skeleton ]" aria-busy="true" aria-live="polite">
+    <span class="[ visually-hidden ]">Loading</span>
+    <div class="[ universe-skeleton__chips ]">
+        {Array.from({ length: 4 }).map(() => <div class="[ skel skel-chip ]"></div>)}
+    </div>
+    <div class="[ skel skel-search ]"></div>
+    {variant === 'cards'
+        ? (
+            <div class="[ universe-skeleton__cards ]">
+                {Array.from({ length: 6 }).map(() =>
+                    <div class="[ universe-skeleton__card ]">
+                        <div class="[ skel skel-art ]"></div>
+                        <div class="[ skel skel-line skel-line--title ]"></div>
+                        <div class="[ skel skel-line skel-line--sub ]"></div>
+                    </div>
+                )}
+            </div>
+        )
+        : (
+            <div class="[ universe-skeleton__table ]">
+                {Array.from({ length: rows }).map(() =>
+                    <div class="[ universe-skeleton__row ]">
+                        <div class="[ skel skel-icon ]"></div>
+                        <div class="[ skel skel-line skel-line--title ]"></div>
+                        <div class="[ skel skel-line ]"></div>
+                        <div class="[ skel skel-line ]"></div>
+                    </div>
+                )}
+            </div>
+        )
+    }
+</div>
+
+<style lang="scss">
+    @use '../../../styles/mixins/skeleton';
+
+    .universe-skeleton {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .universe-skeleton .skel {
+        border-radius: 2px;
+        @include skeleton.shimmer;
+    }
+
+    .universe-skeleton__chips {
+        display: flex;
+        gap: var(--space-xs);
+    }
+
+    .skel-chip {
+        inline-size: 6rem;
+        block-size: 2.5rem;
+    }
+
+    .skel-search {
+        block-size: 3rem;
+    }
+
+    .universe-skeleton__cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+        gap: var(--space-s);
+    }
+
+    .universe-skeleton__card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding-block-end: var(--space-s);
+        border: 1px solid var(--hairline);
+    }
+
+    .skel-art {
+        block-size: 14rem;
+    }
+
+    .universe-skeleton__table {
+        border: 1px solid var(--hairline);
+    }
+
+    .universe-skeleton__row {
+        display: grid;
+        grid-template-columns: 2.5rem 2fr 1fr 1fr;
+        gap: var(--space-m);
+        align-items: center;
+        padding: var(--space-xs) var(--space-s);
+        border-block-start: 1px solid var(--hairline);
+    }
+
+    .skel-icon {
+        block-size: 2.5rem;
+    }
+
+    .skel-line {
+        block-size: 0.9rem;
+        inline-size: 70%;
+    }
+
+    .skel-line--title {
+        inline-size: 85%;
+    }
+
+    .skel-line--sub {
+        inline-size: 45%;
+        margin-inline: var(--space-s);
+    }
+
+    .universe-skeleton__card .skel-line--title {
+        margin-inline: var(--space-s);
+        inline-size: 60%;
+    }
+</style>

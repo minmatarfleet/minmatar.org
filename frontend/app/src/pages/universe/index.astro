@@ -1,0 +1,103 @@
+---
+/**
+ * Universe: where we live (Locations), what stands in space (Structures and
+ * their Timers), what we scanned (Moons), and soon Wormholes. The masthead
+ * and tabs stay the same on every tab; each tab's body loads as a partial.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_request_user } from '@helpers/request_user'
+import { login_redirect } from '@helpers/http_responses'
+import { get_gates, can } from '@helpers/gates'
+
+const { user } = get_request_user(Astro)
+if (!user) return login_redirect(Astro)
+
+const gates = await get_gates(Astro)
+const show_structures = can(gates, 'universe.structures')
+const show_timers = can(gates, 'structures.timers.view')
+const show_moons = can(gates, 'moons.view')
+
+// The structure browser keeps its view and rig filters in the page query.
+const locations_query = new URLSearchParams()
+const view = Astro.url.searchParams.get('view')
+if (view) locations_query.set('view', view)
+Astro.url.searchParams.getAll('rigs').forEach((rigs) => locations_query.append('rigs', rigs))
+const partial = (name: string, query = '') => translatePath(`/partials/universe_${name}_component/${query ? `?${query}` : ''}`)
+
+const tabs = [
+    { id: 'locations', label: t('universe.tab.locations') },
+    ...(show_structures ? [{ id: 'structures', label: t('universe.tab.structures') }] : []),
+    ...(show_timers ? [{ id: 'timers', label: t('universe.tab.timers') }] : []),
+    ...(show_moons ? [{ id: 'moons', label: t('universe.tab.moons') }] : []),
+    { id: 'wormholes', label: t('universe.tab.wormholes'), meta: t('universe.soon') },
+]
+
+const page_title = t('universe.page_title')
+
+import Viewport from '@layouts/Viewport.astro'
+import PageDefault from '@components/page/PageDefault.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import SectionTabs from '@components/blocks/SectionTabs.astro'
+import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import UniverseSkeleton from '@components/blocks/universe/UniverseSkeleton.astro'
+---
+
+<Viewport title={page_title} meta_description={t('universe.description')} components={{ modal: true, confirm_dialog: true }}>
+    <PageDefault
+        cover={{
+            image: '/images/intel-cover.jpg',
+            image_990: '/images/intel-cover.jpg',
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <Flexblock slot="header" gap="var(--space-2xs)">
+            <PageTitle>{page_title}</PageTitle>
+            <small>{t('universe.lead')}</small>
+        </Flexblock>
+
+        <SectionTabs aria_label={t('universe.tabs_label')} id_prefix="universe" tabs={tabs}>
+            <SectionTabPanel id="locations" id_prefix="universe" is_default={true}>
+                <LazyPartial url={partial('locations', locations_query.toString())} swap="outerHTML">
+                    <UniverseSkeleton variant="cards" />
+                </LazyPartial>
+            </SectionTabPanel>
+
+            {show_structures &&
+                <SectionTabPanel id="structures" id_prefix="universe">
+                    <LazyPartial url={partial('structures')} trigger="reveal" swap="outerHTML">
+                        <UniverseSkeleton variant="table" />
+                    </LazyPartial>
+                </SectionTabPanel>
+            }
+
+            {show_timers &&
+                <SectionTabPanel id="timers" id_prefix="universe">
+                    <LazyPartial url={partial('timers')} trigger="reveal" swap="outerHTML">
+                        <UniverseSkeleton variant="table" />
+                    </LazyPartial>
+                </SectionTabPanel>
+            }
+
+            {show_moons &&
+                <SectionTabPanel id="moons" id_prefix="universe">
+                    <LazyPartial url={partial('moons')} trigger="reveal" swap="outerHTML">
+                        <UniverseSkeleton variant="table" />
+                    </LazyPartial>
+                </SectionTabPanel>
+            }
+
+            <SectionTabPanel id="wormholes" id_prefix="universe">
+                <ComponentBlock>
+                    <EmptyState title={t('universe.wormholes.title')} hint={t('universe.wormholes.hint')} />
+                </ComponentBlock>
+            </SectionTabPanel>
+        </SectionTabs>
+    </PageDefault>
+</Viewport>

@@ -10905,6 +10905,181 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/universe/moons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Moons
+         * @description Every moon we know about. Contents (ores, scans, ISK a month) are
+         *     null unless the caller may see them, so the shape never changes.
+         */
+        get: operations["universe_router_list_moons"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/universe/moons/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report Moons
+         * @description Paste from the moon survey scanner. Any pilot who sees moons can
+         *     report them; each moon's scan is kept.
+         */
+        post: operations["universe_router_report_moons"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/universe/structures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Structures
+         * @description Every structure the caller may see, soonest timer first.
+         */
+        get: operations["universe_router_list_structures"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/universe/structures/match": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Match Structures
+         * @description Step one of a report: the structures in that system the reporter
+         *     can see with the same type or a similar name.
+         */
+        post: operations["universe_router_match_structures"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/universe/structures/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Report Structure */
+        post: operations["universe_router_report_structure"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/universe/structures/{structure_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Structure */
+        get: operations["universe_router_get_structure"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/universe/structures/{structure_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Structure
+         * @description A pilot saw it still standing.
+         */
+        post: operations["universe_router_confirm_structure"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/universe/structures/{structure_id}/visibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Set Visibility */
+        patch: operations["universe_router_set_visibility"];
+        trace?: never;
+    };
+    "/api/universe/timers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Timers
+         * @description Every structure timer, across all campaigns: upcoming soonest first,
+         *     then the last week's finished timers, newest first.
+         */
+        get: operations["universe_router_list_timers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/": {
         parameters: {
             query?: never;
@@ -24717,6 +24892,13 @@ export interface components {
             /** Reported By */
             reported_by: string;
         };
+        /** MoonOre */
+        MoonOre: {
+            /** Ore */
+            ore: string;
+            /** Yield Percent */
+            yield_percent: number;
+        };
         /** MoonParsingResult */
         MoonParsingResult: {
             /**
@@ -24749,6 +24931,22 @@ export interface components {
              * @default 0
              */
             systems_ignored?: number;
+        };
+        /** MoonReportRequest */
+        MoonReportRequest: {
+            /** Paste */
+            paste: string;
+        };
+        /** MoonScanRef */
+        MoonScanRef: {
+            /**
+             * Reported At
+             * Format: date-time
+             */
+            reported_at: string;
+            reported_by?: components["schemas"]["PilotRef"] | null;
+            /** Revenue */
+            revenue?: number | null;
         };
         /** MoonSummaryResponse */
         MoonSummaryResponse: {
@@ -26080,6 +26278,16 @@ export interface components {
             user_id: number;
             /** Username */
             username: string;
+        };
+        /** PilotRef */
+        PilotRef: {
+            /** Character Id */
+            character_id?: number | null;
+            /**
+             * Name
+             * @default
+             */
+            name?: string;
         };
         /** PlanCharacterResponse */
         PlanCharacterResponse: {
@@ -30137,6 +30345,25 @@ export interface components {
             /** Timer State */
             timer_state?: string | null;
         };
+        /** StructureMatchRequest */
+        StructureMatchRequest: {
+            /**
+             * Name
+             * @default
+             */
+            name?: string;
+            /** System Name */
+            system_name: string;
+            /** Type Id */
+            type_id: number;
+        };
+        /** StructureMatchResponse */
+        StructureMatchResponse: {
+            /** Candidates */
+            candidates: components["schemas"]["UniverseStructure"][];
+            /** System Found */
+            system_found: boolean;
+        };
         /**
          * StructureNotificationResponse
          * @description Response model for structure notification API
@@ -30153,6 +30380,50 @@ export interface components {
             timestamp: string;
             /** Type */
             type: string;
+        };
+        /** StructureReportRequest */
+        StructureReportRequest: {
+            /**
+             * Affiliated Alliance Name
+             * @default
+             */
+            affiliated_alliance_name?: string;
+            /**
+             * Alliance Name
+             * @default
+             */
+            alliance_name?: string;
+            /**
+             * Corporation Name
+             * @default
+             */
+            corporation_name?: string;
+            /**
+             * Fitting
+             * @default
+             */
+            fitting?: string;
+            /**
+             * Name
+             * @default
+             */
+            name?: string;
+            /** Reinforce Hour */
+            reinforce_hour?: number | null;
+            /** Structure Id */
+            structure_id?: number | null;
+            /** System Name */
+            system_name: string;
+            /** Type Id */
+            type_id: number;
+        };
+        /** StructureReportResponse */
+        StructureReportResponse: {
+            /**
+             * Status
+             * @constant
+             */
+            status: "recorded";
         };
         /**
          * StructureResponse
@@ -32115,6 +32386,165 @@ export interface components {
              */
             ticker?: string;
         };
+        /** UniverseMoon */
+        UniverseMoon: {
+            /** Id */
+            id: number;
+            /** Last Scanned At */
+            last_scanned_at?: string | null;
+            /** Monthly Revenue */
+            monthly_revenue?: number | null;
+            /** Moon */
+            moon: number;
+            /** Ores */
+            ores?: components["schemas"]["MoonOre"][] | null;
+            /** Planet */
+            planet: string;
+            /** Rarity */
+            rarity?: number | null;
+            reported_by?: components["schemas"]["PilotRef"] | null;
+            /** Scans */
+            scans?: components["schemas"]["MoonScanRef"][] | null;
+            /** System */
+            system: string;
+        };
+        /** UniverseMoonList */
+        UniverseMoonList: {
+            /** Can Report */
+            can_report: boolean;
+            /** Can View Contents */
+            can_view_contents: boolean;
+            /** Moons */
+            moons: components["schemas"]["UniverseMoon"][];
+        };
+        /** UniverseStructure */
+        UniverseStructure: {
+            /**
+             * Affiliated Alliance Name
+             * @default
+             */
+            affiliated_alliance_name?: string;
+            /**
+             * Alliance Name
+             * @default
+             */
+            alliance_name?: string;
+            /**
+             * Can Change Visibility
+             * @default false
+             */
+            can_change_visibility?: boolean;
+            /** Corporation Id */
+            corporation_id?: number | null;
+            /**
+             * Corporation Name
+             * @default
+             */
+            corporation_name?: string;
+            /** Esi Structure Id */
+            esi_structure_id?: number | null;
+            /** Fitting */
+            fitting?: string | null;
+            /** Id */
+            id: number;
+            /** Last Confirmed At */
+            last_confirmed_at?: string | null;
+            last_confirmed_by?: components["schemas"]["PilotRef"] | null;
+            /** Name */
+            name: string;
+            /** Reinforce Hour */
+            reinforce_hour?: number | null;
+            /** Reported At */
+            reported_at?: string | null;
+            reported_by?: components["schemas"]["PilotRef"] | null;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "esi" | "reported";
+            /** State */
+            state: string;
+            /** State Timer End */
+            state_timer_end?: string | null;
+            /** System Id */
+            system_id: number;
+            /** System Name */
+            system_name: string;
+            /** Type Id */
+            type_id: number;
+            /** Type Name */
+            type_name: string;
+            /**
+             * Visibility
+             * @enum {string}
+             */
+            visibility: "alliance" | "corporation" | "private";
+        };
+        /** UniverseStructureList */
+        UniverseStructureList: {
+            /** Can Report */
+            can_report: boolean;
+            /** Structures */
+            structures: components["schemas"]["UniverseStructure"][];
+        };
+        /** UniverseTimer */
+        UniverseTimer: {
+            /**
+             * Alliance Name
+             * @default
+             */
+            alliance_name?: string;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /**
+             * Campaign Name
+             * @default
+             */
+            campaign_name?: string;
+            /**
+             * Campaign Slug
+             * @default
+             */
+            campaign_slug?: string;
+            /**
+             * Corporation Name
+             * @default
+             */
+            corporation_name?: string;
+            /**
+             * Done
+             * @default false
+             */
+            done?: boolean;
+            /** Final */
+            final: boolean;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Stage */
+            stage: number;
+            /** State */
+            state: string;
+            /** Structure Type */
+            structure_type: string;
+            /** System */
+            system: string;
+            /** Type Id */
+            type_id?: number | null;
+            /** Type Name */
+            type_name: string;
+        };
+        /** UniverseTimerList */
+        UniverseTimerList: {
+            /** Can Add */
+            can_add: boolean;
+            /** Timers */
+            timers: components["schemas"]["UniverseTimer"][];
+        };
         /** UnknownCharacter */
         UnknownCharacter: {
             /** Character Id */
@@ -32363,6 +32793,14 @@ export interface components {
              * @default []
              */
             officer_corp_ids?: number[];
+        };
+        /** VisibilityRequest */
+        VisibilityRequest: {
+            /**
+             * Visibility
+             * @enum {string}
+             */
+            visibility: "alliance" | "corporation" | "private";
         };
         /** VolunteerRequest */
         VolunteerRequest: {
@@ -59801,6 +60239,325 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    universe_router_list_moons: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UniverseMoonList"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    universe_router_report_moons: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoonReportRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoonParsingResult"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    universe_router_list_structures: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UniverseStructureList"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    universe_router_match_structures: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StructureMatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StructureMatchResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    universe_router_report_structure: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StructureReportRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StructureReportResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    universe_router_get_structure: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                structure_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UniverseStructure"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    universe_router_confirm_structure: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                structure_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UniverseStructure"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    universe_router_set_visibility: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                structure_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisibilityRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UniverseStructure"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    universe_router_list_timers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UniverseTimerList"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

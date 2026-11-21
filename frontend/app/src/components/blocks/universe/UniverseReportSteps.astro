@@ -1,0 +1,207 @@
+---
+/**
+ * The body of the Report a structure dialog, one step at a time:
+ * Find → Match → Details → Sent. Each step posts to
+ * universe_structure_report_component, which renders the next one; what the
+ * pilot entered so far travels along as hidden fields. The step strip and
+ * layout are the Add a structure dialog's (StructureAddSteps).
+ */
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { UniverseStructure } from '@dtypes/api.minmatar.org'
+import { get_item_icon } from '@helpers/eve_image_server'
+
+export interface UniverseReportState {
+    system_name:    string;
+    type_id:        number | null;
+    name:           string;
+    structure_id:   number | null;
+}
+
+interface Props {
+    step:           'find' | 'match' | 'details' | 'sent';
+    state?:         Partial<UniverseReportState>;
+    candidates?:    UniverseStructure[];
+    picked?:        UniverseStructure | null;
+    error?:         string | null;
+}
+
+const { step, candidates = [], picked = null, error = null } = Astro.props
+const state: UniverseReportState = { system_name: '', type_id: null, name: '', structure_id: null, ...(Astro.props.state ?? {}) }
+
+// Types a pilot can report; the backend holds the same list.
+const REPORTABLE_TYPES: [number, string][] = [
+    [35832, 'Astrahus'], [35833, 'Fortizar'], [35834, 'Keepstar'],
+    [35825, 'Raitaru'], [35826, 'Azbel'], [35827, 'Sotiyo'],
+    [35835, 'Athanor'], [35836, 'Tatara'],
+    [35841, 'Ansiblex Jump Gate'], [81826, 'Metenox Moon Drill'],
+]
+const type_name = REPORTABLE_TYPES.find(([id]) => id === state.type_id)?.[1] ?? ''
+
+const URL = translatePath('/partials/universe_structure_report_component/')
+const STEPS = ['find', 'match', 'details', 'sent'] as const
+const current = STEPS.indexOf(step)
+const summary = [
+    [type_name, state.system_name].filter(Boolean).join(' · '),
+    picked?.name ?? (state.structure_id === null && current > 1 ? t('universe.report.none') : ''),
+    '',
+    '',
+]
+const go = (value: string) => JSON.stringify({ go: value })
+
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+---
+
+<div class="[ structure-add ]">
+    <h2>{t('universe.report.title')}</h2>
+
+    <ol class="[ structure-steps ]" aria-label={t('universe.report.steps')}>
+        {STEPS.map((name, index) => (
+            <li class:list={[{ done: index < current, now: index === current }]} aria-current={index === current ? 'step' : undefined}>
+                <span class="[ structure-steps__node ]">
+                    {index < current
+                        ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5 9-10" /></svg>
+                        : index + 1}
+                </span>
+                <span class="[ structure-steps__t ]">{t(t_key('universe.report.step_', name))}</span>
+                <span class="[ structure-steps__s ]">{index < current ? summary[index] : index === current ? t(t_key('universe.report.step_now_', name)) : ''}</span>
+            </li>
+        ))}
+    </ol>
+
+    {step !== 'find' &&
+        <Fragment>
+            <input type="hidden" name="system_name" value={state.system_name} />
+            <input type="hidden" name="type_id" value={state.type_id ?? ''} />
+            <input type="hidden" name="name" value={state.name} />
+        </Fragment>
+    }
+    {step === 'details' && <input type="hidden" name="structure_id" value={state.structure_id ?? ''} />}
+
+    {error && <p class="[ manage-field__error ]" role="alert">{error}</p>}
+
+    {step === 'find' &&
+        <div class="[ structure-add__body ]">
+            <div class="[ structure-add__two ]">
+                <ManageField label={t('universe.report.system')} for="universe-report-system">
+                    <Input id="universe-report-system" name="system_name" value={state.system_name} required />
+                </ManageField>
+                <ManageField label={t('universe.report.type')} for="universe-report-type">
+                    <Select id="universe-report-type" name="type_id" size="sm">
+                        {REPORTABLE_TYPES.map(([id, name]) => <option value={id} selected={state.type_id === id}>{name}</option>)}
+                    </Select>
+                </ManageField>
+            </div>
+            <ManageField label={t('universe.report.name')} for="universe-report-name">
+                <Input id="universe-report-name" name="name" value={state.name} />
+            </ManageField>
+            <div class="[ manage-actions ]">
+                <Button type="button" size="sm" color="fleet-red" hx-post={URL} hx-vals={go('match')} hx-target="#universe-report" hx-swap="innerHTML" hx-disabled-elt="this">{t('universe.report.next')}</Button>
+                <Button type="button" size="sm" color="transparent" x-on:click="close_dialog()">{t('cancel')}</Button>
+            </div>
+        </div>
+    }
+
+    {step === 'match' &&
+        <div class="[ structure-add__body ]">
+            <span class="[ manage-field__label ]">{candidates.length ? t('universe.report.is_it_one') : t('universe.report.no_candidates')}</span>
+            <fieldset class="[ universe-report__choices ]">
+                {candidates.map((structure, index) => (
+                    <label class="[ structure-add__result ]">
+                        <img src={get_item_icon(structure.type_id, 64)} alt="" width="56" height="56" />
+                        <div>
+                            <input type="radio" name="structure_id" value={structure.id} checked={index === 0} class="[ visually-hidden ]" />
+                            <b>{structure.name}</b>
+                            <small>{[structure.type_name, structure.system_name, structure.corporation_name].filter(Boolean).join(' · ')}</small>
+                        </div>
+                    </label>
+                ))}
+                <label class="[ structure-add__result ]">
+                    <span class="[ structure-add__glyph ]" aria-hidden="true"></span>
+                    <div>
+                        <input type="radio" name="structure_id" value="" checked={candidates.length === 0} class="[ visually-hidden ]" />
+                        <b>{t('universe.report.none')}</b>
+                        <small>{t('universe.report.none_hint')}</small>
+                    </div>
+                </label>
+            </fieldset>
+            <div class="[ manage-actions ]">
+                <Button type="button" size="sm" color="fleet-red" hx-post={URL} hx-vals={go('details')} hx-target="#universe-report" hx-swap="innerHTML">{t('universe.report.next')}</Button>
+                <Button type="button" size="sm" color="transparent" hx-post={URL} hx-vals={go('find')} hx-target="#universe-report" hx-swap="innerHTML">{t('universe.report.back')}</Button>
+            </div>
+        </div>
+    }
+
+    {step === 'details' &&
+        <div class="[ structure-add__body ]">
+            <div class="[ structure-add__two ]">
+                <ManageField label={t('universe.report.corporation')} for="universe-report-corp">
+                    <Input id="universe-report-corp" name="corporation_name" value={picked?.corporation_name ?? ''} />
+                </ManageField>
+                <ManageField label={t('universe.report.alliance')} for="universe-report-alliance">
+                    <Input id="universe-report-alliance" name="alliance_name" value={picked?.alliance_name ?? ''} />
+                </ManageField>
+                <ManageField label={t('universe.report.affiliated')} for="universe-report-affiliated">
+                    <Input id="universe-report-affiliated" name="affiliated_alliance_name" value={picked?.affiliated_alliance_name ?? ''} placeholder={t('universe.report.affiliated_placeholder')} />
+                </ManageField>
+                <ManageField label={t('universe.report.reinforce')} for="universe-report-hour">
+                    <Select id="universe-report-hour" name="reinforce_hour" size="sm">
+                        <option value="">{t('universe.report.not_known')}</option>
+                        {Array.from({ length: 24 }, (_, hour) => (
+                            <option value={hour} selected={picked?.reinforce_hour === hour}>{String(hour).padStart(2, '0')}:00 EVE</option>
+                        ))}
+                    </Select>
+                </ManageField>
+            </div>
+            <ManageField label={t('universe.report.fitting')} for="universe-report-fit">
+                <Textarea id="universe-report-fit" name="fitting" rows="5">{picked?.fitting ?? ''}</Textarea>
+            </ManageField>
+            <div class="[ manage-actions ]">
+                <Button type="button" size="sm" color="fleet-red" hx-post={URL} hx-vals={go('send')} hx-target="#universe-report" hx-swap="innerHTML" hx-disabled-elt="this">{t('universe.report.send')}</Button>
+                <Button type="button" size="sm" color="transparent" hx-post={URL} hx-vals={go('match')} hx-target="#universe-report" hx-swap="innerHTML">{t('universe.report.back')}</Button>
+            </div>
+        </div>
+    }
+
+    {step === 'sent' &&
+        <div class="[ structure-add__body ]">
+            <div class="[ structure-add__sent ]">
+                <h3>{t('universe.report.sent_title')}</h3>
+                <p>{t('universe.report.sent_body')}</p>
+            </div>
+            <div class="[ manage-actions ]">
+                <Button type="button" size="sm" color="fleet-red" x-on:click="close_dialog()">{t('universe.report.done')}</Button>
+                <Button type="button" size="sm" color="transparent" hx-post={URL} hx-vals={go('find')} hx-target="#universe-report" hx-swap="innerHTML">{t('universe.report.another')}</Button>
+            </div>
+        </div>
+    }
+</div>
+
+<style lang="scss" is:global>
+    .universe-report__choices {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        margin: 0;
+        padding: 0;
+        border: 0;
+
+        .structure-add__result {
+            cursor: pointer;
+        }
+
+        .structure-add__result:has(input:checked) {
+            border-color: var(--fleet-yellow);
+            background: color-mix(in srgb, var(--fleet-yellow) 8%, transparent);
+        }
+
+        .structure-add__result:has(input:focus-visible) {
+            outline: 2px solid var(--highlight);
+        }
+    }
+</style>

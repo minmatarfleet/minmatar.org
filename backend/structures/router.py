@@ -109,7 +109,7 @@ class EveStructureTimerResponse(BaseModel):
 def get_structures(request):
     if not can_use_feature(request.user, "structures.view"):
         return 403, None
-    structures = EveStructure.objects.all()
+    structures = EveStructure.objects.filter(source=EveStructure.SOURCE_ESI)
     response = []
     for structure in structures:
         response.append(

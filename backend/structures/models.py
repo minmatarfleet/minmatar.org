@@ -31,7 +31,7 @@ class EveStructure(MinmatarSoftDeleteModel):
     type_id = models.BigIntegerField()
     type_name = models.CharField(max_length=255)
     name = models.CharField(max_length=255)
-    reinforce_hour = models.IntegerField()
+    reinforce_hour = models.IntegerField(null=True, blank=True)
     fuel_expires = models.DateTimeField(null=True, blank=True)
     state = models.CharField(
         max_length=255, choices=structure_states, default="unknown"
@@ -41,10 +41,79 @@ class EveStructure(MinmatarSoftDeleteModel):
     fitting = models.TextField(blank=True, null=True)
     is_valid_staging = models.BooleanField(default=False)
 
+    # Null for a reported structure whose owner is not a corporation we
+    # track; owner_corporation_name then holds what the reporter typed.
     corporation = models.ForeignKey(
         EveCorporation,
         on_delete=models.CASCADE,
+        null=True,
+        blank=True,
     )
+
+    # Who can see it (universe.access): ESI rows start private, reported
+    # rows are always alliance-wide.
+    VISIBILITY_ALLIANCE = "alliance"
+    VISIBILITY_CORPORATION = "corporation"
+    VISIBILITY_PRIVATE = "private"
+    VISIBILITY_CHOICES = (
+        (VISIBILITY_ALLIANCE, "Alliance"),
+        (VISIBILITY_CORPORATION, "Corporation"),
+        (VISIBILITY_PRIVATE, "Private"),
+    )
+    visibility = models.CharField(
+        max_length=16, choices=VISIBILITY_CHOICES, default=VISIBILITY_PRIVATE
+    )
+
+    SOURCE_ESI = "esi"
+    SOURCE_REPORTED = "reported"
+    SOURCE_CHOICES = ((SOURCE_ESI, "ESI"), (SOURCE_REPORTED, "Reported"))
+    source = models.CharField(
+        max_length=16, choices=SOURCE_CHOICES, default=SOURCE_ESI
+    )
+
+    owner_corporation_name = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    owner_alliance_name = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    affiliated_alliance_name = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+
+    reported_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reported_structures",
+    )
+    reported_at = models.DateTimeField(null=True, blank=True)
+    last_confirmed_at = models.DateTimeField(null=True, blank=True)
+    last_confirmed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="confirmed_structures",
+    )
+    # A report that may describe a structure the reporter could not see.
+    # Admins merge these by hand in Django admin.
+    possible_duplicate = models.BooleanField(default=False)
+
+    # Reported rows have no ESI id. They take ids from this far-negative
+    # range, clear of the negative ids structure pings use for orbitals.
+    REPORTED_ID_BASE = -1_000_000_000_000_000
+
+    @property
+    def esi_structure_id(self):
+        return self.id if self.id and self.id > 0 else None
+
+    @property
+    def owner_name(self) -> str:
+        if self.corporation_id:
+            return self.corporation.name
+        return self.owner_corporation_name
 
     def delete(self, force_policy=None, **kwargs):
         policy = (
@@ -55,7 +124,7 @@ class EveStructure(MinmatarSoftDeleteModel):
         return super().delete(force_policy=force_policy, **kwargs)
 
     def __str__(self):
-        return str(f"{self.corporation.name} - {self.name}")
+        return str(f"{self.owner_name or 'Unknown'} - {self.name}")
 
 
 class EveStructureTimer(models.Model):

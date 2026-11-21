@@ -9,6 +9,7 @@ from moons.models import EveMoon
 
 from .parser import MoonParsingResult, process_moon_paste
 from groups.helpers.feature_access import can_use_feature
+from universe.access import can_see_moon_contents
 
 moons_router = Router(tags=["Moons"])
 moons_paste_router = Router(tags=["Moons"])
@@ -103,14 +104,13 @@ def get_moon_summary(request):
     auth=AuthBearer(),
 )
 def get_moons(request, system: str = None):
-    if can_use_feature(request.user, "moons.view"):
-        view_distribution = True
-    elif can_use_feature(request.user, "moons.view"):
-        view_distribution = False
-    else:
+    if not can_use_feature(request.user, "moons.view"):
         return 403, ErrorResponse(
             detail="You do not have permission to view moons"
         )
+    # Everyone with moons.view sees which moons exist; only Strategic FCs,
+    # structure managers and superusers see what they are worth.
+    view_distribution = can_see_moon_contents(request.user)
 
     moons = EveMoon.objects.all()
     if system:

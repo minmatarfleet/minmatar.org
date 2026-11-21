@@ -86,6 +86,7 @@ const INLINE: Partial<Record<GateKey, Inline>> = {
     'structures.timers.verify': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('structures.change_evestructuretimer'),
     'structures.timers.add_button': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('fleets.add_evefleet'),
     'moons.view': (is_superuser, user_permissions) => !(!is_superuser && !user_permissions.includes('moons.view_evemoon')),
+    'universe.structures': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('structures.view_evestructure'),
     'moons.view#strict': (_is_superuser, user_permissions) => user_permissions.includes('moons.view_evemoon'),
     'moons.manage#strict': (_is_superuser, user_permissions) => user_permissions.includes('moons.add_evemoon'),
     'intel.affiliations': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('intel.change_intelaffiliation'),

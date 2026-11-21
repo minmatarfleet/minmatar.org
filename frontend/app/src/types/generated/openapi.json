@@ -34414,6 +34414,24 @@
         "title": "MoonDetailResponse",
         "type": "object"
       },
+      "MoonOre": {
+        "properties": {
+          "ore": {
+            "title": "Ore",
+            "type": "string"
+          },
+          "yield_percent": {
+            "title": "Yield Percent",
+            "type": "number"
+          }
+        },
+        "required": [
+          "ore",
+          "yield_percent"
+        ],
+        "title": "MoonOre",
+        "type": "object"
+      },
       "MoonParsingResult": {
         "properties": {
           "errors": {
@@ -34454,6 +34472,54 @@
           }
         },
         "title": "MoonParsingResult",
+        "type": "object"
+      },
+      "MoonReportRequest": {
+        "properties": {
+          "paste": {
+            "title": "Paste",
+            "type": "string"
+          }
+        },
+        "required": [
+          "paste"
+        ],
+        "title": "MoonReportRequest",
+        "type": "object"
+      },
+      "MoonScanRef": {
+        "properties": {
+          "reported_at": {
+            "format": "date-time",
+            "title": "Reported At",
+            "type": "string"
+          },
+          "reported_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PilotRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "revenue": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revenue"
+          }
+        },
+        "required": [
+          "reported_at"
+        ],
+        "title": "MoonScanRef",
         "type": "object"
       },
       "MoonSummaryResponse": {
@@ -37887,6 +37953,28 @@
           "discord_linked"
         ],
         "title": "PilotHealthResponse",
+        "type": "object"
+      },
+      "PilotRef": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "title": "PilotRef",
         "type": "object"
       },
       "PlanCharacterResponse": {
@@ -47360,6 +47448,50 @@
         "title": "StructureAttachRequest",
         "type": "object"
       },
+      "StructureMatchRequest": {
+        "properties": {
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "system_name": {
+            "title": "System Name",
+            "type": "string"
+          },
+          "type_id": {
+            "title": "Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "system_name",
+          "type_id"
+        ],
+        "title": "StructureMatchRequest",
+        "type": "object"
+      },
+      "StructureMatchResponse": {
+        "properties": {
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/UniverseStructure"
+            },
+            "title": "Candidates",
+            "type": "array"
+          },
+          "system_found": {
+            "title": "System Found",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "system_found",
+          "candidates"
+        ],
+        "title": "StructureMatchResponse",
+        "type": "object"
+      },
       "StructureNotificationResponse": {
         "description": "Response model for structure notification API",
         "properties": {
@@ -47388,6 +47520,85 @@
           "timestamp"
         ],
         "title": "StructureNotificationResponse",
+        "type": "object"
+      },
+      "StructureReportRequest": {
+        "properties": {
+          "affiliated_alliance_name": {
+            "default": "",
+            "title": "Affiliated Alliance Name",
+            "type": "string"
+          },
+          "alliance_name": {
+            "default": "",
+            "title": "Alliance Name",
+            "type": "string"
+          },
+          "corporation_name": {
+            "default": "",
+            "title": "Corporation Name",
+            "type": "string"
+          },
+          "fitting": {
+            "default": "",
+            "title": "Fitting",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "reinforce_hour": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reinforce Hour"
+          },
+          "structure_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Structure Id"
+          },
+          "system_name": {
+            "title": "System Name",
+            "type": "string"
+          },
+          "type_id": {
+            "title": "Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "system_name",
+          "type_id"
+        ],
+        "title": "StructureReportRequest",
+        "type": "object"
+      },
+      "StructureReportResponse": {
+        "properties": {
+          "status": {
+            "const": "recorded",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "StructureReportResponse",
         "type": "object"
       },
       "StructureResponse": {
@@ -52095,6 +52306,446 @@
         "title": "UniverseEntityMatch",
         "type": "object"
       },
+      "UniverseMoon": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "last_scanned_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Scanned At"
+          },
+          "monthly_revenue": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Monthly Revenue"
+          },
+          "moon": {
+            "title": "Moon",
+            "type": "integer"
+          },
+          "ores": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MoonOre"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ores"
+          },
+          "planet": {
+            "title": "Planet",
+            "type": "string"
+          },
+          "rarity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rarity"
+          },
+          "reported_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PilotRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scans": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MoonScanRef"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scans"
+          },
+          "system": {
+            "title": "System",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "system",
+          "planet",
+          "moon"
+        ],
+        "title": "UniverseMoon",
+        "type": "object"
+      },
+      "UniverseMoonList": {
+        "properties": {
+          "can_report": {
+            "title": "Can Report",
+            "type": "boolean"
+          },
+          "can_view_contents": {
+            "title": "Can View Contents",
+            "type": "boolean"
+          },
+          "moons": {
+            "items": {
+              "$ref": "#/components/schemas/UniverseMoon"
+            },
+            "title": "Moons",
+            "type": "array"
+          }
+        },
+        "required": [
+          "moons",
+          "can_view_contents",
+          "can_report"
+        ],
+        "title": "UniverseMoonList",
+        "type": "object"
+      },
+      "UniverseStructure": {
+        "properties": {
+          "affiliated_alliance_name": {
+            "default": "",
+            "title": "Affiliated Alliance Name",
+            "type": "string"
+          },
+          "alliance_name": {
+            "default": "",
+            "title": "Alliance Name",
+            "type": "string"
+          },
+          "can_change_visibility": {
+            "default": false,
+            "title": "Can Change Visibility",
+            "type": "boolean"
+          },
+          "corporation_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corporation Id"
+          },
+          "corporation_name": {
+            "default": "",
+            "title": "Corporation Name",
+            "type": "string"
+          },
+          "esi_structure_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Esi Structure Id"
+          },
+          "fitting": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fitting"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "last_confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Confirmed At"
+          },
+          "last_confirmed_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PilotRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "reinforce_hour": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reinforce Hour"
+          },
+          "reported_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reported At"
+          },
+          "reported_by": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PilotRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "enum": [
+              "esi",
+              "reported"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "state_timer_end": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State Timer End"
+          },
+          "system_id": {
+            "title": "System Id",
+            "type": "integer"
+          },
+          "system_name": {
+            "title": "System Name",
+            "type": "string"
+          },
+          "type_id": {
+            "title": "Type Id",
+            "type": "integer"
+          },
+          "type_name": {
+            "title": "Type Name",
+            "type": "string"
+          },
+          "visibility": {
+            "enum": [
+              "alliance",
+              "corporation",
+              "private"
+            ],
+            "title": "Visibility",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type_id",
+          "type_name",
+          "system_id",
+          "system_name",
+          "state",
+          "visibility",
+          "source"
+        ],
+        "title": "UniverseStructure",
+        "type": "object"
+      },
+      "UniverseStructureList": {
+        "properties": {
+          "can_report": {
+            "title": "Can Report",
+            "type": "boolean"
+          },
+          "structures": {
+            "items": {
+              "$ref": "#/components/schemas/UniverseStructure"
+            },
+            "title": "Structures",
+            "type": "array"
+          }
+        },
+        "required": [
+          "structures",
+          "can_report"
+        ],
+        "title": "UniverseStructureList",
+        "type": "object"
+      },
+      "UniverseTimer": {
+        "properties": {
+          "alliance_name": {
+            "default": "",
+            "title": "Alliance Name",
+            "type": "string"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "campaign_name": {
+            "default": "",
+            "title": "Campaign Name",
+            "type": "string"
+          },
+          "campaign_slug": {
+            "default": "",
+            "title": "Campaign Slug",
+            "type": "string"
+          },
+          "corporation_name": {
+            "default": "",
+            "title": "Corporation Name",
+            "type": "string"
+          },
+          "done": {
+            "default": false,
+            "title": "Done",
+            "type": "boolean"
+          },
+          "final": {
+            "title": "Final",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "integer"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "structure_type": {
+            "title": "Structure Type",
+            "type": "string"
+          },
+          "system": {
+            "title": "System",
+            "type": "string"
+          },
+          "type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type Id"
+          },
+          "type_name": {
+            "title": "Type Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "structure_type",
+          "type_name",
+          "system",
+          "state",
+          "stage",
+          "final",
+          "at"
+        ],
+        "title": "UniverseTimer",
+        "type": "object"
+      },
+      "UniverseTimerList": {
+        "properties": {
+          "can_add": {
+            "title": "Can Add",
+            "type": "boolean"
+          },
+          "timers": {
+            "items": {
+              "$ref": "#/components/schemas/UniverseTimer"
+            },
+            "title": "Timers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "timers",
+          "can_add"
+        ],
+        "title": "UniverseTimerList",
+        "type": "object"
+      },
       "UnknownCharacter": {
         "properties": {
           "character_id": {
@@ -52922,6 +53573,24 @@
           }
         },
         "title": "ViewerContext",
+        "type": "object"
+      },
+      "VisibilityRequest": {
+        "properties": {
+          "visibility": {
+            "enum": [
+              "alliance",
+              "corporation",
+              "private"
+            ],
+            "title": "Visibility",
+            "type": "string"
+          }
+        },
+        "required": [
+          "visibility"
+        ],
+        "title": "VisibilityRequest",
         "type": "object"
       },
       "VolunteerRequest": {
@@ -94762,6 +95431,455 @@
         "tags": [
           "Tribes - Groups",
           "Tribes - Groups"
+        ]
+      }
+    },
+    "/api/universe/moons": {
+      "get": {
+        "description": "Every moon we know about. Contents (ores, scans, ISK a month) are\nnull unless the caller may see them, so the shape never changes.",
+        "operationId": "universe_router_list_moons",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UniverseMoonList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "List Moons",
+        "tags": [
+          "Universe"
+        ]
+      }
+    },
+    "/api/universe/moons/report": {
+      "post": {
+        "description": "Paste from the moon survey scanner. Any pilot who sees moons can\nreport them; each moon's scan is kept.",
+        "operationId": "universe_router_report_moons",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoonReportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MoonParsingResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Report Moons",
+        "tags": [
+          "Universe"
+        ]
+      }
+    },
+    "/api/universe/structures": {
+      "get": {
+        "description": "Every structure the caller may see, soonest timer first.",
+        "operationId": "universe_router_list_structures",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UniverseStructureList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "List Structures",
+        "tags": [
+          "Universe"
+        ]
+      }
+    },
+    "/api/universe/structures/match": {
+      "post": {
+        "description": "Step one of a report: the structures in that system the reporter\ncan see with the same type or a similar name.",
+        "operationId": "universe_router_match_structures",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StructureMatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StructureMatchResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Match Structures",
+        "tags": [
+          "Universe"
+        ]
+      }
+    },
+    "/api/universe/structures/report": {
+      "post": {
+        "operationId": "universe_router_report_structure",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StructureReportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StructureReportResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Report Structure",
+        "tags": [
+          "Universe"
+        ]
+      }
+    },
+    "/api/universe/structures/{structure_id}": {
+      "get": {
+        "operationId": "universe_router_get_structure",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "structure_id",
+            "required": true,
+            "schema": {
+              "title": "Structure Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UniverseStructure"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Structure",
+        "tags": [
+          "Universe"
+        ]
+      }
+    },
+    "/api/universe/structures/{structure_id}/confirm": {
+      "post": {
+        "description": "A pilot saw it still standing.",
+        "operationId": "universe_router_confirm_structure",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "structure_id",
+            "required": true,
+            "schema": {
+              "title": "Structure Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UniverseStructure"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Confirm Structure",
+        "tags": [
+          "Universe"
+        ]
+      }
+    },
+    "/api/universe/structures/{structure_id}/visibility": {
+      "patch": {
+        "operationId": "universe_router_set_visibility",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "structure_id",
+            "required": true,
+            "schema": {
+              "title": "Structure Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisibilityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UniverseStructure"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Set Visibility",
+        "tags": [
+          "Universe"
+        ]
+      }
+    },
+    "/api/universe/timers": {
+      "get": {
+        "description": "Every structure timer, across all campaigns: upcoming soonest first,\nthen the last week's finished timers, newest first.",
+        "operationId": "universe_router_list_timers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UniverseTimerList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "List Timers",
+        "tags": [
+          "Universe"
         ]
       }
     },

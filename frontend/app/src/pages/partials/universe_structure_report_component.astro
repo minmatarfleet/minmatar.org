@@ -1,0 +1,74 @@
+---
+/**
+ * One step of the Report a structure dialog. The form posts `go` (the step to
+ * show next) plus what the pilot entered so far; this renders that step.
+ */
+// no-error-refetch: a form step; errors show inside the dialog.
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { UniverseStructure } from '@dtypes/api.minmatar.org'
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { match_universe_structures, report_universe_structure } from '@helpers/api.minmatar.org/universe'
+import UniverseReportSteps from '@components/blocks/universe/UniverseReportSteps.astro'
+import type { UniverseReportState } from '@components/blocks/universe/UniverseReportSteps.astro'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token || Astro.request.method !== 'POST') return HTTP_403_Forbidden()
+
+const form = await Astro.request.formData()
+const text = (name: string) => String(form.get(name) ?? '').trim()
+const number = (name: string) => {
+    const value = parseInt(text(name))
+    return Number.isFinite(value) ? value : null
+}
+
+const state: UniverseReportState = {
+    system_name: text('system_name'),
+    type_id: number('type_id'),
+    name: text('name'),
+    structure_id: number('structure_id'),
+}
+
+let step: 'find' | 'match' | 'details' | 'sent' = 'find'
+let candidates: UniverseStructure[] = []
+let picked: UniverseStructure | null = null
+let error: string | null = null
+const go = text('go') || 'find'
+
+try {
+    if (go === 'match' || go === 'details') {
+        if (!state.system_name || state.type_id === null) {
+            error = t('universe.report.unknown_system')
+        } else {
+            const match = await match_universe_structures(auth_token, state.system_name, state.type_id, state.name)
+            if (!match?.system_found) {
+                error = t('universe.report.unknown_system')
+            } else {
+                candidates = match.candidates
+                step = go
+                picked = candidates.find((row) => row.id === state.structure_id) ?? null
+            }
+        }
+    } else if (go === 'send') {
+        await report_universe_structure(auth_token, {
+            structure_id: state.structure_id,
+            system_name: state.system_name,
+            type_id: state.type_id ?? 0,
+            name: state.name,
+            corporation_name: text('corporation_name'),
+            alliance_name: text('alliance_name'),
+            affiliated_alliance_name: text('affiliated_alliance_name'),
+            reinforce_hour: number('reinforce_hour'),
+            fitting: text('fitting'),
+        })
+        step = 'sent'
+    }
+} catch (failure) {
+    error = (failure as Error).message
+    step = go === 'send' ? 'details' : 'find'
+}
+---
+
+<UniverseReportSteps step={step} state={state} candidates={candidates} picked={picked} error={error} />

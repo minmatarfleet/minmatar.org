@@ -107,6 +107,11 @@
             "parity": "dead_ui",
             "note": "The timer history page's add button checked a fleets permission; the page it opens needs structures.timers.manage."
         },
+        "universe.structures": {
+            "feature": "structures.view",
+            "legacy": { "perms": ["structures.view_evestructure"], "superuser": true },
+            "note": "Universe > Structures tab and its partial."
+        },
         "moons.view": {
             "feature": "moons.view",
             "legacy": { "perms": ["moons.view_evemoon"], "superuser": true }

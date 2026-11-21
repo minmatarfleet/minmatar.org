@@ -52,6 +52,7 @@ from referrals.router import router as referrals_router
 from reminders.router import router as reminders_router
 from srp.router import router as srp_router
 from structures.router import router as structures_router
+from universe.router import router as universe_router
 from users.router import router as users_router
 from users.eve_views import eve_mobile_sso_complete
 from subscriptions.router import router as subscription_router
@@ -85,6 +86,7 @@ api.add_router("buyback", buyback_router)
 api.add_router("blog", posts_router)
 api.add_router("combatlog", combatlog_router)
 api.add_router("moons", moons_router)
+api.add_router("universe/", universe_router)
 api.add_router("moon_paste", moons_paste_router)
 api.add_router("market", market_router)
 api.add_router("industry", industry_router)

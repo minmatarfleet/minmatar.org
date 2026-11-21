@@ -8,7 +8,9 @@ from esi.exceptions import HTTPClientError
 
 from eveonline.client import EsiClient
 
-from moons.models import EveMoon, EveMoonDistribution
+from django.db import transaction
+
+from moons.models import EveMoon, EveMoonDistribution, EveMoonScan
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +85,8 @@ def process_moon_paste(
     result = MoonParsingResult()
 
     ignored_moons = {}
+    # The paste's lines for each moon, stored as one scan per moon below.
+    scanned = {}
 
     esi = EsiClient(None)
 
@@ -110,16 +114,11 @@ def process_moon_paste(
             else:
                 ignored_moons[moon.name] = True
 
-            if not EveMoonDistribution.objects.filter(
-                moon=eve_moon, ore=parsed_moon.ore
-            ).exists():
-                EveMoonDistribution.objects.create(
-                    moon=eve_moon,
-                    ore=parsed_moon.ore,
-                    yield_percent=parsed_moon.quantity,
-                )
-
-            result.ids_added.append(eve_moon.id)
+            scanned.setdefault(eve_moon.id, (eve_moon, []))[1].append(
+                parsed_moon
+            )
+            if eve_moon.id not in result.ids_added:
+                result.ids_added.append(eve_moon.id)
         except HTTPClientError as e:
             msg = (
                 f"Moon ID {parsed_moon.moon_id} not found in ESI "
@@ -134,6 +133,27 @@ def process_moon_paste(
             logger.exception(msg)
             result.errors.append(msg)
 
+    for eve_moon, lines in scanned.values():
+        _store_scan(eve_moon, lines, user_id)
+
     result.moons_ignored = len(ignored_moons)
 
     return result
+
+
+def _store_scan(eve_moon: EveMoon, lines, user_id) -> EveMoonScan:
+    """Keep the scan and make the moon's ores match it: the newest scan wins."""
+    with transaction.atomic():
+        scan = EveMoonScan.objects.create(
+            moon=eve_moon,
+            reported_by_id=user_id,
+            raw_text="\n".join(
+                f"{line.ore}\t{line.quantity}" for line in lines
+            ),
+        )
+        EveMoonDistribution.objects.filter(moon=eve_moon).delete()
+        for line in lines:
+            EveMoonDistribution.objects.create(
+                moon=eve_moon, ore=line.ore, yield_percent=line.quantity
+            )
+    return scan

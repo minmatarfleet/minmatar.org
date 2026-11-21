@@ -1,0 +1,260 @@
+---
+/**
+ * Universe > Moons. Everyone who sees moons sees which ones exist and who
+ * reported them; rarity, ores, scans and ISK a month come back from the API
+ * only for those allowed (Strategic FCs, structure managers).
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { UniverseMoon } from '@dtypes/api.minmatar.org'
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_gates, can } from '@helpers/gates'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { get_universe_moons } from '@helpers/api.minmatar.org/universe'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+const gates = await get_gates(Astro)
+if (!can(gates, 'moons.view')) return HTTP_403_Forbidden()
+
+const PARTIAL_URL = translatePath('/partials/universe_moons_component/')
+const REPORT_URL = translatePath('/partials/universe_moon_report_component/')
+const MOON_ICON = get_item_icon(14, 64)
+
+let moons: UniverseMoon[] = []
+let contents = false
+let fetch_error: Error | false = false
+try {
+    const list = await get_universe_moons(auth_token)
+    moons = list?.moons ?? []
+    contents = list?.can_view_contents ?? false
+} catch (failure) {
+    fetch_error = failure as Error
+}
+
+const name_of = (moon: UniverseMoon) => `${moon.system} ${moon.planet} - Moon ${moon.moon}`
+const quality = (moon: UniverseMoon) => {
+    if (!moon.rarity) return ''
+    if (moon.rarity >= 64) return t('universe.moons.quality_high')
+    if (moon.rarity >= 16) return t('universe.moons.quality_medium')
+    return t('universe.moons.quality_low')
+}
+const isk = (value: number | null | undefined) => value ? `${(value / 1e9).toFixed(2)} b` : '—'
+const rarities = [64, 32, 16] as const
+const columns = contents
+    ? [
+        { label: t('universe.moons.col.moon') },
+        { label: t('universe.moons.col.rarity') },
+        { label: t('universe.moons.col.last_scan'), phone: false },
+        { label: t('universe.moons.col.isk'), align: 'num' as const, sort: 'descending' as const },
+    ]
+    : [
+        { label: t('universe.moons.col.moon') },
+        { label: t('universe.moons.col.reported_by'), phone: false },
+        { label: t('universe.moons.col.reported'), align: 'num' as const },
+    ]
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import DialogButton from '@components/blocks/DialogButton.astro'
+import LocalTime from '@components/blocks/LocalTime.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import ManageSearch from '@components/blocks/manage/ManageSearch.astro'
+import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
+import UniverseMoonReport from '@components/blocks/universe/UniverseMoonReport.astro'
+---
+
+<div id="universe-moons" x-data="{ view: 0, q: '' }">
+    {fetch_error ?
+        <ErrorRefetch args={{ partial: PARTIAL_URL, error: fetch_error, delay: 0, target: '#universe-moons' }} />
+        :
+        <Flexblock gap="var(--space-s)">
+            <div class="[ manage-filters ]">
+                {contents &&
+                    <div class="[ manage-chips ]" role="radiogroup" aria-label={t('universe.moons.col.rarity')}>
+                        <button type="button" role="radio" class="[ manage-chip ]" x-bind:class="{ 'is-on': view === 0 }" x-bind:aria-checked="view === 0" x-on:click="view = 0">
+                            <span>{t('universe.view_all')}</span><span class="[ manage-chip__count ]">{moons.length}</span>
+                        </button>
+                        {rarities.map((rarity) => (
+                            <button type="button" role="radio" class="[ manage-chip ]" x-bind:class={`{ 'is-on': view === ${rarity} }`} x-bind:aria-checked={`view === ${rarity}`} x-on:click={`view = ${rarity}`}>
+                                <span>R{rarity}</span><span class="[ manage-chip__count ]">{moons.filter((moon) => moon.rarity === rarity).length}</span>
+                            </button>
+                        ))}
+                    </div>
+                }
+                <FlexInline gap="var(--space-s)" class="[ universe-toolbar ]">
+                    <ManageSearch id="universe-moons-search" label={t('universe.moons.search')} placeholder={t('universe.moons.search')} x-model="q" />
+                    <DialogButton size="sm" color="fleet-red" max_width="48rem">
+                        {t('universe.moons.report')}
+                        <form slot="dialog" id="universe-moon-report" hx-post={REPORT_URL} hx-target="this" hx-swap="innerHTML">
+                            <UniverseMoonReport />
+                        </form>
+                    </DialogButton>
+                </FlexInline>
+            </div>
+
+            {moons.length === 0
+                ? <EmptyState title={t('universe.moons.empty')} />
+                : (
+                    <ManageTable caption={t('universe.tab.moons')} columns={columns} expandable={contents} min_width="40rem">
+                        {moons.map((moon) => {
+                            const search = `${name_of(moon)} ${(moon.ores ?? []).map((ore) => ore.ore).join(' ')}`.toLowerCase()
+                            const show = `(view === 0 || view === ${moon.rarity ?? 0}) && (!q || ${JSON.stringify(search)}.includes(q.toLowerCase()))`
+                            const who = moon.reported_by?.character_id
+                                ? <CharacterPicture character_id={moon.reported_by.character_id} character_name={moon.reported_by.name} size={32} />
+                                : null
+                            return contents
+                                ? (
+                                    <ExpandRow colspan={columns.length + 1} label={name_of(moon)} x-show={show}>
+                                        <td>
+                                            <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+                                                <img src={MOON_ICON} alt="" width="40" height="40" loading="lazy" />
+                                                <span class="[ manage-who__text ]">
+                                                    <span class="[ manage-who__name ]">{name_of(moon)}</span>
+                                                    <span class="[ manage-who__sub ]">{moon.system}</span>
+                                                </span>
+                                            </button>
+                                        </td>
+                                        <td>
+                                            <span>{moon.rarity ? `R${moon.rarity}` : '—'}</span>
+                                            <small class="[ universe-small ]">{quality(moon)}</small>
+                                        </td>
+                                        <td class="[ is-wide ]">
+                                            <span class="[ universe-who ]">
+                                                {who}
+                                                <span>
+                                                    {moon.last_scanned_at ? <LocalTime eve_time={new Date(moon.last_scanned_at)} format="datetime" /> : '—'}
+                                                    <small class="[ universe-small ]">{moon.reported_by?.name}</small>
+                                                </span>
+                                            </span>
+                                        </td>
+                                        <td class="[ num ]">{isk(moon.monthly_revenue)}</td>
+                                        <div slot="detail" class="[ universe-moon-detail ]">
+                                            <Flexblock gap="var(--space-2xs)">
+                                                <h4>{t('universe.moons.latest_scan')}</h4>
+                                                <dl class="[ universe-ores ]">
+                                                    {(moon.ores ?? []).map((ore) => (
+                                                        <Fragment><dt>{ore.ore}</dt><dd>{Math.round(ore.yield_percent * 100)}%</dd></Fragment>
+                                                    ))}
+                                                </dl>
+                                            </Flexblock>
+                                            <Flexblock gap="var(--space-2xs)">
+                                                <h4>{t('universe.moons.scans')}</h4>
+                                                <ul class="[ universe-scans ]">
+                                                    {(moon.scans ?? []).map((scan) => (
+                                                        <li>
+                                                            <LocalTime eve_time={new Date(scan.reported_at)} format="datetime" />
+                                                            <span class="[ universe-who ]">
+                                                                {scan.reported_by?.character_id && <CharacterPicture character_id={scan.reported_by.character_id} character_name={scan.reported_by.name} size={32} />}
+                                                                {scan.reported_by?.name}
+                                                            </span>
+                                                            <span>{isk(scan.revenue)}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </Flexblock>
+                                        </div>
+                                    </ExpandRow>
+                                )
+                                : (
+                                    <tbody x-show={show}>
+                                        <tr class="[ manage-row ]">
+                                            <td>
+                                                <span class="[ manage-who ]">
+                                                    <img src={MOON_ICON} alt="" width="40" height="40" loading="lazy" />
+                                                    <span class="[ manage-who__text ]">
+                                                        <span class="[ manage-who__name ]">{name_of(moon)}</span>
+                                                        <span class="[ manage-who__sub ]">{moon.system}</span>
+                                                    </span>
+                                                </span>
+                                            </td>
+                                            <td class="[ is-wide ]"><span class="[ universe-who ]">{who}{moon.reported_by?.name ?? '—'}</span></td>
+                                            <td class="[ num ]">{moon.last_scanned_at ? <LocalTime eve_time={new Date(moon.last_scanned_at)} format="datetime" /> : '—'}</td>
+                                        </tr>
+                                    </tbody>
+                                )
+                        })}
+                    </ManageTable>
+                )
+            }
+        </Flexblock>
+    }
+</div>
+
+<style lang="scss">
+    .universe-toolbar {
+        flex-wrap: nowrap;
+
+        > :global(:first-child) {
+            flex: 1 1 auto;
+        }
+    }
+
+    .universe-small {
+        display: block;
+        font-size: var(--step--2);
+        color: var(--foreground);
+    }
+
+    .universe-who {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-xs);
+    }
+
+    .universe-moon-detail {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-m);
+
+        h4 {
+            margin: 0;
+            font-family: var(--heading-font);
+            font-size: var(--step-0);
+            color: var(--highlight);
+            text-transform: uppercase;
+        }
+    }
+
+    .universe-ores {
+        display: grid;
+        grid-template-columns: 1fr max-content;
+        gap: var(--space-3xs) var(--space-s);
+        margin: 0;
+        font-size: var(--step--1);
+
+        dd {
+            margin: 0;
+            color: var(--highlight);
+            text-align: end;
+        }
+    }
+
+    .universe-scans {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        font-size: var(--step--1);
+
+        li {
+            display: grid;
+            grid-template-columns: max-content 1fr max-content;
+            gap: var(--space-m);
+            align-items: center;
+        }
+    }
+
+    @media (max-width: 48rem) {
+        .universe-moon-detail {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
