@@ -269,6 +269,7 @@ import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 import Select from '@components/blocks/Select.astro'
 import ShowAlert from '@components/blocks/ShowAlert.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
+import DeploymentStrip from '@components/blocks/DeploymentStrip.astro'
 
 const page_title = t('industry.orders.create.page_title')
 const breadcrumbs = [
@@ -308,6 +309,7 @@ const breadcrumbs = [
         </FlexInline>
 
         <Flexblock gap="var(--space-l)" class="[ compensate-bottom-bar ]">
+            <DeploymentStrip />
             <TextBox>
                 <p class="[ excerpt ]">{t('industry.orders.create.leading_text')}</p>
                 {produced_only &&

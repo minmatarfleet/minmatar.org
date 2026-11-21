@@ -70,6 +70,7 @@ import Viewport from '@layouts/Viewport.astro';
 import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 import FleetsHubTabs from '@components/blocks/FleetsHubTabs.astro';
+import DeploymentStrip from '@components/blocks/DeploymentStrip.astro'
 import PageActions from '@components/page/PageActions.astro'
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -135,6 +136,8 @@ const page_title = t('fleets.upcoming.page_title');
                 }
             </PageActions>
         </FlexInline>
+
+        <DeploymentStrip />
 
         <FleetsHubTabs active="upcoming" />
 

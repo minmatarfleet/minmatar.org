@@ -1076,6 +1076,13 @@ export const ui = {
         'doctrines.leading_text': 'Doctrines are recipes for content, and are the primary way that we organize our fleets. They are a set of ships, fits, and tactics that are designed to be flown by a group of pilots. All doctrines are public.',
         'doctrines.cover_alt': 'A fleet of Cyclone Fleet Issue ships engaged in battle, with the local star looming in the background.',
 
+        'deployment_strip.deployed': 'Deployed:',
+        'deployment_strip.home': 'Home:',
+        'doctrines.tabs_label': 'Doctrines by location',
+        'doctrines.tab.home': 'Home',
+        'doctrines.tab.deployed': 'Deployed',
+        'doctrines.tab.empty': 'No doctrines are staged here yet.',
+
         'doctrines.alliance.page_title': 'Alliance Doctrines',
         'doctrines.alliance.page_leading_text': 'Doctrines that are flown in Minmatar Fleet Alliance fleets and are available via [market](/market/ops/) staging supply.',
         'doctrines.alliance.meta_description': 'Prepare yourself for the next fleet by browsing the doctrines of Minmatar Fleet Alliance.',

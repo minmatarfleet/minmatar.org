@@ -3385,3 +3385,5 @@ export type StructureLocationRetired = ApiResponse<'LocationRetired'>
 export type StructureLocationService = ApiResponse<'LocationService'>
 export type StructureRigBonus = ApiResponse<'RigBonus'>
 export type StructureLocationHoldings = ApiResponse<'LocationHoldings'>
+export type StagingLocation = ApiResponse<'StagingLocation'>
+export type Stagings = ApiResponse<'Stagings'>
