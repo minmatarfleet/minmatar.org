@@ -1,5 +1,6 @@
 import logging
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from eveuniverse.models import EveFaction
 
@@ -45,6 +46,36 @@ class EveCorporation(models.Model):
     )
     alliance = models.ForeignKey(
         EveAlliance, on_delete=models.SET_NULL, blank=True, null=True
+    )
+    # Alliance override: while the corporation is in alliance_override_from
+    # in game, the site treats it as a member of alliance_override_to (e.g. a
+    # BUILD corporation run as FL33T). It wins over ESI for the corporation's
+    # alliance and its members' character alliance, so every alliance check,
+    # group and Discord role follows it. When the corporation leaves
+    # alliance_override_from, the next refresh clears the override.
+    # See eveonline.helpers.corporations.alliance_override.
+    alliance_override_from = models.ForeignKey(
+        EveAlliance,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="+",
+        help_text=(
+            "The in-game alliance the override applies to (e.g. BUILD). If "
+            "the corporation leaves it, the override is removed."
+        ),
+    )
+    alliance_override_to = models.ForeignKey(
+        EveAlliance,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="+",
+        help_text=(
+            "The alliance to treat the corporation as (e.g. FL33T): members "
+            "get its groups and Discord roles. Leave both blank to follow "
+            "the game."
+        ),
     )
     faction = models.ForeignKey(
         EveFaction, on_delete=models.SET_NULL, blank=True, null=True
@@ -145,6 +176,35 @@ class EveCorporation(models.Model):
             return "militia"
         return "public"
 
+    def has_alliance_override(self) -> bool:
+        return bool(
+            self.alliance_override_from_id or self.alliance_override_to_id
+        )
+
+    def alliance_override_applies(self, in_game_alliance_id) -> bool:
+        """Whether the override holds for this in-game alliance id."""
+        return bool(
+            self.alliance_override_to_id
+            and self.alliance_override_from_id
+            and in_game_alliance_id
+            and self.alliance_override_from.alliance_id == in_game_alliance_id
+        )
+
+    def clean(self):
+        if bool(self.alliance_override_from_id) != bool(
+            self.alliance_override_to_id
+        ):
+            raise ValidationError(
+                "Set both override alliances (from and to), or neither."
+            )
+        if (
+            self.alliance_override_from_id
+            and self.alliance_override_from_id == self.alliance_override_to_id
+        ):
+            raise ValidationError(
+                "The override must map to a different alliance."
+            )
+
     @property
     def active(self):
         return self.recruitment_active
@@ -167,13 +227,25 @@ class EveCorporation(models.Model):
         self.ticker = esi_corporation["ticker"]
         self.member_count = esi_corporation["member_count"]
         self.date_founded = parse_esi_date(esi_corporation.get("date_founded"))
-        esi_alliance_id = esi_corporation["alliance_id"]
+        esi_alliance_id = esi_corporation.get("alliance_id")
         if esi_alliance_id:
             self.alliance = EveAlliance.objects.filter(
                 alliance_id=esi_alliance_id
             ).first()
         else:
             self.alliance = None
+        if self.has_alliance_override():
+            if self.alliance_override_applies(esi_alliance_id):
+                self.alliance = self.alliance_override_to
+            else:
+                logger.info(
+                    "Corporation %s left alliance %s; removing its "
+                    "alliance override",
+                    self.corporation_id,
+                    self.alliance_override_from_id,
+                )
+                self.alliance_override_from = None
+                self.alliance_override_to = None
         if esi_corporation["ceo_id"] > 90000000:
             self.ceo = EveCharacter.objects.get_or_create(
                 character_id=esi_corporation["ceo_id"]
