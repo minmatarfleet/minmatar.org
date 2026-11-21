@@ -210,6 +210,12 @@ export const campaign_detail = (over: Partial<CampaignDetail> = {}): CampaignDet
     totals: campaign_totals,
     is_enlisted: false, characters_included: 0, characters_tracked: 0,
     standing_fleet_up: false, standing_fleet_members: 0, standing_fleet_boss: null,
+    // The faction_warfare preset (backend campaigns.models.FEATURE_PRESETS).
+    features: {
+        weekly_progress: true, structures: false, timers: false, theater: true,
+        fleets: true, destruction: false, pilots: true, projects: true,
+    },
+    paused_at: null,
     ...over,
 })
 
@@ -334,6 +340,8 @@ const structure = (id: number, over: Partial<CampaignStructure>): CampaignStruct
     alliance_name: 'Snuffed Out',
     related_alliance_id: null,
     related_alliance_name: '',
+    owner_alliance_id: 99002685,
+    owner_alliance_ticker: 'SNUFF',
     affiliation: 'hostile',
     status: 'anchored',
     source: 'recon',
@@ -347,11 +355,11 @@ const structure = (id: number, over: Partial<CampaignStructure>): CampaignStruct
 })
 
 export const structures_typical: CampaignStructure[] = [
-    structure(1, { name: 'Amamake - Freeport', structure_type: 'azbel', affiliation: 'friendly', corporation_name: 'Rattini Tribe', alliance_name: 'Minmatar Fleet Alliance', fitting: 'Market + Cap Ship Assembly' }),
+    structure(1, { name: 'Amamake - Freeport', structure_type: 'azbel', affiliation: 'friendly', corporation_name: 'Rattini Tribe', alliance_name: 'Minmatar Fleet Alliance', owner_alliance_id: 99011978, owner_alliance_ticker: 'MINMATAR', fitting: 'Market + Cap Ship Assembly' }),
     structure(2, { name: 'Auga - Forward Keep', structure_type: 'fortizar', system_name: 'Auga', solar_system_id: 30002542, status: 'reinforced', reinforce_hour: 18, timer_at: iso(30 * HOUR), related_alliance_name: 'Clan Vanguard of Amarr', fitting: 'Doomsday' }),
     structure(3, { name: 'Vard - Jump Gate', structure_type: 'ansiblex_jump_gate', system_name: 'Vard', solar_system_id: 30002538, status: 'anchored', reinforce_hour: 3 }),
     structure(4, { name: 'Huola - Old Keep', structure_type: 'astrahus', system_name: 'Huola', solar_system_id: 30003067, status: 'destroyed', destroyed_at: iso(-2 * DAY), killmail_id: 123456789 }),
-    structure(5, { name: 'Amamake - Moon Drill', structure_type: 'metenox_moon_drill', affiliation: 'neutral', corporation_name: '', alliance_name: '', status: 'unanchored' }),
+    structure(5, { name: 'Amamake - Moon Drill', structure_type: 'metenox_moon_drill', affiliation: 'neutral', corporation_name: '', alliance_name: '', owner_alliance_id: null, owner_alliance_ticker: '', status: 'unanchored' }),
 ]
 
 export const structures_single: CampaignStructure[] = [structures_typical[1]]
