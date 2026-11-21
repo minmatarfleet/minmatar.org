@@ -139,9 +139,8 @@ an Alliance-only fleet would show up in an associate's list. So:
 - One helper decides both the list and the detail, so they can't drift. A test
   proves a fleet hidden from a pilot by the detail endpoint is also missing from
   their list.
-- Without `fleets.view`, the list answers the fleets the pilot may see instead
-  of 403. For an Associate that's their groups' fleets and the fleets whose
-  audience includes them.
+- The list still needs `fleets.view`, as today. Alliance, Militia and
+  Associate pilots all have it, and the Fleets pages open only to them.
 
 ### 2. Opening the pages (website)
 
@@ -229,9 +228,8 @@ per pilot (`can_publish`), and the corporation plays no part:
   (tribe-publishing rule 1).
 - Group fleets still never pre-ping (rule 3).
 - No desktop-facing payload changes. `GET /api/fleets/v3` keeps its shape. It
-  answers pilots without `fleets.view` instead of 403, and leaves out fleets
-  whose audience the pilot isn't in, which the detail endpoint already refuses
-  them. It's on the desktop's list (`.claude/rules/desktop-release.md`), and no
+  leaves out fleets whose audience the pilot isn't in, which the detail
+  endpoint already refuses them. It's on the desktop's list (`.claude/rules/desktop-release.md`), and no
   field changes.
 
 ## Production check
@@ -262,9 +260,8 @@ Small PRs, one layer at a time:
 
 1. **This concept** (docs only).
 2. **Backend:** the audience-group filter on `GET /api/fleets/v3`, shared with
-   the detail check; the list answering pilots without `fleets.view`; locations
-   and types for group publishers. Tests: an Associate active member sees their
-   group's fleets; a non-member Associate doesn't see members-only group fleets
+   the detail check; locations and types for group publishers. Tests: an
+   Associate active member sees their group's fleets; a non-member Associate doesn't see members-only group fleets
    or an Alliance-only audience fleet, in the list or the detail; an on-leave
    member. Regenerate the OpenAPI schema and contracts.
 3. **Website:** open the Fleets pages, partials, history and the group Fleets
