@@ -26963,6 +26963,282 @@
         "title": "LandedPricesResponse",
         "type": "object"
       },
+      "LandingDayTotals": {
+        "properties": {
+          "complexes": {
+            "title": "Complexes",
+            "type": "integer"
+          },
+          "freight_contracts": {
+            "title": "Freight Contracts",
+            "type": "integer"
+          },
+          "freight_volume": {
+            "title": "Freight Volume",
+            "type": "integer"
+          },
+          "industry_jobs": {
+            "title": "Industry Jobs",
+            "type": "integer"
+          },
+          "ships_destroyed": {
+            "title": "Ships Destroyed",
+            "type": "integer"
+          },
+          "ships_lost": {
+            "title": "Ships Lost",
+            "type": "integer"
+          },
+          "warzone_sites": {
+            "title": "Warzone Sites",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ships_destroyed",
+          "ships_lost",
+          "warzone_sites",
+          "complexes",
+          "industry_jobs",
+          "freight_contracts",
+          "freight_volume"
+        ],
+        "title": "LandingDayTotals",
+        "type": "object"
+      },
+      "LandingEvent": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "others": {
+            "title": "Others",
+            "type": "integer"
+          },
+          "region": {
+            "title": "Region",
+            "type": "string"
+          }
+        },
+        "required": [
+          "occurred_at",
+          "kind",
+          "character_id",
+          "character_name",
+          "others",
+          "action",
+          "region"
+        ],
+        "title": "LandingEvent",
+        "type": "object"
+      },
+      "LandingHourlyKills": {
+        "properties": {
+          "hour": {
+            "title": "Hour",
+            "type": "integer"
+          },
+          "kills": {
+            "title": "Kills",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "hour",
+          "kills"
+        ],
+        "title": "LandingHourlyKills",
+        "type": "object"
+      },
+      "LandingMoment": {
+        "properties": {
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "unit": {
+            "title": "Unit",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "kind",
+          "occurred_at",
+          "title",
+          "value",
+          "unit"
+        ],
+        "title": "LandingMoment",
+        "type": "object"
+      },
+      "LandingPulseResponse": {
+        "properties": {
+          "day": {
+            "$ref": "#/components/schemas/LandingDayTotals"
+          },
+          "delay_minutes": {
+            "title": "Delay Minutes",
+            "type": "integer"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/LandingEvent"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "hourly_kills": {
+            "items": {
+              "$ref": "#/components/schemas/LandingHourlyKills"
+            },
+            "title": "Hourly Kills",
+            "type": "array"
+          },
+          "moments": {
+            "items": {
+              "$ref": "#/components/schemas/LandingMoment"
+            },
+            "title": "Moments",
+            "type": "array"
+          },
+          "timezone_kills": {
+            "items": {
+              "$ref": "#/components/schemas/LandingTimezoneKills"
+            },
+            "title": "Timezone Kills",
+            "type": "array"
+          },
+          "week": {
+            "$ref": "#/components/schemas/LandingWeekTotals"
+          }
+        },
+        "required": [
+          "generated_at",
+          "delay_minutes",
+          "day",
+          "hourly_kills",
+          "week",
+          "timezone_kills",
+          "moments",
+          "events"
+        ],
+        "title": "LandingPulseResponse",
+        "type": "object"
+      },
+      "LandingTimezoneKills": {
+        "properties": {
+          "average_kills": {
+            "title": "Average Kills",
+            "type": "number"
+          },
+          "hour": {
+            "title": "Hour",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "hour",
+          "average_kills"
+        ],
+        "title": "LandingTimezoneKills",
+        "type": "object"
+      },
+      "LandingWeekTotals": {
+        "properties": {
+          "complexes": {
+            "title": "Complexes",
+            "type": "integer"
+          },
+          "fleets": {
+            "title": "Fleets",
+            "type": "integer"
+          },
+          "freight_contracts": {
+            "title": "Freight Contracts",
+            "type": "integer"
+          },
+          "freight_volume": {
+            "title": "Freight Volume",
+            "type": "integer"
+          },
+          "industry_jobs": {
+            "title": "Industry Jobs",
+            "type": "integer"
+          },
+          "peak_comms": {
+            "title": "Peak Comms",
+            "type": "integer"
+          },
+          "peak_comms_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Peak Comms At"
+          },
+          "ships_destroyed": {
+            "title": "Ships Destroyed",
+            "type": "integer"
+          },
+          "warzone_sites": {
+            "title": "Warzone Sites",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ships_destroyed",
+          "warzone_sites",
+          "complexes",
+          "fleets",
+          "peak_comms",
+          "freight_contracts",
+          "freight_volume",
+          "industry_jobs"
+        ],
+        "title": "LandingWeekTotals",
+        "type": "object"
+      },
       "LeaderboardRow": {
         "properties": {
           "character_id": {
@@ -55127,6 +55403,44 @@
         "tags": [
           "Alliance",
           "Alliance - Health"
+        ]
+      }
+    },
+    "/api/alliance/landing/pulse": {
+      "get": {
+        "operationId": "alliance_endpoints_landing_get_landing_pulse_get_landing_pulse",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LandingPulseResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Alliance activity for the new landing page, 60 minutes behind",
+        "tags": [
+          "Alliance",
+          "Alliance"
         ]
       }
     },

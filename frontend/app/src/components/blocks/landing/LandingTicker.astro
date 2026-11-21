@@ -1,0 +1,141 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { LandingEvent } from '@dtypes/api.minmatar.org'
+import { character_portrait, eve_clock, event_who } from '@helpers/landing'
+
+interface Props {
+    events:         LandingEvent[];
+    [propName: string]: any;
+}
+
+const { events, ...attributes } = Astro.props
+
+delete attributes.class
+
+// Oldest first, so the ticker plays the hour forward.
+const items = events.slice(0, 12).reverse()
+const others = t('landing_new.and_others')
+---
+
+{items.length > 0 &&
+    <div
+        class:list={['[ landing-ticker ]', Astro.props.class]}
+        x-data={`{
+            index: 0,
+            count: ${items.length},
+            init() {
+                if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+                setInterval(() => { this.index = (this.index + 1) % this.count }, 3000)
+            },
+        }`}
+        {...attributes}
+    >
+        <span class="landing-ticker__label">
+            <span class="landing-ticker__dot" aria-hidden="true"></span>
+            {t('landing_new.ticker_label')}
+        </span>
+        <ol class="landing-ticker__slot">
+            {items.map((event, index) =>
+                <li
+                    class="landing-ticker__item"
+                    x-show={`index === ${index}`}
+                    style={index === 0 ? undefined : 'display: none;'}
+                >
+                    <img src={character_portrait(event.character_id, 64)} alt="" width="32" height="32" loading="lazy" />
+                    <span>
+                        <strong>{event_who(event, others)}</strong>{' '}{event.action}
+                    </span>
+                    <time datetime={event.occurred_at}>{eve_clock(event.occurred_at)}</time>
+                </li>
+            )}
+        </ol>
+    </div>
+}
+
+<style lang="scss">
+    .landing-ticker {
+        display: flex;
+        align-items: center;
+        gap: var(--space-s);
+        white-space: nowrap;
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
+    .landing-ticker__label {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--fleet-yellow);
+    }
+
+    .landing-ticker__dot {
+        width: var(--space-2xs);
+        height: var(--space-2xs);
+        border-radius: 50%;
+        background: var(--green);
+        animation: landing-beat 1.6s ease-in-out infinite;
+    }
+
+    .landing-ticker__slot {
+        position: relative;
+        overflow: hidden;
+        mask-image: linear-gradient(90deg, var(--background) 85%, transparent);
+        flex-grow: 1;
+        min-height: var(--space-l);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .landing-ticker__item {
+        position: absolute;
+        inset-inline-start: 0;
+        top: 50%;
+        max-width: 100%;
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-xs);
+        transform-origin: left center;
+        animation: landing-pop 600ms ease-out both;
+
+        img {
+            width: var(--space-l);
+            height: var(--space-l);
+            object-fit: cover;
+        }
+
+        strong {
+            color: var(--highlight);
+            font-weight: 600;
+        }
+
+        time {
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    @keyframes landing-pop {
+        0% { opacity: 0; transform: translateY(-50%) scale(0.8); }
+        55% { opacity: 1; transform: translateY(-50%) scale(1.08); }
+        100% { opacity: 1; transform: translateY(-50%) scale(1); }
+    }
+
+    @keyframes landing-beat {
+        50% { opacity: 0.35; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .landing-ticker__item,
+        .landing-ticker__dot {
+            animation: none;
+            transform: translateY(-50%);
+        }
+    }
+</style>

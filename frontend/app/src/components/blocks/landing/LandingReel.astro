@@ -1,0 +1,299 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { eve_day } from '@helpers/landing'
+
+export interface LandingReelItem {
+    kicker:         string;
+    occurred_at:    string;
+    title:          string;
+    image:          string;
+    value?:         string;
+    unit?:          string;
+    href?:          string;
+}
+
+interface Props {
+    items:          LandingReelItem[];
+    [propName: string]: any;
+}
+
+const { items, ...attributes } = Astro.props
+
+delete attributes.class
+
+const pad = (n: number) => String(n).padStart(2, '0')
+---
+
+{items.length > 0 &&
+    <section
+        class:list={['[ landing-reel ]', Astro.props.class]}
+        aria-roledescription="carousel"
+        aria-label={t('landing_new.reel_title')}
+        x-data={`{
+            index: 0,
+            count: ${items.length},
+            timer: null,
+            init() {
+                if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+                this.timer = setInterval(() => { this.index = (this.index + 1) % this.count }, 6000)
+            },
+            go(i) {
+                clearInterval(this.timer)
+                this.index = (i + this.count) % this.count
+            },
+        }`}
+        {...attributes}
+    >
+        <div class="landing-reel__header">
+            <div>
+                <p class="landing-reel__eyebrow">{t('landing_new.reel_eyebrow')}</p>
+                <h2>{t('landing_new.reel_title')}</h2>
+            </div>
+            <div class="landing-reel__controls">
+                <span class="landing-reel__count">
+                    <strong x-text="String(index + 1).padStart(2, '0')">01</strong> / {pad(items.length)}
+                </span>
+                <button type="button" aria-label={t('landing_new.reel_newer')} x-on:click="go(index - 1)">‹</button>
+                <button type="button" aria-label={t('landing_new.reel_older')} x-on:click="go(index + 1)">›</button>
+            </div>
+        </div>
+
+        <div class="landing-reel__stage" aria-live="polite">
+            {items.map((item, index) =>
+                <a
+                    class="landing-reel__slide"
+                    href={item.href}
+                    x-show={`index === ${index}`}
+                    style={index === 0 ? undefined : 'display: none;'}
+                >
+                    <img src={item.image} alt="" loading={index === 0 ? 'eager' : 'lazy'} />
+                    <span class="landing-reel__copy">
+                        <span class="landing-reel__meta">
+                            <span>{item.kicker}</span>
+                            <span>{eve_day(item.occurred_at)}</span>
+                        </span>
+                        <span class="landing-reel__title">{item.title}</span>
+                        {item.value
+                            ? <span class="landing-reel__value"><strong>{item.value}</strong> {item.unit}</span>
+                            : <span class="landing-reel__read">{t('landing_new.reel_read')}</span>
+                        }
+                    </span>
+                </a>
+            )}
+        </div>
+
+        <ol class="landing-reel__strip">
+            {items.map((item, index) =>
+                <li>
+                    <button
+                        type="button"
+                        x-on:click={`go(${index})`}
+                        x-bind:aria-current={`index === ${index} ? 'true' : 'false'`}
+                        x-bind:class={`{ 'is-current': index === ${index} }`}
+                        class:list={[{ 'is-current': index === 0 }]}
+                    >
+                        <img src={item.image} alt="" loading="lazy" />
+                        <span class="landing-reel__strip-date">{eve_day(item.occurred_at)}</span>
+                        <span class="landing-reel__strip-title">{item.title}</span>
+                    </button>
+                </li>
+            )}
+        </ol>
+    </section>
+}
+
+<style lang="scss">
+    .landing-reel {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+    }
+
+    .landing-reel__header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: var(--space-m);
+
+        h2 {
+            margin: 0;
+            font-family: var(--heading-font);
+            font-weight: normal;
+            font-size: var(--step-4);
+            line-height: 1;
+            color: var(--highlight);
+        }
+    }
+
+    .landing-reel__eyebrow {
+        margin: 0 0 var(--space-2xs);
+        font-size: var(--step--1);
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+    }
+
+    .landing-reel__controls {
+        margin-inline-start: auto;
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+
+        button {
+            width: var(--space-xl);
+            height: var(--space-xl);
+            background: transparent;
+            color: var(--fleet-yellow);
+            border: 1px solid var(--hairline-strong);
+            font-size: var(--step-2);
+            cursor: pointer;
+        }
+    }
+
+    .landing-reel__count {
+        font-size: var(--step--1);
+        color: var(--text-muted);
+        font-variant-numeric: tabular-nums;
+
+        strong {
+            color: var(--highlight);
+        }
+    }
+
+    .landing-reel__stage {
+        position: relative;
+        height: 28rem;
+        background: var(--component-background);
+        overflow: hidden;
+    }
+
+    .landing-reel__slide {
+        position: absolute;
+        inset: 0;
+        display: block;
+        color: var(--fleet-yellow);
+        text-decoration: none;
+
+        img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, var(--background) 0%, color-mix(in srgb, var(--background) 70%, transparent) 40%, transparent 80%);
+        }
+    }
+
+    .landing-reel__copy {
+        position: relative;
+        z-index: 1;
+        height: 100%;
+        box-sizing: border-box;
+        max-width: 40rem;
+        padding: var(--space-xl);
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        gap: var(--space-s);
+    }
+
+    .landing-reel__meta {
+        display: flex;
+        gap: var(--space-s);
+        font-size: var(--step--1);
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+
+        span:last-child {
+            color: var(--text-muted);
+        }
+    }
+
+    .landing-reel__title {
+        font-family: var(--heading-font);
+        font-size: var(--step-3);
+        line-height: 1;
+        color: var(--highlight);
+    }
+
+    .landing-reel__value {
+        color: var(--text-muted);
+
+        strong {
+            font-family: var(--heading-font);
+            font-weight: normal;
+            font-size: var(--step-4);
+            color: var(--highlight);
+        }
+    }
+
+    .landing-reel__read {
+        font-weight: 600;
+    }
+
+    .landing-reel__strip {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+        gap: var(--space-xs);
+
+        button {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2xs);
+            padding: 0;
+            background: transparent;
+            border: 0;
+            border-top: 3px solid var(--hairline-strong);
+            color: inherit;
+            text-align: start;
+            cursor: pointer;
+            opacity: 0.55;
+            transition: opacity var(--fast-transition);
+
+            &.is-current {
+                opacity: 1;
+                border-top-color: var(--fleet-yellow);
+            }
+
+            &:focus-visible {
+                opacity: 1;
+            }
+        }
+
+        img {
+            margin-top: var(--space-2xs);
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+        }
+    }
+
+    .landing-reel__strip-date {
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .landing-reel__strip-title {
+        font-size: var(--step--1);
+        font-weight: 600;
+        line-height: 1.3;
+        color: var(--highlight);
+    }
+</style>

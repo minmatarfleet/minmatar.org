@@ -1,0 +1,711 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_request_user } from '@helpers/request_user'
+const { auth_token } = get_request_user(Astro)
+
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
+
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+// Preview of the new landing page. Superusers only until the pilot
+// opt-out for the named feed exists.
+if (!can(gates, 'site.debug_pages') || !auth_token)
+    return HTTP_404_Not_Found()
+
+import type { LandingPulse, LandingMoment } from '@dtypes/api.minmatar.org'
+import type { PostListUI } from '@dtypes/layout_components'
+import { get_landing_pulse } from '@helpers/api.minmatar.org/landing'
+import { fetch_latest_published_posts } from '@helpers/fetching/posts'
+import { format_number } from '@helpers/landing'
+import { t_key } from '@helpers/i18n'
+
+let pulse: LandingPulse | null = null
+let pulse_error: string | null = null
+try {
+    pulse = await get_landing_pulse(auth_token)
+} catch (error) {
+    pulse_error = error instanceof Error ? error.message : String(error)
+}
+
+let posts: PostListUI[] = []
+try {
+    posts = (await fetch_latest_published_posts(8)).chunk
+} catch {
+    posts = []
+}
+
+const post_href = (post: PostListUI) => translatePath(`/posts/${post.post_id}`)
+const post_image = (post: PostListUI, fallback: string) => post.image || fallback
+
+const latest = posts.slice(0, 3)
+const more_news = posts.slice(3, 7)
+
+const MOMENT_IMAGES: Record<string, string> = {
+    record: '/images/videos-cover.jpg',
+    comms: '/images/ceos.webp',
+    warzone: '/images/propaganda-cover.jpg',
+    fleet: '/images/fleets-cover.jpg',
+}
+
+const month_ago = Date.now() - 30 * 24 * 3600 * 1000
+const reel_items = [
+    ...(pulse?.moments ?? []).map((moment: LandingMoment) => ({
+        kicker: t(t_key('landing_new.moment.', moment.kind)) ?? moment.kind,
+        occurred_at: moment.occurred_at,
+        title: moment.title,
+        image: MOMENT_IMAGES[moment.kind] ?? '/images/alliance-cover.jpg',
+        value: format_number(moment.value),
+        unit: moment.unit,
+    })),
+    ...posts
+        .filter((post) => new Date(post.date_posted).getTime() >= month_ago)
+        .slice(0, 4)
+        .map((post) => ({
+            kicker: t('landing_new.moment.post'),
+            occurred_at: post.date_posted,
+            title: post.title,
+            image: post_image(post, '/images/posts-cover.jpg'),
+            href: post_href(post),
+        })),
+].sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime())
+ .slice(0, 8)
+
+const strip = pulse ? [
+    { value: pulse.day.ships_destroyed, label: t('landing_new.ships_destroyed') },
+    { value: pulse.day.warzone_sites, label: t('landing_new.warzone_sites') },
+    { value: pulse.day.industry_jobs, label: t('landing_new.industry_jobs') },
+    { value: pulse.day.freight_contracts, label: t('landing_new.freight_contracts') },
+] : []
+
+const PUBLICATIONS = [
+    { name: 'Metropolis', image: '/images/icons/Metropolis.webp' },
+    { name: 'Frontlines', image: '/images/icons/Frontlines.webp' },
+    { name: 'Metro Daily News', image: '/images/icons/Metro-Daily-News.webp' },
+    { name: 'The Cope', image: '/images/icons/The-Cope.webp' },
+    { name: 'The Waifu Wars', image: '/images/icons/Waifu-Wars.webp' },
+    { name: 'Rust and Blood', image: '/images/icons/Rust-and-Blood.webp' },
+]
+
+import Viewport from '@layouts/Viewport.astro'
+
+import EmptyState from '@components/blocks/EmptyState.astro'
+import LandingBars from '@components/blocks/landing/LandingBars.astro'
+import LandingFeed from '@components/blocks/landing/LandingFeed.astro'
+import LandingReel from '@components/blocks/landing/LandingReel.astro'
+import LandingTicker from '@components/blocks/landing/LandingTicker.astro'
+import LandingWeek from '@components/blocks/landing/LandingWeek.astro'
+---
+
+<Viewport
+    title={t('landing_new.page_title')}
+    meta_description={t('landing_new.lead')}
+    robots="noindex, nofollow"
+>
+    <div class="landing">
+        <section class="landing-hero">
+            <img class="landing-hero__cover" src="/images/home-amamake-cover.jpg" alt="" />
+
+            {pulse && <LandingTicker class="landing-hero__ticker" events={pulse.events} />}
+
+            <div class="landing-hero__main">
+                <div class="landing-hero__pitch">
+                    <p class="landing-eyebrow">{t('landing_new.eyebrow')}</p>
+                    <h1>{t('landing_new.title_1')}<br />{t('landing_new.title_2')}</h1>
+                    <p class="landing-hero__lead">{t('landing_new.lead')}</p>
+                    <div class="landing-actions">
+                        <a class="landing-button landing-button--primary" href={translatePath('/alliance/corporations/')}>{t('landing_new.find_corporation')}</a>
+                        <a class="landing-button" href="https://discord.gg/minmatar" rel="noopener" target="_blank">{t('landing_new.join_discord')}</a>
+                    </div>
+                </div>
+
+                {latest.length > 0 &&
+                    <aside class="landing-latest" aria-label={t('landing_new.latest')}>
+                        <div class="landing-latest__header">
+                            <h2>{t('landing_new.latest')}</h2>
+                            <a href={translatePath('/posts/')}>{t('landing_new.all_news')}</a>
+                        </div>
+                        <a class="landing-latest__lead" href={post_href(latest[0])}>
+                            <img src={post_image(latest[0], '/images/posts-cover.jpg')} alt="" />
+                            <span class="landing-latest__lead-copy">
+                                <span class="landing-latest__kicker">{latest[0].tags[0] ?? ''}</span>
+                                <span class="landing-latest__lead-title">{latest[0].title}</span>
+                            </span>
+                        </a>
+                        {latest.slice(1).map((post) =>
+                            <a class="landing-latest__row" href={post_href(post)}>
+                                <img src={post_image(post, '/images/posts-cover.jpg')} alt="" loading="lazy" />
+                                <span>
+                                    <span class="landing-latest__kicker">{post.tags[0] ?? ''}</span>
+                                    <span class="landing-latest__row-title">{post.title}</span>
+                                </span>
+                            </a>
+                        )}
+                    </aside>
+                }
+            </div>
+
+            {pulse &&
+                <div class="landing-hero__activity">
+                    <div class="landing-strip">
+                        <p class="landing-strip__label">
+                            <span class="landing-dot" aria-hidden="true"></span>
+                            <span>{t('landing_new.last_24_hours')}</span>
+                            <span class="landing-muted">{t('landing_new.delay_note')}</span>
+                        </p>
+                        <div class="landing-strip__stats">
+                            {strip.map((stat) =>
+                                <div>
+                                    <span class="landing-strip__value">{format_number(stat.value)}</span>
+                                    <span class="landing-muted">{stat.label}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <div class="landing-hourly">
+                        <p class="landing-strip__label">
+                            <span>{t('landing_new.kills_by_hour')}</span>
+                        </p>
+                        <LandingBars
+                            values={pulse.hourly_kills.map((h) => h.kills)}
+                            hours={pulse.hourly_kills.map((h) => h.hour)}
+                            label={t('landing_new.kills_by_hour')}
+                            label_every={6}
+                            height="var(--space-2xl)"
+                        />
+                    </div>
+                </div>
+            }
+
+            {pulse_error && <EmptyState title={t('landing_new.error')} hint={pulse_error} />}
+        </section>
+
+        {reel_items.length > 0 &&
+            <div class="landing-section">
+                <LandingReel items={reel_items} />
+            </div>
+        }
+
+        {pulse &&
+            <section class="landing-section">
+                <p class="landing-eyebrow">{t('landing_new.feed_eyebrow')}</p>
+                <h2 class="landing-title">{t('landing_new.feed_title')}</h2>
+                <div class="landing-feed-grid">
+                    <LandingFeed events={pulse.events} />
+                    <LandingWeek week={pulse.week} />
+                </div>
+            </section>
+        }
+
+        <section class="landing-section">
+            <div class="landing-section__header">
+                <div>
+                    <p class="landing-eyebrow">{t('landing_new.news_eyebrow')}</p>
+                    <h2 class="landing-title">{t('landing_new.news_title')}</h2>
+                </div>
+                <a href={translatePath('/posts/')}>{t('landing_new.all_stories')}</a>
+            </div>
+            {more_news.length > 0 &&
+                <ol class="landing-news">
+                    {more_news.map((post) =>
+                        <li>
+                            <a href={post_href(post)}>
+                                <img src={post_image(post, '/images/series-cover.jpg')} alt="" loading="lazy" />
+                                <span class="landing-news__copy">
+                                    <span class="landing-latest__kicker">{post.tags[0] ?? ''}</span>
+                                    <span class="landing-news__title">{post.title}</span>
+                                    <span class="landing-muted">{new Date(post.date_posted).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', timeZone: 'UTC' })}</span>
+                                </span>
+                            </a>
+                        </li>
+                    )}
+                </ol>
+            }
+            <nav class="landing-publications" aria-label={t('landing_new.publications')}>
+                <p class="landing-muted landing-eyebrow">{t('landing_new.publications')}</p>
+                <div>
+                    {PUBLICATIONS.map((publication) =>
+                        <a href={translatePath('/alliance/content/')}>
+                            <img src={publication.image} alt={publication.name} loading="lazy" />
+                        </a>
+                    )}
+                </div>
+            </nav>
+        </section>
+
+        <section class="landing-section landing-join">
+            <div class="landing-join__pitch">
+                <p class="landing-eyebrow">{t('landing_new.join_eyebrow')}</p>
+                <h2 class="landing-title">{t('landing_new.join_title')}</h2>
+                <p class="landing-join__lead">{t('landing_new.join_lead')}</p>
+                <div class="landing-actions">
+                    <a class="landing-button landing-button--primary" href={translatePath('/alliance/corporations/')}>{t('landing_new.find_corporation')}</a>
+                    <a class="landing-button" href="https://discord.gg/minmatar" rel="noopener" target="_blank">{t('landing_new.join_discord')}</a>
+                </div>
+            </div>
+            {pulse &&
+                <div class="landing-join__chart">
+                    <p class="landing-join__chart-title">
+                        <span>{t('landing_new.tz_chart_title')}</span>
+                        <span class="landing-muted">{t('landing_new.tz_chart_note')}</span>
+                    </p>
+                    <LandingBars
+                        values={pulse.timezone_kills.map((h) => h.average_kills)}
+                        hours={pulse.timezone_kills.map((h) => h.hour)}
+                        label={t('landing_new.tz_chart_title')}
+                        height="var(--space-3xl)"
+                    />
+                    <div class="landing-join__zones" aria-hidden="true">
+                        <span>USTZ</span>
+                        <span>AUTZ</span>
+                        <span>EUTZ</span>
+                    </div>
+                </div>
+            }
+        </section>
+    </div>
+</Viewport>
+
+<style lang="scss">
+    .landing {
+        background: var(--background);
+        color: var(--fleet-yellow);
+    }
+
+    .landing-eyebrow {
+        margin: 0 0 var(--space-2xs);
+        font-size: var(--step--1);
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+    }
+
+    .landing-title {
+        margin: 0 0 var(--space-l);
+        font-family: var(--heading-font);
+        font-weight: normal;
+        font-size: var(--step-4);
+        line-height: 1;
+        color: var(--highlight);
+    }
+
+    .landing-muted {
+        color: var(--text-muted);
+    }
+
+    .landing-dot {
+        width: var(--space-2xs);
+        height: var(--space-2xs);
+        border-radius: 50%;
+        background: var(--green);
+    }
+
+    .landing-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-s);
+        margin-top: var(--space-l);
+    }
+
+    .landing-button {
+        display: inline-flex;
+        align-items: center;
+        min-height: var(--space-xl);
+        padding: 0 var(--space-m);
+        border: 1px solid var(--hairline-strong);
+        font-family: var(--button-font);
+        font-weight: 600;
+        color: var(--fleet-yellow);
+        text-decoration: none;
+        transition: background var(--fast-transition);
+
+        &:hover,
+        &:focus-visible {
+            background: var(--hairline-medium);
+        }
+    }
+
+    .landing-button--primary {
+        background: var(--fleet-red);
+        border-color: var(--fleet-red);
+        color: var(--highlight);
+
+        &:hover,
+        &:focus-visible {
+            background: color-mix(in srgb, var(--fleet-red) 85%, var(--highlight));
+        }
+    }
+
+    /* Hero: everything the page is for, inside the first screen. */
+    .landing-hero {
+        position: relative;
+        min-height: 100vh;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        padding: var(--space-m) var(--space-xl) var(--space-l);
+        overflow: hidden;
+
+        > *:not(.landing-hero__cover) {
+            position: relative;
+        }
+    }
+
+    .landing-hero__cover {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: 60% 35%;
+        mask-image: linear-gradient(180deg, var(--background) 45%, transparent 100%);
+        opacity: 0.45;
+    }
+
+    .landing-hero__main {
+        flex-grow: 1;
+        display: grid;
+        grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+        gap: var(--space-xl);
+        align-items: center;
+
+        h1 {
+            margin: 0;
+            font-family: var(--heading-font);
+            font-weight: normal;
+            font-size: clamp(3.5rem, 7vw, 6rem);
+            line-height: 0.95;
+            color: var(--highlight);
+        }
+    }
+
+    .landing-hero__lead {
+        margin: var(--space-m) 0 0;
+        max-width: 36rem;
+        font-size: var(--step-1);
+        line-height: 1.55;
+        color: var(--highlight);
+        opacity: 0.85;
+    }
+
+    .landing-latest {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+    }
+
+    .landing-latest__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+
+        h2 {
+            margin: 0;
+            font-size: var(--step--1);
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--highlight);
+        }
+    }
+
+    .landing-latest__lead {
+        position: relative;
+        display: flex;
+        align-items: flex-end;
+        height: 15rem;
+        overflow: hidden;
+        text-decoration: none;
+
+        img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, transparent 20%, var(--background) 100%);
+        }
+    }
+
+    .landing-latest__lead-copy {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding: var(--space-s) var(--space-m);
+    }
+
+    .landing-latest__kicker {
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--fleet-yellow);
+    }
+
+    .landing-latest__lead-title {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        line-height: 1.1;
+        color: var(--highlight);
+    }
+
+    .landing-latest__row {
+        display: grid;
+        grid-template-columns: 7rem minmax(0, 1fr);
+        gap: var(--space-s);
+        align-items: center;
+        padding: var(--space-xs);
+        background: var(--component-background);
+        border: 1px solid var(--border-color);
+        text-decoration: none;
+
+        img {
+            width: 7rem;
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+        }
+
+        > span {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+        }
+    }
+
+    .landing-latest__row-title {
+        font-size: var(--step--1);
+        font-weight: 600;
+        line-height: 1.35;
+        color: var(--highlight);
+    }
+
+    .landing-hero__activity {
+        display: grid;
+        grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+        gap: var(--space-xl);
+    }
+
+    .landing-strip__label {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        margin: 0 0 var(--space-s);
+        padding-bottom: var(--space-s);
+        border-bottom: 1px solid var(--hairline-strong);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--highlight);
+
+        .landing-muted {
+            font-weight: normal;
+            letter-spacing: normal;
+            text-transform: none;
+        }
+    }
+
+    .landing-strip__stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: var(--space-s);
+
+        > div {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+            font-size: var(--step--1);
+        }
+    }
+
+    .landing-strip__value {
+        font-family: var(--heading-font);
+        font-size: var(--step-4);
+        line-height: 1;
+        color: var(--highlight);
+    }
+
+    /* Sections below the fold */
+    .landing-section {
+        max-width: var(--max-col-width);
+        margin: 0 auto;
+        padding: var(--space-2xl) var(--space-xl);
+    }
+
+    .landing-section__header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: var(--space-m);
+        margin-bottom: var(--space-l);
+
+        .landing-title {
+            margin: 0;
+        }
+    }
+
+    .landing-feed-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+        gap: var(--space-l);
+        align-items: stretch;
+    }
+
+    .landing-news {
+        margin: 0 0 var(--space-xl);
+        padding: 0;
+        list-style: none;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+        gap: var(--space-m);
+
+        li {
+            display: flex;
+        }
+
+        a {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--component-background);
+            border: 1px solid var(--border-color);
+            text-decoration: none;
+        }
+
+        img {
+            width: 100%;
+            aspect-ratio: 16 / 10;
+            object-fit: cover;
+        }
+    }
+
+    .landing-news__copy {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding: var(--space-m);
+        font-size: var(--step--1);
+    }
+
+    .landing-news__title {
+        font-size: var(--step-0);
+        font-weight: 600;
+        line-height: 1.35;
+        color: var(--highlight);
+    }
+
+    .landing-publications > div {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+        gap: var(--space-s);
+
+        a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 6rem;
+            background: var(--component-background);
+            border: 1px solid var(--border-color);
+        }
+
+        img {
+            max-width: 72%;
+            max-height: 4rem;
+            object-fit: contain;
+        }
+    }
+
+    .landing-join {
+        display: grid;
+        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+        gap: var(--space-2xl);
+        align-items: center;
+    }
+
+    .landing-join__lead {
+        margin: 0;
+        font-size: var(--step-0);
+        line-height: 1.6;
+        color: var(--text-muted);
+    }
+
+    .landing-join__chart {
+        padding: var(--space-l);
+        background: var(--component-background);
+        border: 1px solid var(--border-color);
+    }
+
+    .landing-join__chart-title {
+        display: flex;
+        justify-content: space-between;
+        gap: var(--space-s);
+        margin: 0 0 var(--space-m);
+        font-weight: 600;
+        color: var(--highlight);
+
+        .landing-muted {
+            font-size: var(--step--1);
+            font-weight: normal;
+        }
+    }
+
+    .landing-join__zones {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--space-3xs);
+        margin-top: var(--space-xs);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-align: center;
+
+        span {
+            padding-top: var(--space-2xs);
+            border-top: 2px solid var(--hairline-strong);
+        }
+    }
+
+    @media (max-width: 64rem) {
+        .landing-hero__main,
+        .landing-hero__activity,
+        .landing-feed-grid,
+        .landing-join {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .landing-strip__stats {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 48rem) {
+        .landing-hero {
+            min-height: auto;
+            padding: var(--space-m) var(--space-s) var(--space-l);
+        }
+
+        .landing-section {
+            padding: var(--space-xl) var(--space-s);
+        }
+
+        .landing-join__chart {
+            padding: var(--space-s);
+        }
+    }
+</style>
