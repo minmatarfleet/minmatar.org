@@ -521,6 +521,48 @@ class MoonApiTests(UniverseFixture):
         self.assertEqual(moon["monthly_revenue"], 3_000_000_000)
         self.assertEqual(len(moon["scans"]), 1)
 
+    def _moon(self, system, number, ore, revenue):
+        moon = EveMoon.objects.create(
+            system=system, planet="I", moon=number, monthly_revenue=revenue
+        )
+        EveMoonDistribution.objects.create(
+            moon=moon, ore=ore, yield_percent=0.2
+        )
+        return moon
+
+    def test_moons_come_a_page_at_a_time(self, _):
+        for n in range(1, 6):
+            self._moon("Teonusude", n, "Cinnabar", n * 1_000_000)
+        url = "/api/universe/moons?page_size=2&page=2"
+        body = self.get(self.pilots["director"], url).json()
+        self.assertEqual(body["total"], 6)
+        self.assertEqual(body["page"], 2)
+        self.assertEqual(body["page_size"], 2)
+        # Revenue order: Amamake (3b), then Teonusude 5, 4, 3, ...
+        self.assertEqual([m["moon"] for m in body["moons"]], [4, 3])
+
+    def test_moons_search_and_rarity_filter(self, _):
+        self._moon("Teonusude", 1, "Cinnabar", 1)
+        self._moon("Teonusude", 2, "Bitumens", 1)
+        director = self.pilots["director"]
+        body = self.get(director, "/api/universe/moons?q=teon").json()
+        self.assertEqual(body["total"], 2)
+        counts = {c["rarity"]: c["count"] for c in body["rarity_counts"]}
+        self.assertEqual(counts, {0: 2, 64: 0, 32: 1, 16: 0})
+        body = self.get(director, "/api/universe/moons?rarity=64").json()
+        self.assertEqual([m["system"] for m in body["moons"]], ["Amamake"])
+        body = self.get(director, "/api/universe/moons?q=cinnabar").json()
+        self.assertEqual([m["moon"] for m in body["moons"]], [1])
+
+    def test_pilot_cannot_search_or_filter_by_contents(self, _):
+        self._moon("Teonusude", 1, "Cinnabar", 1)
+        member = self.pilots["member"]
+        body = self.get(member, "/api/universe/moons?q=xenotime").json()
+        self.assertEqual(body["total"], 0)
+        body = self.get(member, "/api/universe/moons?rarity=64").json()
+        self.assertEqual(body["total"], 2)
+        self.assertEqual(body["rarity_counts"], [])
+
     def test_moon_contents_rule(self, _):
         self.assertTrue(can_see_moon_contents(self.pilots["superuser"]))
         self.assertTrue(can_see_moon_contents(self.pilots["steward"]))

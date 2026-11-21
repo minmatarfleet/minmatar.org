@@ -10914,8 +10914,10 @@ export interface paths {
         };
         /**
          * List Moons
-         * @description Every moon we know about. Contents (ores, scans, ISK a month) are
-         *     null unless the caller may see them, so the shape never changes.
+         * @description One page of the moons we know about, searched by system, planet,
+         *     moon number and (for those who see contents) ore. Contents (ores,
+         *     scans, ISK a month) are null unless the caller may see them, so the
+         *     shape never changes; only they can filter by rarity.
          */
         get: operations["universe_router_list_moons"];
         put?: never;
@@ -24932,6 +24934,13 @@ export interface components {
              */
             systems_ignored?: number;
         };
+        /** MoonRarityCount */
+        MoonRarityCount: {
+            /** Count */
+            count: number;
+            /** Rarity */
+            rarity: number;
+        };
         /** MoonReportRequest */
         MoonReportRequest: {
             /** Paste */
@@ -32416,6 +32425,26 @@ export interface components {
             can_view_contents: boolean;
             /** Moons */
             moons: components["schemas"]["UniverseMoon"][];
+            /**
+             * Page
+             * @default 1
+             */
+            page?: number;
+            /**
+             * Page Size
+             * @default 0
+             */
+            page_size?: number;
+            /**
+             * Rarity Counts
+             * @default []
+             */
+            rarity_counts?: components["schemas"]["MoonRarityCount"][];
+            /**
+             * Total
+             * @default 0
+             */
+            total?: number;
         };
         /** UniverseStructure */
         UniverseStructure: {
@@ -60245,7 +60274,12 @@ export interface operations {
     };
     universe_router_list_moons: {
         parameters: {
-            query?: never;
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string;
+                rarity?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;

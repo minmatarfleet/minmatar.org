@@ -56,8 +56,13 @@ export async function get_universe_timers(access_token:string) {
     })
 }
 
-export async function get_universe_moons(access_token:string) {
-    return await api_request<UniverseMoonList>(`${API_ENDPOINT}/moons`, {
+export async function get_universe_moons(access_token:string, query:{ page?: number, q?: string, rarity?: number } = {}) {
+    const params = new URLSearchParams()
+    if (query.page && query.page > 1) params.set('page', String(query.page))
+    if (query.q) params.set('q', query.q)
+    if (query.rarity) params.set('rarity', String(query.rarity))
+    const search = params.size > 0 ? `?${params}` : ''
+    return await api_request<UniverseMoonList>(`${API_ENDPOINT}/moons${search}`, {
         token: access_token,
         error: 'Error fetching moons',
     })

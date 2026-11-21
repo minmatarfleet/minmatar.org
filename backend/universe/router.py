@@ -7,10 +7,24 @@ not see answers 404, never 403, so a probe cannot tell it exists.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone as dt_timezone
+from datetime import datetime, timedelta
 from typing import List, Literal, Optional
 
-from django.db.models import Prefetch
+from django.db.models import (
+    Case,
+    Count,
+    Exists,
+    F,
+    IntegerField,
+    Max,
+    OuterRef,
+    Prefetch,
+    Q,
+    Subquery,
+    Value,
+    When,
+)
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 from ninja import Router, Schema
 
@@ -42,6 +56,10 @@ router = Router(tags=["Universe"])
 STRUCTURES_FEATURE = "structures.view"
 TIMERS_FEATURE = "structures.timers.view"
 MOONS_FEATURE = "moons.view"
+MOONS_PAGE_SIZE = 50
+MOONS_MAX_PAGE_SIZE = 200
+# The rarity chips: the moons worth fighting over.
+MOON_RARITY_FILTERS = (64, 32, 16)
 
 Visibility = Literal["alliance", "corporation", "private"]
 
@@ -165,10 +183,23 @@ class UniverseMoon(Schema):
     scans: Optional[List[MoonScanRef]] = None
 
 
+class MoonRarityCount(Schema):
+    rarity: int
+    count: int
+
+
 class UniverseMoonList(Schema):
     moons: List[UniverseMoon]
     can_view_contents: bool
     can_report: bool
+    # One page of the matching moons; `total` counts them all.
+    total: int = 0
+    page: int = 1
+    page_size: int = 0
+    # Matching moons per rarity (search applied, rarity filter not);
+    # rarity 0 counts them all.
+    # Empty unless the caller may see moon contents.
+    rarity_counts: List[MoonRarityCount] = []
 
 
 class MoonReportRequest(Schema):
@@ -484,14 +515,63 @@ def list_timers(request):
     auth=AuthBearer(),
     response={200: UniverseMoonList, 403: ErrorResponse},
 )
-def list_moons(request):
-    """Every moon we know about. Contents (ores, scans, ISK a month) are
-    null unless the caller may see them, so the shape never changes."""
+def list_moons(
+    request,
+    page: int = 1,
+    page_size: int = MOONS_PAGE_SIZE,
+    q: str = "",
+    rarity: int = 0,
+):
+    """One page of the moons we know about, searched by system, planet,
+    moon number and (for those who see contents) ore. Contents (ores,
+    scans, ISK a month) are null unless the caller may see them, so the
+    shape never changes; only they can filter by rarity."""
     if not can_use_feature(request.user, MOONS_FEATURE):
         return 403, ErrorResponse(detail="You cannot view moons")
     contents = can_see_moon_contents(request.user)
+    page_size = max(1, min(page_size, MOONS_MAX_PAGE_SIZE))
+    page = max(1, page)
+
+    moons = EveMoon.objects.all()
+    for token in q.split():
+        match = Q(system__icontains=token) | Q(planet__iexact=token)
+        if token.isdigit():
+            match |= Q(moon=int(token))
+        if contents:
+            match |= Exists(
+                EveMoonDistribution.objects.filter(
+                    moon=OuterRef("pk"), ore__icontains=token
+                )
+            )
+        moons = moons.filter(match)
+
+    rarity_counts = []
+    if contents:
+        moons = moons.annotate(rarity=_moon_rarity())
+        counts = dict(
+            moons.order_by()
+            .values_list("rarity")
+            .annotate(n=Count("id"))
+            .values_list("rarity", "n")
+        )
+        rarity_counts = [
+            MoonRarityCount(rarity=0, count=sum(counts.values()))
+        ] + [
+            MoonRarityCount(rarity=r, count=counts.get(r, 0))
+            for r in MOON_RARITY_FILTERS
+        ]
+        if rarity:
+            moons = moons.filter(rarity=rarity)
+        moons = moons.order_by("-monthly_revenue", "id")
+    else:
+        moons = moons.annotate(last_scan=Max("scans__reported_at")).order_by(
+            F("last_scan").desc(nulls_last=True), "-id"
+        )
+
+    total = moons.count()
+    offset = (page - 1) * page_size
     moons = list(
-        EveMoon.objects.prefetch_related(
+        moons[offset : offset + page_size].prefetch_related(
             Prefetch(
                 "evemoondistribution_set",
                 queryset=EveMoonDistribution.objects.order_by(
@@ -524,12 +604,7 @@ def list_moons(request):
             last_scanned_at=latest.reported_at if latest else None,
         )
         if contents:
-            row.rarity = (
-                max(
-                    (ORE_RARITY.get(o.ore, 0) for o in moon.ores), default=None
-                )
-                or None
-            )
+            row.rarity = moon.rarity or None
             row.monthly_revenue = moon.monthly_revenue
             row.ores = [
                 MoonOre(ore=o.ore, yield_percent=float(o.yield_percent))
@@ -544,17 +619,38 @@ def list_moons(request):
                 for s in moon.scan_rows
             ]
         rows.append(row)
-    if contents:
-        rows.sort(key=lambda r: -(r.monthly_revenue or 0))
-    else:
-        rows.sort(
-            key=lambda r: r.last_scanned_at
-            or datetime.min.replace(tzinfo=dt_timezone.utc),
-            reverse=True,
-        )
     return UniverseMoonList(
-        moons=rows, can_view_contents=contents, can_report=True
+        moons=rows,
+        can_view_contents=contents,
+        can_report=True,
+        total=total,
+        page=page,
+        page_size=page_size,
+        rarity_counts=rarity_counts,
     )
+
+
+def _moon_rarity():
+    """The rarity of a moon's rarest ore (0 when it has none we know)."""
+    by_rarity = {}
+    for ore, value in ORE_RARITY.items():
+        by_rarity.setdefault(value, []).append(ore)
+    rarest = (
+        EveMoonDistribution.objects.filter(moon=OuterRef("pk"))
+        .annotate(
+            r=Case(
+                *[
+                    When(ore__in=ores, then=Value(value))
+                    for value, ores in by_rarity.items()
+                ],
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+        )
+        .order_by("-r")
+        .values("r")[:1]
+    )
+    return Coalesce(Subquery(rarest), Value(0))
 
 
 @router.post(

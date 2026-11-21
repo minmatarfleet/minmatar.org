@@ -34474,6 +34474,24 @@
         "title": "MoonParsingResult",
         "type": "object"
       },
+      "MoonRarityCount": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "rarity": {
+            "title": "Rarity",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rarity",
+          "count"
+        ],
+        "title": "MoonRarityCount",
+        "type": "object"
+      },
       "MoonReportRequest": {
         "properties": {
           "paste": {
@@ -52422,6 +52440,29 @@
             },
             "title": "Moons",
             "type": "array"
+          },
+          "page": {
+            "default": 1,
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "default": 0,
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "rarity_counts": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/MoonRarityCount"
+            },
+            "title": "Rarity Counts",
+            "type": "array"
+          },
+          "total": {
+            "default": 0,
+            "title": "Total",
+            "type": "integer"
           }
         },
         "required": [
@@ -95436,9 +95477,50 @@
     },
     "/api/universe/moons": {
       "get": {
-        "description": "Every moon we know about. Contents (ores, scans, ISK a month) are\nnull unless the caller may see them, so the shape never changes.",
+        "description": "One page of the moons we know about, searched by system, planet,\nmoon number and (for those who see contents) ore. Contents (ores,\nscans, ISK a month) are null unless the caller may see them, so the\nshape never changes; only they can filter by rarity.",
         "operationId": "universe_router_list_moons",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "rarity",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Rarity",
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {

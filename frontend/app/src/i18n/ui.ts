@@ -109,6 +109,8 @@ export const ui = {
         'universe.moons.latest_scan': "Latest scan",
         'universe.moons.scans': "Scans",
         'universe.moons.empty': "No moons reported yet.",
+        'universe.moons.no_match': "No moons match.",
+        'universe.moons.page_status': "Page {page} of {pages} · {total} moons",
         'universe.moons.report_label': "Moon scan, pasted from the probe scanner",
         'universe.moons.report_send': "Send scan",
         'universe.moons.report_done': "~ADDED new, ~IGNORED updated",
