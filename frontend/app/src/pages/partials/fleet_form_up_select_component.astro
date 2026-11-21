@@ -1,0 +1,72 @@
+---
+// no-error-refetch: optional; without it the fleet forms up at the staging.
+/**
+ * "Forms up in" for the flash form and quick start: every fleet form-up
+ * location, defaulting to where the fleet boss is docked, else the staging.
+ * Renders nothing unless a form-up location is a deployment, so the forms
+ * stay as they were (and the backend uses the staging).
+ */
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import { get_gates, can } from '@helpers/gates'
+const gates = await get_gates(Astro)
+
+if (!can(gates, 'fleets.create'))
+    return HTTP_403_Forbidden()
+
+import type { FleetLocation } from '@dtypes/api.minmatar.org'
+import { get_default_form_up_location, get_form_up_locations } from '@helpers/api.minmatar.org/fleets'
+import { form_up_label, has_deployment, staging_location } from '@helpers/fleet_form_up'
+
+const select_id = (Astro.url.searchParams.get('id') ?? 'form-up-location').replace(/[^a-z0-9_-]/gi, '')
+
+let locations:FleetLocation[] = []
+try {
+    locations = await get_form_up_locations(auth_token as string)
+} catch (error) {
+    console.log(`Skipping form-up locations: ${error.message}`)
+}
+
+const show = has_deployment(locations)
+let default_id = staging_location(locations)?.location_id ?? null
+if (show) {
+    try {
+        default_id = await get_default_form_up_location(auth_token as string) ?? default_id
+    } catch (error) {
+        console.log(`Skipping docked form-up location: ${error.message}`)
+    }
+}
+
+// Staging first, then deployments, then the other form-up locations.
+const rank = (location:FleetLocation) => location.staging_active ? 0 : location.deployment_active ? 1 : 2
+const options = [...locations].sort((a, b) => rank(a) - rank(b) || a.short_name.localeCompare(b.short_name))
+const labels = { staging: t('fleets.form_up.staging'), deployment: t('fleets.form_up.deployment') }
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Select from '@components/blocks/Select.astro'
+---
+
+{show &&
+    <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+        <label for={select_id}>{t('fleets.form_up.forms_up_in')}</label>
+        <Select id={select_id} name="location_id">
+            {options.map(location =>
+                <option
+                    value={location.location_id}
+                    selected={location.location_id === default_id}
+                >
+                    {form_up_label(location, labels)}
+                </option>
+            )}
+        </Select>
+    </Flexblock>
+}
