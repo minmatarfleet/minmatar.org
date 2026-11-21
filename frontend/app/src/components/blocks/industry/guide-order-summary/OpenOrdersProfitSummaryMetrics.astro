@@ -11,9 +11,12 @@ import Grid from '@components/compositions/Grid.astro'
 
 interface Props {
     summary: OrdersProfitSummary
+    /** Shown instead of the profit when the delivery location has no
+     * facility profile (no planned build cost). */
+    not_costed?: string | null
 }
 
-const { summary } = Astro.props
+const { summary, not_costed = null } = Astro.props
 const { lang, t } = i18n(Astro.url)
 const totals = summary.totals
 
@@ -60,14 +63,20 @@ const days_remaining_display =
             {formatIskCompact(totals.total_order_amount)}
         </span>
     </CampaignStat>
-    <CampaignStat
-        label="Total order profit"
-        tone={totals.total_profit >= 0 ? 'success' : 'danger'}
-    >
-        <span data-tippy-content={number_name(totals.total_profit, lang)}>
-            {formatIskCompact(totals.total_profit)}
-        </span>
-    </CampaignStat>
+    {not_costed ?
+        <CampaignStat label="Total order profit">
+            <span class="[ order-metrics-muted ]">{not_costed}</span>
+        </CampaignStat>
+        :
+        <CampaignStat
+            label="Total order profit"
+            tone={totals.total_profit >= 0 ? 'success' : 'danger'}
+        >
+            <span data-tippy-content={number_name(totals.total_profit, lang)}>
+                {formatIskCompact(totals.total_profit)}
+            </span>
+        </CampaignStat>
+    }
     <CampaignStat label="Total products" tone="info">
         {totals.line_count}
     </CampaignStat>
@@ -77,6 +86,10 @@ const days_remaining_display =
 </Grid>
 
 <style lang="scss">
+    .order-metrics-muted {
+        color: var(--text-muted);
+    }
+
     /* Fixed 4 KPIs: equal columns that always consume the full row.
        Skip auto-fill/auto-fit so we never leave a half-empty track. */
     :global(.order-metrics-grid.grid) {

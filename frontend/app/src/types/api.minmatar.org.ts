@@ -1956,6 +1956,8 @@ export interface BuildPack {
 }
 
 export type IndustrySingleOrder = ApiResponse<'OrderDetailResponse'>
+export type OrderDeliveryLocation = ApiResponse<'OrderLocationResponse'>
+export type OrderClaimCharacters = ApiResponse<'OrderClaimCharactersResponse'>
 export type OrderPatch = ApiRequest<'PatchOrderRequest'>
 
 export interface OrderLpStockpileContact {

@@ -12452,6 +12452,34 @@
         "title": "DiscordUserSchema",
         "type": "object"
       },
+      "DockAccessEntry": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ticker": {
+            "default": "",
+            "title": "Ticker",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "name"
+        ],
+        "title": "DockAccessEntry",
+        "type": "object"
+      },
       "DoctrineCellResponse": {
         "properties": {
           "column": {
@@ -26695,6 +26723,11 @@
             "title": "Industry",
             "type": "boolean"
           },
+          "industry_delivery": {
+            "default": false,
+            "title": "Industry Delivery",
+            "type": "boolean"
+          },
           "industry_orders": {
             "title": "Industry Orders",
             "type": "integer"
@@ -26980,6 +27013,14 @@
             "title": "Description",
             "type": "string"
           },
+          "dock_access": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DockAccessEntry"
+            },
+            "title": "Dock Access",
+            "type": "array"
+          },
           "facility_tax": {
             "anyOf": [
               {
@@ -27039,6 +27080,11 @@
           },
           "industry": {
             "title": "Industry",
+            "type": "boolean"
+          },
+          "industry_delivery": {
+            "default": false,
+            "title": "Industry Delivery",
             "type": "boolean"
           },
           "industry_orders": {
@@ -27485,6 +27531,11 @@
             "title": "Freight",
             "type": "boolean"
           },
+          "industry_delivery": {
+            "default": false,
+            "title": "Industry Delivery",
+            "type": "boolean"
+          },
           "is_structure": {
             "title": "Is Structure",
             "type": "boolean"
@@ -27836,6 +27887,20 @@
             ],
             "title": "Description"
           },
+          "dock_access_names": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dock Access Names"
+          },
           "fleets_active": {
             "anyOf": [
               {
@@ -27882,6 +27947,17 @@
               }
             ],
             "title": "Good For"
+          },
+          "industry_delivery": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry Delivery"
           },
           "market_active": {
             "anyOf": [
@@ -34901,6 +34977,64 @@
         "title": "OrderCapabilitiesResponse",
         "type": "object"
       },
+      "OrderClaimCharacterResponse": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "is_primary": {
+            "default": false,
+            "title": "Is Primary",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name"
+        ],
+        "title": "OrderClaimCharacterResponse",
+        "type": "object"
+      },
+      "OrderClaimCharactersResponse": {
+        "description": "The user's characters that can dock at the order's delivery location.",
+        "properties": {
+          "characters": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/OrderClaimCharacterResponse"
+            },
+            "title": "Characters",
+            "type": "array"
+          },
+          "dock_tickers": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Dock Tickers",
+            "type": "array"
+          },
+          "location_name": {
+            "default": "",
+            "title": "Location Name",
+            "type": "string"
+          },
+          "restricted": {
+            "title": "Restricted",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "restricted"
+        ],
+        "title": "OrderClaimCharactersResponse",
+        "type": "object"
+      },
       "OrderDetailResponse": {
         "description": "Full order with items and who committed to each item.",
         "properties": {
@@ -35531,6 +35665,24 @@
       "OrderLocationResponse": {
         "description": "Location where the order should be built/delivered.",
         "properties": {
+          "costed": {
+            "default": true,
+            "title": "Costed",
+            "type": "boolean"
+          },
+          "deployment": {
+            "default": false,
+            "title": "Deployment",
+            "type": "boolean"
+          },
+          "dock_tickers": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Dock Tickers",
+            "type": "array"
+          },
           "location_id": {
             "title": "Location Id",
             "type": "integer"
@@ -35538,6 +35690,21 @@
           "location_name": {
             "title": "Location Name",
             "type": "string"
+          },
+          "short_name": {
+            "default": "",
+            "title": "Short Name",
+            "type": "string"
+          },
+          "solar_system_name": {
+            "default": "",
+            "title": "Solar System Name",
+            "type": "string"
+          },
+          "staging": {
+            "default": false,
+            "title": "Staging",
+            "type": "boolean"
           }
         },
         "required": [
@@ -72280,6 +72447,38 @@
         ]
       }
     },
+    "/api/industry/orders/delivery-locations": {
+      "get": {
+        "operationId": "industry_endpoints_orders_get_order_delivery_locations_get_order_delivery_locations",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OrderLocationResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Locations a manufacturing order can deliver to",
+        "tags": [
+          "Industry",
+          "Industry - Orders"
+        ]
+      }
+    },
     "/api/industry/orders/pricing": {
       "get": {
         "operationId": "industry_endpoints_orders_get_order_line_pricing_get_order_line_pricing",
@@ -72875,6 +73074,54 @@
         "tags": [
           "Industry",
           "Industry - Breakdown"
+        ]
+      }
+    },
+    "/api/industry/orders/{order_id}/claim-characters": {
+      "get": {
+        "operationId": "industry_endpoints_orders_get_order_claim_characters_get_order_claim_characters",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "order_id",
+            "required": true,
+            "schema": {
+              "title": "Order Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderClaimCharactersResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Your characters that can dock at the order's delivery location",
+        "tags": [
+          "Industry",
+          "Industry - Orders"
         ]
       }
     },

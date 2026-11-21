@@ -12,6 +12,7 @@ from eveonline.models import EveLocation
 from industry.helpers.facility_api import facility_key_for_system
 
 from . import capabilities as caps
+from . import dock_access as dock
 from . import locations as svc
 from .models import LocationAudienceGroup, LocationChange, LocationSubmission
 
@@ -63,6 +64,7 @@ class LocationCard(Schema):
     type_name: str
     staging: bool
     deployment: bool
+    industry_delivery: bool = False
     fleets: bool
     freight: bool
     freight_route: bool
@@ -111,8 +113,16 @@ class LocationRouteHere(Schema):
     route_type: str
 
 
+class DockAccessEntry(Schema):
+    kind: str
+    id: int
+    name: str
+    ticker: str = ""
+
+
 class LocationDetail(LocationCard):
     description: str
+    dock_access: List[DockAccessEntry] = []
     planner_systems: List[str]
     routes_here: List[LocationRouteHere]
     fitting: List[LocationModule]
@@ -135,6 +145,10 @@ class LocationPatch(Schema):
     prices_active: Optional[bool] = None
     deployment_active: Optional[bool] = None
     freight_route_active: Optional[bool] = None
+    industry_delivery: Optional[bool] = None
+    # Corporation or alliance names or tickers that may dock. None leaves
+    # it alone; an empty list means anyone in the alliance.
+    dock_access_names: Optional[List[str]] = None
 
 
 class LocationFittingPaste(Schema):
@@ -263,6 +277,7 @@ class LocationManageRow(Schema):
     prices: bool
     staging: bool
     deployment: bool
+    industry_delivery: bool = False
     price_baseline: bool
     audience: str
     audience_groups: List[str]
@@ -397,6 +412,7 @@ def _card(location, ctx: CardContext) -> dict:
         "type_name": _type_name(location.type_id, location.is_structure),
         "staging": location.staging_active,
         "deployment": location.deployment_active,
+        "industry_delivery": location.industry_delivery,
         "fleets": location.fleets_active,
         "freight": location.freight_active,
         "freight_route": location.freight_route_active,
@@ -653,6 +669,7 @@ def get_manage(request):
                 "prices": row.prices_active,
                 "staging": row.staging_active,
                 "deployment": row.deployment_active,
+                "industry_delivery": row.industry_delivery,
                 "price_baseline": row.price_baseline,
                 "audience": row.audience,
                 "audience_groups": _group_names(row),
@@ -726,6 +743,7 @@ def get_location(request, location_id: int):
     card.update(
         {
             "description": location.description,
+            "dock_access": dock.dock_entries(location),
             "planner_systems": _planner_systems(),
             "routes_here": svc.routes_here(location.location_id),
             "fitting": location.fitting or [],
@@ -768,7 +786,34 @@ def _patch_error(location, sent: dict) -> Optional[str]:
         "market_active", location.market_active
     ):
         return "Price tracking needs Market."
+    if sent.get("dock_access_names"):
+        _, unknown = dock.resolve_dock_names(sent["dock_access_names"])
+        if unknown:
+            return (
+                "Unknown corporation or alliance: " + ", ".join(unknown) + "."
+            )
     return None
+
+
+def _patch_dock_access(location, user, sent: dict):
+    names = sent.get("dock_access_names")
+    if names is None:
+        return
+    entries, _ = dock.resolve_dock_names(names)
+    before = dock.dock_entries(location)
+    if dock.same_entries(entries, before):
+        return
+    location.dock_access = entries
+    svc.record_change(
+        location,
+        user,
+        "dock_access",
+        "changed who can dock",
+        {
+            "from": dock.dock_tickers_of(before),
+            "to": dock.dock_tickers_of(entries),
+        },
+    )
 
 
 def _patch_details(location, user, sent: dict):
@@ -851,6 +896,7 @@ SITE_FLAGS = (
     ("prices_active", "Price tracking"),
     ("deployment_active", "Deployment"),
     ("freight_route_active", "Freight route"),
+    ("industry_delivery", "Industry delivery"),
 )
 
 
@@ -900,6 +946,7 @@ def patch_location(request, location_id: int, payload: LocationPatch):
     _patch_flags(location, request.user, sent)
     _patch_details(location, request.user, sent)
     _patch_audience(location, request.user, sent)
+    _patch_dock_access(location, request.user, sent)
     location.save()
     return get_location(request, location_id)
 

@@ -22,6 +22,7 @@ from industry.models import (
     IndustryOrderItemAssignment,
 )
 from onboarding.orders_gate import require_current_orders_onboarding
+from structures import dock_access
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,19 @@ ROUTE_SPEC = {
         404: ErrorResponse,
     },
 }
+
+
+def _dock_error(order, character) -> str | None:
+    """Only characters that can dock at the delivery location may claim."""
+    location = order.location
+    if location is None or dock_access.character_can_dock(location, character):
+        return None
+    where = location.short_name or location.location_name
+    tickers = ", ".join(dock_access.dock_tickers(location))
+    return (
+        f"{character.character_name} can't dock at {where}. "
+        f"Only {tickers} characters can deliver there."
+    )
 
 
 def post_order_item_assignment(
@@ -75,6 +89,10 @@ def post_order_item_assignment(
                 detail=f"Order item {order_item_id} not found on this order."
             )
         order = item.order
+
+        dock_error = _dock_error(order, character)
+        if dock_error:
+            return 400, ErrorResponse(detail=dock_error)
 
         totals = IndustryOrderItemAssignment.objects.filter(
             order_item=item

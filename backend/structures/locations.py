@@ -731,6 +731,7 @@ RETIRE_FLAGS = (
     "freight_active",
     "freight_route_active",
     "fleets_active",
+    "industry_delivery",
     "market_active",
     "prices_active",
 )

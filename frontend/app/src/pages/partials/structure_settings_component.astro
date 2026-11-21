@@ -17,6 +17,12 @@ try {
     const form = await Astro.request.formData()
     const hour = String(form.get('reinforce_hour') ?? '')
     const audience = String(form.get('audience') ?? 'alliance')
+    const dock_mode = form.get('dock_mode')
+    const dock_access_names = dock_mode === null
+        ? undefined
+        : dock_mode === 'only'
+            ? String(form.get('dock_access_names') ?? '').split(/[,\n]/).map((name) => name.trim()).filter(Boolean)
+            : []
     await patch_structure_location(auth_token, location_id, {
         short_name: String(form.get('short_name') ?? ''),
         description: String(form.get('description') ?? ''),
@@ -31,6 +37,8 @@ try {
         market_active: form.get('market_active') === 'on',
         prices_active: form.get('prices_active') === 'on',
         deployment_active: form.get('deployment_active') === 'on',
+        industry_delivery: form.get('industry_delivery') === 'on',
+        ...(dock_access_names !== undefined && { dock_access_names }),
     })
 } catch (failure) {
     error = (failure as Error).message

@@ -5469,6 +5469,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/industry/orders/delivery-locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Locations a manufacturing order can deliver to */
+        get: operations["industry_endpoints_orders_get_order_delivery_locations_get_order_delivery_locations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/industry/orders/pricing": {
         parameters: {
             query?: never;
@@ -5566,6 +5583,23 @@ export interface paths {
         };
         /** Nested material breakdown for all items in the order */
         get: operations["industry_endpoints_breakdown_get_order_breakdown_get_order_breakdown"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/industry/orders/{order_id}/claim-characters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your characters that can dock at the order's delivery location */
+        get: operations["industry_endpoints_orders_get_order_claim_characters_get_order_claim_characters"];
         put?: never;
         post?: never;
         delete?: never;
@@ -16081,6 +16115,20 @@ export interface components {
             /** Nickname */
             nickname: string | null;
         };
+        /** DockAccessEntry */
+        DockAccessEntry: {
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /**
+             * Ticker
+             * @default
+             */
+            ticker?: string;
+        };
         /** DoctrineCellResponse */
         DoctrineCellResponse: {
             /** Column */
@@ -21607,6 +21655,11 @@ export interface components {
             index_discount: number;
             /** Industry */
             industry: boolean;
+            /**
+             * Industry Delivery
+             * @default false
+             */
+            industry_delivery?: boolean;
             /** Industry Orders */
             industry_orders: number;
             /** Is Structure */
@@ -21699,6 +21752,11 @@ export interface components {
             deployment: boolean;
             /** Description */
             description: string;
+            /**
+             * Dock Access
+             * @default []
+             */
+            dock_access?: components["schemas"]["DockAccessEntry"][];
             /** Facility Tax */
             facility_tax: number | null;
             /** Fitting */
@@ -21719,6 +21777,11 @@ export interface components {
             index_discount: number;
             /** Industry */
             industry: boolean;
+            /**
+             * Industry Delivery
+             * @default false
+             */
+            industry_delivery?: boolean;
             /** Industry Orders */
             industry_orders: number;
             /** Is Structure */
@@ -21857,6 +21920,11 @@ export interface components {
             fleets: boolean;
             /** Freight */
             freight: boolean;
+            /**
+             * Industry Delivery
+             * @default false
+             */
+            industry_delivery?: boolean;
             /** Is Structure */
             is_structure: boolean;
             /** Location Id */
@@ -21988,6 +22056,8 @@ export interface components {
             deployment_active?: boolean | null;
             /** Description */
             description?: string | null;
+            /** Dock Access Names */
+            dock_access_names?: string[] | null;
             /** Fleets Active */
             fleets_active?: boolean | null;
             /** Freight Active */
@@ -21996,6 +22066,8 @@ export interface components {
             freight_route_active?: boolean | null;
             /** Good For */
             good_for?: string[] | null;
+            /** Industry Delivery */
+            industry_delivery?: boolean | null;
             /** Market Active */
             market_active?: boolean | null;
             /** Prices Active */
@@ -24699,6 +24771,41 @@ export interface components {
             /** Produced Only */
             produced_only: boolean;
         };
+        /** OrderClaimCharacterResponse */
+        OrderClaimCharacterResponse: {
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /**
+             * Is Primary
+             * @default false
+             */
+            is_primary?: boolean;
+        };
+        /**
+         * OrderClaimCharactersResponse
+         * @description The user's characters that can dock at the order's delivery location.
+         */
+        OrderClaimCharactersResponse: {
+            /**
+             * Characters
+             * @default []
+             */
+            characters?: components["schemas"]["OrderClaimCharacterResponse"][];
+            /**
+             * Dock Tickers
+             * @default []
+             */
+            dock_tickers?: string[];
+            /**
+             * Location Name
+             * @default
+             */
+            location_name?: string;
+            /** Restricted */
+            restricted: boolean;
+        };
         /**
          * OrderDetailResponse
          * @description Full order with items and who committed to each item.
@@ -24936,10 +25043,40 @@ export interface components {
          * @description Location where the order should be built/delivered.
          */
         OrderLocationResponse: {
+            /**
+             * Costed
+             * @default true
+             */
+            costed?: boolean;
+            /**
+             * Deployment
+             * @default false
+             */
+            deployment?: boolean;
+            /**
+             * Dock Tickers
+             * @default []
+             */
+            dock_tickers?: string[];
             /** Location Id */
             location_id: number;
             /** Location Name */
             location_name: string;
+            /**
+             * Short Name
+             * @default
+             */
+            short_name?: string;
+            /**
+             * Solar System Name
+             * @default
+             */
+            solar_system_name?: string;
+            /**
+             * Staging
+             * @default false
+             */
+            staging?: boolean;
         };
         /**
          * OrderLpStockpileContactResponse
@@ -45042,6 +45179,26 @@ export interface operations {
             };
         };
     };
+    industry_endpoints_orders_get_order_delivery_locations_get_order_delivery_locations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderLocationResponse"][];
+                };
+            };
+        };
+    };
     industry_endpoints_orders_get_order_line_pricing_get_order_line_pricing: {
         parameters: {
             query: {
@@ -45404,6 +45561,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrderBreakdownResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    industry_endpoints_orders_get_order_claim_characters_get_order_claim_characters: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                order_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderClaimCharactersResponse"];
                 };
             };
             /** @description Not Found */
