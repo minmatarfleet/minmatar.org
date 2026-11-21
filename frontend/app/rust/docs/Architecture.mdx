@@ -32,8 +32,11 @@ So Rust keeps the composition idea and files everything by purpose.
 | **Components** | Shared UI, grouped by purpose: Forms, Feedback, Data display, Navigation, Overlays | atoms + molecules + organisms | Domain-free; data in through props and slots |
 | **EVE** | Domain components: characters, corporations, items, ships and the SDE (systems, security, types, slots, search) | organisms | Know about EVE; still presentational, data via props or htmx partials |
 | **Page** | Page chrome: titles, sub-headers, actions, breadcrumbs, text boxes | templates | Every page uses these for its frame |
+| **Features** | The site's feature blocks (fleet lists, campaign boards, order books, ...) rendered with typed fixture data, in scenarios: empty, typical, busy, edge cases | pages | Not a reusable library: a workbench for building and reviewing features without the backend |
 
-Pages themselves (`src/pages/`) are the last tier and live in the app, not in Rust.
+Pages themselves (`src/pages/`) live in the app, not in Rust. **Features** is where their blocks are built and
+reviewed: each story feeds a real block typed fixture data (`rust/fixtures/features/`), so a feature can be
+designed against an empty state, a busy fleet or a pilot with a 40-character name before the API returns one.
 
 A component moves up a tier only when it is reused: a block used by one page stays in `src/components/blocks/`
 next to it and joins Rust (`rust/library.ts`) once a second feature needs it.

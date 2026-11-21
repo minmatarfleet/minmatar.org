@@ -1,5 +1,10 @@
 import { fileURLToPath } from 'node:url'
 import remark_gfm from 'remark-gfm'
+import { load_display_env } from '../rust/display_env.mjs'
+
+// Date formats and other display settings (rust/display.env), for the render
+// server and, through `define` below, the preview bundle.
+const display_env: Record<string, string> = load_display_env()
 import type { StorybookConfig } from '@storybook-astro/framework'
 
 // Rust, the Minmatar Fleet component library (my.minmatar.org/rust).
@@ -80,6 +85,31 @@ const config: StorybookConfig = {
     async viteFinal(vite_config, { configType }) {
         // Browser-only alias for the preview bundle (see shims/async_hooks.ts).
         const aliases = Array.isArray(vite_config.resolve?.alias) ? vite_config.resolve.alias : Object.entries(vite_config.resolve?.alias ?? {}).map(([find, replacement]) => ({ find, replacement }))
+        // Server-only modules the preview bundle reaches through frontmatter
+        // imports; the render server (SSR) keeps the real ones.
+        const browser_shims: Record<string, string> = {
+            'src/helpers/sde_db.ts': fileURLToPath(new URL('./shims/sde_db.ts', import.meta.url)),
+        }
+        vite_config.plugins = [
+            {
+                name: 'rust:browser-shims',
+                enforce: 'pre',
+                async resolveId(source, importer, options) {
+                    if (options?.ssr)
+                        return null
+                    if (source === 'node:crypto' || source === 'crypto')
+                        return fileURLToPath(new URL('./shims/crypto.ts', import.meta.url))
+                    const resolved = await this.resolve(source, importer, { ...options, skipSelf: true })
+                    const shim = resolved && Object.entries(browser_shims).find(([path]) => resolved.id.endsWith(path))?.[1]
+                    return shim ?? null
+                },
+            },
+            ...(vite_config.plugins ?? []),
+        ]
+        vite_config.define = {
+            ...vite_config.define,
+            ...Object.fromEntries(Object.entries(display_env).map(([key, value]) => [`import.meta.env.${key}`, JSON.stringify(value)])),
+        }
         vite_config.resolve = {
             ...vite_config.resolve,
             alias: [

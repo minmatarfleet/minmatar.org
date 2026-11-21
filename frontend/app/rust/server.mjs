@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url'
 import { Hono } from 'hono'
 import { serve } from '@hono/node-server'
 import { serveStatic } from '@hono/node-server/serve-static'
+import { load_display_env } from './display_env.mjs'
 
 const app_dir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const static_dir = resolve(app_dir, process.env.RUST_STATIC_DIR ?? 'storybook-static')
@@ -166,6 +167,9 @@ async function warm_up(render_app, story_components) {
 }
 
 async function main() {
+    // Date formats the components render with (rust/display.env), over the
+    // build's dummy values.
+    load_display_env()
     const story_components = read_story_components(readFileSync(server_entry, 'utf8'))
     const allowed_components = component_allowlist()
     // The render bundle resolves the project's snapshot relative to itself and

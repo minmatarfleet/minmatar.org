@@ -12,6 +12,7 @@ than three stories, no docs description, or no `play()` tests.
 
 | Path | What |
 | --- | --- |
+| `rust/CATALOG.md` | Generated summary of every component (import, props, slots, stories) for people and AI agents; regenerate with `UPDATE_CATALOG=1 npx vitest run testing/rust/catalog.test.ts` |
 | `rust/library.ts` | The inventory, grouped by sidebar category (see [Architecture](?path=/docs/rust-architecture--docs)) |
 | `rust/stories/<category path>/<Component>.stories.ts` | One file per component. The folder is the category lower-cased with hyphens: `Components/Data display` → `components/data-display/StatCard.stories.ts` |
 | `rust/foundations/tokens.ts` | Reads tokens, fonts, themes and off-token colours from the source for the Foundations pages and `tokens.json` |
@@ -122,6 +123,20 @@ parameters: {
 
 Unmocked htmx requests get an empty 404. `window.__rust_htmx_requests` records every request, so a
 `browser` play function can assert what was sent.
+
+## Features: feature blocks with test data
+
+`rust/stories/features/<area>/<Block>.stories.ts`, title `Features/<Area>/<Block>`. These are for building and
+reviewing the site's own feature blocks, not reusable components, so they sit outside `rust/library.ts`.
+
+- **Data comes from fixtures** in `rust/fixtures/features/<area>.ts`, typed with the component's own prop types and
+  the generated API types (`@dtypes/api.minmatar.org`), so `npm run check` fails when the API or the props change
+  and the fixture no longer fits. Use real EVE ids and names (see `_controls.ts` `EVE`), never lorem ipsum.
+- **One story per scenario**: empty, one item, typical, busy (many rows), edge cases (long names, missing
+  optional data, errors, permission variants such as FC vs member). Name stories after the scenario.
+- **Only blocks that render from props.** A block that fetches in its frontmatter (`get_*`, `fetch`, `get_gates`)
+  can't render here; leave it out, or refactor it to take its data as props in its own pull request.
+- `testing/rust/features.test.ts` requires a docs description, at least two stories and a `play()` on each.
 
 ## Running
 

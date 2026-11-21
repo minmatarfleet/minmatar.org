@@ -5,7 +5,6 @@ import 'medium-zoom/dist/style.css'
 import '../src/styles/base.scss'
 import '../src/styles/tailwind.css'
 import './rust.scss'
-import './site_globals.js'
 import { bind_swap_init } from '@helpers/swap_init'
 import { bind_partial_styles } from '@helpers/htmx_partial_styles'
 
@@ -72,6 +71,7 @@ const preview = {
                     'Components', ['Forms', 'Feedback', 'Data display', 'Navigation', 'Overlays'],
                     'EVE', ['SDE'],
                     'Page',
+                    'Features', ['Fleets', 'Campaigns', 'Industry', 'Ships', 'Corporations and tribes', 'Intel and combat', 'Content'],
                 ],
             },
         },

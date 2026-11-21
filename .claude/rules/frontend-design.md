@@ -27,9 +27,12 @@ Read **`docs/frontend-design.md`** — it is the source of truth. The rules belo
 - Compose from `src/components/compositions/` (`Wrapper`, `Grid`, `FlexInline`, `FlexInlineSiblings`, `Flexblock`, `FixedFluid`, `FluidFixed`, `BlockList`, `XFadeScroll`, `Cover`, `Center`) instead of hand-rolling flex/grid. Wide tables and chip rows scroll inside `XFadeScroll`, not a hand-rolled `overflow-x: auto`.
 - Pass spacing via tokens. Reuse `Button`, `Badge`, `Tag`, `Input` rather than restyling raw elements. A bordered panel is `ComponentBlock`; `Card` is only the picture card with hover actions.
 
-## 4.1 Rust (the component library)
+## 4.1 Rust (the component library) — look here first
 
-- Shared components live in Rust (`frontend/app/rust/`, deployed at `/rust`). A component used by a second feature goes into `rust/library.ts` with a stories file (≥3 stories, `play()` tests, a docs description) in the same PR; `testing/rust/library.test.ts` enforces it.
+- **Before writing UI, read `frontend/app/rust/CATALOG.md`** (every shared component: import, props, slots, stories) and use the component's stories file as the usage example. Full workflow: the `rust-components` skill (`.claude/skills/rust-components/SKILL.md`). Rust is deployed at `/rust`.
+- Order of preference: use a component as is → add a prop to it (with a story) → compose → write a new one.
+- A component used by a second feature goes into `rust/library.ts` with a stories file (≥3 stories, `play()` tests, a docs description) in the same PR; `testing/rust/library.test.ts` enforces it. A feature block that renders from props gets a `Features/<Area>` story with typed fixtures in `rust/fixtures/features/`.
+- After changing a library component or tokens, regenerate: `UPDATE_CATALOG=1 npx vitest run testing/rust/catalog.test.ts`, `UPDATE_TOKENS=1 npx vitest run testing/rust/foundations.test.ts` (both fail in CI when stale).
 - Conventions: `frontend/app/rust/docs/WritingStories.mdx`. Run one folder's stories as tests with `RUST_STORY_FILTER=components/forms npx vitest run testing/rust`.
 
 ## 5. Component conventions

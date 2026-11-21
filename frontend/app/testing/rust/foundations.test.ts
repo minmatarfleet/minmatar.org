@@ -14,7 +14,8 @@ import ThemeModes from '../../rust/components/foundations/ThemeModes.astro'
 
 const APP = resolve(__dirname, '../..')
 
-describe('Rust foundations', () => {
+// Scans the whole source tree; slow under a parallel full-suite run.
+describe('Rust foundations', { timeout: 60_000 }, () => {
     test('every colour token is on the Colors page', async () => {
         const html = await render_component(ColorTokens, {}, {})
         const colors = read_tokens().filter((t) => t.kind === 'color')

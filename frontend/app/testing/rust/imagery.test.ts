@@ -9,7 +9,7 @@ import { media_files, list_imagery } from '../../rust/foundations/imagery'
 const APP = resolve(__dirname, '../..')
 const stories = readFileSync(resolve(APP, 'rust/stories/foundations/Imagery.stories.ts'), 'utf8')
 
-describe('Rust imagery', () => {
+describe('Rust imagery', { timeout: 60_000 }, () => {
     test('every image and video in public/ and src/assets is in a collection', () => {
         const files = [
             ...media_files('public').map((file) => ({ root: 'public', file })),

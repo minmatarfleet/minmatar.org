@@ -23,8 +23,10 @@ Astro's Container API. Controls therefore re-render real components in productio
 
 | Path | |
 | --- | --- |
+| `CATALOG.md` | Generated: every library component's import, props, slots and stories, plus the Features index, in one file for people and AI agents (`UPDATE_CATALOG=1 npx vitest run testing/rust/catalog.test.ts`) |
 | `library.ts` | The inventory of shared components, by category. `testing/rust/library.test.ts` requires a stories file for each, with at least 3 stories, `play()` tests and a docs description |
-| `stories/<category path>/*.stories.ts` | One stories file per component: `foundations/`, `layout/`, `components/<purpose>/`, `eve/` (and `eve/sde/`), `page/` |
+| `stories/<category path>/*.stories.ts` | One stories file per component: `foundations/`, `layout/`, `components/<purpose>/`, `eve/` (and `eve/sde/`), `page/`, and `features/<area>/` for feature blocks |
+| `fixtures/` | `sde.json` (real SDE data) and `features/<area>.ts` (typed test data for the Features stories) |
 | `foundations/tokens.ts` | Reads tokens, fonts, theme modes and hand-written colours from the source for the Foundations pages |
 | `public/tokens.json` | Every root token in the Design Tokens Community Group format, served at `/rust/tokens.json` (`testing/rust/foundations.test.ts` keeps it current; `UPDATE_TOKENS=1` rewrites it) |
 | `link_snapshot.mjs` | Post-build: points the render server's project snapshot at the app |
