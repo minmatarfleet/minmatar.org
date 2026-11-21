@@ -48,3 +48,25 @@ class DesktopSettingsSchema(BaseModel):
 class DesktopSettingsPatchSchema(BaseModel):
     # A null value removes the key.
     values: dict[str, Any]
+
+
+class DiscordNicknameOptionSchema(BaseModel):
+    """One character the pilot can show as their Discord nickname."""
+
+    character_id: int
+    character_name: str
+    nickname: str
+
+
+class DiscordNicknameSchema(BaseModel):
+    """The pilot's Discord nickname choice and the characters they can pick."""
+
+    # None means the main character.
+    character_id: Optional[int] = None
+    current: Optional[str] = None
+    options: List[DiscordNicknameOptionSchema] = []
+
+
+class DiscordNicknamePatchSchema(BaseModel):
+    # None goes back to the main character.
+    character_id: Optional[int] = None

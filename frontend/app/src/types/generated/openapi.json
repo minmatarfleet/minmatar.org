@@ -12640,6 +12640,84 @@
         "title": "DiscordMemberHold",
         "type": "object"
       },
+      "DiscordNicknameOptionSchema": {
+        "description": "One character the pilot can show as their Discord nickname.",
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "nickname": {
+            "title": "Nickname",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "nickname"
+        ],
+        "title": "DiscordNicknameOptionSchema",
+        "type": "object"
+      },
+      "DiscordNicknamePatchSchema": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          }
+        },
+        "title": "DiscordNicknamePatchSchema",
+        "type": "object"
+      },
+      "DiscordNicknameSchema": {
+        "description": "The pilot's Discord nickname choice and the characters they can pick.",
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "current": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current"
+          },
+          "options": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DiscordNicknameOptionSchema"
+            },
+            "title": "Options",
+            "type": "array"
+          }
+        },
+        "title": "DiscordNicknameSchema",
+        "type": "object"
+      },
       "DiscordNpsiActionRequest": {
         "properties": {
           "discord_user_id": {
@@ -94898,6 +94976,89 @@
           }
         ],
         "summary": "Merge changes into the desktop app settings on your account",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/users/me/discord-nickname": {
+      "get": {
+        "operationId": "users_router_get_discord_nickname",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscordNicknameSchema"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get which of your characters is shown as your Discord nickname",
+        "tags": [
+          "Authentication"
+        ]
+      },
+      "patch": {
+        "description": "Any character you own. The corporation ticker still follows the chosen character's corporation. A null character_id goes back to your main.",
+        "operationId": "users_router_patch_discord_nickname",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscordNicknamePatchSchema"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscordNicknameSchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Choose which of your characters is shown as your Discord nickname",
         "tags": [
           "Authentication"
         ]

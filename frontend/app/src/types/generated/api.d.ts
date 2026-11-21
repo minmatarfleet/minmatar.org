@@ -11023,6 +11023,27 @@ export interface paths {
         patch: operations["users_router_patch_desktop_settings"];
         trace?: never;
     };
+    "/api/users/me/discord-nickname": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get which of your characters is shown as your Discord nickname */
+        get: operations["users_router_get_discord_nickname"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Choose which of your characters is shown as your Discord nickname
+         * @description Any character you own. The corporation ticker still follows the chosen character's corporation. A null character_id goes back to your main.
+         */
+        patch: operations["users_router_patch_discord_nickname"];
+        trace?: never;
+    };
     "/api/users/me/gates": {
         parameters: {
             query?: never;
@@ -16339,6 +16360,38 @@ export interface components {
              * Format: date-time
              */
             since: string;
+        };
+        /**
+         * DiscordNicknameOptionSchema
+         * @description One character the pilot can show as their Discord nickname.
+         */
+        DiscordNicknameOptionSchema: {
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /** Nickname */
+            nickname: string;
+        };
+        /** DiscordNicknamePatchSchema */
+        DiscordNicknamePatchSchema: {
+            /** Character Id */
+            character_id?: number | null;
+        };
+        /**
+         * DiscordNicknameSchema
+         * @description The pilot's Discord nickname choice and the characters they can pick.
+         */
+        DiscordNicknameSchema: {
+            /** Character Id */
+            character_id?: number | null;
+            /** Current */
+            current?: string | null;
+            /**
+             * Options
+             * @default []
+             */
+            options?: components["schemas"]["DiscordNicknameOptionSchema"][];
         };
         /** DiscordNpsiActionRequest */
         DiscordNpsiActionRequest: {
@@ -59905,6 +59958,68 @@ export interface operations {
             };
             /** @description Bad Request */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    users_router_get_discord_nickname: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscordNicknameSchema"];
+                };
+            };
+        };
+    };
+    users_router_patch_discord_nickname: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscordNicknamePatchSchema"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscordNicknameSchema"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

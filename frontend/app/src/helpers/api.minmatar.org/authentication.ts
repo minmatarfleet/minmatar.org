@@ -1,4 +1,4 @@
-import type { UserProfile } from '@dtypes/api.minmatar.org'
+import type { UserProfile, DiscordNickname, DiscordNicknamePatch } from '@dtypes/api.minmatar.org'
 import { api_request, api_status_is } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/users`
@@ -34,5 +34,21 @@ export async function sync_user_with_discord(access_token:string, user_id:number
         method: 'POST',
         token: access_token,
         error: 'Error syncing user roles with Discord',
+    })
+}
+
+export async function get_discord_nickname(access_token:string) {
+    return await api_request<DiscordNickname>(`${API_ENDPOINT}/me/discord-nickname`, {
+        token: access_token,
+        error: 'Error fetching Discord nickname',
+    })
+}
+
+export async function set_discord_nickname(access_token:string, body:DiscordNicknamePatch) {
+    return await api_request<DiscordNickname>(`${API_ENDPOINT}/me/discord-nickname`, {
+        method: 'PATCH',
+        token: access_token,
+        body: body,
+        error: 'Error setting Discord nickname',
     })
 }

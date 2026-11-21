@@ -37,17 +37,19 @@ export const Typical = {
         const canvas = within(canvasElement)
         await expect(canvas.getByRole('heading', { name: 'Structures' })).toBeVisible()
         await expect(canvas.getAllByRole('row')).toHaveLength(structures_typical.length + 1)
-        await expect(canvas.getByText('Amamake - Freeport')).toBeVisible()
+        // The name lives on the copy button (icon) as "<name> · <type>".
+        await expect(canvas.getByRole('button', { name: /^Amamake - Freeport · / })).toBeVisible()
         await expect(canvas.getByText('1 destroyed · 4 remaining')).toBeVisible()
         await expect(canvas.getByText('Reinforced')).toBeVisible()
         await expect(canvas.getByText('Destroyed')).toBeVisible()
         await expect(canvas.getByText('Unanchored')).toBeVisible()
-        await expect(canvas.getAllByText('Friendly').length).toBeGreaterThan(0)
-        await expect(canvas.getAllByText('Hostile').length).toBeGreaterThan(0)
-        await expect(canvas.getByText('Neutral')).toBeVisible()
+        // Owner shows the owning alliance's ticker.
+        await expect(canvas.getByText('MINMATAR')).toBeVisible()
+        await expect(canvas.getAllByText('SNUFF').length).toBeGreaterThan(0)
         await expect(canvas.getByText('18:00')).toBeVisible()
-        // Structures with a recorded fit carry a Fit tag.
-        await expect(canvas.getAllByText('Fit')).toHaveLength(2)
+        // Structures with a recorded fit carry a Fit tag (the column header also reads Fit).
+        const fit_cells = canvas.getAllByRole('cell').filter(cell => cell.textContent?.trim() === 'Fit')
+        await expect(fit_cells).toHaveLength(2)
         await expect(canvas.queryByRole('link', { name: 'Add timer' })).toBeNull()
     },
 }
@@ -66,10 +68,9 @@ export const SingleReinforced = {
     play: async ({ canvasElement }: Ctx) => {
         const canvas = within(canvasElement)
         await expect(canvas.getAllByRole('row')).toHaveLength(2)
-        await expect(canvas.getByText('Auga - Forward Keep')).toBeVisible()
+        await expect(canvas.getByRole('button', { name: /^Auga - Forward Keep · / })).toBeVisible()
         await expect(canvas.getByText('Reinforced')).toBeVisible()
-        // Owner and related alliance both read Clan Vanguard of Amarr.
-        await expect(canvas.getAllByText('Clan Vanguard of Amarr')).toHaveLength(2)
+        await expect(canvas.getByText('SNUFF')).toBeVisible()
     },
 }
 
@@ -78,8 +79,8 @@ export const Busy = {
     play: async ({ canvasElement }: Ctx) => {
         const canvas = within(canvasElement)
         await expect(canvas.getAllByRole('row')).toHaveLength(15)
-        await expect(canvas.getByText('Amamake - Citadel 1')).toBeVisible()
-        await expect(canvas.getByText('Auga - Citadel 2')).toBeVisible()
+        await expect(canvas.getByRole('button', { name: /^Amamake - Citadel 1 · / })).toBeVisible()
+        await expect(canvas.getByRole('button', { name: /^Auga - Citadel 2 · / })).toBeVisible()
     },
 }
 
@@ -99,9 +100,9 @@ export const EdgeCases = {
     play: async ({ canvasElement }: Ctx) => {
         const canvas = within(canvasElement)
         await expect(canvas.getAllByRole('row')).toHaveLength(3)
-        await expect(canvas.getByText(/A Structure With An Extraordinarily Long Name/)).toBeVisible()
+        await expect(canvas.getByRole('button', { name: /A Structure With An Extraordinarily Long Name/ })).toBeVisible()
         // A reinforcement hour of 0 is a real value, not "no hour".
         await expect(canvas.getByText('00:00')).toBeVisible()
-        await expect(canvas.getByText('Unknown Deployable')).toBeVisible()
+        await expect(canvas.getByRole('button', { name: /^Unknown Deployable · / })).toBeVisible()
     },
 }

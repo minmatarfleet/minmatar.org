@@ -23,6 +23,14 @@ class DiscordUser(models.Model):
         User, on_delete=models.CASCADE, related_name="discord_user"
     )
     nickname = models.CharField(max_length=100, blank=True, null=True)
+    # The pilot's pick for the name shown on Discord; empty means the main.
+    nickname_character = models.ForeignKey(
+        "eveonline.EveCharacter",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
     is_down_under = models.BooleanField(default=False)
     dress_wearer = models.BooleanField(default=False)
 

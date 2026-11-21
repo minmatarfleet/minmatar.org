@@ -43,6 +43,8 @@ export interface TribeCharacterRef {
     character_name: string;
 }
 
+export type DiscordNickname = ApiResponse<'DiscordNicknameSchema'>
+export type DiscordNicknamePatch = ApiRequest<'DiscordNicknamePatchSchema'>
 export type TimezoneTag = ApiResponse<'TimezoneTag'>
 export type TribeQualifyingAssetType = ApiResponse<'QualifyingAssetTypeSchema'>
 export type FittingBuyCustomFitCheck = ApiResponse<'CustomFitCheckResponse'>
