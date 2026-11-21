@@ -1,15 +1,18 @@
 # Group fleets for associate members: seeing and pinging Mining fleets
 
 **Status:** concept, nothing built yet. This doc explains why M-EXC miners in the
-Mining group can't see or ping Mining fleets, and proposes a permission rule
-that fixes it for every tribe group, not just Mining. Read the
+Mining group can't see or ping Mining fleets. It proposes opening the Fleets
+pages to the whole community and letting **each fleet** decide who sees it,
+which fixes this for every tribe group, not just Mining. Read the
 [production check](#production-check) before building: it confirms which of the
 blockers below apply today.
 
 ## The report
 
 Pilots of Minmatar Extraction Company (M-EXC) are active members of the Mining
-tribe group (`/alliance/tribes/2/6/`). The Mining chief reports:
+tribe group (`/alliance/tribes/2/6/`). M-EXC is corporation `98838663`, the
+buyback corporation (`BUYBACK_CORPORATION_ID` in `backend/buyback/models.py`).
+The Mining chief reports:
 
 1. M-EXC members **don't see the Fleets tab** on the website at all, so they
    can neither see upcoming fleets nor create one.
@@ -36,13 +39,17 @@ The site's fleet permissions are alliance-wide features decided by affiliation
 Each feature has exactly one scope (`_evaluate_scope` in
 `backend/groups/helpers/feature_access.py`). `fleets.view` is resource-match
 (affiliation plus the fleet's audience), and `fleets.create` is affiliation.
-Neither can also be granted to a tribe group's members, so the Mining group
-can't be added to them through the admin.
+Neither scope looks at tribe group membership. `can_use_feature` also accepts
+each feature's old Django permission (`fleets.view_evefleet`,
+`fleets.add_evefleet`), so an auth group holding that permission gets the
+feature, but there's no way to say "the Mining group's members" in either
+feature.
 
 Tribe groups already have their own fleet rights, separate from these
 features (`backend/tribes/helpers/publishing.py`):
 
-- **Scheduling** is `can_publish(user, group, "fleet")`: the group is active,
+- **Scheduling** is `can_publish(user, group, "fleet")`, and the groups a
+  pilot may host for are `publishable_groups(user, "fleet")`: the group is active,
   `fleets_enabled` is on, and the pilot manages the group or the group's
   `fleet_policy` allows them (chiefs, chosen pilots, or any active member).
   `POST /api/fleets` and `POST /api/fleets/ping-preview` already skip
@@ -58,8 +65,8 @@ ask for the alliance-wide features.
 
 | # | Step | What decides it today | Effect on an Associate group member |
 | --- | --- | --- | --- |
-| 1 | See the Fleets entry and `/fleets/upcoming/` | `fleets.view` | Allowed **by default**. The report says it isn't, so production differs: `fleets.view` isn't wired to Associate, or the pilots don't have the Associate affiliation (no main character set, for example). The production check shows which. |
-| 2 | See the group's fleets on its page and open a fleet | `fleets.view` (page gate, `GET /api/fleets/v3`, `GET /api/fleets/{id}`) | Same as 1. Being an active member of the group doesn't count. |
+| 1 | See the Fleets entry and `/fleets/upcoming/` | `fleets.view` as a **page gate** | Allowed **by default**. The report says it isn't, so production differs: `fleets.view` isn't wired to Associate, or the pilots don't have the Associate affiliation (no main character set, for example). The production check shows which. |
+| 2 | See the group's fleets on its page and open a fleet | `fleets.view` again as a page gate, then per fleet in `GET /api/fleets/v3` and `GET /api/fleets/{id}` | Same as 1. Being an active member of the group doesn't count at the page gate, though the per-fleet checks already let members see their group's fleets. |
 | 3 | Open the fleet form for the group (`/fleets/add/?host=6`) | Page: `fleets.create` **or** a publishable group (already group-aware). Reference data: `fleets.create` only. | The page opens, but `get_audiences` and `get_locations` return 403, so the form fails to load. **A code bug even when the policy allows the pilot.** |
 | 4 | Schedule as the group | `can_publish` (`fleet_policy`) | Works once the Mining chief allows members (see [the earlier settings check](#settings-the-mining-chief-controls)). |
 | 5 | Start the fleet, which sends the ping | `POST /api/fleets/{id}/tracking`: the fleet's creator only. Reaching the button needs the fleet page (blocker 2). `/fleets/start/` and "start now" need `fleets.create`. | Blocked by 2, and by `fleets.create` for start-now. |
@@ -82,56 +89,87 @@ production check tells apart:
 If the form's wording made the chief expect a ping at scheduling time, the form
 copy is wrong and should say "pings the Mining role when you start the fleet".
 
-## Proposal: a group fleet follows the group's rules
+## Proposal: the Fleets pages are open, each fleet decides who sees it
 
-> **Rule.** For a fleet hosted by a tribe group, the group's own rights decide
-> who may see, schedule, and start it. The alliance-wide `fleets.view` and
-> `fleets.create` features decide alliance fleets, and the fleet pages a pilot
-> can only reach through them.
+> **Rule.** Everyone in the community, whatever their affiliation (Alliance,
+> Militia, Associate, ...), can open the Fleets pages. Which fleets a pilot sees
+> there is decided **per fleet** by the API: its audience, its host group, and
+> whether it's private. The page gate stops being the thing that hides fleets.
 
-The repo already follows this rule when a group fleet is created. The proposal
-applies it to the rest of the flow. It doesn't widen any alliance permission:
-an associate gets nothing outside the groups whose chiefs let them in.
+This needs no new feature and no second set of gates. Most of it exists:
 
-### 1. Seeing group fleets (backend)
+- **Per-fleet filtering:** `visible_fleets_q` (`backend/fleets/helpers/visibility.py`)
+  already hides members-only group fleets and private fleets from pilots who
+  can't see them, and lets group members, managers and the creator see them.
+- **Public history:** `public_kills_allowed` already lets anyone with the link
+  open a fleet's kills page (`GET /api/fleets/{id}/public-kills`,
+  `/fleets/{id}/kills`). Members-only group fleets, hidden audiences and
+  cancelled fleets are left out.
+- **Rosters:** hidden by default (`EveFleet.hide_volunteers`, default on). Only
+  the fleet's FC and Strategic FCs see every name (`sees_all_volunteers`).
 
-- `GET /api/fleets/{id}` and the volunteer/role endpoints (`_fleet_authorized`
-  in `backend/fleets/endpoints/helpers.py`): also allow a group fleet when
-  `fleet_visible_to(user, fleet)` is true for a reason other than "open to the
-  alliance", that is, creator, active member, or manager.
-  An open group fleet keeps needing `fleets.view` for outsiders, as today.
-- `GET /api/fleets/v3`: without `fleets.view`, answer only the group fleets the
-  pilot can see through their memberships (`visible_fleets_q` restricted to
-  `host_group` in the pilot's groups) instead of 403. With `fleets.view`,
-  nothing changes.
-- A new pilot feature **`fleets.view_group`**, scope `tribe_membership`, meaning
-  "an active member, or a manager, of at least one active group with
-  `fleets_enabled`". It needs no tribe group list: any such group counts.
-  It's what the website gates on, so gates still map to pilot features
-  (`docs/auth/frontend-feature-gating.md`). On-leave pilots are denied, like the
-  other fleet features.
+### What each viewer sees
 
-### 2. Seeing group fleets (website)
+| Viewer | Upcoming fleets | Finished fleets and history |
+| --- | --- | --- |
+| Public, signed out | none | type, result, kills and losses, ship classes, battle report (killmails are public on zKill anyway) |
+| Community member | fleets they're allowed to see: matching audience, their groups' fleets, private fleets they're invited to | as above, plus their own participation |
+| Group member, FC, manager | as above, plus members-only group fleets | rosters and participants, where the roster settings allow |
 
-- A gate `fleets.view_group` in `frontend/app/src/json/feature_gates.json`.
-- The Neocom Fleets entry, `/fleets/upcoming/` and a fleet's page show for
-  `fleets.view` **or** `fleets.view_group`. Without `fleets.view` the list is
-  whatever the API answers, so only that pilot's group fleets.
-- The group page's Fleets tab (`[group_id].astro`) shows for `fleets.view` or
-  for an active member or manager of that group (the group response already
-  says which).
+Names, full rosters and FC time patterns stay behind membership. Upcoming
+fleets and form-up times stay behind sign-in.
+
+### 1. Needed before the pages open: the list filters by audience (backend)
+
+`GET /api/fleets/v3` (`backend/fleets/endpoints/catalog/get_v3_fleets.py`)
+doesn't check a fleet's **audience groups**. It drops hidden audiences,
+members-only group fleets and private fleets, nothing else. The fleet detail
+endpoint does run the audience-group check, through `fleets.view` with the
+fleet (`_evaluate_resource_match`: a fleet whose audience lists auth groups is
+visible only to pilots in one of them, or whose affiliation's group is listed).
+
+Today that gap is covered by who can reach the page. Once the page is open to
+everyone, an Alliance-only fleet would show up in an associate's list. So:
+
+- Add the audience-group condition to the list as a queryset filter (next to
+  `visible_fleets_q`): no audience or an audience with no groups, **or** an
+  audience group the pilot is in, **or** the group of the pilot's affiliation.
+  Group fleets have no audience and keep following `visible_fleets_q`.
+  Strategic FCs and superusers still see everything.
+- One helper decides both the list and the detail, so they can't drift. A test
+  proves a fleet hidden from a pilot by the detail endpoint is also missing from
+  their list.
+- Without `fleets.view`, the list answers the fleets the pilot may see instead
+  of 403. For an Associate that's their groups' fleets and the fleets whose
+  audience includes them.
+
+### 2. Opening the pages (website)
+
+- The Neocom Fleets entry, `/fleets/upcoming/`, `/fleets/history/`, a fleet's
+  page (`/fleets/upcoming/{id}`, `/fleets/history/{id}` and its report), and the
+  partials behind them stop checking the `fleets.view` gate. They need a signed-in
+  pilot, and show whatever the API answers.
+- A fleet the API refuses renders as not found or forbidden, as today. The
+  per-fleet checks on the API (`_fleet_authorized`, `visible_fleets_q`,
+  `sees_all_volunteers`) stay as they are.
+- The group page's Fleets tab (`[group_id].astro`) shows for any signed-in pilot
+  and lists what the API answers for that group.
+- Signed-out visitors keep the public kills page, which already works. Opening
+  fleet history and the battle report to them is a later step: `GET
+  /api/fleets/v3` requires sign-in today, so it needs a public mode that never
+  returns upcoming fleets, names or rosters.
 
 ### 3. Scheduling and starting (backend)
 
 - `GET /api/fleets/v2/locations` and `GET /api/fleets/types`: allow
-  `fleets.create` **or** "can publish fleets for some group" (the same list
-  `get_publishable_groups(user, "fleet")` answers). Fleet types are already
+  `fleets.create` **or** "can publish fleets for some group"
+  (`publishable_groups(user, "fleet")` is non-empty). Fleet types are already
   limited to `GROUP_FLEET_TYPES` when the fleet has a host group.
 - `GET /api/fleets/audiences` stays `fleets.create` only. A group fleet has no
   audience, so `add.astro` must stop requiring it when the pilot can only host
   as a group (send `[]`, don't fail the form).
 - `POST /api/fleets/{id}/tracking` (start) stays creator-only. It needs no
-  change once the creator can reach the fleet's page.
+  change once the creator can reach the fleet's page, which §2 opens.
 - Start-now (`/fleets/start/`, the flash form, `POST /api/fleets/start-now`):
   for a group fleet, `can_publish` instead of `fleets.create`, as for
   scheduling. This can be a second step: scheduling for "now" and pressing
@@ -167,6 +205,12 @@ per pilot (`can_publish`), and the corporation plays no part:
 - **Give Associates `fleets.create` in the admin.** No code, but every
   associate could then schedule alliance fleets with an `@everyone` ping. Too
   broad, and it ignores the group's own policy.
+- **A new `fleets.view_group` feature (tribe-membership scope) and gate.** The
+  first draft of this concept. It adds a second set of gates next to
+  `fleets.view` while the API already decides visibility per fleet, and a
+  tribe-membership feature with no tribe groups listed denies everyone
+  (`_evaluate_tribe_membership`), so it would need every fleet-hosting group
+  listed in the admin.
 - **Wire `fleets.view`/`fleets.create` to the Mining group.** Not possible:
   a feature has one scope and these two aren't tribe-membership features.
   Changing their scope would change who sees alliance fleets.
@@ -181,9 +225,11 @@ per pilot (`can_publish`), and the corporation plays no part:
 - Members-only group fleets stay hidden from everyone outside the group
   (tribe-publishing rule 1).
 - Group fleets still never pre-ping (rule 3).
-- No desktop-facing payload changes. `GET /api/fleets/v3` keeps its shape and
-  answers more pilots. It's on the desktop's list
-  (`.claude/rules/desktop-release.md`), so the change stays additive.
+- No desktop-facing payload changes. `GET /api/fleets/v3` keeps its shape. It
+  answers pilots without `fleets.view` instead of 403, and leaves out fleets
+  whose audience the pilot isn't in, which the detail endpoint already refuses
+  them. It's on the desktop's list (`.claude/rules/desktop-release.md`), and no
+  field changes.
 
 ## Production check
 
@@ -199,7 +245,7 @@ docker compose -f docker-compose-prod.yml exec app python3 manage.py shell -c 'f
 
 | Output | Means | Fix |
 | --- | --- | --- |
-| `FEATURE fleets.view` without `Associate` | blocker 1 is a setting | Add Associate in the admin (Pilot features), or rely on `fleets.view_group` once built. |
+| `FEATURE fleets.view` without `Associate` | blocker 1 is a setting | Add Associate in the admin (Pilot features) today. Once the pages are open, the page no longer asks. |
 | A pilot with `affiliation None` | no main character or no matching affiliation | The pilot sets a main; check the Associate affiliation lists alliance `99012009`. |
 | `status on_leave` | the fleet features deny on-leave pilots | Expected. |
 | `policy chiefs`, or `chosen` without the pilot | blocker 4 | The Mining chief changes the policy. |
@@ -212,21 +258,25 @@ docker compose -f docker-compose-prod.yml exec app python3 manage.py shell -c 'f
 Small PRs, one layer at a time:
 
 1. **This concept** (docs only).
-2. **Backend:** `fleets.view_group` feature, group-aware fleet detail, list,
-   locations and types, with tests for an Associate active member, a
-   non-member Associate (still blocked from members-only fleets), and an
-   on-leave member. Regenerate the OpenAPI schema and contracts.
-3. **Website:** the gate, Neocom/upcoming/fleet page/group Fleets tab, the
-   form without audiences for group-only hosts, and the ping-preview warning
-   and copy.
-4. **Optional:** start-now for group fleets.
+2. **Backend:** the audience-group filter on `GET /api/fleets/v3`, shared with
+   the detail check; the list answering pilots without `fleets.view`; locations
+   and types for group publishers. Tests: an Associate active member sees their
+   group's fleets; a non-member Associate doesn't see members-only group fleets
+   or an Alliance-only audience fleet, in the list or the detail; an on-leave
+   member. Regenerate the OpenAPI schema and contracts.
+3. **Website:** open the Fleets pages, partials, history and the group Fleets
+   tab to signed-in pilots; the form without audiences for group-only hosts;
+   the ping-preview warning and copy. This must ship **after** 2, or the list
+   leaks audience fleets.
+4. **Later:** public, signed-out fleet history and battle reports; start-now
+   for group fleets.
 
 ## Open questions
 
 1. What does the production check show? It decides whether blocker 1 is a
-   setting to fix today or only fixed by `fleets.view_group`.
-2. Should `fleets.view_group` let a member see **all** upcoming alliance fleets,
-   or only their groups' fleets (as proposed)? Only their groups' fleets keeps
-   associates' access unchanged outside the groups they're in.
+   setting to fix today, before the pages open.
+2. Does "everyone in the community" include the **Guest** affiliation, or only
+   Alliance, Militia and Associate? Per-fleet checks keep alliance fleets from
+   Guests either way, but it decides who sees the Neocom entry.
 3. Should Mining's fleet policy be "Any active member" or "Chiefs and chosen
    pilots"? This is the Mining chief's call.
