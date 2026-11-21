@@ -91,8 +91,8 @@ copy is wrong and should say "pings the Mining role when you start the fleet".
 
 ## Proposal: the Fleets pages are open, each fleet decides who sees it
 
-> **Rule.** Everyone in the community, whatever their affiliation (Alliance,
-> Militia, Associate, ...), can open the Fleets pages. Which fleets a pilot sees
+> **Rule.** Every pilot with the Alliance, Militia or Associate affiliation can
+> open the Fleets pages. Guests can't; they keep only the public kills page. Which fleets a pilot sees
 > there is decided **per fleet** by the API: its audience, its host group, and
 > whether it's private. The page gate stops being the thing that hides fleets.
 
@@ -128,8 +128,8 @@ endpoint does run the audience-group check, through `fleets.view` with the
 fleet (`_evaluate_resource_match`: a fleet whose audience lists auth groups is
 visible only to pilots in one of them, or whose affiliation's group is listed).
 
-Today that gap is covered by who can reach the page. Once the page is open to
-everyone, an Alliance-only fleet would show up in an associate's list. So:
+Today that gap is covered by who can reach the page. Once Associates can open the page,
+an Alliance-only fleet would show up in an associate's list. So:
 
 - Add the audience-group condition to the list as a queryset filter (next to
   `visible_fleets_q`): no audience or an audience with no groups, **or** an
@@ -147,12 +147,13 @@ everyone, an Alliance-only fleet would show up in an associate's list. So:
 
 - The Neocom Fleets entry, `/fleets/upcoming/`, `/fleets/history/`, a fleet's
   page (`/fleets/upcoming/{id}`, `/fleets/history/{id}` and its report), and the
-  partials behind them stop checking the `fleets.view` gate. They need a signed-in
-  pilot, and show whatever the API answers.
+  partials behind them keep `fleets.view` only as "is this pilot Alliance,
+  Militia or Associate", which is its default affiliation list. They no longer
+  hide fleets; they show whatever the API answers.
 - A fleet the API refuses renders as not found or forbidden, as today. The
   per-fleet checks on the API (`_fleet_authorized`, `visible_fleets_q`,
   `sees_all_volunteers`) stay as they are.
-- The group page's Fleets tab (`[group_id].astro`) shows for any signed-in pilot
+- The group page's Fleets tab (`[group_id].astro`) shows for the same pilots
   and lists what the API answers for that group.
 - Signed-out visitors keep the public kills page, which already works. Opening
   fleet history and the battle report to them is a later step: `GET
@@ -189,7 +190,9 @@ everyone, an Alliance-only fleet would show up in an associate's list. So:
 
 ### Settings the Mining chief controls
 
-These were the original analysis and still apply. Scheduling as the group is
+Who may schedule and ping Mining fleets is the Mining chief's decision, made in
+the group's settings; this concept doesn't choose it. These were the original
+analysis and still apply. Scheduling as the group is
 per pilot (`can_publish`), and the corporation plays no part:
 
 1. `fleets_enabled` on (default on).
@@ -265,18 +268,19 @@ Small PRs, one layer at a time:
    or an Alliance-only audience fleet, in the list or the detail; an on-leave
    member. Regenerate the OpenAPI schema and contracts.
 3. **Website:** open the Fleets pages, partials, history and the group Fleets
-   tab to signed-in pilots; the form without audiences for group-only hosts;
+   tab to Alliance, Militia and Associate pilots; the form without audiences for group-only hosts;
    the ping-preview warning and copy. This must ship **after** 2, or the list
    leaks audience fleets.
 4. **Later:** public, signed-out fleet history and battle reports; start-now
    for group fleets.
 
+## Decisions
+
+1. **Who opens the Fleets pages:** Alliance, Militia and Associate. Guests don't.
+2. **Mining's fleet policy:** set by the Mining chief, who decides who may
+   schedule and ping Mining fleets.
+
 ## Open questions
 
 1. What does the production check show? It decides whether blocker 1 is a
    setting to fix today, before the pages open.
-2. Does "everyone in the community" include the **Guest** affiliation, or only
-   Alliance, Militia and Associate? Per-fleet checks keep alliance fleets from
-   Guests either way, but it decides who sees the Neocom entry.
-3. Should Mining's fleet policy be "Any active member" or "Chiefs and chosen
-   pilots"? This is the Mining chief's call.
