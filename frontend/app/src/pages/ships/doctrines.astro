@@ -16,8 +16,42 @@ let all_locations_ui: DoctrineLocationUI[] = []
 const AMAMAKE_LOCATION_ID = 1022167642188
 const active_location_id = parseInt(Astro.url.searchParams.get('location_id') ?? String(AMAMAKE_LOCATION_ID))
 
+// With a deployment the page is split into Home and Deployed tabs. Without
+// one `doctrine_tab_list` is empty and the page is the single list it was.
+import { get_request_user } from '@helpers/request_user'
+import { get_stagings } from '@helpers/api.minmatar.org/stagings'
+import { fetch_doctrine_options } from '@helpers/fetching/doctrines'
+import { doctrine_tabs, doctrines_at, tab_for_location } from '@helpers/doctrine_tabs'
+
+const { auth_token } = get_request_user(Astro)
+const stagings = await get_stagings(auth_token)
+const doctrine_tab_list = doctrine_tabs(stagings)
+const has_tabs = doctrine_tab_list.length > 0
+
+let doctrine_tab_counts: Record<string, number> = {}
+if (has_tabs) {
+    try {
+        const options = await fetch_doctrine_options()
+        doctrine_tab_counts = Object.fromEntries(
+            doctrine_tab_list.map((tab) => [tab.id, doctrines_at(options, tab.location_ids).length])
+        )
+    } catch (error) {
+        console.error('Error counting doctrines per tab:', error)
+    }
+}
+
+const section_tabs = doctrine_tab_list.map((tab) => ({
+    id: tab.id,
+    label: t(`doctrines.tab.${tab.id}`),
+    meta: [tab.names.join(', '), doctrine_tab_counts[tab.id]].filter((part) => part !== undefined).join(' · '),
+}))
+
+const default_tab = has_tabs ? tab_for_location(doctrine_tab_list, active_location_id) : 'home'
+const tab_partial_url = (tab_id: string) => translatePath(`/partials/doctrines_component?tab=${tab_id}`)
+
 try {
-    doctrines = await fetch_doctrines()
+    // The tab panels load their own doctrines.
+    doctrines = has_tabs ? [] : await fetch_doctrines()
 
     // Collect all unique location_ids from all doctrines and count doctrines per location
     doctrines.forEach(doctrine => {
@@ -90,6 +124,10 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import DoctrinesList from '@components/blocks/DoctrinesList.astro';
 import Markdown from '@components/blocks/Markdown.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import SectionTabs from '@components/blocks/SectionTabs.astro';
+import SectionTabPanel from '@components/blocks/SectionTabPanel.astro';
+import LazyPartial from '@components/blocks/LazyPartial.astro';
+import DeploymentStrip from '@components/blocks/DeploymentStrip.astro';
 
 const page_title = t('doctrines.page_title');
 const leading_text = t('doctrines.alliance.page_leading_text')
@@ -125,11 +163,29 @@ const leading_text = t('doctrines.alliance.page_leading_text')
         </FlexInline>
 
         <Flexblock gap='var(--space-xl)'>
+            <DeploymentStrip />
             <TextBox>
                 <Markdown class="[ excerpt ]" markdown={leading_text} />
             </TextBox>
 
-            {fetch_doctrines_error ?
+            {has_tabs ?
+                <SectionTabs
+                    aria_label={t('doctrines.tabs_label')}
+                    id_prefix="doctrines"
+                    tabs={section_tabs}
+                    default_tab={default_tab}
+                >
+                    {doctrine_tab_list.map((tab) =>
+                        <SectionTabPanel id={tab.id} id_prefix="doctrines" is_default={tab.id === default_tab}>
+                            <LazyPartial
+                                url={tab_partial_url(tab.id)}
+                                trigger={tab.id === default_tab ? 'load' : 'reveal'}
+                            />
+                        </SectionTabPanel>
+                    )}
+                </SectionTabs>
+                :
+                fetch_doctrines_error ?
                 <ErrorRefetch
                     args={{
                         partial: DOCTRINES_PARTIAL_URL,
