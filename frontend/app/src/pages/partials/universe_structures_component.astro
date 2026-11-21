@@ -1,0 +1,347 @@
+---
+/**
+ * Universe > Structures: every structure the pilot may see (the API decides),
+ * with its owner, affiliation, reinforcement and, opened, its fit and who
+ * reported it. POSTs (confirm, visibility) act, then render the list again.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { UniverseStructure } from '@dtypes/api.minmatar.org'
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_gates, can } from '@helpers/gates'
+import { get_item_icon } from '@helpers/eve_image_server'
+import {
+    get_universe_structures,
+    confirm_universe_structure,
+    set_universe_structure_visibility,
+} from '@helpers/api.minmatar.org/universe'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+const gates = await get_gates(Astro)
+if (!can(gates, 'universe.structures')) return HTTP_403_Forbidden()
+
+const PARTIAL_URL = translatePath('/partials/universe_structures_component/')
+const REPORT_URL = translatePath('/partials/universe_structure_report_component/')
+
+let action_error: string | null = null
+let opened: number | null = null
+if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    const structure_id = parseInt(String(form.get('structure_id') ?? ''))
+    const action = String(form.get('action') ?? '')
+    opened = Number.isFinite(structure_id) ? structure_id : null
+    try {
+        if (opened !== null && action === 'confirm') await confirm_universe_structure(auth_token, opened)
+        if (opened !== null && action === 'visibility') await set_universe_structure_visibility(auth_token, opened, String(form.get('visibility') ?? ''))
+    } catch (failure) {
+        action_error = (failure as Error).message
+    }
+}
+
+let structures: UniverseStructure[] = []
+let fetch_error: Error | false = false
+try {
+    structures = (await get_universe_structures(auth_token))?.structures ?? []
+} catch (failure) {
+    fetch_error = failure as Error
+}
+
+const reinforced = (row: UniverseStructure) => row.state.endsWith('_reinforce')
+const view_of = (row: UniverseStructure) => [
+    'all',
+    row.source === 'esi' ? 'ours' : 'reported',
+    reinforced(row) ? 'reinforced' : '',
+].filter(Boolean).join(' ')
+const counts = {
+    all: structures.length,
+    ours: structures.filter((row) => row.source === 'esi').length,
+    reported: structures.filter((row) => row.source === 'reported').length,
+    reinforced: structures.filter(reinforced).length,
+}
+const manages = structures.some((row) => row.can_change_visibility)
+const columns = [
+    { label: t('universe.structures.col.structure') },
+    { label: t('universe.structures.col.owner'), phone: false },
+    { label: t('universe.structures.col.affiliated'), phone: false },
+    { label: t('universe.structures.col.reinforcement'), align: 'num' as const },
+    ...(manages ? [{ label: t('universe.structures.col.visibility'), phone: false }] : []),
+]
+const hour = (value: number) => `${String(value).padStart(2, '0')}:00`
+const hour_date = (value: number) => {
+    const date = new Date()
+    date.setUTCHours(value, 0, 0, 0)
+    return date
+}
+const VISIBILITY_TAG = { alliance: 'alliance-blue', corporation: 'militia-purple', private: 'fleet-yellow' } as const
+const VISIBILITY_VARIANT = { alliance: 'fill', corporation: 'fill', private: 'outline' } as const
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import DialogButton from '@components/blocks/DialogButton.astro'
+import Button from '@components/blocks/Button.astro'
+import Tag from '@components/blocks/Tag.astro'
+import LocalTime from '@components/blocks/LocalTime.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import ManageSearch from '@components/blocks/manage/ManageSearch.astro'
+import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
+import UniverseReportSteps from '@components/blocks/universe/UniverseReportSteps.astro'
+---
+
+<div id="universe-structures" class="[ universe-structures ]" x-data="{ view: 'all', q: '' }">
+    {fetch_error ?
+        <ErrorRefetch args={{ partial: PARTIAL_URL, error: fetch_error, delay: 0, target: '#universe-structures' }} />
+        :
+        <Flexblock gap="var(--space-s)">
+            <div class="[ manage-filters ]">
+                <div class="[ manage-chips ]" role="radiogroup" aria-label={t('universe.tab.structures')}>
+                    {(['all', 'ours', 'reported', 'reinforced'] as const).map((name) => (
+                        <button type="button" role="radio" class="[ manage-chip ]" x-bind:class={`{ 'is-on': view === '${name}' }`} x-bind:aria-checked={`view === '${name}'`} x-on:click={`view = '${name}'`}>
+                            <span>{name === 'all' ? t('universe.view_all') : t(`universe.structures.view_${name}`)}</span>
+                            <span class="[ manage-chip__count ]">{counts[name]}</span>
+                        </button>
+                    ))}
+                </div>
+                <FlexInline gap="var(--space-s)" class="[ universe-toolbar ]">
+                    <ManageSearch id="universe-structures-search" label={t('universe.structures.search')} placeholder={t('universe.structures.search')} x-model="q" />
+                    <DialogButton size="sm" color="fleet-red" max_width="52rem" id="universe-report-button">
+                        {t('universe.structures.report')}
+                        <form slot="dialog" id="universe-report" hx-post={REPORT_URL} hx-target="this" hx-swap="innerHTML" x-on:submit.prevent="">
+                            <UniverseReportSteps step="find" />
+                        </form>
+                    </DialogButton>
+                </FlexInline>
+            </div>
+
+            {action_error && <p class="[ manage-field__error ]" role="alert">{action_error}</p>}
+
+            {structures.length === 0
+                ? <EmptyState title={t('universe.structures.empty')} hint={t('universe.structures.empty_hint')} />
+                : (
+                    <ManageTable caption={t('universe.tab.structures')} columns={columns} expandable={true} min_width="48rem">
+                        {structures.map((row) => (
+                            <ExpandRow
+                                colspan={columns.length + 1}
+                                label={t('universe.structures.open').replace('~NAME', row.name)}
+                                open={row.id === opened}
+                                data-view={view_of(row)}
+                                data-search={`${row.name} ${row.system_name} ${row.corporation_name} ${row.alliance_name}`.toLowerCase()}
+                                x-show="$el.dataset.view.split(' ').includes(view) && (!q || $el.dataset.search.includes(q.toLowerCase()))"
+                            >
+                                <td>
+                                    <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+                                        <img src={get_item_icon(row.type_id, 64)} alt="" width="40" height="40" loading="lazy" />
+                                        <span class="[ manage-who__text ]">
+                                            <span class="[ manage-who__name ]">{row.name}</span>
+                                            <span class="[ manage-who__sub ]">{row.type_name} · {row.system_name}</span>
+                                        </span>
+                                    </button>
+                                </td>
+                                <td class="[ is-wide ]">
+                                    <span>{row.corporation_name || '—'}</span>
+                                    <small class="[ universe-small ]">{row.alliance_name || t('universe.structures.no_alliance')}</small>
+                                </td>
+                                <td class="[ is-wide ]">{row.affiliated_alliance_name || <span class="[ manage-muted ]">—</span>}</td>
+                                <td class="[ num ]">
+                                    {reinforced(row) && row.state_timer_end
+                                        ? <span class="[ universe-attention ]"><LocalTime eve_time={new Date(row.state_timer_end)} format="datetime" /></span>
+                                        : row.reinforce_hour !== null && row.reinforce_hour !== undefined
+                                            ? <Fragment><span>{hour(row.reinforce_hour)}</span><small class="[ universe-small ]"><LocalTime eve_time={hour_date(row.reinforce_hour)} format="time" /></small></Fragment>
+                                            : <span class="[ manage-muted ]">—</span>
+                                    }
+                                </td>
+                                {manages &&
+                                    <td class="[ is-wide ]">
+                                        <Tag text={t(`universe.visibility.${row.visibility}`)} color={VISIBILITY_TAG[row.visibility]} variant={VISIBILITY_VARIANT[row.visibility]} />
+                                    </td>
+                                }
+                                <div slot="detail" class="[ universe-detail ]">
+                                    <Flexblock gap="var(--space-2xs)">
+                                        <FlexInline justification="space-between" class="[ items-center ]">
+                                            <h4>{t('universe.structures.fitting')}</h4>
+                                            {row.fitting &&
+                                                <button type="button" class="[ universe-copy ]" x-data="{ copied: false }"
+                                                    x-on:click="navigator.clipboard.writeText($el.closest('.universe-detail').querySelector('pre').textContent).then(() => { copied = true; setTimeout(() => copied = false, 1500) })"
+                                                    x-text={`copied ? ${JSON.stringify(t('universe.structures.copied'))} : ${JSON.stringify(t('universe.structures.copy_pyfa'))}`}>
+                                                    {t('universe.structures.copy_pyfa')}
+                                                </button>
+                                            }
+                                        </FlexInline>
+                                        {row.fitting ? <pre>{row.fitting}</pre> : <p class="[ manage-muted ]">{t('universe.structures.no_fit')}</p>}
+                                    </Flexblock>
+                                    <Flexblock gap="var(--space-2xs)">
+                                        <h4>{row.source === 'reported' ? t('universe.structures.reported') : t('universe.structures.from_esi')}</h4>
+                                        <dl class="[ universe-facts ]">
+                                            {row.reported_by &&
+                                                <Fragment>
+                                                    <dt>{t('universe.structures.by')}</dt>
+                                                    <dd>
+                                                        {row.reported_by.character_id && <CharacterPicture character_id={row.reported_by.character_id} character_name={row.reported_by.name} size={32} />}
+                                                        <span>{row.reported_by.name}</span>
+                                                        {row.reported_at && <small><LocalTime eve_time={new Date(row.reported_at)} format="datetime" /></small>}
+                                                    </dd>
+                                                </Fragment>
+                                            }
+                                            {row.last_confirmed_by &&
+                                                <Fragment>
+                                                    <dt>{t('universe.structures.last_seen')}</dt>
+                                                    <dd>
+                                                        {row.last_confirmed_by.character_id && <CharacterPicture character_id={row.last_confirmed_by.character_id} character_name={row.last_confirmed_by.name} size={32} />}
+                                                        <span>{row.last_confirmed_by.name}</span>
+                                                        {row.last_confirmed_at && <small><LocalTime eve_time={new Date(row.last_confirmed_at)} format="datetime" /></small>}
+                                                    </dd>
+                                                </Fragment>
+                                            }
+                                        </dl>
+                                        <div class="[ manage-actions ]">
+                                            <Button type="button" size="sm" color="transparent" hx-post={PARTIAL_URL} hx-vals={JSON.stringify({ structure_id: row.id, action: 'confirm' })} hx-target="#universe-structures" hx-swap="outerHTML">{t('universe.structures.still_standing')}</Button>
+                                            {row.can_change_visibility &&
+                                                <DialogButton size="sm" color="transparent" max_width="40rem">
+                                                    {t('universe.structures.change_visibility')}
+                                                    <form slot="dialog" class="[ universe-visibility ]" hx-post={PARTIAL_URL} hx-target="#universe-structures" hx-swap="outerHTML">
+                                                        <h3>{t('universe.visibility.title')}</h3>
+                                                        <input type="hidden" name="structure_id" value={row.id} />
+                                                        <input type="hidden" name="action" value="visibility" />
+                                                        {(['alliance', 'corporation', 'private'] as const).map((level) => (
+                                                            <label class="[ universe-visibility__option ]">
+                                                                <input type="radio" name="visibility" value={level} checked={row.visibility === level} />
+                                                                <span>
+                                                                    <b>{t(`universe.visibility.${level}`)}</b>
+                                                                    <small>{t(`universe.visibility.${level}_hint`).replace('~CORP', row.corporation_name)}</small>
+                                                                </span>
+                                                            </label>
+                                                        ))}
+                                                        <div class="[ manage-actions ]">
+                                                            <Button type="submit" size="sm" color="fleet-red">{t('universe.visibility.save')}</Button>
+                                                        </div>
+                                                    </form>
+                                                </DialogButton>
+                                            }
+                                        </div>
+                                    </Flexblock>
+                                </div>
+                            </ExpandRow>
+                        ))}
+                    </ManageTable>
+                )
+            }
+        </Flexblock>
+    }
+</div>
+
+<style lang="scss">
+    .universe-toolbar {
+        flex-wrap: nowrap;
+
+        > :global(:first-child) {
+            flex: 1 1 auto;
+        }
+    }
+
+    .universe-small {
+        display: block;
+        font-size: var(--step--2);
+        color: var(--foreground);
+    }
+
+    .universe-attention {
+        color: var(--security-status-point-4);
+    }
+
+    .universe-detail {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-m);
+
+        h4 {
+            margin: 0;
+            font-family: var(--heading-font);
+            font-size: var(--step-0);
+            color: var(--highlight);
+            text-transform: uppercase;
+        }
+
+        pre {
+            margin: 0;
+            padding: var(--space-s);
+            border: 1px solid var(--border-color);
+            background: var(--background);
+            font-family: var(--default-font);
+            font-size: var(--step--1);
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+    }
+
+    @media (max-width: 48rem) {
+        .universe-detail {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .universe-copy {
+        padding: 0;
+        border: 0;
+        background: none;
+        color: var(--highlight);
+        font-family: var(--button-font);
+        font-weight: 600;
+        cursor: copy;
+    }
+
+    .universe-facts {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: var(--space-2xs) var(--space-s);
+        align-items: center;
+        margin: 0;
+        font-size: var(--step--1);
+
+        dt {
+            color: var(--text-muted);
+        }
+
+        dd {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2xs);
+            margin: 0;
+            color: var(--highlight);
+        }
+    }
+
+    .universe-visibility {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .universe-visibility__option {
+        display: flex;
+        gap: var(--space-s);
+        align-items: flex-start;
+        padding: var(--space-s);
+        border: 1px solid var(--border-color);
+        cursor: pointer;
+
+        &:has(input:checked) {
+            border-color: var(--fleet-yellow);
+            background: color-mix(in srgb, var(--fleet-yellow) 8%, transparent);
+        }
+
+        span {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+        }
+
+        b {
+            color: var(--highlight);
+        }
+    }
+</style>

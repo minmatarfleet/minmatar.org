@@ -148,3 +148,28 @@ class EveMoonDistribution(models.Model):
     moon = models.ForeignKey(EveMoon, on_delete=models.CASCADE)
     ore = models.CharField(max_length=100, choices=ore_choices)
     yield_percent = models.DecimalField(max_digits=11, decimal_places=10)
+
+
+class EveMoonScan(models.Model):
+    """
+    One pasted survey scan of a moon, kept so scans can be compared and a
+    bad one rolled back. The moon's distribution rows follow its newest scan.
+    """
+
+    moon = models.ForeignKey(
+        EveMoon, on_delete=models.CASCADE, related_name="scans"
+    )
+    reported_by = models.ForeignKey(
+        "auth.User", on_delete=models.SET_NULL, null=True, blank=True
+    )
+    reported_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    # The moon's lines from the paste: "Ore<TAB>quantity" per line.
+    raw_text = models.TextField(blank=True, default="")
+    # Monthly revenue estimated when the scan was stored, if prices were known.
+    revenue = models.BigIntegerField(null=True, blank=True)
+
+    class Meta:
+        ordering = ("-reported_at", "-id")
+
+    def __str__(self):
+        return f"{self.moon} scan {self.reported_at:%Y-%m-%d}"

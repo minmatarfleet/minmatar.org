@@ -638,7 +638,9 @@ def find_structure(user, name: str, type_id: Optional[int] = None) -> Match:
             solar_system_name=pending.solar_system_name,
             type_id=pending.type_id or type_id,
         )
-    structure = EveStructure.objects.filter(name__iexact=name).first()
+    structure = EveStructure.objects.filter(
+        name__iexact=name, source=EveStructure.SOURCE_ESI
+    ).first()
     if structure:
         return Match(
             status="found",

@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "posts.apps.PostsConfig",
     # Moons
     "moons.apps.MoonsConfig",
+    "universe.apps.UniverseConfig",
     # Market
     "market.apps.MarketConfig",
     # Industry (type breakdown, etc.)

@@ -1,0 +1,118 @@
+---
+/**
+ * Universe > Timers: the campaign timerboard, made global. Every structure
+ * timer the pilot may see, with the campaign it belongs to.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { UniverseTimer } from '@dtypes/api.minmatar.org'
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_gates, can } from '@helpers/gates'
+import { get_universe_timers } from '@helpers/api.minmatar.org/universe'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+const gates = await get_gates(Astro)
+if (!can(gates, 'structures.timers.view')) return HTTP_403_Forbidden()
+
+const PARTIAL_URL = translatePath('/partials/universe_timers_component/')
+const ADD_TIMER_URL = translatePath('/intel/timers/add/')
+
+let timers: UniverseTimer[] = []
+let can_add = false
+let fetch_error: Error | false = false
+try {
+    const list = await get_universe_timers(auth_token)
+    timers = list?.timers ?? []
+    can_add = list?.can_add ?? false
+} catch (failure) {
+    fetch_error = failure as Error
+}
+
+const DAY = 24 * 60 * 60 * 1000
+const now = Date.now()
+const view_of = (timer: UniverseTimer) => [
+    'all',
+    !timer.done && new Date(timer.at).getTime() - now < DAY ? 'soon' : '',
+].filter(Boolean).join(' ')
+const upcoming = timers.filter((timer) => !timer.done)
+const tracking = t('universe.timers.tracking')
+    .replace('~UPCOMING', String(upcoming.length))
+    .replace('~DONE', String(timers.length - upcoming.length))
+const rows = timers.map((timer) => ({
+    ...timer,
+    alliance_id: null,
+    alliance_ticker: timer.alliance_name || timer.corporation_name,
+    outcome: 'passed' as const,
+    campaign_name: timer.campaign_name,
+}))
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import ManageSearch from '@components/blocks/manage/ManageSearch.astro'
+import CampaignTimersTable from '@components/blocks/CampaignTimersTable.astro'
+---
+
+<div id="universe-timers" x-data="{ view: 'all', q: '' }">
+    {fetch_error ?
+        <ErrorRefetch args={{ partial: PARTIAL_URL, error: fetch_error, delay: 0, target: '#universe-timers' }} />
+        :
+        <Flexblock gap="var(--space-s)">
+            <div class="[ manage-filters ]">
+                <div class="[ manage-chips ]" role="radiogroup" aria-label={t('universe.tab.timers')}>
+                    <button type="button" role="radio" class="[ manage-chip ]" x-bind:class="{ 'is-on': view === 'all' }" x-bind:aria-checked="view === 'all'" x-on:click="view = 'all'">
+                        <span>{t('universe.view_all')}</span><span class="[ manage-chip__count ]">{upcoming.length}</span>
+                    </button>
+                    <button type="button" role="radio" class="[ manage-chip ]" x-bind:class="{ 'is-on': view === 'soon' }" x-bind:aria-checked="view === 'soon'" x-on:click="view = 'soon'">
+                        <span>{t('universe.timers.view_soon')}</span><span class="[ manage-chip__count ]">{rows.filter((row) => view_of(row).includes('soon')).length}</span>
+                    </button>
+                </div>
+                <FlexInline gap="var(--space-s)" class="[ universe-toolbar ]">
+                    <ManageSearch id="universe-timers-search" label={t('universe.timers.search')} placeholder={t('universe.timers.search')} x-model="q" />
+                    {can_add && <Button size="sm" color="fleet-red" href={ADD_TIMER_URL}>{t('universe.timers.add')}</Button>}
+                </FlexInline>
+            </div>
+            <ComponentBlock>
+                {timers.length === 0
+                    ? <EmptyState title={t('universe.timers.empty')} />
+                    : (
+                        <Flexblock gap="var(--space-s)">
+                            <small class="[ universe-tracking ]">{tracking}</small>
+                            <CampaignTimersTable
+                                timers={rows}
+                                campaigns={true}
+                                x-effect={`$el.querySelectorAll('.campaign-timers-row').forEach((row) => {
+                                    const text = row.textContent.toLowerCase()
+                                    const at = new Date(row.querySelector('[data-at]')?.dataset.at ?? 0).getTime()
+                                    const soon = at > Date.now() && at - Date.now() < 86400000
+                                    row.hidden = (q && !text.includes(q.toLowerCase())) || (view === 'soon' && !soon)
+                                })`}
+                            />
+                        </Flexblock>
+                    )
+                }
+            </ComponentBlock>
+        </Flexblock>
+    }
+</div>
+
+<style lang="scss">
+    .universe-toolbar {
+        flex-wrap: nowrap;
+
+        > :global(:first-child) {
+            flex: 1 1 auto;
+        }
+    }
+
+    .universe-tracking {
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+    }
+</style>

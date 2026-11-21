@@ -43,6 +43,7 @@ import FleetEvEIcon from '@components/icons/FleetEvEIcon.astro';
 import AssetsEvEIcon from '@components/icons/AssetsEvEIcon.astro';
 import MarketEvEIcon from '@components/icons/MarketEvEIcon.astro';
 import IndustryEVEIcon from '@components/icons/IndustryEVEIcon.astro';
+import MapEvEIcon from '@components/icons/MapEvEIcon.astro';
 import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
 import AllianceEvEIcon from '@components/icons/AllianceEvEIcon.astro';
 import CorporationEvEIcon from '@components/icons/CorporationEvEIcon.astro';
@@ -162,6 +163,14 @@ const on_led_corporation = led_corporation_paths.some((path) => page.startsWith(
                         href={translatePath('/industry/')}
                     >
                         <IndustryEVEIcon />
+                    </NeocomButton>
+                    <NeocomButton
+                        active={page.startsWith(translatePath('/universe')) || page.startsWith(translatePath('/structures'))}
+                        title='neocom.universe'
+                        description='universe.description'
+                        href={translatePath('/universe/')}
+                    >
+                        <MapEvEIcon />
                     </NeocomButton>
                     {false && primary_character &&
                         <NeocomButton

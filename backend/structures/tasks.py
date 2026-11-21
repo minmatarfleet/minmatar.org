@@ -20,6 +20,7 @@ from eveonline.models import (
 from eveonline.utils import get_esi_downtime_countdown
 
 from .models import EveStructure, EveStructurePing
+from .reported import absorb_reported_structure
 from structures.helpers import (
     parse_structure_notification,
     is_new_event,
@@ -44,7 +45,8 @@ def update_structures():
     # Tracked scope (every EveAlliance row), not just FL33T + BUILD: we keep
     # structures for every alliance an admin has added to the site.
     allied_alliances = EveAlliance.objects.all()
-    EveStructure.objects.exclude(
+    # Only ESI rows: reported structures belong to anyone, tracked or not.
+    EveStructure.objects.filter(source=EveStructure.SOURCE_ESI).exclude(
         corporation__alliance__in=allied_alliances,
     ).delete()
 
@@ -119,6 +121,7 @@ def update_corporation_structures(corporation_id: int):
             )
             if created:
                 logger.debug("Creating new structure %s", structure["name"])
+                absorb_reported_structure(eve_structure)
             else:
                 logger.debug(
                     "Updating existing structure %s", structure["name"]
@@ -130,7 +133,9 @@ def update_corporation_structures(corporation_id: int):
             known_structure_ids.append(eve_structure.id)
 
         # delete structures that are no longer in the response
-        structures = EveStructure.objects.filter(corporation=corporation)
+        structures = EveStructure.objects.filter(
+            corporation=corporation, source=EveStructure.SOURCE_ESI
+        )
         for structure in structures:
             if structure.id not in known_structure_ids:
                 logger.info("Deleting structure %s", structure.name)
@@ -168,9 +173,9 @@ def process_structure_notifications():
     """
     since = timezone.now() - STRUCTURE_NOTIFICATION_LOOKBACK
     corporation_ids = list(
-        EveStructure.objects.values_list(
-            "corporation__corporation_id", flat=True
-        ).distinct()
+        EveStructure.objects.filter(source=EveStructure.SOURCE_ESI)
+        .values_list("corporation__corporation_id", flat=True)
+        .distinct()
     )
     if not corporation_ids:
         return 0, 0
@@ -249,6 +254,7 @@ def notify_low_fuel_structures():
     cutoff = now + timedelta(days=7)
     low_fuel = (
         EveStructure.objects.filter(
+            source=EveStructure.SOURCE_ESI,
             fuel_expires__isnull=False,
             fuel_expires__lt=cutoff,
         )

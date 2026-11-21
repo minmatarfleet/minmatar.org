@@ -12,12 +12,16 @@ import { get_structure_id } from '@helpers/eve'
 import { eve_clock } from '@helpers/date'
 
 interface Props {
-    timers:     CampaignTimer[];
+    /** `campaign_name` fills the Campaign column on the global timerboard. */
+    timers:     (CampaignTimer & { campaign_name?: string })[];
+    /** Show the Campaign column (Universe > Timers). */
+    campaigns?: boolean;
     [propName: string]: any;
 }
 
 const {
     timers,
+    campaigns = false,
     ...attributes
 } = Astro.props
 
@@ -43,13 +47,14 @@ import EmptyState from '@components/blocks/EmptyState.astro'
 {timers.length === 0 ?
     <EmptyState title={t('campaigns.timers.none')} />
     :
-    <div class:list={['[ campaign-timers ]', Astro.props.class]} role="table" aria-label={t('campaigns.timers.title')} {...attributes}>
+    <div class:list={['[ campaign-timers ]', { 'has-campaigns': campaigns }, Astro.props.class]} role="table" aria-label={t('campaigns.timers.title')} {...attributes}>
         <div class="[ campaign-timers-head ]" role="row">
             <span role="columnheader">{t('campaigns.timers.col.stage')}</span>
             <span role="columnheader">{t('campaigns.timers.col.structure')}</span>
             <span role="columnheader">{t('campaigns.timers.col.eve_time')}</span>
             <span role="columnheader">{t('campaigns.timers.col.system')}</span>
             <span role="columnheader">{t('campaigns.timers.col.alliance')}</span>
+            {campaigns && <span role="columnheader">{t('universe.timers.col.campaign')}</span>}
             <span role="columnheader">{t('campaigns.timers.col.starts_in')}</span>
         </div>
         {[upcoming, done].map((group, index) =>
@@ -90,6 +95,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                             {timer.alliance_id && <img src={get_alliance_logo(timer.alliance_id, 32)} alt="" width="22" height="22" loading="lazy" />}
                             <span>{timer.alliance_ticker || '—'}</span>
                         </span>
+                        {campaigns && <span role="cell">{timer.campaign_name || <span class="[ campaign-timers-muted ]">—</span>}</span>}
                         <span role="cell" class="[ campaign-timers-countdown ]">
                             {timer.done ?
                                 <span class="[ campaign-timers-muted ]">{t(t_key('campaigns.timers.outcome.', timer.outcome))}</span>
@@ -113,6 +119,11 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         align-items: center;
         font-size: var(--step--1);
         white-space: nowrap;
+    }
+
+    .has-campaigns .campaign-timers-head,
+    .has-campaigns .campaign-timers-row {
+        grid-template-columns: 3.5rem minmax(0, 1.6fr) minmax(0, 0.9fr) minmax(0, 0.8fr) minmax(0, 0.7fr) minmax(0, 1fr) minmax(0, 1fr);
     }
 
     .campaign-timers-head {
