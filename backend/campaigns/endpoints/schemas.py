@@ -137,6 +137,30 @@ class CampaignTotals(Schema):
     active_today: int = 0
 
 
+class CampaignFeatures(Schema):
+    """Which parts of the campaign page show. See models.CAMPAIGN_FEATURES."""
+
+    weekly_progress: bool = True
+    structures: bool = False
+    timers: bool = False
+    theater: bool = True
+    fleets: bool = True
+    destruction: bool = False
+    pilots: bool = True
+    projects: bool = True
+
+
+class CampaignFeaturesPatch(Schema):
+    weekly_progress: bool | None = None
+    structures: bool | None = None
+    timers: bool | None = None
+    theater: bool | None = None
+    fleets: bool | None = None
+    destruction: bool | None = None
+    pilots: bool | None = None
+    projects: bool | None = None
+
+
 class CampaignDetail(Schema):
     id: int
     slug: str
@@ -163,6 +187,7 @@ class CampaignDetail(Schema):
     standing_fleet_up: bool = False
     standing_fleet_members: int = 0
     standing_fleet_boss: str | None = None
+    features: CampaignFeatures = CampaignFeatures()
 
 
 class RightNow(Schema):
@@ -618,6 +643,7 @@ class CampaignPatchRequest(Schema):
     status: str | None = None
     start_at: datetime | None = None
     end_at: datetime | None = None
+    features: CampaignFeaturesPatch | None = None
 
 
 class SystemAddRequest(Schema):
@@ -685,6 +711,7 @@ class CampaignSettingsOut(Schema):
     fittings: list[CampaignFittingOut]
     week_targets: list[SettingsWeekTargetOut]
     daily_orders: list[SettingsOrderOut]
+    features: CampaignFeatures = CampaignFeatures()
 
 
 class PayoutCodeOut(Schema):

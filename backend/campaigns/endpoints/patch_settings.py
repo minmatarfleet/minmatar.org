@@ -15,6 +15,7 @@ from campaigns.endpoints.settings_helpers import _settings
 from campaigns.models import (
     Campaign,
     CampaignStatus,
+    feature_field,
 )
 
 
@@ -30,7 +31,8 @@ from campaigns.models import (
     auth=AuthBearer(),
 )
 def patch_campaign(request, slug: str, payload: schemas.CampaignPatchRequest):
-    """Rename, reschedule, or move a campaign between draft and live."""
+    """Rename, reschedule, switch features, or move a campaign between
+    draft and live."""
     campaign = get_object_or_404(Campaign, slug=slug)
     if not _can_manage(request.user, campaign):
         return _denied()
@@ -50,6 +52,11 @@ def patch_campaign(request, slug: str, payload: schemas.CampaignPatchRequest):
         if value is not None:
             setattr(campaign, name, value)
             fields.append(name)
+    if payload.features is not None:
+        for feature, value in payload.features.dict().items():
+            if value is not None:
+                setattr(campaign, feature_field(feature), value)
+                fields.append(feature_field(feature))
     campaign.start_at = start_at
     campaign.end_at = end_at
     campaign.save(update_fields=fields + ["start_at", "end_at"])

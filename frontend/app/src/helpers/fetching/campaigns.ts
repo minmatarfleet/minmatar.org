@@ -327,6 +327,17 @@ export const campaign_totals_stats = (
     ]
 }
 
+/** The three tallies a campaign without weekly progress leads with. */
+export const destruction_totals_stats = (
+    totals:CampaignTotals,
+    t:(key:'campaigns.stat.structures_destroyed' | 'campaigns.stat.isk_destroyed' | 'campaigns.stat.ships_killed') => string,
+    format_isk:(value:number) => string,
+):CampaignTotalsStat[] => [
+    { label: t('campaigns.stat.structures_destroyed'), value: String(totals.structures_destroyed) },
+    { label: t('campaigns.stat.isk_destroyed'), value: format_isk(totals.isk_destroyed) },
+    { label: t('campaigns.stat.ships_killed'), value: String(totals.kills) },
+]
+
 export type CampaignObjectiveKind =
     | 'offense'
     | 'defense'

@@ -1465,7 +1465,8 @@ export interface paths {
         head?: never;
         /**
          * Patch Campaign
-         * @description Rename, reschedule, or move a campaign between draft and live.
+         * @description Rename, reschedule, switch features, or move a campaign between
+         *     draft and live.
          */
         patch: operations["campaigns_endpoints_patch_settings_patch_campaign"];
         trace?: never;
@@ -12466,6 +12467,19 @@ export interface components {
              */
             end_at: string;
             /**
+             * @default {
+             *       "destruction": false,
+             *       "fleets": true,
+             *       "pilots": true,
+             *       "projects": true,
+             *       "structures": false,
+             *       "theater": true,
+             *       "timers": false,
+             *       "weekly_progress": true
+             *     }
+             */
+            features?: components["schemas"]["CampaignFeatures"];
+            /**
              * Fittings
              * @default []
              */
@@ -12528,6 +12542,71 @@ export interface components {
              */
             tagline?: string;
             totals: components["schemas"]["CampaignTotals"];
+        };
+        /**
+         * CampaignFeatures
+         * @description Which parts of the campaign page show. See models.CAMPAIGN_FEATURES.
+         */
+        CampaignFeatures: {
+            /**
+             * Destruction
+             * @default false
+             */
+            destruction?: boolean;
+            /**
+             * Fleets
+             * @default true
+             */
+            fleets?: boolean;
+            /**
+             * Pilots
+             * @default true
+             */
+            pilots?: boolean;
+            /**
+             * Projects
+             * @default true
+             */
+            projects?: boolean;
+            /**
+             * Structures
+             * @default false
+             */
+            structures?: boolean;
+            /**
+             * Theater
+             * @default true
+             */
+            theater?: boolean;
+            /**
+             * Timers
+             * @default false
+             */
+            timers?: boolean;
+            /**
+             * Weekly Progress
+             * @default true
+             */
+            weekly_progress?: boolean;
+        };
+        /** CampaignFeaturesPatch */
+        CampaignFeaturesPatch: {
+            /** Destruction */
+            destruction?: boolean | null;
+            /** Fleets */
+            fleets?: boolean | null;
+            /** Pilots */
+            pilots?: boolean | null;
+            /** Projects */
+            projects?: boolean | null;
+            /** Structures */
+            structures?: boolean | null;
+            /** Theater */
+            theater?: boolean | null;
+            /** Timers */
+            timers?: boolean | null;
+            /** Weekly Progress */
+            weekly_progress?: boolean | null;
         };
         /** CampaignFittingOut */
         CampaignFittingOut: {
@@ -12835,6 +12914,7 @@ export interface components {
             description_md?: string | null;
             /** End At */
             end_at?: string | null;
+            features?: components["schemas"]["CampaignFeaturesPatch"] | null;
             /** Name */
             name?: string | null;
             /** Start At */
@@ -12892,6 +12972,19 @@ export interface components {
              * Format: date-time
              */
             end_at: string;
+            /**
+             * @default {
+             *       "destruction": false,
+             *       "fleets": true,
+             *       "pilots": true,
+             *       "projects": true,
+             *       "structures": false,
+             *       "theater": true,
+             *       "timers": false,
+             *       "weekly_progress": true
+             *     }
+             */
+            features?: components["schemas"]["CampaignFeatures"];
             /** Fittings */
             fittings: components["schemas"]["CampaignFittingOut"][];
             /** Kind */

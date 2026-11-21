@@ -3902,6 +3902,23 @@
             "title": "End At",
             "type": "string"
           },
+          "features": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CampaignFeatures"
+              }
+            ],
+            "default": {
+              "destruction": false,
+              "fleets": true,
+              "pilots": true,
+              "projects": true,
+              "structures": false,
+              "theater": true,
+              "timers": false,
+              "weekly_progress": true
+            }
+          },
           "fittings": {
             "default": [],
             "items": {
@@ -4010,6 +4027,147 @@
           "totals"
         ],
         "title": "CampaignDetail",
+        "type": "object"
+      },
+      "CampaignFeatures": {
+        "description": "Which parts of the campaign page show. See models.CAMPAIGN_FEATURES.",
+        "properties": {
+          "destruction": {
+            "default": false,
+            "title": "Destruction",
+            "type": "boolean"
+          },
+          "fleets": {
+            "default": true,
+            "title": "Fleets",
+            "type": "boolean"
+          },
+          "pilots": {
+            "default": true,
+            "title": "Pilots",
+            "type": "boolean"
+          },
+          "projects": {
+            "default": true,
+            "title": "Projects",
+            "type": "boolean"
+          },
+          "structures": {
+            "default": false,
+            "title": "Structures",
+            "type": "boolean"
+          },
+          "theater": {
+            "default": true,
+            "title": "Theater",
+            "type": "boolean"
+          },
+          "timers": {
+            "default": false,
+            "title": "Timers",
+            "type": "boolean"
+          },
+          "weekly_progress": {
+            "default": true,
+            "title": "Weekly Progress",
+            "type": "boolean"
+          }
+        },
+        "title": "CampaignFeatures",
+        "type": "object"
+      },
+      "CampaignFeaturesPatch": {
+        "properties": {
+          "destruction": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destruction"
+          },
+          "fleets": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleets"
+          },
+          "pilots": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pilots"
+          },
+          "projects": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projects"
+          },
+          "structures": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Structures"
+          },
+          "theater": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Theater"
+          },
+          "timers": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timers"
+          },
+          "weekly_progress": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weekly Progress"
+          }
+        },
+        "title": "CampaignFeaturesPatch",
         "type": "object"
       },
       "CampaignFittingOut": {
@@ -4630,6 +4788,16 @@
             ],
             "title": "End At"
           },
+          "features": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CampaignFeaturesPatch"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "name": {
             "anyOf": [
               {
@@ -4788,6 +4956,23 @@
             "format": "date-time",
             "title": "End At",
             "type": "string"
+          },
+          "features": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CampaignFeatures"
+              }
+            ],
+            "default": {
+              "destruction": false,
+              "fleets": true,
+              "pilots": true,
+              "projects": true,
+              "structures": false,
+              "theater": true,
+              "timers": false,
+              "weekly_progress": true
+            }
           },
           "fittings": {
             "items": {
@@ -58065,7 +58250,7 @@
         ]
       },
       "patch": {
-        "description": "Rename, reschedule, or move a campaign between draft and live.",
+        "description": "Rename, reschedule, switch features, or move a campaign between\ndraft and live.",
         "operationId": "campaigns_endpoints_patch_settings_patch_campaign",
         "parameters": [
           {

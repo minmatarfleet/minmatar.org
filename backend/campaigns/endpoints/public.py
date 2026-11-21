@@ -204,6 +204,7 @@ def get_campaign(request, slug: str):
         "standing_fleet_up": False,
         "standing_fleet_members": 0,
         "standing_fleet_boss": None,
+        "features": campaign.features,
     }
 
 

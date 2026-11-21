@@ -39,6 +39,35 @@ class CampaignKind(models.TextChoices):
     STRATEGIC = "strategic", "Strategic"
 
 
+# Feature switches on a campaign, in the order the Settings tab lists them.
+# Each one shows or hides a part of the campaign page (a tab, or the weekly
+# progress hero); the kind only picks which start on.
+CAMPAIGN_FEATURES = (
+    "weekly_progress",
+    "structures",
+    "timers",
+    "theater",
+    "fleets",
+    "destruction",
+    "pilots",
+    "projects",
+)
+FEATURE_PRESETS = {
+    "faction_warfare": {
+        "weekly_progress",
+        "theater",
+        "fleets",
+        "pilots",
+        "projects",
+    },
+    "strategic": {"structures", "timers", "fleets", "destruction"},
+}
+
+
+def feature_field(feature: str) -> str:
+    return f"{feature}_enabled"
+
+
 class StructureStatus(models.TextChoices):
     ANCHORED = "anchored", "Anchored"
     REINFORCED = "reinforced", "Reinforced"
@@ -120,7 +149,11 @@ class OperationalState(models.TextChoices):
 
 
 class Campaign(models.Model):
-    """One named operation. Theaters may be systems, structures, or both."""
+    """One named operation. Theaters may be systems, structures, or both.
+
+    A new campaign takes its feature switches from its kind's preset, except
+    the ones the caller set explicitly.
+    """
 
     slug = models.SlugField(max_length=64, unique=True)
     short_code = models.CharField(
@@ -190,6 +223,35 @@ class Campaign(models.Model):
     donation_corporation_id = models.BigIntegerField(null=True, blank=True)
     donation_division = models.PositiveSmallIntegerField(default=1)
 
+    weekly_progress_enabled = models.BooleanField(
+        default=True,
+        help_text="This week's progress in the header, with weekly targets "
+        "and the commander's order. Off shows destruction totals instead.",
+    )
+    structures_enabled = models.BooleanField(
+        default=False, help_text="The Structures tab."
+    )
+    timers_enabled = models.BooleanField(
+        default=False, help_text="The Timers tab."
+    )
+    theater_enabled = models.BooleanField(
+        default=True, help_text="The Theater tab."
+    )
+    fleets_enabled = models.BooleanField(
+        default=True, help_text="The Fleets tab."
+    )
+    destruction_enabled = models.BooleanField(
+        default=False,
+        help_text="The Destruction tab. Also counts kills anywhere in the "
+        "campaign systems and areas, not only FW objectives.",
+    )
+    pilots_enabled = models.BooleanField(
+        default=True, help_text="The Pilots tab."
+    )
+    projects_enabled = models.BooleanField(
+        default=True, help_text="The Projects tab."
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -197,8 +259,39 @@ class Campaign(models.Model):
         ordering = ["-start_at"]
         indexes = [models.Index(fields=["status", "-start_at"])]
 
+    def __init__(self, *args, **kwargs):
+        explicit = {
+            name
+            for name in map(feature_field, CAMPAIGN_FEATURES)
+            if name in kwargs
+        }
+        super().__init__(*args, **kwargs)
+        self._explicit_features = explicit
+
     def __str__(self) -> str:
         return str(self.name)
+
+    def save(self, *args, **kwargs):
+        if self._state.adding:
+            self.apply_feature_presets(skip=self._explicit_features)
+        super().save(*args, **kwargs)
+
+    def apply_feature_presets(self, skip=()) -> None:
+        """Switch features on or off by kind, leaving ``skip`` alone."""
+        preset = FEATURE_PRESETS.get(
+            self.kind, FEATURE_PRESETS[CampaignKind.FACTION_WARFARE]
+        )
+        for feature in CAMPAIGN_FEATURES:
+            name = feature_field(feature)
+            if name not in skip:
+                setattr(self, name, feature in preset)
+
+    @property
+    def features(self) -> dict[str, bool]:
+        return {
+            feature: bool(getattr(self, feature_field(feature)))
+            for feature in CAMPAIGN_FEATURES
+        }
 
     def clean(self):
         super().clean()

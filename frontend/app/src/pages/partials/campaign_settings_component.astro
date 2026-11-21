@@ -4,6 +4,7 @@
  * Each `part` GETs its form and POSTs back to itself; the form swaps only
  * itself and sends the section's summary out of band.
  *
+ * part=features   the feature switches (one per tab or header part)
  * part=basics     name, tagline, status, start and end (EVE time)
  * part=systems    goal, role and priority per system, retire, add by name; one Save
  *                 (op=preview re-renders with a picked system added as a New row)
@@ -36,6 +37,7 @@ import {
     eve_weekday_date,
     refusal_text,
 } from '@helpers/campaign_manage'
+import { CAMPAIGN_FEATURES, features_on } from '@helpers/campaign_features'
 
 const { auth_token, user } = get_request_user(Astro)
 if (!user || !auth_token) return HTTP_403_Forbidden()
@@ -47,7 +49,7 @@ const params = Astro.url.searchParams
 const slug = params.get('slug') ?? ''
 if (!/^[a-z0-9-]+$/.test(slug)) return HTTP_403_Forbidden()
 
-const PARTS = ['basics', 'systems', 'sides', 'fittings', 'targets', 'order', 'structures'] as const
+const PARTS = ['features', 'basics', 'systems', 'sides', 'fittings', 'targets', 'order', 'structures'] as const
 type Part = typeof PARTS[number]
 const part = (PARTS as readonly string[]).includes(params.get('part') ?? '') ? params.get('part') as Part : 'basics'
 const has_structures_tab = params.get('tab') === '1'
@@ -145,6 +147,12 @@ if (is_post && settings && choices) {
     const current = settings
     try {
         switch (part) {
+            case 'features':
+                await change_campaign(slug, auth_token, 'PATCH', '/settings', {
+                    features: Object.fromEntries(CAMPAIGN_FEATURES.map((feature) => [feature, field(`${feature}_enabled`) === 'on'])),
+                })
+                saved = true
+                break
             case 'basics':
                 await change_campaign(slug, auth_token, 'PATCH', '/settings', {
                     name: field('name'),
@@ -288,6 +296,10 @@ const retired = settings?.systems.filter((system) => system.retired && !rows.som
 
 function summary_for(current: CampaignSettings): string {
     switch (part) {
+        case 'features':
+            return t('campaigns.manage.features_summary')
+                .replace('~COUNT', String(features_on(current.features)))
+                .replace('~TOTAL', String(CAMPAIGN_FEATURES.length))
         case 'basics': {
             const status = choice_label(choices?.status, current.status)
             const ends = t('campaigns.manage.ends_on').replace('~DATE', eve_weekday_date(lang, current.end_at))
@@ -341,6 +353,7 @@ import ManageField from '@components/blocks/manage/ManageField.astro'
 import EntityPicker from '@components/blocks/manage/EntityPicker.astro'
 import EveTimeInput from '@components/blocks/manage/EveTimeInput.astro'
 import SectionSummary from '@components/blocks/manage/SectionSummary.astro'
+import SwitchSquare from '@components/blocks/SwitchSquare.astro'
 ---
 
 {fetch_error || !settings || !choices ?
@@ -362,6 +375,26 @@ import SectionSummary from '@components/blocks/manage/SectionSummary.astro'
         hx-target="this"
         hx-swap="outerHTML"
     >
+        {part === 'features' &&
+            <Fragment>
+                <div class="[ campaign-features ]">
+                    {CAMPAIGN_FEATURES.map((feature) =>
+                        <SwitchSquare
+                            name={`${feature}_enabled`}
+                            label={t(`campaigns.features.${feature}`)}
+                            description={t(`campaigns.features.${feature}_help`)}
+                            checked={settings.features[feature]}
+                        />
+                    )}
+                </div>
+                <div class="[ manage-actions ]">
+                    <Button type="submit" size="sm">{t('campaigns.manage.save')}</Button>
+                    {error_message && <span class="[ manage-field__error ]" role="alert">{error_message}</span>}
+                    {saved && <span class="[ manage-saved ]">{t('campaigns.manage.saved')}</span>}
+                </div>
+            </Fragment>
+        }
+
         {part === 'basics' &&
             <Fragment>
                 <div class="[ manage-fields ]">
@@ -694,6 +727,12 @@ import SectionSummary from '@components/blocks/manage/SectionSummary.astro'
 }
 
 <style lang="scss">
+    .campaign-features {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
     .campaign-settings :global(select) {
         min-width: 8rem;
     }

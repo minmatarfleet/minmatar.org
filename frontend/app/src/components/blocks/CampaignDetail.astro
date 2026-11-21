@@ -15,6 +15,7 @@ import type {
 } from '@dtypes/api.minmatar.org'
 import { campaign_totals_stats, sort_systems_by_contest, fw_objective_systems, ops_theater_systems } from '@helpers/fetching/campaigns'
 import { format_isk } from '@helpers/numbers'
+import { campaign_tabs } from '@helpers/campaign_features'
 import type { CampaignChoices } from '@helpers/api.minmatar.org/campaigns'
 
 interface Props {
@@ -69,17 +70,9 @@ const structures_tracking = t('campaigns.structures.tracking')
     .replace('{destroyed}', String(structures_destroyed))
     .replace('{remaining}', String(structures_remaining))
 const has_systems = systems.length > 0 || areas.length > 0
-/** Structures lead strategic; FW systems (and any theater systems) show when attached. */
-const TABS:( 'structures' | 'systems' | 'fleets' | 'activity' | 'pilots' | 'projects' | 'you' | 'settings' )[] = [
-    ...(is_strategic ? ['structures'] as const : []),
-    ...(has_systems || !is_strategic ? ['systems'] as const : []),
-    'fleets',
-    'activity',
-    'pilots',
-    'projects',
-    'you',
-    ...(can_manage ? ['settings'] as const : []),
-]
+const features = campaign.features
+/** Each feature switch shows or hides its tab (helpers/campaign_features). */
+const TABS = campaign_tabs({ kind: campaign.kind, features, has_systems, can_manage })
 const tab_label = (tab:string) => tab === 'settings'
     ? t('campaigns.manage.tab')
     : t(`campaigns.tabs.${tab}` as 'campaigns.tabs.systems')
@@ -160,7 +153,7 @@ import CampaignSettingsPanel from '@components/blocks/CampaignSettingsPanel.astr
                                 </Flexblock>
                             </ComponentBlock>
                         }
-                        {!is_strategic && structures.length > 0 &&
+                        {!show_structures_tab && structures.length > 0 &&
                             <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
                                 <CampaignStructuresTable
                                     structures={structures}
@@ -187,6 +180,7 @@ import CampaignSettingsPanel from '@components/blocks/CampaignSettingsPanel.astr
             </SectionTabPanel>
         }
 
+        {TABS.includes('fleets') &&
         <SectionTabPanel id="fleets" id_prefix="campaign" is_default={default_tab === 'fleets'}>
             <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
                 <Flexblock gap='var(--space-s)'>
@@ -203,7 +197,9 @@ import CampaignSettingsPanel from '@components/blocks/CampaignSettingsPanel.astr
                 </Flexblock>
             </ComponentBlock>
         </SectionTabPanel>
+        }
 
+        {TABS.includes('activity') &&
         <SectionTabPanel id="activity" id_prefix="campaign" is_default={default_tab === 'activity'}>
             <Flexblock gap='var(--space-m)'>
 
@@ -230,7 +226,9 @@ import CampaignSettingsPanel from '@components/blocks/CampaignSettingsPanel.astr
                 }
             </Flexblock>
         </SectionTabPanel>
+        }
 
+        {TABS.includes('pilots') &&
         <SectionTabPanel id="pilots" id_prefix="campaign" is_default={default_tab === 'pilots'}>
             <Flexblock gap='var(--space-m)'>
                 <Flexblock gap='var(--space-2xs)'>
@@ -274,7 +272,9 @@ import CampaignSettingsPanel from '@components/blocks/CampaignSettingsPanel.astr
                 </ComponentBlock>
             </Flexblock>
         </SectionTabPanel>
+        }
 
+        {TABS.includes('projects') &&
         <SectionTabPanel id="projects" id_prefix="campaign" is_default={default_tab === 'projects'}>
             <div
                 hx-get={PROJECTS_PARTIAL_URL}
@@ -284,6 +284,7 @@ import CampaignSettingsPanel from '@components/blocks/CampaignSettingsPanel.astr
                 <p class="[ campaign-panel-label ]">{t('campaigns.projects.loading')}</p>
             </div>
         </SectionTabPanel>
+        }
 
         <SectionTabPanel id="you" id_prefix="campaign" is_default={default_tab === 'you'}>
             <CampaignYouPanel campaign={campaign} readiness={readiness} flash={token_error} />
