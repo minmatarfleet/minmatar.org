@@ -63,6 +63,18 @@ class EveLocation(MinmatarSoftDeleteModel):
         help_text="A staging the alliance is deployed to, next to the home "
         "staging. Any number of locations may have it.",
     )
+    industry_delivery = models.BooleanField(
+        default=False,
+        db_default=False,
+        help_text="Industry orders can deliver here.",
+    )
+    dock_access = models.JSONField(
+        default=list,
+        db_default=[],
+        blank=True,
+        help_text="Who can dock: a list of {kind: corporation|alliance, id, "
+        "name, ticker}. Empty means anyone in the alliance.",
+    )
     freight_route_active = models.BooleanField(
         default=False,
         db_default=False,
@@ -154,6 +166,7 @@ class EveLocation(MinmatarSoftDeleteModel):
         self.freight_active = False
         self.fleets_active = False
         self.staging_active = False
+        self.industry_delivery = False
 
     def delete(self, force_policy=None, **kwargs):
         policy = (
