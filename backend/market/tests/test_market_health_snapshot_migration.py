@@ -4,10 +4,11 @@ from datetime import timedelta
 
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
-from django.test import TransactionTestCase
+from django.test import TransactionTestCase, tag
 from django.utils import timezone
 
 
+@tag("migration")
 class MarketHealthSnapshotMigrationTestCase(TransactionTestCase):
     """
     Apply 0037 → seed legacy rows → apply 0038 → assert copy + drop.

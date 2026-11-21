@@ -24,6 +24,10 @@ SHARED_SECRET = os.environ.get("SHARED_SECRET", "nothing")
 
 TESTING = True
 
+# Hashing a password with the production PBKDF2 hasher costs ~0.16s, and
+# fixtures create thousands of users. Tests never need a strong hash.
+PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+
 # Developer switches are always off in tests, whatever .env says. A truthy
 # SETUP_TEST_DATA would seed rows at URLconf import and collide with fixtures.
 FAKE_LOGIN_USER_ID = None

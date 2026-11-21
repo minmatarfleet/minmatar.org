@@ -79,23 +79,38 @@ jobs:
         run: |
           pip install pipenv
           pipenv sync --dev
-      # The migrated schema only changes when a migration or a dependency
-      # does, so skip re-running ~550 migrations on every push.
+      # Restore the newest migrated test DB, even one from before this
+      # branch's migrations: --keepdb then applies only the new ones, instead
+      # of all ~700 (about 4 minutes). ci_test_db.py discards the DB when a
+      # migration it holds was renamed or edited. A Pipfile.lock change can
+      # change third-party migrations, so it starts a fresh chain.
       - name: Restore migrated test database
         id: test-db
         uses: actions/cache/restore@v4
         with:
-          path: backend/.test-db/test_db.sqlite3
-          key: test-db-${{ runner.os }}-py3.10-${{ hashFiles('backend/**/migrations/*.py', 'backend/Pipfile.lock') }}
+          path: |
+            backend/.test-db/test_db.sqlite3
+            backend/.test-db/test_db.sqlite3.manifest.json
+          key: test-db-${{ runner.os }}-py3.10-${{ hashFiles('backend/Pipfile.lock') }}-${{ hashFiles('backend/**/migrations/*.py') }}
+          restore-keys: |
+            test-db-${{ runner.os }}-py3.10-${{ hashFiles('backend/Pipfile.lock') }}-
+      - name: Check cached test database
+        run: python ci_test_db.py check "$TEST_DB_NAME"
+      # Migration tests (tag "migration") run in backend-migration-tests.
       - name: Run tests
         run: |
           mkdir -p .test-db
-          pipenv run coverage run manage.py test --settings=app.settings_test --testrunner="testrunner.Runner" --parallel auto --keepdb --noinput
+          pipenv run coverage run manage.py test --settings=app.settings_test --testrunner="testrunner.Runner" --parallel auto --keepdb --noinput --exclude-tag migration
+      - name: Record test database migrations
+        if: always() && steps.test-db.outputs.cache-hit != 'true'
+        run: python ci_test_db.py record "$TEST_DB_NAME"
       - name: Save migrated test database
         if: always() && steps.test-db.outputs.cache-hit != 'true' && hashFiles('backend/.test-db/test_db.sqlite3') != ''
         uses: actions/cache/save@v4
         with:
-          path: backend/.test-db/test_db.sqlite3
+          path: |
+            backend/.test-db/test_db.sqlite3
+            backend/.test-db/test_db.sqlite3.manifest.json
           key: ${{ steps.test-db.outputs.cache-primary-key }}
       - name: Combine coverage
         run: |
@@ -111,3 +126,57 @@ jobs:
           name: backend-test-results
           path: backend/testresults.txt
           retention-days: 1
+  # Tests that drive MigrationExecutor re-render the whole migration graph
+  # and take seconds each, so they run beside backend-check, not in it, and
+  # on pull requests only when the PR adds or changes a migration.
+  backend-migration-tests:
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      TEST_DB_NAME: .test-db/test_db.sqlite3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The PR's merge commit and its first parent, the base branch.
+          fetch-depth: 2
+      - name: Find migration changes
+        id: changes
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ] || \
+             git diff --name-only HEAD^1 HEAD | grep -q '^backend/.*/migrations/'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No migrations changed; skipping migration tests."
+          fi
+      - if: steps.changes.outputs.run == 'true'
+        name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pipenv
+          cache-dependency-path: backend/Pipfile.lock
+      - if: steps.changes.outputs.run == 'true'
+        name: Install dependencies
+        run: |
+          pip install pipenv
+          pipenv sync --dev
+      - if: steps.changes.outputs.run == 'true'
+        name: Restore migrated test database
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            backend/.test-db/test_db.sqlite3
+            backend/.test-db/test_db.sqlite3.manifest.json
+          key: test-db-${{ runner.os }}-py3.10-${{ hashFiles('backend/Pipfile.lock') }}-${{ hashFiles('backend/**/migrations/*.py') }}
+          restore-keys: |
+            test-db-${{ runner.os }}-py3.10-${{ hashFiles('backend/Pipfile.lock') }}-
+      - if: steps.changes.outputs.run == 'true'
+        name: Check cached test database
+        run: python ci_test_db.py check "$TEST_DB_NAME"
+      - if: steps.changes.outputs.run == 'true'
+        name: Run migration tests
+        run: |
+          mkdir -p .test-db
+          pipenv run python manage.py test --settings=app.settings_test --parallel auto --keepdb --noinput --tag migration

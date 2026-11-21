@@ -6,7 +6,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
-from django.test import Client, TransactionTestCase, override_settings
+from django.test import Client, TransactionTestCase, override_settings, tag
 
 from app.test import TestCase
 from discord.models import DiscordChannel, DiscordGuild, DiscordUser
@@ -907,6 +907,7 @@ class DiscordChannelTestCase(CorporationPostTestCase):
         )
 
 
+@tag("migration")
 class PostTemplateMigrationTestCase(TransactionTestCase):
     """0009/0010 turn the old last_* fields into RedditPost rows."""
 
@@ -971,6 +972,7 @@ class PostTemplateMigrationTestCase(TransactionTestCase):
         )
 
 
+@tag("migration")
 class RestoreCorporationPostsTestCase(TransactionTestCase):
     """0011 puts back the corporation posts 0008 deleted; 0012 then puts
     them in the rotation."""
@@ -1040,6 +1042,7 @@ class RestoreCorporationPostsTestCase(TransactionTestCase):
         self.assertTrue(template.paused)
 
 
+@tag("migration")
 class AllianceAccountMigrationTestCase(TransactionTestCase):
     """0013 moves the reminder-only posts to the alliance account."""
 
