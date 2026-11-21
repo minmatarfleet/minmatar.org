@@ -18,6 +18,8 @@ interface Props {
     can_set:                boolean;
     /** True when there is no portrait to click. */
     empty?:                 boolean;
+    /** A "Change chief" button instead of the clickable portrait (seat filled). */
+    button?:                boolean;
     [propName: string]:     any;
 }
 
@@ -28,6 +30,7 @@ const {
     region = null,
     can_set,
     empty = false,
+    button = false,
     ...attributes
 } = Astro.props
 
@@ -60,15 +63,15 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
     <slot />
     :
     <DialogButton
-        styless={!empty}
+        styless={!empty && !button}
         size="sm"
         color="transparent"
         max_width="560px"
-        class:list={['[ tribe-chief-swap ]', { 'tribe-chief-swap--portrait': !empty }, Astro.props.class]}
+        class:list={['[ tribe-chief-swap ]', { 'tribe-chief-swap--portrait': !empty && !button }, Astro.props.class]}
         aria-label={t('tribes.chief.swap')}
         {...attributes}
     >
-        {empty ? <slot name="empty">{t('tribes.chief.swap_set')}</slot> : <slot />}
+        {empty ? <slot name="empty">{t('tribes.chief.swap_set')}</slot> : button ? t('tribes.chief.swap') : <slot />}
 
         <div slot="dialog">
             <Flexblock gap="var(--space-l)">

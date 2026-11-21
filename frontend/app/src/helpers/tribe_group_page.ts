@@ -29,7 +29,7 @@ export const TRIBE_GROUP_TABS = [
     'fleets',
     'events',
     'posts',
-    'settings',
+    'chiefs',
 ] as const
 
 export type TribeGroupTab = typeof TRIBE_GROUP_TABS[number]
@@ -37,8 +37,15 @@ export type TribeGroupTab = typeof TRIBE_GROUP_TABS[number]
 /** The Events tab block; the cancel partial swaps it back. */
 export const TRIBE_GROUP_EVENTS_ID = 'tribe-group-events'
 
-/** The old tab name: `#propaganda` links keep opening Posts. */
-export const TRIBE_GROUP_HASH_ALIASES: Record<string, string> = { propaganda: 'posts' }
+/**
+ * Old tab names keep working: `#propaganda` opens Posts, `#settings` opens
+ * Chiefs, and the volunteer DM's `#chief-volunteers` link opens Chiefs.
+ */
+export const TRIBE_GROUP_HASH_ALIASES: Record<string, string> = {
+    propaganda: 'posts',
+    settings: 'chiefs',
+    'chief-volunteers': 'chiefs',
+}
 
 export interface TribeGroupTabInput {
     has_about:          boolean;
@@ -50,6 +57,7 @@ export interface TribeGroupTabInput {
     can_schedule_fleets: boolean;
     can_create_events:  boolean;
     can_post:           boolean;
+    /** Sees the Chiefs tab: manages the group, or sets or appoints its chief. */
     can_manage:         boolean;
     /** Groups can switch fleets and events off; absent means on. */
     fleets_enabled?:    boolean;
@@ -58,7 +66,7 @@ export interface TribeGroupTabInput {
 
 /**
  * Tabs in the contract's order. A tab shows when it has something or the
- * viewer can add to it; Requirements and Members always show, Settings only
+ * viewer can add to it; Requirements and Members always show, Chiefs only
  * for managers.
  */
 export function tribe_group_tab_ids(input: TribeGroupTabInput): TribeGroupTab[] {
@@ -71,7 +79,7 @@ export function tribe_group_tab_ids(input: TribeGroupTabInput): TribeGroupTab[] 
         fleets: (input.fleets_enabled ?? true) && (input.fleet_count > 0 || input.can_schedule_fleets),
         events: (input.events_enabled ?? true) && (input.event_count > 0 || input.can_create_events),
         posts: input.post_count > 0 || input.can_post,
-        settings: input.can_manage,
+        chiefs: input.can_manage,
     }
     return TRIBE_GROUP_TABS.filter((tab) => shown[tab])
 }

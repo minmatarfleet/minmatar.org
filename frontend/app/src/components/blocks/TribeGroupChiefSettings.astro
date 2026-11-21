@@ -1,0 +1,143 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { TribeGroup } from '@dtypes/api.minmatar.org'
+
+/**
+ * Chiefs tab, the seats: who leads each timezone seat (or the one seat on a
+ * backend without seats), with Change chief for superusers and the open
+ * seat's volunteers for whoever appoints chiefs.
+ */
+interface Props {
+    group:              TribeGroup;
+    [propName: string]: any;
+}
+
+const {
+    group,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { query_string } from '@helpers/string'
+import { needs_chief } from '@helpers/tribe_chiefs'
+
+const can_set = Boolean(group.can_set_chief)
+const chief_is_interim = Boolean(group.chief_is_interim)
+const acting_chief = group.acting_chief ?? null
+// Seats come with chief: null while the group runs on an interim chief.
+const seats = group.chiefs ?? []
+const volunteers_url = translatePath(`/partials/tribe_chief_volunteers_component?${query_string({
+    tribe_id: group.tribe_id,
+    group_id: group.id,
+    seat_name: group.name,
+})}`)
+
+import PilotBadge from '@components/blocks/PilotBadge.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+import TribeChiefSwap from '@components/blocks/TribeChiefSwap.astro'
+---
+
+<section
+    class:list={['[ tribe-settings-section tribe-chief-settings ]', Astro.props.class]}
+    aria-labelledby="tribe-chief-settings-title"
+    {...attributes}
+>
+    <div class="[ tribe-settings-section__head ]">
+        <h2 id="tribe-chief-settings-title">{t('tribes.chiefs.title')}</h2>
+        <p>{seats.length > 0 ? t('tribes.chief.open_seats_hint') : t('tribes.chiefs.lead')}</p>
+    </div>
+
+    {chief_is_interim && acting_chief &&
+        <div class="[ tribe-settings-section__row ]">
+            <span class="[ tribe-settings-section__label ]">
+                <b>{t('tribes.chief.interim')}</b>
+                <small>{t('tribes.chiefs.interim_help')}</small>
+            </span>
+            <PilotBadge
+                character_id={acting_chief.character_id}
+                character_name={acting_chief.character_name}
+                size={32}
+                centered={true}
+            />
+        </div>
+    }
+
+    {seats.length > 0 ?
+        seats.map((seat) =>
+            <div class="[ tribe-settings-section__row ]">
+                <span class="[ tribe-settings-section__label ]">
+                    <b>{t('tribes.chief.seat_chief').replace('{tz}', seat.label)}</b>
+                    {seat.chief ?
+                        <PilotBadge
+                            character_id={seat.chief.character_id}
+                            character_name={seat.chief.character_name}
+                            size={32}
+                            centered={true}
+                        />
+                        :
+                        <small class="[ tribe-chief-settings__open ]">{t('tribes.chiefs.open')}</small>
+                    }
+                </span>
+                {can_set &&
+                    <TribeChiefSwap
+                        tribe_id={group.tribe_id}
+                        group_id={group.id}
+                        region={seat.region}
+                        seat_name={`${group.name} (${seat.label})`}
+                        can_set={true}
+                        empty={!seat.chief}
+                        button={Boolean(seat.chief)}
+                    />
+                }
+            </div>
+        )
+        :
+        <div class="[ tribe-settings-section__row ]">
+            <span class="[ tribe-settings-section__label ]">
+                <b>{t('group_chief')}</b>
+                {!chief_is_interim && acting_chief ?
+                    <PilotBadge
+                        character_id={acting_chief.character_id}
+                        character_name={acting_chief.character_name}
+                        size={32}
+                        centered={true}
+                    />
+                    :
+                    <small class="[ tribe-chief-settings__open ]">{t('tribes.chiefs.open')}</small>
+                }
+            </span>
+            {can_set &&
+                <TribeChiefSwap
+                    tribe_id={group.tribe_id}
+                    group_id={group.id}
+                    seat_name={group.name}
+                    can_set={true}
+                    empty={chief_is_interim || !acting_chief}
+                    button={!chief_is_interim && Boolean(acting_chief)}
+                />
+            }
+        </div>
+    }
+
+    {group.can_appoint_chief && needs_chief(group) &&
+        <div class="[ tribe-chief-settings__volunteers ]">
+            <LazyPartial url={volunteers_url}>
+                <span class="[ text-muted ]">{t('tribes.chief.volunteers')}</span>
+            </LazyPartial>
+        </div>
+    }
+</section>
+
+<style lang="scss">
+    .tribe-chief-settings__open {
+        color: var(--attention);
+    }
+
+    .tribe-chief-settings__volunteers {
+        padding-block-start: var(--space-xs);
+        border-top: 1px solid var(--hairline);
+    }
+</style>

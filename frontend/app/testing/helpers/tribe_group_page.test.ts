@@ -44,7 +44,7 @@ describe('tribe group tabs', () => {
             can_create_events: false,
             can_post: false,
             can_manage: true,
-        })).toEqual(['about', 'requirements', 'guides', 'activity', 'members', 'fleets', 'events', 'posts', 'settings'])
+        })).toEqual(['about', 'requirements', 'guides', 'activity', 'members', 'fleets', 'events', 'posts', 'chiefs'])
     })
 
     it('shows an empty tab to a viewer who can add to it', () => {
@@ -55,14 +55,14 @@ describe('tribe group tabs', () => {
         expect(tribe_group_tab_ids({ ...nothing, can_post: true })).toContain('posts')
     })
 
-    it('shows content tabs to outsiders and never Settings', () => {
+    it('shows content tabs to outsiders and never Chiefs', () => {
         const tabs = tribe_group_tab_ids({ ...nothing, fleet_count: 2, post_count: 3 })
         expect(tabs).toEqual(['requirements', 'members', 'fleets', 'posts'])
-        expect(tabs).not.toContain('settings')
+        expect(tabs).not.toContain('chiefs')
     })
 
-    it('opens Posts from the old #propaganda hash', () => {
-        expect(TRIBE_GROUP_HASH_ALIASES).toEqual({ propaganda: 'posts' })
+    it('opens old tab hashes on their new tabs', () => {
+        expect(TRIBE_GROUP_HASH_ALIASES).toEqual({ propaganda: 'posts', settings: 'chiefs', 'chief-volunteers': 'chiefs' })
     })
 })
 

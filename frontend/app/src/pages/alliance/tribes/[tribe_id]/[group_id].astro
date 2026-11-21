@@ -12,7 +12,7 @@ import { login_url } from '@helpers/http_responses'
 import { help_wanted_props, needs_chief } from '@helpers/tribe_chiefs'
 import { get_gates, can } from '@helpers/gates'
 import { HTTP_400_Bad_Request, HTTP_404_Not_Found } from '@helpers/http_responses'
-import { query_string, strip_markdown } from '@helpers/string'
+import { strip_markdown } from '@helpers/string'
 import { tribe_group_cover } from '@helpers/tribe_covers'
 import { getGuidesByTribeGroupCode } from '@/data/guides'
 import { get_posts } from '@helpers/api.minmatar.org/posts'
@@ -205,14 +205,6 @@ const chief_label = chief_is_interim ? t('tribes.chief.interim') : t('group_chie
 // sends none, and the single chief shows as before.
 const chief_seats = tribe_group?.chiefs ?? []
 const show_seats = !chief_is_interim && chief_seats.length > 0
-const can_set_chief = Boolean(tribe_group?.can_set_chief)
-// Superusers fill empty seats from the header.
-const settable_open_seats = can_set_chief ? chief_seats.filter((seat) => seat.is_open) : []
-const chief_volunteers_url = translatePath(`/partials/tribe_chief_volunteers_component?${query_string({
-    tribe_id,
-    group_id,
-    seat_name: tribe_group?.name ?? '',
-})}`)
 const has_qualification_requirements = (tribe_group?.requirements?.length ?? 0) > 0
 const has_membership_requirements = Boolean(tribe_group?.require_off_trial)
     || (tribe_group?.allowed_affiliations?.length ?? 0) > 0
@@ -247,8 +239,8 @@ function tribe_tab_label(tab: TribeGroupTab) {
             return t('tribes.detail.tab.events')
         case 'posts':
             return t('tribes.detail.tab.posts')
-        case 'settings':
-            return t('tribes.detail.tab.settings')
+        case 'chiefs':
+            return t('tribes.detail.tab.chiefs')
         default: {
             const unexpected: never = tab
             return unexpected
@@ -256,8 +248,11 @@ function tribe_tab_label(tab: TribeGroupTab) {
     }
 }
 
-// Settings needs the publishing settings, which only the API's managers get.
-const show_settings = Boolean(tribe_group?.can_manage && publishing)
+// Publishing settings come only to the API's managers; the chief seats to
+// superusers (set) and the executor (appoint volunteers).
+const show_publishing_settings = Boolean(tribe_group?.can_manage && publishing)
+const show_chiefs = show_publishing_settings
+    || Boolean(tribe_group?.can_set_chief || tribe_group?.can_appoint_chief)
 const tribe_tab_ids = tribe_group_tab_ids({
     // The year's numbers always have something to say, even with no write-up.
     has_about: true,
@@ -269,7 +264,7 @@ const tribe_tab_ids = tribe_group_tab_ids({
     can_schedule_fleets: Boolean(tribe_group?.can_schedule_fleets),
     can_create_events: Boolean(tribe_group?.can_create_events),
     can_post: Boolean(tribe_group?.can_post),
-    can_manage: show_settings,
+    can_manage: show_chiefs,
     fleets_enabled: tribe_group?.fleets_enabled ?? true,
     events_enabled: tribe_group?.events_enabled ?? true,
 })
@@ -319,8 +314,7 @@ import Button from '@components/blocks/Button.astro'
 import SectionTabs from '@components/blocks/SectionTabs.astro'
 import TribeGroupInvitationBanner from '@components/blocks/TribeGroupInvitationBanner.astro'
 import TribeChiefHelpWanted from '@components/blocks/TribeChiefHelpWanted.astro'
-import TribeChiefSwap from '@components/blocks/TribeChiefSwap.astro'
-import LazyPartial from '@components/blocks/LazyPartial.astro'
+import TribeGroupChiefSettings from '@components/blocks/TribeGroupChiefSettings.astro'
 import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
 ---
 
@@ -350,24 +344,15 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
                         {show_seats ?
                             chief_seats.map((seat) => seat.chief &&
                                 <Flexblock gap="var(--space-3xs)" class="[ tribe-group-chief ]">
-                                    <TribeChiefSwap
-                                        tribe_id={tribe_group!.tribe_id}
-                                        group_id={tribe_group!.id}
-                                        region={seat.region}
-                                        seat_name={`${tribe_group!.name} (${seat.label})`}
-                                        can_set={can_set_chief}
-                                    >
-                                        <div class="[ tribe-group-chief-portrait ]">
-                                            <CharacterPicture
-                                                character_id={seat.chief.character_id}
-                                                character_name={seat.chief.character_name}
-                                                size={128}
-                                                icon_quality={256}
-                                                inert={can_set_chief}
-                                                tooltip={`${seat.chief.character_name} · ${t('tribes.chief.seat_chief').replace('{tz}', seat.label)}`}
-                                            />
-                                        </div>
-                                    </TribeChiefSwap>
+                                    <div class="[ tribe-group-chief-portrait ]">
+                                        <CharacterPicture
+                                            character_id={seat.chief.character_id}
+                                            character_name={seat.chief.character_name}
+                                            size={128}
+                                            icon_quality={256}
+                                            tooltip={`${seat.chief.character_name} · ${t('tribes.chief.seat_chief').replace('{tz}', seat.label)}`}
+                                        />
+                                    </div>
                                     <small class="[ tribe-chief-seat-label ]">{seat.label}</small>
                                 </Flexblock>
                             )
@@ -387,18 +372,6 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
                                 }
                             </Flexblock>
                         }
-                        {settable_open_seats.map((seat) =>
-                            <TribeChiefSwap
-                                tribe_id={tribe_group!.tribe_id}
-                                group_id={tribe_group!.id}
-                                region={seat.region}
-                                seat_name={`${tribe_group!.name} (${seat.label})`}
-                                can_set={true}
-                                empty={true}
-                            >
-                                <span slot="empty">{t('tribes.chief.seat_open').replace('{tz}', seat.label)}</span>
-                            </TribeChiefSwap>
-                        )}
                         <PageTitle is_landing={true}>{page_title}</PageTitle>
                     </FlexInline>
                 </Flexblock>
@@ -455,11 +428,6 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
                                     is_auth={is_auth}
                                     login_href={login_url(Astro)}
                                 />
-                                {tribe_group.can_appoint_chief &&
-                                    <LazyPartial url={chief_volunteers_url} class="[ mt-[var(--space-l)] ]">
-                                        <span class="[ text-muted ]">{t('tribes.chief.volunteers')}</span>
-                                    </LazyPartial>
-                                }
                             </div>
                         }
                         <SectionTabs
@@ -644,25 +612,30 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
                                 </SectionTabPanel>
                             }
 
-                            {show_settings && publishing &&
-                                <SectionTabPanel id="settings" id_prefix="tribe-group" is_default={default_tribe_tab === 'settings'}>
+                            {show_chiefs &&
+                                <SectionTabPanel id="chiefs" id_prefix="tribe-group" is_default={default_tribe_tab === 'chiefs'}>
                                     <Flexblock gap="var(--space-l)">
-                                        <TribeGroupDiscordSettings
-                                            settings={publishing}
-                                            channels={text_channels}
-                                            tribe_id={tribe_id}
-                                            group_id={group_id}
-                                            tribe_name={tribe?.name ?? tribe_group.tribe_name}
-                                            group_name={tribe_group.name}
-                                        />
-                                        <TribeGroupPublishingSettings
-                                            settings={publishing}
-                                            roster={publishing_roster}
-                                            tribe_id={tribe_id}
-                                            group_id={group_id}
-                                            tribe_name={tribe?.name ?? tribe_group.tribe_name}
-                                            group_name={tribe_group.name}
-                                        />
+                                        <TribeGroupChiefSettings group={tribe_group} />
+                                        {show_publishing_settings && publishing &&
+                                            <TribeGroupDiscordSettings
+                                                settings={publishing}
+                                                channels={text_channels}
+                                                tribe_id={tribe_id}
+                                                group_id={group_id}
+                                                tribe_name={tribe?.name ?? tribe_group.tribe_name}
+                                                group_name={tribe_group.name}
+                                            />
+                                        }
+                                        {show_publishing_settings && publishing &&
+                                            <TribeGroupPublishingSettings
+                                                settings={publishing}
+                                                roster={publishing_roster}
+                                                tribe_id={tribe_id}
+                                                group_id={group_id}
+                                                tribe_name={tribe?.name ?? tribe_group.tribe_name}
+                                                group_name={tribe_group.name}
+                                            />
+                                        }
                                     </Flexblock>
                                 </SectionTabPanel>
                             }
