@@ -1,7 +1,7 @@
 ---
 import { i18n } from '@helpers/i18n'
 const { t, lang, translatePath } = i18n(Astro.url)
-import { format_date_short } from '@helpers/date'
+import { eve_day_short } from '@helpers/date'
 
 import { HTTP_403_Forbidden, HTTP_404_Not_Found, login_redirect } from '@helpers/http_responses'
 
@@ -202,7 +202,7 @@ const breadcrumbs = [
                         />
                         {before_start && !is_redacted &&
                             <small class="[ campaign-header-runs ]">
-                                {t('campaigns.runs_until').replace('{weeks}', String(weeks)).replace('{date}', format_date_short(lang, new Date(campaign.end_at)))}
+                                {t('campaigns.runs_until').replace('{weeks}', String(weeks)).replace('{date}', eve_day_short(lang, campaign.end_at))}
                             </small>
                         }
                     </Flexblock>

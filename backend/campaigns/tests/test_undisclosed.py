@@ -123,6 +123,7 @@ class UndisclosedTestCase(TestCase):
             **auth_headers(self.member),
         )
         self.assertNotEqual(response.status_code, 404)
+        self.assertNotIn(self.campaign.slug, response.content.decode())
 
     def test_manager_gets_the_full_detail(self):
         body = self._get(f"/{self.campaign.slug}", self.manager).json()

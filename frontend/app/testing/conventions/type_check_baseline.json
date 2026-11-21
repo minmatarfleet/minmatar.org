@@ -37,7 +37,6 @@
     "src/helpers/main_db.ts": 1,
     "src/models/sde/types.ts": 29,
     "src/pages/alliance/health.astro": 16,
-    "src/pages/campaigns/[slug]/index.astro": 3,
     "src/pages/fleets/history/[fleet_id].astro": 1,
     "src/pages/fleets/upcoming/[fleet_id]/refresh-motd.astro": 1,
     "src/pages/industry/loyalty.astro": 1,

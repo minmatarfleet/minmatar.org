@@ -240,7 +240,7 @@ def enlist(request, slug: str, payload: schemas.EnlistRequest):
     chain_url = (
         TOKEN_CHAIN_URL.format(
             character_id=primary.character_id,
-            redirect=f"/campaigns/{campaign.slug}/",
+            redirect=f"/campaigns/{disclosure.address(campaign, request.user)}/",
         )
         if primary and missing
         else ""
