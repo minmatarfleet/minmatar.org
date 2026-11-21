@@ -145,6 +145,8 @@ REPORT_BINDINGS: dict[str, ReportBinding] = {
             "town_hall": {"top_n": 5, "sort": "isk_pi_30d_estimate"},
         },
     ),
+    "supply.production": _production_binding("supply.production"),
+    # Legacy codes, until the production merge has renamed those groups.
     "supply.subcapital-production": _production_binding(
         "supply.subcapital-production"
     ),

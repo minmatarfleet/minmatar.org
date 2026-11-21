@@ -91,17 +91,7 @@ export const TRIBE_ABOUT_STAGES: Record<string, TribeAboutStage> = {
         pilot_metric: 'tribes.about.metric.isk',
         pilot_value: format_isk,
     },
-    'supply.subcapital-production': {
-        verb: 'tribes.about.verb.built',
-        value: (totals) => short(n(totals, 'delivered_units')),
-        unit: 'tribes.about.unit.units',
-        detail: (t, totals) => fill_template(t('tribes.about.detail.delivered'), {
-            isk: format_isk(n(totals, 'delivered_estimate')),
-        }),
-        pilot_metric: 'tribes.about.metric.units',
-        pilot_value: count,
-    },
-    'supply.capital-production': {
+    'supply.production': {
         verb: 'tribes.about.verb.built',
         value: (totals) => short(n(totals, 'delivered_units')),
         unit: 'tribes.about.unit.units',
@@ -203,6 +193,10 @@ export const TRIBE_ABOUT_STAGES: Record<string, TribeAboutStage> = {
     },
 }
 
+// Until the production merge runs, the old group codes share Production's stage.
+TRIBE_ABOUT_STAGES['supply.capital-production'] = TRIBE_ABOUT_STAGES['supply.production']
+TRIBE_ABOUT_STAGES['supply.subcapital-production'] = TRIBE_ABOUT_STAGES['supply.production']
+
 /** Siege, move, save. */
 export const CAPITALS_ORDER = [
     'capitals.dreads',
@@ -214,8 +208,7 @@ export const CAPITALS_ORDER = [
 export const SUPPLY_FLOW = [
     'supply.mining',
     'supply.planetary-interaction',
-    'supply.subcapital-production',
-    'supply.capital-production',
+    'supply.production',
     'supply.freighters',
     'supply.market',
     'supply.loyalty-points',

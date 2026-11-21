@@ -115,30 +115,16 @@
   },
   {
     "model": "tribes.tribegroup",
-    "pk": 4,
-    "fields": {
-      "tribe": 2,
-      "name": "Subcapital Production",
-      "description": "Ships are ammo. Subcapital Production ensures the alliance always has ships in hangars and pilots ready to undock.",
-      "group": null,
-      "chief": null,
-      "discord_channel_id": null,
-      "is_active": true,
-      "code": "supply.subcapital-production"
-    }
-  },
-  {
-    "model": "tribes.tribegroup",
     "pk": 5,
     "fields": {
       "tribe": 2,
-      "name": "Capital Production",
-      "description": "Bigger hulls, bigger feeds. Capital Production handles the most resource-intensive manufacturing the alliance undertakes \u2014 the ships that decide wars.",
+      "name": "Production",
+      "description": "Ships are ammo, and the big hulls decide wars. Production builds the subcapital ships the alliance undocks and the capital ships that decide fights.",
       "group": null,
       "chief": null,
       "discord_channel_id": null,
       "is_active": true,
-      "code": "supply.capital-production"
+      "code": "supply.production"
     }
   },
   {
@@ -306,7 +292,7 @@
     "model": "tribes.tribegrouprequirement",
     "pk": 8,
     "fields": {
-      "tribe_group": 4
+      "tribe_group": 5
     }
   },
   {

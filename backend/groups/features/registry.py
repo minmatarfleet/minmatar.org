@@ -28,8 +28,7 @@ def _tribe_codes(*codes: str) -> tuple[str, ...]:
 
 
 _INDUSTRY_TRIBE_CODES = (
-    "supply.subcapital-production",
-    "supply.capital-production",
+    "supply.production",
     "supply.mining",
     "supply.planetary-interaction",
 )
