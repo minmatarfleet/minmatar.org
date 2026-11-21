@@ -99,6 +99,7 @@ const INLINE: Partial<Record<GateKey, Inline>> = {
     'surveys.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('surveys.change_surveycampaign'),
     'tasks.manage': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('taskboard.change_taskrulesetting'),
     'surveys.results.view': (is_superuser) => is_superuser,
+    'campaigns.coordination': (is_superuser) => is_superuser,
     'learning.manage': (is_superuser, user_permissions) => is_superuser
         || user_permissions.includes('learning.change_certificate'),
     'skillsets.manage': (is_superuser, user_permissions) => is_superuser

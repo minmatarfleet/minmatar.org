@@ -518,6 +518,16 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         legacy_permission="campaigns.change_campaign",
         staff_permission="campaigns.change_campaign",
     ),
+    "campaigns.coordination": FeatureDefinition(
+        code="campaigns.coordination",
+        label="Campaign coordination Discord",
+        scope=FeatureScope.AUTH_GROUP,
+        description=(
+            "Link a campaign to a Discord server and its timers and fleet "
+            "pings channels. Unwired, so only superusers pass."
+        ),
+        deny_community_statuses=(),
+    ),
     # Site gates moved off Django permission strings. Each one ships with
     # empty wiring plus the permission it replaces as legacy_permission, so
     # its audience is exactly today's; widen it by wiring it in the admin.

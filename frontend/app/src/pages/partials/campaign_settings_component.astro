@@ -13,6 +13,7 @@
  * part=targets    this week's targets: accept, nudge, propose again
  * part=order      the commander's order: publish, draft from the week plan
  * part=structures the structures under recon (added from the Structures tab)
+ * part=coordination the Discord server, timers and fleet pings channels (admins only)
  */
 import { i18n } from '@helpers/i18n'
 const { t, lang, translatePath } = i18n(Astro.url)
@@ -23,11 +24,13 @@ import { get_gates, can } from '@helpers/gates'
 import {
     get_campaign_settings,
     get_campaign_choices,
+    get_campaign_coordination,
+    put_campaign_coordination,
     change_campaign,
     type CampaignChoices,
 } from '@helpers/api.minmatar.org/campaigns'
 import { get_fittings } from '@helpers/api.minmatar.org/ships'
-import type { CampaignSettings, Fitting } from '@dtypes/api.minmatar.org'
+import type { CampaignCoordination, CampaignSettings, Fitting } from '@dtypes/api.minmatar.org'
 import { form_text } from '@helpers/manage_forms'
 import { query_string } from '@helpers/string'
 import {
@@ -44,12 +47,13 @@ if (!user || !auth_token) return HTTP_403_Forbidden()
 
 const gates = await get_gates(Astro)
 if (!can(gates, 'campaigns.manage')) return HTTP_403_Forbidden()
+if (Astro.url.searchParams.get('part') === 'coordination' && !can(gates, 'campaigns.coordination')) return HTTP_403_Forbidden()
 
 const params = Astro.url.searchParams
 const slug = params.get('slug') ?? ''
 if (!/^[a-z0-9-]+$/.test(slug)) return HTTP_403_Forbidden()
 
-const PARTS = ['features', 'basics', 'systems', 'sides', 'fittings', 'targets', 'order', 'structures'] as const
+const PARTS = ['features', 'basics', 'systems', 'sides', 'fittings', 'targets', 'order', 'structures', 'coordination'] as const
 type Part = typeof PARTS[number]
 const part = (PARTS as readonly string[]).includes(params.get('part') ?? '') ? params.get('part') as Part : 'basics'
 const has_structures_tab = params.get('tab') === '1'
@@ -95,6 +99,7 @@ async function load() {
 let settings: CampaignSettings | null = null
 let choices: CampaignChoices | null = null
 let fittings: Fitting[] = []
+let coordination: CampaignCoordination | null = null
 let fetch_error: Error | false = false
 
 try {
@@ -257,6 +262,14 @@ if (is_post && settings && choices) {
                 }
                 saved = true
                 break
+            case 'coordination':
+                await put_campaign_coordination(slug, auth_token, {
+                    guild_id: field('guild_id') || null,
+                    timers_channel_id: field('timers_channel_id') || null,
+                    fleets_channel_id: field('fleets_channel_id') || null,
+                })
+                saved = true
+                break
             case 'order':
                 if (op === 'draft') {
                     await change_campaign(slug, auth_token, 'POST', '/commander-order/draft')
@@ -292,6 +305,16 @@ if (settings && part === 'fittings') {
     }
 }
 
+if (settings && part === 'coordination') {
+    try {
+        // A server picked in the form lists its own channels before it is saved.
+        const picked = is_post ? '' : (params.get('guild_id') ?? '')
+        coordination = await get_campaign_coordination(slug, auth_token, picked)
+    } catch (error) {
+        fetch_error = error
+    }
+}
+
 const retired = settings?.systems.filter((system) => system.retired && !rows.some((row) => row.solar_system_id === system.solar_system_id)) ?? []
 
 function summary_for(current: CampaignSettings): string {
@@ -324,6 +347,8 @@ function summary_for(current: CampaignSettings): string {
             return current.commander_order_text
                 ? `${current.commander_order_text}${current.commander_order_is_draft ? ` ${t('campaigns.manage.order_draft_suffix')}` : ''}`
                 : t('campaigns.manage.order_none')
+        case 'coordination':
+            return coordination?.guild_name ?? ''
         case 'structures':
             return current.structures.length === 0
                 ? t('campaigns.manage.none_yet')
@@ -718,6 +743,51 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
                         ? <Button color="transparent" size="sm" href="#structures">{t('campaigns.manage.structures_open')}</Button>
                         : <span class="[ manage-muted ]">{t('campaigns.manage.structures_scout')}</span>
                     }
+                </div>
+            </Fragment>
+        }
+
+        {part === 'coordination' && coordination &&
+            <Fragment>
+                <div class="[ manage-fields ]">
+                    <ManageField label={t('campaigns.manage.coordination_server')} for="campaign-coordination-server">
+                        <Select
+                            id="campaign-coordination-server"
+                            size="sm"
+                            name="guild_id"
+                            hx-get={PART_URL}
+                            hx-trigger="change"
+                            hx-include="this"
+                            hx-target={`#${body_id}`}
+                            hx-swap="outerHTML"
+                        >
+                            {coordination.servers.map((server) =>
+                                <option value={server.id} selected={server.id === coordination.guild_id}>
+                                    {server.name} · {server.is_administrator ? t('campaigns.manage.coordination_admin') : t('campaigns.manage.coordination_no_admin')}
+                                </option>
+                            )}
+                        </Select>
+                    </ManageField>
+                    {coordination.invite_url &&
+                        <Button color="transparent" size="sm" href={coordination.invite_url} target="_blank" rel="noopener noreferrer">{t('campaigns.manage.coordination_add_bot')}</Button>
+                    }
+                    <ManageField label={t('campaigns.manage.coordination_timers')} for="campaign-coordination-timers">
+                        <Select id="campaign-coordination-timers" size="sm" name="timers_channel_id">
+                            <option value="">{t('campaigns.manage.coordination_none')}</option>
+                            {coordination.channels.map((channel) => <option value={channel.id} selected={channel.id === coordination.timers_channel_id}>#{channel.name}</option>)}
+                        </Select>
+                    </ManageField>
+                    <ManageField label={t('campaigns.manage.coordination_fleets')} for="campaign-coordination-fleets">
+                        <Select id="campaign-coordination-fleets" size="sm" name="fleets_channel_id">
+                            <option value="">{t('campaigns.manage.coordination_none')}</option>
+                            {coordination.channels.map((channel) => <option value={channel.id} selected={channel.id === coordination.fleets_channel_id}>#{channel.name}</option>)}
+                        </Select>
+                    </ManageField>
+                </div>
+                <div class="[ manage-actions ]">
+                    <Button type="submit" size="sm">{t('campaigns.manage.save')}</Button>
+                    {error_message && <span class="[ manage-field__error ]" role="alert">{error_message}</span>}
+                    {saved && <span class="[ manage-saved ]">{t('campaigns.manage.saved')}</span>}
                 </div>
             </Fragment>
         }

@@ -215,7 +215,7 @@ describe('tribe group fleets', () => {
     it('asks the API for one group\'s fleets', async () => {
         vi.mocked(get_fleets_v3).mockResolvedValue([] as any)
         await fetch_fleets_auth('token', false, true, null, 1)
-        expect(get_fleets_v3).toHaveBeenCalledWith('token', 'recent', 1)
+        expect(get_fleets_v3).toHaveBeenCalledWith('token', 'recent', 1, null)
     })
 })
 

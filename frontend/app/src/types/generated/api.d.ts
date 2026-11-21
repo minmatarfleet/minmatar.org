@@ -1165,6 +1165,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/campaigns/{slug}/coordination": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Coordination
+         * @description The campaign's coordination Discord server and channels. Admins
+         *     only: nobody else sees which server a campaign is run from.
+         *     ``guild_id`` lists another server's channels while choosing one.
+         */
+        get: operations["campaigns_endpoints_get_coordination_get_coordination"];
+        /**
+         * Put Coordination
+         * @description Link the campaign to a server the bot is in, and pick its timers and
+         *     fleet pings channels there. Admins only.
+         */
+        put: operations["campaigns_endpoints_put_coordination_put_coordination"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/campaigns/{slug}/destruction": {
         parameters: {
             query?: never;
@@ -12404,6 +12431,57 @@ export interface components {
             /** Status */
             status: components["schemas"]["ChoiceOut"][];
         };
+        /**
+         * CampaignCoordinationOut
+         * @description The campaign's coordination Discord (admins only).
+         */
+        CampaignCoordinationOut: {
+            /**
+             * Channels
+             * @default []
+             */
+            channels?: components["schemas"]["CoordinationChannelOut"][];
+            /**
+             * Channels Unavailable
+             * @default false
+             */
+            channels_unavailable?: boolean;
+            /** Fleets Channel Id */
+            fleets_channel_id?: string | null;
+            /** Guild Id */
+            guild_id?: string | null;
+            /**
+             * Guild Name
+             * @default
+             */
+            guild_name?: string;
+            /**
+             * Invite Url
+             * @default
+             */
+            invite_url?: string;
+            /**
+             * Is Default
+             * @default true
+             */
+            is_default?: boolean;
+            /**
+             * Servers
+             * @default []
+             */
+            servers?: components["schemas"]["CoordinationServerOut"][];
+            /** Timers Channel Id */
+            timers_channel_id?: string | null;
+        };
+        /** CampaignCoordinationRequest */
+        CampaignCoordinationRequest: {
+            /** Fleets Channel Id */
+            fleets_channel_id?: string | null;
+            /** Guild Id */
+            guild_id?: string | null;
+            /** Timers Channel Id */
+            timers_channel_id?: string | null;
+        };
         /** CampaignCreateRequest */
         CampaignCreateRequest: {
             /**
@@ -14086,6 +14164,30 @@ export interface components {
             is_active?: boolean | null;
             /** Notes */
             notes?: string | null;
+        };
+        /** CoordinationChannelOut */
+        CoordinationChannelOut: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** CoordinationServerOut */
+        CoordinationServerOut: {
+            /** Id */
+            id: string;
+            /**
+             * Is Administrator
+             * @default false
+             */
+            is_administrator?: boolean;
+            /**
+             * Is Primary
+             * @default false
+             */
+            is_primary?: boolean;
+            /** Name */
+            name: string;
         };
         /**
          * CopyEveFleetRequest
@@ -35126,6 +35228,97 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
+            };
+        };
+    };
+    campaigns_endpoints_get_coordination_get_coordination: {
+        parameters: {
+            query?: {
+                guild_id?: string;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignCoordinationOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    campaigns_endpoints_put_coordination_put_coordination: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CampaignCoordinationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignCoordinationOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

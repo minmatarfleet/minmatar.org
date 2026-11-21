@@ -1,4 +1,4 @@
-import type { CampaignChoices, CampaignDestruction, CampaignTimer } from '@dtypes/api.minmatar.org'
+import type { CampaignChoices, CampaignCoordination, CampaignCoordinationPut, CampaignDestruction, CampaignTimer } from '@dtypes/api.minmatar.org'
 import type {
     CampaignListItem,
     CampaignDetail,
@@ -318,5 +318,23 @@ export async function get_campaign_choices(access_token:string) {
     return await api_request<CampaignChoices>(`${API_ENDPOINT}/choices`, {
         token: access_token,
         error: 'Error fetching campaign choices',
+    })
+}
+
+/** The coordination Discord (admins only). `guild_id` lists another server's channels while one is being picked. */
+export async function get_campaign_coordination(slug:string, access_token:string, guild_id:string = '') {
+    const query = guild_id ? `?guild_id=${encodeURIComponent(guild_id)}` : ''
+    return await api_request<CampaignCoordination>(`${API_ENDPOINT}/${slug}/coordination${query}`, {
+        token: access_token,
+        error: 'Error fetching campaign coordination',
+    })
+}
+
+export async function put_campaign_coordination(slug:string, access_token:string, body:CampaignCoordinationPut) {
+    return await api_request<CampaignCoordination>(`${API_ENDPOINT}/${slug}/coordination`, {
+        method: 'PUT',
+        token: access_token,
+        body,
+        error: 'Error saving campaign coordination',
     })
 }

@@ -112,6 +112,9 @@ import SectionTabs from '@components/blocks/SectionTabs.astro'
 import LazyPartial from '@components/blocks/LazyPartial.astro'
 import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
 import CampaignSettingsPanel from '@components/blocks/CampaignSettingsPanel.astro'
+import { get_gates, can } from '@helpers/gates'
+
+const can_coordinate = can_manage && can(await get_gates(Astro), 'campaigns.coordination')
 ---
 
 <Flexblock gap='var(--space-l)' class:list={['[ campaign-detail ]', Astro.props.class]} {...attributes}>
@@ -324,7 +327,7 @@ import CampaignSettingsPanel from '@components/blocks/CampaignSettingsPanel.astr
 
         {can_manage &&
             <SectionTabPanel id="settings" id_prefix="campaign" is_default={false}>
-                <CampaignSettingsPanel campaign={campaign} week={week} choices={choices} has_structures_tab={show_structures_tab} />
+                <CampaignSettingsPanel campaign={campaign} week={week} choices={choices} has_structures_tab={show_structures_tab} can_coordinate={can_coordinate} />
             </SectionTabPanel>
         }
     </SectionTabs>

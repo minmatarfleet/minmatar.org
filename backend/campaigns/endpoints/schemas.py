@@ -234,6 +234,41 @@ class CampaignDestructionOut(Schema):
     rows: list[CampaignDestructionRow] = []
 
 
+class CoordinationServerOut(Schema):
+    # Discord snowflakes are strings: they do not fit a JavaScript number.
+    id: str
+    name: str
+    is_primary: bool = False
+    # The bot holds Administrator there, as of the last role snapshot.
+    is_administrator: bool = False
+
+
+class CoordinationChannelOut(Schema):
+    id: str
+    name: str
+
+
+class CampaignCoordinationOut(Schema):
+    """The campaign's coordination Discord (admins only)."""
+
+    guild_id: str | None = None
+    guild_name: str = ""
+    # No server stored: the campaign runs from ours.
+    is_default: bool = True
+    timers_channel_id: str | None = None
+    fleets_channel_id: str | None = None
+    servers: list[CoordinationServerOut] = []
+    channels: list[CoordinationChannelOut] = []
+    channels_unavailable: bool = False
+    invite_url: str = ""
+
+
+class CampaignCoordinationRequest(Schema):
+    guild_id: str | None = None
+    timers_channel_id: str | None = None
+    fleets_channel_id: str | None = None
+
+
 class RightNow(Schema):
     active_pilots: int = 0
     system_heat: int = 0

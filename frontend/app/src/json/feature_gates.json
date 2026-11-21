@@ -166,6 +166,10 @@
             "feature": "tasks.manage",
             "legacy": { "perms": ["taskboard.change_taskrulesetting"], "superuser": true }
         },
+        "campaigns.coordination": {
+            "feature": "campaigns.coordination",
+            "legacy": { "perms": [], "superuser": true }
+        },
         "surveys.results.view": {
             "feature": "surveys.results.view",
             "legacy": { "perms": [], "superuser": true }

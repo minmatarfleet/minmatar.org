@@ -19,6 +19,7 @@ interface Props {
     week:                   CampaignWeek | null;
     choices:                CampaignChoices | null;
     has_structures_tab:     boolean;
+    can_coordinate?:        boolean;
     [propName: string]: any;
 }
 
@@ -27,6 +28,7 @@ const {
     week,
     choices,
     has_structures_tab,
+    can_coordinate = false,
     ...attributes
 } = Astro.props
 
@@ -112,5 +114,8 @@ import SettingsSection from '@components/blocks/manage/SettingsSection.astro'
     }
     {features.structures &&
         <SettingsSection id="campaign-settings-structures" title={t('campaigns.manage.structures')} summary={structures_summary} url={part_url('structures')} load="open" />
+    }
+    {can_coordinate &&
+        <SettingsSection id="campaign-settings-coordination" title={t('campaigns.manage.coordination')} url={part_url('coordination')} load="open" />
     }
 </Flexblock>

@@ -187,11 +187,13 @@ def _bits(value) -> int:
 
 def _mark_cannot_manage(guild: DiscordGuild) -> None:
     guild.can_manage_roles = False
+    guild.bot_is_administrator = False
     guild.can_kick_members = False
     guild.roles_checked_at = timezone.now()
     guild.save(
         update_fields=[
             "can_manage_roles",
+            "bot_is_administrator",
             "can_kick_members",
             "roles_checked_at",
             "updated_at",
@@ -321,6 +323,9 @@ def snapshot_guild_roles(guild: DiscordGuild, client=None) -> bool:
     rows, can_manage = _catalog(guild, roles, member)
     guild.roles = rows
     guild.can_manage_roles = can_manage
+    guild.bot_is_administrator = bool(
+        _held_permissions(guild, roles, member) & ADMINISTRATOR
+    )
     guild.can_kick_members = bool(
         _held_permissions(guild, roles, member)
         & (ADMINISTRATOR | KICK_MEMBERS)
@@ -330,6 +335,7 @@ def snapshot_guild_roles(guild: DiscordGuild, client=None) -> bool:
         update_fields=[
             "roles",
             "can_manage_roles",
+            "bot_is_administrator",
             "can_kick_members",
             "roles_checked_at",
             "updated_at",

@@ -216,6 +216,15 @@ class Campaign(models.Model):
         User, on_delete=models.SET_NULL, null=True, blank=True
     )
     discord_channel_id = models.BigIntegerField(null=True, blank=True)
+    # Coordination Discord (admins only): the server the campaign is run
+    # from, ours unless set, and its timers and fleet pings channels.
+    coordination_guild_id = models.BigIntegerField(null=True, blank=True)
+    coordination_timers_channel_id = models.BigIntegerField(
+        null=True, blank=True
+    )
+    coordination_fleets_channel_id = models.BigIntegerField(
+        null=True, blank=True
+    )
     voice_channel_ids = models.JSONField(default=list, blank=True)
     default_fleet_audience = models.ForeignKey(
         "fleets.EveFleetAudience",
