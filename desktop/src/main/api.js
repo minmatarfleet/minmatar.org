@@ -235,11 +235,53 @@ async function load_upcoming_fleets(api, web_url) {
         .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
 }
 
+const finite = value => (typeof value === 'number' && Number.isFinite(value) ? value : null)
+
+// One entry of the overlay's `campaigns` list. Every field is read defensively: absent means the old look.
+function campaign_entry(entry, web_url) {
+    if (!entry || typeof entry.slug !== 'string' || !entry.slug) return null
+    const features = entry.features && typeof entry.features === 'object' ? entry.features : {}
+    const weekly = features.weekly_progress_enabled ?? features.weekly_progress
+    const totals = entry.totals && typeof entry.totals === 'object' ? entry.totals : null
+    return {
+        id: entry.id ?? null,
+        slug: entry.slug,
+        name: String(entry.name || entry.slug),
+        status: typeof entry.status === 'string' ? entry.status : '',
+        url: web_routes.campaign(web_url, entry.slug),
+        weekly_progress: weekly !== false,   // only an explicit false hides the weekly rows
+        totals: totals && {
+            structures_destroyed: finite(totals.structures_destroyed),
+            isk_destroyed: finite(totals.isk_destroyed),
+            ships_killed: finite(totals.ships_killed),
+        },
+        next_timers: (Array.isArray(entry.next_timers) ? entry.next_timers : [])
+            .filter(timer => timer && !Number.isNaN(new Date(timer.at).getTime()))
+            .slice(0, 3)
+            .map(timer => ({
+                name: String(timer.name || ''),
+                type_name: String(timer.type_name || ''),
+                system: String(timer.system || ''),
+                stage: [1, 2, 3].includes(timer.stage) ? timer.stage : 3,
+                final: timer.final === true,
+                at: timer.at,
+            })),
+    }
+}
+
 // Campaign overlay -> what the Campaigns window draws, or null when no campaign is live.
 async function load_campaign(api, web_url) {
-    const { campaign } = await api.campaign_overlay()
-    if (!campaign) return null
+    const payload = await api.campaign_overlay()
+    const campaign = payload.campaign
+    // The list of live campaigns (deployment staging backends); absent on older ones, then it is empty.
+    const campaigns = Array.isArray(payload.campaigns) ? payload.campaigns.map(entry => campaign_entry(entry, web_url)).filter(Boolean) : []
+    if (!campaign && !campaigns.length) return null
+    if (!campaign) {
+        const first = campaigns[0]
+        return { slug: first.slug, name: first.name, week_index: null, week_count: null, url: first.url, systems: [], active_window_minutes: 60, pilots: [], campaigns }
+    }
     return {
+        campaigns,
         slug: campaign.slug,
         name: campaign.name,
         week_index: campaign.week_index,

@@ -3,9 +3,12 @@ const { send, on_state, on_visibility } = window.minmatar
 window.eve_window.follow_visibility(on_visibility)
 const { eve_time } = window.fleet_format
 const { activity_text, ago_text } = window.campaign_format
-const { content } = window.campaign_view
+const { content, selected_campaign } = window.campaign_view
+const { clock } = window.fleet_format
 
 let rendered = null   // signature of what the window currently shows
+let selected = null   // slug picked in the switcher; null follows the legacy campaign
+let last_state = null
 let pilots = []       // the pilots behind the faces, for the tooltip
 
 // The page's CSP has no inline styles, so bar geometry goes on through the CSSOM.
@@ -16,25 +19,37 @@ function apply_geometry(root) {
     })
 }
 
-on_state(state => {
+function shown_slug() {
+    const entry = last_state && shown_entry(last_state)
+    return entry ? entry.slug : null
+}
+
+function shown_entry(state) {
+    return state.campaign && selected_campaign(state.campaign, selected)
+}
+
+function render_state(state) {
+    last_state = state
     window.eve_window.apply(state)
     $('refresh').classList.toggle('is-loading', state.loading)
-    $('title').textContent = state.campaign ? state.campaign.name : 'Campaigns'
+    const entry = shown_entry(state)
+    $('title').textContent = entry ? entry.name : state.campaign ? state.campaign.name : 'Campaigns'
     $('status').textContent = state.campaign_updated_at ? `Updated ${eve_time(state.campaign_updated_at)} EVE` : ''
     $('open-site').hidden = !state.campaign
     $('version').textContent = `v${state.version}`
     window.eve_window.show_update($('update'), state.update)
 
     // State is pushed on every focus change; only rebuild when the content changed so portraits don't flicker.
-    const signature = JSON.stringify([state.campaign, state.campaign_error, !!state.campaign_updated_at])
+    const signature = JSON.stringify([state.campaign, state.campaign_error, !!state.campaign_updated_at, entry && entry.slug])
     if (signature === rendered) return
     rendered = signature
     hide_tip()
     if (state.campaign) pilots = state.campaign.pilots
-    $('content').innerHTML = content(state)
+    $('content').innerHTML = content(state, selected)
     apply_geometry($('content'))
     capture_wheel()
-})
+}
+on_state(render_state)
 
 // Click-through hands the mouse wheel to EVE too, so a list that scrolls takes the whole body (the gaps
 // between rows and the scrollbar), as the Intel window does.
@@ -81,17 +96,32 @@ $('content').addEventListener('focusin', event => {
 $('content').addEventListener('focusout', hide_tip)
 $('content').addEventListener('scroll', hide_tip)
 
+// ---------------------------------------------------------------- switcher and timer clocks
+
+$('content').addEventListener('click', event => {
+    const button = event.target.closest('[data-campaign]')
+    if (!button || !last_state) return
+    selected = button.dataset.campaign
+    render_state(last_state)
+})
+
+// The countdowns tick every second between the minute's refreshes.
+setInterval(() => {
+    document.querySelectorAll('[data-at]').forEach(el => { el.textContent = clock(el.dataset.at).text })
+}, 1000)
+
 // ---------------------------------------------------------------- actions
 
 window.eve_window.wire_overlay(send)
 window.eve_window.wire_update($('update'), send)
 
 $('content').addEventListener('click', event => {
-    if (event.target.closest('[data-open]')) send('campaigns:open')
+    if (event.target.closest('[data-open]')) send('campaigns:open', shown_slug())
 })
 $('content').addEventListener('keydown', event => {
     if (event.target.closest('[data-open]') && (event.key === 'Enter' || event.key === ' ')) {
         event.preventDefault()
-        send('campaigns:open')
+        send('campaigns:open', shown_slug())
     }
 })
+$('open-site').addEventListener('click', () => send('campaigns:open', shown_slug()))

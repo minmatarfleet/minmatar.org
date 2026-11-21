@@ -66,7 +66,17 @@
         return `${hours}h ${minutes % 60}m ago`
     }
 
-    const api = { change_tone, change_text, bar, activity_text, ago_text, flip_tone, row_title, PERIODS, SHORT_PERIODS, FLIPS, FLIP_WORDS }
+    // 41.6B, 850M, 12k, 7: the ISK and ship counts in the Totals row.
+    function compact_number(value) {
+        if (value == null) return '-'
+        const abs = Math.abs(value)
+        for (const [size, suffix] of [[1e12, 'T'], [1e9, 'B'], [1e6, 'M'], [1e3, 'k']]) {
+            if (abs >= size) return `${(value / size).toFixed(abs / size >= 100 ? 0 : 1).replace(/\.0$/, '')}${suffix}`
+        }
+        return String(Math.round(value))
+    }
+
+    const api = { compact_number, change_tone, change_text, bar, activity_text, ago_text, flip_tone, row_title, PERIODS, SHORT_PERIODS, FLIPS, FLIP_WORDS }
     if (typeof module !== 'undefined' && module.exports) module.exports = api
     else root.campaign_format = api
 })(this)
