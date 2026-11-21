@@ -212,6 +212,27 @@ class CampaignTimerOut(Schema):
     outcome: Literal["destroyed", "survived", "passed"]
 
 
+class CampaignDestructionRow(Schema):
+    killmail_id: int
+    killmail_time: datetime
+    type_id: int | None = None
+    # The structure's name when the kill was a campaign structure, else
+    # the ship type.
+    name: str = ""
+    type_name: str = ""
+    alliance_id: int | None = None
+    alliance_ticker: str = ""
+    isk_value: int = 0
+    is_structure: bool = False
+
+
+class CampaignDestructionOut(Schema):
+    isk_destroyed_week: int = 0
+    structures_destroyed: int = 0
+    biggest_kill_isk: int = 0
+    rows: list[CampaignDestructionRow] = []
+
+
 class RightNow(Schema):
     active_pilots: int = 0
     system_heat: int = 0

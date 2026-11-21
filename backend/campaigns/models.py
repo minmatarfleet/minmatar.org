@@ -32,6 +32,10 @@ class CampaignStatus(models.TextChoices):
     ARCHIVED = "archived", "Archived"
 
 
+# Statuses whose campaigns record activity as it happens.
+COUNTING_STATUSES = (CampaignStatus.SCHEDULED, CampaignStatus.ACTIVE)
+
+
 class CampaignKind(models.TextChoices):
     """How the campaign page reads. Theaters (systems, structures) are separate."""
 
@@ -305,10 +309,7 @@ class Campaign(models.Model):
     @property
     def is_counting(self) -> bool:
         """Scheduled campaigns already attribute, so nothing is missed."""
-        return self.status in (
-            CampaignStatus.SCHEDULED,
-            CampaignStatus.ACTIVE,
-        )
+        return self.status in COUNTING_STATUSES
 
     def system_ids(self) -> list[int]:
         return list(

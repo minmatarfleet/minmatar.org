@@ -15,6 +15,7 @@ from django.utils import timezone
 
 from app.errors import ErrorResponse
 from campaigns.models import (
+    COUNTING_STATUSES,
     DAY_BOUNDARY_HOUR,
     Campaign,
     CampaignEnlistmentCharacter,
@@ -63,7 +64,9 @@ def week_bounds(week_start: date) -> tuple[datetime, datetime]:
     return start, start + timedelta(days=7)
 
 
-def counting_campaigns(solar_system_id: int, moment: datetime):
+def counting_campaigns(
+    solar_system_id: int, moment: datetime, kill_scope: bool = False
+):
     """Campaigns that should count activity in a system at a moment.
 
     Scheduled campaigns count too: a campaign is created before it starts so
@@ -72,18 +75,42 @@ def counting_campaigns(solar_system_id: int, moment: datetime):
     A campaign matches when the system is listed as an FW objective, or when
     a structure under recon sits in that system (ops theaters alone do not
     score ship kills; citadel grids still match via structures).
+
+    ``kill_scope`` is for killmails: a campaign with the Destruction feature
+    also matches in any of its systems and anywhere inside its areas
+    (services/kill_scope.py).
     """
-    return Campaign.objects.filter(
-        Q(
-            systems__solar_system_id=solar_system_id,
-            systems__retired_at__isnull=True,
-            systems__is_fw_objective=True,
-        )
-        | Q(structures__solar_system_id=solar_system_id),
-        status__in=["scheduled", "active"],
+    # pylint: disable=import-outside-toplevel
+    from campaigns.services.kill_scope import in_area
+
+    counting = Campaign.objects.filter(
+        status__in=COUNTING_STATUSES,
         start_at__lte=moment,
         end_at__gte=moment,
-    ).distinct()
+    )
+    match = Q(
+        systems__solar_system_id=solar_system_id,
+        systems__retired_at__isnull=True,
+        systems__is_fw_objective=True,
+    ) | Q(structures__solar_system_id=solar_system_id)
+    if kill_scope:
+        match |= Q(
+            destruction_enabled=True,
+            systems__solar_system_id=solar_system_id,
+            systems__retired_at__isnull=True,
+        )
+    matched = counting.filter(match).distinct()
+    if not kill_scope:
+        return matched
+    ids = set(matched.values_list("id", flat=True))
+    for campaign in (
+        counting.filter(destruction_enabled=True)
+        .exclude(id__in=ids)
+        .prefetch_related("areas")
+    ):
+        if in_area(campaign, solar_system_id):
+            ids.add(campaign.id)
+    return Campaign.objects.filter(id__in=ids)
 
 
 class CampaignRoster:

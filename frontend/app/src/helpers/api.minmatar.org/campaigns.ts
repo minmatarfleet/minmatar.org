@@ -1,4 +1,4 @@
-import type { CampaignChoices, CampaignTimer } from '@dtypes/api.minmatar.org'
+import type { CampaignChoices, CampaignDestruction, CampaignTimer } from '@dtypes/api.minmatar.org'
 import type {
     CampaignListItem,
     CampaignDetail,
@@ -121,6 +121,13 @@ export async function get_campaign_timers(slug:string, access_token:string | fal
     return await api_request<CampaignTimer[]>(`${API_ENDPOINT}/${slug}/timers`, {
         token: access_token,
         error: 'Error fetching campaign timers',
+    })
+}
+
+export async function get_campaign_destruction(slug:string, access_token:string | false = false, limit:number = 50) {
+    return await api_request<CampaignDestruction>(`${API_ENDPOINT}/${slug}/destruction?limit=${limit}`, {
+        token: access_token,
+        error: 'Error fetching campaign destruction',
     })
 }
 

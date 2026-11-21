@@ -1165,6 +1165,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/campaigns/{slug}/destruction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Campaign Destruction
+         * @description The Destruction tab: this week's ISK, structures killed, the biggest
+         *     kill, and the kills themselves, newest first.
+         */
+        get: operations["campaigns_endpoints_get_destruction_get_campaign_destruction"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/campaigns/{slug}/enlist": {
         parameters: {
             query?: never;
@@ -12443,6 +12464,68 @@ export interface components {
              * @default []
              */
             systems?: string[];
+        };
+        /** CampaignDestructionOut */
+        CampaignDestructionOut: {
+            /**
+             * Biggest Kill Isk
+             * @default 0
+             */
+            biggest_kill_isk?: number;
+            /**
+             * Isk Destroyed Week
+             * @default 0
+             */
+            isk_destroyed_week?: number;
+            /**
+             * Rows
+             * @default []
+             */
+            rows?: components["schemas"]["CampaignDestructionRow"][];
+            /**
+             * Structures Destroyed
+             * @default 0
+             */
+            structures_destroyed?: number;
+        };
+        /** CampaignDestructionRow */
+        CampaignDestructionRow: {
+            /** Alliance Id */
+            alliance_id?: number | null;
+            /**
+             * Alliance Ticker
+             * @default
+             */
+            alliance_ticker?: string;
+            /**
+             * Is Structure
+             * @default false
+             */
+            is_structure?: boolean;
+            /**
+             * Isk Value
+             * @default 0
+             */
+            isk_value?: number;
+            /** Killmail Id */
+            killmail_id: number;
+            /**
+             * Killmail Time
+             * Format: date-time
+             */
+            killmail_time: string;
+            /**
+             * Name
+             * @default
+             */
+            name?: string;
+            /** Type Id */
+            type_id?: number | null;
+            /**
+             * Type Name
+             * @default
+             */
+            type_name?: string;
         };
         /** CampaignDetail */
         CampaignDetail: {
@@ -34974,6 +35057,46 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
+            };
+        };
+    };
+    campaigns_endpoints_get_destruction_get_campaign_destruction: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignDestructionOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

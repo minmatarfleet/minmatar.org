@@ -83,6 +83,7 @@ const show_structures_tab = TABS.includes('structures')
 // Corporation projects directors put toward the campaign; loaded when the tab opens.
 const PROJECTS_PARTIAL_URL = translatePath(`/partials/campaign_projects_component?slug=${encodeURIComponent(campaign.slug)}`)
 const TIMERS_PARTIAL_URL = translatePath(`/partials/campaign_timers_component?slug=${encodeURIComponent(campaign.slug)}`)
+const DESTRUCTION_PARTIAL_URL = translatePath(`/partials/campaign_destruction_component?slug=${encodeURIComponent(campaign.slug)}`)
 const SCHEDULE_FLEET_URL = translatePath(`/fleets/add/?campaign_id=${campaign.id}`)
 
 import Flexblock from '@components/compositions/Flexblock.astro'
@@ -209,6 +210,16 @@ import CampaignSettingsPanel from '@components/blocks/CampaignSettingsPanel.astr
                 </Flexblock>
             </ComponentBlock>
         </SectionTabPanel>
+        }
+
+        {TABS.includes('destruction') &&
+            <SectionTabPanel id="destruction" id_prefix="campaign" is_default={default_tab === 'destruction'}>
+                <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
+                    <LazyPartial url={DESTRUCTION_PARTIAL_URL} trigger="reveal">
+                        <p class="[ campaign-panel-label ]">{t('campaigns.destruction.loading')}</p>
+                    </LazyPartial>
+                </ComponentBlock>
+            </SectionTabPanel>
         }
 
         {TABS.includes('activity') &&

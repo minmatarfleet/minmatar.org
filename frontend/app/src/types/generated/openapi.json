@@ -3857,6 +3857,101 @@
         "title": "CampaignCreated",
         "type": "object"
       },
+      "CampaignDestructionOut": {
+        "properties": {
+          "biggest_kill_isk": {
+            "default": 0,
+            "title": "Biggest Kill Isk",
+            "type": "integer"
+          },
+          "isk_destroyed_week": {
+            "default": 0,
+            "title": "Isk Destroyed Week",
+            "type": "integer"
+          },
+          "rows": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CampaignDestructionRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "structures_destroyed": {
+            "default": 0,
+            "title": "Structures Destroyed",
+            "type": "integer"
+          }
+        },
+        "title": "CampaignDestructionOut",
+        "type": "object"
+      },
+      "CampaignDestructionRow": {
+        "properties": {
+          "alliance_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alliance Id"
+          },
+          "alliance_ticker": {
+            "default": "",
+            "title": "Alliance Ticker",
+            "type": "string"
+          },
+          "is_structure": {
+            "default": false,
+            "title": "Is Structure",
+            "type": "boolean"
+          },
+          "isk_value": {
+            "default": 0,
+            "title": "Isk Value",
+            "type": "integer"
+          },
+          "killmail_id": {
+            "title": "Killmail Id",
+            "type": "integer"
+          },
+          "killmail_time": {
+            "format": "date-time",
+            "title": "Killmail Time",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type Id"
+          },
+          "type_name": {
+            "default": "",
+            "title": "Type Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "killmail_id",
+          "killmail_time"
+        ],
+        "title": "CampaignDestructionRow",
+        "type": "object"
+      },
       "CampaignDetail": {
         "properties": {
           "areas": {
@@ -57238,6 +57333,67 @@
           }
         ],
         "summary": "Publish Commander Order",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/api/campaigns/{slug}/destruction": {
+      "get": {
+        "description": "The Destruction tab: this week's ISK, structures killed, the biggest\nkill, and the kills themselves, newest first.",
+        "operationId": "campaigns_endpoints_get_destruction_get_campaign_destruction",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignDestructionOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthOptional": []
+          }
+        ],
+        "summary": "Get Campaign Destruction",
         "tags": [
           "Campaigns"
         ]

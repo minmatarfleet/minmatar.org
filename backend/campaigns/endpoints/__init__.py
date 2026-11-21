@@ -24,6 +24,7 @@ from campaigns.endpoints import post_order_publish  # noqa: F401
 from campaigns.endpoints import post_system  # noqa: F401
 from campaigns.endpoints import public  # noqa: F401
 from campaigns.endpoints import get_timers  # noqa: F401
+from campaigns.endpoints import get_destruction  # noqa: F401
 from campaigns.endpoints import projects  # noqa: F401
 
 __all__ = ["router"]
