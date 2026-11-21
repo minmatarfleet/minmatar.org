@@ -185,7 +185,7 @@ class RouterTestCase(ForumPostTestCase):
 
     def test_only_the_ceo_can_read_or_edit(self):
         self.put(THREAD)
-        other = self.other_user_token(is_superuser=True)
+        other = self.other_user_token()
         self.assertEqual(
             403, self.client.get(self.url, **self.auth(other)).status_code
         )
@@ -194,6 +194,14 @@ class RouterTestCase(ForumPostTestCase):
             403, self.client.delete(self.url, **self.auth(other)).status_code
         )
         self.assertTrue(ForumRecruitmentPost.objects.exists())
+
+    def test_superuser_can_read_and_edit(self):
+        self.put(THREAD)
+        admin = self.other_user_token(is_superuser=True)
+        self.assertEqual(
+            200, self.client.get(self.url, **self.auth(admin)).status_code
+        )
+        self.assertEqual(200, self.put(THREAD, token=admin).status_code)
 
     def test_requires_login(self):
         self.assertEqual(401, self.client.get(self.url).status_code)

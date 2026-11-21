@@ -560,6 +560,33 @@ class CorporationRouterTestCase(TestCase):
         names = {row["character_name"] for row in response.json()}
         self.assertEqual({"Visible Main", "Secret Alt", "Hush Alt"}, names)
 
+    def test_superuser_gets_ceo_access(self):
+        self.create_corp(12345, "TestCorp")
+        self.user.is_superuser = True
+        self.user.save()
+
+        access = self.client.get(
+            BASE_URL + "corporations/12345/members/access",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        ).json()
+        self.assertEqual(
+            {
+                "can_view_members": True,
+                "can_view_characters": True,
+                "can_edit_settings": True,
+                "can_view_projects": True,
+                "can_manage_projects": True,
+            },
+            access,
+        )
+        self.assertEqual(
+            200,
+            self.client.get(
+                BASE_URL + "corporations/12345/admin",
+                HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            ).status_code,
+        )
+
     def test_members_include_primary_character(self):
         corp = self.create_corp(12345, "TestCorp")
         primary = EveCharacter.objects.create(
