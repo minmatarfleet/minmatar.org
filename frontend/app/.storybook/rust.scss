@@ -26,3 +26,257 @@ body.sb-show-main {
     text-align: center;
     white-space: nowrap;
 }
+
+// ---------------------------------------------------------------------------
+// Docs pages (MDX and each component's Docs tab).
+//
+// Two stylesheets fight here: Storybook's docs typography (Nunito, light-theme
+// sizes) and the site's globals (`.viewport-layout p` at --step-0, uppercase
+// headings). This sets one reading style on the site's tokens: Norwester
+// headings, Montserrat body at a comfortable measure, quiet tables and code.
+// `#storybook-docs` outranks the emotion classes without !important.
+// ---------------------------------------------------------------------------
+
+$docs: '#storybook-docs .sbdocs-wrapper';
+
+#{$docs} {
+    --docs-text:        color-mix(in srgb, var(--highlight) 78%, transparent);
+    --docs-text-strong: var(--highlight);
+    --docs-rule:        var(--hairline-medium);
+
+    background: var(--background);
+    padding: var(--space-xl) var(--space-m) var(--space-3xl);
+
+    .sbdocs-content {
+        max-inline-size: 52rem;
+        font-family: var(--default-font);
+        color: var(--docs-text);
+    }
+
+    // Prose -----------------------------------------------------------------
+
+    // Docs prose, not the stories rendered inside it (those keep the site's).
+    .sbdocs-content p:not(.docs-story *, .sb-story *),
+    .sbdocs-content > ul,
+    .sbdocs-content > ol,
+    .sbdocs-content > ul li,
+    .sbdocs-content > ol li {
+        font-family: var(--default-font);
+        font-size: 1rem;
+        line-height: 1.75;
+        color: var(--docs-text);
+        margin-block: 0 var(--space-s);
+    }
+
+    .sbdocs-content > ul,
+    .sbdocs-content > ol {
+        padding-inline-start: var(--space-m);
+
+        li {
+            margin-block: 0 var(--space-2xs);
+            padding-inline-start: var(--space-3xs);
+        }
+
+        li::marker {
+            color: var(--fleet-red);
+        }
+    }
+
+    strong {
+        color: var(--docs-text-strong);
+        font-weight: 600;
+    }
+
+    em {
+        color: var(--foreground);
+    }
+
+    a:not(.sb-anchor, [class*='button']) {
+        color: var(--foreground);
+        text-decoration: underline;
+        text-decoration-color: color-mix(in srgb, var(--fleet-yellow) 40%, transparent);
+        text-underline-offset: 0.2em;
+        transition: var(--fast-transition);
+
+        &:hover,
+        &:focus-visible {
+            color: var(--highlight);
+            text-decoration-color: currentColor;
+        }
+    }
+
+    // Headings: Norwester, as on the site ------------------------------------
+
+    h1, h2, h3, h4 {
+        font-family: var(--heading-font);
+        font-weight: normal;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: var(--docs-text-strong);
+        border: 0;
+    }
+
+    h1 {
+        font-size: var(--step-4);
+        line-height: 1.05;
+        margin: 0 0 var(--space-s);
+    }
+
+    // The paragraph right after the title is the lead (MDX pages), and so is
+    // the first paragraph of a component's description (Docs tabs).
+    h1 + p,
+    h1 + div > p:first-child {
+        font-size: var(--step-0);
+        line-height: 1.6;
+        color: var(--foreground);
+        margin-block-end: var(--space-l);
+        max-inline-size: 44rem;
+    }
+
+    h2 {
+        font-size: var(--step-2);
+        line-height: 1.1;
+        margin: var(--space-xl) 0 var(--space-s);
+        padding-block-start: var(--space-m);
+        border-block-start: 1px solid var(--docs-rule);
+    }
+
+    h3 {
+        font-size: var(--step-1);
+        line-height: 1.15;
+        margin: var(--space-l) 0 var(--space-xs);
+        color: var(--foreground);
+    }
+
+    h4 {
+        font-size: var(--step-0);
+        margin: var(--space-m) 0 var(--space-2xs);
+    }
+
+    // Code -------------------------------------------------------------------
+
+    :not(pre) > code {
+        font-size: 0.86em;
+        padding: 0.12em 0.4em;
+        border: 0;
+        border-radius: 2px;
+        background: color-mix(in srgb, var(--fleet-yellow) 10%, transparent);
+        color: var(--foreground);
+        white-space: nowrap;
+    }
+
+    pre,
+    .docblock-source {
+        background: var(--component-background);
+        border: 1px solid var(--docs-rule);
+        border-radius: 0;
+    }
+
+    // Tables (MDX tables, not the props table) --------------------------------
+
+    .sbdocs-content > table {
+        inline-size: 100%;
+        border-collapse: collapse;
+        margin: var(--space-s) 0 var(--space-l);
+        font-size: var(--step--1);
+        line-height: 1.6;
+        display: table;
+        overflow: visible;
+
+        thead tr {
+            background: transparent;
+            border: 0;
+        }
+
+        th {
+            text-align: start;
+            font-family: var(--default-font);
+            font-weight: 600;
+            font-size: var(--step--2);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            background: transparent;
+            border: 0;
+            border-block-end: 1px solid var(--hairline-strong);
+            padding: var(--space-2xs) var(--space-s) var(--space-2xs) 0;
+        }
+
+        tr,
+        tr:nth-of-type(2n) {
+            background: transparent;
+            border: 0;
+            border-block-end: 1px solid var(--hairline);
+        }
+
+        td {
+            color: var(--docs-text);
+            background: transparent;
+            border: 0;
+            padding: var(--space-xs) var(--space-s) var(--space-xs) 0;
+            vertical-align: top;
+        }
+
+        td:first-child {
+            color: var(--docs-text-strong);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        code {
+            white-space: normal;
+        }
+    }
+
+    // Blocks: story previews, colour palettes, props table -------------------
+
+    .docs-story,
+    .sbdocs-preview {
+        border-color: var(--docs-rule);
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .sbdocs-preview {
+        margin-block: var(--space-s) var(--space-l);
+    }
+
+    // Storybook reserves 400px per inline story; let small components sit in
+    // a frame their own size (a tall component still gets its height).
+    .sb-story {
+        min-block-size: var(--space-3xl);
+    }
+
+    .docblock-argstable {
+        font-family: var(--default-font);
+    }
+
+    hr {
+        border: 0;
+        border-block-start: 1px solid var(--docs-rule);
+        margin-block: var(--space-xl);
+    }
+
+    blockquote {
+        margin: var(--space-m) 0;
+        padding: var(--space-xs) var(--space-m);
+        border-inline-start: 3px solid var(--fleet-red);
+        background: var(--surface-sunken);
+        color: var(--foreground);
+    }
+}
+
+@media (max-width: 48rem) {
+    #{$docs} {
+        padding: var(--space-m) var(--space-s) var(--space-2xl);
+
+        .sbdocs-content > table {
+            display: block;
+            overflow-x: auto;
+        }
+
+        td:first-child {
+            white-space: normal;
+        }
+    }
+}

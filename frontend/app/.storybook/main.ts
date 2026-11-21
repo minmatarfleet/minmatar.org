@@ -73,6 +73,8 @@ const config: StorybookConfig = {
     staticDirs: [
         // rust/public: tokens.json (the DTCG token export) at /rust/tokens.json.
         '../rust/public',
+        // src/assets (planet art), for Foundations › Imagery.
+        { from: '../src/assets', to: '/src-assets' },
         ...(process.env.RUST_STATIC_PUBLIC === '0' ? [] : ['../public']),
     ],
     async viteFinal(vite_config, { configType }) {
