@@ -1,0 +1,50 @@
+---
+/**
+ * The meta group of an item (Tech I, Tech II, Faction, Deadspace, Officer...)
+ * as a small tag in the meta colour tokens (--tech-i, --tech-ii, --faction...),
+ * the same colours FittingSlot uses for module borders. Renders nothing for a
+ * type without a meta group; a meta group without a colour token (Premium,
+ * Structure Tech I...) gets a neutral outline tag.
+ */
+import { meta_group_token, LIGHT_META_TOKENS } from '@helpers/sde/display'
+
+interface Props {
+    meta_group_name:    string | null | undefined;
+    narrow?:            boolean;
+    [propName: string]: any;
+}
+
+const {
+    meta_group_name,
+    narrow = true,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const token = meta_group_token(meta_group_name)
+const text_color = token && LIGHT_META_TOKENS.includes(token) ? 'var(--background)' : undefined
+
+import Tag from '@components/blocks/Tag.astro'
+---
+
+{meta_group_name && (token ?
+    <Tag
+        text={meta_group_name}
+        color={token}
+        text_color={text_color}
+        narrow={narrow}
+        class:list={['[ meta-group-tag ]', Astro.props.class]}
+        data-meta-group={token}
+        {...attributes}
+    />
+    :
+    <Tag
+        text={meta_group_name}
+        variant="outline"
+        narrow={narrow}
+        class:list={['[ meta-group-tag ]', Astro.props.class]}
+        data-meta-group="other"
+        {...attributes}
+    />
+)}

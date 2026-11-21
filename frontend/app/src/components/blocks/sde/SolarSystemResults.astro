@@ -1,0 +1,98 @@
+---
+/**
+ * A list of solar systems (search results, a staging picker). Rows are
+ * SolarSystemTag with the star icon. Three modes:
+ *   - plain (default): read-only rows;
+ *   - `href_template`: each row links to the template with `{system_id}` and
+ *     `{system_name}` filled in (same-site paths only);
+ *   - `selectable`: each row is a button that dispatches `sde-system-select`
+ *     with `{ system_id, system_name }`, for SolarSystemSearch or any Alpine parent.
+ * No rows renders EmptyState, naming the query when there is one.
+ */
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { SdeSolarSystem } from '@dtypes/sde'
+
+interface Props {
+    systems:            SdeSolarSystem[];
+    query?:             string;
+    href_template?:     string;
+    selectable?:        boolean;
+    empty_title?:       string;
+    [propName: string]: any;
+}
+
+const {
+    systems,
+    query,
+    href_template,
+    selectable = false,
+    empty_title,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { fill_href_template, safe_href_template } from '@helpers/sde/display'
+
+import BlockList from '@components/compositions/BlockList.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
+import SolarSystemTag from '@components/blocks/sde/SolarSystemTag.astro'
+
+const template = safe_href_template(href_template)
+const empty = empty_title ?? (query ? t('sde.no_systems_match').replace('~QUERY', query) : t('sde.no_systems'))
+const href_for = (system: SdeSolarSystem) => template
+    ? fill_href_template(template, { system_id: system.system_id, system_name: system.system_name })
+    : undefined
+---
+
+{systems.length === 0 ?
+    <EmptyState title={empty} class:list={['[ sde-results sde-results--empty ]', Astro.props.class]} {...attributes} />
+    :
+    <div class:list={['[ sde-results ]', Astro.props.class]} {...attributes}>
+        <p class="[ visually-hidden ]">{t('sde.search.results_count').replace('~COUNT', String(systems.length))}</p>
+        <BlockList role="list" gap="var(--space-3xs)">
+            {systems.map((system) =>
+                <div role="listitem" class="[ sde-results__item ]" x-data={selectable ? "" : undefined}>
+                    {selectable ?
+                        <StylessButton
+                            type="button"
+                            class="[ sde-results__option ][ w-full ]"
+                            data-system-id={system.system_id}
+                            data-system-name={system.system_name}
+                            x-on:click="$dispatch('sde-system-select', { system_id: Number($el.dataset.systemId), system_name: $el.dataset.systemName })"
+                        >
+                            <SolarSystemTag system={system} icon={true} />
+                        </StylessButton>
+                        :
+                        href_for(system) ?
+                            <a class="[ sde-results__link ]" href={href_for(system)}>
+                                <SolarSystemTag system={system} icon={true} />
+                            </a>
+                            :
+                            <SolarSystemTag system={system} icon={true} />
+                    }
+                </div>
+            )}
+        </BlockList>
+    </div>
+}
+
+<style lang="scss">
+    .sde-results__item {
+        padding: var(--space-3xs) var(--space-2xs);
+        transition: background-color var(--fast-transition);
+
+        &:hover,
+        &:focus-within {
+            background-color: var(--surface-sunken);
+        }
+    }
+
+    .sde-results__link {
+        display: block;
+        color: inherit;
+    }
+</style>

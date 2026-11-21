@@ -1,0 +1,58 @@
+---
+/**
+ * TypeSearch results: inventory types whose name contains `q`.
+ * Query: q, category_ids, group_ids (comma-separated), published (0 to include
+ * unpublished), limit (max 50), selectable (1: rows are pick buttons), href
+ * (same-site link template, `{type_id}` / `{type_name}`), slots (1: ship slots).
+ * Static data only, so no login is needed. Under 2 letters renders nothing.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { clamp_limit, normalise_query, parse_ids, search_types, SEARCH_MIN_LENGTH } from '@helpers/sde/search'
+import type { SdeType } from '@dtypes/sde'
+
+const params = Astro.url.searchParams
+const query = normalise_query(params.get('q'))
+const selectable = params.get('selectable') === '1'
+const href_template = params.get('href') ?? undefined
+const show_slots = params.get('slots') === '1'
+
+let types: SdeType[] = []
+let search_error: Error | false = false
+
+if (query.length >= SEARCH_MIN_LENGTH) {
+    try {
+        types = await search_types({
+            query,
+            category_ids: parse_ids(params.get('category_ids')),
+            group_ids: parse_ids(params.get('group_ids')),
+            published: params.get('published') !== '0',
+            limit: clamp_limit(params.get('limit')),
+        })
+    } catch (error) {
+        console.error('sde_type_search_component', error)
+        // A numeric cause: retrying will not bring a missing SDE back, so ErrorRefetch shows the message only.
+        search_error = new Error(t('sde.search.error'), { cause: 500 })
+    }
+}
+
+const delay = parseInt(params.get('delay') ?? '0') || 0
+const SELF_URL = `${translatePath('/partials/sde_type_search_component')}?${params.toString()}`
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import TypeResults from '@components/blocks/sde/TypeResults.astro'
+---
+
+{search_error ?
+    <ErrorRefetch args={{ partial: SELF_URL, error: search_error, delay }} />
+    :
+    query.length >= SEARCH_MIN_LENGTH &&
+        <TypeResults
+            types={types}
+            query={query}
+            selectable={selectable}
+            href_template={selectable ? undefined : href_template}
+            show_slots={show_slots}
+        />
+}
