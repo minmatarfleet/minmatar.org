@@ -39,6 +39,16 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-11-21 — Fitting order Save prices reloads with an empty box
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL in the thread
+**PR:** fix+skill
+**Symptom vs cause:** Pasting purchased prices on a fitting order stayed on the purchase step and the box came back empty. Every to-buy line still had a null unit price. The parser only accepted a tab or a double space with the item name in the first column and a US-formatted number. Multibuy is `Name qty` with one space, wallet rows lead with the date, and EU amounts with an ISK suffix did not parse. A station name like `Jita IV - Moon 4` must not be read as a price.
+**Durable rule:** Match order item names inside the line. Accept a single-space quantity and total, wallet rows, and ISK/EU numbers. When nothing matches, keep the paste and say so. The submit button stays inside the form.
+**Skill update:** added the fitting-order landed-price row.
+
 ## 2026-11-20 — Thread replies after the investigation PRs merged
 
 **Category:** pulse.technology

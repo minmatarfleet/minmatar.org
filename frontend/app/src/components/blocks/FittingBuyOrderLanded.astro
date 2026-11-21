@@ -13,6 +13,9 @@ interface Props {
     order: FittingBuyOrderDetail
     partial_base: string
     shopping_landed_complete: boolean
+    saved_count?: number | null
+    unresolved_names?: string[]
+    paste_value?: string
     [propName: string]: any
 }
 
@@ -20,10 +23,28 @@ const {
     order,
     partial_base,
     shopping_landed_complete,
+    saved_count = null,
+    unresolved_names = [],
+    paste_value = '',
     ...attributes
 } = Astro.props
 
 delete attributes.class
+
+const missing_names = order.items
+    .filter((item) => item.buy_qty > 0 && !item.unit_price)
+    .map((item) => item.type_name)
+
+function name_list(names: string[]): string {
+    const shown = names.slice(0, 12)
+    const list = shown.join(', ')
+    const extra = names.length - shown.length
+    if (extra <= 0)
+        return list
+    return t('fitting_buy.landed_more')
+        .replace('{names}', list)
+        .replace('{count}', String(extra))
+}
 ---
 
 <ComponentBlock
@@ -36,34 +57,48 @@ delete attributes.class
             <h2>{t('fitting_buy.landed_prices')}</h2>
             <p class="[ fitting-buy-hint ]">{t('fitting_buy.landed_prices_tip')}</p>
         </Flexblock>
-        <Flexblock gap="var(--space-xs)">
-            <form
-                id={`fitting-buy-landed-${order.id}`}
-                hx-post={partial_base}
-                hx-target="#fitting-buy-order"
-                hx-swap="outerHTML"
-            >
-                <input type="hidden" name="action" value="landed_prices" />
+        <form
+            id={`fitting-buy-landed-${order.id}`}
+            hx-post={partial_base}
+            hx-target="#fitting-buy-order"
+            hx-swap="outerHTML"
+        >
+            <input type="hidden" name="action" value="landed_prices" />
+            <Flexblock gap="var(--space-xs)">
                 <textarea
                     name="paste"
                     rows="4"
                     class="[ fitting-buy-textarea ]"
                     placeholder={t('fitting_buy.landed_placeholder')}
                     aria-label={t('fitting_buy.landed_prices')}
-                ></textarea>
-            </form>
-            <FlexInline gap="var(--space-xs)" class="[ flex-wrap items-center ]">
-                <Button
-                    type="submit"
-                    size="sm"
-                    form={`fitting-buy-landed-${order.id}`}
-                >
-                    {shopping_landed_complete
-                        ? t('fitting_buy.apply_prices')
-                        : t('fitting_buy.landed_continue')}
-                </Button>
-            </FlexInline>
-        </Flexblock>
+                >{paste_value}</textarea>
+                <FlexInline gap="var(--space-xs)" class="[ flex-wrap items-center ]">
+                    <Button type="submit" size="sm">
+                        {shopping_landed_complete
+                            ? t('fitting_buy.apply_prices')
+                            : t('fitting_buy.landed_continue')}
+                    </Button>
+                </FlexInline>
+            </Flexblock>
+        </form>
+        {saved_count === 0 && (
+            <p class="[ text-[var(--fleet-red)] text-[var(--step--1)] ]">{t('fitting_buy.landed_none')}</p>
+        )}
+        {saved_count !== null && saved_count > 0 && (
+            <p class="[ fitting-buy-hint ]">
+                {t('fitting_buy.landed_saved').replace('{count}', String(saved_count))}
+            </p>
+        )}
+        {unresolved_names.length > 0 && (
+            <p class="[ text-[var(--fleet-red)] text-[var(--step--1)] ]">
+                {t('fitting_buy.landed_unresolved').replace('{names}', name_list(unresolved_names))}
+            </p>
+        )}
+        {saved_count !== null && saved_count > 0 && missing_names.length > 0 && (
+            <p class="[ fitting-buy-hint ]">
+                {t('fitting_buy.landed_missing').replace('{names}', name_list(missing_names))}
+            </p>
+        )}
         {shopping_landed_complete ? (
             <p class="[ fitting-buy-hint ]">{t('fitting_buy.landed_ready')}</p>
         ) : (
