@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 
 import type { LandingEvent } from '@dtypes/api.minmatar.org'
-import { bar_heights, eve_clock, eve_day, event_who, format_number } from '@helpers/landing'
+import { bar_heights, dedupe_posts, eve_clock, eve_day, event_who, format_number } from '@helpers/landing'
 
 const event = (others: number): LandingEvent => ({
     occurred_at: '2026-11-21T17:58:00Z',
@@ -31,5 +31,26 @@ describe('landing helpers', () => {
 
     test('numbers are grouped', () => {
         expect(format_number(1713)).toBe('1,713')
+    })
+})
+
+describe('dedupe_posts', () => {
+    test('a Reddit cross-post collapses into the plain post', () => {
+        const posts = [
+            { title: 'The Cope - The Imperium Retreats', image: 'a.jpg' },
+            { title: 'The Cope - The Imperium Retreats (Reddit)', image: 'a.jpg' },
+            { title: 'YC128 In Review (Reddit)', image: 'b.jpg' },
+            { title: 'YC128 In Review', image: 'b.jpg' },
+            { title: 'Something else', image: 'c.jpg' },
+        ]
+        expect(dedupe_posts(posts).map((p) => p.title)).toEqual([
+            'The Cope - The Imperium Retreats',
+            'YC128 In Review',
+            'Something else',
+        ])
+    })
+
+    test('same cover image with a different title is one story', () => {
+        expect(dedupe_posts([{ title: 'A', image: 'x.jpg' }, { title: 'B', image: 'x.jpg' }])).toHaveLength(1)
     })
 })

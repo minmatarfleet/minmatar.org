@@ -1,9 +1,10 @@
 """
 Public "heartbeat" for the new landing page (/landing-new).
 
-Everything here runs 60 minutes behind real time, so nothing on the page
-says where the alliance is right now. Kills name a region, never a system;
-comms lines never name a channel; fleets appear only after they end.
+Killmails are live: they are public on zKillboard the moment they happen.
+Fleets and voice comms run 60 minutes behind, so the page never says that
+the alliance is forming or on comms right now. Kills name a region, never a
+system; comms lines never name a channel; fleets appear only after they end.
 
 The rollup is cached: the cheap 24-hour/7-day part for five minutes and the
 30-day part (timezone chart, month moments) for an hour.
@@ -64,6 +65,9 @@ SLOW = CachedRollup(
 MAX_EVENTS = 60
 # A voice gathering worth a line: at least this many pilots in one minute.
 VOICE_MIN_PILOTS = 3
+# A kill or loss reads as a fleet fight ("fought X and won") only when a fleet
+# this big was involved; smaller gangs and solo read "killed a Rifter".
+LARGE_FLEET_PILOTS = 10
 MANUFACTURING_ACTIVITY_ID = 1
 
 FACTION_MILITIA_NAMES = {
@@ -262,13 +266,14 @@ def _day_totals(start, end) -> dict:
 def _week_totals(start, end) -> dict:
     sites, complexes = _sites(start, end)
     freight_count, freight_volume = _freight(start, end)
-    peak, peak_at = _voice_peak(start, end)
+    # Fleets and comms are held back an hour; everything else is live.
+    peak, peak_at = _voice_peak(start - DELAY, end - DELAY)
     return {
         "ships_destroyed": len(_distinct_killmail_times(start, end)),
         "warzone_sites": sites,
         "complexes": complexes,
         "fleets": EveFleet.objects.filter(
-            start_time__gte=start, start_time__lt=end
+            start_time__gte=start - DELAY, start_time__lt=end - DELAY
         ).count(),
         "peak_comms": peak,
         "peak_comms_at": peak_at,
@@ -331,7 +336,7 @@ def _moments(end) -> list[dict]:
             }
         )
 
-    peak, peak_at = _voice_peak(start, end)
+    peak, peak_at = _voice_peak(start - DELAY, end - DELAY)
     if peak and peak_at:
         moments.append(
             {
@@ -367,7 +372,9 @@ def _moments(end) -> list[dict]:
 
     longest_seconds, longest_end = 0.0, None
     for instance in EveFleetInstance.objects.filter(
-        end_time__gte=start, end_time__lt=end, start_time__isnull=False
+        end_time__gte=start - DELAY,
+        end_time__lt=end - DELAY,
+        start_time__isnull=False,
     ).only("start_time", "end_time"):
         length = (instance.end_time - instance.start_time).total_seconds()
         if length > longest_seconds:
@@ -410,6 +417,7 @@ def _killmail_groups(start, end) -> dict[int, list[dict]]:
         "victim_corporation_id",
         "victim_alliance_id",
         "victim_faction_id",
+        "ship_type_id",
         "character__character_id",
     ):
         by_killmail[row["killmail_id"]].append(row)
@@ -438,6 +446,45 @@ def _attacker_sides(killmail_row_ids):
         if faction_id:
             factions[row_id][faction_id] += 1
     return sides, factions
+
+
+def _large_fleet_windows(start, end) -> dict[int, list[tuple]]:
+    """Character -> (start, end) of each fleet of LARGE_FLEET_PILOTS or more
+    they were in that overlaps the window. A fleet still running ends now."""
+    instances = {
+        row["id"]: row
+        for row in EveFleetInstance.objects.filter(
+            Q(end_time__isnull=True) | Q(end_time__gte=start),
+            start_time__isnull=False,
+            start_time__lt=end,
+        )
+        .annotate(
+            pilots=Count("evefleetinstancemember__character_id", distinct=True)
+        )
+        .filter(pilots__gte=LARGE_FLEET_PILOTS)
+        .values("id", "start_time", "end_time")
+    }
+    windows: dict[int, list[tuple]] = defaultdict(list)
+    for instance_id, character_id in EveFleetInstanceMember.objects.filter(
+        eve_fleet_instance_id__in=instances.keys()
+    ).values_list("eve_fleet_instance_id", "character_id"):
+        row = instances[instance_id]
+        windows[character_id].append(
+            (row["start_time"], row["end_time"] or end)
+        )
+    return windows
+
+
+def _in_large_fleet(character_ids, when, windows) -> bool:
+    return any(
+        start <= when <= finish
+        for character_id in character_ids
+        for start, finish in windows.get(character_id, ())
+    )
+
+
+def _article(name: str) -> str:
+    return "an" if name[:1].lower() in "aeiou" else "a"
 
 
 def _biggest(counter: Counter | None):
@@ -469,12 +516,39 @@ def _combat_events(start, end) -> list[Event]:
     } | {_biggest(counter) for counter in sides.values()}
     names = _entity_names(entity_ids, entity_ids)
     regions = _region_names_for_systems(f["solar_system_id"] for f in firsts)
+    ships = _type_names(f["ship_type_id"] for f in firsts)
+    fleets = _large_fleet_windows(start, end)
 
     events: list[Event] = []
     for group in by_killmail.values():
         first = group[0]
         ours = sorted({r["character__character_id"] for r in group})
         region = regions.get(first["solar_system_id"], "")
+        ship = ships.get(first["ship_type_id"], "")
+        pilots = [first["victim_character_id"]] if _is_loss(first) else ours
+        large = len(ours) >= LARGE_FLEET_PILOTS or _in_large_fleet(
+            pilots, first["killmail_time"], fleets
+        )
+        if not large:
+            # Small gang or solo: just the hull.
+            ship = ship or "ship"
+            loss = _is_loss(first)
+            verb = "lost" if loss else "killed"
+            events.append(
+                Event(
+                    first["killmail_time"],
+                    "loss" if loss else "kill",
+                    (
+                        (first["victim_character_id"] or ours[0])
+                        if loss
+                        else ours[0]
+                    ),
+                    f"{verb} {_article(ship)} {ship}",
+                    0 if loss else len(ours) - 1,
+                    region,
+                )
+            )
+            continue
         if _is_loss(first):
             entity = names.get(
                 _biggest(sides.get(first["id"])), ""
@@ -667,10 +741,11 @@ def _events(start, end) -> list[dict]:
         _site_events,
         _industry_events,
         _freight_events,
-        _fleet_events,
-        _voice_events,
     ):
         events.extend(source(start, end))
+    # Fleets and comms would say where the alliance is right now: an hour late.
+    for source in (_fleet_events, _voice_events):
+        events.extend(source(start - DELAY, end - DELAY))
     events = [e for e in events if e.character_id]
     events.sort(key=lambda e: e.occurred_at, reverse=True)
     events = events[:MAX_EVENTS]
@@ -698,20 +773,19 @@ def _events(start, end) -> list[dict]:
 
 def build_fast(now=None) -> dict:
     now = now or timezone.now()
-    end = now - DELAY
     return {
         "generated_at": now,
         "delay_minutes": int(DELAY.total_seconds() // 60),
-        "day": _day_totals(end - timedelta(hours=24), end),
-        "hourly_kills": _hourly_kills(end),
-        "week": _week_totals(end - timedelta(days=7), end),
-        "events": _events(end - timedelta(hours=24), end),
+        "day": _day_totals(now - timedelta(hours=24), now),
+        "hourly_kills": _hourly_kills(now),
+        "week": _week_totals(now - timedelta(days=7), now),
+        "events": _events(now - timedelta(hours=24), now),
     }
 
 
 def build_slow(now=None) -> dict:
     now = now or timezone.now()
-    end = now - DELAY
+    end = now
     return {
         "timezone_kills": _timezone_kills(end),
         "moments": _moments(end),

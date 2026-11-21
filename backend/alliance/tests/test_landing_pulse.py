@@ -1,4 +1,5 @@
-"""The /landing-new heartbeat: totals, pilot events and the 60-minute delay."""
+"""The /landing-new heartbeat: totals, pilot events, live kills and the
+60-minute delay on fleets and comms."""
 
 from datetime import timedelta
 
@@ -20,6 +21,9 @@ from eveonline.models import (
     EveCharacterKillmail,
     EveCharacterKillmailAttacker,
 )
+from eveuniverse.models import EveCategory, EveGroup, EveType
+from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
+from fleets.tests import disconnect_fleet_signals
 
 ENEMY_ALLIANCE_ID = 99000001
 OTHER_ENEMY_ALLIANCE_ID = 99000002
@@ -46,6 +50,52 @@ class LandingPulseTestCase(TestCase):
         EveAlliance.objects.create(
             alliance_id=OTHER_ENEMY_ALLIANCE_ID, name="Templis CALSF"
         )
+        category, _ = EveCategory.objects.get_or_create(
+            id=6, defaults={"name": "Ship", "published": True}
+        )
+        group, _ = EveGroup.objects.get_or_create(
+            id=25,
+            defaults={
+                "name": "Frigate",
+                "published": True,
+                "eve_category": category,
+            },
+        )
+        EveType.objects.get_or_create(
+            id=587,
+            defaults={"name": "Rifter", "published": True, "eve_group": group},
+        )
+
+    def _large_fleet(self, character, start, end):
+        """A fleet of LARGE_FLEET_PILOTS with ``character`` in it."""
+        disconnect_fleet_signals()
+        fc = User.objects.create(username="fc")
+        fleet = EveFleet.objects.create(
+            start_time=start,
+            type="strategic",
+            status="complete",
+            created_by=fc,
+        )
+        instance = EveFleetInstance.objects.create(id=4242, eve_fleet=fleet)
+        EveFleetInstance.objects.filter(pk=instance.pk).update(
+            start_time=start, end_time=end
+        )
+        for index in range(10):
+            EveFleetInstanceMember.objects.create(
+                eve_fleet_instance=instance,
+                character_id=(
+                    character.character_id if index == 0 else 8000 + index
+                ),
+                character_name=f"Pilot {index}",
+                role="squad_member",
+                role_name="Squad Member",
+                ship_type_id=587,
+                ship_name="Rifter",
+                solar_system_id=30002537,
+                solar_system_name="Amamake",
+                squad_id=1,
+                wing_id=1,
+            )
 
     def _killmail(self, row_id, killmail_id, character, ago, **victim):
         return EveCharacterKillmail.objects.create(
@@ -67,7 +117,7 @@ class LandingPulseTestCase(TestCase):
             for e in data["events"]
         ]
 
-    def test_kill_names_the_victims_alliance_and_counts_our_pilots(self):
+    def test_small_gang_kill_names_the_hull_and_counts_our_pilots(self):
         for row_id, character in ((1, self.pilot), (2, self.wingman)):
             self._killmail(
                 row_id,
@@ -84,12 +134,55 @@ class LandingPulseTestCase(TestCase):
         self.assertEqual(data["week"]["ships_destroyed"], 1)
         self.assertEqual(
             self._event_actions(data),
-            [("Orion Sa-Solo", 1, "fought Snuffed Out and won")],
+            [("Orion Sa-Solo", 1, "killed a Rifter")],
         )
         self.assertEqual(sum(h["kills"] for h in data["hourly_kills"]), 1)
         self.assertEqual(len(data["hourly_kills"]), 24)
 
-    def test_loss_names_the_largest_attacking_alliance(self):
+    def test_large_fleet_kill_names_the_victims_alliance(self):
+        self._large_fleet(
+            self.pilot,
+            self.now - timedelta(hours=3),
+            self.now - timedelta(hours=1),
+        )
+        self._killmail(
+            1,
+            500,
+            self.pilot,
+            timedelta(hours=2),
+            victim_character_id=9001,
+            victim_alliance_id=ENEMY_ALLIANCE_ID,
+        )
+
+        data = build_fast(self.now)
+
+        self.assertIn(
+            ("Orion Sa-Solo", 0, "fought Snuffed Out and won"),
+            self._event_actions(data),
+        )
+
+    def test_solo_loss_names_the_hull(self):
+        self._killmail(
+            3,
+            501,
+            self.pilot,
+            timedelta(hours=3),
+            victim_character_id=self.pilot.character_id,
+            victim_alliance_id=MINMATAR_FLEET_ALLIANCE_ID,
+        )
+
+        data = build_fast(self.now)
+
+        self.assertEqual(
+            self._event_actions(data), [("Orion Sa-Solo", 0, "lost a Rifter")]
+        )
+
+    def test_large_fleet_loss_names_the_largest_attacking_alliance(self):
+        self._large_fleet(
+            self.pilot,
+            self.now - timedelta(hours=4),
+            self.now - timedelta(hours=2),
+        )
         killmail = self._killmail(
             3,
             501,
@@ -113,18 +206,16 @@ class LandingPulseTestCase(TestCase):
 
         self.assertEqual(data["day"]["ships_lost"], 1)
         self.assertEqual(data["day"]["ships_destroyed"], 0)
-        self.assertEqual(
+        self.assertIn(
+            (
+                "Orion Sa-Solo",
+                0,
+                "fought Templis CALSF and went down swinging",
+            ),
             self._event_actions(data),
-            [
-                (
-                    "Orion Sa-Solo",
-                    0,
-                    "fought Templis CALSF and went down swinging",
-                )
-            ],
         )
 
-    def test_the_last_hour_is_held_back(self):
+    def test_kills_are_live(self):
         self._killmail(
             4,
             502,
@@ -136,10 +227,52 @@ class LandingPulseTestCase(TestCase):
 
         data = build_fast(self.now)
 
-        self.assertEqual(data["day"]["ships_destroyed"], 0)
+        self.assertEqual(data["day"]["ships_destroyed"], 1)
+        self.assertEqual(
+            self._event_actions(data),
+            [("Orion Sa-Solo", 0, "killed a Rifter")],
+        )
+
+    def test_fleets_from_the_last_hour_are_held_back(self):
+        self._large_fleet(
+            self.pilot,
+            self.now - timedelta(hours=2),
+            self.now - timedelta(minutes=20),
+        )
+
+        data = build_fast(self.now)
+
+        self.assertEqual(
+            [e for e in data["events"] if e["kind"] == "fleet"], []
+        )
+
+    def test_comms_from_the_last_hour_are_held_back(self):
+        user = User.objects.create(username="voice")
+        DiscordUser.objects.create(id=7100, discord_tag="bear", user=user)
+        character = EveCharacter.objects.create(
+            character_id=2100, character_name="BearThatCares", user=user
+        )
+        set_primary_character(user, character)
+        minute = (self.now - timedelta(minutes=20)).replace(
+            second=0, microsecond=0
+        )
+        for tag in ("anna", "bear", "cass"):
+            record = DiscordChannelActivityRecord.objects.create(
+                activity_type=DiscordChannelActivityRecord.VOICE_MINUTE,
+                username=tag,
+                quantity=1,
+                channel_name="Ops 1",
+            )
+            DiscordChannelActivityRecord.objects.filter(pk=record.pk).update(
+                created_on=minute
+            )
+
+        data = build_fast(self.now)
+
+        self.assertEqual(data["week"]["peak_comms"], 0)
         self.assertEqual(data["events"], [])
 
-    def test_militia_victim_without_alliance(self):
+    def test_solo_kill_on_a_militia_pilot(self):
         self._killmail(
             5,
             503,
@@ -153,7 +286,7 @@ class LandingPulseTestCase(TestCase):
 
         self.assertEqual(
             self._event_actions(data),
-            [("Orion Sa-Solo", 0, "fought the Amarr Militia and won")],
+            [("Orion Sa-Solo", 0, "killed a Rifter")],
         )
 
     def test_voice_gathering_names_one_pilot_and_counts_the_rest(self):

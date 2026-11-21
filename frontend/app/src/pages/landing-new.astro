@@ -19,7 +19,7 @@ import type { LandingPulse, LandingMoment } from '@dtypes/api.minmatar.org'
 import type { PostListUI } from '@dtypes/layout_components'
 import { get_landing_pulse } from '@helpers/api.minmatar.org/landing'
 import { fetch_latest_published_posts } from '@helpers/fetching/posts'
-import { format_number } from '@helpers/landing'
+import { dedupe_posts, format_number } from '@helpers/landing'
 import { t_key } from '@helpers/i18n'
 
 let pulse: LandingPulse | null = null
@@ -32,7 +32,7 @@ try {
 
 let posts: PostListUI[] = []
 try {
-    posts = (await fetch_latest_published_posts(8)).chunk
+    posts = dedupe_posts((await fetch_latest_published_posts(16)).chunk)
 } catch {
     posts = []
 }
@@ -108,10 +108,9 @@ import LandingWeek from '@components/blocks/landing/LandingWeek.astro'
         <section class="landing-hero">
             <img class="landing-hero__cover" src="/images/home-amamake-cover.jpg" alt="" />
 
-            {pulse && <LandingTicker class="landing-hero__ticker" events={pulse.events} />}
-
             <div class="landing-hero__main">
                 <div class="landing-hero__pitch">
+                    {pulse && <LandingTicker class="landing-hero__ticker" events={pulse.events} />}
                     <p class="landing-eyebrow">{t('landing_new.eyebrow')}</p>
                     <h1>{t('landing_new.title_1')}<br />{t('landing_new.title_2')}</h1>
                     <p class="landing-hero__lead">{t('landing_new.lead')}</p>
@@ -153,7 +152,6 @@ import LandingWeek from '@components/blocks/landing/LandingWeek.astro'
                         <p class="landing-strip__label">
                             <span class="landing-dot" aria-hidden="true"></span>
                             <span>{t('landing_new.last_24_hours')}</span>
-                            <span class="landing-muted">{t('landing_new.delay_note')}</span>
                         </p>
                         <div class="landing-strip__stats">
                             {strip.map((stat) =>
@@ -341,11 +339,10 @@ import LandingWeek from '@components/blocks/landing/LandingWeek.astro'
     /* Hero: everything the page is for, inside the first screen. */
     .landing-hero {
         position: relative;
-        min-height: 100vh;
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
-        gap: var(--space-m);
+        gap: var(--space-xl);
         padding: var(--space-m) var(--space-xl) var(--space-l);
         overflow: hidden;
 
@@ -366,11 +363,10 @@ import LandingWeek from '@components/blocks/landing/LandingWeek.astro'
     }
 
     .landing-hero__main {
-        flex-grow: 1;
         display: grid;
         grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
         gap: var(--space-xl);
-        align-items: center;
+        align-items: start;
 
         h1 {
             margin: 0;
@@ -380,6 +376,10 @@ import LandingWeek from '@components/blocks/landing/LandingWeek.astro'
             line-height: 0.95;
             color: var(--highlight);
         }
+    }
+
+    .landing-hero__ticker {
+        margin-bottom: var(--space-l);
     }
 
     .landing-hero__lead {
@@ -542,8 +542,6 @@ import LandingWeek from '@components/blocks/landing/LandingWeek.astro'
 
     /* Sections below the fold */
     .landing-section {
-        max-width: var(--max-col-width);
-        margin: 0 auto;
         padding: var(--space-2xl) var(--space-xl);
     }
 
