@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("discord", "0027_corp_discord_strip_roles_on_leave"),
+        ("discord", "0028_guild_bot_is_administrator"),
         ("eveonline", "0116_eve_location_freight_route"),
     ]
 
