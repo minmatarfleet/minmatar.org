@@ -45,6 +45,7 @@ from .helpers.corporations.discord_invite import (
     INVITE_FIELDS,
     recheck_discord_invite,
 )
+from .helpers.corporations.alliance_override import apply_alliance_override
 from .helpers.corporations.discord_bot import unlink_guild
 from .tasks import update_corporation
 from .tasks.corporations import release_corporation_discord_guild
@@ -436,13 +437,18 @@ class EveCorporationAdmin(admin.ModelAdmin):
         "name",
         "ticker",
         "alliance",
+        "alliance_override_to",
         "trial",
         "generate_corporation_groups",
     )
     search_fields = ("name", "ticker")
     list_filter = ("alliance", "trial", "generate_corporation_groups")
     filter_horizontal = ("directors", "recruiters", "stewards")
-    autocomplete_fields = ("discord_guild",)
+    autocomplete_fields = (
+        "discord_guild",
+        "alliance_override_from",
+        "alliance_override_to",
+    )
     # Filled from Discord; the invite link itself stays editable.
     readonly_fields = (
         "discord_invite_status",
@@ -526,6 +532,10 @@ class EveCorporationAdmin(admin.ModelAdmin):
             )
         if obj.generate_corporation_groups and obj.ticker:
             ensure_corporation_groups_for_corp(obj)
+        if {"alliance_override_from", "alliance_override_to"} & set(
+            form.changed_data
+        ):
+            apply_alliance_override(obj)
         if "discord_invite_url" in form.changed_data:
             # The old link's status says nothing about the new one.
             obj.discord_invite_status = ""
