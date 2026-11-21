@@ -1,0 +1,142 @@
+---
+// Transitions, the z-index chain and the glass effects.
+import { tokens_of } from '../../foundations/tokens'
+
+interface Props {
+    section?: 'motion' | 'layers' | 'effects' | 'all';
+}
+
+const { section = 'all' } = Astro.props
+const transitions = tokens_of('transition')
+const layers = tokens_of('z-index')
+const effects = ['light-transparency', 'light-transparency-heavier', 'transparency', 'dark-transparency', 'darker-transparency', 'solid-transparency']
+const show = (name: string) => section === 'all' || section === name
+---
+
+<div class="motion-layers">
+    {show('motion') && (
+        <section data-section="motion">
+            <h3>Motion</h3>
+            <p class="hint">Hover or focus a row to run its transition.</p>
+            <ul role="list">
+                {transitions.map((token) => (
+                    <li data-token={token.name} tabindex="0" style={`--demo-transition: var(${token.name})`}>
+                        <code>{token.name}</code>
+                        <span class="track"><span class="dot" /></span>
+                        <code class="value">{token.value}</code>
+                    </li>
+                ))}
+            </ul>
+        </section>
+    )}
+
+    {show('layers') && (
+        <section data-section="layers">
+            <h3>Layers</h3>
+            <p class="hint">One additive chain from <code>--base-z-index</code>. Derive every z-index from it.</p>
+            <ol>
+                {layers.map((token) => (
+                    <li data-token={token.name}><code>{token.name}</code> <code class="value">{token.value}</code></li>
+                ))}
+            </ol>
+        </section>
+    )}
+
+    {show('effects') && (
+        <section data-section="effects">
+            <h3>Glass</h3>
+            <p class="hint">Transparency classes: solid on phones, blurred from 980 px.</p>
+            <div class="stage">
+                {effects.map((name) => (
+                    <div class={name} data-effect={name}><code>.{name}</code></div>
+                ))}
+            </div>
+        </section>
+    )}
+</div>
+
+<style lang="scss">
+    .motion-layers {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xl);
+    }
+
+    h3 {
+        font-family: var(--heading-font);
+        margin: 0 0 var(--space-2xs);
+    }
+
+    .hint {
+        color: var(--text-muted);
+        font-size: var(--step--1);
+        margin: 0 0 var(--space-s);
+    }
+
+    ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+
+        li {
+            display: grid;
+            grid-template-columns: 12rem 1fr 18rem;
+            gap: var(--space-s);
+            align-items: center;
+        }
+    }
+
+    .track {
+        position: relative;
+        block-size: var(--space-3xs);
+        background: var(--hairline-strong);
+    }
+
+    .dot {
+        position: absolute;
+        inset-block-start: 50%;
+        inset-inline-start: 0;
+        inline-size: var(--space-xs);
+        block-size: var(--space-xs);
+        translate: 0 -50%;
+        background: var(--fleet-red);
+        transition: var(--demo-transition);
+    }
+
+    li:hover .dot,
+    li:focus-visible .dot {
+        inset-inline-start: calc(100% - var(--space-xs));
+    }
+
+    .value {
+        font-size: var(--step--2);
+        color: var(--text-muted);
+    }
+
+    ol {
+        margin: 0;
+        padding-inline-start: var(--space-m);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .stage {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(12rem, 100%), 1fr));
+        gap: var(--space-s);
+        padding: var(--space-m);
+        background: url('/images/alliance-cover.jpg') center / cover;
+
+        > div {
+            min-block-size: var(--space-2xl);
+            display: grid;
+            place-items: center;
+            color: var(--highlight);
+            font-size: var(--step--1);
+        }
+    }
+</style>

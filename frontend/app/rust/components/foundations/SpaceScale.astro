@@ -1,0 +1,78 @@
+---
+// The fluid space scale and the layout widths, drawn with each token.
+import { tokens_of } from '../../foundations/tokens'
+
+interface Props {
+    show_layout?: boolean;
+}
+
+const { show_layout = true } = Astro.props
+const space = tokens_of('space')
+const layout = tokens_of('size')
+---
+
+<div class="space-scale">
+    <table data-total={space.length}>
+        <caption>Space (Utopia, 320 px → 1240 px)</caption>
+        <tbody>
+            {space.map((token) => (
+                <tr data-token={token.name}>
+                    <th scope="row"><code>{token.name}</code></th>
+                    <td><span class="bar" style={`inline-size: var(${token.name})`} /></td>
+                    <td><code class="value">{token.value}</code></td>
+                </tr>
+            ))}
+        </tbody>
+    </table>
+
+    {show_layout && (
+        <table data-total={layout.length}>
+            <caption>Layout</caption>
+            <tbody>
+                {layout.map((token) => (
+                    <tr data-token={token.name}>
+                        <th scope="row"><code>{token.name}</code></th>
+                        <td colspan="2"><code class="value">{token.value}</code></td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    )}
+</div>
+
+<style lang="scss">
+    .space-scale {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+    }
+
+    table {
+        border-collapse: collapse;
+        inline-size: 100%;
+    }
+
+    caption {
+        text-align: start;
+        color: var(--text-muted);
+        padding-block-end: var(--space-xs);
+    }
+
+    th, td {
+        text-align: start;
+        padding: var(--space-3xs) var(--space-xs);
+        border-block-end: 1px solid var(--hairline);
+        font-weight: normal;
+    }
+
+    .bar {
+        display: block;
+        block-size: var(--space-xs);
+        background: var(--fleet-red);
+    }
+
+    .value {
+        font-size: var(--step--2);
+        color: var(--text-muted);
+    }
+</style>

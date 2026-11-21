@@ -27,6 +27,11 @@ Read **`docs/frontend-design.md`** — it is the source of truth. The rules belo
 - Compose from `src/components/compositions/` (`Wrapper`, `Grid`, `FlexInline`, `FlexInlineSiblings`, `Flexblock`, `FixedFluid`, `FluidFixed`, `BlockList`, `XFadeScroll`, `Cover`, `Center`) instead of hand-rolling flex/grid. Wide tables and chip rows scroll inside `XFadeScroll`, not a hand-rolled `overflow-x: auto`.
 - Pass spacing via tokens. Reuse `Button`, `Badge`, `Tag`, `Input` rather than restyling raw elements. A bordered panel is `ComponentBlock`; `Card` is only the picture card with hover actions.
 
+## 4.1 Rust (the component library)
+
+- Shared components live in Rust (`frontend/app/rust/`, deployed at `/rust`). A component used by a second feature goes into `rust/library.ts` with a stories file (≥3 stories, `play()` tests, a docs description) in the same PR; `testing/rust/library.test.ts` enforces it.
+- Conventions: `frontend/app/rust/docs/WritingStories.mdx`. Run one folder's stories as tests with `RUST_STORY_FILTER=components/forms npx vitest run testing/rust`.
+
 ## 5. Component conventions
 
 - One `.astro` component per file; `interface Props` with snake_case fields, defaults destructured from `Astro.props`, and `[propName: string]: any` for passthrough.

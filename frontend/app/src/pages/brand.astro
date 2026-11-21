@@ -18,6 +18,10 @@ import TextBox from '@components/layout/TextBox.astro'
 import Wrapper from '@components/compositions/Wrapper.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import BrandAssets from '@components/blocks/brand/BrandAssets.astro'
+import Button from '@components/blocks/Button.astro'
+
+// Rust, the component library (Storybook), served by the `rust` service.
+const RUST_URL = '/rust/'
 
 const page_title = t('brand.page_title')
 const page_description = t('brand.leading_text')
@@ -54,6 +58,17 @@ const page_description = t('brand.leading_text')
 
             <TextBox>
                 <Flexblock gap="var(--space-2xl)" class="[ brand-page ]">
+                    <section class="[ brand-section ]" id="components">
+                        <h2>{t('brand.components_title')}</h2>
+                        <p>{t('brand.components_text')}</p>
+                        <div>
+                            {/* Not an Astro page: skip the client router. */}
+                            <Button href={RUST_URL} off_disable={true} data-astro-reload>
+                                {t('brand.components_link')}
+                            </Button>
+                        </div>
+                    </section>
+
                     <section class="[ brand-section ]">
                         <h2>Font</h2>
                         <p>

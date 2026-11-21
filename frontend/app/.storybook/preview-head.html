@@ -1,0 +1,41 @@
+<!-- The same third-party scripts the site's HeadScripts loads, in the same order:
+     tippy before Alpine, Alpine plugins before core, htmx last. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11.2.10/swiper-bundle.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.6.0/dist/nouislider.min.css" />
+<!-- Feature fonts some components @import themselves (guides: Orbitron + Source Sans 3; chronicle: Lora),
+     loaded up front so Foundations/Typography can show them. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" />
+<!-- The site's own globals (HeadScripts/FooterScripts): countdown's pad(), clipboard and number helpers. -->
+<script src="/js/countdown.js"></script>
+<script src="/js/clipboard.js"></script>
+<script src="/js/numbers.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/medium-zoom@1.1.0/dist/medium-zoom.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/swiper@11.2.10/swiper-bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nouislider@15.6.0/dist/nouislider.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy.umd.min.js"></script>
+<script>
+    window.tippy_options = window.tippy_options || {
+        delay: [100, 200],
+        arrow: true,
+        onShow(instance) {
+            if (window.htmx && instance && instance.popper)
+                window.htmx.process(instance.popper)
+        },
+    }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@alpinejs/mask@3.16.0/dist/cdn.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.16.0/dist/cdn.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@alpinejs/anchor@3.16.0/dist/cdn.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@alpinejs/intersect@3.16.0/dist/cdn.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@alpinejs/persist@3.16.0/dist/cdn.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@alpinejs/focus@3.16.0/dist/cdn.min.js"></script>
+<script>
+    // @storybook-astro's renderer starts Alpine itself unless it is flagged as
+    // started; a second start redefines $persist and throws.
+    document.addEventListener('alpine:init', () => { window.Alpine._isStarted = true })
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.16.0/dist/cdn.min.js"></script>
+<script defer src="https://unpkg.com/htmx.org@1.9.10"></script>

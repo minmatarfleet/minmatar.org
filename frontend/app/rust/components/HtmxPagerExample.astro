@@ -1,0 +1,36 @@
+---
+// Story-only wrapper for HtmxPager. `url_for` is a function, and story args
+// travel to the render server as JSON, so stories pass `url_pattern`
+// ('/partials/x?page={page}') and this builds the function. Every other prop
+// and both slots go straight through.
+import HtmxPager from '@components/blocks/HtmxPager.astro'
+
+interface Props {
+    url_pattern:        string;
+    page:               number;
+    [propName: string]: any;
+}
+
+const { url_pattern, page, ...props } = Astro.props
+const url_for = (page: number) => url_pattern.replace('{page}', String(page))
+const has_status = Astro.slots.has('status')
+const has_actions = Astro.slots.has('actions')
+---
+
+{/* One branch per slot combination: an empty named slot would replace HtmxPager's "Page N" fallback. */}
+{has_status && has_actions ?
+    <HtmxPager page={page} url_for={url_for} {...props}>
+        <Fragment slot="status"><slot name="status" /></Fragment>
+        <Fragment slot="actions"><slot name="actions" /></Fragment>
+    </HtmxPager>
+: has_status ?
+    <HtmxPager page={page} url_for={url_for} {...props}>
+        <Fragment slot="status"><slot name="status" /></Fragment>
+    </HtmxPager>
+: has_actions ?
+    <HtmxPager page={page} url_for={url_for} {...props}>
+        <Fragment slot="actions"><slot name="actions" /></Fragment>
+    </HtmxPager>
+:
+    <HtmxPager page={page} url_for={url_for} {...props} />
+}

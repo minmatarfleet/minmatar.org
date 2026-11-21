@@ -5,7 +5,7 @@ import node from '@astrojs/node';
 import sentry from "@sentry/astro";
 import { loadEnv } from "vite";
 
-const env = loadEnv(import.meta.env.MODE, process.cwd(), "")
+const env = loadEnv(import.meta.env?.MODE ?? process.env.NODE_ENV ?? "production", process.cwd(), "")
 
 const SENTRY_AUTH_TOKEN = env.SENTRY_AUTH_TOKEN ?? false
 const SENTRY_DSN = env.SENTRY_DSN

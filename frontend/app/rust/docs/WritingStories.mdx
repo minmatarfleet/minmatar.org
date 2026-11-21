@@ -1,0 +1,135 @@
+import { Meta } from '@storybook/addon-docs/blocks'
+
+<Meta title="Rust/Writing stories" />
+
+# Writing stories
+
+Every shared component in `src/components/` that pages build from belongs in Rust. The list lives in
+`rust/library.ts`; `testing/rust/library.test.ts` fails when a listed component has no stories file, fewer
+than three stories, no docs description, or no `play()` tests.
+
+## Where things go
+
+| Path | What |
+| --- | --- |
+| `rust/library.ts` | The inventory, grouped by sidebar category (see [Architecture](?path=/docs/rust-architecture--docs)) |
+| `rust/stories/<category path>/<Component>.stories.ts` | One file per component. The folder is the category lower-cased with hyphens: `Components/Data display` → `components/data-display/StatCard.stories.ts` |
+| `rust/foundations/tokens.ts` | Reads tokens, fonts, themes and off-token colours from the source for the Foundations pages and `tokens.json` |
+| `rust/stories/_controls.ts` | Shared controls (`SPACES`, `BUTTON_COLORS`, `TAG_COLORS`, ...), demo content and real EVE ids |
+| `rust/components/` | Astro helpers that exist only for stories (galleries, demo frames) |
+| `rust/docs/*.mdx` | Pages like this one |
+| `.storybook/` | Storybook config, the site's head scripts, the htmx mock layer |
+
+## The shape of a stories file
+
+```ts
+import { expect, within, userEvent } from 'storybook/test'
+import StatCard from '@components/blocks/StatCard.astro'
+import { space_control } from '../../_controls'
+
+export default {
+    title: 'Components/Data display/StatCard', // `<Category>/<Component>`, the category from rust/library.ts
+    component: StatCard,
+    parameters: {
+        docs: {
+            description: {
+                component: 'What it is for, when to reach for it instead of something else, and any gotcha.',
+            },
+        },
+    },
+    argTypes: {                              // every prop, with a control and a one-line description
+        label: { control: 'text', description: 'Small caps label above the value.' },
+    },
+    args: {                                  // the defaults the component itself uses
+        label: 'Fleets this month',
+        slots: { default: '42' },
+    },
+}
+
+export const Default = {
+    play: async ({ canvasElement }) => {
+        const canvas = within(canvasElement)
+        await expect(canvas.getByText('Fleets this month')).toBeVisible()
+    },
+}
+```
+
+- `title` is `<Category>/<Component>`; the category must match `rust/library.ts`.
+- `argTypes` cover **every prop** in the component's `interface Props`, with the option lists from
+  `_controls.ts` for tokens. Describe what a prop does, not its type.
+- `args` hold the component's own defaults, so the Controls panel starts where a page would.
+- Name stories after what they show (`Disabled`, `WithIcon`, `LongContent`, `Empty`), not `Story2`.
+- Show every variant a page uses: each color, each size, the empty, loading and error states, long text,
+  links vs buttons, and how it sits inside its usual parents.
+
+## Slots
+
+Slot content goes in `args.slots`. A value is an HTML string, a component, a configured component, or an
+array of those:
+
+```ts
+args: {
+    slots: {
+        default: 'Plain text or <strong>HTML</strong>',
+        icon: { component: FlagIcon },
+        actions: [
+            { component: Button, props: { size: 'sm' }, slots: { default: 'Edit' } },
+            { component: Button, props: { size: 'sm', color: 'transparent' }, slots: { default: 'Delete' } },
+        ],
+    },
+}
+```
+
+Use `demo_box()` / `demo_boxes()` from `_controls.ts` for layout placeholders so layout stories look the same.
+
+## Tests: `play()`
+
+Each story's `play` function is a test. It runs twice:
+
+- in the browser, in the Interactions panel, with Alpine, htmx and tippy loaded as on the site;
+- in `npm run test` (`testing/rust/stories.test.ts`), against the HTML Astro's Container API rendered,
+  with Alpine (and its plugins) running in happy-dom.
+
+Assert what a page relies on: roles and accessible names, `href`/`target`/`rel`, `aria-*` and `disabled`
+state, the classes and `data-*` attributes styles key off, CSS custom properties a prop sets
+(`getAttribute('style')`), and that Alpine interactions work (`userEvent.click` a toggle, then expect the
+panel to show). Use `getByRole` first, `getByText` next, and `querySelector` only for markup without a role.
+
+Storybook renders `meta.component` only: a story can't swap in another component. When a component needs a
+parent (the page's dialog state, say), use a decorator (`decorators: [PageScope]`, or a function returning
+HTML around `${Story()}`). When a prop is a function (story args reach the render server as JSON), write a
+story-only wrapper in `rust/components/` and set `parameters.rust.covers: 'blocks/Name'` (see `HtmxPager`).
+
+Tag a story `browser` when its play function needs a real browser (htmx swaps, layout or sizes, tippy,
+`IntersectionObserver`); it still renders in vitest, only the play step is skipped there. Tag it `!test` only
+if it cannot render outside Storybook at all, and say why in a comment.
+
+Every story is also checked for `undefined`, `NaN` and `[object Object]` leaking into the text.
+
+## htmx
+
+Stories never reach the site's server. Answer the requests a story makes with `parameters.htmx`:
+
+```ts
+parameters: {
+    htmx: {
+        '/partials/fleets_component': '<p>Fleet list</p>',
+        '/partials/slow_component': { body: '<p>Late</p>', delay: 1500 },
+        '/partials/broken_component': { status: 500, body: '' },
+    },
+}
+```
+
+Unmocked htmx requests get an empty 404. `window.__rust_htmx_requests` records every request, so a
+`browser` play function can assert what was sent.
+
+## Running
+
+```bash
+npm run rust                     # Storybook on :6006
+npm run rust:build               # storybook-static/ + storybook-server/
+npm run rust:serve               # what production runs, on :6007/rust/
+npm run rust:serve-local         # the same, also serving public/ (no frontend running)
+npm run rust:test-browser        # every story in Chromium against rust:serve-local
+RUST_STORY_FILTER=forms npx vitest run testing/rust   # one folder's stories as tests
+```

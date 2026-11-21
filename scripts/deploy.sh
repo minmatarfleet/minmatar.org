@@ -7,7 +7,8 @@
 # container starts next to the old one, edge starts routing to it once it is
 # healthy, the old one is drained and stopped. A new container that never
 # gets healthy is removed and the old one keeps serving. Everything else is
-# recreated with `compose up`.
+# recreated with `compose up`. rust (the Storybook at /rust) rolls out the
+# same way.
 #
 # On failure, the reason is written to DEPLOY_STATUS_FILE; the workflow posts
 # it to Discord.
@@ -24,7 +25,7 @@ ROLLOUT_SHA256=cdeaba6ae9eee3b0b606286e585bbda6787283d801a6ad6d9b9d2bc347fda05b
 PRE_STOP_HOOK="touch /tmp/drain && sleep 20"
 # Migrations have already run, so a new container only has to boot.
 HEALTHY_TIMEOUT=180
-ROLLOUT_SERVICES=(app frontend)
+ROLLOUT_SERVICES=(app frontend rust)
 
 step=""
 released=()

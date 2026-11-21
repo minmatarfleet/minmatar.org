@@ -175,6 +175,33 @@ services:
             - traefik.http.routers.frontend.rule=PathPrefix(`/`)
             - traefik.http.services.frontend.loadbalancer.server.port=4321
 
+    # Rust, the component library (Storybook), at my.minmatar.org/rust.
+    # Edge sends /rust and /rust/* here; everything else stays on frontend
+    # (the longer rule wins). Components load site assets (/images, /fonts)
+    # from frontend on the same origin.
+    rust:
+        build:
+            context: ./frontend/
+            dockerfile: Dockerfile
+            target: rust
+        restart: always
+        networks:
+            - web
+        healthcheck:
+            test: ["CMD", "node", "rust/healthcheck.mjs"]
+            interval: 5s
+            timeout: 5s
+            retries: 3
+            # The first render boots Vite SSR.
+            start_period: 5m
+            start_interval: 2s
+        stop_grace_period: 30s
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.rust.entrypoints=web
+            - traefik.http.routers.rust.rule=Path(`/rust`) || PathPrefix(`/rust/`)
+            - traefik.http.services.rust.loadbalancer.server.port=6007
+
     redis:
         image: redis:6.0.9-alpine
         volumes:

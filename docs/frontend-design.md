@@ -185,6 +185,14 @@ Reach for these before building a variant of your own (all in `src/components/bl
 | `FilterChip` + `ChipGroup` | Filter chips over rendered content (`aria-pressed`) or filtered-view links (`aria-current`). |
 | `CorporationBadge` / `AllianceBadge` | Entity logo + name; the default slot renders at every size. |
 
+## 4.2 Rust, the component library
+
+Every shared component is in **Rust**, the Storybook at [my.minmatar.org/rust](https://my.minmatar.org/rust/) (source in `frontend/app/rust/`, linked from `/brand/`): live examples of each one with its props, the design tokens (generated from `src/styles/`), themes, fonts, icons and the SDE components. Look there before building something new.
+
+- A component that two features use belongs in `rust/library.ts` with a stories file in the same pull request. `testing/rust/library.test.ts` requires at least three stories, `play()` tests and a docs description for each.
+- Stories are tests: `npm run test` renders every story and runs its `play()` (`testing/rust/stories.test.ts`), and CI runs them in Chromium against the production build.
+- How it is organised (tokens → Layout → Components → EVE → Page) and why: `frontend/app/rust/docs/Architecture.mdx`. How to write stories: `frontend/app/rust/docs/WritingStories.mdx`.
+
 ## 5. Component conventions
 
 A component lives in `src/components/` (`blocks/`, `page/`, `partials/`, `compositions/`, `layout/`, `icons/`, `logos/`). One component per file.

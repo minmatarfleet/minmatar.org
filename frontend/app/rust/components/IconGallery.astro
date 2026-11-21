@@ -1,0 +1,92 @@
+---
+import Grid from '@components/compositions/Grid.astro'
+// Story-only helper: renders every icon in src/components/icons/ in a labelled cell.
+interface Props {
+    only?:          'all' | 'eve' | 'buttons' | 'main';
+    size?:          number;
+    color?:         string;
+    background?:    string;
+    min_item_width?: string;
+}
+
+const {
+    only = 'all',
+    size = 32,
+    color = 'var(--foreground)',
+    background = 'transparent',
+    min_item_width = '9rem',
+} = Astro.props
+
+const modules = import.meta.glob('/src/components/icons/**/*.astro', { eager: true }) as Record<string, { default: any }>
+const sources = import.meta.glob('/src/components/icons/**/*.astro', { eager: true, query: '?raw', import: 'default' }) as Record<string, string>
+
+const prefix = '/src/components/icons/'
+const is_eve = (label: string) => /ev[e]?icon$/i.test(label.replace(/\.astro$/, ''))
+
+const icons = Object.entries(modules)
+    .map(([path, mod]) => {
+        const label = path.slice(prefix.length)
+        const source = sources[path] ?? ''
+        // An inline <style> inside an <svg> (NavyIcon, Tech2Icon, Tech3Icon) makes happy-dom, the DOM the
+        // vitest runner uses, drop everything after it, so those icons are listed last.
+        return { path, label, Icon: mod.default, accepts_size: /\bsize\b/.test(source), inline_style: /<svg[\s\S]*<style>/.test(source) }
+    })
+    .filter(({ label }) => {
+        if (only === 'eve') return is_eve(label)
+        if (only === 'buttons') return label.startsWith('buttons/')
+        if (only === 'main') return !label.startsWith('buttons/')
+        return true
+    })
+    .sort((a, b) => Number(a.inline_style) - Number(b.inline_style) || a.label.localeCompare(b.label))
+---
+
+<div class="icon-gallery" data-total={icons.length} style={`--gallery_color: ${color}; --gallery_background: ${background};`}>
+    <Grid min_item_width={min_item_width} row_gap="var(--space-s)" column_gap="var(--space-s)">
+        {icons.map(({ label, Icon, accepts_size }) => (
+            <figure class="icon-cell" data-icon-cell data-icon={label}>
+                <figcaption class="icon-label">{label}</figcaption>
+                <div class="icon-frame">
+                    {accepts_size ? <Icon size={size} /> : <Icon />}
+                </div>
+            </figure>
+        ))}
+    </Grid>
+</div>
+
+<style lang="scss">
+    .icon-gallery {
+        background-color: var(--gallery_background);
+        color: var(--gallery_color);
+        padding: var(--space-s);
+    }
+
+    .icon-cell {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-2xs);
+        margin: 0;
+        padding: var(--space-xs);
+        border: 1px solid var(--hairline);
+        text-align: center;
+    }
+
+    .icon-label {
+        order: 2;
+    }
+
+    .icon-frame {
+        order: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: var(--space-2xl);
+    }
+
+    .icon-label {
+        font-size: var(--step--2);
+        color: inherit;
+        opacity: 0.8;
+        word-break: break-word;
+    }
+</style>

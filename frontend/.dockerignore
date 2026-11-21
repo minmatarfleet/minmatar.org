@@ -1,2 +1,8 @@
 **/node_modules/
 **/dist/
+
+# Build output of the rust Storybook (npm run rust:build); images build their own.
+app/.astro
+app/storybook-static
+app/storybook-server
+app/coverage
