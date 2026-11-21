@@ -63,6 +63,21 @@ class ParsePasteTestCase(TestCase):
             "Ore grading",
         )
 
+    def test_rig_groups(self):
+        cases = {
+            "Standup XL-Set Capital Ship Manufacturing Efficiency I": "capital_production",
+            "Standup L-Set Basic Capital Component Manufacturing Efficiency I": "capital_production",
+            "Standup M-Set Basic Large Ship Manufacturing Material Efficiency I": "subcap_production",
+            "Standup M-Set Equipment Manufacturing Material Efficiency II": "module_production",
+            "Standup M-Set Composite Reactor Material Efficiency I": "composite_reactions",
+            "Standup M-Set Moon Ore Grading Processor I": "grading",
+            "Standup M-Set Reprocessing Monitor I": "reprocessing",
+            "Standup M-Set Thermal Armor Reinforcer I": "",
+        }
+        for name, group in cases.items():
+            with self.subTest(name=name):
+                self.assertEqual(svc.rig_group(name), group)
+
 
 class LocationApiTestCase(TestCase):
     def setUp(self):
@@ -120,6 +135,7 @@ class LocationApiTestCase(TestCase):
         rows = {row["short_name"]: row for row in response.json()["locations"]}
         self.assertIn("Amamake", rows)
         self.assertTrue(rows["Amamake"]["staging"])
+        self.assertFalse(rows["Amamake"]["deployment"])
         self.assertEqual(rows["Amamake"]["you"]["items"], 1)
         self.assertTrue(response.json()["can_add"])
         self.assertFalse(response.json()["can_manage"])
@@ -268,6 +284,42 @@ class LocationApiTestCase(TestCase):
         self.assertIn("turned on Fleet form-up", summaries)
         detail = response.json()
         self.assertEqual(len(detail["changes"]), len(summaries))
+
+    def test_deployment_flag_and_rig_groups_on_cards(self):
+        self._grant("view_evestructure", "structures")
+        self._grant("change_evelocation", "eveonline")
+        self.public.fitting = [
+            {
+                "name": "Standup L-Set Equipment Manufacturing Efficiency I",
+                "slot": "rig",
+                "size": "L",
+                "label": "Equipment",
+            }
+        ]
+        self.public.save()
+        response = self.client.patch(
+            f"/api/structures/locations/{self.public.location_id}",
+            data=json.dumps({"deployment_active": True}),
+            content_type="application/json",
+            **self._auth(),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.public.refresh_from_db()
+        self.assertTrue(self.public.deployment_active)
+        self.assertTrue(
+            LocationChange.objects.filter(
+                location=self.public, summary="turned on Deployment"
+            ).exists()
+        )
+        rows = {
+            row["short_name"]: row
+            for row in self.client.get(
+                "/api/structures/locations", **self._auth()
+            ).json()["locations"]
+        }
+        self.assertTrue(rows["Jita"]["deployment"])
+        self.assertEqual(rows["Jita"]["rigs"][0]["group"], "module_production")
+        self.assertEqual(list(rows)[:2], ["Amamake", "Jita"])
 
     def test_patch_needs_manage(self):
         self._grant("view_evestructure", "structures")

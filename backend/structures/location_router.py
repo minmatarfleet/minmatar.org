@@ -22,6 +22,7 @@ class LocationModule(Schema):
     slot: str
     size: str
     label: str
+    group: str = ""
 
 
 class LocationHolding(Schema):
@@ -40,6 +41,7 @@ class LocationCard(Schema):
     type_id: Optional[int]
     type_name: str
     staging: bool
+    deployment: bool
     fleets: bool
     freight: bool
     market: bool
@@ -94,6 +96,7 @@ class LocationPatch(Schema):
     fleets_active: Optional[bool] = None
     market_active: Optional[bool] = None
     prices_active: Optional[bool] = None
+    deployment_active: Optional[bool] = None
 
 
 class LocationFittingPaste(Schema):
@@ -195,6 +198,7 @@ class LocationManageRow(Schema):
     market: bool
     prices: bool
     staging: bool
+    deployment: bool
     price_baseline: bool
     audience: str
     audience_groups: List[str]
@@ -270,6 +274,7 @@ def _card(
         "type_id": type_id,
         "type_name": _type_name(location.type_id, location.is_structure),
         "staging": location.staging_active,
+        "deployment": location.deployment_active,
         "fleets": location.fleets_active,
         "freight": location.freight_active,
         "market": location.market_active,
@@ -278,7 +283,11 @@ def _card(
         "audience": location.audience,
         "audience_groups": _group_names(location),
         "good_for": location.good_for or [],
-        "rigs": [m for m in fitting if m.get("slot") == "rig"],
+        "rigs": [
+            {**m, "group": svc.rig_group(m.get("name", ""))}
+            for m in fitting
+            if m.get("slot") == "rig"
+        ],
         "services": [
             m.get("label", "") for m in fitting if m.get("slot") == "service"
         ],
@@ -309,7 +318,7 @@ def list_locations(request):
         .prefetch_related(
             "audience_groups__tribe_group", "audience_groups__corporation"
         )
-        .order_by("-staging_active", "location_name")
+        .order_by("-staging_active", "-deployment_active", "location_name")
     )
     ids = [row.location_id for row in rows]
     you = svc.holdings(user, ids)
@@ -529,6 +538,7 @@ def get_manage(request):
                 "market": row.market_active,
                 "prices": row.prices_active,
                 "staging": row.staging_active,
+                "deployment": row.deployment_active,
                 "price_baseline": row.price_baseline,
                 "audience": row.audience,
                 "audience_groups": _group_names(row),
@@ -724,6 +734,7 @@ SITE_FLAGS = (
     ("fleets_active", "Fleet form-up"),
     ("market_active", "Market"),
     ("prices_active", "Price tracking"),
+    ("deployment_active", "Deployment"),
 )
 
 

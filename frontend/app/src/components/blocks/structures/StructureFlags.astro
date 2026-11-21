@@ -1,7 +1,8 @@
 ---
 /**
- * Status tags the site sets: Staging, Fleet form-up, Freight, Market and open
- * Industry orders. Staging is filled; the rest are quiet with an icon.
+ * Status tags the site sets: Home, Deployment, Form-up, Freight, Market and
+ * open Industry orders. Home and Deployment are filled; the rest are quiet
+ * with an icon.
  */
 import { i18n, t_key } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
@@ -17,7 +18,8 @@ const { flags, ...attributes } = Astro.props
 delete attributes.class
 
 const ICONS: Record<StructureFlag, string> = {
-    staging: 'M5 21V4h11l-2 4 2 4H5',
+    home: 'M5 21V4h11l-2 4 2 4H5',
+    deployment: 'M5 21V4h11l-2 4 2 4H5',
     fleets: 'M4 17 12 5l8 12M8 17h8',
     freight: 'M3 7h11v9H3zM14 10h4l3 3v3h-7M7 19a1.6 1.6 0 1 0 0-.01M17 19a1.6 1.6 0 1 0 0-.01',
     market: 'M4 20h16M7 16v-5M12 16V7M17 16v-3',
@@ -28,7 +30,7 @@ const ICONS: Record<StructureFlag, string> = {
 {flags.length > 0 &&
     <ul class:list={['[ structure-flags ]', Astro.props.class]} {...attributes}>
         {flags.map((flag) => (
-            <li class:list={['[ structure-flag ]', { key: flag.kind === 'staging' }]}>
+            <li class:list={['[ structure-flag ]', { key: flag.kind === 'home', deployment: flag.kind === 'deployment' }]}>
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d={ICONS[flag.kind]} /></svg>
                 {t(t_key('structures.flag.', flag.kind))}
                 {flag.count !== undefined && <span class="[ structure-flag__n ]">{flag.count}</span>}
@@ -75,6 +77,12 @@ const ICONS: Record<StructureFlag, string> = {
             color: var(--background);
             background-color: var(--fleet-yellow);
             border-color: var(--fleet-yellow);
+        }
+
+        &.deployment {
+            color: var(--highlight);
+            background-color: var(--fleet-red);
+            border-color: var(--fleet-red);
         }
     }
 

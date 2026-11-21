@@ -29,6 +29,7 @@ try {
         fleets_active: form.get('fleets_active') === 'on',
         market_active: form.get('market_active') === 'on',
         prices_active: form.get('prices_active') === 'on',
+        deployment_active: form.get('deployment_active') === 'on',
     })
 } catch (failure) {
     error = (failure as Error).message

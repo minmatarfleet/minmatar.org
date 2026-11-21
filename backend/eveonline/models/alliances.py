@@ -57,6 +57,12 @@ class EveLocation(MinmatarSoftDeleteModel):
         default=False,
         help_text="At most one location may be the active staging system.",
     )
+    deployment_active = models.BooleanField(
+        default=False,
+        db_default=False,
+        help_text="A staging the alliance is deployed to, next to the home "
+        "staging. Any number of locations may have it.",
+    )
     market_categories = models.JSONField(
         default=list,
         blank=True,

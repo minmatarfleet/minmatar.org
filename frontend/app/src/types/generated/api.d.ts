@@ -21473,6 +21473,8 @@ export interface components {
             audience: string;
             /** Audience Groups */
             audience_groups: string[];
+            /** Deployment */
+            deployment: boolean;
             /** Fitting Scanned At */
             fitting_scanned_at: string | null;
             /** Fleets */
@@ -21563,6 +21565,8 @@ export interface components {
             can_manage: boolean;
             /** Changes */
             changes: components["schemas"]["LocationChangeEntry"][];
+            /** Deployment */
+            deployment: boolean;
             /** Description */
             description: string;
             /** Fitting */
@@ -21688,6 +21692,8 @@ export interface components {
             audience: string;
             /** Audience Groups */
             audience_groups: string[];
+            /** Deployment */
+            deployment: boolean;
             /** Fleets */
             fleets: boolean;
             /** Freight */
@@ -21736,6 +21742,11 @@ export interface components {
         };
         /** LocationModule */
         LocationModule: {
+            /**
+             * Group
+             * @default
+             */
+            group?: string;
             /** Label */
             label: string;
             /** Name */
@@ -21784,6 +21795,8 @@ export interface components {
              * @default false
              */
             clear_reinforce_hour?: boolean;
+            /** Deployment Active */
+            deployment_active?: boolean | null;
             /** Description */
             description?: string | null;
             /** Fleets Active */

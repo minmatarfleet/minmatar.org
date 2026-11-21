@@ -81,6 +81,36 @@ RIG_LABELS = (
     ("Ice Grading", "Ice grading"),
 )
 
+# Filter groups for rigs, by words in the rig's full name. Checked in order:
+# "Capital Ship Manufacturing" must win over "Ship Manufacturing".
+RIG_GROUPS = (
+    ("Basic Capital Component", "capital_production"),
+    ("Capital Ship Manufacturing", "capital_production"),
+    ("Ship Manufacturing", "subcap_production"),
+    ("Equipment Manufacturing", "module_production"),
+    ("Ammunition Manufacturing", "ammo_production"),
+    ("Drone and Fighter Manufacturing", "drone_production"),
+    ("Thukker Advanced Component", "component_production"),
+    ("Thukker Structure and Component", "component_production"),
+    ("Laboratory Optimization", "research"),
+    ("Invention", "invention"),
+    ("Composite Reactor", "composite_reactions"),
+    ("Biochemical Reactor", "biochemical_reactions"),
+    ("Hybrid Reactor", "hybrid_reactions"),
+    ("Reprocessing Monitor", "reprocessing"),
+    ("Ore Grading", "grading"),
+    ("Ice Grading", "grading"),
+)
+
+
+def rig_group(name: str) -> str:
+    """The Rigs filter group a rig belongs to, or "" when it has none."""
+    for words, group in RIG_GROUPS:
+        if words in name:
+            return group
+    return ""
+
+
 DSCAN_LINE = re.compile(r"^(\d+)\t([^\t]+)\t([^\t]+)(?:\t(.*))?$")
 REINFORCE = re.compile(
     r"^(?:reinforces?(?:\s+at)?\s*)?([01]?\d|2[0-3]):([0-5]\d)(?:\s*(?:eve|utc))?$",
@@ -589,6 +619,7 @@ def decline_submission(submission: LocationSubmission, user, reason: str = ""):
 
 # Flags a retired location gives up, so adding it back later starts clean.
 RETIRE_FLAGS = (
+    "deployment_active",
     "freight_active",
     "fleets_active",
     "market_active",
