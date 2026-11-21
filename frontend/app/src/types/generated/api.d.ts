@@ -1192,6 +1192,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/campaigns/{slug}/coordinators": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invite Coordinator
+         * @description Invite a character from outside the alliance to help run the
+         *     campaign, by exact character name.
+         */
+        post: operations["campaigns_endpoints_post_coordinator_invite_coordinator"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/campaigns/{slug}/coordinators/{coordinator_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove Coordinator
+         * @description Take a coordinator off the campaign, and the servers they linked.
+         */
+        delete: operations["campaigns_endpoints_delete_coordinator_remove_coordinator"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/campaigns/{slug}/destruction": {
         parameters: {
             query?: never;
@@ -1208,6 +1249,91 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/campaigns/{slug}/discord-links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Links
+         * @description The servers this viewer may edit: all of them for managers, a
+         *     coordinator's own for a coordinator.
+         */
+        get: operations["campaigns_endpoints_get_discord_links_list_links"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/campaigns/{slug}/discord-links/{link_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove Link
+         * @description Stop forwarding to a linked server.
+         */
+        delete: operations["campaigns_endpoints_delete_discord_link_remove_link"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Link
+         * @description Pick the timers and fleet pings channels on a linked server.
+         */
+        patch: operations["campaigns_endpoints_patch_discord_link_update_link"];
+        trace?: never;
+    };
+    "/api/campaigns/{slug}/doctrines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Attach Doctrine
+         * @description Attach a doctrine; its fittings join the campaign, switched on.
+         */
+        post: operations["campaigns_endpoints_post_doctrine_attach_doctrine"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/campaigns/{slug}/doctrines/{campaign_doctrine_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Detach Doctrine
+         * @description Detach a doctrine and the fittings it brought in.
+         */
+        delete: operations["campaigns_endpoints_delete_doctrine_detach_doctrine"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1265,7 +1391,11 @@ export interface paths {
         delete: operations["campaigns_endpoints_delete_fitting_delete_fitting"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Toggle Fitting
+         * @description Show or hide one fitting on the campaign page.
+         */
+        patch: operations["campaigns_endpoints_patch_fitting_toggle_fitting"];
         trace?: never;
     };
     "/api/campaigns/{slug}/fleets": {
@@ -12758,6 +12888,16 @@ export interface components {
              */
             is_default?: boolean;
             /**
+             * Link Url
+             * @default
+             */
+            link_url?: string;
+            /**
+             * Links
+             * @default []
+             */
+            links?: components["schemas"]["CampaignDiscordLinkOut"][];
+            /**
              * Servers
              * @default []
              */
@@ -12773,6 +12913,40 @@ export interface components {
             guild_id?: string | null;
             /** Timers Channel Id */
             timers_channel_id?: string | null;
+        };
+        /** CampaignCoordinatorInvite */
+        CampaignCoordinatorInvite: {
+            /** Character Name */
+            character_name: string;
+        };
+        /** CampaignCoordinatorOut */
+        CampaignCoordinatorOut: {
+            /**
+             * Alliance Name
+             * @default
+             */
+            alliance_name?: string;
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /**
+             * Corporation Name
+             * @default
+             */
+            corporation_name?: string;
+            /**
+             * Discord Servers
+             * @default []
+             */
+            discord_servers?: string[];
+            /** Id */
+            id: number;
+            /**
+             * Signed In
+             * @default false
+             */
+            signed_in?: boolean;
         };
         /** CampaignCreateRequest */
         CampaignCreateRequest: {
@@ -12925,6 +13099,16 @@ export interface components {
              */
             commander_order_text?: string;
             /**
+             * Coordination Ready
+             * @default false
+             */
+            coordination_ready?: boolean;
+            /**
+             * Coordinator Scopes
+             * @default []
+             */
+            coordinator_scopes?: string[];
+            /**
              * Cover Image Url
              * @default
              */
@@ -12978,6 +13162,11 @@ export interface components {
             parties?: components["schemas"]["CampaignPartyOut"][];
             /** Paused At */
             paused_at?: string | null;
+            /**
+             * Redacted
+             * @default false
+             */
+            redacted?: boolean;
             /** Short Code */
             short_code: string;
             /** Slug */
@@ -13017,6 +13206,84 @@ export interface components {
              */
             tagline?: string;
             totals: components["schemas"]["CampaignTotals"];
+            /**
+             * Undisclosed
+             * @default false
+             */
+            undisclosed?: boolean;
+            /**
+             * Viewer Role
+             * @default member
+             */
+            viewer_role?: string;
+        };
+        /**
+         * CampaignDiscordLinkOut
+         * @description Another server a coordinator forwards the campaign's pings to.
+         */
+        CampaignDiscordLinkOut: {
+            /**
+             * Channels
+             * @default []
+             */
+            channels?: components["schemas"]["CoordinationChannelOut"][];
+            /**
+             * Channels Unavailable
+             * @default false
+             */
+            channels_unavailable?: boolean;
+            /** Fleets Channel Id */
+            fleets_channel_id?: string | null;
+            /** Guild Id */
+            guild_id: string;
+            /**
+             * Guild Name
+             * @default
+             */
+            guild_name?: string;
+            /** Id */
+            id: number;
+            /**
+             * Linked By
+             * @default
+             */
+            linked_by?: string;
+            /** Timers Channel Id */
+            timers_channel_id?: string | null;
+        };
+        /** CampaignDiscordLinkRequest */
+        CampaignDiscordLinkRequest: {
+            /** Fleets Channel Id */
+            fleets_channel_id?: string | null;
+            /** Timers Channel Id */
+            timers_channel_id?: string | null;
+        };
+        /** CampaignDoctrineAttach */
+        CampaignDoctrineAttach: {
+            /** Doctrine Id */
+            doctrine_id: number;
+        };
+        /** CampaignDoctrineOut */
+        CampaignDoctrineOut: {
+            /** Doctrine Id */
+            doctrine_id: number;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+        };
+        /** CampaignDoctrinesOut */
+        CampaignDoctrinesOut: {
+            /**
+             * Doctrines
+             * @default []
+             */
+            doctrines?: components["schemas"]["CampaignDoctrineOut"][];
+            /**
+             * Fittings
+             * @default []
+             */
+            fittings?: components["schemas"]["CampaignFittingOut"][];
         };
         /**
          * CampaignFeatures
@@ -13085,6 +13352,18 @@ export interface components {
         };
         /** CampaignFittingOut */
         CampaignFittingOut: {
+            /** Doctrine Id */
+            doctrine_id?: number | null;
+            /**
+             * Doctrine Name
+             * @default
+             */
+            doctrine_name?: string;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled?: boolean;
             /** Fitting Id */
             fitting_id: number;
             /** Id */
@@ -13101,6 +13380,8 @@ export interface components {
              * @default
              */
             role_label?: string;
+            /** Ship Id */
+            ship_id?: number | null;
             /**
              * Ship Name
              * @default
@@ -13111,6 +13392,11 @@ export interface components {
              * @default true
              */
             srp_eligible?: boolean;
+        };
+        /** CampaignFittingToggle */
+        CampaignFittingToggle: {
+            /** Enabled */
+            enabled: boolean;
         };
         /**
          * CampaignFleetOut
@@ -13256,6 +13542,11 @@ export interface components {
              * @default
              */
             tagline?: string;
+            /**
+             * Undisclosed
+             * @default false
+             */
+            undisclosed?: boolean;
         };
         /**
          * CampaignOverlay
@@ -13452,6 +13743,8 @@ export interface components {
         };
         /** CampaignPatchRequest */
         CampaignPatchRequest: {
+            /** Coordinator Scopes */
+            coordinator_scopes?: string[] | null;
             /** Description Md */
             description_md?: string | null;
             /** End At */
@@ -13465,6 +13758,8 @@ export interface components {
             status?: string | null;
             /** Tagline */
             tagline?: string | null;
+            /** Undisclosed */
+            undisclosed?: boolean | null;
         };
         /** CampaignSchema */
         CampaignSchema: {
@@ -13505,10 +13800,25 @@ export interface components {
             commander_order_is_draft: boolean;
             /** Commander Order Text */
             commander_order_text: string;
+            /**
+             * Coordinator Scopes
+             * @default []
+             */
+            coordinator_scopes?: string[];
+            /**
+             * Coordinators
+             * @default []
+             */
+            coordinators?: components["schemas"]["CampaignCoordinatorOut"][];
             /** Daily Orders */
             daily_orders: components["schemas"]["SettingsOrderOut"][];
             /** Description Md */
             description_md: string;
+            /**
+             * Doctrines
+             * @default []
+             */
+            doctrines?: components["schemas"]["CampaignDoctrineOut"][];
             /**
              * End At
              * Format: date-time
@@ -13535,6 +13845,11 @@ export interface components {
             name: string;
             /** Parties */
             parties: components["schemas"]["CampaignPartyOut"][];
+            /**
+             * Public Key
+             * @default
+             */
+            public_key?: string;
             /** Slug */
             slug: string;
             /**
@@ -13550,6 +13865,11 @@ export interface components {
             systems: components["schemas"]["SettingsSystemOut"][];
             /** Tagline */
             tagline: string;
+            /**
+             * Undisclosed
+             * @default false
+             */
+            undisclosed?: boolean;
             /** Week Targets */
             week_targets: components["schemas"]["SettingsWeekTargetOut"][];
         };
@@ -36124,6 +36444,96 @@ export interface operations {
             };
         };
     };
+    campaigns_endpoints_post_coordinator_invite_coordinator: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CampaignCoordinatorInvite"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignCoordinatorOut"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    campaigns_endpoints_delete_coordinator_remove_coordinator: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                coordinator_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignCoordinatorOut"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     campaigns_endpoints_get_destruction_get_campaign_destruction: {
         parameters: {
             query?: {
@@ -36144,6 +36554,223 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CampaignDestructionOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    campaigns_endpoints_get_discord_links_list_links: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignDiscordLinkOut"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    campaigns_endpoints_delete_discord_link_remove_link: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                link_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    campaigns_endpoints_patch_discord_link_update_link: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                link_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CampaignDiscordLinkRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignDiscordLinkOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    campaigns_endpoints_post_doctrine_attach_doctrine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CampaignDoctrineAttach"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignDoctrinesOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    campaigns_endpoints_delete_doctrine_detach_doctrine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                campaign_doctrine_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignDoctrinesOut"];
                 };
             };
             /** @description Forbidden */
@@ -36307,6 +36934,49 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
+            };
+        };
+    };
+    campaigns_endpoints_patch_fitting_toggle_fitting: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                row_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CampaignFittingToggle"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignFittingOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

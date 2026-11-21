@@ -3801,6 +3801,19 @@
             "title": "Is Default",
             "type": "boolean"
           },
+          "link_url": {
+            "default": "",
+            "title": "Link Url",
+            "type": "string"
+          },
+          "links": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CampaignDiscordLinkOut"
+            },
+            "title": "Links",
+            "type": "array"
+          },
           "servers": {
             "default": [],
             "items": {
@@ -3861,6 +3874,67 @@
           }
         },
         "title": "CampaignCoordinationRequest",
+        "type": "object"
+      },
+      "CampaignCoordinatorInvite": {
+        "properties": {
+          "character_name": {
+            "maxLength": 255,
+            "minLength": 3,
+            "title": "Character Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_name"
+        ],
+        "title": "CampaignCoordinatorInvite",
+        "type": "object"
+      },
+      "CampaignCoordinatorOut": {
+        "properties": {
+          "alliance_name": {
+            "default": "",
+            "title": "Alliance Name",
+            "type": "string"
+          },
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "corporation_name": {
+            "default": "",
+            "title": "Corporation Name",
+            "type": "string"
+          },
+          "discord_servers": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Discord Servers",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "signed_in": {
+            "default": false,
+            "title": "Signed In",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "character_id",
+          "character_name"
+        ],
+        "title": "CampaignCoordinatorOut",
         "type": "object"
       },
       "CampaignCreateRequest": {
@@ -4097,6 +4171,19 @@
             "title": "Commander Order Text",
             "type": "string"
           },
+          "coordination_ready": {
+            "default": false,
+            "title": "Coordination Ready",
+            "type": "boolean"
+          },
+          "coordinator_scopes": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Coordinator Scopes",
+            "type": "array"
+          },
           "cover_image_url": {
             "default": "",
             "title": "Cover Image Url",
@@ -4175,6 +4262,11 @@
             ],
             "title": "Paused At"
           },
+          "redacted": {
+            "default": false,
+            "title": "Redacted",
+            "type": "boolean"
+          },
           "short_code": {
             "title": "Short Code",
             "type": "string"
@@ -4236,6 +4328,16 @@
           },
           "totals": {
             "$ref": "#/components/schemas/CampaignTotals"
+          },
+          "undisclosed": {
+            "default": false,
+            "title": "Undisclosed",
+            "type": "boolean"
+          },
+          "viewer_role": {
+            "default": "member",
+            "title": "Viewer Role",
+            "type": "string"
           }
         },
         "required": [
@@ -4249,6 +4351,156 @@
           "totals"
         ],
         "title": "CampaignDetail",
+        "type": "object"
+      },
+      "CampaignDiscordLinkOut": {
+        "description": "Another server a coordinator forwards the campaign's pings to.",
+        "properties": {
+          "channels": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CoordinationChannelOut"
+            },
+            "title": "Channels",
+            "type": "array"
+          },
+          "channels_unavailable": {
+            "default": false,
+            "title": "Channels Unavailable",
+            "type": "boolean"
+          },
+          "fleets_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleets Channel Id"
+          },
+          "guild_id": {
+            "title": "Guild Id",
+            "type": "string"
+          },
+          "guild_name": {
+            "default": "",
+            "title": "Guild Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "linked_by": {
+            "default": "",
+            "title": "Linked By",
+            "type": "string"
+          },
+          "timers_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timers Channel Id"
+          }
+        },
+        "required": [
+          "id",
+          "guild_id"
+        ],
+        "title": "CampaignDiscordLinkOut",
+        "type": "object"
+      },
+      "CampaignDiscordLinkRequest": {
+        "properties": {
+          "fleets_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleets Channel Id"
+          },
+          "timers_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timers Channel Id"
+          }
+        },
+        "title": "CampaignDiscordLinkRequest",
+        "type": "object"
+      },
+      "CampaignDoctrineAttach": {
+        "properties": {
+          "doctrine_id": {
+            "title": "Doctrine Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "doctrine_id"
+        ],
+        "title": "CampaignDoctrineAttach",
+        "type": "object"
+      },
+      "CampaignDoctrineOut": {
+        "properties": {
+          "doctrine_id": {
+            "title": "Doctrine Id",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "doctrine_id",
+          "name"
+        ],
+        "title": "CampaignDoctrineOut",
+        "type": "object"
+      },
+      "CampaignDoctrinesOut": {
+        "properties": {
+          "doctrines": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CampaignDoctrineOut"
+            },
+            "title": "Doctrines",
+            "type": "array"
+          },
+          "fittings": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CampaignFittingOut"
+            },
+            "title": "Fittings",
+            "type": "array"
+          }
+        },
+        "title": "CampaignDoctrinesOut",
         "type": "object"
       },
       "CampaignFeatures": {
@@ -4394,6 +4646,27 @@
       },
       "CampaignFittingOut": {
         "properties": {
+          "doctrine_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doctrine Id"
+          },
+          "doctrine_name": {
+            "default": "",
+            "title": "Doctrine Name",
+            "type": "string"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
           "fitting_id": {
             "title": "Fitting Id",
             "type": "integer"
@@ -4416,6 +4689,17 @@
             "title": "Role Label",
             "type": "string"
           },
+          "ship_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ship Id"
+          },
           "ship_name": {
             "default": "",
             "title": "Ship Name",
@@ -4433,6 +4717,19 @@
           "name"
         ],
         "title": "CampaignFittingOut",
+        "type": "object"
+      },
+      "CampaignFittingToggle": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "title": "CampaignFittingToggle",
         "type": "object"
       },
       "CampaignFleetOut": {
@@ -4662,6 +4959,11 @@
             "default": "",
             "title": "Tagline",
             "type": "string"
+          },
+          "undisclosed": {
+            "default": false,
+            "title": "Undisclosed",
+            "type": "boolean"
           }
         },
         "required": [
@@ -5105,6 +5407,20 @@
       },
       "CampaignPatchRequest": {
         "properties": {
+          "coordinator_scopes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coordinator Scopes"
+          },
           "description_md": {
             "anyOf": [
               {
@@ -5185,6 +5501,17 @@
               }
             ],
             "title": "Tagline"
+          },
+          "undisclosed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Undisclosed"
           }
         },
         "title": "CampaignPatchRequest",
@@ -5281,6 +5608,22 @@
             "title": "Commander Order Text",
             "type": "string"
           },
+          "coordinator_scopes": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Coordinator Scopes",
+            "type": "array"
+          },
+          "coordinators": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CampaignCoordinatorOut"
+            },
+            "title": "Coordinators",
+            "type": "array"
+          },
           "daily_orders": {
             "items": {
               "$ref": "#/components/schemas/SettingsOrderOut"
@@ -5291,6 +5634,14 @@
           "description_md": {
             "title": "Description Md",
             "type": "string"
+          },
+          "doctrines": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CampaignDoctrineOut"
+            },
+            "title": "Doctrines",
+            "type": "array"
           },
           "end_at": {
             "format": "date-time",
@@ -5336,6 +5687,11 @@
             "title": "Parties",
             "type": "array"
           },
+          "public_key": {
+            "default": "",
+            "title": "Public Key",
+            "type": "string"
+          },
           "slug": {
             "title": "Slug",
             "type": "string"
@@ -5366,6 +5722,11 @@
           "tagline": {
             "title": "Tagline",
             "type": "string"
+          },
+          "undisclosed": {
+            "default": false,
+            "title": "Undisclosed",
+            "type": "boolean"
           },
           "week_targets": {
             "items": {
@@ -58931,6 +59292,145 @@
         ]
       }
     },
+    "/api/campaigns/{slug}/coordinators": {
+      "post": {
+        "description": "Invite a character from outside the alliance to help run the\ncampaign, by exact character name.",
+        "operationId": "campaigns_endpoints_post_coordinator_invite_coordinator",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CampaignCoordinatorInvite"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CampaignCoordinatorOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Invite Coordinator",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/api/campaigns/{slug}/coordinators/{coordinator_id}": {
+      "delete": {
+        "description": "Take a coordinator off the campaign, and the servers they linked.",
+        "operationId": "campaigns_endpoints_delete_coordinator_remove_coordinator",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "coordinator_id",
+            "required": true,
+            "schema": {
+              "title": "Coordinator Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CampaignCoordinatorOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Remove Coordinator",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
     "/api/campaigns/{slug}/destruction": {
       "get": {
         "description": "The Destruction tab: this week's ISK, structures killed, the biggest\nkill, and the kills themselves, newest first.",
@@ -58987,6 +59487,323 @@
           }
         ],
         "summary": "Get Campaign Destruction",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/api/campaigns/{slug}/discord-links": {
+      "get": {
+        "description": "The servers this viewer may edit: all of them for managers, a\ncoordinator's own for a coordinator.",
+        "operationId": "campaigns_endpoints_get_discord_links_list_links",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CampaignDiscordLinkOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "List Links",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/api/campaigns/{slug}/discord-links/{link_id}": {
+      "delete": {
+        "description": "Stop forwarding to a linked server.",
+        "operationId": "campaigns_endpoints_delete_discord_link_remove_link",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "link_id",
+            "required": true,
+            "schema": {
+              "title": "Link Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Remove Link",
+        "tags": [
+          "Campaigns"
+        ]
+      },
+      "patch": {
+        "description": "Pick the timers and fleet pings channels on a linked server.",
+        "operationId": "campaigns_endpoints_patch_discord_link_update_link",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "link_id",
+            "required": true,
+            "schema": {
+              "title": "Link Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CampaignDiscordLinkRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignDiscordLinkOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Update Link",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/api/campaigns/{slug}/doctrines": {
+      "post": {
+        "description": "Attach a doctrine; its fittings join the campaign, switched on.",
+        "operationId": "campaigns_endpoints_post_doctrine_attach_doctrine",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CampaignDoctrineAttach"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignDoctrinesOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Attach Doctrine",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/api/campaigns/{slug}/doctrines/{campaign_doctrine_id}": {
+      "delete": {
+        "description": "Detach a doctrine and the fittings it brought in.",
+        "operationId": "campaigns_endpoints_delete_doctrine_detach_doctrine",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "campaign_doctrine_id",
+            "required": true,
+            "schema": {
+              "title": "Campaign Doctrine Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignDoctrinesOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Detach Doctrine",
         "tags": [
           "Campaigns"
         ]
@@ -59217,6 +60034,74 @@
           }
         ],
         "summary": "Delete Fitting",
+        "tags": [
+          "Campaigns"
+        ]
+      },
+      "patch": {
+        "description": "Show or hide one fitting on the campaign page.",
+        "operationId": "campaigns_endpoints_patch_fitting_toggle_fitting",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "row_id",
+            "required": true,
+            "schema": {
+              "title": "Row Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CampaignFittingToggle"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignFittingOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Toggle Fitting",
         "tags": [
           "Campaigns"
         ]

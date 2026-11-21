@@ -9,6 +9,7 @@ import {
     launching_campaign,
     long_name_campaign,
     upcoming_campaign,
+    undisclosed_campaign,
 } from '../../../fixtures/features/campaigns'
 
 type Ctx = { canvasElement: HTMLElement }
@@ -74,10 +75,20 @@ export const Upcoming = {
     play: async ({ canvasElement }: Ctx) => {
         const canvas = within(canvasElement)
         await expect(canvas.getByRole('heading', { name: 'Huola Recapture' })).toBeVisible()
-        await expect(canvas.getByText(/Starts in \d+ Days?/)).toBeVisible()
-        // An upcoming campaign is not clickable yet.
-        await expect(canvas.queryByRole('link')).toBeNull()
-        await expect(canvas.queryByText('View campaign')).toBeNull()
+        await expect(canvas.getByText(/Starts in \d+ Days? · /)).toBeVisible()
+        // The page counts down to the start and holds the Enlist bar.
+        await expect(canvas.getByRole('link', { name: 'View campaign' })).toBeVisible()
+    },
+}
+
+export const UpcomingUndisclosed = {
+    args: { campaign: undisclosed_campaign },
+    play: async ({ canvasElement }: Ctx) => {
+        const canvas = within(canvasElement)
+        await expect(canvas.getByRole('heading', { name: 'Upcoming Campaign' })).toBeVisible()
+        await expect(canvas.getByText('Coming soon')).toBeVisible()
+        await expect(canvas.queryByText('Strategic')).toBeNull()
+        await expect(canvas.getByRole('link', { name: 'View campaign' })).toHaveAttribute('href', '/campaigns/a1b2c3d4e5f6/')
     },
 }
 
@@ -85,8 +96,7 @@ export const LaunchingSoon = {
     args: { campaign: launching_campaign },
     play: async ({ canvasElement }: Ctx) => {
         const canvas = within(canvasElement)
-        await expect(canvas.getByText('Launching soon')).toBeVisible()
-        await expect(canvas.queryByRole('link')).toBeNull()
+        await expect(canvas.getByText(/^Launching soon · /)).toBeVisible()
     },
 }
 

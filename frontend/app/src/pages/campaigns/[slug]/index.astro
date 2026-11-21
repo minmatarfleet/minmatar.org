@@ -1,6 +1,7 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { t, lang, translatePath } = i18n(Astro.url)
+import { format_date_short } from '@helpers/date'
 
 import { HTTP_403_Forbidden, HTTP_404_Not_Found, login_redirect } from '@helpers/http_responses'
 
@@ -47,6 +48,9 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import CampaignDetailBody from '@components/blocks/CampaignDetail.astro'
 import CampaignEnlistBar from '@components/blocks/CampaignEnlistBar.astro'
 import DeploymentStrip from '@components/blocks/DeploymentStrip.astro'
+import Tag from '@components/blocks/Tag.astro'
+import CampaignSides from '@components/blocks/CampaignSides.astro'
+import CampaignComingSoon from '@components/blocks/CampaignComingSoon.astro'
 
 const { auth_token, user } = get_request_user(Astro)
 
@@ -55,10 +59,6 @@ if (!user) return login_redirect(Astro)
 const gates = await get_gates(Astro)
 
 const can_view_campaigns = can(gates, 'campaigns.view')
-const can_manage_campaign = can(gates, 'campaigns.manage')
-
-if (!can_view_campaigns)
-    return HTTP_403_Forbidden()
 
 const slug = Astro.params.slug as string
 
@@ -92,6 +92,21 @@ try {
     fetch_campaign_error = error
 }
 
+// Coordinators from outside the alliance have no campaigns gate; the API
+// says who they are for this campaign.
+const viewer_role = campaign?.viewer_role ?? 'member'
+if (!can_view_campaigns && viewer_role !== 'coordinator')
+    return HTTP_403_Forbidden()
+
+/** Per-object rights come from the API: managers of this campaign. */
+const can_manage_campaign = viewer_role === 'manager'
+const is_coordinator = viewer_role === 'coordinator'
+const is_redacted = campaign?.redacted ?? false
+const before_start = campaign !== null && new Date(campaign.start_at).getTime() > Date.now()
+const weeks = campaign
+    ? Math.max(1, Math.round((new Date(campaign.end_at).getTime() - new Date(campaign.start_at).getTime()) / (7 * 86_400_000)))
+    : 0
+
 let week:CampaignWeek | null = null
 let fleets:CampaignFleet[] = []
 let leaderboard:CampaignLeaderboardRow[] = []
@@ -103,7 +118,7 @@ let readiness:CampaignReadiness | null = null
 let choices:CampaignChoices | null = null
 
 /** Sub-resources answer 403 without `campaigns.view`; each section degrades on its own. */
-if (campaign) {
+if (campaign && !is_redacted) {
     const results = await Promise.allSettled([
         get_campaign_week(slug, auth_token as string),
         get_campaign_fleets(slug, auth_token as string, 25),
@@ -127,8 +142,8 @@ if (campaign) {
     choices = results[8].status === 'fulfilled' ? results[8].value : null
 }
 
-/** Enlisting only makes sense while the campaign can still be joined. */
-const show_enlist_bar = campaign !== null && (campaign.status === 'active' || campaign.status === 'paused' || campaign.status === 'scheduled')
+/** Enlisting only makes sense while the campaign can still be joined; coordinators are not in the alliance. */
+const show_enlist_bar = campaign !== null && !is_coordinator && (campaign.status === 'active' || campaign.status === 'paused' || campaign.status === 'scheduled')
 
 const CAMPAIGN_DETAIL_PARTIAL_URL = translatePath(`/partials/campaign_detail_component?slug=${slug}`)
 
@@ -160,33 +175,17 @@ const breadcrumbs = [
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full items-end ]">
             <Flexblock gap='var(--space-3xs)' class="[ campaign-header-title ]">
+                {can_manage_campaign && campaign && (campaign.status === 'draft' || campaign.undisclosed) &&
+                    <FlexInline gap='var(--space-3xs)'>
+                        {campaign.status === 'draft' && <Tag text={t('draft')} variant='outline' />}
+                        {campaign.undisclosed && <Tag text={t('campaigns.undisclosed')} variant='outline' />}
+                    </FlexInline>
+                }
                 <PageTitle>
                     {page_title}
                 </PageTitle>
                 {campaign?.tagline && (
                     <p class="[ campaign-header-tagline ]">{campaign.tagline}</p>
-                )}
-                {campaign?.parties?.length > 0 && (
-                    <p class="[ campaign-header-parties ]">
-                        {(() => {
-                            const label = (party: { ticker?: string; name: string }) => {
-                                const ticker = (party.ticker || '').trim()
-                                if (ticker && /^[A-Za-z0-9._-]{2,6}$/.test(ticker))
-                                    return ticker
-                                return party.name
-                            }
-                            const enemies = campaign.parties
-                                .filter(party => party.side === 'enemy')
-                                .map(label)
-                            const allies = campaign.parties
-                                .filter(party => party.side === 'ally')
-                                .map(label)
-                            return [
-                                enemies.length ? `${t('campaigns.parties.enemies')} ${enemies.join(', ')}` : '',
-                                allies.length ? `${t('campaigns.parties.allies')} ${allies.join(', ')}` : '',
-                            ].filter(Boolean).join(' · ')
-                        })()}
-                    </p>
                 )}
                 {campaign?.description_md && (
                     <Markdown markdown={campaign.description_md} inline={true} inline_element='p' class="[ campaign-header-description ]" />
@@ -195,15 +194,20 @@ const breadcrumbs = [
             <PageActions class="[ !items-end ]">
                 {campaign && (
                     <Flexblock gap='var(--space-3xs)' class="[ campaign-header-countdown ]">
-                        <small class="[ campaign-header-countdown-label ]">{t('campaigns.ends_in')}</small>
+                        <small class="[ campaign-header-countdown-label ]">{before_start ? t('campaigns.starts_in') : t('campaigns.ends_in')}</small>
                         <CampaignCountdown
                             id={1}
-                            date={new Date(campaign.end_at)}
+                            date={new Date(before_start ? campaign.start_at : campaign.end_at)}
                             expired_text={t('campaigns.ended')}
                         />
+                        {before_start && !is_redacted &&
+                            <small class="[ campaign-header-runs ]">
+                                {t('campaigns.runs_until').replace('{weeks}', String(weeks)).replace('{date}', format_date_short(lang, new Date(campaign.end_at)))}
+                            </small>
+                        }
                     </Flexblock>
                 )}
-                {can_manage_campaign && (
+                {can_manage_campaign && campaign?.kind === 'faction_warfare' && (
                     <Button
                         href={translatePath('/campaigns/event-codes/')}
                         color="transparent"
@@ -215,9 +219,16 @@ const breadcrumbs = [
             </PageActions>
         </FlexInline>
 
+        {campaign && !is_redacted && (campaign.parties?.length ?? 0) > 0 &&
+            <CampaignSides parties={campaign.parties} all_href={can_manage_campaign ? '#settings' : null} class="[ campaign-header-sides ]" />
+        }
+
         <DeploymentStrip />
 
-        {fetch_campaign_error || !campaign ?
+        {campaign && is_redacted ?
+            <CampaignComingSoon />
+            :
+        fetch_campaign_error || !campaign ?
             <ErrorRefetch
                 args={{
                     partial: CAMPAIGN_DETAIL_PARTIAL_URL,
@@ -239,6 +250,7 @@ const breadcrumbs = [
                 token_error={token_error_message}
                 can_manage={can_manage_campaign}
                 choices={choices}
+                before_start={before_start}
             />
         }
     </PageWide>
@@ -264,12 +276,13 @@ const breadcrumbs = [
         max-width: 60ch;
     }
 
-    .campaign-header-parties {
-        margin: 0;
-        color: var(--fleet-red);
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        font-size: var(--step--2);
+    .campaign-header-runs {
+        color: var(--text-muted);
+    }
+
+    :global(.campaign-header-sides) {
+        padding-block-start: var(--space-s);
+        border-block-start: 1px solid var(--hairline);
     }
 
     .campaign-header-title :global(.campaign-header-description) {

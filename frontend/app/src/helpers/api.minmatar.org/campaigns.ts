@@ -1,4 +1,4 @@
-import type { CampaignChoices, CampaignCoordination, CampaignCoordinationPut, CampaignDestruction, CampaignTimer } from '@dtypes/api.minmatar.org'
+import type { CampaignChoices, CampaignCoordination, CampaignCoordinationPut, CampaignDestruction, CampaignDiscordLink, CampaignTimer } from '@dtypes/api.minmatar.org'
 import type {
     CampaignListItem,
     CampaignDetail,
@@ -336,5 +336,18 @@ export async function put_campaign_coordination(slug:string, access_token:string
         token: access_token,
         body,
         error: 'Error saving campaign coordination',
+    })
+}
+
+/** Browser URL that starts adding the bot to a server for the campaign (Discord code grant). */
+export function campaign_discord_bot_connect_url(api_url:string, slug:string, purpose:'ours' | 'link', access_token:string) {
+    return `${api_url}/api/campaigns/${slug}/discord/bot/connect?purpose=${purpose}&token=${encodeURIComponent(access_token)}`
+}
+
+/** The servers this viewer may edit: every one for managers, their own for a coordinator. */
+export async function get_campaign_discord_links(slug:string, access_token:string) {
+    return await api_request<CampaignDiscordLink[]>(`${API_ENDPOINT}/${slug}/discord-links`, {
+        token: access_token,
+        error: 'Error fetching campaign Discord servers',
     })
 }

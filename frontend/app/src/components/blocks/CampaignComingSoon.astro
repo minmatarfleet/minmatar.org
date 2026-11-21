@@ -1,0 +1,38 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+interface Props {
+    [propName: string]: any;
+}
+
+const { ...attributes } = Astro.props
+
+delete attributes.class
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+---
+
+<ComponentBlock
+    padding_inline='var(--space-m)'
+    padding_block='var(--space-m)'
+    class:list={['[ campaign-coming-soon ]', Astro.props.class]}
+    {...attributes}
+>
+    <Flexblock gap='var(--space-2xs)'>
+        <h2>{t('campaigns.coming_soon')}</h2>
+        <p>{t('campaigns.coming_soon_body')}</p>
+    </Flexblock>
+</ComponentBlock>
+
+<style lang="scss">
+    h2 {
+        margin: 0;
+    }
+
+    p {
+        margin: 0;
+        max-width: 60ch;
+    }
+</style>
