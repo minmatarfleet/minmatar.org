@@ -7,14 +7,14 @@ import { get_request_user } from '@helpers/request_user'
 import { get_gates, can } from '@helpers/gates'
 import { get_structure_locations } from '@helpers/api.minmatar.org/structure_locations'
 import { get_item_icon } from '@helpers/eve_image_server'
-import { in_view, STRUCTURE_VIEWS, type StructureView } from '@helpers/structure_locations'
+import { in_view, has_rig_group, parse_rig_groups, parse_structure_view, rig_groups_of, RIG_GROUP_SECTIONS, STRUCTURE_VIEWS, type StructureView } from '@helpers/structure_locations'
 
 const { auth_token } = get_request_user(Astro)
 const gates = await get_gates(Astro)
 const can_manage = can(gates, 'structures.locations.manage')
 
-const requested = Astro.url.searchParams.get('view') ?? 'all'
-const view: StructureView = (STRUCTURE_VIEWS as string[]).includes(requested) ? requested as StructureView : 'all'
+const view = parse_structure_view(Astro.url.searchParams.get('view'))
+const picked_rigs = parse_rig_groups(Astro.url.searchParams.getAll('rigs'))
 
 let list: StructureLocationList | null = null
 let list_error: Error | null = null
@@ -25,9 +25,22 @@ try {
 }
 
 const locations = list?.locations ?? []
-const shown = locations.filter((card) => in_view(card, view))
+const in_this_view = locations.filter((card) => in_view(card, view))
+const shown = in_this_view.filter((card) => has_rig_group(card, picked_rigs))
 const staging = locations.find((card) => card.staging)
 const counts = Object.fromEntries(STRUCTURE_VIEWS.map((name) => [name, locations.filter((card) => in_view(card, name)).length]))
+// How many structures in this view carry each rig group, for the Rigs menu.
+const rig_counts: Record<string, number> = {}
+in_this_view.forEach((card) => rig_groups_of(card).forEach((group) => { rig_counts[group] = (rig_counts[group] ?? 0) + 1 }))
+
+/** A link to this page with the view and rig groups kept, one of them changed. */
+function page_query(next_view: StructureView, rigs: string[]) {
+    const params = new URLSearchParams()
+    if (next_view !== 'all') params.set('view', next_view)
+    if (rigs.length > 0) params.set('rigs', rigs.join(','))
+    const query = params.toString()
+    return query ? `?${query}` : '?'
+}
 
 const page_title = t('structures.page_title')
 const breadcrumbs = [{ page_title, accumulated_path: translatePath('/structures/') }]
@@ -59,7 +72,7 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
                     <p class="[ structures-band__lead ]">{t('structures.lead')}</p>
                     {staging &&
                         <a class="[ structures-band__staging ]" href={translatePath(`/structures/${staging.location_id}/`)}>
-                            <StructureFlags flags={[{ kind: 'staging' }]} />
+                            <StructureFlags flags={[{ kind: 'home' }]} />
                             <span>{staging.short_name}</span>
                         </a>
                     }
@@ -72,16 +85,58 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
         </header>
 
         <div class="[ structures-controls ]" x-data="{ q: '' }">
-            <label class="[ visually-hidden ]" for="structures-search">{t('structures.search')}</label>
-            <Input id="structures-search" type="search" placeholder={t('structures.search')} x-model="q"
-                x-on:input="document.querySelectorAll('[data-structure-name]').forEach((el) => el.hidden = q && !el.dataset.structureName.includes(q.toLowerCase()))" />
+            <div class="[ structures-controls__row ]">
+                <label class="[ visually-hidden ]" for="structures-search">{t('structures.search')}</label>
+                <Input id="structures-search" type="search" placeholder={t('structures.search')} x-model="q"
+                    x-on:input="document.querySelectorAll('[data-structure-name]').forEach((el) => el.hidden = q && !el.dataset.structureName.includes(q.toLowerCase()))" />
+                <details class="[ structures-rigs ]" x-data x-on:click.outside="$el.open = false" x-on:keydown.escape="$el.open = false">
+                    <summary class:list={['[ structures-rigs__toggle ]', { 'is-on': picked_rigs.length > 0 }]}>
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4" /></svg>
+                        {t('structures.rigs.button')}{picked_rigs.length > 0 && ` · ${picked_rigs.length}`}
+                    </summary>
+                    <form class="[ structures-rigs__menu ]" method="get" aria-label={t('structures.rigs.label')}>
+                        {view !== 'all' && <input type="hidden" name="view" value={view} />}
+                        <div class="[ structures-rigs__sections ]">
+                            {RIG_GROUP_SECTIONS.map((section) => (
+                                <fieldset>
+                                    <legend>{t(t_key('structures.rigs.section_', section.section))}</legend>
+                                    {section.groups.map((group) => (
+                                        <label>
+                                            <input type="checkbox" name="rigs" value={group} checked={picked_rigs.includes(group)} />
+                                            <span>{t(t_key('structures.rigs.group_', group))}</span>
+                                            <span class="[ manage-muted ]">{rig_counts[group] ?? 0}</span>
+                                        </label>
+                                    ))}
+                                </fieldset>
+                            ))}
+                        </div>
+                        <div class="[ structures-rigs__foot ]">
+                            <a href={page_query(view, [])}>{t('structures.rigs.clear')}</a>
+                            <Button type="submit" size="sm" color="transparent">{t('structures.rigs.apply')}</Button>
+                        </div>
+                    </form>
+                </details>
+            </div>
             <nav class="[ manage-chips ]" aria-label={t('structures.views')}>
                 {STRUCTURE_VIEWS.map((name) => (
-                    <a class:list={['[ manage-chip ]', { 'is-on': name === view }]} href={`?view=${name}`} aria-current={name === view ? 'page' : undefined}>
+                    <a class:list={['[ manage-chip ]', { 'is-on': name === view }]} href={page_query(name, picked_rigs)} aria-current={name === view ? 'page' : undefined}>
                         {t(t_key('structures.view_', name))} <span class="[ manage-muted ]">{counts[name]}</span>
                     </a>
                 ))}
             </nav>
+            {picked_rigs.length > 0 &&
+                <ul class="[ structures-picked ]" aria-label={t('structures.rigs.label')}>
+                    {picked_rigs.map((group) => (
+                        <li>
+                            {t(t_key('structures.rigs.group_', group))}
+                            <a href={page_query(view, picked_rigs.filter((other) => other !== group))} aria-label={t('structures.rigs.remove').replace('~NAME', t(t_key('structures.rigs.group_', group)))}>
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+                            </a>
+                        </li>
+                    ))}
+                    <li class="[ structures-picked__clear ]"><a href={page_query(view, [])}>{t('structures.rigs.clear')}</a></li>
+                </ul>
+            }
         </div>
 
         {list_error
@@ -92,7 +147,7 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
                 <div class="[ structures-grid ]">
                     {shown.map((card) => (
                         <div data-structure-name={`${card.name} ${card.solar_system_name} ${card.rigs.map((r) => r.label).join(' ')}`.toLowerCase()}>
-                            <StructureCard card={card} view={view} />
+                            <StructureCard card={card} />
                         </div>
                     ))}
                     {list?.can_add &&
@@ -177,6 +232,7 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
     }
 
     .structures-controls {
+        position: relative;
         display: flex;
         flex-direction: column;
         gap: var(--space-s);
@@ -193,6 +249,170 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
         }
     }
 
+    .structures-controls__row {
+        display: flex;
+        gap: var(--space-s);
+
+        > :global(*:first-child) {
+            flex: 1;
+            min-width: 0;
+        }
+    }
+
+    .structures-rigs {
+        flex: none;
+    }
+
+    .structures-rigs__toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        block-size: 100%;
+        min-block-size: 2.75rem;
+        padding-inline: var(--space-s);
+        font-family: var(--button-font);
+        font-size: var(--step--1);
+        font-weight: 600;
+        color: var(--highlight);
+        list-style: none;
+        cursor: pointer;
+        background-color: var(--component-background);
+        border: 1px solid var(--hairline-strong);
+
+        &::-webkit-details-marker {
+            display: none;
+        }
+
+        svg {
+            width: 1.2em;
+            height: 1.2em;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+        }
+
+        &.is-on {
+            color: var(--background);
+            background-color: var(--fleet-yellow);
+            border-color: var(--fleet-yellow);
+        }
+    }
+
+    .structures-rigs__menu {
+        position: absolute;
+        inset-inline-end: 0;
+        z-index: var(--sticky-z-index);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        inline-size: min(100%, 40rem);
+        margin-top: var(--space-2xs);
+        padding: var(--space-m);
+        background-color: var(--component-background);
+        border: 1px solid var(--hairline-strong);
+        box-shadow: 0 var(--space-m) var(--space-l) color-mix(in srgb, var(--background) 60%, transparent);
+    }
+
+    .structures-rigs__sections {
+        columns: 2 16rem;
+        column-gap: var(--space-l);
+
+        fieldset {
+            break-inside: avoid;
+            margin: 0 0 var(--space-s);
+            padding: 0;
+            border: 0;
+        }
+
+        legend {
+            margin-bottom: var(--space-3xs);
+            font-size: var(--step--2);
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--fleet-yellow);
+        }
+
+        label {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+            min-block-size: 2.25rem;
+            font-size: var(--step--1);
+            color: var(--highlight);
+            cursor: pointer;
+
+            :global(.manage-muted) {
+                margin-inline-start: auto;
+            }
+        }
+
+        input {
+            inline-size: 1.1rem;
+            block-size: 1.1rem;
+            margin: 0;
+            accent-color: var(--fleet-yellow);
+        }
+    }
+
+    .structures-rigs__foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: var(--space-s);
+        border-top: 1px solid var(--hairline-strong);
+
+        a {
+            font-size: var(--step--1);
+            font-weight: 600;
+            color: var(--highlight);
+        }
+    }
+
+    .structures-picked {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-3xs);
+            padding-inline: var(--space-xs) var(--space-3xs);
+            font-size: var(--step--1);
+            font-weight: 600;
+            color: var(--highlight);
+            background-color: color-mix(in srgb, var(--green) 22%, transparent);
+            border: 1px solid color-mix(in srgb, var(--green) 60%, transparent);
+        }
+
+        li a {
+            display: inline-flex;
+            padding: var(--space-3xs);
+            color: inherit;
+        }
+
+        svg {
+            width: 1em;
+            height: 1em;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2.4;
+            stroke-linecap: round;
+        }
+
+        .structures-picked__clear {
+            padding: 0 var(--space-2xs);
+            background: none;
+            border: 0;
+        }
+    }
+
     .structures-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
@@ -203,7 +423,7 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
         display: flex;
         flex-direction: column;
         gap: var(--space-xs);
-        min-height: 29rem;
+        min-height: 30rem;
         padding: var(--space-m);
         border: 1px dashed var(--hairline-strong);
 

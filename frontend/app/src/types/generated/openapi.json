@@ -26513,6 +26513,10 @@
             "title": "Audience Groups",
             "type": "array"
           },
+          "deployment": {
+            "title": "Deployment",
+            "type": "boolean"
+          },
           "fitting_scanned_at": {
             "anyOf": [
               {
@@ -26665,6 +26669,7 @@
           "type_id",
           "type_name",
           "staging",
+          "deployment",
           "fleets",
           "freight",
           "market",
@@ -26778,6 +26783,10 @@
             },
             "title": "Changes",
             "type": "array"
+          },
+          "deployment": {
+            "title": "Deployment",
+            "type": "boolean"
           },
           "description": {
             "title": "Description",
@@ -26942,6 +26951,7 @@
           "type_id",
           "type_name",
           "staging",
+          "deployment",
           "fleets",
           "freight",
           "market",
@@ -27166,6 +27176,10 @@
             "title": "Audience Groups",
             "type": "array"
           },
+          "deployment": {
+            "title": "Deployment",
+            "type": "boolean"
+          },
           "fleets": {
             "title": "Fleets",
             "type": "boolean"
@@ -27239,6 +27253,7 @@
           "market",
           "prices",
           "staging",
+          "deployment",
           "price_baseline",
           "audience",
           "audience_groups"
@@ -27310,6 +27325,11 @@
       },
       "LocationModule": {
         "properties": {
+          "group": {
+            "default": "",
+            "title": "Group",
+            "type": "string"
+          },
           "label": {
             "title": "Label",
             "type": "string"
@@ -27460,6 +27480,17 @@
             "default": false,
             "title": "Clear Reinforce Hour",
             "type": "boolean"
+          },
+          "deployment_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deployment Active"
           },
           "description": {
             "anyOf": [

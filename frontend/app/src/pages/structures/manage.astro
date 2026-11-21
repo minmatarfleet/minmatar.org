@@ -101,6 +101,7 @@ import ManageTable from '@components/blocks/manage/ManageTable.astro'
                             { label: t('structures.settings.flag_market_active'), align: 'num' },
                             { label: t('structures.settings.flag_prices_active'), align: 'num' },
                             { label: t('structures.flag.staging'), align: 'num' },
+                            { label: t('structures.flag.deployment'), align: 'num' },
                             { label: t('structures.col.audience') },
                             { label: t('structures.col.retire'), align: 'act' },
                         ]}
@@ -113,6 +114,7 @@ import ManageTable from '@components/blocks/manage/ManageTable.astro'
                                 <td class="num">{tick(row.market)}</td>
                                 <td class="num">{tick(row.prices)}</td>
                                 <td class="num">{tick(row.staging)}</td>
+                                <td class="num">{tick(row.deployment)}</td>
                                 <td>{row.audience === 'groups' ? row.audience_groups.join(', ') : t(t_key('structures.audience.', row.audience))}</td>
                                 <td class="act">
                                     <Button

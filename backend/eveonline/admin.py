@@ -683,6 +683,7 @@ class EveLocationAdmin(SafeDeleteAdmin):
         "freight_active",
         "fleets_active",
         "staging_active",
+        "deployment_active",
         "deleted",
     )
     search_fields = ("location_name", "short_name", "solar_system_name")
@@ -695,6 +696,7 @@ class EveLocationAdmin(SafeDeleteAdmin):
         "freight_active",
         "fleets_active",
         "staging_active",
+        "deployment_active",
     )
     ordering = ("location_name",)
     fieldsets = (
@@ -730,6 +732,7 @@ class EveLocationAdmin(SafeDeleteAdmin):
                     "freight_active",
                     "fleets_active",
                     "staging_active",
+                    "deployment_active",
                 )
             },
         ),
