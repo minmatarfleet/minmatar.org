@@ -39,6 +39,16 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-11-21 — Fitting order Save prices reloads with an empty box
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL in the thread
+**PR:** fix+skill
+**Symptom vs cause:** Pasting purchased prices on a fitting order stayed on the purchase step and the box came back empty. Every to-buy line still had a null unit price. The parser only accepted a tab or a double space with the item name in the first column and a US-formatted number. Multibuy is `Name qty` with one space, wallet rows lead with the date, and EU amounts with an ISK suffix did not parse. A station name like `Jita IV - Moon 4` must not be read as a price.
+**Durable rule:** Match order item names inside the line. Accept a single-space quantity and total, wallet rows, and ISK/EU numbers. When nothing matches, keep the paste and say so. The submit button stays inside the form.
+**Skill update:** added the fitting-order landed-price row.
+
 ## 2026-11-20 — Thread replies after the investigation PRs merged
 
 **Category:** pulse.technology
@@ -78,6 +88,26 @@ do not duplicate it — one clarifying clause at most.
 **Symptom vs cause:** A published mentor class required a tribe group, and an active member still saw the class locked. The stored value was the group's display name. The check queried `tribe_group.code` only, so the name never matched. Membership is one row per user, including when the character on the roster is an alt. Pending membership still does not qualify.
 **Durable rule:** Dump `MentorClass.requirements` before the membership. A `tribe_group` token is a code or a unique group name. Active `TribeGroupMembership` on the account is what counts.
 **Skill update:** added the mentor-class tribe requirement row.
+
+## 2026-11-21 — Help ticket thread cuts off a long report
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** A report longer than 1024 characters showed up cut off in the help thread. The modal allows 2000 and the row stores the full body. The starter embed put that body in a field, which Discord caps at 1024, so the rest never appeared. Nothing threw, so Sentry and PostHog had no error.
+**Durable rule:** Compare `len(HelpTicket.body)` to 1024 before calling it a modal limit. The thread posts the body as an embed description (4096) and continues in another embed past that.
+**Skill update:** added the clipped help-ticket row.
+
+## 2026-11-21 — Reddit post approval looks cut off
+
+**Category:** pulse.technology
+**Verdict:** bug, plus a refusal that looks like one
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** A recruitment post looked cut off once it reached approval. The review panel capped the body at 32rem, so the end of a long post sat under a thin scrollbar. The reminder DM that says to post it yourself splits near 2000 characters and stripped the trailing newlines, so the blank line at the split disappeared. A save that hits the profanity list is refused before write; the queue keeps the previous body, and that body can itself end mid-word. The mid-word ending is stored text. The content column is longtext, and the save path does not shorten a body.
+**Durable rule:** The review body is not height-capped. Reminder chunks keep their trailing newlines so the fenced pieces join back to the post. Compare `len(content)`, the stored ending, and `find_profanity` before calling a short post a truncation. A profanity refusal leaves the last successful body in the queue.
+**Skill update:** added the reddit approval clip row.
 
 ## 2026-11-14 — Open technology threads (batch, Discord MCP on production)
 
