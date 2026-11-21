@@ -1,0 +1,72 @@
+---
+/** The campaign Destruction tab body, loaded when the tab opens. */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+import type { CampaignDestruction } from '@dtypes/api.minmatar.org'
+import { get_campaign_destruction } from '@helpers/api.minmatar.org/campaigns'
+import { format_isk } from '@helpers/numbers'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!user) return HTTP_403_Forbidden()
+
+const gates = await get_gates(Astro)
+if (!can(gates, 'campaigns.view')) return HTTP_403_Forbidden()
+
+const slug = Astro.url.searchParams.get('slug') ?? ''
+if (!/^[a-z0-9-]+$/.test(slug)) return HTTP_403_Forbidden()
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+let destruction: CampaignDestruction | null = null
+let fetch_error: Error | false = false
+try {
+    destruction = await get_campaign_destruction(slug, auth_token as string)
+} catch (error) {
+    fetch_error = error
+}
+
+const PARTIAL_URL = translatePath(`/partials/campaign_destruction_component?slug=${encodeURIComponent(slug)}`)
+const stats = destruction ? [
+    { label: t('campaigns.destruction.isk_week'), value: format_isk(destruction.isk_destroyed_week) },
+    { label: t('campaigns.stat.structures_destroyed'), value: String(destruction.structures_destroyed) },
+    { label: t('campaigns.destruction.biggest_kill'), value: format_isk(destruction.biggest_kill_isk) },
+] : []
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import CampaignStatBar from '@components/blocks/CampaignStatBar.astro'
+import CampaignDestructionTable from '@components/blocks/CampaignDestructionTable.astro'
+---
+
+<div id="campaign-destruction">
+    {fetch_error || !destruction ?
+        <ErrorRefetch
+            args={{
+                partial: PARTIAL_URL,
+                error: fetch_error || new Error(t('campaigns.action_failed')),
+                delay,
+                target: '#campaign-destruction',
+            }}
+        />
+        :
+        <Flexblock gap="var(--space-m)">
+            <Flexblock gap="var(--space-3xs)">
+                <h3>{t('campaigns.destruction.title')}</h3>
+                <small>{t('campaigns.destruction.hint')}</small>
+            </Flexblock>
+            <CampaignStatBar stats={stats} />
+            <CampaignDestructionTable rows={destruction.rows} />
+        </Flexblock>
+    }
+</div>
+
+<style lang="scss">
+    h3 {
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        color: var(--highlight);
+    }
+</style>

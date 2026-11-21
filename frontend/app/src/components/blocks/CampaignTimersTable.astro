@@ -1,0 +1,201 @@
+---
+/**
+ * The campaign timerboard: one line per timer, upcoming soonest first, then
+ * a dimmed Done group with the outcome in place of the countdown.
+ */
+import { i18n, t_key } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { CampaignTimer } from '@dtypes/api.minmatar.org'
+import { get_alliance_logo, get_item_icon } from '@helpers/eve_image_server'
+import { get_structure_id } from '@helpers/eve'
+import { eve_clock } from '@helpers/date'
+
+interface Props {
+    timers:     CampaignTimer[];
+    [propName: string]: any;
+}
+
+const {
+    timers,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const upcoming = timers.filter((timer) => !timer.done)
+const done = timers.filter((timer) => timer.done)
+
+const icon = (timer: CampaignTimer) => {
+    const type_id = timer.type_id || get_structure_id(timer.structure_type)
+    return type_id ? get_item_icon(type_id, 64) : ''
+}
+const eve_time = (iso: string) => `${new Date(iso).toLocaleDateString(lang, { weekday: 'short', timeZone: 'UTC' })} ${eve_clock(iso)}`
+/** The viewer's own clock for the tooltip; only the browser knows it. */
+const local_tip = "{ tip: '' }"
+const local_init = `tip = ${JSON.stringify(t('campaigns.timers.your_time'))}.replace('~TIME', new Date($el.dataset.at).toLocaleTimeString(${JSON.stringify(lang)}, { hour: '2-digit', minute: '2-digit', hour12: false }))`
+
+import CampaignTimerStage from '@components/blocks/CampaignTimerStage.astro'
+import Countdown from '@components/blocks/Countdown.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+---
+
+{timers.length === 0 ?
+    <EmptyState title={t('campaigns.timers.none')} />
+    :
+    <div class:list={['[ campaign-timers ]', Astro.props.class]} role="table" aria-label={t('campaigns.timers.title')} {...attributes}>
+        <div class="[ campaign-timers-head ]" role="row">
+            <span role="columnheader">{t('campaigns.timers.col.stage')}</span>
+            <span role="columnheader">{t('campaigns.timers.col.structure')}</span>
+            <span role="columnheader">{t('campaigns.timers.col.eve_time')}</span>
+            <span role="columnheader">{t('campaigns.timers.col.system')}</span>
+            <span role="columnheader">{t('campaigns.timers.col.alliance')}</span>
+            <span role="columnheader">{t('campaigns.timers.col.starts_in')}</span>
+        </div>
+        {[upcoming, done].map((group, index) =>
+            <Fragment>
+                {index === 1 && group.length > 0 &&
+                    <div class="[ campaign-timers-separator ]" role="row">
+                        <span role="cell">{t('campaigns.timers.done')}</span>
+                    </div>
+                }
+                {group.map((timer) =>
+                    <div class:list={['[ campaign-timers-row ]', { 'is-done': timer.done }]} role="row">
+                        <span role="cell"><CampaignTimerStage stage={timer.stage} final={timer.final} /></span>
+                        <span role="cell">
+                            <button
+                                type="button"
+                                class="[ campaign-timers-name ]"
+                                data-name={timer.name}
+                                data-tippy-content={t('campaigns.structures.copy_tip').replace('~NAME', timer.name).replace('~TYPE', timer.type_name)}
+                                x-data="{ copied: false }"
+                                x-on:click="navigator.clipboard.writeText($el.dataset.name).then(() => { copied = true; setTimeout(() => copied = false, 1500) })"
+                                x-bind:class="{ 'is-copied': copied }"
+                            >
+                                {icon(timer) && <img src={icon(timer)} alt="" width="32" height="32" loading="lazy" />}
+                                <span>{timer.name}</span>
+                            </button>
+                        </span>
+                        <span role="cell">
+                            <span
+                                class="[ campaign-timers-eve ]"
+                                data-at={timer.at}
+                                x-data={local_tip}
+                                x-init={local_init}
+                                x-bind:data-tippy-content="tip"
+                            >{eve_time(timer.at)}</span>
+                        </span>
+                        <span role="cell">{timer.system}</span>
+                        <span role="cell" class="[ campaign-timers-alliance ]">
+                            {timer.alliance_id && <img src={get_alliance_logo(timer.alliance_id, 32)} alt="" width="22" height="22" loading="lazy" />}
+                            <span>{timer.alliance_ticker || '—'}</span>
+                        </span>
+                        <span role="cell" class="[ campaign-timers-countdown ]">
+                            {timer.done ?
+                                <span class="[ campaign-timers-muted ]">{t(t_key('campaigns.timers.outcome.', timer.outcome))}</span>
+                                :
+                                <Countdown id={timer.id} tag="campaign-timer" date={timer.at} />
+                            }
+                        </span>
+                    </div>
+                )}
+            </Fragment>
+        )}
+    </div>
+}
+
+<style lang="scss">
+    .campaign-timers-head,
+    .campaign-timers-row {
+        display: grid;
+        grid-template-columns: 3.5rem minmax(0, 1.6fr) minmax(0, 0.9fr) minmax(0, 0.8fr) minmax(0, 0.9fr) minmax(0, 1fr);
+        gap: var(--space-s);
+        align-items: center;
+        font-size: var(--step--1);
+        white-space: nowrap;
+    }
+
+    .campaign-timers-head {
+        color: var(--highlight);
+        border-bottom: solid 1px var(--border-color);
+        padding-block-end: var(--space-3xs);
+    }
+
+    .campaign-timers-row {
+        padding-block: var(--space-3xs);
+
+        > * {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        &.is-done {
+            opacity: 0.5;
+        }
+    }
+
+    .campaign-timers-separator {
+        color: var(--highlight);
+        font-size: var(--step--1);
+        border-bottom: solid 1px var(--border-color);
+        padding: var(--space-s) 0 var(--space-3xs);
+    }
+
+    .campaign-timers-name {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        min-width: 0;
+        padding: 0;
+        color: var(--highlight);
+        background: none;
+        border: 0;
+        cursor: copy;
+        font: inherit;
+
+        img {
+            flex-shrink: 0;
+        }
+
+        span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        &.is-copied span {
+            color: var(--green);
+        }
+    }
+
+    .campaign-timers-eve {
+        border-bottom: 1px dotted var(--hairline-strong);
+    }
+
+    .campaign-timers-alliance {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+    }
+
+    .campaign-timers-countdown :global(.countdown) {
+        font-size: var(--step-1);
+        letter-spacing: 2px;
+        text-indent: 0;
+        color: var(--highlight);
+    }
+
+    .campaign-timers-muted {
+        color: var(--text-muted);
+    }
+
+    @media (max-width: 720px) {
+        .campaign-timers-head {
+            display: none;
+        }
+
+        .campaign-timers-row {
+            grid-template-columns: 3.5rem 1fr 1fr;
+            gap: var(--space-3xs);
+        }
+    }
+</style>

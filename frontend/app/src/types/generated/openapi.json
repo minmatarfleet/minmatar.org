@@ -3748,6 +3748,121 @@
         "title": "CampaignChoicesOut",
         "type": "object"
       },
+      "CampaignCoordinationOut": {
+        "description": "The campaign's coordination Discord (admins only).",
+        "properties": {
+          "channels": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CoordinationChannelOut"
+            },
+            "title": "Channels",
+            "type": "array"
+          },
+          "channels_unavailable": {
+            "default": false,
+            "title": "Channels Unavailable",
+            "type": "boolean"
+          },
+          "fleets_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleets Channel Id"
+          },
+          "guild_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guild Id"
+          },
+          "guild_name": {
+            "default": "",
+            "title": "Guild Name",
+            "type": "string"
+          },
+          "invite_url": {
+            "default": "",
+            "title": "Invite Url",
+            "type": "string"
+          },
+          "is_default": {
+            "default": true,
+            "title": "Is Default",
+            "type": "boolean"
+          },
+          "servers": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CoordinationServerOut"
+            },
+            "title": "Servers",
+            "type": "array"
+          },
+          "timers_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timers Channel Id"
+          }
+        },
+        "title": "CampaignCoordinationOut",
+        "type": "object"
+      },
+      "CampaignCoordinationRequest": {
+        "properties": {
+          "fleets_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleets Channel Id"
+          },
+          "guild_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guild Id"
+          },
+          "timers_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timers Channel Id"
+          }
+        },
+        "title": "CampaignCoordinationRequest",
+        "type": "object"
+      },
       "CampaignCreateRequest": {
         "properties": {
           "description_md": {
@@ -3857,6 +3972,101 @@
         "title": "CampaignCreated",
         "type": "object"
       },
+      "CampaignDestructionOut": {
+        "properties": {
+          "biggest_kill_isk": {
+            "default": 0,
+            "title": "Biggest Kill Isk",
+            "type": "integer"
+          },
+          "isk_destroyed_week": {
+            "default": 0,
+            "title": "Isk Destroyed Week",
+            "type": "integer"
+          },
+          "rows": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CampaignDestructionRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "structures_destroyed": {
+            "default": 0,
+            "title": "Structures Destroyed",
+            "type": "integer"
+          }
+        },
+        "title": "CampaignDestructionOut",
+        "type": "object"
+      },
+      "CampaignDestructionRow": {
+        "properties": {
+          "alliance_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alliance Id"
+          },
+          "alliance_ticker": {
+            "default": "",
+            "title": "Alliance Ticker",
+            "type": "string"
+          },
+          "is_structure": {
+            "default": false,
+            "title": "Is Structure",
+            "type": "boolean"
+          },
+          "isk_value": {
+            "default": 0,
+            "title": "Isk Value",
+            "type": "integer"
+          },
+          "killmail_id": {
+            "title": "Killmail Id",
+            "type": "integer"
+          },
+          "killmail_time": {
+            "format": "date-time",
+            "title": "Killmail Time",
+            "type": "string"
+          },
+          "name": {
+            "default": "",
+            "title": "Name",
+            "type": "string"
+          },
+          "type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type Id"
+          },
+          "type_name": {
+            "default": "",
+            "title": "Type Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "killmail_id",
+          "killmail_time"
+        ],
+        "title": "CampaignDestructionRow",
+        "type": "object"
+      },
       "CampaignDetail": {
         "properties": {
           "areas": {
@@ -3902,6 +4112,23 @@
             "title": "End At",
             "type": "string"
           },
+          "features": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CampaignFeatures"
+              }
+            ],
+            "default": {
+              "destruction": false,
+              "fleets": true,
+              "pilots": true,
+              "projects": true,
+              "structures": false,
+              "theater": true,
+              "timers": false,
+              "weekly_progress": true
+            }
+          },
           "fittings": {
             "default": [],
             "items": {
@@ -3935,6 +4162,18 @@
             },
             "title": "Parties",
             "type": "array"
+          },
+          "paused_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paused At"
           },
           "short_code": {
             "title": "Short Code",
@@ -4010,6 +4249,147 @@
           "totals"
         ],
         "title": "CampaignDetail",
+        "type": "object"
+      },
+      "CampaignFeatures": {
+        "description": "Which parts of the campaign page show. See models.CAMPAIGN_FEATURES.",
+        "properties": {
+          "destruction": {
+            "default": false,
+            "title": "Destruction",
+            "type": "boolean"
+          },
+          "fleets": {
+            "default": true,
+            "title": "Fleets",
+            "type": "boolean"
+          },
+          "pilots": {
+            "default": true,
+            "title": "Pilots",
+            "type": "boolean"
+          },
+          "projects": {
+            "default": true,
+            "title": "Projects",
+            "type": "boolean"
+          },
+          "structures": {
+            "default": false,
+            "title": "Structures",
+            "type": "boolean"
+          },
+          "theater": {
+            "default": true,
+            "title": "Theater",
+            "type": "boolean"
+          },
+          "timers": {
+            "default": false,
+            "title": "Timers",
+            "type": "boolean"
+          },
+          "weekly_progress": {
+            "default": true,
+            "title": "Weekly Progress",
+            "type": "boolean"
+          }
+        },
+        "title": "CampaignFeatures",
+        "type": "object"
+      },
+      "CampaignFeaturesPatch": {
+        "properties": {
+          "destruction": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destruction"
+          },
+          "fleets": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fleets"
+          },
+          "pilots": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pilots"
+          },
+          "projects": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projects"
+          },
+          "structures": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Structures"
+          },
+          "theater": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Theater"
+          },
+          "timers": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timers"
+          },
+          "weekly_progress": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weekly Progress"
+          }
+        },
+        "title": "CampaignFeaturesPatch",
         "type": "object"
       },
       "CampaignFittingOut": {
@@ -4297,7 +4677,7 @@
         "type": "object"
       },
       "CampaignOverlay": {
-        "description": "The desktop app's Campaigns window.",
+        "description": "The desktop app's Campaigns window.\n\n``campaign`` is the shape every installed version reads: the pilot's\nlive campaign. ``campaigns`` (added later) lists every live campaign.",
         "properties": {
           "campaign": {
             "anyOf": [
@@ -4308,6 +4688,14 @@
                 "type": "null"
               }
             ]
+          },
+          "campaigns": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CampaignOverlaySummary"
+            },
+            "title": "Campaigns",
+            "type": "array"
           }
         },
         "title": "CampaignOverlay",
@@ -4422,6 +4810,56 @@
         "title": "CampaignOverlayPilot",
         "type": "object"
       },
+      "CampaignOverlaySummary": {
+        "description": "One live campaign in the window's switcher.",
+        "properties": {
+          "features": {
+            "$ref": "#/components/schemas/CampaignFeatures"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "next_timers": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CampaignOverlayTimer"
+            },
+            "title": "Next Timers",
+            "type": "array"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/CampaignOverlayTotals"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "kind",
+          "status",
+          "features",
+          "totals"
+        ],
+        "title": "CampaignOverlaySummary",
+        "type": "object"
+      },
       "CampaignOverlaySystem": {
         "properties": {
           "change_24h": {
@@ -4528,6 +4966,66 @@
         "title": "CampaignOverlaySystem",
         "type": "object"
       },
+      "CampaignOverlayTimer": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "final": {
+            "title": "Final",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "integer"
+          },
+          "system": {
+            "title": "System",
+            "type": "string"
+          },
+          "type_name": {
+            "title": "Type Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "type_name",
+          "system",
+          "stage",
+          "final",
+          "at"
+        ],
+        "title": "CampaignOverlayTimer",
+        "type": "object"
+      },
+      "CampaignOverlayTotals": {
+        "properties": {
+          "isk_destroyed": {
+            "default": 0,
+            "title": "Isk Destroyed",
+            "type": "integer"
+          },
+          "ships_killed": {
+            "default": 0,
+            "title": "Ships Killed",
+            "type": "integer"
+          },
+          "structures_destroyed": {
+            "default": 0,
+            "title": "Structures Destroyed",
+            "type": "integer"
+          }
+        },
+        "title": "CampaignOverlayTotals",
+        "type": "object"
+      },
       "CampaignPartyOut": {
         "properties": {
           "alliance_id": {
@@ -4629,6 +5127,16 @@
               }
             ],
             "title": "End At"
+          },
+          "features": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CampaignFeaturesPatch"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "name": {
             "anyOf": [
@@ -4789,6 +5297,23 @@
             "title": "End At",
             "type": "string"
           },
+          "features": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CampaignFeatures"
+              }
+            ],
+            "default": {
+              "destruction": false,
+              "fleets": true,
+              "pilots": true,
+              "projects": true,
+              "structures": false,
+              "theater": true,
+              "timers": false,
+              "weekly_progress": true
+            }
+          },
           "fittings": {
             "items": {
               "$ref": "#/components/schemas/CampaignFittingOut"
@@ -4945,6 +5470,22 @@
           },
           "name": {
             "title": "Name",
+            "type": "string"
+          },
+          "owner_alliance_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Alliance Id"
+          },
+          "owner_alliance_ticker": {
+            "default": "",
+            "title": "Owner Alliance Ticker",
             "type": "string"
           },
           "reinforce_hour": {
@@ -5315,6 +5856,103 @@
           "goal"
         ],
         "title": "CampaignSystemSummary",
+        "type": "object"
+      },
+      "CampaignTimerOut": {
+        "description": "One row of the campaign timerboard.",
+        "properties": {
+          "alliance_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alliance Id"
+          },
+          "alliance_ticker": {
+            "default": "",
+            "title": "Alliance Ticker",
+            "type": "string"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "done": {
+            "default": false,
+            "title": "Done",
+            "type": "boolean"
+          },
+          "final": {
+            "title": "Final",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "destroyed",
+              "survived",
+              "passed"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "integer"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "structure_type": {
+            "title": "Structure Type",
+            "type": "string"
+          },
+          "system": {
+            "title": "System",
+            "type": "string"
+          },
+          "type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type Id"
+          },
+          "type_name": {
+            "title": "Type Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "structure_type",
+          "type_name",
+          "system",
+          "state",
+          "stage",
+          "final",
+          "at",
+          "outcome"
+        ],
+        "title": "CampaignTimerOut",
         "type": "object"
       },
       "CampaignTotals": {
@@ -6833,6 +7471,52 @@
           }
         },
         "title": "ContactPatchRequest",
+        "type": "object"
+      },
+      "CoordinationChannelOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "CoordinationChannelOut",
+        "type": "object"
+      },
+      "CoordinationServerOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_administrator": {
+            "default": false,
+            "title": "Is Administrator",
+            "type": "boolean"
+          },
+          "is_primary": {
+            "default": false,
+            "title": "Is Primary",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "CoordinationServerOut",
         "type": "object"
       },
       "CopyEveFleetRequest": {
@@ -57242,6 +57926,197 @@
         ]
       }
     },
+    "/api/campaigns/{slug}/coordination": {
+      "get": {
+        "description": "The campaign's coordination Discord server and channels. Admins\nonly: nobody else sees which server a campaign is run from.\n``guild_id`` lists another server's channels while choosing one.",
+        "operationId": "campaigns_endpoints_get_coordination_get_coordination",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "guild_id",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Guild Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignCoordinationOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Coordination",
+        "tags": [
+          "Campaigns"
+        ]
+      },
+      "put": {
+        "description": "Link the campaign to a server the bot is in, and pick its timers and\nfleet pings channels there. Admins only.",
+        "operationId": "campaigns_endpoints_put_coordination_put_coordination",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CampaignCoordinationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignCoordinationOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Put Coordination",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/api/campaigns/{slug}/destruction": {
+      "get": {
+        "description": "The Destruction tab: this week's ISK, structures killed, the biggest\nkill, and the kills themselves, newest first.",
+        "operationId": "campaigns_endpoints_get_destruction_get_campaign_destruction",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignDestructionOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthOptional": []
+          }
+        ],
+        "summary": "Get Campaign Destruction",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
     "/api/campaigns/{slug}/enlist": {
       "delete": {
         "operationId": "campaigns_endpoints_member_leave",
@@ -58362,7 +59237,7 @@
         ]
       },
       "patch": {
-        "description": "Rename, reschedule, or move a campaign between draft and live.",
+        "description": "Rename, reschedule, switch features, or move a campaign between\ndraft and live.",
         "operationId": "campaigns_endpoints_patch_settings_patch_campaign",
         "parameters": [
           {
@@ -59092,6 +59967,61 @@
           }
         ],
         "summary": "Get Timeline",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/api/campaigns/{slug}/timers": {
+      "get": {
+        "description": "The campaign timerboard: upcoming soonest first, then done.",
+        "operationId": "campaigns_endpoints_get_timers_get_campaign_timers",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CampaignTimerOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthOptional": []
+          }
+        ],
+        "summary": "Get Campaign Timers",
         "tags": [
           "Campaigns"
         ]
@@ -66319,7 +67249,7 @@
     },
     "/api/fleets/v3": {
       "get": {
-        "description": "List fleets matching the filter. Requires fleets.view_evefleet. Tribe group fleets are included when the viewer can see them; host_group_id lists one group's fleets.",
+        "description": "List fleets matching the filter. Requires fleets.view_evefleet. Tribe group fleets are included when the viewer can see them; host_group_id lists one group's fleets; campaign_id lists the fleets linked to one campaign (recent: the whole campaign, not just the last 30 days).",
         "operationId": "fleets_endpoints_catalog_get_v3_fleets_get_v3_fleets",
         "parameters": [
           {
@@ -66355,6 +67285,22 @@
                 }
               ],
               "title": "Host Group Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "campaign_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Campaign Id"
             }
           }
         ],

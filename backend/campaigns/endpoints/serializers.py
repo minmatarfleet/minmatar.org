@@ -20,6 +20,7 @@ from campaigns.models import (
 )
 from campaigns.services import advantage, snapshots, stats
 from campaigns.services import structures as structure_service
+from campaigns.services.tickers import alliance_tickers, owner_alliance
 from eveonline.models import EveCorporation, EveCharacter, EvePlayer
 from feed.models import FeedKillmail
 from fittings.models import EveFitting
@@ -250,8 +251,11 @@ def campaign_fittings(campaign: Campaign) -> list[dict]:
     ]
 
 
-def structure_out(structure, parties=None) -> dict:
+def structure_out(structure, parties=None, tickers=None) -> dict:
     timer = structure.timer
+    owner_id, owner_name = owner_alliance(structure)
+    if tickers is None:
+        tickers = alliance_tickers([owner_id], structure.campaign)
     return {
         "id": structure.id,
         "name": structure.name,
@@ -265,6 +269,8 @@ def structure_out(structure, parties=None) -> dict:
         "alliance_name": structure.alliance_name or "",
         "related_alliance_id": structure.related_alliance_id,
         "related_alliance_name": structure.related_alliance_name or "",
+        "owner_alliance_id": owner_id,
+        "owner_alliance_ticker": tickers.get(owner_id, "") or owner_name,
         "affiliation": structure_service.structure_affiliation(
             structure, parties=parties
         ),

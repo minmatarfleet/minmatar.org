@@ -56,5 +56,5 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         }}
     />
     :
-    <CampaignObjectivesTable week={week} systems={campaign.systems} />
+    <CampaignObjectivesTable week={week} systems={campaign.systems} paused={campaign.status === 'paused'} />
 }

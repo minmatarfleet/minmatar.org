@@ -447,6 +447,25 @@ class CampaignSettingsTab(AdminTab, admin.ModelAdmin):
             },
         ),
         (
+            "Features",
+            {
+                "fields": (
+                    "weekly_progress_enabled",
+                    "structures_enabled",
+                    "timers_enabled",
+                    "theater_enabled",
+                    "fleets_enabled",
+                    "destruction_enabled",
+                    "pilots_enabled",
+                    "projects_enabled",
+                ),
+                "description": (
+                    "Each switch shows or hides one part of the campaign "
+                    "page. A new campaign starts with its kind's preset."
+                ),
+            },
+        ),
+        (
             "Discord and fleets",
             {
                 "fields": (

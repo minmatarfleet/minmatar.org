@@ -1165,6 +1165,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/campaigns/{slug}/coordination": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Coordination
+         * @description The campaign's coordination Discord server and channels. Admins
+         *     only: nobody else sees which server a campaign is run from.
+         *     ``guild_id`` lists another server's channels while choosing one.
+         */
+        get: operations["campaigns_endpoints_get_coordination_get_coordination"];
+        /**
+         * Put Coordination
+         * @description Link the campaign to a server the bot is in, and pick its timers and
+         *     fleet pings channels there. Admins only.
+         */
+        put: operations["campaigns_endpoints_put_coordination_put_coordination"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/campaigns/{slug}/destruction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Campaign Destruction
+         * @description The Destruction tab: this week's ISK, structures killed, the biggest
+         *     kill, and the kills themselves, newest first.
+         */
+        get: operations["campaigns_endpoints_get_destruction_get_campaign_destruction"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/campaigns/{slug}/enlist": {
         parameters: {
             query?: never;
@@ -1465,7 +1513,8 @@ export interface paths {
         head?: never;
         /**
          * Patch Campaign
-         * @description Rename, reschedule, or move a campaign between draft and live.
+         * @description Rename, reschedule, switch features, or move a campaign between
+         *     draft and live.
          */
         patch: operations["campaigns_endpoints_patch_settings_patch_campaign"];
         trace?: never;
@@ -1618,6 +1667,26 @@ export interface paths {
         };
         /** Get Timeline */
         get: operations["campaigns_endpoints_public_get_timeline"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/campaigns/{slug}/timers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Campaign Timers
+         * @description The campaign timerboard: upcoming soonest first, then done.
+         */
+        get: operations["campaigns_endpoints_get_timers_get_campaign_timers"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3592,7 +3661,7 @@ export interface paths {
         };
         /**
          * Get V3 Fleets
-         * @description List fleets matching the filter. Requires fleets.view_evefleet. Tribe group fleets are included when the viewer can see them; host_group_id lists one group's fleets.
+         * @description List fleets matching the filter. Requires fleets.view_evefleet. Tribe group fleets are included when the viewer can see them; host_group_id lists one group's fleets; campaign_id lists the fleets linked to one campaign (recent: the whole campaign, not just the last 30 days).
          */
         get: operations["fleets_endpoints_catalog_get_v3_fleets_get_v3_fleets"];
         put?: never;
@@ -12436,6 +12505,57 @@ export interface components {
             /** Status */
             status: components["schemas"]["ChoiceOut"][];
         };
+        /**
+         * CampaignCoordinationOut
+         * @description The campaign's coordination Discord (admins only).
+         */
+        CampaignCoordinationOut: {
+            /**
+             * Channels
+             * @default []
+             */
+            channels?: components["schemas"]["CoordinationChannelOut"][];
+            /**
+             * Channels Unavailable
+             * @default false
+             */
+            channels_unavailable?: boolean;
+            /** Fleets Channel Id */
+            fleets_channel_id?: string | null;
+            /** Guild Id */
+            guild_id?: string | null;
+            /**
+             * Guild Name
+             * @default
+             */
+            guild_name?: string;
+            /**
+             * Invite Url
+             * @default
+             */
+            invite_url?: string;
+            /**
+             * Is Default
+             * @default true
+             */
+            is_default?: boolean;
+            /**
+             * Servers
+             * @default []
+             */
+            servers?: components["schemas"]["CoordinationServerOut"][];
+            /** Timers Channel Id */
+            timers_channel_id?: string | null;
+        };
+        /** CampaignCoordinationRequest */
+        CampaignCoordinationRequest: {
+            /** Fleets Channel Id */
+            fleets_channel_id?: string | null;
+            /** Guild Id */
+            guild_id?: string | null;
+            /** Timers Channel Id */
+            timers_channel_id?: string | null;
+        };
         /** CampaignCreateRequest */
         CampaignCreateRequest: {
             /**
@@ -12497,6 +12617,68 @@ export interface components {
              */
             systems?: string[];
         };
+        /** CampaignDestructionOut */
+        CampaignDestructionOut: {
+            /**
+             * Biggest Kill Isk
+             * @default 0
+             */
+            biggest_kill_isk?: number;
+            /**
+             * Isk Destroyed Week
+             * @default 0
+             */
+            isk_destroyed_week?: number;
+            /**
+             * Rows
+             * @default []
+             */
+            rows?: components["schemas"]["CampaignDestructionRow"][];
+            /**
+             * Structures Destroyed
+             * @default 0
+             */
+            structures_destroyed?: number;
+        };
+        /** CampaignDestructionRow */
+        CampaignDestructionRow: {
+            /** Alliance Id */
+            alliance_id?: number | null;
+            /**
+             * Alliance Ticker
+             * @default
+             */
+            alliance_ticker?: string;
+            /**
+             * Is Structure
+             * @default false
+             */
+            is_structure?: boolean;
+            /**
+             * Isk Value
+             * @default 0
+             */
+            isk_value?: number;
+            /** Killmail Id */
+            killmail_id: number;
+            /**
+             * Killmail Time
+             * Format: date-time
+             */
+            killmail_time: string;
+            /**
+             * Name
+             * @default
+             */
+            name?: string;
+            /** Type Id */
+            type_id?: number | null;
+            /**
+             * Type Name
+             * @default
+             */
+            type_name?: string;
+        };
         /** CampaignDetail */
         CampaignDetail: {
             /**
@@ -12540,6 +12722,19 @@ export interface components {
              */
             end_at: string;
             /**
+             * @default {
+             *       "destruction": false,
+             *       "fleets": true,
+             *       "pilots": true,
+             *       "projects": true,
+             *       "structures": false,
+             *       "theater": true,
+             *       "timers": false,
+             *       "weekly_progress": true
+             *     }
+             */
+            features?: components["schemas"]["CampaignFeatures"];
+            /**
              * Fittings
              * @default []
              */
@@ -12563,6 +12758,8 @@ export interface components {
              * @default []
              */
             parties?: components["schemas"]["CampaignPartyOut"][];
+            /** Paused At */
+            paused_at?: string | null;
             /** Short Code */
             short_code: string;
             /** Slug */
@@ -12602,6 +12799,71 @@ export interface components {
              */
             tagline?: string;
             totals: components["schemas"]["CampaignTotals"];
+        };
+        /**
+         * CampaignFeatures
+         * @description Which parts of the campaign page show. See models.CAMPAIGN_FEATURES.
+         */
+        CampaignFeatures: {
+            /**
+             * Destruction
+             * @default false
+             */
+            destruction?: boolean;
+            /**
+             * Fleets
+             * @default true
+             */
+            fleets?: boolean;
+            /**
+             * Pilots
+             * @default true
+             */
+            pilots?: boolean;
+            /**
+             * Projects
+             * @default true
+             */
+            projects?: boolean;
+            /**
+             * Structures
+             * @default false
+             */
+            structures?: boolean;
+            /**
+             * Theater
+             * @default true
+             */
+            theater?: boolean;
+            /**
+             * Timers
+             * @default false
+             */
+            timers?: boolean;
+            /**
+             * Weekly Progress
+             * @default true
+             */
+            weekly_progress?: boolean;
+        };
+        /** CampaignFeaturesPatch */
+        CampaignFeaturesPatch: {
+            /** Destruction */
+            destruction?: boolean | null;
+            /** Fleets */
+            fleets?: boolean | null;
+            /** Pilots */
+            pilots?: boolean | null;
+            /** Projects */
+            projects?: boolean | null;
+            /** Structures */
+            structures?: boolean | null;
+            /** Theater */
+            theater?: boolean | null;
+            /** Timers */
+            timers?: boolean | null;
+            /** Weekly Progress */
+            weekly_progress?: boolean | null;
         };
         /** CampaignFittingOut */
         CampaignFittingOut: {
@@ -12780,9 +13042,17 @@ export interface components {
         /**
          * CampaignOverlay
          * @description The desktop app's Campaigns window.
+         *
+         *     ``campaign`` is the shape every installed version reads: the pilot's
+         *     live campaign. ``campaigns`` (added later) lists every live campaign.
          */
         CampaignOverlay: {
             campaign?: components["schemas"]["CampaignOverlayCampaign"] | null;
+            /**
+             * Campaigns
+             * @default []
+             */
+            campaigns?: components["schemas"]["CampaignOverlaySummary"][];
         };
         /** CampaignOverlayCampaign */
         CampaignOverlayCampaign: {
@@ -12840,6 +13110,29 @@ export interface components {
             /** System */
             system?: string | null;
         };
+        /**
+         * CampaignOverlaySummary
+         * @description One live campaign in the window's switcher.
+         */
+        CampaignOverlaySummary: {
+            features: components["schemas"]["CampaignFeatures"];
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+            /**
+             * Next Timers
+             * @default []
+             */
+            next_timers?: components["schemas"]["CampaignOverlayTimer"][];
+            /** Slug */
+            slug: string;
+            /** Status */
+            status: string;
+            totals: components["schemas"]["CampaignOverlayTotals"];
+        };
         /** CampaignOverlaySystem */
         CampaignOverlaySystem: {
             /** Change 24H */
@@ -12872,6 +13165,42 @@ export interface components {
             solar_system_id: number;
             /** System Id */
             system_id: number;
+        };
+        /** CampaignOverlayTimer */
+        CampaignOverlayTimer: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Final */
+            final: boolean;
+            /** Name */
+            name: string;
+            /** Stage */
+            stage: number;
+            /** System */
+            system: string;
+            /** Type Name */
+            type_name: string;
+        };
+        /** CampaignOverlayTotals */
+        CampaignOverlayTotals: {
+            /**
+             * Isk Destroyed
+             * @default 0
+             */
+            isk_destroyed?: number;
+            /**
+             * Ships Killed
+             * @default 0
+             */
+            ships_killed?: number;
+            /**
+             * Structures Destroyed
+             * @default 0
+             */
+            structures_destroyed?: number;
         };
         /** CampaignPartyOut */
         CampaignPartyOut: {
@@ -12909,6 +13238,7 @@ export interface components {
             description_md?: string | null;
             /** End At */
             end_at?: string | null;
+            features?: components["schemas"]["CampaignFeaturesPatch"] | null;
             /** Name */
             name?: string | null;
             /** Start At */
@@ -12966,6 +13296,19 @@ export interface components {
              * Format: date-time
              */
             end_at: string;
+            /**
+             * @default {
+             *       "destruction": false,
+             *       "fleets": true,
+             *       "pilots": true,
+             *       "projects": true,
+             *       "structures": false,
+             *       "theater": true,
+             *       "timers": false,
+             *       "weekly_progress": true
+             *     }
+             */
+            features?: components["schemas"]["CampaignFeatures"];
             /** Fittings */
             fittings: components["schemas"]["CampaignFittingOut"][];
             /** Kind */
@@ -13026,6 +13369,13 @@ export interface components {
             killmail_id?: number | null;
             /** Name */
             name: string;
+            /** Owner Alliance Id */
+            owner_alliance_id?: number | null;
+            /**
+             * Owner Alliance Ticker
+             * @default
+             */
+            owner_alliance_ticker?: string;
             /** Reinforce Hour */
             reinforce_hour?: number | null;
             /** Related Alliance Id */
@@ -13156,6 +13506,52 @@ export interface components {
             victory_points?: number | null;
             /** Victory Points Threshold */
             victory_points_threshold?: number | null;
+        };
+        /**
+         * CampaignTimerOut
+         * @description One row of the campaign timerboard.
+         */
+        CampaignTimerOut: {
+            /** Alliance Id */
+            alliance_id?: number | null;
+            /**
+             * Alliance Ticker
+             * @default
+             */
+            alliance_ticker?: string;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /**
+             * Done
+             * @default false
+             */
+            done?: boolean;
+            /** Final */
+            final: boolean;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "destroyed" | "survived" | "passed";
+            /** Stage */
+            stage: number;
+            /** State */
+            state: string;
+            /** Structure Type */
+            structure_type: string;
+            /** System */
+            system: string;
+            /** Type Id */
+            type_id?: number | null;
+            /** Type Name */
+            type_name: string;
         };
         /** CampaignTotals */
         CampaignTotals: {
@@ -13852,6 +14248,30 @@ export interface components {
             is_active?: boolean | null;
             /** Notes */
             notes?: string | null;
+        };
+        /** CoordinationChannelOut */
+        CoordinationChannelOut: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** CoordinationServerOut */
+        CoordinationServerOut: {
+            /** Id */
+            id: string;
+            /**
+             * Is Administrator
+             * @default false
+             */
+            is_administrator?: boolean;
+            /**
+             * Is Primary
+             * @default false
+             */
+            is_primary?: boolean;
+            /** Name */
+            name: string;
         };
         /**
          * CopyEveFleetRequest
@@ -35044,6 +35464,137 @@ export interface operations {
             };
         };
     };
+    campaigns_endpoints_get_coordination_get_coordination: {
+        parameters: {
+            query?: {
+                guild_id?: string;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignCoordinationOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    campaigns_endpoints_put_coordination_put_coordination: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CampaignCoordinationRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignCoordinationOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    campaigns_endpoints_get_destruction_get_campaign_destruction: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignDestructionOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     campaigns_endpoints_member_enlist: {
         parameters: {
             query?: never;
@@ -36203,6 +36754,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TimelineEvent"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    campaigns_endpoints_get_timers_get_campaign_timers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignTimerOut"][];
                 };
             };
             /** @description Forbidden */
@@ -41035,6 +41624,7 @@ export interface operations {
             query?: {
                 fleet_filter?: "active" | "upcoming" | "recent";
                 host_group_id?: number | null;
+                campaign_id?: number | null;
             };
             header?: never;
             path?: never;

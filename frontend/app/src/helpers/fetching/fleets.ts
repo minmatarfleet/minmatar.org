@@ -39,6 +39,7 @@ export async function fetch_fleets_auth(
     simplified:boolean = false,
     fc_metrics:FleetCommanderMetrics[] | Promise<FleetCommanderMetrics[]> | null = null,
     host_group_id:number | null = null,
+    campaign_id:number | null = null,
 ) {
     let api_fleets:Fleet[]
 
@@ -50,7 +51,7 @@ export async function fetch_fleets_auth(
     fleets_metrics_promise?.catch(() => null)
     fc_metrics_promise?.catch(() => null)
 
-    api_fleets = await get_fleets_v3(access_token, upcoming ? 'active' : 'recent', host_group_id)
+    api_fleets = await get_fleets_v3(access_token, upcoming ? 'active' : 'recent', host_group_id, campaign_id)
     api_fleets = api_fleets.filter(api_fleet => api_fleet.fleet_commander)
     if (!upcoming)
         api_fleets = api_fleets.filter(api_fleet => api_fleet?.tracking || new Date(api_fleet.start_time ?? 0) < new Date())

@@ -1,0 +1,63 @@
+---
+/**
+ * Three chevrons (shield, armor, hull) filled up to the stage a structure
+ * timer starts; red when it is the final timer, when the structure dies.
+ */
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+interface Props {
+    stage:  number;
+    final:  boolean;
+    [propName: string]: any;
+}
+
+const {
+    stage,
+    final,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const tip = final
+    ? t('campaigns.timers.stage_final')
+    : stage >= 2 ? t('campaigns.timers.stage_armor') : t('campaigns.timers.stage_anchoring')
+---
+
+<span
+    class:list={['[ timer-stage ]', { 'is-final': final }, Astro.props.class]}
+    data-tippy-content={tip}
+    aria-label={tip}
+    role="img"
+    {...attributes}
+>
+    {[1, 2, 3].map((step) =>
+        <svg class:list={[step <= stage ? 'is-on' : 'is-off']} viewBox="0 0 10 12" width="10" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M1.5 2l4 4-4 4" />
+        </svg>
+    )}
+</span>
+
+<style lang="scss">
+    .timer-stage {
+        display: inline-flex;
+        gap: 1px;
+
+        svg {
+            display: block;
+        }
+
+        .is-on {
+            color: var(--highlight);
+        }
+
+        .is-off {
+            color: var(--hairline-strong);
+        }
+
+        &.is-final .is-on {
+            color: var(--fleet-red);
+        }
+    }
+</style>

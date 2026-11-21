@@ -1,0 +1,36 @@
+---
+/**
+ * Resume a paused campaign (managers): sets it active and reloads the page,
+ * which redraws the header, the objectives and the tabs.
+ */
+// no-error-refetch: a resume click; a refusal shows in the banner.
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+import { change_campaign } from '@helpers/api.minmatar.org/campaigns'
+import { refusal_text } from '@helpers/campaign_manage'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!user || !auth_token) return HTTP_403_Forbidden()
+
+const gates = await get_gates(Astro)
+if (!can(gates, 'campaigns.manage')) return HTTP_403_Forbidden()
+
+const slug = Astro.url.searchParams.get('slug') ?? ''
+if (!/^[a-z0-9-]+$/.test(slug) || Astro.request.method !== 'POST') return HTTP_403_Forbidden()
+
+let error_message = ''
+try {
+    await change_campaign(slug, auth_token, 'PATCH', '/settings', { status: 'active' })
+    Astro.response.headers.set('HX-Refresh', 'true')
+} catch (error) {
+    error_message = refusal_text(error, t('campaigns.action_failed'))
+}
+---
+
+<section id="campaign-paused-banner" role="alert">
+    {error_message && <p class="[ manage-field__error ]">{error_message}</p>}
+</section>

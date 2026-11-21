@@ -8,12 +8,15 @@ import { campaign_objective_rows } from '@helpers/fetching/campaigns'
 interface Props {
     week:               CampaignWeek | null;
     systems:            CampaignSystemSummary[];
+    /** A paused campaign keeps its rows, each reading "Paused". */
+    paused?:            boolean;
     [propName: string]: any;
 }
 
 const {
     week,
     systems,
+    paused = false,
     ...attributes
 } = Astro.props
 
@@ -34,7 +37,7 @@ import CampaignObjectiveRow from '@components/blocks/CampaignObjectiveRow.astro'
                 <small>{t('campaigns.objective.column_progress')}</small>
                 <small class="[ text-right ]">{t('campaigns.objective.column_change')}</small>
             </div>
-            {rows.map(row => <CampaignObjectiveRow row={row} />)}
+            {rows.map(row => <CampaignObjectiveRow row={row} paused={paused} />)}
         </>
     }
 </div>
