@@ -26,6 +26,7 @@ function card(changes: Partial<StructureLocationCard> = {}): StructureLocationCa
         type_name: 'Azbel',
         staging: false,
         deployment: false,
+        industry_delivery: false,
         fleets: false,
         freight: false,
         freight_route: false,
@@ -121,6 +122,14 @@ describe('banners and tags', () => {
     it('tags a freight route without freight, and never open orders', () => {
         const stop = card({ freight_route: true, industry_orders: 3 })
         expect(structure_flags(stop).map((flag) => flag.kind)).toEqual(['freight_route'])
+    })
+
+    it('tags industry delivery on the hero only, never on the staging', () => {
+        const forward = card({ industry_delivery: true })
+        expect(structure_flags(forward).map((flag) => flag.kind)).toEqual(['industry_delivery'])
+        expect(structure_flags(forward, { banner: false })).toEqual([])
+        const home = card({ staging: true, industry_delivery: true })
+        expect(structure_flags(home).map((flag) => flag.kind)).toEqual(['home'])
     })
 })
 

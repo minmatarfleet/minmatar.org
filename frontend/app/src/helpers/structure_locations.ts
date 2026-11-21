@@ -16,14 +16,15 @@ export function parse_structure_view(requested: string | null): StructureView {
     return VIEW_ALIASES[name] ?? 'all'
 }
 
-export type StructureFlag = 'home' | 'deployment' | 'fleets' | 'freight' | 'freight_route' | 'market'
+export type StructureFlag = 'home' | 'deployment' | 'fleets' | 'freight' | 'freight_route' | 'market' | 'industry_delivery'
 
 /** Status tags the site derives from EveLocation. Browse cards show Home and
  * Deployment as a banner instead, so they ask for the tags without them
  * (`banner: false`). Open industry orders are not a tag: the location page
- * has its own Industry orders tool. */
+ * has its own Industry orders tool. Industry delivery is a hero tag only,
+ * and never on the staging: orders always deliver there. */
 export function structure_flags(
-    card: Pick<StructureLocationCard, 'staging' | 'deployment' | 'fleets' | 'freight' | 'freight_route' | 'market'>,
+    card: Pick<StructureLocationCard, 'staging' | 'deployment' | 'fleets' | 'freight' | 'freight_route' | 'market'> & Partial<Pick<StructureLocationCard, 'industry_delivery'>>,
     { banner = true }: { banner?: boolean } = {},
 ) {
     const flags: { kind: StructureFlag, count?: number }[] = []
@@ -33,6 +34,7 @@ export function structure_flags(
     if (card.freight) flags.push({ kind: 'freight' })
     if (card.freight_route) flags.push({ kind: 'freight_route' })
     if (card.market) flags.push({ kind: 'market' })
+    if (banner && card.industry_delivery && !card.staging) flags.push({ kind: 'industry_delivery' })
     return flags
 }
 
@@ -44,6 +46,7 @@ export const FLAG_ICONS: Record<StructureFlag, string> = {
     freight: '/images/icons/48px-Cargo.png',
     freight_route: '/images/icons/48px-Map.png',
     market: '/images/icons/48px-Market.png',
+    industry_delivery: '/images/icons/48px-Industry.png',
 }
 
 /** EVE icons for what a rig builds: ship-tree class symbols for hulls, item
