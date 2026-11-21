@@ -16,7 +16,7 @@ let error: string | null = null
 try {
     const form = await Astro.request.formData()
     const hour = String(form.get('reinforce_hour') ?? '')
-    const audience = String(form.get('audience') ?? 'alliance')
+    const audience = String(form.get('audience') ?? 'public')
     const dock_mode = form.get('dock_mode')
     const dock_access_names = dock_mode === null
         ? undefined

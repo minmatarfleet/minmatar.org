@@ -124,8 +124,8 @@ class EveLocation(MinmatarSoftDeleteModel):
     audience = models.CharField(
         max_length=16,
         choices=AUDIENCE_CHOICES,
-        default=AUDIENCE_ALLIANCE,
-        db_default=AUDIENCE_ALLIANCE,
+        default=AUDIENCE_PUBLIC,
+        db_default=AUDIENCE_PUBLIC,
     )
     good_for = models.JSONField(
         default=list,

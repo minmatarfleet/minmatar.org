@@ -199,7 +199,7 @@ class LocationSubmissionRequest(Schema):
     type_id: Optional[int] = None
     short_name: str = ""
     reinforce_hour: Optional[int] = None
-    audience: str = EveLocation.AUDIENCE_ALLIANCE
+    audience: str = EveLocation.AUDIENCE_PUBLIC
     audience_tribe_group_ids: List[int] = []
     good_for: List[str] = []
     description: str = ""

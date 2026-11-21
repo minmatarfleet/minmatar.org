@@ -94,6 +94,7 @@ class LocationApiTestCase(TestCase):
             is_structure=True,
             staging_active=True,
             freight_active=True,
+            audience=EveLocation.AUDIENCE_ALLIANCE,
         )
         self.public = EveLocation.objects.create(
             location_id=60003760,
@@ -135,6 +136,47 @@ class LocationApiTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         names = [row["short_name"] for row in response.json()["locations"]]
         self.assertEqual(names, ["Jita"])
+
+    def test_new_locations_are_public(self):
+        location = EveLocation.objects.create(
+            location_id=60008494,
+            location_name="Amarr VIII (Oris) - Emperor Family Academy",
+            solar_system_id=30002187,
+            solar_system_name="Amarr",
+            short_name="Amarr",
+        )
+        self.assertEqual(location.audience, EveLocation.AUDIENCE_PUBLIC)
+        response = self.client.get("/api/structures/locations")
+        names = [row["short_name"] for row in response.json()["locations"]]
+        self.assertIn("Amarr", names)
+
+    def test_migration_opens_default_alliance_locations(self):
+        # pylint: disable=import-outside-toplevel
+        from importlib import import_module
+
+        from django.apps import apps
+
+        migration = import_module(
+            "eveonline.migrations.0119_locations_public_by_default"
+        )
+        chosen = EveLocation.objects.create(
+            location_id=60008494,
+            location_name="Amarr VIII (Oris) - Emperor Family Academy",
+            solar_system_id=30002187,
+            solar_system_name="Amarr",
+            short_name="Amarr",
+            audience=EveLocation.AUDIENCE_ALLIANCE,
+        )
+        LocationChange.objects.create(
+            location=chosen,
+            kind="audience",
+            summary="changed who can see it",
+        )
+        migration.open_default_alliance_locations(apps, None)
+        self.location.refresh_from_db()
+        chosen.refresh_from_db()
+        self.assertEqual(self.location.audience, EveLocation.AUDIENCE_PUBLIC)
+        self.assertEqual(chosen.audience, EveLocation.AUDIENCE_ALLIANCE)
 
     def test_alliance_sees_alliance_locations_and_holdings(self):
         self._grant("view_evestructure", "structures")
@@ -246,6 +288,7 @@ class LocationApiTestCase(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         location = EveLocation.objects.get(location_id=1035466617946)
+        self.assertEqual(location.audience, EveLocation.AUDIENCE_PUBLIC)
         self.assertEqual(location.type_id, 35827)
         self.assertEqual(location.reinforce_hour, 20)
         self.assertEqual(len(location.fitting), 6)

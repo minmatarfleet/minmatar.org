@@ -114,7 +114,7 @@ try {
             type_id: state.type_id,
             short_name: text_field('short_name'),
             reinforce_hour: state.reinforce_hour,
-            audience: text_field('audience') === 'public' ? 'public' : 'alliance',
+            audience: text_field('audience') === 'alliance' ? 'alliance' : 'public',
             audience_tribe_group_ids: [],
             good_for: form.getAll('good_for').map(String),
             description: text_field('description'),

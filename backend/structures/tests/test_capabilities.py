@@ -154,6 +154,7 @@ class FreightRouteAndHoldingsTestCase(TestCase):
             solar_system_name="Olettiers",
             short_name="Olettiers",
             is_structure=True,
+            audience=EveLocation.AUDIENCE_ALLIANCE,
         )
 
     def _grant(self, user, codename, app_label):
