@@ -370,21 +370,141 @@ def alliance_holdings(location_id: int) -> dict:
     }
 
 
-def _pilot_rows(pilots: dict) -> List[dict]:
+USERS_CACHE_SECONDS = 600
+NPC_CORPORATION_MAX = 2_000_000
+RECENT_JOB_DAYS = 90
+
+
+def location_users(location_id: int) -> dict:
+    """Corporations and pilots that use one structure, for anyone who can
+    see it. Use is any of: items, a jump or medical clone, a blueprint, or an
+    industry job in the last 90 days. The answer names who, never how: one
+    row per pilot (their main) and per corporation, nothing else."""
     # pylint: disable=import-outside-toplevel
-    from eveonline.helpers.characters import user_primary_character
+    from django.core.cache import cache
+
+    key = f"structures:location_users:v1:{location_id}"
+    cached = cache.get(key)
+    if cached is None:
+        cached = _location_users(location_id)
+        cache.set(key, cached, USERS_CACHE_SECONDS)
+    return cached
+
+
+def _location_users(location_id: int) -> dict:
+    # pylint: disable=import-outside-toplevel
+    from datetime import timedelta
+
     from django.contrib.auth.models import User
 
-    users = User.objects.in_bulk(
-        [p["user_id"] for p in pilots.values() if p["user_id"]]
+    from eveonline.helpers.characters.identity import (
+        primary_characters_for_users,
+    )
+    from eveonline.models import (
+        EveCharacterBlueprint,
+        EveCharacterIndustryJob,
+        EveCorporation,
+        EveCorporationBlueprint,
+        EveCorporationIndustryJob,
+    )
+
+    since = timezone.now() - timedelta(days=RECENT_JOB_DAYS)
+    character_pks = set()
+    for query in (
+        EveCharacterAsset.objects.filter(location_id=location_id),
+        EveCharacterClone.objects.filter(location_id=location_id),
+        EveCharacterBlueprint.objects.filter(location_id=location_id),
+        EveCharacterIndustryJob.objects.filter(
+            location_id=location_id, end_date__gte=since
+        ),
+    ):
+        character_pks.update(
+            query.values_list("character_id", flat=True).distinct()
+        )
+    user_ids = set(
+        EveCharacter.objects.filter(
+            Q(pk__in=character_pks) | Q(medical_clone_location_id=location_id),
+            user__isnull=False,
+        )
+        .values_list("user_id", flat=True)
+        .distinct()
+    )
+
+    active = User.objects.filter(pk__in=user_ids, is_active=True).values_list(
+        "pk", flat=True
+    )
+    mains = list(primary_characters_for_users(active).values())
+
+    # NPC corporations (ids under 2,000,000) are starter and school corps,
+    # not anyone's corporation; their pilots still count.
+    corporation_ids = {
+        m.corporation_id
+        for m in mains
+        if m.corporation_id and m.corporation_id >= NPC_CORPORATION_MAX
+    }
+    for query in (
+        EveCorporationIndustryJob.objects.filter(
+            location_id=location_id, end_date__gte=since
+        ),
+        EveCorporationBlueprint.objects.filter(location_id=location_id),
+    ):
+        corporation_ids.update(
+            cid
+            for cid in query.values_list(
+                "corporation__corporation_id", flat=True
+            ).distinct()
+            if cid >= NPC_CORPORATION_MAX
+        )
+    names = dict(
+        EveCorporation.objects.filter(
+            corporation_id__in=corporation_ids
+        ).values_list("corporation_id", "name")
+    )
+
+    pilots_per_corp = {}
+    for main in mains:
+        if main.corporation_id not in corporation_ids:
+            continue
+        pilots_per_corp[main.corporation_id] = (
+            pilots_per_corp.get(main.corporation_id, 0) + 1
+        )
+    corporations = [
+        {
+            "corporation_id": cid,
+            "name": names.get(cid) or str(cid),
+            "pilots": pilots_per_corp.get(cid, 0),
+        }
+        for cid in corporation_ids
+    ]
+    pilots = [
+        {
+            "character_id": main.character_id,
+            "name": main.character_name,
+            "corporation_id": main.corporation_id,
+            "corporation_name": names.get(main.corporation_id, ""),
+        }
+        for main in mains
+    ]
+    return {
+        "corporations": sorted(
+            corporations, key=lambda c: (-c["pilots"], c["name"].lower())
+        ),
+        "pilots": sorted(pilots, key=lambda p: p["name"].lower()),
+    }
+
+
+def _pilot_rows(pilots: dict) -> List[dict]:
+    # pylint: disable=import-outside-toplevel
+    from eveonline.helpers.characters.identity import (
+        primary_characters_for_users,
+    )
+
+    primaries = primary_characters_for_users(
+        p["user_id"] for p in pilots.values() if p["user_id"]
     )
     out = []
     for pilot in pilots.values():
-        primary = (
-            user_primary_character(users[pilot["user_id"]])
-            if pilot["user_id"] in users
-            else None
-        )
+        primary = primaries.get(pilot["user_id"])
         characters = sorted(pilot["characters"].items(), key=lambda c: c[1])
         main_id, main_name = (
             (primary.character_id, primary.character_name)

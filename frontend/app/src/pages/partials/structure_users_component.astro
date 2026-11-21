@@ -1,0 +1,135 @@
+---
+/**
+ * Who uses one structure, for the public Corporations and Pilots tabs. The
+ * API names who, never how (items, clones, blueprints and jobs all count the
+ * same), so this lists names and nothing else: pilots by their main, and
+ * corporations with how many of those pilots fly for them.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { StructureLocationUsers } from '@dtypes/api.minmatar.org'
+import { get_request_user } from '@helpers/request_user'
+import { get_structure_users } from '@helpers/api.minmatar.org/structure_locations'
+import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
+
+const { auth_token } = get_request_user(Astro)
+
+const location_id = parseInt(Astro.url.searchParams.get('id') ?? '0')
+const view = Astro.url.searchParams.get('view') === 'pilots' ? 'pilots' : 'corporations'
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+let users: StructureLocationUsers | null = null
+let fetch_error: Error | null = null
+try {
+    users = await get_structure_users(auth_token, location_id)
+} catch (failure) {
+    fetch_error = failure as Error
+}
+
+const corporations = users?.corporations ?? []
+const pilots = users?.pilots ?? []
+const count = view === 'pilots' ? pilots.length : corporations.length
+const lead = view === 'pilots'
+    ? (count === 1 ? t('structures.users.pilots_one') : t('structures.users.pilots').replace('~COUNT', String(count)))
+    : (count === 1 ? t('structures.users.corporations_one') : t('structures.users.corporations').replace('~COUNT', String(count)))
+
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{fetch_error
+    ? <ErrorRefetch args={{ partial: translatePath(`/partials/structure_users_component/?id=${location_id}&view=${view}`), error: fetch_error, delay }} />
+    : count === 0
+        ? <EmptyState title={t('structures.users.empty')} hint={t('structures.users.hint')} />
+        : (
+            <section class="[ structure-users ]" aria-label={lead}>
+                <p class="[ structure-users__lead ]">{`${lead} ${t('structures.users.hint')}`}</p>
+                <ul class="[ structure-users__list ]">
+                    {view === 'pilots'
+                        ? pilots.map((pilot) => (
+                            <li>
+                                <img src={get_player_icon(pilot.character_id, 64)} alt="" width="40" height="40" loading="lazy" />
+                                <span class="[ structure-users__name ]">
+                                    <b title={pilot.name}>{pilot.name}</b>
+                                    {pilot.corporation_name && <small title={pilot.corporation_name}>{pilot.corporation_name}</small>}
+                                </span>
+                            </li>
+                        ))
+                        : corporations.map((corporation) => (
+                            <li>
+                                <img src={get_corporation_logo(corporation.corporation_id, 64)} alt="" width="40" height="40" loading="lazy" />
+                                <span class="[ structure-users__name ]">
+                                    <b title={corporation.name}>{corporation.name}</b>
+                                    {corporation.pilots > 0 &&
+                                        <small>{corporation.pilots === 1
+                                            ? t('structures.users.corp_pilots_one')
+                                            : t('structures.users.corp_pilots').replace('~COUNT', String(corporation.pilots))}</small>
+                                    }
+                                </span>
+                            </li>
+                        ))
+                    }
+                </ul>
+            </section>
+        )
+}
+
+<style lang="scss">
+    .structure-users {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .structure-users__lead {
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
+    .structure-users__list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+        gap: var(--space-2xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: grid;
+            grid-template-columns: 2.5rem minmax(0, 1fr);
+            align-items: center;
+            gap: var(--space-xs);
+            padding: var(--space-2xs) var(--space-s);
+            background-color: var(--component-background);
+        }
+
+        img {
+            display: block;
+            inline-size: 2.5rem;
+            block-size: 2.5rem;
+        }
+    }
+
+    .structure-users__name {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+
+        b,
+        small {
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        b {
+            color: var(--highlight);
+        }
+
+        small {
+            font-size: var(--step--1);
+            color: var(--text-muted);
+        }
+    }
+</style>

@@ -184,7 +184,8 @@ class FreightRouteAndHoldingsTestCase(TestCase):
             ).exists()
         )
 
-    def test_holdings_need_manage(self):
+    def test_holdings_need_superuser(self):
+        self._grant(self.user, "change_evelocation", "eveonline")
         response = self.client.get(
             f"/api/structures/locations/{self.location.location_id}/holdings",
             **self._auth(),
@@ -192,7 +193,7 @@ class FreightRouteAndHoldingsTestCase(TestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_holdings_group_alts_under_one_pilot(self):
-        self._grant(self.user, "change_evelocation", "eveonline")
+        self.make_superuser()
         other = User.objects.create(username="other")
         mine = [
             EveCharacter.objects.create(
@@ -232,6 +233,69 @@ class FreightRouteAndHoldingsTestCase(TestCase):
         self.assertEqual(first["top_items"][0]["type_name"], "Rifter")
         rifter = data["by_item"][0]
         self.assertEqual((rifter["count"], rifter["holders"]), (3, 2))
+
+    def test_users_name_mains_and_corporations_only(self):
+        # pylint: disable=import-outside-toplevel
+        from eveonline.helpers.characters import set_primary_character
+        from eveonline.models import EveCharacterClone, EveCorporation
+
+        self._grant(self.user, "view_evestructure", "structures")
+        EveCorporation.objects.create(corporation_id=98000001, name="Corp A")
+        other = User.objects.create(username="other")
+        main = EveCharacter.objects.create(
+            character_id=91000001,
+            character_name="Main",
+            corporation_id=98000001,
+            user=self.user,
+        )
+        alt = EveCharacter.objects.create(
+            character_id=91000002,
+            character_name="Alt",
+            corporation_id=98000002,
+            user=self.user,
+        )
+        set_primary_character(self.user, main)
+        theirs = EveCharacter.objects.create(
+            character_id=91000003,
+            character_name="Other",
+            corporation_id=98000001,
+            user=other,
+        )
+        set_primary_character(other, theirs)
+        EveCharacter.objects.create(
+            character_id=91000004, character_name="Elsewhere", user=other
+        )
+        EveCharacterAsset.objects.create(
+            character=alt,
+            type_id=587,
+            type_name="Rifter",
+            location_id=self.location.location_id,
+            location_name=self.location.location_name,
+        )
+        EveCharacterClone.objects.create(
+            character=theirs, clone_id=1, location_id=self.location.location_id
+        )
+        response = self.client.get(
+            f"/api/structures/locations/{self.location.location_id}/users",
+            **self._auth(),
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(
+            [p["name"] for p in data["pilots"]], ["Main", "Other"]
+        )
+        self.assertEqual(
+            data["corporations"],
+            [{"corporation_id": 98000001, "name": "Corp A", "pilots": 2}],
+        )
+        self.assertNotIn("Rifter", response.content.decode())
+        self.assertNotIn("Alt", response.content.decode())
+
+    def test_users_hidden_when_location_is_not_visible(self):
+        response = self.client.get(
+            f"/api/structures/locations/{self.location.location_id}/users",
+        )
+        self.assertEqual(response.status_code, 404)
 
 
 class SameFittingTestCase(TestCase):

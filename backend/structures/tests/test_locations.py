@@ -115,6 +115,21 @@ class LocationApiTestCase(TestCase):
     def _auth(self):
         return {"HTTP_AUTHORIZATION": f"Bearer {self.token}"}
 
+    def test_station_card_shows_esi_services(self):
+        stations = {
+            60003760: (1529, ["market", "cloning", "insurance", "labratory"])
+        }
+        with patch(
+            "structures.location_router._stations", return_value=stations
+        ):
+            response = self.client.get("/api/structures/locations")
+        card = response.json()["locations"][0]
+        self.assertEqual(
+            [m["label"] for m in card["service_modules"]],
+            ["Clone bay", "Research", "Market"],
+        )
+        self.assertTrue(card["industry"])
+
     def test_signed_out_sees_public_only(self):
         response = self.client.get("/api/structures/locations")
         self.assertEqual(response.status_code, 200)

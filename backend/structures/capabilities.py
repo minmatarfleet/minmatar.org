@@ -270,6 +270,36 @@ def service_type_ids(names: Iterable[str]) -> Dict[str, int]:
     )
 
 
+# NPC station services from ESI, shown like a structure's service modules:
+# (ESI service names, label, the Standup module whose icon stands for it).
+# ESI spells the lab service "labratory".
+STATION_SERVICES = (
+    (
+        ("jump-clone-facility", "cloning"),
+        "Clone bay",
+        "Standup Cloning Center I",
+    ),
+    (
+        ("reprocessing-plant",),
+        "Reprocessing",
+        "Standup Reprocessing Facility I",
+    ),
+    (("factory",), "Manufacturing", "Standup Manufacturing Plant I"),
+    (("labratory", "laboratory"), "Research", "Standup Research Lab I"),
+    (("market",), "Market", "Standup Market Hub I"),
+)
+
+
+def station_service_modules(esi_services: Iterable[str]) -> List[dict]:
+    """The station's ESI services as service-module rows, in a fixed order."""
+    have = set(esi_services)
+    return [
+        {"name": module, "label": label, "slot": "service"}
+        for names, label, module in STATION_SERVICES
+        if have.intersection(names)
+    ]
+
+
 INDUSTRY_SERVICE_WORDS = (
     "Manufacturing Plant",
     "Shipyard",
