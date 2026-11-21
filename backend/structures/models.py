@@ -286,7 +286,7 @@ class LocationSubmission(models.Model):
     paste_text = models.TextField(blank=True, default="")
     fitting = models.JSONField(default=list, blank=True)
     reinforce_hour = models.PositiveSmallIntegerField(null=True, blank=True)
-    audience = models.CharField(max_length=16, default="alliance")
+    audience = models.CharField(max_length=16, default="public")
     audience_tribe_group_ids = models.JSONField(default=list, blank=True)
     good_for = models.JSONField(default=list, blank=True)
     description = models.TextField(blank=True, default="")

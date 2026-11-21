@@ -29565,7 +29565,7 @@
       "LocationSubmissionRequest": {
         "properties": {
           "audience": {
-            "default": "alliance",
+            "default": "public",
             "title": "Audience",
             "type": "string"
           },

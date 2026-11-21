@@ -23256,7 +23256,7 @@ export interface components {
         LocationSubmissionRequest: {
             /**
              * Audience
-             * @default alliance
+             * @default public
              */
             audience?: string;
             /**
