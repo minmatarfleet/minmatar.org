@@ -18,6 +18,7 @@ from django.db.models import Max
 
 from capabilities.engine.sde import _Source
 from capabilities.services import download_build, latest_published_build
+from industry.helpers.blueprint_sde import load_missing_blueprints
 from industry.models import InventionDecryptor, InventionOutcome
 
 logger = logging.getLogger(__name__)
@@ -178,6 +179,8 @@ def load_from_path(path: str | Path) -> Tuple[int, int, int]:
     if not outcomes:
         raise ValueError(f"No invention rows found in {path}")
     n_outcomes, n_decryptors = store(outcomes, decryptors)
+    # New hulls the third-party SDE mirror has not caught up with yet.
+    load_missing_blueprints(path)
     logger.info(
         "Loaded invention data from SDE build %s: %s outcomes, %s decryptors",
         build,
@@ -194,10 +197,13 @@ def stored_build() -> int:
     )
 
 
-def refresh_if_new() -> Optional[int]:
-    """Download CCP's newest SDE when it is newer than our rows. Returns it."""
+def refresh_if_new(force: bool = False) -> Optional[int]:
+    """Download CCP's newest SDE when it is newer than our rows. Returns it.
+
+    ``force`` reloads the newest build even when ours already matches it.
+    """
     latest = latest_published_build()
-    if stored_build() >= latest:
+    if not force and stored_build() >= latest:
         return None
     with tempfile.TemporaryDirectory() as directory:
         path = download_build(latest, directory)

@@ -2,6 +2,7 @@
 
 from unittest.mock import patch
 
+from django.core.cache import cache
 from django.test import TestCase, override_settings
 
 from industry.helpers.lp_catalog import (
@@ -203,6 +204,30 @@ class LoyaltyStoreHelperTestCase(TestCase):
             offer = ensure_loyalty_store_offers_for_blueprint(TYFI_BP_TYPE_ID)
             mock_sync.assert_not_called()
         self.assertIsNone(offer)
+
+    @override_settings(ALLOW_LIVE_ESI_IN_TESTS=True)
+    def test_ensure_blueprint_syncs_once_for_offerless_blueprint(self):
+        # A pirate hull BPC no synced store sells: one sync, then remembered.
+        cache.clear()
+        bhaalgorn_bp = 17921
+        with patch(
+            "industry.helpers.loyalty_store.sync_loyalty_store_offers"
+        ) as mock_sync:
+            self.assertIsNone(
+                ensure_loyalty_store_offers_for_blueprint(bhaalgorn_bp)
+            )
+            self.assertIsNone(get_offer_for_blueprint_type(bhaalgorn_bp))
+            self.assertIsNone(get_offer_for_blueprint_type(bhaalgorn_bp))
+        mock_sync.assert_called_once()
+
+    @override_settings(ALLOW_LIVE_ESI_IN_TESTS=True)
+    def test_ensure_blueprint_survives_failed_sync(self):
+        cache.clear()
+        with patch(
+            "industry.helpers.loyalty_store.sync_loyalty_store_offers",
+            side_effect=RuntimeError("ESI down"),
+        ):
+            self.assertIsNone(get_offer_for_blueprint_type(TYFI_BP_TYPE_ID))
 
     def test_lp_catalog_type_ids_includes_required(self):
         sync_loyalty_store_offers(
