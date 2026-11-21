@@ -24,7 +24,13 @@ from app.cache import CachedRollup
 from campaigns.models import CampaignSiteCompletion
 from discord.models import DiscordChannelActivityRecord, DiscordUser
 from eveonline.client import live_esi_allowed
-from eveonline.constants import MINMATAR_FLEET_ALLIANCE_ID
+from eveonline.constants import (
+    AMARR_FACTION_ID,
+    CALDARI_FACTION_ID,
+    GALLENTE_FACTION_ID,
+    MINMATAR_FACTION_ID,
+    MINMATAR_FLEET_ALLIANCE_ID,
+)
 from eveonline.helpers.characters.identity import primary_characters_for_users
 from eveonline.models import (
     EveAlliance,
@@ -61,10 +67,10 @@ VOICE_MIN_PILOTS = 3
 MANUFACTURING_ACTIVITY_ID = 1
 
 FACTION_MILITIA_NAMES = {
-    500001: "the Caldari Militia",
-    500002: "the Minmatar Militia",
-    500003: "the Amarr Militia",
-    500004: "the Gallente Militia",
+    CALDARI_FACTION_ID: "the Caldari Militia",
+    MINMATAR_FACTION_ID: "the Minmatar Militia",
+    AMARR_FACTION_ID: "the Amarr Militia",
+    GALLENTE_FACTION_ID: "the Gallente Militia",
     500010: "the Guristas",
     500011: "the Angel Cartel",
 }

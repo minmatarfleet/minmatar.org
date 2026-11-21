@@ -9,7 +9,10 @@ from django.utils import timezone
 from alliance.helpers.landing_pulse import build_fast, build_slow
 from app.test import TestCase
 from discord.models import DiscordChannelActivityRecord, DiscordUser
-from eveonline.constants import MINMATAR_FLEET_ALLIANCE_ID
+from eveonline.constants import (
+    AMARR_FACTION_ID,
+    MINMATAR_FLEET_ALLIANCE_ID,
+)
 from eveonline.helpers.characters import set_primary_character
 from eveonline.models import (
     EveAlliance,
@@ -143,7 +146,7 @@ class LandingPulseTestCase(TestCase):
             self.pilot,
             timedelta(hours=2),
             victim_character_id=9001,
-            victim_faction_id=500003,
+            victim_faction_id=AMARR_FACTION_ID,
         )
 
         data = build_fast(self.now)
