@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { CampaignFeatures } from '@dtypes/api.minmatar.org'
-import { campaign_tabs, features_on } from '@helpers/campaign_features'
+import type { CampaignFeatures, CampaignStructure } from '@dtypes/api.minmatar.org'
+import { campaign_tabs, features_on, sort_campaign_structures } from '@helpers/campaign_features'
 
 const ALL_TODAY: CampaignFeatures = {
     weekly_progress: true,
@@ -46,5 +46,20 @@ describe('campaign tabs', () => {
         const features = { ...ALL_TODAY, destruction: true }
         expect(campaign_tabs({ kind: 'faction_warfare', features, has_systems: true, can_manage: false }))
             .toContain('activity')
+    })
+})
+
+describe('campaign structure order', () => {
+    const row = (name: string, status: CampaignStructure['status'], timer_at: string | null = null, destroyed_at: string | null = null) =>
+        ({ name, status, timer_at, destroyed_at } as CampaignStructure)
+
+    it('puts reinforced by next timer first, anchored next, destroyed last', () => {
+        const sorted = sort_campaign_structures([
+            row('Dead', 'destroyed', null, '2026-01-02T00:00:00Z'),
+            row('Calm', 'anchored'),
+            row('Later', 'reinforced', '2026-01-05T00:00:00Z'),
+            row('Sooner', 'reinforced', '2026-01-04T00:00:00Z'),
+        ])
+        expect(sorted.map((structure) => structure.name)).toEqual(['Sooner', 'Later', 'Calm', 'Dead'])
     })
 })

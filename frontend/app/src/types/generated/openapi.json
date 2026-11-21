@@ -5132,6 +5132,22 @@
             "title": "Name",
             "type": "string"
           },
+          "owner_alliance_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Alliance Id"
+          },
+          "owner_alliance_ticker": {
+            "default": "",
+            "title": "Owner Alliance Ticker",
+            "type": "string"
+          },
           "reinforce_hour": {
             "anyOf": [
               {

@@ -87,6 +87,8 @@ class CampaignStructureOut(Schema):
     alliance_name: str = ""
     related_alliance_id: int | None = None
     related_alliance_name: str = ""
+    owner_alliance_id: int | None = None
+    owner_alliance_ticker: str = ""
     affiliation: str = "neutral"
     status: str
     source: str

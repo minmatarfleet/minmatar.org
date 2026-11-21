@@ -65,10 +65,10 @@ const is_strategic = campaign.kind === 'strategic'
 const stats = campaign_totals_stats(campaign.totals, t, format_isk, campaign.kind).slice(0, 5)
 const structures = campaign.structures ?? []
 const structures_destroyed = campaign.totals.structures_destroyed
-const structures_remaining = campaign.totals.structures_remaining
-const structures_tracking = t('campaigns.structures.tracking')
+const structures_tracking = t('campaigns.structures.tracking_states')
     .replace('{destroyed}', String(structures_destroyed))
-    .replace('{remaining}', String(structures_remaining))
+    .replace('{reinforced}', String(structures.filter((row) => row.status === 'reinforced').length))
+    .replace('{anchored}', String(structures.filter((row) => row.status === 'anchored').length))
 const has_systems = systems.length > 0 || areas.length > 0
 const features = campaign.features
 /** Each feature switch shows or hides its tab (helpers/campaign_features). */

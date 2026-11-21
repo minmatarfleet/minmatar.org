@@ -13045,6 +13045,13 @@ export interface components {
             killmail_id?: number | null;
             /** Name */
             name: string;
+            /** Owner Alliance Id */
+            owner_alliance_id?: number | null;
+            /**
+             * Owner Alliance Ticker
+             * @default
+             */
+            owner_alliance_ticker?: string;
             /** Reinforce Hour */
             reinforce_hour?: number | null;
             /** Related Alliance Id */

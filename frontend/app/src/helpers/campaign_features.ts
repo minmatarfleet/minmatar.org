@@ -1,5 +1,5 @@
 /** Which parts of a campaign page show: the feature switches and the tabs they give. */
-import type { CampaignFeatures, CampaignKind } from '@dtypes/api.minmatar.org'
+import type { CampaignFeatures, CampaignKind, CampaignStructure } from '@dtypes/api.minmatar.org'
 
 /** In the order the Settings tab lists them (backend `CAMPAIGN_FEATURES`). */
 export const CAMPAIGN_FEATURES = [
@@ -59,4 +59,15 @@ export function campaign_tabs({ kind, features, has_systems, can_manage }: Campa
 /** How many switches are on. */
 export function features_on(features: CampaignFeatures): number {
     return CAMPAIGN_FEATURES.filter((feature) => features[feature]).length
+}
+
+const STATUS_ORDER: Record<string, number> = { reinforced: 0, anchored: 1, unanchored: 2, destroyed: 3 }
+
+/** Reinforced first by next timer, then anchored, destroyed last (newest kill first). */
+export function sort_campaign_structures(structures: CampaignStructure[]): CampaignStructure[] {
+    const at = (iso: string | null) => (iso ? new Date(iso).getTime() : Number.POSITIVE_INFINITY)
+    return [...structures].sort((a, b) =>
+        (STATUS_ORDER[a.status] ?? 2) - (STATUS_ORDER[b.status] ?? 2)
+        || (a.status === 'destroyed' ? at(b.destroyed_at) - at(a.destroyed_at) : at(a.timer_at) - at(b.timer_at))
+        || a.name.localeCompare(b.name))
 }

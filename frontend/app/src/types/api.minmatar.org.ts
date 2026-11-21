@@ -2739,6 +2739,8 @@ export interface CampaignStructure {
     alliance_name:      string;
     related_alliance_id: number | null;
     related_alliance_name: string;
+    owner_alliance_id:  number | null;
+    owner_alliance_ticker: string;
     affiliation:        CampaignStructureAffiliation;
     status:             'anchored' | 'reinforced' | 'destroyed' | 'unanchored';
     source:             'recon' | 'timer' | 'killmail';
