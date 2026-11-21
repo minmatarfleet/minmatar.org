@@ -7,6 +7,7 @@ import math
 from dataclasses import dataclass
 from typing import Iterable, List, Optional, Sequence, Set, Tuple
 
+from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Count
 from django.utils import timezone
@@ -30,6 +31,15 @@ from industry.models import (
 from market.helpers.pricing import enqueue_history_for_types
 
 logger = logging.getLogger(__name__)
+
+# A blueprint no synced LP store sells (pirate hulls such as the Bhaalgorn)
+# would otherwise resync every store from ESI on each page that prices it.
+MISSING_OFFER_CACHE_SECONDS = 6 * 60 * 60
+
+
+def _missing_offer_cache_key(blueprint_type_id: int) -> str:
+    return f"lp_store_offer_missing:{int(blueprint_type_id)}"
+
 
 # Faction Warfare militia LP stores (bootstrap defaults).
 MILITIA_CORPORATION_IDS: tuple[int, ...] = (
@@ -293,13 +303,27 @@ def ensure_loyalty_store_offers_for_blueprint(
             blueprint_type_id,
         )
         return None
+    missing_key = _missing_offer_cache_key(blueprint_type_id)
+    if cache.get(missing_key):
+        return None
     logger.info(
         "No pure LP store offer for blueprint type %s; syncing from ESI",
         blueprint_type_id,
     )
-    sync_loyalty_store_offers()
+    try:
+        sync_loyalty_store_offers()
+    except Exception:  # pylint: disable=broad-exception-caught
+        # Callers are web requests: a failed ESI sync must not fail the page.
+        logger.warning(
+            "LP store sync for blueprint type %s failed",
+            blueprint_type_id,
+            exc_info=True,
+        )
     existing = _pure_offers_for_type(blueprint_type_id)
-    return existing[0] if existing else None
+    if existing:
+        return existing[0]
+    cache.set(missing_key, True, MISSING_OFFER_CACHE_SECONDS)
+    return None
 
 
 def ensure_loyalty_store_offers_for_product(product_id: int) -> int:
