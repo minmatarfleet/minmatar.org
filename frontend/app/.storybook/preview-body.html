@@ -1,0 +1,16 @@
+<!-- The site's <body> owns an Alpine scope that components reach for
+     (`Alpine.$data(document.body)`); give stories the same root. -->
+<script>
+    document.body.classList.add('viewport-layout')
+    document.body.setAttribute('x-data', `{
+        viewport_width: window.innerWidth,
+        color_blind_mode: false,
+        post_header_height: null,
+        global_collapse: false,
+        character_errors_count: 0,
+        set_character_errors_count(value) { this.character_errors_count = value },
+    }`)
+    document.body.setAttribute('x-bind:class', "color_blind_mode ? 'color-blind-mode' : ''")
+</script>
+<!-- ErrorRefetch and LazyPartial point hx-indicator at the site's global .loader. -->
+<div class="loader" hidden></div>

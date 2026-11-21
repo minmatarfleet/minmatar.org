@@ -1,0 +1,93 @@
+---
+/**
+ * A list of inventory types (search results, a picker, a hull list). Rows are
+ * TypeRow. Three modes:
+ *   - plain (default): read-only rows;
+ *   - `href_template`: each row links to the template with `{type_id}` and
+ *     `{type_name}` filled in (same-site paths only);
+ *   - `selectable`: each row is a button that dispatches `sde-type-select`
+ *     with `{ type_id, type_name }`, for TypeSearch or any Alpine parent.
+ * No rows renders EmptyState, naming the query when there is one. A
+ * visually-hidden count is announced when the list sits in an aria-live region.
+ */
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { SdeType } from '@dtypes/sde'
+
+interface Props {
+    types:              SdeType[];
+    query?:             string;
+    href_template?:     string;
+    selectable?:        boolean;
+    size?:              32 | 48 | 64;
+    show_slots?:        boolean;
+    empty_title?:       string;
+    [propName: string]: any;
+}
+
+const {
+    types,
+    query,
+    href_template,
+    selectable = false,
+    size = 32,
+    show_slots = false,
+    empty_title,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { fill_href_template, safe_href_template } from '@helpers/sde/display'
+
+import BlockList from '@components/compositions/BlockList.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
+import TypeRow from '@components/blocks/sde/TypeRow.astro'
+
+const template = safe_href_template(href_template)
+const empty = empty_title ?? (query ? t('sde.no_types_match').replace('~QUERY', query) : t('sde.no_types'))
+const href_for = (type: SdeType) => template
+    ? fill_href_template(template, { type_id: type.type_id, type_name: type.type_name })
+    : undefined
+---
+
+{types.length === 0 ?
+    <EmptyState title={empty} class:list={['[ sde-results sde-results--empty ]', Astro.props.class]} {...attributes} />
+    :
+    <div class:list={['[ sde-results ]', Astro.props.class]} {...attributes}>
+        <p class="[ visually-hidden ]">{t('sde.search.results_count').replace('~COUNT', String(types.length))}</p>
+        <BlockList role="list" gap="var(--space-3xs)">
+            {types.map((type) =>
+                <div role="listitem" class="[ sde-results__item ]" x-data={selectable ? "" : undefined}>
+                    {selectable ?
+                        <StylessButton
+                            type="button"
+                            class="[ sde-results__option ][ w-full ]"
+                            data-type-id={type.type_id}
+                            data-type-name={type.type_name}
+                            x-on:click="$dispatch('sde-type-select', { type_id: Number($el.dataset.typeId), type_name: $el.dataset.typeName })"
+                        >
+                            <TypeRow type={type} size={size} show_slots={show_slots} />
+                        </StylessButton>
+                        :
+                        <TypeRow type={type} size={size} show_slots={show_slots} href={href_for(type)} />
+                    }
+                </div>
+            )}
+        </BlockList>
+    </div>
+}
+
+<style lang="scss">
+    .sde-results__item {
+        padding: var(--space-3xs) var(--space-2xs);
+        transition: background-color var(--fast-transition);
+
+        &:hover,
+        &:focus-within {
+            background-color: var(--surface-sunken);
+        }
+    }
+</style>

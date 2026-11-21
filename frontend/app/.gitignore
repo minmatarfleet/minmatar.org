@@ -130,3 +130,6 @@ dist
 sqlite-latest*.sqlite
 sqlite-main.sqlite
 sde-*.sqlite
+# Rust (Storybook) build output: npm run rust:build
+storybook-static/
+storybook-server/

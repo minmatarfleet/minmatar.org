@@ -1,0 +1,46 @@
+import { Meta } from '@storybook/addon-docs/blocks'
+
+<Meta title="Rust/Introduction" />
+
+# Rust
+
+Rust is the Minmatar Fleet component library: the shared building blocks every page on
+[my.minmatar.org](https://my.minmatar.org) is made of. Each entry is the real Astro component from
+`frontend/app/src/components/`, rendered on a server exactly as the site renders it, with the site's
+tokens, fonts, Alpine and htmx loaded. Change a control and the component is rendered again with the new props.
+
+## How to use it
+
+- **Building a page?** Look here first. Take colours, type and spacing from **Foundations**, compose layout
+  from **Layout**, and use **Components** for every input, panel, menu, dialog and empty state. Don't restyle a
+  raw `<button>` or hand-roll a flex row. [Architecture](?path=/docs/rust-architecture--docs) explains the tiers.
+- **Each component's Docs tab** lists its props with descriptions and shows every story. The **Controls** panel
+  edits props live; **Interactions** replays the story's test; **Accessibility** runs axe against it.
+- **Design rules** live in `docs/frontend-design.md` in the repo: htmx owns server state, Alpine is for local
+  UI only, snake_case props, and tokens instead of hardcoded colours, spacing or type.
+
+## The sections
+
+| Section | What's in it |
+| --- | --- |
+| Foundations | Every colour, font, type step, space step, motion and layer token, the themes, all icons and logos, and the hex colours not yet tokens |
+| Layout | Composition primitives: `Wrapper`, `Grid`, `Flexblock`, `FlexInline`, `FixedFluid`, `XFadeScroll`, ... |
+| Components › Forms | Buttons, inputs, selects, switches, date pickers |
+| Components › Feedback | Empty and error states, progress, countdowns, lazy-loaded partials |
+| Components › Data display | Panels, badges, tags, stat cards, tables and data grids, cards |
+| Components › Navigation | Action menus, dropdowns, section tabs, chips, pagers, breadcrumbs |
+| Components › Overlays | Dialogs, modals, tooltips |
+| EVE | Character, corporation, alliance and item pictures and badges, and the SDE: systems, security status, types, ship slots, search |
+| Page | Page titles, sub-headers, actions and breadcrumbs |
+| Features | The site's feature blocks with test data, by area (Fleets, Campaigns, Industry, Ships, Corporations and tribes, Intel and combat, Content), each in its empty, typical and edge-case states |
+
+The toolbar's **Theme** and **UI scale** buttons preview any story in colour-blind mode or at 80–120% scaling.
+Design tools can read every token from [`tokens.json`](./tokens.json).
+
+## Contributing
+
+A new shared component gets a stories file in the same pull request. See
+[Writing stories](?path=/docs/rust-writing-stories--docs) for the conventions; `npm run test` fails when a
+component listed in `rust/library.ts` has no stories, too few, or no `play()` tests.
+
+Brand assets (logos, mascots, colours, font) are on the [Branding page](https://my.minmatar.org/brand/).

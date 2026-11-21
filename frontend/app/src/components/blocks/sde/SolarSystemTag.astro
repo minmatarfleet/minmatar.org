@@ -1,0 +1,86 @@
+---
+/**
+ * A solar system: name, security status and "Constellation ‹ Region", the way
+ * the site's system lists show them. Inline by default; `icon` puts the star's
+ * icon beside it (the layout of the system finder lists). `href` makes the
+ * name a link. Data comes in as props; this component never queries the SDE.
+ */
+import type { SdeSolarSystem } from '@dtypes/sde'
+
+interface Props {
+    system:             SdeSolarSystem;
+    href?:              string;
+    show_location?:     boolean;
+    icon?:              boolean;
+    /** Star icon width in px (with `icon`). */
+    icon_size?:         32 | 48 | 64;
+    [propName: string]: any;
+}
+
+const {
+    system,
+    href,
+    show_location = true,
+    icon = false,
+    icon_size = 32,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { get_item_icon } from '@helpers/eve_image_server'
+import { security_band } from '@helpers/sde/display'
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Badge from '@components/blocks/Badge.astro'
+import SecurityStatus from '@components/blocks/sde/SecurityStatus.astro'
+
+const location = `${system.constellation_name} ‹ ${system.region_name}`
+const band = security_band(system.security, system.system_id)
+const Name = href ? 'a' : 'span'
+---
+
+{icon ?
+    <Badge
+        title={system.system_name}
+        size={icon_size}
+        class:list={['[ solar-system-tag solar-system-tag--icon ]', Astro.props.class]}
+        data-system-id={system.system_id}
+        data-security-band={band}
+        {...attributes}
+    >
+        <picture slot="picture">
+            {system.sun_type_id &&
+                <img loading="lazy" src={get_item_icon(system.sun_type_id, 64)} width={icon_size} height={icon_size} alt="" />
+            }
+        </picture>
+        <SecurityStatus slot="title" security={system.security} system_id={system.system_id} />
+        {show_location && <small class="[ solar-system-tag__location ]">{location}</small>}
+    </Badge>
+    :
+    <FlexInline
+        gap="var(--space-3xs) var(--space-2xs)"
+        class:list={['[ solar-system-tag ]', Astro.props.class]}
+        data-system-id={system.system_id}
+        data-security-band={band}
+        {...attributes}
+    >
+        <Name href={href} class="[ solar-system-tag__name ]">{system.system_name}</Name>
+        <SecurityStatus security={system.security} system_id={system.system_id} />
+        {show_location && <small class="[ solar-system-tag__location ]">{location}</small>}
+    </FlexInline>
+}
+
+<style lang="scss">
+    .solar-system-tag__name {
+        color: var(--highlight);
+    }
+
+    a.solar-system-tag__name:hover {
+        text-decoration: underline;
+    }
+
+    .solar-system-tag__location {
+        color: var(--fleet-yellow);
+    }
+</style>

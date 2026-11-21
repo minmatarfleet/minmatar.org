@@ -1,0 +1,777 @@
+{
+  "sde_build": null,
+  "ships": [
+    {
+      "type_id": 587,
+      "type_name": "Rifter",
+      "group_id": 25,
+      "group_name": "Frigate",
+      "category_id": 6,
+      "category_name": "Ship",
+      "meta_group_id": 1,
+      "meta_group_name": "Tech I",
+      "slots": {
+        "high": 3,
+        "mid": 3,
+        "low": 4,
+        "rig": 3,
+        "subsystem": 0,
+        "turrets": 3,
+        "launchers": 2
+      }
+    },
+    {
+      "type_id": 598,
+      "type_name": "Breacher",
+      "group_id": 25,
+      "group_name": "Frigate",
+      "category_id": 6,
+      "category_name": "Ship",
+      "meta_group_id": 1,
+      "meta_group_name": "Tech I",
+      "slots": {
+        "high": 3,
+        "mid": 4,
+        "low": 3,
+        "rig": 3,
+        "subsystem": 0,
+        "turrets": 0,
+        "launchers": 3
+      }
+    },
+    {
+      "type_id": 16242,
+      "type_name": "Thrasher",
+      "group_id": 420,
+      "group_name": "Destroyer",
+      "category_id": 6,
+      "category_name": "Ship",
+      "meta_group_id": 1,
+      "meta_group_name": "Tech I",
+      "slots": {
+        "high": 8,
+        "mid": 3,
+        "low": 2,
+        "rig": 3,
+        "subsystem": 0,
+        "turrets": 7,
+        "launchers": 1
+      }
+    },
+    {
+      "type_id": 622,
+      "type_name": "Stabber",
+      "group_id": 26,
+      "group_name": "Cruiser",
+      "category_id": 6,
+      "category_name": "Ship",
+      "meta_group_id": 1,
+      "meta_group_name": "Tech I",
+      "slots": {
+        "high": 6,
+        "mid": 4,
+        "low": 4,
+        "rig": 3,
+        "subsystem": 0,
+        "turrets": 4,
+        "launchers": 2
+      }
+    },
+    {
+      "type_id": 629,
+      "type_name": "Rupture",
+      "group_id": 26,
+      "group_name": "Cruiser",
+      "category_id": 6,
+      "category_name": "Ship",
+      "meta_group_id": 1,
+      "meta_group_name": "Tech I",
+      "slots": {
+        "high": 5,
+        "mid": 4,
+        "low": 5,
+        "rig": 3,
+        "subsystem": 0,
+        "turrets": 4,
+        "launchers": 1
+      }
+    },
+    {
+      "type_id": 24702,
+      "type_name": "Hurricane",
+      "group_id": 419,
+      "group_name": "Combat Battlecruiser",
+      "category_id": 6,
+      "category_name": "Ship",
+      "meta_group_id": 1,
+      "meta_group_name": "Tech I",
+      "slots": {
+        "high": 7,
+        "mid": 4,
+        "low": 6,
+        "rig": 3,
+        "subsystem": 0,
+        "turrets": 6,
+        "launchers": 3
+      }
+    },
+    {
+      "type_id": 16231,
+      "type_name": "Cyclone",
+      "group_id": 419,
+      "group_name": "Combat Battlecruiser",
+      "category_id": 6,
+      "category_name": "Ship",
+      "meta_group_id": 1,
+      "meta_group_name": "Tech I",
+      "slots": {
+        "high": 7,
+        "mid": 5,
+        "low": 5,
+        "rig": 3,
+        "subsystem": 0,
+        "turrets": 2,
+        "launchers": 5
+      }
+    },
+    {
+      "type_id": 639,
+      "type_name": "Tempest",
+      "group_id": 27,
+      "group_name": "Battleship",
+      "category_id": 6,
+      "category_name": "Ship",
+      "meta_group_id": 1,
+      "meta_group_name": "Tech I",
+      "slots": {
+        "high": 8,
+        "mid": 5,
+        "low": 6,
+        "rig": 3,
+        "subsystem": 0,
+        "turrets": 6,
+        "launchers": 4
+      }
+    },
+    {
+      "type_id": 644,
+      "type_name": "Typhoon",
+      "group_id": 27,
+      "group_name": "Battleship",
+      "category_id": 6,
+      "category_name": "Ship",
+      "meta_group_id": 1,
+      "meta_group_name": "Tech I",
+      "slots": {
+        "high": 7,
+        "mid": 5,
+        "low": 7,
+        "rig": 3,
+        "subsystem": 0,
+        "turrets": 6,
+        "launchers": 6
+      }
+    },
+    {
+      "type_id": 11400,
+      "type_name": "Jaguar",
+      "group_id": 324,
+      "group_name": "Assault Frigate",
+      "category_id": 6,
+      "category_name": "Ship",
+      "meta_group_id": 2,
+      "meta_group_name": "Tech II",
+      "slots": {
+        "high": 4,
+        "mid": 5,
+        "low": 3,
+        "rig": 2,
+        "subsystem": 0,
+        "turrets": 1,
+        "launchers": 3
+      }
+    },
+    {
+      "type_id": 11371,
+      "type_name": "Wolf",
+      "group_id": 324,
+      "group_name": "Assault Frigate",
+      "category_id": 6,
+      "category_name": "Ship",
+      "meta_group_id": 2,
+      "meta_group_name": "Tech II",
+      "slots": {
+        "high": 5,
+        "mid": 2,
+        "low": 5,
+        "rig": 2,
+        "subsystem": 0,
+        "turrets": 4,
+        "launchers": 1
+      }
+    },
+    {
+      "type_id": 11196,
+      "type_name": "Claw",
+      "group_id": 831,
+      "group_name": "Interceptor",
+      "category_id": 6,
+      "category_name": "Ship",
+      "meta_group_id": 2,
+      "meta_group_name": "Tech II",
+      "slots": {
+        "high": 4,
+        "mid": 2,
+        "low": 4,
+        "rig": 2,
+        "subsystem": 0,
+        "turrets": 3,
+        "launchers": 1
+      }
+    },
+    {
+      "type_id": 22456,
+      "type_name": "Sabre",
+      "group_id": 541,
+      "group_name": "Interdictor",
+      "category_id": 6,
+      "category_name": "Ship",
+      "meta_group_id": 2,
+      "meta_group_name": "Tech II",
+      "slots": {
+        "high": 8,
+        "mid": 4,
+        "low": 2,
+        "rig": 2,
+        "subsystem": 0,
+        "turrets": 7,
+        "launchers": 1
+      }
+    },
+    {
+      "type_id": 11999,
+      "type_name": "Vagabond",
+      "group_id": 358,
+      "group_name": "Heavy Assault Cruiser",
+      "category_id": 6,
+      "category_name": "Ship",
+      "meta_group_id": 2,
+      "meta_group_name": "Tech II",
+      "slots": {
+        "high": 6,
+        "mid": 4,
+        "low": 5,
+        "rig": 2,
+        "subsystem": 0,
+        "turrets": 5,
+        "launchers": 1
+      }
+    },
+    {
+      "type_id": 12015,
+      "type_name": "Muninn",
+      "group_id": 358,
+      "group_name": "Heavy Assault Cruiser",
+      "category_id": 6,
+      "category_name": "Ship",
+      "meta_group_id": 2,
+      "meta_group_name": "Tech II",
+      "slots": {
+        "high": 5,
+        "mid": 4,
+        "low": 6,
+        "rig": 2,
+        "subsystem": 0,
+        "turrets": 1,
+        "launchers": 5
+      }
+    },
+    {
+      "type_id": 11978,
+      "type_name": "Scimitar",
+      "group_id": 832,
+      "group_name": "Logistics",
+      "category_id": 6,
+      "category_name": "Ship",
+      "meta_group_id": 2,
+      "meta_group_name": "Tech II",
+      "slots": {
+        "high": 4,
+        "mid": 5,
+        "low": 4,
+        "rig": 2,
+        "subsystem": 0,
+        "turrets": 2,
+        "launchers": 1
+      }
+    },
+    {
+      "type_id": 28665,
+      "type_name": "Vargur",
+      "group_id": 900,
+      "group_name": "Marauder",
+      "category_id": 6,
+      "category_name": "Ship",
+      "meta_group_id": 2,
+      "meta_group_name": "Tech II",
+      "slots": {
+        "high": 7,
+        "mid": 6,
+        "low": 6,
+        "rig": 2,
+        "subsystem": 0,
+        "turrets": 4,
+        "launchers": 0
+      }
+    },
+    {
+      "type_id": 34562,
+      "type_name": "Svipul",
+      "group_id": 1305,
+      "group_name": "Tactical Destroyer",
+      "category_id": 6,
+      "category_name": "Ship",
+      "meta_group_id": 14,
+      "meta_group_name": "Tech III",
+      "slots": {
+        "high": 6,
+        "mid": 4,
+        "low": 4,
+        "rig": 3,
+        "subsystem": 0,
+        "turrets": 4,
+        "launchers": 1
+      }
+    },
+    {
+      "type_id": 17812,
+      "type_name": "Republic Fleet Firetail",
+      "group_id": 25,
+      "group_name": "Frigate",
+      "category_id": 6,
+      "category_name": "Ship",
+      "meta_group_id": 4,
+      "meta_group_name": "Faction",
+      "slots": {
+        "high": 3,
+        "mid": 4,
+        "low": 3,
+        "rig": 3,
+        "subsystem": 0,
+        "turrets": 2,
+        "launchers": 1
+      }
+    },
+    {
+      "type_id": 17713,
+      "type_name": "Stabber Fleet Issue",
+      "group_id": 26,
+      "group_name": "Cruiser",
+      "category_id": 6,
+      "category_name": "Ship",
+      "meta_group_id": 4,
+      "meta_group_name": "Faction",
+      "slots": {
+        "high": 5,
+        "mid": 4,
+        "low": 6,
+        "rig": 3,
+        "subsystem": 0,
+        "turrets": 5,
+        "launchers": 3
+      }
+    },
+    {
+      "type_id": 33157,
+      "type_name": "Hurricane Fleet Issue",
+      "group_id": 419,
+      "group_name": "Combat Battlecruiser",
+      "category_id": 6,
+      "category_name": "Ship",
+      "meta_group_id": 4,
+      "meta_group_name": "Faction",
+      "slots": {
+        "high": 8,
+        "mid": 4,
+        "low": 6,
+        "rig": 3,
+        "subsystem": 0,
+        "turrets": 6,
+        "launchers": 3
+      }
+    },
+    {
+      "type_id": 17720,
+      "type_name": "Cynabal",
+      "group_id": 26,
+      "group_name": "Cruiser",
+      "category_id": 6,
+      "category_name": "Ship",
+      "meta_group_id": 4,
+      "meta_group_name": "Faction",
+      "slots": {
+        "high": 5,
+        "mid": 5,
+        "low": 5,
+        "rig": 3,
+        "subsystem": 0,
+        "turrets": 4,
+        "launchers": 0
+      }
+    }
+  ],
+  "modules": [
+    {
+      "type_id": 486,
+      "type_name": "200mm AutoCannon I",
+      "group_id": 55,
+      "group_name": "Projectile Weapon",
+      "category_id": 7,
+      "category_name": "Module",
+      "meta_group_id": 1,
+      "meta_group_name": "Tech I"
+    },
+    {
+      "type_id": 2889,
+      "type_name": "200mm AutoCannon II",
+      "group_id": 55,
+      "group_name": "Projectile Weapon",
+      "category_id": 7,
+      "category_name": "Module",
+      "meta_group_id": 2,
+      "meta_group_name": "Tech II"
+    },
+    {
+      "type_id": 16050,
+      "type_name": "Republic Fleet 200mm Autocannon",
+      "group_id": 55,
+      "group_name": "Projectile Weapon",
+      "category_id": 7,
+      "category_name": "Module",
+      "meta_group_id": 4,
+      "meta_group_name": "Faction"
+    },
+    {
+      "type_id": 85010,
+      "type_name": "Ramaku's Modified 200mm AutoCannon",
+      "group_id": 55,
+      "group_name": "Projectile Weapon",
+      "category_id": 7,
+      "category_name": "Module",
+      "meta_group_id": 5,
+      "meta_group_name": "Officer"
+    },
+    {
+      "type_id": 519,
+      "type_name": "Gyrostabilizer II",
+      "group_id": 59,
+      "group_name": "Gyrostabilizer",
+      "category_id": 7,
+      "category_name": "Module",
+      "meta_group_id": 2,
+      "meta_group_name": "Tech II"
+    },
+    {
+      "type_id": 15806,
+      "type_name": "Republic Fleet Gyrostabilizer",
+      "group_id": 59,
+      "group_name": "Gyrostabilizer",
+      "category_id": 7,
+      "category_name": "Module",
+      "meta_group_id": 4,
+      "meta_group_name": "Faction"
+    },
+    {
+      "type_id": 21486,
+      "type_name": "'Kindred' Gyrostabilizer",
+      "group_id": 59,
+      "group_name": "Gyrostabilizer",
+      "category_id": 7,
+      "category_name": "Module",
+      "meta_group_id": 3,
+      "meta_group_name": "Storyline"
+    },
+    {
+      "type_id": 2048,
+      "type_name": "Damage Control II",
+      "group_id": 60,
+      "group_name": "Damage Control",
+      "category_id": 7,
+      "category_name": "Module",
+      "meta_group_id": 2,
+      "meta_group_name": "Tech II"
+    },
+    {
+      "type_id": 440,
+      "type_name": "5MN Microwarpdrive II",
+      "group_id": 46,
+      "group_name": "Propulsion Module",
+      "category_id": 7,
+      "category_name": "Module",
+      "meta_group_id": 2,
+      "meta_group_name": "Tech II"
+    },
+    {
+      "type_id": 19343,
+      "type_name": "Gistii B-Type 5MN Microwarpdrive",
+      "group_id": 46,
+      "group_name": "Propulsion Module",
+      "category_id": 7,
+      "category_name": "Module",
+      "meta_group_id": 6,
+      "meta_group_name": "Deadspace"
+    },
+    {
+      "type_id": 448,
+      "type_name": "Warp Scrambler II",
+      "group_id": 52,
+      "group_name": "Warp Scrambler",
+      "category_id": 7,
+      "category_name": "Module",
+      "meta_group_id": 2,
+      "meta_group_name": "Tech II"
+    },
+    {
+      "type_id": 14254,
+      "type_name": "Domination Warp Scrambler",
+      "group_id": 52,
+      "group_name": "Warp Scrambler",
+      "category_id": 7,
+      "category_name": "Module",
+      "meta_group_id": 4,
+      "meta_group_name": "Faction"
+    },
+    {
+      "type_id": 21512,
+      "type_name": "'Delineative' Warp Scrambler",
+      "group_id": 52,
+      "group_name": "Warp Scrambler",
+      "category_id": 7,
+      "category_name": "Module",
+      "meta_group_id": 3,
+      "meta_group_name": "Storyline"
+    },
+    {
+      "type_id": 14670,
+      "type_name": "Tobias' Modified Heavy Warp Scrambler",
+      "group_id": 52,
+      "group_name": "Warp Scrambler",
+      "category_id": 7,
+      "category_name": "Module",
+      "meta_group_id": 5,
+      "meta_group_name": "Officer"
+    },
+    {
+      "type_id": 45608,
+      "type_name": "Loki Offensive - Launcher Efficiency Configuration",
+      "group_id": 956,
+      "group_name": "Offensive Subsystem",
+      "category_id": 32,
+      "category_name": "Subsystem",
+      "meta_group_id": 14,
+      "meta_group_name": "Tech III"
+    }
+  ],
+  "systems": [
+    {
+      "system_id": 30002187,
+      "system_name": "Amarr",
+      "security": 1,
+      "sun_type_id": 45037,
+      "constellation_id": 20000322,
+      "constellation_name": "Throne Worlds",
+      "region_id": 10000043,
+      "region_name": "Domain"
+    },
+    {
+      "system_id": 30000142,
+      "system_name": "Jita",
+      "security": 0.9459,
+      "sun_type_id": 3796,
+      "constellation_id": 20000020,
+      "constellation_name": "Kimotoro",
+      "region_id": 10000002,
+      "region_name": "The Forge"
+    },
+    {
+      "system_id": 30002510,
+      "system_name": "Rens",
+      "security": 0.8946,
+      "sun_type_id": 7,
+      "constellation_id": 20000367,
+      "constellation_name": "Ortner",
+      "region_id": 10000030,
+      "region_name": "Heimatar"
+    },
+    {
+      "system_id": 30002053,
+      "system_name": "Hek",
+      "security": 0.8,
+      "sun_type_id": 3799,
+      "constellation_id": 20000302,
+      "constellation_name": "Barvigrard",
+      "region_id": 10000042,
+      "region_name": "Metropolis"
+    },
+    {
+      "system_id": 30002507,
+      "system_name": "Abudban",
+      "security": 0.7324,
+      "sun_type_id": 3803,
+      "constellation_id": 20000367,
+      "constellation_name": "Ortner",
+      "region_id": 10000030,
+      "region_name": "Heimatar"
+    },
+    {
+      "system_id": 30002385,
+      "system_name": "Teonusude",
+      "security": 0.5863,
+      "sun_type_id": 3796,
+      "constellation_id": 20000350,
+      "constellation_name": "Fittakan",
+      "region_id": 10000028,
+      "region_name": "Molden Heath"
+    },
+    {
+      "system_id": 30002768,
+      "system_name": "Uedama",
+      "security": 0.5054,
+      "sun_type_id": 45033,
+      "constellation_id": 20000406,
+      "constellation_name": "Kantanen",
+      "region_id": 10000033,
+      "region_name": "The Citadel"
+    },
+    {
+      "system_id": 30002537,
+      "system_name": "Amamake",
+      "security": 0.4388,
+      "sun_type_id": 3802,
+      "constellation_id": 20000372,
+      "constellation_name": "Hed",
+      "region_id": 10000030,
+      "region_name": "Heimatar"
+    },
+    {
+      "system_id": 30003067,
+      "system_name": "Huola",
+      "security": 0.3702,
+      "sun_type_id": 3803,
+      "constellation_id": 20000448,
+      "constellation_name": "Sasen",
+      "region_id": 10000038,
+      "region_name": "The Bleak Lands"
+    },
+    {
+      "system_id": 30002542,
+      "system_name": "Auga",
+      "security": 0.3855,
+      "sun_type_id": 45039,
+      "constellation_id": 20000372,
+      "constellation_name": "Hed",
+      "region_id": 10000030,
+      "region_name": "Heimatar"
+    },
+    {
+      "system_id": 30002538,
+      "system_name": "Vard",
+      "security": 0.3791,
+      "sun_type_id": 3801,
+      "constellation_id": 20000372,
+      "constellation_name": "Hed",
+      "region_id": 10000030,
+      "region_name": "Heimatar"
+    },
+    {
+      "system_id": 30005000,
+      "system_name": "Old Man Star",
+      "security": 0.3357,
+      "sun_type_id": 3802,
+      "constellation_id": 20000731,
+      "constellation_name": "Vieres",
+      "region_id": 10000064,
+      "region_name": "Essence"
+    },
+    {
+      "system_id": 30002813,
+      "system_name": "Tama",
+      "security": 0.2826,
+      "sun_type_id": 45037,
+      "constellation_id": 20000412,
+      "constellation_name": "Isoma",
+      "region_id": 10000033,
+      "region_name": "The Citadel"
+    },
+    {
+      "system_id": 30002060,
+      "system_name": "Evati",
+      "security": 0.2474,
+      "sun_type_id": 45036,
+      "constellation_id": 20000304,
+      "constellation_name": "Aldodan",
+      "region_id": 10000042,
+      "region_name": "Metropolis"
+    },
+    {
+      "system_id": 30002064,
+      "system_name": "Arnstur",
+      "security": 0.1182,
+      "sun_type_id": 45037,
+      "constellation_id": 20000304,
+      "constellation_name": "Aldodan",
+      "region_id": 10000042,
+      "region_name": "Metropolis"
+    },
+    {
+      "system_id": 30002420,
+      "system_name": "Egbinger",
+      "security": 0.0346,
+      "sun_type_id": 45035,
+      "constellation_id": 20000355,
+      "constellation_name": "Elfrard",
+      "region_id": 10000028,
+      "region_name": "Molden Heath"
+    },
+    {
+      "system_id": 30001161,
+      "system_name": "HED-GP",
+      "security": -0.1463,
+      "sun_type_id": 45041,
+      "constellation_id": 20000169,
+      "constellation_name": "UX3-N2",
+      "region_id": 10000014,
+      "region_name": "Catch"
+    },
+    {
+      "system_id": 30004759,
+      "system_name": "1DQ1-A",
+      "security": -0.3858,
+      "sun_type_id": 3802,
+      "constellation_id": 20000696,
+      "constellation_name": "O-EIMK",
+      "region_id": 10000060,
+      "region_name": "Delve"
+    },
+    {
+      "system_id": 31001159,
+      "system_name": "J164104",
+      "security": -0.99,
+      "sun_type_id": 3801,
+      "constellation_id": 21000119,
+      "constellation_name": "C-C00119",
+      "region_id": 11000012,
+      "region_name": "C-R00012"
+    },
+    {
+      "system_id": 31000005,
+      "system_name": "Thera",
+      "security": -0.99,
+      "sun_type_id": 34331,
+      "constellation_id": 21000324,
+      "constellation_name": "G-C00324",
+      "region_id": 11000031,
+      "region_name": "G-R00031"
+    }
+  ]
+}

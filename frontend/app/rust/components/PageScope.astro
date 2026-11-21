@@ -1,0 +1,25 @@
+---
+// Story decorator: the Alpine state the page layout (src/layouts/Viewport.astro)
+// puts on <body> for the site-wide dialogs, so AlertDialog, ConfirmDialog and
+// Modal render as the real component and open the way pages open them:
+//   Alpine.$data(el).show_alert_dialog({ title, content })
+// Use it as `decorators: [PageScope]`.
+import {
+    AlertDialogXData,
+    ConfirmDialogXData,
+    ModalXData,
+} from '@components/partials/AlpineScripts.astro'
+---
+
+<div
+    class="page-scope"
+    data-page-scope
+    x-data={`{
+        ${AlertDialogXData}
+        ${ConfirmDialogXData}
+        ${ModalXData}
+        rifter_animation() { return { init() {} } },
+    }`}
+>
+    <slot />
+</div>

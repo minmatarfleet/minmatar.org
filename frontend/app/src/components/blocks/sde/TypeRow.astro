@@ -1,0 +1,77 @@
+---
+/**
+ * One inventory type (ship, module, charge...) in a list: icon, name, meta
+ * group tag and "Group · Category", optionally the hull's slot layout. Icons
+ * come from images.evetech.net; sizes above 64 use the ship render. `href`
+ * links the name. Data comes in as props; this component never queries the SDE.
+ */
+import type { SdeType } from '@dtypes/sde'
+
+interface Props {
+    type:               SdeType;
+    href?:              string;
+    /** Icon width in px; above 64 the image server returns the render. */
+    size?:              32 | 48 | 64 | 128;
+    show_group?:        boolean;
+    show_meta?:         boolean;
+    /** Ship hulls with `type.slots` only. */
+    show_slots?:        boolean;
+    [propName: string]: any;
+}
+
+const {
+    type,
+    href,
+    size = 32,
+    show_group = true,
+    show_meta = true,
+    show_slots = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { get_item_icon } from '@helpers/eve_image_server'
+
+import Badge from '@components/blocks/Badge.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import MetaGroupTag from '@components/blocks/sde/MetaGroupTag.astro'
+import ShipSlots from '@components/blocks/sde/ShipSlots.astro'
+
+const image_size = size > 64 ? 256 : 64
+const Wrapper = href ? 'a' : 'div'
+---
+
+<Wrapper
+    href={href}
+    class:list={['[ type-row ]', Astro.props.class]}
+    data-type-id={type.type_id}
+    data-category-id={type.category_id}
+    {...attributes}
+>
+    <Badge title={type.type_name} size={size}>
+        <picture slot="picture">
+            <img loading="lazy" src={get_item_icon(type.type_id, image_size)} width={size} height={size} alt="" />
+        </picture>
+        {show_meta && <MetaGroupTag slot="title" class="[ !inline-flex align-middle ]" meta_group_name={type.meta_group_name} />}
+        <Flexblock gap="var(--space-3xs)">
+            {show_group && <small class="[ type-row__group ]">{type.group_name} · {type.category_name}</small>}
+            {show_slots && type.slots && <ShipSlots counts={type.slots} icon_size="var(--space-s)" />}
+        </Flexblock>
+    </Badge>
+</Wrapper>
+
+<style lang="scss">
+    .type-row {
+        display: block;
+        color: inherit;
+    }
+
+    a.type-row:hover :global(.title) {
+        text-decoration: underline;
+    }
+
+    .type-row__group {
+        color: var(--fleet-yellow);
+    }
+</style>

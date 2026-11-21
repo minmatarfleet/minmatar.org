@@ -1,0 +1,68 @@
+---
+/**
+ * SolarSystemSearch results: solar systems whose name contains `q`.
+ * Query: q, region_ids (comma-separated), security (any/high/low/null/wormhole),
+ * wormholes (0 to leave out J-space), limit (max 50), selectable (1: rows are
+ * pick buttons), href (same-site link template, `{system_id}` / `{system_name}`).
+ * Static data only, so no login is needed. Under 2 letters renders nothing.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import {
+    clamp_limit,
+    normalise_query,
+    parse_ids,
+    search_solar_systems,
+    SEARCH_MIN_LENGTH,
+    SYSTEM_SECURITY_FILTERS,
+    type SystemSecurityFilter,
+} from '@helpers/sde/search'
+import type { SdeSolarSystem } from '@dtypes/sde'
+
+const params = Astro.url.searchParams
+const query = normalise_query(params.get('q'))
+const selectable = params.get('selectable') === '1'
+const href_template = params.get('href') ?? undefined
+const security_param = params.get('security') ?? 'any'
+const security: SystemSecurityFilter = (SYSTEM_SECURITY_FILTERS as string[]).includes(security_param)
+    ? security_param as SystemSecurityFilter
+    : 'any'
+
+let systems: SdeSolarSystem[] = []
+let search_error: Error | false = false
+
+if (query.length >= SEARCH_MIN_LENGTH) {
+    try {
+        systems = await search_solar_systems({
+            query,
+            region_ids: parse_ids(params.get('region_ids')),
+            security,
+            wormholes: params.get('wormholes') !== '0',
+            limit: clamp_limit(params.get('limit')),
+        })
+    } catch (error) {
+        console.error('sde_system_search_component', error)
+        // A numeric cause: retrying will not bring a missing SDE back, so ErrorRefetch shows the message only.
+        search_error = new Error(t('sde.search.error'), { cause: 500 })
+    }
+}
+
+const delay = parseInt(params.get('delay') ?? '0') || 0
+const SELF_URL = `${translatePath('/partials/sde_system_search_component')}?${params.toString()}`
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import SolarSystemResults from '@components/blocks/sde/SolarSystemResults.astro'
+---
+
+{search_error ?
+    <ErrorRefetch args={{ partial: SELF_URL, error: search_error, delay }} />
+    :
+    query.length >= SEARCH_MIN_LENGTH &&
+        <SolarSystemResults
+            systems={systems}
+            query={query}
+            selectable={selectable}
+            href_template={selectable ? undefined : href_template}
+        />
+}

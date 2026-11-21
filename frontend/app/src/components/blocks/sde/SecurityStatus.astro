@@ -1,0 +1,65 @@
+---
+/**
+ * A solar system's security status as the EVE client shows it (rounded to one
+ * decimal, 0.0–0.05 shown as 0.1), coloured with the --security-status-* tokens.
+ *
+ * `text` is coloured text for sentences and lists; `outline` is a small bordered
+ * tag for table cells and chips. `data-security-band` (high/low/null/wormhole)
+ * is there for filters and styles. Screen readers hear "Security status 0.4"
+ * unless `sr_label` is off (when a column header already says it).
+ */
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { format_security, security_band, security_token } from '@helpers/sde/display'
+
+interface Props {
+    security:           number;
+    /** Marks J-space systems (31xxxxxx) as the `wormhole` band. */
+    system_id?:         number | null;
+    variant?:           'text' | 'outline';
+    sr_label?:          boolean;
+    [propName: string]: any;
+}
+
+const {
+    security,
+    system_id,
+    variant = 'text',
+    sr_label = true,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const shown = format_security(security)
+const token = security_token(security)
+const band = security_band(security, system_id)
+
+import Tag from '@components/blocks/Tag.astro'
+---
+
+{variant === 'outline' ?
+    <Tag
+        text={shown}
+        color={token}
+        variant="outline"
+        narrow={true}
+        title={t('sde.security_status')}
+        class:list={['[ security-status ][ tabular-nums ]', Astro.props.class]}
+        data-security-band={band}
+        data-security={shown}
+        {...attributes}
+    >
+        {sr_label && <span slot="icon" class="visually-hidden">{t('sde.security_status')}</span>}
+    </Tag>
+    :
+    <span
+        class:list={['[ security-status ][ tabular-nums ]', Astro.props.class]}
+        style={`color: var(--${token})`}
+        title={t('sde.security_status')}
+        data-security-band={band}
+        data-security={shown}
+        {...attributes}
+    >{sr_label && <span class="visually-hidden">{`${t('sde.security_status')} `}</span>}{shown}</span>
+}

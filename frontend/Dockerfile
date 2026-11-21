@@ -37,3 +37,24 @@ ENV HOST=0.0.0.0
 ENV PORT=4321
 EXPOSE 4321
 ENTRYPOINT ["node", "dist/server/entry.mjs"]
+
+# Rust, the component library (Storybook), served at my.minmatar.org/rust by
+# the `rust` service in docker-compose-prod.yml. Stories render real Astro
+# components through Vite SSR at runtime, so this image keeps the full
+# node_modules and the source the render server snapshots.
+FROM build-deps AS rust-build
+COPY app/ .
+ENV NODE_OPTIONS=--max_old_space_size=4096
+RUN npm run rust:build
+
+FROM build-deps AS rust
+COPY app/ .
+COPY --from=rust-build /app/storybook-static ./storybook-static
+COPY --from=rust-build /app/storybook-server ./storybook-server
+ENV NODE_ENV=production
+ENV HOST=0.0.0.0
+ENV PORT=6007
+EXPOSE 6007
+# exec so node gets SIGTERM; the dummy build env satisfies astro.config.mjs,
+# which the render server loads.
+CMD ["sh", "-c", "set -a; . ./.env.BUILDONLY; set +a; exec node rust/server.mjs"]

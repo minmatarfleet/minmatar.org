@@ -185,6 +185,17 @@ Reach for these before building a variant of your own (all in `src/components/bl
 | `FilterChip` + `ChipGroup` | Filter chips over rendered content (`aria-pressed`) or filtered-view links (`aria-current`). |
 | `CorporationBadge` / `AllianceBadge` | Entity logo + name; the default slot renders at every size. |
 
+## 4.2 Rust, the component library
+
+Every shared component is in **Rust**, the Storybook at [my.minmatar.org/rust](https://my.minmatar.org/rust/) (source in `frontend/app/rust/`, linked from `/brand/`): live examples of each one with its props, the design tokens (generated from `src/styles/`), themes, fonts, icons and the SDE components. Look there before building something new.
+
+- **Start from `frontend/app/rust/CATALOG.md`**: every shared component with its import, props, slots and stories, generated from the library (`testing/rust/catalog.test.ts`, `UPDATE_CATALOG=1` rewrites it). AI agents use it through the `rust-components` skill.
+- A component that two features use belongs in `rust/library.ts` with a stories file in the same pull request. `testing/rust/library.test.ts` requires at least three stories, `play()` tests and a docs description for each.
+- Feature blocks that render from props are under **Features** with typed fixture data (`rust/fixtures/features/`), one story per scenario, so a feature can be built and reviewed without the backend.
+- Tokens as data: `/rust/tokens.json` (Design Tokens Community Group format), generated from `src/styles/` and kept current by `testing/rust/foundations.test.ts`.
+- Stories are tests: `npm run test` renders every story and runs its `play()` (`testing/rust/stories.test.ts`), and CI runs them in Chromium against the production build.
+- How it is organised (tokens → Layout → Components → EVE → Page → Features) and why: `frontend/app/rust/docs/Architecture.mdx`. How to write stories: `frontend/app/rust/docs/WritingStories.mdx`.
+
 ## 5. Component conventions
 
 A component lives in `src/components/` (`blocks/`, `page/`, `partials/`, `compositions/`, `layout/`, `icons/`, `logos/`). One component per file.

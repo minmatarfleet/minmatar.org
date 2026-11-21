@@ -1,0 +1,74 @@
+---
+// Hex colours components and pages write by hand instead of using a token:
+// the backlog for new tokens (docs/frontend-design.md §3).
+import { read_off_token_colors } from '../../foundations/tokens'
+
+interface Props {
+    limit?: number;
+}
+
+const { limit } = Astro.props
+const all = read_off_token_colors()
+const colors = limit ? all.slice(0, limit) : all
+---
+
+<div class="off-token" data-total={all.length}>
+    <p class="intro">{all.length} colours are written as hex in {new Set(all.flatMap((c) => c.files)).size} files. Each should become a token or use one.</p>
+    <ul role="list">
+        {colors.map((color) => (
+            <li data-color={color.value}>
+                <span class="swatch" style={`background: ${color.value}`} aria-hidden="true" />
+                <code>{color.value}</code>
+                <span class="count">{color.count}×</span>
+                <details>
+                    <summary>{color.files.length} {color.files.length === 1 ? 'file' : 'files'}</summary>
+                    <ul role="list" class="files">{color.files.map((file) => <li><code>src/{file}</code></li>)}</ul>
+                </details>
+            </li>
+        ))}
+    </ul>
+</div>
+
+<style lang="scss">
+    .intro {
+        color: var(--text-muted);
+        margin: 0 0 var(--space-s);
+    }
+
+    ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    > ul, .off-token > ul {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(18rem, 100%), 1fr));
+        gap: var(--space-xs);
+    }
+
+    .off-token > ul > li {
+        display: grid;
+        grid-template-columns: var(--space-l) auto 1fr;
+        gap: var(--space-2xs) var(--space-xs);
+        align-items: center;
+        padding: var(--space-2xs);
+        border: 1px solid var(--hairline-medium);
+    }
+
+    .swatch {
+        block-size: var(--space-l);
+        border: 1px solid var(--hairline-strong);
+    }
+
+    .count {
+        color: var(--text-muted);
+        font-size: var(--step--1);
+    }
+
+    details {
+        grid-column: 1 / -1;
+        font-size: var(--step--2);
+        color: var(--text-muted);
+    }
+</style>

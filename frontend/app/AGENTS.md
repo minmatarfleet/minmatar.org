@@ -2,6 +2,12 @@
 
 Full methodology: **`../../docs/frontend-design.md`** (read it before editing UI). Non-negotiable rules:
 
+## Component library first (Rust)
+- **Before writing markup or CSS, read `rust/CATALOG.md`**: every shared component with its import, props, slots and stories (Rust, the Storybook at my.minmatar.org/rust). Use the stories file as the usage example. Skill: `.claude/skills/rust-components/SKILL.md`.
+- Prefer: use a component as is → add a prop (and a story) → compose → only then write a new one.
+- A shared component goes in `rust/library.ts` with a stories file (≥3 stories, `play()` tests, docs description). A feature block that renders from props gets a `Features` story with typed fixtures (`rust/fixtures/features/`). Regenerate the catalog: `UPDATE_CATALOG=1 npx vitest run testing/rust/catalog.test.ts`.
+- Tokens: `rust/public/tokens.json` / `src/styles/properties/`. Images: `rust/foundations/imagery_collections.ts`.
+
 ## Interactivity & state
 - **htmx owns all server state.** Data fetching, mutations, partial re-renders, DOM updates → htmx (`hx-*`, `hx-swap-oob`) against partials in `src/pages/partials/*_component.astro`. Server renders HTML; never build DOM from JSON.
 - **Alpine = minor, local UI only**: toggles, collapsibles, filters, dialog open/close.
@@ -21,4 +27,4 @@ Full methodology: **`../../docs/frontend-design.md`** (read it before editing UI
 - Dark-only; respect `body.color-blind-mode`; keep `:focus-visible`; gate hover effects behind `@media (hover: hover)` and tactile press behind `@media (hover: none)`.
 
 ## Verify
-From this directory: `npm run check` and `npm run test`. Don't finish until `npm run check` passes.
+From this directory: `npm run check` and `npm run test` (which includes every Rust story as a test). Don't finish until `npm run check` passes. Look at UI changes in Storybook with `npm run rust`.

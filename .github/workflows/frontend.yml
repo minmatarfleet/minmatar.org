@@ -41,3 +41,39 @@ jobs:
         run: npm run test -- --run
       - name: Type-check ratchet
         run: npm run check
+
+  # Rust, the component library (Storybook at my.minmatar.org/rust):
+  # build it as production does, serve it, and run every story's play()
+  # test in Chromium (frontend/app/rust/browser_test.mjs). The same stories
+  # also run as vitest cases in frontend-check.
+  rust:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: frontend/app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: frontend/app
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/app/package-lock.json
+      - run: npm ci
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build Rust
+        run: npm run rust:build
+      - name: Serve and test every story in the browser
+        run: |
+          PORT=6007 npm run rust:serve-local > rust-server.log 2>&1 &
+          for i in $(seq 1 90); do
+            curl -fsS http://127.0.0.1:6007/rust/health > /dev/null && break
+            sleep 2
+          done
+          npm run rust:test-browser -- http://127.0.0.1:6007/rust/
+      - name: Render server log
+        if: failure()
+        run: cat rust-server.log

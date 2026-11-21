@@ -1,0 +1,75 @@
+---
+import Grid from '@components/compositions/Grid.astro'
+// Story-only helper: renders every logo in src/components/logos/ in a labelled cell.
+interface Props {
+    size?:          string;
+    color?:         string;
+    background?:    string;
+    min_item_width?: string;
+}
+
+const {
+    size = 'var(--space-3xl)',
+    color = 'var(--foreground)',
+    background = 'transparent',
+    min_item_width = '10rem',
+} = Astro.props
+
+const modules = import.meta.glob('/src/components/logos/**/*.astro', { eager: true }) as Record<string, { default: any }>
+const prefix = '/src/components/logos/'
+
+const logos = Object.entries(modules)
+    .map(([path, mod]) => ({ label: path.slice(prefix.length), Logo: mod.default }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+---
+
+<div class="logo-gallery" style={`--gallery_color: ${color}; --gallery_background: ${background}; --gallery_logo_size: ${size};`}>
+    <Grid min_item_width={min_item_width} row_gap="var(--space-s)" column_gap="var(--space-s)">
+        {logos.map(({ label, Logo }) => (
+            <figure class="logo-cell" data-logo-cell data-logo={label}>
+                <div class="logo-frame">
+                    <Logo />
+                </div>
+                <figcaption class="logo-label">{label}</figcaption>
+            </figure>
+        ))}
+    </Grid>
+</div>
+
+<style lang="scss">
+    .logo-gallery {
+        background-color: var(--gallery_background);
+        color: var(--gallery_color);
+        padding: var(--space-s);
+    }
+
+    .logo-cell {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-2xs);
+        margin: 0;
+        padding: var(--space-xs);
+        border: 1px solid var(--hairline);
+        text-align: center;
+    }
+
+    .logo-frame {
+        width: var(--gallery_logo_size);
+        height: var(--gallery_logo_size);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        :global(svg),
+        :global(img) {
+            width: 100%;
+            height: 100%;
+        }
+    }
+
+    .logo-label {
+        font-size: var(--step--2);
+        opacity: 0.8;
+    }
+</style>

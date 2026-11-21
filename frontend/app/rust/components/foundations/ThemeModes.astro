@@ -1,0 +1,103 @@
+---
+// The theme modes the accessibility options switch on <body>: colour-blind
+// mode (redefines tokens) and UI scaling (zoom). The site is dark only.
+import { read_theme_overrides, read_ui_scales } from '../../foundations/tokens'
+
+interface Props {
+    mode?: 'side-by-side' | 'scales';
+}
+
+const { mode = 'side-by-side' } = Astro.props
+const overrides = read_theme_overrides()
+const scales = read_ui_scales()
+const sample_tokens = ['--fleet-red', '--green', '--button-color', '--alliance-blue', '--fleet-yellow']
+---
+
+<div class="theme-modes">
+    {mode === 'side-by-side' && (
+        <div class="pair">
+            <section class="theme" data-theme="default">
+                <h3>Default</h3>
+                <ul role="list">
+                    {sample_tokens.map((name) => <li data-token={name}><span class="swatch" style={`background: var(${name})`} /><code>{name}</code></li>)}
+                </ul>
+            </section>
+            {overrides.map((override) => (
+                <section class:list={['theme', override.selector.replace(/^body\./, '')]} data-theme={override.selector}>
+                    <h3><code>{override.selector}</code></h3>
+                    <ul role="list">
+                        {sample_tokens.map((name) => <li data-token={name}><span class="swatch" style={`background: var(${name})`} /><code>{name}</code></li>)}
+                    </ul>
+                    <p class="redefines">Redefines {override.tokens.map((t) => <code>{t.name}</code>)}</p>
+                </section>
+            ))}
+        </div>
+    )}
+
+    {mode === 'scales' && (
+        <div class="scales">
+            {scales.map((scale) => (
+                <section class={scale === 100 ? '' : `ui-scaling-${scale}`} data-scale={scale}>
+                    <h3>{scale}%</h3>
+                    <p>Fleet forms at 19:00 EVE. Bring two fits.</p>
+                </section>
+            ))}
+        </div>
+    )}
+</div>
+
+<style lang="scss">
+    .pair, .scales {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+        gap: var(--space-m);
+    }
+
+    .theme, .scales > section {
+        padding: var(--space-s);
+        border: 1px solid var(--hairline-medium);
+        background: var(--component-background);
+    }
+
+    // The same overrides the site applies to body.color-blind-mode, scoped here.
+    .color-blind-mode {
+        --fleet-red:    var(--fleet-red-blind);
+        --green:        var(--green-blind);
+        --button-color: var(--button-color-blind);
+    }
+
+    h3 {
+        margin: 0 0 var(--space-xs);
+        font-size: var(--step-0);
+    }
+
+    ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+    }
+
+    .swatch {
+        inline-size: var(--space-m);
+        block-size: var(--space-m);
+        border: 1px solid var(--hairline-strong);
+    }
+
+    .redefines {
+        margin: var(--space-xs) 0 0;
+        font-size: var(--step--2);
+        color: var(--text-muted);
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs);
+    }
+</style>

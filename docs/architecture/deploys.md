@@ -9,7 +9,7 @@ Merging to `main` deploys production (`.github/workflows/deployment.yml`): the r
 1. Installs the [`docker rollout`](https://github.com/wowu/docker-rollout) CLI plugin (pinned version and checksum) if it is missing.
 2. Builds every image while the old containers keep serving.
 3. Runs `migrate` and `sync_pilot_features` in a one-off `app` container. The old containers keep serving. If this fails, the deploy stops before any container is replaced.
-4. Replaces `app`, then `frontend`, with `docker rollout`:
+4. Replaces `app`, then `frontend`, then `rust`, with `docker rollout`:
    - A second container starts next to the old one. Once it is healthy, `edge` starts sending it requests.
    - The old container is drained (its healthcheck fails, so `edge` stops routing to it), given 20 seconds to finish in-flight requests, then stopped.
    - If the new container is not healthy within 3 minutes, it is removed and the old one keeps serving.
@@ -22,6 +22,7 @@ When a step fails, the script writes one line saying what failed and whether the
 
 - **`edge`** is a Traefik proxy. It owns the host ports `8020` (API) and `4321` (website), bound to `127.0.0.1` because only the host's nginx (a system package, `/etc/nginx/sites-enabled/api.minmatar.org` and `my.minmatar.org`) proxies to them, and routes only to healthy `app` and `frontend` containers. It finds them through the Docker socket and the `traefik.*` labels.
 - **`app` and `frontend`** have no host ports, so two of each can run at once.
+- **`rust`** serves Rust, the component library (Storybook), at `my.minmatar.org/rust`: the `rust` target of `frontend/Dockerfile`, running `frontend/app/rust/server.mjs`. `edge` sends `/rust` and `/rust/*` to it on the website entry point (its rule is longer than `frontend`'s, so it wins); everything else stays on `frontend`, which also serves the `/images` and `/fonts` the stories load. Its healthcheck (`frontend/app/rust/healthcheck.mjs`) passes once a real component has rendered. See `frontend/app/rust/README.md`.
 - **Healthchecks**: `backend/healthcheck.py` and `frontend/healthcheck.mjs`. A container is healthy once it answers an HTTP request; after that only its listening socket is checked, so a burst of slow requests can't mark the only container unhealthy. `/tmp/drain` fails the check, which is how a rollout drains the old container.
 - **The `web` network** holds `frontend` and `edge`, and `app` there resolves to `edge`. If the frontend is built with `API_URL="http://app:8000"` (the `standalone.env` default), its server-side calls go through `edge` too and never reach an `app` container that is still starting. Production builds with `https://api.minmatar.org`, which goes through nginx and `edge` anyway. `frontend` is not on the default network.
 

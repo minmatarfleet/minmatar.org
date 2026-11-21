@@ -1,0 +1,160 @@
+---
+// Story-only: one imagery collection (rust/foundations/imagery_collections.ts),
+// each picture once with its variants (-990 crops, .webp copies) listed.
+import { collection_by_id, list_imagery } from '../foundations/imagery'
+
+interface Props {
+    collection:     string;
+    limit?:         number;
+    background?:    string;
+}
+
+const { collection: id, limit, background = 'transparent' } = Astro.props
+const collection = collection_by_id(id)
+const all = list_imagery(collection)
+const items = limit ? all.slice(0, limit) : all
+const label = (key: string) => key.split('/').pop()!.replace(/[-_]+/g, ' ')
+---
+
+<section class="imagery" data-collection={collection.id} data-layout={collection.layout} data-total={all.length} style={`--imagery-background: ${background}`}>
+    <header>
+        <h3>{collection.title} <small>{all.length}</small></h3>
+        <p>{collection.description}</p>
+        <code>{collection.root === 'src' ? 'src/' : 'public/'}{collection.dir}</code>
+    </header>
+
+    <ul role="list">
+        {items.map((item) => (
+            <li data-key={item.key} data-url={item.url}>
+                <figure>
+                    <div class="frame">
+                        {collection.layout === 'video'
+                            ? <video src={item.preview} muted loop playsinline preload="metadata" controls aria-label={label(item.key)} />
+                            : <img src={item.preview} alt={label(item.key)} loading="lazy" decoding="async" />}
+                    </div>
+                    <figcaption>
+                        <code class="url">{item.url}</code>
+                        {item.files.length > 1 && (
+                            <span class="variants">{item.files.map((file) => <span>{file}</span>)}</span>
+                        )}
+                    </figcaption>
+                </figure>
+            </li>
+        ))}
+    </ul>
+</section>
+
+<style lang="scss">
+    .imagery {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    header {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        h3 {
+            margin: 0;
+            font-family: var(--heading-font);
+            font-size: var(--step-1);
+            color: var(--highlight);
+
+            small {
+                color: var(--text-muted);
+                font-size: var(--step--1);
+            }
+        }
+
+        p {
+            margin: 0;
+            font-size: var(--step--1);
+            color: var(--text-muted);
+        }
+
+        code {
+            align-self: flex-start;
+            font-size: var(--step--2);
+            color: var(--foreground);
+        }
+    }
+
+    ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: var(--space-s);
+        grid-template-columns: repeat(auto-fill, minmax(min(10rem, 100%), 1fr));
+    }
+
+    [data-layout='wide'] ul,
+    [data-layout='video'] ul {
+        grid-template-columns: repeat(auto-fill, minmax(min(18rem, 100%), 1fr));
+    }
+
+    figure {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid var(--hairline-medium);
+        background: var(--component-background);
+        block-size: 100%;
+    }
+
+    .frame {
+        display: grid;
+        place-items: center;
+        aspect-ratio: 1;
+        padding: var(--space-xs);
+        background: var(--imagery-background);
+        overflow: hidden;
+
+        img, video {
+            max-inline-size: 100%;
+            max-block-size: 100%;
+            object-fit: contain;
+        }
+    }
+
+    [data-layout='wide'] .frame,
+    [data-layout='video'] .frame {
+        aspect-ratio: 16 / 9;
+        padding: 0;
+
+        img, video {
+            inline-size: 100%;
+            block-size: 100%;
+            object-fit: cover;
+        }
+    }
+
+    figcaption {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-2xs) var(--space-xs);
+        border-block-start: 1px solid var(--hairline);
+    }
+
+    .url {
+        font-size: var(--step--2);
+        color: var(--foreground);
+        word-break: break-all;
+    }
+
+    .variants {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs);
+
+        span {
+            font-size: var(--step--2);
+            color: var(--text-muted);
+            padding: 0 var(--space-3xs);
+            border: 1px solid var(--hairline);
+        }
+    }
+</style>

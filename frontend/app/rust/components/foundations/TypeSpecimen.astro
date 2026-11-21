@@ -1,0 +1,142 @@
+---
+// Every font family the app declares (root tokens, component tokens, @font-face,
+// @fontsource and Google Fonts imports) and the fluid type scale.
+import { read_font_families, tokens_of } from '../../foundations/tokens'
+
+interface Props {
+    sample?:        string;
+    show_scale?:    boolean;
+    show_system?:   boolean;
+}
+
+const {
+    sample = 'Rifter fleet forming in Amamake at 19:00',
+    show_scale = true,
+    show_system = false,
+} = Astro.props
+
+const SOURCE_LABEL = {
+    'self-hosted':  'Self-hosted (/fonts)',
+    'fontsource':   '@fontsource package',
+    'google-fonts': 'Google Fonts',
+    'system':       'System fallback',
+}
+
+const families = read_font_families().filter((f) => show_system || f.source !== 'system')
+const steps = tokens_of('font-size').filter((t) => t.name.startsWith('--step-'))
+    .sort((a, b) => Number(b.name.replace('--step-', '')) - Number(a.name.replace('--step-', '')))
+---
+
+<div class="type-specimen">
+    <ul role="list" class="families" data-total={families.length}>
+        {families.map((font) => (
+            <li data-family={font.family} data-source={font.source}>
+                <p class="sample" style={`font-family: '${font.family}', monospace`}>{sample}</p>
+                <p class="glyphs" style={`font-family: '${font.family}', monospace`}>ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789</p>
+                <dl>
+                    <dt>Family</dt><dd>{font.family}</dd>
+                    <dt>Source</dt><dd>{SOURCE_LABEL[font.source]}</dd>
+                    {font.tokens.length > 0 && <><dt>Tokens</dt><dd>{font.tokens.map((t) => <code>{t}</code>)}</dd></>}
+                </dl>
+            </li>
+        ))}
+    </ul>
+
+    {show_scale && (
+        <table class="scale" data-total={steps.length}>
+            <caption>Fluid type scale (320 px → 1240 px)</caption>
+            <tbody>
+                {steps.map((step) => (
+                    <tr data-token={step.name}>
+                        <th scope="row"><code>{step.name}</code></th>
+                        <td style={`font-size: var(${step.name})`}>Fleet up</td>
+                        <td><code>{step.value}</code></td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    )}
+</div>
+
+<style lang="scss">
+    .type-specimen {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xl);
+    }
+
+    .families {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+
+        > li {
+            padding: var(--space-s);
+            border: 1px solid var(--hairline-medium);
+            background: var(--component-background);
+        }
+    }
+
+    .sample {
+        font-size: var(--step-3);
+        color: var(--highlight);
+        margin: 0 0 var(--space-2xs);
+    }
+
+    .glyphs {
+        font-size: var(--step-0);
+        margin: 0 0 var(--space-s);
+        word-break: break-all;
+    }
+
+    dl {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: var(--space-3xs) var(--space-s);
+        margin: 0;
+        font-size: var(--step--1);
+    }
+
+    dt {
+        color: var(--text-muted);
+    }
+
+    dd {
+        margin: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs);
+    }
+
+    .scale {
+        border-collapse: collapse;
+        inline-size: 100%;
+
+        caption {
+            text-align: start;
+            color: var(--text-muted);
+            padding-block-end: var(--space-xs);
+        }
+
+        th, td {
+            text-align: start;
+            padding: var(--space-3xs) var(--space-xs);
+            border-block-end: 1px solid var(--hairline);
+            font-weight: normal;
+        }
+
+        td:nth-child(2) {
+            font-family: var(--heading-font);
+            color: var(--highlight);
+            white-space: nowrap;
+        }
+
+        td:last-child code {
+            font-size: var(--step--2);
+            color: var(--text-muted);
+        }
+    }
+</style>

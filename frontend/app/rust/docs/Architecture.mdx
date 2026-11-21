@@ -1,0 +1,71 @@
+import { Meta } from '@storybook/addon-docs/blocks'
+
+<Meta title="Rust/Architecture" />
+
+# How Rust is organised
+
+Rust follows the structure most large design systems settled on after Atomic Design (GitHub Primer, Shopify
+Polaris, IBM Carbon, Atlassian): **design tokens at the base, then a small number of tiers named for what
+things are for**, instead of Atomic Design's atoms, molecules and organisms.
+
+## Why not Atomic Design's five levels
+
+Atomic Design (atoms → molecules → organisms → templates → pages) is still a good way to *think* about
+composition, and Rust's tiers map onto it. As a *filing system* it breaks down as a library grows:
+
+- **The classification arguments never end.** Is `ActionMenu` a molecule or an organism? Is an icon button an
+  atom? Teams spend review time on taxonomy instead of on the component. Brad Frost himself describes the levels
+  as a mental model, not folders.
+- **Names don't say what a thing does.** Someone looking for "the thing for an empty list" won't look under
+  *molecules*; they will look under *Feedback*.
+- **It has no layer for values.** Colours, spacing and type are where consistency actually comes from, and they
+  sit below atoms. Modern systems make that layer explicit as design tokens.
+
+So Rust keeps the composition idea and files everything by purpose.
+
+## The tiers
+
+| Tier | What it holds | Atomic Design equivalent | Rule |
+| --- | --- | --- | --- |
+| **Foundations** | Design tokens (colour, type, space, motion, layers, glass), themes, fonts, icons, logos | below atoms | Generated from `src/styles/` — never hand-copied |
+| **Layout** | Composition primitives: `Wrapper`, `Grid`, `Flexblock`, `FlexInline`, `FixedFluid`, `XFadeScroll`, ... | atoms (structural) | Layout comes from these, not bespoke flex/grid CSS |
+| **Components** | Shared UI, grouped by purpose: Forms, Feedback, Data display, Navigation, Overlays | atoms + molecules + organisms | Domain-free; data in through props and slots |
+| **EVE** | Domain components: characters, corporations, items, ships and the SDE (systems, security, types, slots, search) | organisms | Know about EVE; still presentational, data via props or htmx partials |
+| **Page** | Page chrome: titles, sub-headers, actions, breadcrumbs, text boxes | templates | Every page uses these for its frame |
+| **Features** | The site's feature blocks (fleet lists, campaign boards, order books, ...) rendered with typed fixture data, in scenarios: empty, typical, busy, edge cases | pages | Not a reusable library: a workbench for building and reviewing features without the backend |
+
+Pages themselves (`src/pages/`) live in the app, not in Rust. **Features** is where their blocks are built and
+reviewed: each story feeds a real block typed fixture data (`rust/fixtures/features/`), so a feature can be
+designed against an empty state, a busy fleet or a pilot with a 40-character name before the API returns one.
+
+A component moves up a tier only when it is reused: a block used by one page stays in `src/components/blocks/`
+next to it and joins Rust (`rust/library.ts`) once a second feature needs it.
+
+## Design tokens
+
+Tokens follow the three-tier convention, expressed with CSS custom properties:
+
+1. **Primitive** — a raw value with no opinion: `--fleet-red: #b53620`, `--space-s: clamp(...)`.
+2. **Semantic** — an alias that says what it is for: `--foreground: var(--fleet-yellow)`,
+   `--button-color`, `--hairline`. Components use these where one exists, and themes (colour-blind mode) work
+   by redefining them.
+3. **Component** — scoped to one component through `define:vars` (`--button_background_color`). They never leak
+   into `:root`.
+
+The **Foundations** pages are rendered from the stylesheets themselves, and
+[`/rust/tokens.json`](./tokens.json) exports every root token in the
+[Design Tokens Community Group format](https://www.designtokens.org/) (stable since 2025.10), with aliases kept as
+references (`"{color.fleet-yellow}"`), so design tools and other apps (the desktop overlay, the mobile app) can read
+the same values. `npm run test` fails when the export falls behind the CSS, when a token, font family, theme
+mode or UI scale is missing from Foundations, or when a font the app imports isn't loaded in Rust.
+
+## Scaling rules
+
+- **One component per job.** Before adding a component, search Rust; extend one with a prop before copying it.
+- **Every shared component has stories and tests** (`rust/library.ts`, enforced by `testing/rust/library.test.ts`):
+  at least three stories, `play()` tests and a docs description.
+- **Purpose over appearance in names**: `EmptyState`, not `GreyText`.
+- **Tokens, never literals.** **Colours not yet tokens** under Foundations lists the hex values still written by
+  hand; that list should only shrink.
+- **Server state through htmx, local UI through Alpine** (`docs/frontend-design.md`); data-driven components
+  (the SDE search, pagers, lazy partials) render on the server and are tested here with mocked partials.

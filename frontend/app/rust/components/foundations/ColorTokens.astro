@@ -1,0 +1,110 @@
+---
+// Every colour token in src/styles, read from the stylesheets at render time
+// and drawn with the token itself (rust/foundations/tokens.ts).
+import { read_tokens, color_family, COLOR_FAMILIES, read_theme_overrides } from '../../foundations/tokens'
+
+interface Props {
+    family?:        string;     // one of COLOR_FAMILIES; all when unset
+    show_values?:   boolean;
+}
+
+const { family, show_values = true } = Astro.props
+
+const overrides = new Map(read_theme_overrides().flatMap((o) => o.tokens.map((t) => [t.name, o.selector] as const)))
+const tokens = read_tokens().filter((t) => t.kind === 'color')
+const families = COLOR_FAMILIES.filter((f) => !family || f === family)
+    .map((name) => ({ name, tokens: tokens.filter((t) => color_family(t) === name) }))
+    .filter((f) => f.tokens.length)
+---
+
+<div class="color-tokens" data-total={families.reduce((n, f) => n + f.tokens.length, 0)}>
+    {families.map((f) => (
+        <section class="family" data-family={f.name}>
+            <h3>{f.name} <small>{f.tokens.length}</small></h3>
+            <ul role="list">
+                {f.tokens.map((token) => (
+                    <li data-token={token.name} data-tier={token.tier}>
+                        <span class="swatch" style={`background: var(${token.name})`} aria-hidden="true" />
+                        <code class="name">{token.name}</code>
+                        {show_values && <code class="value">{token.value}</code>}
+                        <span class="meta">
+                            <span class="tier">{token.tier}</span>
+                            {overrides.has(token.name) && <span class="override" title={`Redefined by ${overrides.get(token.name)}`}>themed</span>}
+                        </span>
+                    </li>
+                ))}
+            </ul>
+        </section>
+    ))}
+</div>
+
+<style lang="scss">
+    .color-tokens {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+    }
+
+    h3 {
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        margin: 0 0 var(--space-s);
+
+        small {
+            color: var(--text-muted);
+            font-size: var(--step--1);
+        }
+    }
+
+    ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr));
+        gap: var(--space-s);
+    }
+
+    li {
+        display: grid;
+        grid-template-columns: var(--space-xl) 1fr;
+        grid-template-rows: auto auto auto;
+        column-gap: var(--space-xs);
+        align-items: center;
+        padding: var(--space-2xs);
+        border: 1px solid var(--hairline-medium);
+        background: var(--component-background);
+    }
+
+    .swatch {
+        grid-row: 1 / 4;
+        block-size: var(--space-xl);
+        border: 1px solid var(--hairline-strong);
+        // Checkerboard under translucent tokens.
+        background-image: linear-gradient(45deg, var(--hairline) 25%, transparent 25%, transparent 75%, var(--hairline) 75%);
+    }
+
+    .name {
+        color: var(--highlight);
+        font-size: var(--step--1);
+        word-break: break-all;
+    }
+
+    .value {
+        color: var(--text-muted);
+        font-size: var(--step--2);
+        word-break: break-all;
+    }
+
+    .meta {
+        display: flex;
+        gap: var(--space-3xs);
+        font-size: var(--step--2);
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .override {
+        color: var(--fleet-yellow);
+    }
+</style>

@@ -1,0 +1,160 @@
+---
+/**
+ * Search solar systems by name. The input asks the server
+ * (`/partials/sde_system_search_component`) as the pilot types, 300 ms after
+ * the last keystroke or on Enter/clear, and htmx swaps the SolarSystemResults
+ * it renders into an aria-live region. Filters (`region_ids`, `security`,
+ * `wormholes`, `limit`) travel in the request URL; `security` bands use the
+ * displayed value (0.45 is high-sec, 0.03 is low-sec).
+ *
+ * With `name`, results are buttons: picking one fills a hidden input `name`
+ * with the system id, shows the pick, and clears the list (local Alpine
+ * state). With `href_template`, results link to a page instead.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { SdeSolarSystem } from '@dtypes/sde'
+import type { SystemSecurityFilter } from '@helpers/sde/search'
+
+interface Props {
+    id:                 string;
+    /** Hidden input name for the picked system id; makes results selectable. */
+    name?:              string;
+    label?:             string;
+    placeholder?:       string;
+    region_ids?:        number[];
+    security?:          SystemSecurityFilter;
+    /** Include J-space when `security` is `any`. */
+    wormholes?:         boolean;
+    limit?:             number;
+    /** Same-site link per result, with `{system_id}` / `{system_name}`. */
+    href_template?:     string;
+    selected?:          Pick<SdeSolarSystem, 'system_id' | 'system_name'> | null;
+    [propName: string]: any;
+}
+
+const {
+    id,
+    name,
+    label = t('sde.system_search.label'),
+    placeholder = t('sde.system_search.placeholder'),
+    region_ids = [],
+    security = 'any',
+    wormholes = true,
+    limit,
+    href_template,
+    selected = null,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+
+const params: Record<string, string> = {}
+if (region_ids.length > 0) params.region_ids = region_ids.join(',')
+if (security !== 'any') params.security = security
+if (!wormholes) params.wormholes = '0'
+if (limit) params.limit = String(limit)
+if (name) params.selectable = '1'
+else if (href_template) params.href = href_template
+
+const base = translatePath('/partials/sde_system_search_component')
+const partial_url = Object.keys(params).length > 0 ? `${base}?${new URLSearchParams(params)}` : base
+
+const input_id = `${id}-input`
+const results_id = `${id}-results`
+const indicator_id = `${id}-indicator`
+const hint_id = `${id}-hint`
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Input from '@components/blocks/Input.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
+---
+
+<div
+    id={id}
+    class:list={['[ sde-search ]', Astro.props.class]}
+    x-data={`{
+        selected_id: ${selected ? Number(selected.system_id) : 'null'},
+        selected_name: ${JSON.stringify(selected?.system_name ?? '')},
+        pick(detail) {
+            this.selected_id = detail.system_id
+            this.selected_name = detail.system_name
+            $refs.input.value = detail.system_name
+            $refs.results.replaceChildren()
+        },
+        clear() {
+            this.selected_id = null
+            this.selected_name = ''
+            $refs.input.value = ''
+            $refs.input.focus()
+        },
+    }`}
+    x-on:sde-system-select="pick($event.detail)"
+    {...attributes}
+>
+    <Flexblock gap="var(--space-2xs)">
+        <label for={input_id}>{label}</label>
+        <Input
+            id={input_id}
+            type="search"
+            name="q"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder={placeholder}
+            x-ref="input"
+            aria-controls={results_id}
+            aria-describedby={hint_id}
+            hx-get={partial_url}
+            hx-trigger="input changed delay:300ms, search"
+            hx-target={`#${results_id}`}
+            hx-swap="innerHTML"
+            hx-sync="this:replace"
+            hx-indicator={`#${indicator_id}`}
+        >
+            <MagnifierIcon slot="icon" />
+        </Input>
+        <FlexInline gap="var(--space-2xs)" justification="space-between">
+            <small id={hint_id} class="[ sde-search__hint ]">{t('sde.search.hint')}</small>
+            <small id={indicator_id} class="[ sde-search__indicator ][ htmx-indicator ]" aria-hidden="true">{t('sde.search.searching')}</small>
+        </FlexInline>
+        <div
+            id={results_id}
+            class="[ sde-search__results ]"
+            x-ref="results"
+            role="region"
+            aria-live="polite"
+            aria-label={t('sde.search.results')}
+        ></div>
+        {name && <>
+            <div class="[ sde-search__selected ]" x-show="selected_id" style={selected ? undefined : "display: none"}>
+                <FlexInline gap="var(--space-2xs)">
+                    <small>{t('sde.search.selected')}</small>
+                    <strong x-text="selected_name">{selected?.system_name}</strong>
+                    <StylessButton type="button" class="[ sde-search__clear ]" x-on:click="clear()">{t('sde.search.clear')}</StylessButton>
+                </FlexInline>
+            </div>
+            <input type="hidden" name={name} value={selected?.system_id ?? ''} x-effect="$el.value = selected_id ?? ''" />
+        </>}
+    </Flexblock>
+</div>
+
+<style lang="scss">
+    .sde-search__hint,
+    .sde-search__indicator {
+        color: var(--text-muted);
+    }
+
+    .sde-search__results {
+        max-height: 50vh;
+        overflow-y: auto;
+    }
+
+    .sde-search__clear {
+        color: var(--fleet-red);
+        text-decoration: underline;
+    }
+</style>

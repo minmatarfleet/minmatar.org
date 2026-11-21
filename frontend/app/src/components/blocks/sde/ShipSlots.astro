@@ -1,0 +1,105 @@
+---
+/**
+ * A hull's slot layout: high, mid, low and rig counts with the EVE slot icons,
+ * plus subsystems for strategic cruisers. `hardpoints` adds the turret and
+ * launcher counts. Data comes in as props (`counts`: `type.slots` from
+ * search_types() or get_ship_slots()); this component never queries the SDE.
+ *
+ * Each count reads as "3 high slots" to screen readers; the icons are decorative.
+ */
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { ShipSlotCounts } from '@dtypes/sde'
+
+interface Props {
+    /** Named `counts`, not `slots`: `slots` is reserved for Astro slot content in Rust stories. */
+    counts:             ShipSlotCounts;
+    hardpoints?:        boolean;
+    /** Icon width, a token or CSS length. */
+    icon_size?:         string;
+    gap?:               string;
+    [propName: string]: any;
+}
+
+const {
+    counts: slots,
+    hardpoints = false,
+    icon_size = 'var(--space-m)',
+    gap = 'var(--space-2xs) var(--space-xs)',
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+import HighSlotEvEIcon from '@components/icons/HighSlotEvEIcon.astro'
+import MediumSlotEvEIcon from '@components/icons/MediumSlotEvEIcon.astro'
+import LowSlotEvEIcon from '@components/icons/LowSlotEvEIcon.astro'
+import RigSlotEveIcon from '@components/icons/RigSlotEveIcon.astro'
+
+const rows = [
+    { key: 'high', count: slots.high, label: t('sde.slots.high'), Icon: HighSlotEvEIcon },
+    { key: 'mid', count: slots.mid, label: t('sde.slots.mid'), Icon: MediumSlotEvEIcon },
+    { key: 'low', count: slots.low, label: t('sde.slots.low'), Icon: LowSlotEvEIcon },
+    { key: 'rig', count: slots.rig, label: t('sde.slots.rig'), Icon: RigSlotEveIcon },
+]
+
+const show_hardpoints = hardpoints && (slots.turrets !== undefined || slots.launchers !== undefined)
+---
+
+<div
+    class:list={['[ ship-slots ]', Astro.props.class]}
+    style={`--ship_slots_icon: ${icon_size}`}
+    {...attributes}
+>
+    <FlexInline gap={gap} role="list" aria-label={t('sde.slots.label')}>
+        {rows.map(({ key, count, label, Icon }) =>
+            <span role="listitem" class="[ ship-slots__slot ]" data-slot={key} data-count={count}>
+                <span class="[ ship-slots__icon ]" aria-hidden="true"><Icon /></span>
+                <span class="[ ship-slots__count ]">{count}</span>
+                <span class="[ visually-hidden ]">{label}</span>
+            </span>
+        )}
+        {slots.subsystem > 0 &&
+            <span role="listitem" class="[ ship-slots__slot ]" data-slot="subsystem" data-count={slots.subsystem}>
+                <span class="[ ship-slots__abbr ]" aria-hidden="true">{t('sde.slots.subsystem_abbr')}</span>
+                <span class="[ ship-slots__count ]">{slots.subsystem}</span>
+                <span class="[ visually-hidden ]">{t('sde.slots.subsystem')}</span>
+            </span>
+        }
+        {show_hardpoints &&
+            <span role="listitem" class="[ ship-slots__hardpoints ]" data-slot="hardpoints">
+                <small>{t('sde.hardpoints.turrets').replace('~COUNT', String(slots.turrets ?? 0))}</small>
+                <small>{t('sde.hardpoints.launchers').replace('~COUNT', String(slots.launchers ?? 0))}</small>
+            </span>
+        }
+    </FlexInline>
+</div>
+
+<style lang="scss">
+    .ship-slots__slot {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        font-variant-numeric: tabular-nums;
+        color: var(--highlight);
+    }
+
+    .ship-slots__icon {
+        display: inline-flex;
+        width: var(--ship_slots_icon);
+    }
+
+    .ship-slots__abbr {
+        font-size: var(--step--2);
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .ship-slots__hardpoints {
+        display: inline-flex;
+        gap: var(--space-2xs);
+        color: var(--text-muted);
+    }
+</style>
