@@ -36,7 +36,7 @@ def user_is_ceo(user: User, corporation: EveCorporation) -> bool:
 def can_manage_corporation(user: User, corporation: EveCorporation) -> bool:
     if user is None or not getattr(user, "is_authenticated", False):
         return False
-    if user_is_ceo(user, corporation):
+    if user.is_superuser or user_is_ceo(user, corporation):
         return True
     if any(_owns(user, director) for director in corporation.directors.all()):
         return True
@@ -103,9 +103,12 @@ def can_view_member_characters(
 def can_manage_corporation_projects(
     user: User, corporation: EveCorporation
 ) -> bool:
-    """CEO and directors put the corporation's projects toward campaigns."""
+    """CEO, directors and superusers put the corporation's projects toward
+    campaigns."""
     if user is None or not getattr(user, "is_authenticated", False):
         return False
+    if user.is_superuser:
+        return True
     return user_is_ceo(user, corporation) or user_is_director(
         user, corporation
     )
@@ -127,10 +130,12 @@ def can_view_corporation_projects(
 def can_edit_corporation_settings(
     user: User, corporation: EveCorporation
 ) -> bool:
-    """The Settings tab (Reddit post, forum thread, Discord server): the CEO
-    and directors."""
+    """The Settings tab (Reddit post, forum thread, Discord server): the CEO,
+    directors and superusers."""
     if user is None or not getattr(user, "is_authenticated", False):
         return False
+    if user.is_superuser:
+        return True
     return user_is_ceo(user, corporation) or user_is_director(
         user, corporation
     )

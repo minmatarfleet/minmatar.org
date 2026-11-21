@@ -475,11 +475,11 @@ class RouterTestCase(CorporationPostTestCase):
         )
         self.assertEqual(200, response.status_code)
 
-    def test_superuser_who_is_not_ceo_cannot_edit(self):
+    def test_superuser_who_is_not_ceo_can_edit(self):
         other = self.other_user_token()
         User.objects.filter(username="not-ceo").update(is_superuser=True)
         self.assertEqual(
-            403, self.client.get(self.url, **self.auth(other)).status_code
+            200, self.client.get(self.url, **self.auth(other)).status_code
         )
 
     def test_ceo_saves_settings(self):
