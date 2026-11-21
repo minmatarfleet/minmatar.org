@@ -45888,6 +45888,58 @@
         "title": "SrpStatsOverviewResponse",
         "type": "object"
       },
+      "StagingLocation": {
+        "properties": {
+          "location_id": {
+            "title": "Location Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "short_name": {
+            "title": "Short Name",
+            "type": "string"
+          },
+          "solar_system_name": {
+            "title": "Solar System Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "location_id",
+          "name",
+          "short_name",
+          "solar_system_name"
+        ],
+        "title": "StagingLocation",
+        "type": "object"
+      },
+      "Stagings": {
+        "properties": {
+          "deployments": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/StagingLocation"
+            },
+            "title": "Deployments",
+            "type": "array"
+          },
+          "home": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StagingLocation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "Stagings",
+        "type": "object"
+      },
       "StartFleetNowRequest": {
         "description": "Optional body for quick-start fleet (which character is in the fleet).",
         "properties": {
@@ -84190,6 +84242,35 @@
           }
         ],
         "summary": "Post Parse",
+        "tags": [
+          "Structures",
+          "Structure browser"
+        ]
+      }
+    },
+    "/api/structures/locations/stagings": {
+      "get": {
+        "description": "The home staging and the deployment locations this user may see.",
+        "operationId": "structures_endpoints_get_stagings_get_stagings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stagings"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "AuthOptional": []
+          }
+        ],
+        "summary": "Get Stagings",
         "tags": [
           "Structures",
           "Structure browser"

@@ -8585,6 +8585,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/structures/locations/stagings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Stagings
+         * @description The home staging and the deployment locations this user may see.
+         */
+        get: operations["structures_endpoints_get_stagings_get_stagings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/structures/locations/submissions": {
         parameters: {
             query?: never;
@@ -29219,6 +29239,26 @@ export interface components {
             pending_requests: number;
             /** Pending Total */
             pending_total: number;
+        };
+        /** StagingLocation */
+        StagingLocation: {
+            /** Location Id */
+            location_id: number;
+            /** Name */
+            name: string;
+            /** Short Name */
+            short_name: string;
+            /** Solar System Name */
+            solar_system_name: string;
+        };
+        /** Stagings */
+        Stagings: {
+            /**
+             * Deployments
+             * @default []
+             */
+            deployments?: components["schemas"]["StagingLocation"][];
+            home?: components["schemas"]["StagingLocation"] | null;
         };
         /**
          * StartFleetNowRequest
@@ -52982,6 +53022,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    structures_endpoints_get_stagings_get_stagings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Stagings"];
                 };
             };
         };

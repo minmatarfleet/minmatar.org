@@ -474,6 +474,13 @@ def get_structure_pings(
     ]
 
 
+# Registered first so /locations/stagings is not read as a location id.
+from .endpoints.get_stagings import (  # noqa: E402 pylint: disable=wrong-import-position
+    router as stagings_router,
+)
+
+router.add_router("locations", stagings_router)
+
 # Structure browser: alliance locations, submissions and their history.
 from .location_router import (  # noqa: E402 pylint: disable=wrong-import-position
     router as location_router,
