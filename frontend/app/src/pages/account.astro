@@ -101,6 +101,7 @@ const DELETE_ACCOUNT_URL = translatePath('/api/auth')
 const CLEAR_ACCOUNT_CACHE_URL = translatePath('/api/cache')
 const PILOTS_LIST_PARTIAL_URL = translatePath('/partials/pilots_list_component/')
 const REFRESH_DISCORD_ROLES_PARTIAL_URL = `${translatePath('/partials/refresh_discord_roles_component/')}?is_friend=false`
+const DISCORD_NICKNAME_PARTIAL_URL = translatePath('/partials/discord_nickname_component/')
 const ACCOUNT_REFERRALS_PARTIAL_URL = translatePath('/partials/account_referrals_component/')
 const TRAINING_PARTIAL_URL = translatePath('/partials/training_component/')
 const TRIAL_PARTIAL_URL = translatePath('/partials/trial_component/')
@@ -326,6 +327,14 @@ const page_title = t('account.page_title');
                                     >
                                         {t('refresh_discord_roles')}
                                     </Button>
+                                </SettingRow>
+                                <SettingRow
+                                    title={t('account.discord_nickname')}
+                                    description={t('account.discord_nickname_description')}
+                                >
+                                    <LazyPartial url={DISCORD_NICKNAME_PARTIAL_URL} trigger="reveal" swap="outerHTML">
+                                        <p class="[ loading ]">{t('loading')}</p>
+                                    </LazyPartial>
                                 </SettingRow>
                                 <SettingRow
                                     title={t('fleet_discord')}

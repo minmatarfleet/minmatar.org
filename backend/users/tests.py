@@ -11,6 +11,7 @@ from esi.models import CallbackRedirect, Token
 
 from app.test import TestCase
 from discord.client import DiscordError
+from discord.helpers import get_expected_nickname
 from discord.models import DiscordChannelActivityRecord, DiscordUser
 from eveonline.models import EveCharacter, EveCorporation, EvePlayer
 from eveonline.helpers.characters import (
@@ -804,3 +805,99 @@ class IsAllowedLoginRedirectTestCase(TestCase):
             response = oauth_redirect(f"{url}?token=t")
             self.assertEqual(302, response.status_code, url)
             self.assertEqual(f"{url}?token=t", response.url, url)
+
+
+class DiscordNicknameChoiceTestCase(TestCase):
+    """Pick which of your own characters is your Discord nickname."""
+
+    URL = "/api/users/me/discord-nickname"
+
+    def setUp(self):
+        EveCorporation.objects.create(
+            corporation_id=1, name="Home Corp", ticker="HOME"
+        )
+        EveCorporation.objects.create(
+            corporation_id=2, name="Alt Corp", ticker="ALT"
+        )
+        self.client = Client()
+        self.user = User.objects.create_user(username="nick_pilot")
+        self.other = User.objects.create_user(username="someone_else")
+        self.main = EveCharacter.objects.create(
+            character_id=11,
+            character_name="Main Pilot",
+            corporation_id=1,
+            user=self.user,
+        )
+        self.alt = EveCharacter.objects.create(
+            character_id=12,
+            character_name="Alt Pilot",
+            corporation_id=2,
+            user=self.user,
+        )
+        self.not_mine = EveCharacter.objects.create(
+            character_id=13,
+            character_name="Stranger",
+            corporation_id=1,
+            user=self.other,
+        )
+        EvePlayer.objects.create(
+            user=self.user, nickname="nick_pilot", primary_character=self.main
+        )
+        self.discord_user = DiscordUser.objects.create(
+            id=999, discord_tag="nick#1", user=self.user
+        )
+        token = jwt.encode(
+            {"user_id": self.user.id}, settings.SECRET_KEY, algorithm="HS256"
+        )
+        self.auth = {"HTTP_AUTHORIZATION": f"Bearer {token}"}
+        patcher = patch("discord.tasks.discord.update_user")
+        self.update_user = patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def choose(self, character_id):
+        return self.client.patch(
+            self.URL,
+            {"character_id": character_id},
+            content_type="application/json",
+            **self.auth,
+        )
+
+    def test_requires_sign_in(self):
+        self.assertEqual(self.client.get(self.URL).status_code, 401)
+
+    def test_defaults_to_main_and_lists_only_own_characters(self):
+        response = self.client.get(self.URL, **self.auth)
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertIsNone(body["character_id"])
+        self.assertEqual(body["current"], "[HOME] Main Pilot")
+        self.assertEqual(
+            [o["character_id"] for o in body["options"]], [12, 11]
+        )
+
+    def test_choosing_an_alt_keeps_that_characters_ticker(self):
+        response = self.choose(12)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["current"], "[ALT] Alt Pilot")
+        self.update_user.assert_called_once_with(
+            999, nickname="[ALT] Alt Pilot"
+        )
+
+    def test_cannot_choose_someone_elses_character(self):
+        response = self.choose(13)
+        self.assertEqual(response.status_code, 403)
+        self.discord_user.refresh_from_db()
+        self.assertIsNone(self.discord_user.nickname_character)
+        self.update_user.assert_not_called()
+
+    def test_null_goes_back_to_main(self):
+        self.choose(12)
+        response = self.choose(None)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["current"], "[HOME] Main Pilot")
+
+    def test_lost_character_falls_back_to_main(self):
+        self.choose(12)
+        self.alt.user = self.other
+        self.alt.save()
+        self.assertEqual(get_expected_nickname(self.user), "[HOME] Main Pilot")

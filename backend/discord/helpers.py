@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 
 from discord.client import DiscordClient
 from eveonline.helpers.characters import user_primary_character
+from eveonline.helpers.characters.identity import owned_by_q
 from eveonline.models import EveCharacter
 from users.helpers import offboard_user
 
@@ -93,20 +94,38 @@ def handle_discord_guild_member_error(
     return False
 
 
+def nickname_character_for(user: User, discord_user: DiscordUser):
+    """The character whose name this user's Discord nickname shows.
+
+    The pilot's pick while they still own it, otherwise their main.
+    """
+    chosen = discord_user.nickname_character
+    if (
+        chosen is not None
+        and EveCharacter.objects.filter(
+            owned_by_q(user.id), pk=chosen.pk
+        ).exists()
+    ):
+        return chosen
+    return user_primary_character(user)
+
+
 def get_expected_nickname(user: User):
     """
     Return the expected Discord nickname for this user (character name format).
     Applies to all users with a primary character and DiscordUser, regardless of
     affiliation or community status (Trial, On Leave, Alliance, etc.).
+    The name is the character the pilot picked for Discord (any character they
+    own), else their main; the ticker is always that character's corp.
     """
     user = User.objects.get(id=user.id)
     discord_user = DiscordUser.objects.filter(user_id=user.id).first()
     if not discord_user:
         return None
-    eve_primary_character = user_primary_character(user)
-    if not eve_primary_character:
+    nickname_character = nickname_character_for(user, discord_user)
+    if not nickname_character:
         return None
-    return make_nickname(eve_primary_character, discord_user)
+    return make_nickname(nickname_character, discord_user)
 
 
 def get_discord_user(user: User, notify=False):

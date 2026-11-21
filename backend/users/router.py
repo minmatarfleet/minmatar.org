@@ -16,7 +16,12 @@ from discord.client import DiscordClient, DiscordError, discord_authorize_url
 from discord.exceptions import DiscordRoleAssignmentError
 
 # from discord.models import DiscordUser
+from discord.core import make_nickname
+from discord.helpers import get_expected_nickname
+from discord.models import DiscordUser
 from discord.tasks import sync_discord_user, sync_discord_nickname
+from eveonline.helpers.characters.identity import owned_by_q
+from eveonline.models import EveCharacter
 from esi.views import sso_redirect
 
 from audit.models import AuditEntry
@@ -47,6 +52,9 @@ from .models import UserDesktopSettings
 from .schemas import (
     DesktopSettingsPatchSchema,
     DesktopSettingsSchema,
+    DiscordNicknameOptionSchema,
+    DiscordNicknamePatchSchema,
+    DiscordNicknameSchema,
     UserProfileSchema,
 )
 
@@ -272,6 +280,78 @@ def patch_desktop_settings(request, payload: DesktopSettingsPatchSchema):
         row.values = values
         row.save()
     return desktop_settings_response(row)
+
+
+def discord_nickname_response(user):
+    discord_user = DiscordUser.objects.filter(user_id=user.id).first()
+    if discord_user is None:
+        return DiscordNicknameSchema()
+    characters = EveCharacter.objects.filter(owned_by_q(user.id)).order_by(
+        "character_name"
+    )
+    options = [
+        DiscordNicknameOptionSchema(
+            character_id=character.character_id,
+            character_name=character.character_name,
+            nickname=make_nickname(character, discord_user),
+        )
+        for character in characters
+    ]
+    chosen = discord_user.nickname_character
+    chosen_id = None
+    if chosen is not None and any(
+        option.character_id == chosen.character_id for option in options
+    ):
+        chosen_id = chosen.character_id
+    return DiscordNicknameSchema(
+        character_id=chosen_id,
+        current=get_expected_nickname(user),
+        options=options,
+    )
+
+
+@router.get(
+    "/me/discord-nickname",
+    summary="Get which of your characters is shown as your Discord nickname",
+    auth=AuthBearer(),
+    response={200: DiscordNicknameSchema},
+)
+def get_discord_nickname(request):
+    return discord_nickname_response(request.user)
+
+
+@router.patch(
+    "/me/discord-nickname",
+    summary="Choose which of your characters is shown as your Discord nickname",
+    description=(
+        "Any character you own. The corporation ticker still follows the "
+        "chosen character's corporation. A null character_id goes back to "
+        "your main."
+    ),
+    auth=AuthBearer(),
+    response={
+        200: DiscordNicknameSchema,
+        403: ErrorResponse,
+        404: ErrorResponse,
+    },
+)
+def patch_discord_nickname(request, payload: DiscordNicknamePatchSchema):
+    discord_user = DiscordUser.objects.filter(user_id=request.user.id).first()
+    if discord_user is None:
+        return 404, ErrorResponse(detail="Discord account not linked.")
+    character = None
+    if payload.character_id is not None:
+        character = EveCharacter.objects.filter(
+            owned_by_q(request.user.id), character_id=payload.character_id
+        ).first()
+        if character is None:
+            return 403, ErrorResponse(
+                detail="You can only use a character you own."
+            )
+    discord_user.nickname_character = character
+    discord_user.save(update_fields=["nickname_character", "updated_at"])
+    sync_discord_nickname(request.user, True)
+    return discord_nickname_response(request.user)
 
 
 def redirect_url_from_session(request):
