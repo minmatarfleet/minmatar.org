@@ -12,6 +12,12 @@ from fleets.endpoints.reference.get_fleet_types import (
     get_fleet_types,
     METHOD as get_fleet_types_method,
 )
+from fleets.endpoints.reference.get_v2_fleet_location_default import (
+    PATH as get_v2_fleet_location_default_path,
+    ROUTE_SPEC as get_v2_fleet_location_default_spec,
+    get_v2_fleet_location_default,
+    METHOD as get_v2_fleet_location_default_method,
+)
 from fleets.endpoints.reference.get_v2_fleet_locations import (
     PATH as get_v2_fleet_locations_path,
     ROUTE_SPEC as get_v2_fleet_locations_spec,
@@ -31,6 +37,12 @@ _ROUTES = (
         get_v2_fleet_locations_path,
         get_v2_fleet_locations_spec,
         get_v2_fleet_locations,
+    ),
+    (
+        get_v2_fleet_location_default_method,
+        get_v2_fleet_location_default_path,
+        get_v2_fleet_location_default_spec,
+        get_v2_fleet_location_default,
     ),
     (
         get_fleet_audiences_method,

@@ -12,7 +12,7 @@ from eveonline.helpers.characters import user_characters
 from fleets.endpoints.helpers import make_fleet_response
 from fleets.endpoints.schemas import EveFleetResponse, StartFleetNowRequest
 from fleets.helpers.fleet_boss import NO_BOSS
-from fleets.helpers.fleet_location import default_staging_location
+from fleets.helpers.fleet_location import resolve_scheduled_fleet_location
 from fleets.models import EveFleet, EveFleetAudience
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,8 @@ ROUTE_SPEC = {
         "Create a fleet with defaults, link to your current in-game fleet, "
         "and activate (no Discord). One of your characters must be the fleet "
         "commander (boss) of its in-game fleet: fc_character_id, else your "
-        "main, else whichever is boss. Needs fleets.create."
+        "main, else whichever is boss. location_id picks a fleet form-up "
+        "location (default: the staging). Needs fleets.create."
     ),
 }
 
@@ -44,9 +45,11 @@ def start_fleet_now(request, payload: Optional[StartFleetNowRequest] = None):
     if not audience:
         return 400, {"detail": "No fleet audience configured"}
 
-    location = default_staging_location()
-    if location is None:
-        return 400, {"detail": "No active staging location configured"}
+    location = resolve_scheduled_fleet_location(
+        payload.location_id if payload else None
+    )
+    if isinstance(location, tuple):
+        return location
 
     quick_objective = (payload.objective or "").strip() if payload else ""
     fleet = EveFleet.objects.create(

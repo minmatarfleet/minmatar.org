@@ -124,6 +124,13 @@ class EveFleetLocationResponse(BaseModel):
     solar_system_name: str
     short_name: str
     staging_active: bool
+    deployment_active: bool = False
+
+
+class EveFleetLocationDefaultResponse(BaseModel):
+    """Where a flash form forms up unless the FC picks another location."""
+
+    location_id: Optional[int] = None
 
 
 class EveFleetUsersResponse(BaseModel):
@@ -252,6 +259,8 @@ class StartFleetNowRequest(BaseModel):
 
     fc_character_id: Optional[int] = None
     objective: Optional[str] = Field(default=None, max_length=200)
+    # A fleet form-up location; the staging when left out.
+    location_id: Optional[int] = None
 
 
 class EveFleetRoleVolunteerResponse(BaseModel):
