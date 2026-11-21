@@ -192,6 +192,26 @@ class CampaignDetail(Schema):
     features: CampaignFeatures = CampaignFeatures()
 
 
+class CampaignTimerOut(Schema):
+    """One row of the campaign timerboard."""
+
+    id: int
+    name: str
+    structure_type: str
+    type_name: str
+    type_id: int | None = None
+    system: str
+    state: str
+    # Chevrons filled (1-3: shield, armor, hull) and whether it is the kill.
+    stage: int
+    final: bool
+    at: datetime
+    alliance_id: int | None = None
+    alliance_ticker: str = ""
+    done: bool = False
+    outcome: Literal["destroyed", "survived", "passed"]
+
+
 class RightNow(Schema):
     active_pilots: int = 0
     system_heat: int = 0

@@ -5518,6 +5518,103 @@
         "title": "CampaignSystemSummary",
         "type": "object"
       },
+      "CampaignTimerOut": {
+        "description": "One row of the campaign timerboard.",
+        "properties": {
+          "alliance_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alliance Id"
+          },
+          "alliance_ticker": {
+            "default": "",
+            "title": "Alliance Ticker",
+            "type": "string"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "done": {
+            "default": false,
+            "title": "Done",
+            "type": "boolean"
+          },
+          "final": {
+            "title": "Final",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "destroyed",
+              "survived",
+              "passed"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "integer"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "structure_type": {
+            "title": "Structure Type",
+            "type": "string"
+          },
+          "system": {
+            "title": "System",
+            "type": "string"
+          },
+          "type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type Id"
+          },
+          "type_name": {
+            "title": "Type Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "structure_type",
+          "type_name",
+          "system",
+          "state",
+          "stage",
+          "final",
+          "at",
+          "outcome"
+        ],
+        "title": "CampaignTimerOut",
+        "type": "object"
+      },
       "CampaignTotals": {
         "properties": {
           "active_today": {
@@ -58996,6 +59093,61 @@
           }
         ],
         "summary": "Get Timeline",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/api/campaigns/{slug}/timers": {
+      "get": {
+        "description": "The campaign timerboard: upcoming soonest first, then done.",
+        "operationId": "campaigns_endpoints_get_timers_get_campaign_timers",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CampaignTimerOut"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthOptional": []
+          }
+        ],
+        "summary": "Get Campaign Timers",
         "tags": [
           "Campaigns"
         ]

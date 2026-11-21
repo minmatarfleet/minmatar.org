@@ -1627,6 +1627,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/campaigns/{slug}/timers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Campaign Timers
+         * @description The campaign timerboard: upcoming soonest first, then done.
+         */
+        get: operations["campaigns_endpoints_get_timers_get_campaign_timers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/campaigns/{slug}/week": {
         parameters: {
             query?: never;
@@ -13182,6 +13202,52 @@ export interface components {
             victory_points?: number | null;
             /** Victory Points Threshold */
             victory_points_threshold?: number | null;
+        };
+        /**
+         * CampaignTimerOut
+         * @description One row of the campaign timerboard.
+         */
+        CampaignTimerOut: {
+            /** Alliance Id */
+            alliance_id?: number | null;
+            /**
+             * Alliance Ticker
+             * @default
+             */
+            alliance_ticker?: string;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /**
+             * Done
+             * @default false
+             */
+            done?: boolean;
+            /** Final */
+            final: boolean;
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "destroyed" | "survived" | "passed";
+            /** Stage */
+            stage: number;
+            /** State */
+            state: string;
+            /** Structure Type */
+            structure_type: string;
+            /** System */
+            system: string;
+            /** Type Id */
+            type_id?: number | null;
+            /** Type Name */
+            type_name: string;
         };
         /** CampaignTotals */
         CampaignTotals: {
@@ -36070,6 +36136,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TimelineEvent"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    campaigns_endpoints_get_timers_get_campaign_timers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignTimerOut"][];
                 };
             };
             /** @description Forbidden */

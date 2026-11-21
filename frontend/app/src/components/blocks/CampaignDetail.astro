@@ -82,6 +82,7 @@ const show_structures_tab = TABS.includes('structures')
 
 // Corporation projects directors put toward the campaign; loaded when the tab opens.
 const PROJECTS_PARTIAL_URL = translatePath(`/partials/campaign_projects_component?slug=${encodeURIComponent(campaign.slug)}`)
+const TIMERS_PARTIAL_URL = translatePath(`/partials/campaign_timers_component?slug=${encodeURIComponent(campaign.slug)}`)
 const SCHEDULE_FLEET_URL = translatePath(`/fleets/add/?campaign_id=${campaign.id}`)
 
 import Flexblock from '@components/compositions/Flexblock.astro'
@@ -103,6 +104,7 @@ import CampaignCorporationBoard from '@components/blocks/CampaignCorporationBoar
 import CampaignCoverageChart from '@components/blocks/CampaignCoverageChart.astro'
 import CampaignYouPanel from '@components/blocks/CampaignYouPanel.astro'
 import SectionTabs from '@components/blocks/SectionTabs.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
 import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
 import CampaignSettingsPanel from '@components/blocks/CampaignSettingsPanel.astro'
 ---
@@ -176,6 +178,16 @@ import CampaignSettingsPanel from '@components/blocks/CampaignSettingsPanel.astr
                         show_add_timer={true}
                         tracking={structures_tracking}
                     />
+                </ComponentBlock>
+            </SectionTabPanel>
+        }
+
+        {TABS.includes('timers') &&
+            <SectionTabPanel id="timers" id_prefix="campaign" is_default={default_tab === 'timers'}>
+                <ComponentBlock padding_inline='var(--space-m)' padding_block='var(--space-m)'>
+                    <LazyPartial url={TIMERS_PARTIAL_URL} trigger="reveal">
+                        <p class="[ campaign-panel-label ]">{t('campaigns.timers.loading')}</p>
+                    </LazyPartial>
                 </ComponentBlock>
             </SectionTabPanel>
         }

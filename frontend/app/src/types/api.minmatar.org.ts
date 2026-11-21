@@ -3278,6 +3278,7 @@ export type FreightRouteCreate = ApiRequest<'RouteCreateRequest'>
 export type FreightRoutePatch = ApiRequest<'RoutePatchRequest'>
 export type CampaignSettings = ApiResponse<'CampaignSettingsOut'>
 export type CampaignFeatures = ApiResponse<'CampaignFeatures'>
+export type CampaignTimer = ApiResponse<'CampaignTimerOut'>
 export type CampaignSettingsSystem = ApiResponse<'SettingsSystemOut'>
 export type CampaignCreate = ApiRequest<'CampaignCreateRequest'>
 export type CampaignSettingsPatch = ApiRequest<'CampaignPatchRequest'>
