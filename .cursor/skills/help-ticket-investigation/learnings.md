@@ -43,7 +43,7 @@ do not duplicate it — one clarifying clause at most.
 
 **Category:** pulse.technology
 **Verdict:** bug
-**Discord:** fix + PR URL
+**Discord:** fix + PR URL posted in the thread
 **PR:** fix+skill
 **Symptom vs cause:** After a class is booked, the only time change is the 48-hour "We moved it" answer, which clears the time and returns the request to asked. The mentor can now change the date and time while the class stays booked. Both pilots get a DM, and a new time restarts the 24-hour reminder.
 **Durable rule:** Accept books an asked request. `reschedule` moves a booked one. "We moved it" is still the close-out that puts the request back to asked.
