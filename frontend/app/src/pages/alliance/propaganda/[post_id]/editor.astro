@@ -372,8 +372,18 @@ const page_title = post?.title ?? t('new_post')
                         </FlexInlineSiblings>
 
                         {tribe_groups_by_tribe.length > 0 &&
-                            <Flexblock gap='var(--space-2xs)'>
-                                <label>{t('tribes.groups')}:</label>
+                            <details class="[ editor-groups ]">
+                                <summary>
+                                    {t('tribes.groups')}
+                                    <small class="[ editor-groups__picked ]">{
+                                        tribe_groups_by_tribe
+                                            .flatMap(({ groups }) => groups)
+                                            .filter(group => selected_tribe_group_ids.has(group.id))
+                                            .map(group => group.name)
+                                            .join(', ')
+                                    }</small>
+                                </summary>
+                            <Flexblock gap='var(--space-2xs)' class="[ editor-groups__options ]">
                                 {tribe_groups_by_tribe.map(({ tribe, groups }) =>
                                     groups.length > 0 &&
                                         <FlexInline>
@@ -390,6 +400,7 @@ const page_title = post?.title ?? t('new_post')
                                         </FlexInline>
                                 )}
                             </Flexblock>
+                            </details>
                         }
                     </Flexblock>
                 </Wrapper>
@@ -459,6 +470,35 @@ const page_title = post?.title ?? t('new_post')
 </Viewport>
 
 <style lang="scss">
+    .editor-groups summary {
+        display: flex;
+        align-items: baseline;
+        gap: var(--space-xs);
+        cursor: pointer;
+        width: fit-content;
+
+        &::before {
+            content: '▸';
+            transition: transform var(--fast-transition);
+        }
+    }
+
+    .editor-groups[open] summary::before {
+        transform: rotate(90deg);
+    }
+
+    .editor-groups__picked {
+        color: var(--text-muted);
+    }
+
+    .editor-groups[open] .editor-groups__picked {
+        display: none;
+    }
+
+    .editor-groups__options {
+        margin-top: var(--space-2xs);
+    }
+
     .excerpt,
     :global(.excerpt p) {
         font-size: var(--step-1);
