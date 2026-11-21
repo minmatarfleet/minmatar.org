@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import type { RootSingleItem } from '@dtypes/api.minmatar.org'
+import type { OrderClaimCharacters, RootSingleItem } from '@dtypes/api.minmatar.org'
 import type { Alert, IndustryOrderUI } from '@dtypes/layout_components'
 
 interface Props {
@@ -10,6 +10,7 @@ interface Props {
     order_breakdown?:       RootSingleItem[];
     primary_character_id?:  number | null;
     claim_disabled_reason?: string | null;
+    claim_characters?:      OrderClaimCharacters | null;
     location_name:          string | undefined;
     alert?:                 Alert | null;
 }
@@ -19,6 +20,7 @@ const {
     order_breakdown,
     primary_character_id,
     claim_disabled_reason = null,
+    claim_characters = null,
     location_name,
     alert = null,
 } = Astro.props
@@ -155,6 +157,7 @@ import TippyOrderItem from './TippyOrderItem.astro';
                 order_id={order.id}
                 primary_character_id={primary_character_id}
                 claim_disabled_reason={claim_disabled_reason}
+                claim_characters={claim_characters}
                 order_breakdown={order_breakdown}
                 location_name={location_name}
             />

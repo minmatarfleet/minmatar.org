@@ -94,13 +94,14 @@ import {
     resolve_primary_for_claim,
     type PrimaryClaimAvailability,
 } from '@helpers/api.minmatar.org/characters'
-import type { RootSingleItem } from '@dtypes/api.minmatar.org'
-import { fetch_order_breakdown_grouped } from '@helpers/fetching/industry'
+import type { OrderClaimCharacters, RootSingleItem } from '@dtypes/api.minmatar.org'
+import { fetch_claim_characters, fetch_order_breakdown_grouped } from '@helpers/fetching/industry'
 
 let fetching_error: Error | false = false
 let order:IndustryOrderUI | null = null
 let order_breakdown: RootSingleItem[] = []
 let primary_character_id = 0
+let claim_characters: OrderClaimCharacters | null = null
 let claim_availability: PrimaryClaimAvailability = 'login'
 
 const claim_disabled_reason_by_availability: Record<Exclude<PrimaryClaimAvailability, 'ok'>, string> = {
@@ -122,6 +123,8 @@ try {
         const primary = await resolve_primary_for_claim(auth_token)
         primary_character_id = primary.character_id
         claim_availability = primary.availability
+        if (claim_availability === 'ok')
+            claim_characters = await fetch_claim_characters(auth_token, order_id)
         fetch_breakdown = true
     }
 } catch (error) {
@@ -156,6 +159,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         order_id={order_id}
         primary_character_id={primary_character_id}
         claim_disabled_reason={claim_disabled_reason}
+        claim_characters={claim_characters}
         order_breakdown={order_breakdown}
         location_name={undefined}
         swap_target_id={`order-breakdown-${order_id}-inner`}
@@ -168,6 +172,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         location_name={order?.location?.location_name}
         primary_character_id={fetch_breakdown ? primary_character_id : undefined}
         claim_disabled_reason={fetch_breakdown ? claim_disabled_reason : undefined}
+        claim_characters={fetch_breakdown ? claim_characters : null}
         alert={alert}
     />
 }

@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import type { CampaignListItem, IndustrySingleOrder, Location, OrderLpStockpile } from '@dtypes/api.minmatar.org' // pragma: allowlist secret
+import type { CampaignListItem, IndustrySingleOrder, Location, OrderDeliveryLocation, OrderLpStockpile } from '@dtypes/api.minmatar.org' // pragma: allowlist secret
 import { eve_clock, eve_day_short, format_date_short, hours_diff } from '@helpers/date'
 import { query_string } from '@helpers/string'
 
@@ -11,6 +11,9 @@ interface Props {
     character_id: number | null
     character_name: string
     location_name?: string | null
+    /** The delivery location; away from the staging (or restricted) the
+     * header names it by short name with a link and a dock note. */
+    location?: OrderDeliveryLocation | null
     needed_by?: Date | string | null
     provisional?: boolean
     starts_at?: string | null
@@ -39,6 +42,7 @@ const {
     character_id,
     character_name,
     location_name = null,
+    location = null,
     needed_by = null,
     provisional = false,
     starts_at = null,
@@ -80,6 +84,8 @@ const claiming_when = starts_at
 const open_unfulfilled = unfulfilled_items.filter((row) => row.imported_order_id == null && row.quantity > 0)
 const show_started = Boolean(starts_at && started_at && !provisional && !fulfilled)
 const where = location_name || t('industry.orders.manage.no_location')
+const dock_tickers = location?.dock_tickers ?? []
+const show_delivery = Boolean(location && (!location.staging || dock_tickers.length > 0))
 const hours_placeholder = '{' + 'hours}'
 const when_placeholder = '{' + 'when}'
 const location_placeholder = '{' + 'location}'
@@ -329,7 +335,19 @@ const claiming_at = location_name && claiming
             </div>
         )}
         {
-            location_name && (
+            show_delivery && location ? (
+                <>
+                    <small class="[ order-detail-meta__label ]">{t('industry.orders.deliver_to')}</small>
+                    <small>
+                        <a class="[ text-highlight ]" href={translatePath(`/structures/${location.location_id}/`)} data-tippy-content={location.location_name}>
+                            {location.short_name || location.location_name}
+                        </a>
+                    </small>
+                    {dock_tickers.length > 0 &&
+                        <small class="[ text-fleet-yellow ]">{t('industry.orders.dock_only').replace('{tickers}', dock_tickers.join(', '))}</small>
+                    }
+                </>
+            ) : location_name && (
                 <small class="[ text-highlight ]">{location_name}</small>
             )
         }
@@ -408,6 +426,10 @@ const claiming_at = location_name && claiming
     .order-detail-meta__aside {
         align-items: flex-end;
         text-align: right;
+    }
+
+    .order-detail-meta__label {
+        color: var(--text-muted);
     }
 
     .order-manage-form__check {

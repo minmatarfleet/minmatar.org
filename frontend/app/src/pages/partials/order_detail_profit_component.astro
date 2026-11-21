@@ -13,6 +13,8 @@ const order_id = parseInt(Astro.url.searchParams.get('order_id') ?? '0')
 let needed_by = Astro.url.searchParams.get('needed_by') || ''
 
 let summary: OrdersProfitSummary | null = null
+// Short name of a delivery location with no facility profile: no profit.
+let not_costed_for: string | null = null
 let fetching_error: Error | false = false
 
 function iso_date(value: Date | string): string {
@@ -24,10 +26,11 @@ try {
     if (isNaN(order_id) || order_id <= 0)
         throw new Error('Invalid order id', { cause: 400 })
 
-    if (!needed_by) {
-        const order = await get_order_by_id(order_id)
+    const order = await get_order_by_id(order_id)
+    if (!needed_by)
         needed_by = iso_date(order.needed_by)
-    }
+    if (order.location && !order.location.costed)
+        not_costed_for = order.location.short_name || order.location.location_name
 
     summary = await get_orders_profit_summary({
         needed_by_from: needed_by,
@@ -62,15 +65,29 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         />
     ) : summary ? (
         <>
-            <OpenOrdersProfitSummaryMetrics summary={summary} />
+            <OpenOrdersProfitSummaryMetrics
+                summary={summary}
+                not_costed={not_costed_for ? t('industry.orders.not_costed').replace('{location}', not_costed_for) : null}
+            />
             <div id="order-detail-chart" hx-swap-oob="innerHTML">
-                <OpenOrdersProfitSummaryChart
-                    summary={summary}
-                    description={t(
-                        'industry.orders.detail.profit_chart_description',
-                    )}
-                />
+                {not_costed_for ?
+                    <p class="[ order-detail-not-costed ]">{t('industry.orders.not_costed_chart')}</p>
+                    :
+                    <OpenOrdersProfitSummaryChart
+                        summary={summary}
+                        description={t(
+                            'industry.orders.detail.profit_chart_description',
+                        )}
+                    />
+                }
             </div>
         </>
     ) : null
 }
+
+<style lang="scss">
+    .order-detail-not-costed {
+        margin: 0;
+        color: var(--text-muted);
+    }
+</style>

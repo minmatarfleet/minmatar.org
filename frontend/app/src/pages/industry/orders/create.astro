@@ -16,17 +16,17 @@ import {
     create_order,
     get_order_by_id,
     get_order_capabilities,
+    get_order_delivery_locations,
     get_products,
 } from '@helpers/api.minmatar.org/industry'
 import { can, get_gates } from '@helpers/gates'
 import { get_characters_summary } from '@helpers/api.minmatar.org/characters'
-import { get_locations } from '@helpers/api.minmatar.org/locations'
 import { fetch_campaign_options } from '@helpers/fetching/campaigns'
 import { parse_margin, parse_price_basis } from '@helpers/order_pricing'
 import type {
     CreateOrderItemInput,
     CampaignListItem,
-    Location,
+    OrderDeliveryLocation,
     Product,
     SummaryCharacter,
 } from '@dtypes/api.minmatar.org'
@@ -47,7 +47,7 @@ if (!can_submit)
 const can_manage = can(await get_gates(Astro), 'industry.order.manage')
 
 let products: Product[] = []
-let locations: Location[] = []
+let locations: OrderDeliveryLocation[] = []
 let characters: SummaryCharacter[] = []
 let delivery_corporations: string[] = []
 let campaigns: CampaignListItem[] = []
@@ -59,16 +59,15 @@ const campaign_prefill = Number(Astro.url.searchParams.get('campaign_id') || 0) 
 try {
     const [all_products, all_locations, summary, campaign_options] = await Promise.all([
         get_products(),
-        get_locations(),
+        get_order_delivery_locations(auth_token),
         get_characters_summary(auth_token),
         fetch_campaign_options(auth_token),
     ])
     products = all_products
         .filter((product) => product.strategy === 'produced')
         .sort((a, b) => a.name.localeCompare(b.name))
+    // The staging comes first, so it stays the default.
     locations = all_locations
-        .filter((location) => location.staging_active)
-        .sort((a, b) => a.location_name.localeCompare(b.location_name))
     characters = [...(summary.characters ?? [])].sort((a, b) => {
         if (a.is_primary !== b.is_primary)
             return a.is_primary ? -1 : 1
@@ -91,6 +90,21 @@ const default_contract_to = characters.find((c) => c.is_primary)?.character_name
     ?? characters[0]?.character_name
     ?? delivery_corporations[0]
     ?? ''
+// One delivery location (the staging) reads as it always has; with more,
+// the picker uses short names with Staging / Deployment / dock labels.
+const many_locations = locations.length > 1
+function location_label(location: OrderDeliveryLocation) {
+    if (!many_locations)
+        return location.location_name
+    const parts = [location.short_name || location.location_name]
+    if (location.staging)
+        parts.push(t('industry.orders.create.location_staging'))
+    if (location.deployment)
+        parts.push(t('industry.orders.create.location_deployment'))
+    if (location.dock_tickers.length > 0)
+        parts.push(t('industry.orders.create.location_only').replace('{tickers}', location.dock_tickers.join(', ')))
+    return parts.join(' · ')
+}
 const default_location_id = locations[0]?.location_id
     ? String(locations[0].location_id)
     : ''
@@ -463,7 +477,7 @@ const breadcrumbs = [
                                 </Flexblock>
                             }
 
-                            <Flexblock gap="var(--space-2xs)">
+                            <Flexblock gap="var(--space-2xs)" x-data={`{ delivery: ${JSON.stringify(submitted_location_id)} }`}>
                                 <label for="location_id">{t('industry.orders.create.location')}</label>
                                 <small x-show="provisional" x-cloak>{t('industry.orders.create.location_provisional_hint')}</small>
                                 <Select
@@ -471,19 +485,29 @@ const breadcrumbs = [
                                     name="location_id"
                                     size="sm"
                                     required
+                                    x-model="delivery"
                                 >
-                                    {locations.length !== 1 &&
-                                        <option value="">{t('industry.orders.create.location_none')}</option>
-                                    }
                                     {locations.map((location) =>
                                         <option
                                             value={location.location_id}
                                             selected={String(location.location_id) === submitted_location_id}
                                         >
-                                            {location.location_name}
+                                            {location_label(location)}
                                         </option>
                                     )}
                                 </Select>
+                                {many_locations && locations.map((location) =>
+                                    <small
+                                        x-show={`delivery === '${location.location_id}'`}
+                                        x-cloak={String(location.location_id) === submitted_location_id ? undefined : ''}
+                                    >
+                                        {location.location_name}
+                                        {location.dock_tickers.length > 0 &&
+                                            <> · <span class="[ text-fleet-yellow ]">{t('industry.orders.dock_only').replace('{tickers}', location.dock_tickers.join(', '))}</span></>
+                                        }
+                                        {' · '}<a href={translatePath(`/structures/${location.location_id}/`)}>{t('industry.orders.view_location')}</a>
+                                    </small>
+                                )}
                             </Flexblock>
 
                             <Flexblock gap="var(--space-2xs)">

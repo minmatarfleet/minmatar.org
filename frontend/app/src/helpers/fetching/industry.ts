@@ -1,5 +1,6 @@
 import type {
     IndustryOrder,
+    OrderClaimCharacters,
     Producer,
 } from '@dtypes/api.minmatar.org'
 import type { OrderLocation, IndustryOrderUI } from '@dtypes/layout_components'
@@ -7,6 +8,7 @@ import {
     get_orders_with_location,
     get_blueprints,
     get_order_by_id,
+    get_order_claim_characters,
     get_order_orderitems,
 } from '@helpers/api.minmatar.org/industry'
 
@@ -111,4 +113,18 @@ export async function fetch_order_by_id(order_id: number) {
         items: order.items,
         assigned_to: assigned_to,
     } as IndustryOrderUI
+}
+/** Who the user can claim with when the delivery location limits docking.
+ * Null when signed out or when the lookup fails: claims then use the main,
+ * and the API still refuses a character that can't dock. */
+export async function fetch_claim_characters(
+    access_token: string | false,
+    order_id: number,
+): Promise<OrderClaimCharacters | null> {
+    if (!access_token) return null
+    try {
+        return await get_order_claim_characters(access_token, order_id)
+    } catch {
+        return null
+    }
 }

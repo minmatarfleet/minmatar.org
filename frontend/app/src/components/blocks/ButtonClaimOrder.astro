@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import type { RootSingleItem } from '@dtypes/api.minmatar.org'
+import type { OrderClaimCharacters, RootSingleItem } from '@dtypes/api.minmatar.org'
 import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
 
 interface Props {
@@ -21,6 +21,11 @@ interface Props {
     styless?:       boolean;
     /** Order is still in its claiming window. */
     claiming?:      boolean;
+    /** Characters that can dock at a location that limits docking: the
+     * dialog asks which one builds. Null claims with character_id. */
+    characters?:    OrderClaimCharacters['characters'] | null;
+    /** Short name of the delivery location, with characters. */
+    deliver_to?:    string | null;
 }
 
 const {
@@ -37,6 +42,8 @@ const {
     render = 'order_item',
     styless = false,
     claiming = false,
+    characters = null,
+    deliver_to = null,
 } = Astro.props
 
 import { hours_diff } from '@helpers/date'
@@ -80,6 +87,7 @@ import ItemBadge from '@components/blocks/ItemBadge.astro';
 import Markdown from './Markdown.astro';
 import TextGroup from './TextGroup.astro';
 import RadioCheckInput from '@components/blocks/RadioCheckInput.astro';
+import Select from '@components/blocks/Select.astro';
 
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
 ---
@@ -130,7 +138,24 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
             <Flexblock gap="var(--space-s)">
                 <h3>{reclaim ? t('my_claim') : t('claim_order')}</h3>
                     
-                <p>{claiming ? t('industry.orders.claim_now_not_selected') : reclaim ? t('define_add_assignment_quantity') : t('define_produce_quantity')}</p>
+                {characters && deliver_to ?
+                    <p>{t('industry.orders.claim_deliver_to').replace('{location}', deliver_to)}</p>
+                    :
+                    <p>{claiming ? t('industry.orders.claim_now_not_selected') : reclaim ? t('define_add_assignment_quantity') : t('define_produce_quantity')}</p>
+                }
+
+                {characters &&
+                    <Flexblock gap="var(--space-3xs)">
+                        <label for={`claim-character-${order_id}-${item.id}`}>{t('industry.orders.claim_with')}</label>
+                        <Select id={`claim-character-${order_id}-${item.id}`} name="character_id" size="sm">
+                            {characters.map((character) => (
+                                <option value={character.character_id} selected={character.character_id === character_id}>
+                                    {character.character_name}
+                                </option>
+                            ))}
+                        </Select>
+                    </Flexblock>
+                }
                 
                 <Flexblock>
                     <Flexblock gap='var(--space-xs)'>
@@ -154,7 +179,9 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
                                 width='150px'
                                 x-on:input={`quantity = Math.min(quantity, ${max_claimable_items}); update_total_text()`}
                             />
-                            <input type="hidden" name="character_id" value={character_id} />
+                            {!characters &&
+                                <input type="hidden" name="character_id" value={character_id} />
+                            }
                         </FluidFixed>
 
                         {clip_maximum &&
