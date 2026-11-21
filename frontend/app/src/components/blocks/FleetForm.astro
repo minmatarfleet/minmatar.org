@@ -6,7 +6,7 @@ import type { Audience, Location, CampaignListItem, PublishableGroup } from '@dt
 import type { DoctrineType, SelectOptions, FleetUI, CharacterBasic, HostOptionUI } from '@dtypes/layout_components'
 import { fleet_types } from '@dtypes/api.minmatar.org'
 import { get_player_icon } from '@helpers/eve_image_server'
-import { AMAMAKE_LOCATION_ID } from '@helpers/market_ops_redirect'
+import { staging_location } from '@helpers/fleet_form_up'
 import { ALLIANCE_HOST } from '@helpers/fleet_hosts'
 import { tribe_group_cover } from '@helpers/tribe_covers'
 import type { FleetPingPreviewUI } from '@helpers/fetching/fleet_ping_preview'
@@ -185,9 +185,8 @@ if (fleet?.location) {
     fleet_location_id = fleet_location?.location_id ?? null
 }
 
-// Keep the fleet's own location when editing; otherwise always Amamake.
-const amamake_location = locations.find((location) => location.location_id === AMAMAKE_LOCATION_ID)
-const default_location_id = fleet_location_id ?? amamake_location?.location_id ?? null
+// Keep the fleet's own location when editing; otherwise the home staging.
+const default_location_id = fleet_location_id ?? staging_location(locations)?.location_id ?? null
 const default_location_value = default_location_id !== null ? String(default_location_id) : ''
 
 const show_audience_picker = audiences.length > 1

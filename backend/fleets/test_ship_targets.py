@@ -8,7 +8,7 @@ from django.utils import timezone
 from eveuniverse.models import EveCategory, EveGroup, EveType
 
 from eveonline.constants import MINMATAR_FLEET_ALLIANCE_ID
-from eveonline.models import EveCharacter, EveCharacterAsset
+from eveonline.models import EveCharacter, EveCharacterAsset, EveLocation
 from fittings.models import EveFitting
 from fleets.helpers.private_fleet_discord import summary_payload
 from fleets.models import EveFleetFitting, EveFleetInvite, EveFleetShipTarget
@@ -84,13 +84,13 @@ class ShipTargetTestBase(PrivateFleetTestBase):
             group_ids=list(groups),
         )
 
-    def own(self, user, type_id, location="Amamake - Freeport"):
+    def own(self, user, type_id, location="Amamake - Freeport", location_id=1):
         character = EveCharacter.objects.filter(user=user).first()
         return EveCharacterAsset.objects.create(
             character=character,
             type_id=type_id,
             type_name=EveType.objects.get(id=type_id).name,
-            location_id=1,
+            location_id=location_id,
             location_name=location,
         )
 
@@ -250,10 +250,68 @@ class MyHangarTests(ShipTargetTestBase):
                     {
                         "character_id": character.character_id,
                         "ship_type_ids": [GUARDIAN],
+                        "formup_ship_type_ids": [GUARDIAN],
+                        "parked": [],
                     }
                 ],
             },
         )
+
+    def deployment(self):
+        return EveLocation.objects.create(
+            location_id=777,
+            location_name="Forward System - Forward Station",
+            solar_system_id=778,
+            solar_system_name="Forward System",
+            short_name="Forward Station",
+            fleets_active=True,
+            deployment_active=True,
+        )
+
+    def test_while_deployed_hulls_say_where_they_are_parked(self):
+        forward = self.deployment()
+        fleet = self.private_fleet(location=forward)
+        self.fit(fleet, "Revelation Siege", REVELATION, "primary")
+        self.fit(fleet, "Siege Logi", GUARDIAN, "support")
+        self.invite(fleet, self.pilot)
+        home = EveLocation.objects.get(location_id=123)
+        self.own(self.pilot, GUARDIAN, "Somewhere - Home", home.location_id)
+        self.own(self.pilot, REVELATION, "Somewhere - Home", 123)
+        self.own(self.pilot, REVELATION, forward.location_name, 777)
+        response = self.call("get", f"/{fleet.id}/targets/mine", self.pilot)
+        self.assertEqual(response.status_code, 200, response.content)
+        (hangar,) = response.json()["hangars"]
+        self.assertEqual(hangar["ship_type_ids"], [GUARDIAN, REVELATION])
+        # Only the hull at the form-up counts as "In hangar".
+        self.assertEqual(hangar["formup_ship_type_ids"], [REVELATION])
+        self.assertEqual(
+            hangar["parked"],
+            [
+                {
+                    "ship_type_id": GUARDIAN,
+                    "location_id": 123,
+                    "location_name": "Somewhere",
+                    "at_formup": False,
+                },
+                {
+                    "ship_type_id": REVELATION,
+                    "location_id": 777,
+                    "location_name": "Forward Station",
+                    "at_formup": True,
+                },
+            ],
+        )
+
+    def test_unknown_location_falls_back_to_the_system_name(self):
+        self.deployment()
+        fleet = self.private_fleet()
+        self.fit(fleet, "Siege Logi", GUARDIAN, "support")
+        self.invite(fleet, self.pilot)
+        self.own(self.pilot, GUARDIAN, "Jita IV - Moon 4", 60003760)
+        response = self.call("get", f"/{fleet.id}/targets/mine", self.pilot)
+        (hangar,) = response.json()["hangars"]
+        self.assertEqual(hangar["formup_ship_type_ids"], [])
+        self.assertEqual(hangar["parked"][0]["location_name"], "Jita IV")
 
     def test_outsiders_get_404_on_a_private_fleet(self):
         fleet = self.private_fleet()

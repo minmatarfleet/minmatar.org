@@ -5851,6 +5851,22 @@
             "title": "Character Id",
             "type": "integer"
           },
+          "formup_ship_type_ids": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Formup Ship Type Ids",
+            "type": "array"
+          },
+          "parked": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ParkedHull"
+            },
+            "title": "Parked",
+            "type": "array"
+          },
           "ship_type_ids": {
             "items": {
               "type": "integer"
@@ -14703,8 +14719,31 @@
         "title": "EveFleetLinkCoverage",
         "type": "object"
       },
+      "EveFleetLocationDefaultResponse": {
+        "description": "Where a flash form forms up unless the FC picks another location.",
+        "properties": {
+          "location_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Id"
+          }
+        },
+        "title": "EveFleetLocationDefaultResponse",
+        "type": "object"
+      },
       "EveFleetLocationResponse": {
         "properties": {
+          "deployment_active": {
+            "default": false,
+            "title": "Deployment Active",
+            "type": "boolean"
+          },
           "location_id": {
             "title": "Location Id",
             "type": "integer"
@@ -35983,6 +36022,34 @@
         "title": "PageProgressStatusResponse",
         "type": "object"
       },
+      "ParkedHull": {
+        "properties": {
+          "at_formup": {
+            "title": "At Formup",
+            "type": "boolean"
+          },
+          "location_id": {
+            "title": "Location Id",
+            "type": "integer"
+          },
+          "location_name": {
+            "title": "Location Name",
+            "type": "string"
+          },
+          "ship_type_id": {
+            "title": "Ship Type Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ship_type_id",
+          "location_id",
+          "location_name",
+          "at_formup"
+        ],
+        "title": "ParkedHull",
+        "type": "object"
+      },
       "PartnerSchema": {
         "properties": {
           "against": {
@@ -45953,6 +46020,17 @@
               }
             ],
             "title": "Fc Character Id"
+          },
+          "location_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Id"
           },
           "objective": {
             "anyOf": [
@@ -65889,7 +65967,7 @@
     },
     "/api/fleets/start-now": {
       "post": {
-        "description": "Create a fleet with defaults, link to your current in-game fleet, and activate (no Discord). One of your characters must be the fleet commander (boss) of its in-game fleet: fc_character_id, else your main, else whichever is boss. Needs fleets.create.",
+        "description": "Create a fleet with defaults, link to your current in-game fleet, and activate (no Discord). One of your characters must be the fleet commander (boss) of its in-game fleet: fc_character_id, else your main, else whichever is boss. location_id picks a fleet form-up location (default: the staging). Needs fleets.create.",
         "operationId": "fleets_endpoints_active_post_start_fleet_now_start_fleet_now",
         "parameters": [],
         "requestBody": {
@@ -66029,6 +66107,44 @@
           }
         ],
         "summary": "Get V2 Fleet Locations",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/v2/locations/default": {
+      "get": {
+        "description": "The form-up location one of your characters is docked at (main first, ESI location cached for a minute), else the staging. Needs fleets.create.",
+        "operationId": "fleets_endpoints_reference_get_v2_fleet_location_default_get_v2_fleet_location_default",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EveFleetLocationDefaultResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get V2 Fleet Location Default",
         "tags": [
           "Fleets"
         ]

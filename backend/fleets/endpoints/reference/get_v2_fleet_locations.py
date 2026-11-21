@@ -39,6 +39,7 @@ def get_v2_fleet_locations(request):
                 "solar_system_name": location.solar_system_name,
                 "short_name": location.short_name,
                 "staging_active": location.staging_active,
+                "deployment_active": location.deployment_active,
             }
         )
     return response

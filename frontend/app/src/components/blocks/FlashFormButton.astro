@@ -42,6 +42,7 @@ import BlockList from '@components/compositions/BlockList.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 
 import Dialog from '@components/blocks/Dialog.astro';
+import LazyPartial from '@components/blocks/LazyPartial.astro';
 import Textarea from '@components/blocks/Textarea.astro';
 import Button from '@components/blocks/Button.astro';
 import SwitchSquare from '@components/blocks/SwitchSquare.astro';
@@ -99,6 +100,7 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
             x-bind:inert="!flash_form_dialog_open"
             @keyup.escape.window="close_dialog()"
             @mousedown.outside="open && close_dialog()"
+            x-init="htmx.process($el)"
         >
             <form
                 method="POST"
@@ -149,6 +151,12 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
                                     </div>
                                 </FlexInline>
                             </Flexblock>
+                            <LazyPartial
+                                url={translatePath('/partials/fleet_form_up_select_component/?id=flash-form-location')}
+                                trigger="reveal"
+                                swap="outerHTML"
+                                indicator={false}
+                            />
                             <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
                                 <label for="description">{t('description')}</label>
                                 <Textarea id="description" name="description" x-model="description" rows="4" required></Textarea>

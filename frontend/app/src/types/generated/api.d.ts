@@ -3520,7 +3520,7 @@ export interface paths {
         put?: never;
         /**
          * Start Fleet Now
-         * @description Create a fleet with defaults, link to your current in-game fleet, and activate (no Discord). One of your characters must be the fleet commander (boss) of its in-game fleet: fc_character_id, else your main, else whichever is boss. Needs fleets.create.
+         * @description Create a fleet with defaults, link to your current in-game fleet, and activate (no Discord). One of your characters must be the fleet commander (boss) of its in-game fleet: fc_character_id, else your main, else whichever is boss. location_id picks a fleet form-up location (default: the staging). Needs fleets.create.
          */
         post: operations["fleets_endpoints_active_post_start_fleet_now_start_fleet_now"];
         delete?: never;
@@ -3555,6 +3555,26 @@ export interface paths {
         };
         /** Get V2 Fleet Locations */
         get: operations["fleets_endpoints_reference_get_v2_fleet_locations_get_v2_fleet_locations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/v2/locations/default": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get V2 Fleet Location Default
+         * @description The form-up location one of your characters is docked at (main first, ESI location cached for a minute), else the staging. Needs fleets.create.
+         */
+        get: operations["fleets_endpoints_reference_get_v2_fleet_location_default_get_v2_fleet_location_default"];
         put?: never;
         post?: never;
         delete?: never;
@@ -13384,6 +13404,16 @@ export interface components {
         CharacterHangar: {
             /** Character Id */
             character_id: number;
+            /**
+             * Formup Ship Type Ids
+             * @default []
+             */
+            formup_ship_type_ids?: number[];
+            /**
+             * Parked
+             * @default []
+             */
+            parked?: components["schemas"]["ParkedHull"][];
             /** Ship Type Ids */
             ship_type_ids: number[];
         };
@@ -16890,8 +16920,21 @@ export interface components {
             /** Pilots */
             pilots: components["schemas"]["EveFleetRolePilot"][];
         };
+        /**
+         * EveFleetLocationDefaultResponse
+         * @description Where a flash form forms up unless the FC picks another location.
+         */
+        EveFleetLocationDefaultResponse: {
+            /** Location Id */
+            location_id?: number | null;
+        };
         /** EveFleetLocationResponse */
         EveFleetLocationResponse: {
+            /**
+             * Deployment Active
+             * @default false
+             */
+            deployment_active?: boolean;
             /** Location Id */
             location_id: number;
             /** Location Name */
@@ -25097,6 +25140,17 @@ export interface components {
             /** Version */
             version?: string | null;
         };
+        /** ParkedHull */
+        ParkedHull: {
+            /** At Formup */
+            at_formup: boolean;
+            /** Location Id */
+            location_id: number;
+            /** Location Name */
+            location_name: string;
+            /** Ship Type Id */
+            ship_type_id: number;
+        };
         /** PartnerSchema */
         PartnerSchema: {
             /** Against */
@@ -29267,6 +29321,8 @@ export interface components {
         StartFleetNowRequest: {
             /** Fc Character Id */
             fc_character_id?: number | null;
+            /** Location Id */
+            location_id?: number | null;
             /** Objective */
             objective?: string | null;
         };
@@ -40795,6 +40851,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EveFleetLocationResponse"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fleets_endpoints_reference_get_v2_fleet_location_default_get_v2_fleet_location_default: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EveFleetLocationDefaultResponse"];
                 };
             };
             /** @description Forbidden */

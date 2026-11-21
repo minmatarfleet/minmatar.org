@@ -285,9 +285,19 @@ class ShipLine(BaseModel):
     target_id: int
 
 
+class ParkedHull(BaseModel):
+    ship_type_id: int
+    location_id: int
+    location_name: str
+    at_formup: bool
+
+
 class CharacterHangar(BaseModel):
     character_id: int
     ship_type_ids: List[int]
+    # The hulls at the fleet's form-up while deployed; else ship_type_ids.
+    formup_ship_type_ids: List[int] = []
+    parked: List[ParkedHull] = []
 
 
 class MyTargetHangarResponse(BaseModel):

@@ -924,6 +924,8 @@ export const tracking_status = ['pending', 'active', 'complete', 'cancelled', 'u
 export type TrackingStatus = typeof tracking_status[number]
 
 export type Audience = ApiResponse<'EveFleetChannelResponse'>
+/** A fleet form-up location (home staging, a deployment or another). */
+export type FleetLocation = ApiResponse<'EveFleetLocationResponse'>
 
 export interface FleetMember {
     character_id:       number;

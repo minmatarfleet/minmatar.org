@@ -7,6 +7,7 @@ import type {
     FleetRequest,
     Audience,
     Location,
+    FleetLocation,
     FleetUsers,
     FleetStatus,
     FleetPatchRequest,
@@ -28,6 +29,23 @@ export async function get_locations(access_token:string) {
         token: access_token,
         error: 'Error fetching fleet locations',
     })
+}
+
+/** The fleet form-up locations, with the staging and deployment flags. */
+export async function get_form_up_locations(access_token:string) {
+    return await api_request<FleetLocation[]>(`${API_ENDPOINT}/v2/locations`, {
+        token: access_token,
+        error: 'Error fetching fleet locations',
+    })
+}
+
+/** Where a flash form forms up: where your fleet boss is docked, else the staging. */
+export async function get_default_form_up_location(access_token:string) {
+    const response = await api_request<ApiResponse<'EveFleetLocationDefaultResponse'>>(`${API_ENDPOINT}/v2/locations/default`, {
+        token: access_token,
+        error: 'Error fetching the default form-up location',
+    })
+    return response?.location_id ?? null
 }
 
 export async function get_audiences(access_token:string) {
@@ -140,11 +158,16 @@ export async function delete_fleet(access_token:string, id:number) {
     })
 }
 
-export async function start_fleet_now(access_token: string, fc_character_id?: number): Promise<Fleet> {
+/** Without location_id the fleet forms up at the staging. */
+export async function start_fleet_now(access_token: string, fc_character_id?: number, location_id?: number): Promise<Fleet> {
+    const body = {
+        ...(fc_character_id != null && { fc_character_id }),
+        ...(location_id != null && { location_id }),
+    }
     return await api_request<Fleet>(`${API_ENDPOINT}/start-now`, {
         method: 'POST',
         token: access_token,
-        body: fc_character_id != null ? { fc_character_id } : undefined,
+        body: Object.keys(body).length > 0 ? body : undefined,
     })
 }
 

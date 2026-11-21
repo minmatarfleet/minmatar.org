@@ -19,6 +19,7 @@ import CharacterCard from '@components/blocks/CharacterCard.astro'
 import CorporationBadge from '@components/blocks/CorporationBadge.astro'
 import StylessButton from '@components/blocks/StylessButton.astro'
 import Button from '@components/blocks/Button.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
 
 const FLET_START_PARTIAL_URL = translatePath('/partials/fleet_start_component/')
 ---
@@ -40,6 +41,11 @@ const FLET_START_PARTIAL_URL = translatePath('/partials/fleet_start_component/')
     }`}
 >
     <Flexblock gap='var(--space-s)'>
+    <LazyPartial
+        url={translatePath('/partials/fleet_form_up_select_component/?id=start-fleet-location')}
+        swap="outerHTML"
+        indicator={false}
+    />
     <Flexblock gap='var(--space-3xs)'>
         <Button
             color='green'

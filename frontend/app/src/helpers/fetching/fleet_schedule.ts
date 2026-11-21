@@ -7,6 +7,7 @@ import { get_fleet_commander_metrics, get_fleet_ship_volunteers, get_fleet_resul
 import { unique_values } from '@helpers/array'
 import { fleet_phase } from '@helpers/fleet_phase'
 import { get_tribe_group } from '@helpers/api.minmatar.org/tribes'
+import { get_locations } from '@helpers/api.minmatar.org/locations'
 import {
     count_fleets_by_host,
     filter_fleets_by_host,
@@ -36,6 +37,13 @@ export interface FleetSchedule {
     host_filter:    FleetHostFilter;
     /** Counted before the host filter; `tribe` is 0 when the viewer sees no group fleets. */
     host_counts:    FleetHostCounts;
+    /** Each form-up location (full name) and its short label; empty unless the fleets form up in more than one place. */
+    locations:      FleetScheduleLocation[];
+}
+
+export interface FleetScheduleLocation {
+    name:   string;
+    label:  string;
 }
 
 const is_live = (fleet:FleetItem) => fleet_phase(fleet) === 'active'
@@ -81,7 +89,26 @@ export async function fetch_fleet_schedule(auth_token:string, host_filter:FleetH
         next ? fetch_next_signups(auth_token, next.id) : Promise.resolve(0),
     ])
 
-    return { fleets, live, next, rest, doctrines, next_signups, fc_metrics, host_filter, host_counts }
+    const locations = await fetch_schedule_locations(fleets)
+
+    return { fleets, live, next, rest, doctrines, next_signups, fc_metrics, host_filter, host_counts, locations }
+}
+
+/**
+ * The form-up locations of these fleets, labelled by short name, for the
+ * location filter. Empty when they all form up in one place (no filter).
+ */
+export async function fetch_schedule_locations(fleets:FleetItem[]):Promise<FleetScheduleLocation[]> {
+    const names = unique_values(fleets.map(fleet => fleet.location).filter(Boolean)) as string[]
+    if (names.length < 2) return []
+
+    let short_names = new Map<string, string>()
+    try {
+        short_names = new Map((await get_locations()).map(location => [location.location_name, location.short_name]))
+    } catch (error) {
+        console.log(`Skipping location short names: ${error.message}`)
+    }
+    return names.map(name => ({ name, label: short_names.get(name) || name.split(' - ')[0] }))
 }
 
 /** How many of the viewer's characters signed up for this fleet; 0 if either call fails. */
