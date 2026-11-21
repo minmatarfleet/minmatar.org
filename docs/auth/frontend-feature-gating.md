@@ -20,7 +20,7 @@ flowchart LR
 
 - **`GET /api/users/me/gates`** (`users/endpoints/get_me_gates.py`, `AuthBearer`) returns:
   - `features`: every registry code the user may use, evaluated without a resource.
-  - `legacy`: the same permission list the profile API returns (`users.helpers.get_user_permissions`) plus `is_superuser`. That list includes a feature's old permission when affiliation wiring passes, and `freight.change_evefreightroute` for the Freighters chief and that tribe's chief, so `/market/freight/routes/` opens while the site is still on legacy gates. Other tribe screens stay on the permission actually assigned to the user.
+  - `legacy`: the same permission list the profile API returns (`users.helpers.get_user_permissions`) plus `is_superuser`. That list includes a feature's old permission when affiliation wiring passes (also for `fleets.view`, which is `resource_match` but gates its pages on the affiliation alone, so the Fleets pages open for every wired affiliation; the fleet API still checks each fleet's audience), and `freight.change_evefreightroute` for the Freighters chief and that tribe's chief, so `/market/freight/routes/` opens while the site is still on legacy gates. Other tribe screens stay on the permission actually assigned to the user.
   - `gate_source`: `legacy`, `shadow` or `features`, from the `FRONTEND_GATE_SOURCE` setting (env var; default `legacy`). Unknown values fall back to `legacy`.
 - **`get_user_feature_codes(user)`** (`groups/helpers/feature_access.py`) runs `can_use_feature` for every code inside one batch.
   - Within the batch, these lookups are loaded once and memoized: affiliation, community status, auth groups, active tribe memberships and chiefships. The call takes 7 queries.

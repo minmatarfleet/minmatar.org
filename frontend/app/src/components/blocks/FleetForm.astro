@@ -695,7 +695,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                             hx-swap="innerHTML"
                             hx-sync="this:replace"
                         >
-                            <FleetPingPreview preview={ping_preview ?? { channel_name: null, payload: null, role_name: null, error: true }} />
+                            <FleetPingPreview preview={ping_preview ?? { channel_name: null, payload: null, role_name: null, error: true, warning: null }} />
                         </div>
                     </ComponentBlock>
                 }

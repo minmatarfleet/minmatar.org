@@ -9,6 +9,26 @@ export interface FleetPingPreviewUI {
     /** The group role the ping mentions (`@Tribe Group - Dreads`); null for alliance pings or when unknown. */
     role_name:      string | null;
     error:          boolean;
+    /** Why a group fleet's start ping would reach nobody; null when it will ping. */
+    warning:        FleetPingWarning;
+}
+
+export type FleetPingWarning = 'no_channel' | 'no_role' | null
+
+/**
+ * A group fleet pings the group's role in its channel (build_start_ping).
+ * Without a channel nothing is sent; without a linked role the message
+ * mentions nobody. Alliance fleets always ping their audience's channel.
+ */
+export function ping_preview_warning(
+    host_group:boolean,
+    channel_name:string | null,
+    content:string | null | undefined,
+):FleetPingWarning {
+    if (!host_group) return null
+    if (!channel_name) return 'no_channel'
+    if (!content?.includes('<@&')) return 'no_role'
+    return null
 }
 
 /**
@@ -24,7 +44,7 @@ export async function fetch_fleet_ping_preview(
     const group_id = request.host_group_id ?? null
     // An alliance fleet with no audience picked yet has no channel to preview.
     if (!group_id && !request.audience_id)
-        return { channel_name: null, payload: null, role_name: null, error: false }
+        return { channel_name: null, payload: null, role_name: null, error: false, warning: null }
 
     const [preview, group] = await Promise.allSettled([
         preview_fleet_ping(access_token, request),
@@ -33,13 +53,16 @@ export async function fetch_fleet_ping_preview(
 
     if (preview.status === 'rejected') {
         console.log(`Fleet ping preview: ${preview.reason?.message ?? preview.reason}`)
-        return { channel_name: null, payload: null, role_name: null, error: true }
+        return { channel_name: null, payload: null, role_name: null, error: true, warning: null }
     }
 
+    const channel_name = preview.value.channel_name ?? null
+    const payload = preview.value.payload as DiscordPreviewPayloadUI
     return {
-        channel_name: preview.value.channel_name ?? null,
-        payload: preview.value.payload as DiscordPreviewPayloadUI,
+        channel_name,
+        payload,
         role_name: group.status === 'fulfilled' ? group.value?.discord_role_name ?? null : null,
         error: false,
+        warning: ping_preview_warning(Boolean(group_id), channel_name, payload?.content),
     }
 }

@@ -150,7 +150,9 @@ try {
     }
 
     doctrines = await fetch_doctrine_options()
-    audiences = await get_audiences(auth_token as string)
+    // Audiences are for alliance fleets (fleets.create); a pilot who only
+    // hosts group fleets gets none, and the API would refuse them.
+    audiences = can_create_alliance_fleets ? await get_audiences(auth_token as string) : []
     locations = await get_locations(auth_token as string)
     // Never fatal: swallows its own errors and answers [] instead.
     campaigns = await fetch_campaign_options(auth_token as string)
