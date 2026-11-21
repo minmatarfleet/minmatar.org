@@ -3873,7 +3873,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Fleet Types */
+        /**
+         * Get Fleet Types
+         * @description The fleet types the fleet form offers. Needs fleets.create, or the right to schedule fleets for a tribe group, which gets only the group fleet types (non-strategic, training, NPSI).
+         */
         get: operations["fleets_endpoints_reference_get_fleet_types_get_fleet_types"];
         put?: never;
         post?: never;
@@ -3890,7 +3893,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get V2 Fleet Locations */
+        /**
+         * Get V2 Fleet Locations
+         * @description Form-up locations for the fleet form. Needs fleets.create, or the right to schedule fleets for a tribe group.
+         */
         get: operations["fleets_endpoints_reference_get_v2_fleet_locations_get_v2_fleet_locations"];
         put?: never;
         post?: never;
@@ -3929,7 +3935,7 @@ export interface paths {
         };
         /**
          * Get V3 Fleets
-         * @description List fleets matching the filter. Requires fleets.view_evefleet. Tribe group fleets are included when the viewer can see them; host_group_id lists one group's fleets; campaign_id lists the fleets linked to one campaign (recent: the whole campaign, not just the last 30 days).
+         * @description List fleets matching the filter. Requires fleets.view_evefleet. A fleet is listed only when GET /api/fleets/{id} would show it: its audience includes the viewer, and tribe group fleets when the viewer can see them; host_group_id lists one group's fleets; campaign_id lists the fleets linked to one campaign (recent: the whole campaign, not just the last 30 days).
          */
         get: operations["fleets_endpoints_catalog_get_v3_fleets_get_v3_fleets"];
         put?: never;

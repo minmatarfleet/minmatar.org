@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
-from groups.helpers.feature_access import require_feature
+from groups.helpers.feature_access import fleet_audience_q, require_feature
 
 from fleets.endpoints.helpers import (
     FLEET_RESPONSE_RELATED,
@@ -30,7 +30,9 @@ ROUTE_SPEC = {
     "auth": AuthBearer(),
     "description": (
         "List fleets matching the filter. Requires fleets.view_evefleet. "
-        "Tribe group fleets are included when the viewer can see them; "
+        "A fleet is listed only when GET /api/fleets/{id} would show it: "
+        "its audience includes the viewer, and tribe group fleets when "
+        "the viewer can see them; "
         "host_group_id lists one group's fleets; campaign_id lists the "
         "fleets linked to one campaign (recent: the whole campaign, not "
         "just the last 30 days)."
@@ -100,10 +102,17 @@ def get_v3_fleets(
         fleets = fleets.filter(host_group_id=host_group_id)
     if not is_strategic_fc(request.user):
         # Group fleets have no audience; an alliance fleet still needs a
-        # visible one, as before. Strategic FCs see every fleet.
+        # visible one, as before, and one whose groups include the viewer
+        # unless they created it, as the detail endpoint checks
+        # (_fleet_authorized). Strategic FCs see every fleet.
         fleets = fleets.filter(
             Q(audience__hidden=False) | Q(host_group__isnull=False)
         )
+        audience_q = fleet_audience_q(request.user)
+        if audience_q:  # an empty Q means every audience
+            fleets = fleets.filter(
+                audience_q | Q(created_by_id=request.user.pk)
+            )
     fleets = (
         fleets.filter(visible_fleets_q(request.user))
         .exclude(type__in=CAMPAIGN_FLEET_TYPES)

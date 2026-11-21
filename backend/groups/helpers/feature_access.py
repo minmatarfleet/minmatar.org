@@ -6,7 +6,7 @@ import time
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q
 
 from django.contrib.auth.models import AnonymousUser
 
@@ -374,6 +374,49 @@ def _evaluate_resource_match(feature: _FeatureSnapshot, user, fleet) -> bool:
         if affiliation and affiliation.group_id in audience_group_ids:
             return True
     return False
+
+
+def fleet_audience_q(user) -> Q:
+    """Filter for fleet lists: the fleets whose audience lets ``user`` see
+    them, as ``can_use_feature(user, "fleets.view", fleet=...)`` decides one
+    fleet at a time (``_evaluate_resource_match``, then the legacy fallback).
+
+    For a pilot who already passed the page-level ``fleets.view`` check.
+    A fleet with no audience, or an audience with no auth groups, is open;
+    otherwise the pilot needs one of the audience's groups, directly or
+    through their affiliation's group. Holding the feature's legacy
+    permission lifts the audience check, as it does on the detail endpoint.
+    Host group and private fleets are filtered by ``visible_fleets_q``.
+    """
+    # Imported here: the fleets app imports this module, so a top-level
+    # import of fleets.models would be circular.
+    from fleets.models import (  # pylint: disable=import-outside-toplevel
+        EveFleetAudience,
+    )
+
+    if user.is_superuser:
+        return Q()
+    feature = _get_feature("fleets.view")
+    legacy_permission = (
+        feature.legacy_permission
+        if feature is not None
+        else FEATURE_DEFINITIONS["fleets.view"].legacy_permission
+    )
+    if _has_legacy_permission(user, legacy_permission):
+        return Q()
+
+    group_ids = _user_auth_group_ids(user)
+    affiliation = user_affiliation(user)
+    if affiliation is not None:
+        group_ids.add(affiliation.group_id)
+    audience_groups = EveFleetAudience.groups.through.objects.filter(
+        evefleetaudience_id=OuterRef("audience_id")
+    )
+    return (
+        Q(audience__isnull=True)
+        | ~Q(Exists(audience_groups))
+        | Q(Exists(audience_groups.filter(group_id__in=group_ids)))
+    )
 
 
 def _evaluate_auth_group(feature: _FeatureSnapshot, user) -> bool:
