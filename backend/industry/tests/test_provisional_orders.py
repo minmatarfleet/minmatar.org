@@ -19,11 +19,14 @@ from industry.models import (
     IndustryOrderUnfulfilledItem,
 )
 from industry.test_utils import create_industry_order
-from industry.tests.test_orders import OrdersEndpointTestCase
+
+# Import the module, not the class: a TestCase imported by name is
+# collected again here and its tests run twice.
+from industry.tests import test_orders
 from tribes.models import Tribe, TribeGroup
 
 
-class ProvisionalOrderApiTests(OrdersEndpointTestCase):
+class ProvisionalOrderApiTests(test_orders.OrdersEndpointTestCase):
     def setUp(self):
         super().setUp()
         tribe = Tribe.objects.create(

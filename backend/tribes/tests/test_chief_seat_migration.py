@@ -2,7 +2,7 @@
 
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
-from django.test import TransactionTestCase
+from django.test import TransactionTestCase, tag
 from django.utils import timezone
 
 BEFORE = [
@@ -12,6 +12,7 @@ BEFORE = [
 AFTER = [("tribes", "0052_tribe_group_chief_seats")]
 
 
+@tag("migration")
 class ChiefSeatMigrationTests(TransactionTestCase):
     def setUp(self):
         executor = MigrationExecutor(connection)

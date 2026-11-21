@@ -17,3 +17,11 @@ Do **not** use `python manage.py test` without `--settings=app.settings_test` un
 
 - Add `--parallel auto` to run across all cores (CI does this). Add `--keepdb` with `TEST_DB_NAME=.test-db/test_db.sqlite3` to reuse the migrated schema between runs.
 - The test settings block all non-loopback network access (`app/test_network_guard.py`). A test that reaches ESI, zKill or Discord fails with `NetworkAccessBlocked`. Seed the eveuniverse rows it needs, mock the client, or gate the production call with `live_esi_allowed()`. Set `ALLOW_NETWORK_IN_TESTS=True` only for a deliberate live run.
+
+## Migration tests
+
+A test that drives `MigrationExecutor` re-renders the whole migration graph and takes seconds. Decorate its class with `@tag("migration")` (`app/tests/test_test_discovery.py` fails otherwise). CI runs these in their own job, and on pull requests only when the PR changes a migration. Run them locally with `--tag migration`.
+
+## CI test database
+
+CI restores the newest cached migrated DB and `--keepdb` applies only new migrations. `backend/ci_test_db.py` discards the cached DB when a migration it holds was renamed or edited, so renumbering a migration after a rebase is safe.
