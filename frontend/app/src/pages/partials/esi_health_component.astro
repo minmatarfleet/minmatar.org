@@ -43,6 +43,7 @@ import ViewChips from '@components/blocks/manage/ViewChips.astro'
 import ManageSearch from '@components/blocks/manage/ManageSearch.astro'
 import ManageTable from '@components/blocks/manage/ManageTable.astro'
 import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
+import RowSwapFrame from '@components/blocks/manage/RowSwapFrame.astro'
 import ManageStatusDot from '@components/blocks/manage/ManageStatusDot.astro'
 import ConfirmAction from '@components/blocks/manage/ConfirmAction.astro'
 import Button from '@components/blocks/Button.astro'
@@ -447,7 +448,7 @@ const saved_row = part === 'scope_save'
                 </ManageTable>
             )
             return part === 'scope_save'
-                ? <table>{table}</table>
+                ? <RowSwapFrame>{table}</RowSwapFrame>
                 : (
                     <div id="esi-health-scopes" class="[ manage-list ]">
                         {scopes.length === 0 ? <EmptyState title={t('esi_health.no_scopes')} /> : table}
