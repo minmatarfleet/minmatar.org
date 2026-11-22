@@ -5,5 +5,12 @@
     "path": "converge",
     "pattern": "data-table",
     "note": "Raw table inside RowList width 635px becomes DataTable: the dialog table now fills the dialog width, cells align to the top, and the header sits in a thead; fonts, borders and padding already matched the global table style."
+  },
+  {
+    "file": "src/pages/surveys/index.astro",
+    "selector": ".button[data-size=\"sm\"]",
+    "path": "converge",
+    "pattern": "button-primary",
+    "note": "Hand-styled .mbtn--go submit and anchor become Button color=green size=sm: 4px radius, 0.85em type and the inline-flex row give way to the library's padding, scale-on-hover and focus ring. The create form is a native POST, so the button keeps off_disable."
   }
 ]

@@ -12,6 +12,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import ActionMenu from '@components/blocks/ActionMenu.astro'
+import Button from '@components/blocks/Button.astro'
 import ActionMenuItem from '@components/blocks/ActionMenuItem.astro'
 import { get_corporation_logo } from '@helpers/eve_image'
 
@@ -164,7 +165,7 @@ const page_title = 'Community Survey'
                             <input type="hidden" name="quarter" value={current_quarter} />
                             <FlexInline gap="var(--space-m)">
                                 <label class="[ check ]"><input type="checkbox" name="open_now" checked /> <span>Open immediately</span></label>
-                                <button type="submit" class="[ mbtn mbtn--go ]">Create {current_year} Q{current_quarter} survey</button>
+                                <Button type="submit" size="sm" color="green" off_disable={true}>Create {current_year} Q{current_quarter} survey</Button>
                             </FlexInline>
                         </form>
                     </Flexblock>
@@ -218,11 +219,11 @@ const page_title = 'Community Survey'
                         {c.status === 'open' && (
                             <div class="[ action-bar ]">
                                 <div class="[ action-bar__btns ]">
-                                    <a class="[ mbtn mbtn--go ]" href={translatePath(`/surveys/${c.id}/fill`)}>
+                                    <Button href={translatePath(`/surveys/${c.id}/fill`)} size="sm" color="green">
                                         {active?.campaign?.id === c.id && active?.has_responded
                                             ? 'Review / update your response'
                                             : 'Start the survey'}
-                                    </a>
+                                    </Button>
                                 </div>
                             </div>
                         )}
@@ -357,24 +358,6 @@ const page_title = 'Community Survey'
     .action-bar + .action-bar { border-top: 1px solid color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent); padding-top: var(--space-m); }
     .action-bar__btns { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xs); }
     .action-bar__btns form { margin: 0; }
-    .mbtn {
-        background: var(--fleet-red);
-        color: var(--highlight);
-        border: 0;
-        border-radius: 4px;
-        padding: var(--space-2xs) var(--space-m);
-        font-family: var(--button-font);
-        font-weight: 600;
-        font-size: 0.85em;
-        cursor: pointer;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-    }
-    .mbtn--go { background: var(--green); }
-    .mbtn--ghost { background: transparent; border: 1px solid var(--border-color); color: var(--foreground); }
-    .mbtn--ghost:hover { border-color: var(--highlight); color: var(--highlight); }
-
     .create-title { text-transform: uppercase; }
 
     .corp-progress {

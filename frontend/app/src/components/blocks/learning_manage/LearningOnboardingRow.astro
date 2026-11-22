@@ -25,6 +25,7 @@ const {
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
+import StylessButton from '@components/blocks/StylessButton.astro'
 import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
 import ConfirmAction from '@components/blocks/manage/ConfirmAction.astro'
 
@@ -33,11 +34,11 @@ const row_id = `onboarding-${program.program_type}`
 
 <ExpandRow id={row_id} colspan={3} label={t('learning_admin.open').replace('~NAME', program.label)} open={open}>
     <td>
-        <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+        <StylessButton type="button" class="[ manage-who ]" x-on:click="open = !open">
             <span class="[ manage-who__text ]">
                 <span class="[ manage-who__name ]">{program.label}</span>
             </span>
-        </button>
+        </StylessButton>
     </td>
     <td class="num">{program.acknowledgments}</td>
     <div slot="detail" class="[ manage-form ]">
