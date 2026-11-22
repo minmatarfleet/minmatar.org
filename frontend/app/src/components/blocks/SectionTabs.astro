@@ -118,7 +118,10 @@ const current_tab = requested_active && tab_ids.includes(requested_active) ? req
                     const next = this.tab_for(window.location.hash.replace('#', ''))
                     if (next) this.tab = next
                 }
-                this.$watch('tab', () => this.$nextTick(() => this.refresh_panel()))
+                this.$watch('tab', (tab) => {
+                    this.$dispatch('section-tabs:change', { tab })
+                    this.$nextTick(() => this.refresh_panel())
+                })
             },
             // A tab id, or the tab an aliased hash (a prefix) belongs to.
             tab_for(hash) {
