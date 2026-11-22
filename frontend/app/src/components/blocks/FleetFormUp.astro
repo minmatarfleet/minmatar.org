@@ -72,6 +72,11 @@ const LOCATIONS_URL = system && show_characters ? `${translatePath('/partials/fl
 </section>
 
 <style lang="scss">
+    /* ComponentBlock shrinks panel headings; the form-up title keeps the page's h2 size. */
+    #fleet-formup-title {
+        font-size: var(--step-2);
+    }
+
     .fleet-formup__where {
         display: flex;
         flex-direction: column;
