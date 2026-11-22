@@ -18,10 +18,34 @@ export interface ChartDataset {
     tones?:     ChartTone[];
     fill?:      boolean;
     type?:      string;
+    /** Appended to the value in the tooltip (`' B'` reads `Ratting: 4.2 B`). */
+    suffix?:    string;
+    /** Fill a line under it with its tone fading to nothing; the number is the opacity at the top, in percent. */
+    gradient?:  number;
+    /** Ring the line's points with the panel colour, so they stand off the line. */
+    ring?:      boolean;
     [key: string]: any;
 }
 
 export type ChartKind = 'line' | 'bar' | 'doughnut' | 'pie' | 'radar'
+
+/** A label under the x axis, joined to a category by a dotted stem. `row` stacks labels that would collide. */
+export interface ChartBeat {
+    index:      number;
+    label:      string;
+    row?:       number;
+    anchor?:    'start' | 'middle' | 'end';
+    dx?:        number;
+}
+
+/** Drawing the chart itself does not cover. Each is built in `build_plugin`. */
+export type ChartPluginSpec =
+    /** A dropline from every point down to zero, in its dataset's tone. */
+    | { id: 'stems' }
+    /** Shades the categories `from` to `to` (inclusive) with the panel colour. */
+    | { id: 'band'; from: number; to: number }
+    /** Labelled markers under the x axis; give the chart bottom padding for them. */
+    | { id: 'beats'; beats: ChartBeat[] }
 
 export interface ChartSpec {
     type:       ChartKind;
@@ -29,6 +53,9 @@ export interface ChartSpec {
     datasets:   ChartDataset[];
     options?:   Record<string, any>;
     legend?:    boolean;
+    /** Appended to the numbers on the y axis (`' B'`). */
+    tick_suffix?: string;
+    plugins?:   ChartPluginSpec[];
 }
 
 /** Order slices take when a doughnut or pie dataset names no tones. */
@@ -66,7 +93,7 @@ export const has_plottable_data = (spec: Pick<ChartSpec, 'labels' | 'datasets'>)
 const is_radial = (type: ChartKind) => type === 'doughnut' || type === 'pie'
 
 function style_dataset(dataset: ChartDataset, index: number, spec: ChartSpec, read: TokenReader) {
-    const { tone, tones, fill, ...rest } = dataset
+    const { tone, tones, fill, gradient, ring, ...rest } = dataset
     const type = rest.type as ChartKind | undefined ?? spec.type
 
     if (is_radial(type)) {
@@ -84,15 +111,99 @@ function style_dataset(dataset: ChartDataset, index: number, spec: ChartSpec, re
         return { ...rest, backgroundColor: with_alpha(color, 60), borderColor: color, borderWidth: 1 }
 
     // line and radar
-    const filled = fill ?? type === 'radar'
+    const filled = fill ?? (type === 'radar' || gradient !== undefined)
+    const surface = read('--component-background')
+    const area = gradient !== undefined
+        ? (context: { chart: { ctx: CanvasRenderingContext2D; chartArea?: { top: number; bottom: number } } }) => {
+            const chart_area = context.chart.chartArea
+            if (!chart_area) return 'transparent'
+            const fade = context.chart.ctx.createLinearGradient(0, chart_area.top, 0, chart_area.bottom)
+            fade.addColorStop(0, with_alpha(color, gradient))
+            fade.addColorStop(1, with_alpha(color, 0))
+            return fade
+        }
+        : filled ? with_alpha(color, 20) : color
     return {
         ...rest,
         borderColor: color,
-        backgroundColor: filled ? with_alpha(color, 20) : color,
+        backgroundColor: area,
         pointBackgroundColor: color,
-        pointBorderColor: color,
+        pointBorderColor: ring ? surface : color,
         fill: filled,
         tension: rest.tension ?? 0.25,
+    }
+}
+
+const plot_bounds = (chart: any) => ({ x: chart.scales.x, y: chart.scales.y, area: chart.chartArea })
+
+/** A Chart.js plugin for one of the drawing specs. */
+export function build_plugin(spec: ChartPluginSpec, read: TokenReader) {
+    if (spec.id === 'stems') return {
+        id: 'stems',
+        beforeDraw(chart: any) {
+            const { x, y } = plot_bounds(chart)
+            const ctx = chart.ctx
+            ctx.save()
+            chart.data.datasets.forEach((dataset: any) => {
+                ctx.strokeStyle = with_alpha(String(dataset.borderColor), 25)
+                ctx.lineWidth = 1
+                dataset.data.forEach((value: number, index: number) => {
+                    ctx.beginPath()
+                    ctx.moveTo(x.getPixelForValue(index), y.getPixelForValue(value))
+                    ctx.lineTo(x.getPixelForValue(index), y.getPixelForValue(0))
+                    ctx.stroke()
+                })
+            })
+            ctx.restore()
+        },
+    }
+
+    if (spec.id === 'band') return {
+        id: 'band',
+        beforeDraw(chart: any) {
+            const { x, area } = plot_bounds(chart)
+            const slot = x.getPixelForValue(1) - x.getPixelForValue(0)
+            const left = x.getPixelForValue(spec.from) - slot / 2
+            const right = x.getPixelForValue(spec.to) + slot / 2
+            chart.ctx.save()
+            chart.ctx.fillStyle = with_alpha(read('--component-background'), 50)
+            chart.ctx.fillRect(left, area.top, right - left, area.bottom - area.top)
+            chart.ctx.restore()
+        },
+    }
+
+    const color = read('--fleet-yellow')
+    const family = read('--default-font')
+    return {
+        id: 'beats',
+        afterDraw(chart: any) {
+            const { x, area } = plot_bounds(chart)
+            const ctx = chart.ctx
+            const stem_start = area.bottom + 20
+            const label_top = area.bottom + 50
+            ctx.save()
+            for (const beat of spec.beats) {
+                const cx = x.getPixelForValue(beat.index)
+                const dx = beat.dx ?? 0
+                const label_y = label_top + (beat.row ?? 0) * 20
+
+                ctx.beginPath()
+                ctx.moveTo(cx, stem_start)
+                ctx.lineTo(cx + dx, label_y - 10)
+                ctx.strokeStyle = with_alpha(color, 35)
+                ctx.lineWidth = 1
+                ctx.setLineDash([2, 3])
+                ctx.stroke()
+                ctx.setLineDash([])
+
+                ctx.font = `600 10px ${family || 'sans-serif'}`
+                ctx.fillStyle = with_alpha(color, 80)
+                ctx.textAlign = beat.anchor ?? 'middle'
+                ctx.textBaseline = 'middle'
+                ctx.fillText(beat.label, cx + dx, label_y)
+            }
+            ctx.restore()
+        },
     }
 }
 
@@ -109,6 +220,7 @@ export function build_config(spec: ChartSpec, read: TokenReader, reduce_motion =
         responsive: true,
         maintainAspectRatio: false,
         animation: reduce_motion ? false : undefined,
+        font: read('--default-font') ? { family: read('--default-font') } : undefined,
         plugins: {
             legend: {
                 display: spec.legend ?? (radial || spec.datasets.length > 1),
@@ -120,6 +232,11 @@ export function build_config(spec: ChartSpec, read: TokenReader, reduce_motion =
                 borderWidth: 1,
                 titleColor: highlight,
                 bodyColor: text,
+                ...(spec.datasets.some((dataset) => dataset.suffix !== undefined) && {
+                    callbacks: {
+                        label: (context: any) => `${context.dataset.label}: ${context.formattedValue}${context.dataset.suffix ?? ''}`,
+                    },
+                }),
             },
         },
     }
@@ -127,8 +244,16 @@ export function build_config(spec: ChartSpec, read: TokenReader, reduce_motion =
     if (spec.type === 'line' || spec.type === 'bar') {
         defaults.scales = {
             x: { grid: { color: border }, ticks: { color: faded }, border: { color: border } },
-            y: { grid: { color: border }, ticks: { color: faded }, border: { color: border }, beginAtZero: true },
+            y: {
+                grid: { color: border },
+                ticks: { color: faded, ...(spec.tick_suffix && { callback: (value: number | string) => `${value}${spec.tick_suffix}` }) },
+                border: { color: border },
+                beginAtZero: true,
+            },
         }
+        // A second value axis (`y1`) in the caller's options looks like the first.
+        for (const key of Object.keys(spec.options?.scales ?? {}))
+            if (!(key in defaults.scales)) defaults.scales[key] = { grid: { color: border }, ticks: { color: faded }, border: { color: border } }
     } else if (spec.type === 'radar') {
         defaults.scales = {
             r: { grid: { color: border }, angleLines: { color: border }, pointLabels: { color: faded }, ticks: { color: faded, backdropColor: 'transparent' } },
@@ -142,6 +267,7 @@ export function build_config(spec: ChartSpec, read: TokenReader, reduce_motion =
             datasets: spec.datasets.map((dataset, index) => style_dataset(dataset, index, spec, read)),
         },
         options: deep_merge(defaults, spec.options),
+        plugins: (spec.plugins ?? []).map((plugin) => build_plugin(plugin, read)),
     }
 }
 

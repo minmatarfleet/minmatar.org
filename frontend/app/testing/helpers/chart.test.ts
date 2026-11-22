@@ -20,6 +20,38 @@ const spec = (patch: Partial<ChartSpec> = {}): ChartSpec => ({
     ...patch,
 })
 
+describe('build_config extras', () => {
+    const line = (dataset: Record<string, unknown>) => build_config(spec({ datasets: [{ label: 'Kills', data: [1, 2], tone: 'fleet-red', ...dataset }] }), read)
+
+    test('a ringed line has panel-coloured points', () => {
+        expect((line({ ring: true }).data.datasets[0] as { pointBorderColor: string }).pointBorderColor).toBe('rgb(25, 25, 25)')
+        expect((line({}).data.datasets[0] as { pointBorderColor: string }).pointBorderColor).toBe('rgb(1, 2, 3)')
+    })
+
+    test('a gradient fills the line with a scriptable background', () => {
+        const dataset = line({ gradient: 40 }).data.datasets[0] as { fill: boolean; backgroundColor: unknown }
+        expect(dataset.fill).toBe(true)
+        expect(typeof dataset.backgroundColor).toBe('function')
+    })
+
+    test('suffixes reach the tooltip and the y ticks', () => {
+        const config = build_config(spec({ tick_suffix: ' B', datasets: [{ label: 'Ratting', data: [1, 2], tone: 'fleet-red', suffix: ' B ISK' }] }), read) as any
+        expect(config.options.scales.y.ticks.callback(4)).toBe('4 B')
+        expect(config.options.plugins.tooltip.callbacks.label({ dataset: { label: 'Ratting', suffix: ' B ISK' }, formattedValue: '4' })).toBe('Ratting: 4 B ISK')
+    })
+
+    test('an extra scale in the options is styled like the first', () => {
+        const config = build_config(spec({ options: { scales: { y1: { position: 'right' } } } }), read) as any
+        expect(config.options.scales.y1.ticks.color).toBe('rgba(255, 255, 255, 0.5)')
+        expect(config.options.scales.y1.position).toBe('right')
+    })
+
+    test('plugins are built from their specs', () => {
+        const config = build_config(spec({ plugins: [{ id: 'stems' }, { id: 'band', from: 0, to: 1 }, { id: 'beats', beats: [] }] }), read)
+        expect(config.plugins.map((plugin) => plugin.id)).toEqual(['stems', 'band', 'beats'])
+    })
+})
+
 describe('build_config', () => {
     test('resolves a tone from its token, never a literal', () => {
         const config = build_config(spec(), read)

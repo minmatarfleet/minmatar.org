@@ -12,12 +12,15 @@
  * The chart is data on a `<canvas role="img" aria-label>`; a script charts every
  * such canvas with the global `Chart` that FooterScripts loads, once, also
  * after an htmx swap, and destroys the instance when the canvas is replaced.
- * With nothing to plot it renders an EmptyState instead of an empty canvas.
+ * A dataset can carry a `suffix` for its tooltip (`' B'`), a `gradient` (its
+ * tone fading out under the line) and `ring` (points ringed in the panel
+ * colour); `tick_suffix` does the y axis, and `plugins` draws droplines, a
+ * shaded band or labelled markers under the axis. With nothing to plot it renders an EmptyState instead of an empty canvas.
  */
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import { has_plottable_data, type ChartDataset, type ChartKind } from '@helpers/chart'
+import { has_plottable_data, type ChartDataset, type ChartKind, type ChartPluginSpec } from '@helpers/chart'
 
 interface Props {
     type:               ChartKind;
@@ -31,6 +34,10 @@ interface Props {
     aria_label:         string;
     /** Defaults to on for several datasets, doughnut and pie. */
     legend?:            boolean;
+    /** Appended to the numbers on the y axis, as in `' B'`. */
+    tick_suffix?:       string;
+    /** Drawing beyond the chart itself: `stems`, `band`, `beats`. */
+    plugins?:           ChartPluginSpec[];
     /** Replaces the "No data to chart" line. */
     empty_title?:       string;
     [propName: string]: any;
@@ -44,13 +51,15 @@ const {
     height = 'calc(var(--space-3xl) * 2.5)',
     aria_label,
     legend,
+    tick_suffix,
+    plugins,
     empty_title,
     ...attributes
 } = Astro.props
 
 delete attributes.class
 
-const spec = { type, labels, datasets, options, legend }
+const spec = { type, labels, datasets, options, legend, tick_suffix, plugins }
 const plottable = has_plottable_data(spec)
 
 import EmptyState from '@components/blocks/EmptyState.astro'
