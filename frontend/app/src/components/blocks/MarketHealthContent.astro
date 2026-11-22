@@ -220,7 +220,6 @@ const sell_viable = sell_listed > 0
             max="100"
             value={contracts_health_pct != null ? Math.max(contracts_health_pct, 0.1) : 0.1}
             data-tippy-content={t('coverage_percent').replace('{percent}', String(contracts_health_pct))}
-            x-init="tippy($el, tippy_options)"
         />
         <Progress
             class:list={[
@@ -235,7 +234,6 @@ const sell_viable = sell_listed > 0
             max="100"
             value={contracts_viability_pct != null ? Math.max(contracts_viability_pct, 0.1) : 0.1}
             data-tippy-content={t('viability_percent').replace('{percent}', String(contracts_viability_pct))}
-            x-init="tippy($el, tippy_options)"
         />
 
         <Tile
@@ -286,7 +284,6 @@ const sell_viable = sell_listed > 0
                                         {contracts_on_target.before}
                                         <span
                                             data-tippy-content={t('ops_health_contracts_target_hint')}
-                                            x-init="tippy($el, tippy_options)"
                                         >{contracts_on_target.word}</span>
                                         {contracts_on_target.after}
                                     </>
@@ -306,7 +303,6 @@ const sell_viable = sell_listed > 0
                                     {contracts_viable.before}
                                     <span
                                         data-tippy-content={t('ops_health_contracts_viability_hint')}
-                                        x-init="tippy($el, tippy_options)"
                                     >{contracts_viable.word}</span>
                                     {contracts_viable.after}
                                 </>
@@ -323,7 +319,6 @@ const sell_viable = sell_listed > 0
                         <span
                             class="[ market-total text-step-1 w-fit ]"
                             data-tippy-content={number_name(contracts_isk, lang)}
-                            x-init="tippy($el, tippy_options)"
                         >{number_thousand_separator(contracts_isk)}</span>
                         <span>{t('isk_listed')}</span>
                     </Flexblock>
@@ -352,7 +347,6 @@ const sell_viable = sell_listed > 0
             max="100"
             value={sell_orders_health_pct != null ? Math.max(sell_orders_health_pct, 0.1) : 0.1}
             data-tippy-content={t('coverage_percent').replace('{percent}', String(sell_orders_health_pct))}
-            x-init="tippy($el, tippy_options)"
         />
         <Progress
             class:list={[
@@ -367,7 +361,6 @@ const sell_viable = sell_listed > 0
             max="100"
             value={sell_orders_viability_pct != null ? Math.max(sell_orders_viability_pct, 0.1) : 0.1}
             data-tippy-content={t('viability_percent').replace('{percent}', String(sell_orders_viability_pct))}
-            x-init="tippy($el, tippy_options)"
         />
 
         <Tile
@@ -417,7 +410,6 @@ const sell_viable = sell_listed > 0
                                     {sell_on_target.before}
                                     <span
                                         data-tippy-content={t('ops_health_coverage_hint')}
-                                        x-init="tippy($el, tippy_options)"
                                     >{sell_on_target.word}</span>
                                     {sell_on_target.after}
                                 </>
@@ -437,7 +429,6 @@ const sell_viable = sell_listed > 0
                                     {sell_viable.before}
                                     <span
                                         data-tippy-content={t('ops_health_viability_hint')}
-                                        x-init="tippy($el, tippy_options)"
                                     >{sell_viable.word}</span>
                                     {sell_viable.after}
                                 </>
@@ -453,7 +444,6 @@ const sell_viable = sell_listed > 0
                         <span
                             class="[ market-total text-step-1 w-fit ]"
                             data-tippy-content={number_name(sell_orders_isk, lang)}
-                            x-init="tippy($el, tippy_options)"
                         >{number_thousand_separator(sell_orders_isk)}</span>
                         <span>{t('isk_listed')}</span>
                     </Flexblock>
