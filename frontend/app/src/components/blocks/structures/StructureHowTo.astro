@@ -9,6 +9,8 @@ import { i18n, t_key } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import type { StructureHowToTopic } from '@dtypes/layout_components'
+import SectionTabs from '@components/blocks/SectionTabs.astro'
+import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
 
 interface Props {
     topics:             StructureHowToTopic[];
@@ -18,6 +20,9 @@ interface Props {
 const { topics, ...attributes } = Astro.props
 
 delete attributes.class
+
+// One guide can sit on a page next to others (each dialog step has its own).
+const id_prefix = `structure-howto-${Math.random().toString(36).slice(2, 8)}`
 
 // Clips cut from a recording of the client; width and height match the file.
 const CLIPS: Partial<Record<StructureHowToTopic, { src: string, width: number, height: number }>> = {
@@ -31,36 +36,33 @@ const CLIPS: Partial<Record<StructureHowToTopic, { src: string, width: number, h
 ---
 
 {topics.length > 0 &&
-    <div class:list={['[ structure-howto ]', Astro.props.class]} x-data={`{ topic: '${topics[0]}' }`} {...attributes}>
+    <div class:list={['[ structure-howto ]', { 'structure-howto--single': topics.length === 1 }, Astro.props.class]} {...attributes}>
         <span class="[ manage-field__label ]">{t('structures.guide.title')}</span>
-        {topics.length > 1 &&
-            <div class="[ manage-chips ]" role="tablist" aria-label={t('structures.guide.title')}>
-                {topics.map((topic) => (
-                    <button type="button" role="tab" class="[ manage-chip ]"
-                        x-bind:aria-selected={`topic === '${topic}'`}
-                        x-bind:class={`{ 'is-on': topic === '${topic}' }`}
-                        x-on:click={`topic = '${topic}'`}>
-                        {t(t_key('structures.guide.tab_', topic))}
-                    </button>
-                ))}
-            </div>
-        }
-
-        {topics.map((topic, index) => {
-            const clip = CLIPS[topic]
-            return (
-                <div class:list={['[ structure-howto__panel ]', { 'no-clip': !clip }]} role="tabpanel" x-show={`topic === '${topic}'`} x-cloak={index > 0 ? '' : undefined}>
-                    {clip &&
-                        <figure class="[ structure-howto__clip ]">
-                            <img src={clip.src} width={clip.width} height={clip.height} loading="lazy" alt={t(t_key('structures.guide.clip_', topic))} />
-                        </figure>
-                    }
-                    <ol class="[ structure-howto__how ]">
-                        {[1, 2, 3].map((n) => <li>{t(t_key('structures.guide.', `${topic}_${n}`))}</li>)}
-                    </ol>
-                </div>
-            )
-        })}
+        <SectionTabs
+            variant="pills"
+            sync_hash={false}
+            aria_label={t('structures.guide.title')}
+            id_prefix={id_prefix}
+            tabs={topics.map((topic) => ({ id: topic, label: t(t_key('structures.guide.tab_', topic)) }))}
+        >
+            {topics.map((topic) => {
+                const clip = CLIPS[topic]
+                return (
+                    <SectionTabPanel id={topic} id_prefix={id_prefix} is_default={topic === topics[0]}>
+                        <div class:list={['[ structure-howto__panel ]', { 'no-clip': !clip }]}>
+                            {clip &&
+                                <figure class="[ structure-howto__clip ]">
+                                    <img src={clip.src} width={clip.width} height={clip.height} loading="lazy" alt={t(t_key('structures.guide.clip_', topic))} />
+                                </figure>
+                            }
+                            <ol class="[ structure-howto__how ]">
+                                {[1, 2, 3].map((n) => <li>{t(t_key('structures.guide.', `${topic}_${n}`))}</li>)}
+                            </ol>
+                        </div>
+                    </SectionTabPanel>
+                )
+            })}
+        </SectionTabs>
     </div>
 }
 
@@ -70,10 +72,9 @@ const CLIPS: Partial<Record<StructureHowToTopic, { src: string, width: number, h
         flex-direction: column;
         gap: var(--space-xs);
 
-        .manage-chip.is-on {
-            color: var(--background);
-            background-color: var(--fleet-yellow);
-            border-color: var(--fleet-yellow);
+        // A single topic needs no tab to pick it.
+        &.structure-howto--single .section-tabs-list {
+            display: none;
         }
     }
 
