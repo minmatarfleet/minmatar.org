@@ -64,6 +64,12 @@ const {
 
 delete attributes.class
 
+// Astro hands a parent's scope attribute (data-astro-cid-*) to the components it renders.
+// Spread onto <picture>, it made the parent's `picture`/`img` rules (a fixed 64px width in
+// SRPItem, for one) hit every picture inside it, which main's pictures never matched.
+for (const key of Object.keys(attributes))
+    if (key.startsWith('data-astro-cid-')) delete attributes[key]
+
 import ZoomableImage from "@components/blocks/ZoomableImage.astro";
 import NotificationBadge from '@components/blocks/NotificationBadge.astro';
 

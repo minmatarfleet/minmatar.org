@@ -1713,5 +1713,21 @@
     "pattern": "data-table",
     "note": "Numeric columns (the er-table__numeric class had no rule, so they were left-aligned) take DataTable's right alignment with tabular figures.",
     "batch": "fix3"
+  },
+  {
+    "file": "src/components/blocks/RadioCheckInput.astro",
+    "selector": ":checked ~ small",
+    "path": "converge",
+    "pattern": "radio-check-library",
+    "note": "The checked-label rule was `:checked + small`, which never matched because the box sits between the input and the label text; it is now `:checked ~ small`, so a checked option's label is bold and full-strength white instead of staying yellow, on every RadioCheckInput.",
+    "batch": "fix4"
+  },
+  {
+    "file": "src/components/blocks/manage/EntityPicker.astro",
+    "selector": ".combobox label",
+    "path": "converge",
+    "pattern": "Combobox",
+    "note": "The picker's label is the Combobox label: full-strength white (was the muted manage-field label), 18px line instead of 17px, and a 10px gap to the field instead of 5px, so each picker is 6px taller.",
+    "batch": "fix4"
   }
 ]
