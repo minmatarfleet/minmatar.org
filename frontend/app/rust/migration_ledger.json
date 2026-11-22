@@ -12,5 +12,19 @@
     "path": "converge",
     "pattern": "error-block",
     "note": "A failed alliance-members fetch used to show 'no characters'; it now shows ErrorRefetch (message plus self-retry)."
+  },
+  {
+    "file": "src/components/blocks/CampaignObjectivesTable.astro",
+    "selector": ".empty-state",
+    "path": "converge",
+    "pattern": "empty-state",
+    "note": "Was --foreground at --step-0; now the library's faded --step--1 line."
+  },
+  {
+    "file": "src/components/blocks/CampaignLeaderboard.astro",
+    "selector": ".empty-state",
+    "path": "converge",
+    "pattern": "empty-state",
+    "note": "Was a --foreground <small>; now the library's faded --step--1 <p>. x-show/x-cloak pass through."
   }
 ]
