@@ -1,0 +1,146 @@
+---
+/**
+ * The page masthead: an image, the title as the landing heading, a meta row
+ * and actions on the right. It is the structure CorporationDetailHero and
+ * ManageHero draw, with their differences as props.
+ *
+ *   <Hero title="LP desk" image={logo} eyebrow="Industry">
+ *       <Fragment slot="meta"><Tag color="alliance-blue" text="LP managers" /><span>4 corporations</span></Fragment>
+ *       <Fragment slot="actions"><Button href="...">Add order</Button></Fragment>
+ *   </Hero>
+ *
+ * Slots: `meta` (the badge/fact row under the title), `actions` (at most one
+ * red `Button` plus quiet `color="transparent"` links, right of the title,
+ * full width on a phone) and the default slot, a body under the meta row.
+ * `variant="compact"` drops the title to page-title size and the image to a
+ * badge, for a masthead inside a card or a nested page.
+ */
+interface Props {
+    title:              string;
+    /** A small label above the title. */
+    eyebrow?:           string;
+    /** Corp logo, type icon...; omitted when the page is about no one thing. */
+    image?:             string;
+    /** Alt text for the image; empty (decorative) by default, since the title names it. */
+    image_alt?:         string;
+    variant?:           'default' | 'compact';
+    /** Title link target; defaults to the current page. */
+    path?:              string;
+    /** Gap in the meta row. */
+    meta_gap?:          string;
+    /** Font size of the meta row; `inherit` leaves it to the items. */
+    meta_size?:         string;
+    /** Cross-axis alignment of the actions. */
+    actions_align?:     'center' | 'flex-start';
+    /** id for the actions group, so a link can scroll to it. */
+    actions_id?:        string;
+    [propName: string]: any;
+}
+
+const {
+    title,
+    eyebrow,
+    image,
+    image_alt = '',
+    variant = 'default',
+    path,
+    meta_gap = 'var(--space-3xs) var(--space-xs)',
+    meta_size = 'var(--step--1)',
+    actions_align = 'center',
+    actions_id,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const compact = variant === 'compact'
+
+import PageTitle from '@components/page/PageTitle.astro'
+---
+
+<div class:list={['[ hero ]', { 'hero--compact': compact }, Astro.props.class]} {...attributes}>
+    {image &&
+        <img class="[ hero__image ]" src={image} width="128" height="128" alt={image_alt} />
+    }
+    <div class="[ hero__copy ]">
+        {eyebrow && <small class="[ hero__eyebrow ]">{eyebrow}</small>}
+        <PageTitle is_landing={!compact} path={path}>{title}</PageTitle>
+        {Astro.slots.has('meta') &&
+            <div class="[ hero__meta ]" style={`--hero-meta-gap: ${meta_gap}; --hero-meta-size: ${meta_size}`}>
+                <slot name="meta" />
+            </div>
+        }
+        {Astro.slots.has('default') &&
+            <div class="[ hero__body ]">
+                <slot />
+            </div>
+        }
+    </div>
+    {Astro.slots.has('actions') &&
+        <div class="[ hero__actions ]" id={actions_id} style={`--hero-actions-align: ${actions_align}`}>
+            <slot name="actions" />
+        </div>
+    }
+</div>
+
+<style lang="scss">
+    .hero {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-s) var(--space-m);
+        width: 100%;
+    }
+
+    .hero__image {
+        height: var(--step-5);
+        width: auto;
+        object-fit: contain;
+        flex: 0 0 auto;
+    }
+
+    .hero--compact .hero__image {
+        height: var(--step-3);
+    }
+
+    .hero__copy {
+        flex: 1 1 24rem;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    .hero__copy :global(.page-title h1.is-landing) {
+        line-height: 1;
+    }
+
+    .hero__eyebrow {
+        color: var(--faded);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .hero__meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--hero-meta-gap);
+        font-size: var(--hero-meta-size);
+    }
+
+    .hero__actions {
+        flex: 0 0 auto;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: var(--hero-actions-align);
+        gap: var(--space-xs);
+        scroll-margin-block-start: var(--space-2xl);
+    }
+
+    @media (max-width: 48rem) {
+        .hero__actions {
+            width: 100%;
+        }
+    }
+</style>

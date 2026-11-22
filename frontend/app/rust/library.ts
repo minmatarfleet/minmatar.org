@@ -50,7 +50,7 @@ export const RUST_LIBRARY = {
         'blocks/sde/SolarSystemSearch',
     ],
     'Page': [
-        'page/PageTitle', 'page/PageSubheader', 'page/PageActions', 'page/PageBreadcrumbs', 'page/BreadcrumbLink',
+        'page/PageTitle', 'blocks/Hero', 'page/PageSubheader', 'page/PageActions', 'page/PageBreadcrumbs', 'page/BreadcrumbLink',
         'layout/TextBox', 'layout/Context',
     ],
 } as const
