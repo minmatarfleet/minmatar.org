@@ -80,5 +80,8 @@ export type ChronicleChapter = {
     charactersOfTheAge?: ChronicleCharactersOfTheAge
 }
 
+/** A chapter as its file writes it. Its number comes from its place in the book. */
+export type ChronicleChapterSource = Omit<ChronicleChapter, 'number'>
+
 // Legacy alias for quote attribution portraits
 export type ChronicleCharacter = Pick<ChronicleCharacterOfTheAge, 'character_id' | 'character_name'>

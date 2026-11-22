@@ -7,13 +7,14 @@ import { chapter5 } from './chapter-5'
 import { chapter6 } from './chapter-6'
 import { chapter7 } from './chapter-7'
 import { chapter8 } from './chapter-8'
-import { chapter9 } from './chapter-9'
 import { chapter10 } from './chapter-10'
 import { chapter11 } from './chapter-11'
+import { theWaifuWars } from './the-waifu-wars'
 import { ratChronicleEras } from './eras'
-import type { ChronicleChapter, ChronicleEra, ChronicleEraId, ChronicleSection } from './types'
+import type { ChronicleChapter, ChronicleChapterSource, ChronicleEra, ChronicleEraId, ChronicleSection } from './types'
 
-export const ratChronicleChapters: ChronicleChapter[] = [
+/** The book in reading order. A chapter's number is its place here. */
+const chapters_in_order: ChronicleChapterSource[] = [
     chapter1,
     chapter2,
     chapter3,
@@ -22,10 +23,15 @@ export const ratChronicleChapters: ChronicleChapter[] = [
     chapter6,
     chapter7,
     chapter8,
-    chapter9,
+    theWaifuWars,
     chapter10,
     chapter11,
 ]
+
+export const ratChronicleChapters: ChronicleChapter[] = chapters_in_order.map((chapter, index) => ({
+    ...chapter,
+    number: index + 1,
+}))
 
 export function getChronicleChapterById(chapter_id: string): ChronicleChapter | undefined {
     return ratChronicleChapters.find((chapter) => chapter.id === chapter_id)
@@ -36,7 +42,9 @@ export function getChronicleChapterById(chapter_id: string): ChronicleChapter | 
  * chapter each one's content now lives in. Old links keep working: the page
  * redirects them.
  */
-export const legacyChronicleChapterIds: Record<string, string> = {}
+export const legacyChronicleChapterIds: Record<string, string> = {
+    'chapter-9': 'the-waifu-wars',
+}
 
 /** The current chapter id for an address: itself, or where a retired one moved to. */
 export function resolveChronicleChapterId(chapter_id: string): string | undefined {
@@ -100,6 +108,7 @@ export type {
     ChronicleCharacterOfTheAge,
     ChronicleCharactersOfTheAge,
     ChronicleChapter,
+    ChronicleChapterSource,
     ChronicleEra,
     ChronicleEraId,
     ChroniclePiece,
