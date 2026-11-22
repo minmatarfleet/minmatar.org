@@ -24,8 +24,8 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
 import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
-import PlayerContentChartChartjs from '@components/blocks/campaigns/scalding-pass/PlayerContentChartChartjs.astro'
-import PlayerContentChartLegend from '@components/blocks/campaigns/scalding-pass/PlayerContentChartLegend.astro'
+import CampaignContentChart from '@components/blocks/campaigns/CampaignContentChart.astro'
+import { CAMPAIGN_BEATS, FLEETS_MONTHLY, ISK_DESTROYED_MONTHLY, MONTHS, toBillions } from '@/data/campaigns/scalding-pass'
 import CountUpAnimation from '@components/blocks/CountUpAnimation.astro'
 import CharacterPicture from '@components/blocks/CharacterPicture.astro'
 import CharacterCard from '@components/blocks/CharacterCard.astro'
@@ -134,7 +134,16 @@ import { number_name } from '@helpers/numbers'
     </Flexblock>
 
     <ComponentBlock>
-        <PlayerContentChartChartjs />
+        <CampaignContentChart
+            months={MONTHS}
+            isk={ISK_DESTROYED_MONTHLY.map(toBillions)}
+            fleets={FLEETS_MONTHLY}
+            beats={CAMPAIGN_BEATS}
+            beat_labels={{ 0: 'Target named', 2: 'F-5FDA cap fight', 3: 'Wind-down' }}
+            beat_layout={{ 0: { anchor: 'start', dx: 10 } }}
+            band={{ from: 2, to: 2 }}
+            aria_label='Monthly ISK destroyed in Scalding Pass against fleets flown there'
+        />
     </ComponentBlock>
 </Flexblock>
 
