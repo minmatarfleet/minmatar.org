@@ -41,6 +41,7 @@ import Input from '@components/blocks/Input.astro'
 import ManageField from '@components/blocks/manage/ManageField.astro'
 import ManageTable from '@components/blocks/manage/ManageTable.astro'
 import Select from '@components/blocks/Select.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <section id="post-tags-manager" class="[ manage-list ]" aria-live="polite">
@@ -60,11 +61,11 @@ import Select from '@components/blocks/Select.astro'
                     <tbody id={row_id} x-data={`{ editing: ${failed ? 'true' : 'false'} }`}>
                         <tr class="[ manage-row ]">
                             <td>
-                                <button type="button" class="[ manage-who ]" x-on:click="editing = !editing; if (editing) $nextTick(() => $refs.name.focus())" x-bind:aria-expanded="editing" aria-expanded={failed ? 'true' : 'false'}>
+                                <StylessButton type="button" class="[ manage-who ]" x-on:click="editing = !editing; if (editing) $nextTick(() => $refs.name.focus())" x-bind:aria-expanded="editing" aria-expanded={failed ? 'true' : 'false'}>
                                     <span class="[ manage-who__text ]">
                                         <span class="[ manage-who__name ]">{tag.tag}</span>
                                     </span>
-                                </button>
+                                </StylessButton>
                             </td>
                             <td class="[ num ]">
                                 {tag.post_count}

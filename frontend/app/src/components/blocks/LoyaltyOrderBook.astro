@@ -77,6 +77,7 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
 const VISIBLE_ROWS = 20
 const rows_expanded = initially_expanded(orders, VISIBLE_ROWS, (order) => String(order.id) === highlight_order_id)
 
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <section
@@ -520,14 +521,14 @@ const rows_expanded = initially_expanded(orders, VISIBLE_ROWS, (order) => String
                 </LoyaltyOrderList>
             )}
             {orders.length > VISIBLE_ROWS && (
-                <button
+                <StylessButton
                     type="button"
                     class="[ loyalty-orders__more ]"
                     x-show="!show_all_rows"
                     x-on:click="show_all_rows = true"
                 >
                     {t('industry.loyalty.book.show_all').replace('{count}', String(orders.length))}
-                </button>
+                </StylessButton>
             )}
         </Flexblock>
     )}

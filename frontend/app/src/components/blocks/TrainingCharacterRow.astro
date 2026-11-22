@@ -54,10 +54,11 @@ const status =
 const add_label = character.goals.length > 0 ? t('training.add_ship') : t('training.pick_ship')
 const shown_ready = character.ready.slice(0, READY_ICONS)
 const more_ready = character.ready.length - shown_ready.length
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <div class:list={['[ training-row ]', Astro.props.class]} {...attributes}>
-    <button
+    <StylessButton
         type="button"
         class="[ training-row__who ]"
         hx-get={partial({ view: 'character', character_id: id })}
@@ -72,12 +73,12 @@ const more_ready = character.ready.length - shown_ready.length
                 <span class:list={[{ 'training-row__done': status.done }]}>{status.text}</span>
             </small>
         </span>
-    </button>
+    </StylessButton>
 
     <div class="[ training-row__training ]">
         {character.training &&
             <div class="[ training-line-wrap ]">
-                <button
+                <StylessButton
                     type="button"
                     class="[ training-line ]"
                     x-on:click={modal(TRAINING_PLAN_PARTIAL, { character_id: id, fitting_id: character.training.fitting_id })}
@@ -86,8 +87,8 @@ const more_ready = character.ready.length - shown_ready.length
                     <span class="[ training-line__name ]">{character.training.name}</span>
                     <span class="[ training-line__time ]">{time_label(t, character.training.days)}</span>
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"></path></svg>
-                </button>
-                <button
+                </StylessButton>
+                <StylessButton
                     type="button"
                     class="[ training-line__remove ]"
                     aria-label={t('training.stop_training').replace('{name}', character.training.name)}
@@ -98,17 +99,17 @@ const more_ready = character.ready.length - shown_ready.length
                     hx-confirm={t('training.remove_confirm').replace('{name}', character.training.name)}
                 >
                     <TrashIcon />
-                </button>
+                </StylessButton>
             </div>
         }
         {!character.training && !character.not_for_fleets &&
-            <button
+            <StylessButton
                 type="button"
                 class="[ training-row__add ]"
                 x-on:click={modal(TRAINING_SHIPS_PARTIAL, { character_id: id })}
             >
                 {add_label}
-            </button>
+            </StylessButton>
         }
     </div>
 
@@ -124,7 +125,7 @@ const more_ready = character.ready.length - shown_ready.length
             />
         )}
         {more_ready > 0 &&
-            <button
+            <StylessButton
                 type="button"
                 class="[ training-row__more ]"
                 aria-label={t('training.more_ready').replace('{count}', character.ready.length.toString())}
@@ -133,7 +134,7 @@ const more_ready = character.ready.length - shown_ready.length
                 hx-swap="outerHTML"
             >
                 +{more_ready}
-            </button>
+            </StylessButton>
         }
         {character.ready.length === 0 &&
             <span class="[ training-row__muted ]">{t('training.none_yet')}</span>

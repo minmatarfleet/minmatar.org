@@ -51,6 +51,7 @@ import ManageTable from '@components/blocks/manage/ManageTable.astro'
 import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
 import NpsiFeedRow from '@components/blocks/manage_intel/NpsiFeedRow.astro'
 import NpsiFeedForm from '@components/blocks/manage_intel/NpsiFeedForm.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <div class="[ manage-list ]" id="npsi-list-root">
@@ -63,12 +64,12 @@ import NpsiFeedForm from '@components/blocks/manage_intel/NpsiFeedForm.astro'
                 {adding &&
                     <ExpandRow id={feed_row_id('new')} colspan={colspan} label={t('manage.npsi.new_feed')} open={true}>
                         <td>
-                            <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+                            <StylessButton type="button" class="[ manage-who ]" x-on:click="open = !open">
                                 <span class="[ manage-who__text ]">
                                     <span class="[ manage-who__name ]">{draft?.name || t('manage.npsi.new_feed')}</span>
                                     <span class="[ manage-who__sub ]">{t('manage.npsi.new_sub')}</span>
                                 </span>
-                            </button>
+                            </StylessButton>
                         </td>
                         <td class="[ is-wide ]"></td>
                         <td class="[ is-wide ]"></td>

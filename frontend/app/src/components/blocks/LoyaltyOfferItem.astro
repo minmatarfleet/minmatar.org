@@ -233,6 +233,7 @@ const buyback_verdict = buyback_diff == null
             .replace('{diff}', format_isk_per_lp_rate(Math.abs(buyback_diff)))
 
 const detail_id = `loyalty-offer-detail-${offer.offer_id}`
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <div
@@ -256,7 +257,7 @@ const detail_id = `loyalty-offer-detail-${offer.offer_id}`
                 onerror="this.hidden=true"
             />
             <span class="[ loyalty-offer-item__text ]">
-                <button
+                <StylessButton
                     type="button"
                     class="[ loyalty-offer-item__toggle ]"
                     aria-controls={detail_id}
@@ -269,7 +270,7 @@ const detail_id = `loyalty-offer-detail-${offer.offer_id}`
                     {offer.quantity > 1 && (
                         <span class="[ loyalty-offer-item__qty ]">×{number_thousand_separator(offer.quantity)}</span>
                     )}
-                </button>
+                </StylessButton>
                 <span
                     class="[ loyalty-offer-item__recipe ]"
                     data-tippy-content={other_cost_tooltip()}
