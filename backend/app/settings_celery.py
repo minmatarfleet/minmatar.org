@@ -497,6 +497,14 @@ CELERYBEAT_OTHER = [
         },
     ),
     (
+        "[Alliance] Warm the landing page",
+        {
+            "task": "alliance.tasks.warm_landing_pages",
+            "schedule": crontab(minute="*/2"),
+            "options": {"expire_seconds": 110},
+        },
+    ),
+    (
         "[Alliance] Prune health snapshots",
         {
             "task": "alliance.tasks.prune_alliance_health_snapshots",

@@ -1,0 +1,453 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+/**
+ * Reads, plays or shows a post or guide without leaving the page. Put one on
+ * a page and wrap each card or link in a ContentViewerLink: a plain click
+ * opens the viewer and htmx loads the content into it; a ctrl/cmd/middle click
+ * still opens the full page.
+ *
+ * - A native <dialog> (top layer, focus trap, Escape) that fills the screen on
+ *   phones and is a panel sized to the content on desktop: wide for a video,
+ *   fitted for a poster, a reading column for articles and guides.
+ * - Opening adds a #viewer history entry through the page router's own
+ *   navigate(), so Back (or a swipe back on a phone) closes the viewer, and
+ *   the router treats it as a same-page hash move: no page swap, no reload.
+ * - Closing empties the body, which stops a playing video.
+ */
+interface Props {
+    [propName: string]: any;
+}
+
+const attributes = { ...Astro.props }
+delete attributes.class
+
+// The history entry the open viewer sits on; no element has this id.
+const HASH = '#viewer'
+
+// Zoom limits: how far in, and where a double-tap goes.
+const ZOOM_MAX = 6
+const ZOOM_DOUBLE = 2.5
+
+import TrashIcon from '@components/icons/buttons/TrashIcon.astro'
+---
+
+<dialog
+    class:list={['[ content-viewer ]', Astro.props.class]}
+    aria-labelledby="content-viewer-title"
+    x-data={`{
+        dialog: null,
+        is_open: false,
+        zoom: { src: '', alt: '', scale: 1, x: 0, y: 0 },
+        loading: false,
+        title: '',
+        href: '',
+        open(detail) {
+            this.title = detail.title ?? ''
+            this.href = detail.href ?? ''
+            this.loading = true
+            if (this.is_open) return
+            if (this.dialog.showModal) this.dialog.showModal(); else this.dialog.setAttribute('open', '')
+            this.is_open = true
+            document.documentElement.classList.add('content-viewer-locked')
+            // A #viewer entry, added through the page router so it knows the
+            // hash: Back is then a same-page hash move (no page swap) and
+            // the popstate below closes the viewer.
+            if (location.hash !== '${HASH}' && window.content_viewer_navigate)
+                window.content_viewer_navigate(location.pathname + location.search + '${HASH}')
+        },
+        loaded(event) {
+            if (event.target !== this.$refs.body) return
+            this.loading = false
+            const content = this.$refs.body.querySelector('.content-viewer-content')
+            if (content?.dataset.title) this.title = content.dataset.title
+            if (content?.dataset.href) this.href = content.dataset.href
+            this.$refs.body.scrollTop = 0
+        },
+        // Zoom: any image in the body opens full screen inside the dialog
+        // (the top layer), where it can be pinched, wheeled, dragged and
+        // double-tapped. Esc or Back leaves the zoom before the viewer.
+        zoom_open(img) {
+            this.zoom = { src: img.currentSrc || img.src, alt: img.alt, scale: 1, x: 0, y: 0 }
+            this.$nextTick(() => this.$refs.zoom_close?.focus())
+        },
+        zoom_close() { this.zoom.src = '' },
+        zoom_to(scale, cx, cy) {
+            const z = this.zoom
+            const next = Math.min(${ZOOM_MAX}, Math.max(1, scale))
+            if (cx !== undefined) {
+                const r = this.$refs.zoom_stage.getBoundingClientRect()
+                const px = cx - r.left - r.width / 2, py = cy - r.top - r.height / 2
+                z.x = px - (px - z.x) * next / z.scale
+                z.y = py - (py - z.y) * next / z.scale
+            }
+            z.scale = next
+            if (next === 1) { z.x = 0; z.y = 0 }
+        },
+        zoom_wheel(event) {
+            this.zoom_to(this.zoom.scale * (event.deltaY < 0 ? 1.15 : 1 / 1.15), event.clientX, event.clientY)
+        },
+        zoom_double(event) {
+            this.zoom_to(this.zoom.scale > 1 ? 1 : ${ZOOM_DOUBLE}, event.clientX, event.clientY)
+        },
+        pointers: {},
+        pinch: null,
+        zoom_down(event) {
+            this.pointers[event.pointerId] = { x: event.clientX, y: event.clientY }
+            try { event.currentTarget.setPointerCapture(event.pointerId) } catch {}
+            const points = Object.values(this.pointers)
+            if (points.length === 2) {
+                this.pinch = { distance: Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y), scale: this.zoom.scale }
+            }
+        },
+        zoom_move(event) {
+            const last = this.pointers[event.pointerId]
+            if (!last) return
+            const points = Object.values(this.pointers)
+            if (points.length === 2 && this.pinch) {
+                this.pointers[event.pointerId] = { x: event.clientX, y: event.clientY }
+                const [a, b] = Object.values(this.pointers)
+                const distance = Math.hypot(a.x - b.x, a.y - b.y)
+                this.zoom_to(this.pinch.scale * distance / this.pinch.distance, (a.x + b.x) / 2, (a.y + b.y) / 2)
+                return
+            }
+            if (this.zoom.scale > 1) {
+                this.zoom.x += event.clientX - last.x
+                this.zoom.y += event.clientY - last.y
+            }
+            this.pointers[event.pointerId] = { x: event.clientX, y: event.clientY }
+        },
+        zoom_up(event) {
+            delete this.pointers[event.pointerId]
+            if (Object.keys(this.pointers).length < 2) this.pinch = null
+        },
+        escape() {
+            if (this.zoom.src) this.zoom_close(); else this.close()
+        },
+        close() {
+            if (!this.is_open) return
+            this.finish()
+            if (location.hash === '${HASH}') history.back()
+        },
+        finish() {
+            this.zoom_close()
+            this.is_open = false
+            this.loading = false
+            try { if (this.dialog.open) this.dialog.close() } catch {}
+            this.dialog.removeAttribute('open')
+            this.$refs.body.innerHTML = ''
+            document.documentElement.classList.remove('content-viewer-locked')
+        },
+        init() {
+            // $el is whichever element a handler sits on (the close button,
+            // say); keep the dialog itself.
+            this.dialog = this.$el
+            this.$refs.body.addEventListener('htmx:afterSwap', (event) => this.loaded(event))
+            this.$refs.body.addEventListener('htmx:responseError', (event) => this.loaded(event))
+            // Images in the body open the zoom (a click, not a swipe of a gallery).
+            this.$refs.body.addEventListener('click', (event) => {
+                const img = event.target.closest?.('img')
+                if (img && !img.closest('a')) { event.preventDefault(); this.zoom_open(img) }
+            })
+            const popped = () => { if (this.is_open && location.hash !== '${HASH}') this.finish() }
+            window.addEventListener('popstate', popped)
+            document.addEventListener('astro:before-swap', () => {
+                window.removeEventListener('popstate', popped)
+                document.documentElement.classList.remove('content-viewer-locked')
+            }, { once: true })
+        },
+    }`}
+    x-on:content-viewer-open.window="open($event.detail)"
+    x-on:cancel.prevent="escape()"
+    x-on:click.self="close()"
+    x-bind:data-loading="loading"
+    {...attributes}
+>
+    <div class="[ content-viewer__panel ]">
+        <header class="[ content-viewer__header ]">
+            <h2 id="content-viewer-title" x-text="title"></h2>
+            <a class="[ content-viewer__open ]" x-bind:href="href" x-show="href">{t('content_viewer.open_page')}</a>
+            <button type="button" class="[ content-viewer__close ]" x-on:click="close()" aria-label={t('content_viewer.close')}>
+                <TrashIcon />
+            </button>
+        </header>
+        <div class="[ content-viewer__skeleton ]" x-show="loading" aria-hidden="true">
+            <span class="[ skel skel-media ]"></span>
+            <span class="[ skel skel-line ]"></span>
+            <span class="[ skel skel-line skel-line--short ]"></span>
+        </div>
+        <div
+            id="content-viewer-body"
+            class="[ content-viewer__body ]"
+            x-ref="body"
+            x-show="!loading"
+            aria-live="polite"
+        ></div>
+    </div>
+
+    <div class="[ content-viewer__zoom ]" x-show="zoom.src" x-cloak role="group" aria-label={t('content_viewer.zoom')}>
+        <div
+            class="[ content-viewer__zoom-stage ]"
+            x-ref="zoom_stage"
+            x-on:wheel.prevent="zoom_wheel($event)"
+            x-on:dblclick="zoom_double($event)"
+            x-on:pointerdown="zoom_down($event)"
+            x-on:pointermove="zoom_move($event)"
+            x-on:pointerup="zoom_up($event)"
+            x-on:pointercancel="zoom_up($event)"
+            x-bind:class="{ 'is-zoomed': zoom.scale > 1 }"
+        >
+            <img
+                x-bind:src="zoom.src"
+                x-bind:alt="zoom.alt"
+                x-bind:style="`transform: translate(${zoom.x}px, ${zoom.y}px) scale(${zoom.scale})`"
+                draggable="false"
+            />
+        </div>
+        <div class="[ content-viewer__zoom-bar ]">
+            <button type="button" x-on:click="zoom_to(zoom.scale / 1.5)" x-bind:disabled="zoom.scale <= 1" aria-label={t('content_viewer.zoom_out')}>−</button>
+            <span x-text="Math.round(zoom.scale * 100) + '%'">100%</span>
+            <button type="button" x-on:click="zoom_to(zoom.scale * 1.5)" x-bind:disabled={`zoom.scale >= ${ZOOM_MAX}`} aria-label={t('content_viewer.zoom_in')}>+</button>
+            <button type="button" x-on:click="zoom_to(1)" x-bind:disabled="zoom.scale === 1">{t('content_viewer.zoom_fit')}</button>
+            <button type="button" x-ref="zoom_close" x-on:click="zoom_close()" aria-label={t('content_viewer.zoom_close')}><TrashIcon /></button>
+        </div>
+    </div>
+</dialog>
+
+<script>
+    // The page router's navigate, for the viewer's #viewer history entry.
+    import { navigate } from 'astro:transitions/client'
+    ;(window as any).content_viewer_navigate = navigate
+</script>
+
+<style lang="scss" is:global>
+    @use '../../styles/mixins/skeleton';
+
+    html.content-viewer-locked {
+        overflow: hidden;
+    }
+
+    .content-viewer {
+        --content-viewer-width: min(64rem, calc(100vw - var(--space-xl) * 2));
+
+        // The site's reset zeroes margins; a modal dialog centres on auto ones.
+        margin: auto;
+        width: var(--content-viewer-width);
+        max-width: none;
+        max-height: calc(100dvh - var(--space-xl) * 2);
+        padding: 0;
+        border: 1px solid var(--border-color);
+        background: var(--background);
+        color: var(--foreground);
+        overscroll-behavior: contain;
+
+        &::backdrop {
+            background: color-mix(in srgb, var(--background) 85%, transparent);
+            backdrop-filter: blur(4px);
+        }
+
+        // Sized to what's inside: wide for a video, a reading column for text.
+        &:has([data-kind="video"]) { --content-viewer-width: min(80rem, calc(100vw - var(--space-xl) * 2)); }
+        &:has(.content-viewer-content__video--reddit) { --content-viewer-width: min(48rem, calc(100vw - var(--space-xl) * 2)); }
+        &:has([data-kind="article"]),
+        &:has([data-kind="guide"]) { --content-viewer-width: min(56rem, calc(100vw - var(--space-xl) * 2)); }
+        &:has([data-kind="missing"]) { --content-viewer-width: min(36rem, calc(100vw - var(--space-xl) * 2)); }
+    }
+
+    .content-viewer__panel {
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100dvh - var(--space-xl) * 2);
+    }
+
+    .content-viewer__header {
+        position: sticky;
+        top: 0;
+        display: flex;
+        align-items: center;
+        gap: var(--space-s);
+        padding: var(--space-s) var(--space-m);
+        border-bottom: 1px solid var(--border-color);
+        background: var(--background);
+
+        h2 {
+            flex: 1;
+            min-width: 0;
+            margin: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-family: var(--heading-font);
+            font-weight: normal;
+            font-size: var(--step-1);
+            color: var(--highlight);
+        }
+    }
+
+    .content-viewer__open {
+        flex: none;
+        font-size: var(--step--1);
+        white-space: nowrap;
+        color: var(--fleet-yellow);
+    }
+
+    .content-viewer__close {
+        flex: none;
+        display: flex;
+        padding: var(--space-2xs);
+        border: none;
+        background: transparent;
+        color: var(--highlight);
+        cursor: pointer;
+
+        svg {
+            width: var(--space-s);
+            height: var(--space-s);
+        }
+    }
+
+    .content-viewer__body,
+    .content-viewer__skeleton {
+        padding: var(--space-m);
+        overflow-y: auto;
+    }
+
+    .content-viewer__skeleton {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+
+        .skel {
+            display: block;
+            border-radius: 2px;
+            @include skeleton.shimmer;
+        }
+
+        .skel-media { aspect-ratio: 16 / 9; width: 100%; max-height: 50dvh; }
+        .skel-line { height: var(--step-0); width: 60%; }
+        .skel-line--short { width: 35%; }
+    }
+
+    // Images in the body zoom on a click.
+    .content-viewer__body img {
+        cursor: zoom-in;
+    }
+
+    // The zoom covers the dialog (it is inside it, so it is in the top layer
+    // too); the image is moved with a transform, so nothing reflows.
+    .content-viewer__zoom {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        background: var(--background);
+    }
+
+    .content-viewer__zoom-stage {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        touch-action: none;
+        cursor: zoom-in;
+
+        &.is-zoomed {
+            cursor: grab;
+
+            &:active {
+                cursor: grabbing;
+            }
+        }
+
+        img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            transform-origin: center;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+    }
+
+    .content-viewer__zoom-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-xs);
+        padding: var(--space-xs);
+        border-top: 1px solid var(--border-color);
+
+        span {
+            min-width: var(--space-2xl);
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+            color: var(--text-muted);
+        }
+
+        button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: var(--space-l);
+            padding: var(--space-3xs) var(--space-xs);
+            border: 1px solid var(--hairline-strong);
+            background: transparent;
+            color: var(--highlight);
+            font-size: var(--step-0);
+            line-height: 1;
+            cursor: pointer;
+
+            &:disabled {
+                opacity: 0.35;
+                cursor: default;
+            }
+
+            svg {
+                width: var(--space-s);
+                height: var(--space-s);
+            }
+        }
+    }
+
+    // Phones: the whole screen, like an app sheet.
+    @media (max-width: 48rem) {
+        .content-viewer,
+        .content-viewer:has([data-kind]) {
+            --content-viewer-width: 100vw;
+
+            height: 100dvh;
+            max-height: 100dvh;
+            margin: 0;
+            border: none;
+        }
+
+        .content-viewer__panel {
+            height: 100%;
+            max-height: 100dvh;
+        }
+
+        .content-viewer__body,
+        .content-viewer__skeleton {
+            flex: 1;
+            padding: var(--space-s);
+        }
+
+        .content-viewer__header {
+            padding: var(--space-xs) var(--space-s);
+        }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .content-viewer[open] {
+            animation: content-viewer-in var(--fast-transition, 150ms) ease-out;
+        }
+    }
+
+    @keyframes content-viewer-in {
+        from { opacity: 0; transform: translateY(var(--space-xs)); }
+        to { opacity: 1; transform: none; }
+    }
+</style>

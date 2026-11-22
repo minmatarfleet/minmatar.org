@@ -96,9 +96,9 @@ A horizontal scroll container that fades its left and right edges when there is 
 The primary call to action.
 
 - Import: `import Button from '@components/blocks/Button.astro'`
-- Props: `color?: ButtonColors = 'fleet-red'`, `new_tab?: boolean = false`, `external?: boolean = false`, `href?: string`, `size?: ButtonSizes = 'lg'`, `narrow?: boolean = false`, `centered?: boolean = true`, `off_disable?: boolean = false`, `disabled?: boolean = false`
+- Props: `color?: ButtonColors = 'fleet-red'`, `new_tab?: boolean = false`, `external?: boolean = false`, `href?: string`, `size?: ButtonSizes = 'lg'`, `narrow?: boolean = false`, `outline?: boolean = false`, `centered?: boolean = true`, `off_disable?: boolean = false`, `disabled?: boolean = false`
 - Slots: `icon`, `default`
-- Stories (12): `frontend/app/rust/stories/components/forms/Button.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-button--docs: Default, Colors, Transparent, Small, Narrow, With Icon, Link, New Tab, External, Disabled, Enabled without Alpine (off_disable), Keyboard focus ring
+- Stories (13): `frontend/app/rust/stories/components/forms/Button.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-button--docs: Default, Colors, Transparent, Small, Narrow, With Icon, Link, New Tab, External, Disabled, Enabled without Alpine (off_disable), Keyboard focus ring, Outline (secondary)
 
 ### StylessButton
 
@@ -391,6 +391,14 @@ A grid-based table with a real header row (`role="table"`, `columnheader`, `row`
 - Slots: `header`, `default`
 - Stories (8): `frontend/app/rust/stories/components/data-display/DataGrid.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-datagrid--docs: Default, Ledger, Stacked on phones (stack), Icon column with a hidden label (hidden_columns), Own header cells (header slot), Media cells (portraits and icons), Empty grid, Narrow viewport scrolls (min_width)
 
+### DataGridSkeleton
+
+Loading state for a DataGrid: the real header and the same column `template`, with shimmering bars where the rows will be.
+
+- Import: `import DataGridSkeleton from '@components/blocks/DataGridSkeleton.astro'`
+- Props: `columns: string[]`, `template: string`, `rows?: number = 8`, `media?: number[] = []`, `numeric?: number[] = []`, `min_width?: string = '38rem'`, `variant?: 'compact' | 'ledger' = 'compact'`, `stack?: boolean = false`, `pager?: boolean = false`
+- Stories (4): `frontend/app/rust/stories/components/data-display/DataGridSkeleton.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-datagridskeleton--docs: Default, With pager bar, Plain columns (no media), Stacked on phones (stack)
+
 ### DataTable
 
 Semantic tabular data: a real `<table>` with a `<thead>` built from `columns`, in an edge-fading horizontal scroller.
@@ -546,9 +554,9 @@ The content region of one `SectionTabs` tab.
 Pager for a list fed by an htmx partial: each button requests another page and swaps it into `target`.
 
 - Import: `import HtmxPager from '@components/blocks/HtmxPager.astro'`
-- Props: `page: number`, `url_for: (page:number) => string`, `total_pages?: number`, `has_more?: boolean = false`, `target?: string`, `swap?: string = 'outerHTML'`, `request?: Record<string, string> = {}`, `gap?: string`, `buttons_gap?: string = 'var(--space-3xs)'`
+- Props: `page: number`, `url_for: (page:number) => string`, `total_pages?: number`, `has_more?: boolean = false`, `numbered?: boolean = false`, `target?: string`, `swap?: string = 'outerHTML'`, `request?: Record<string, string> = {}`, `gap?: string`, `buttons_gap?: string = 'var(--space-3xs)'`
 - Slots: `status`, `actions`
-- Stories (11): `frontend/app/rust/stories/components/navigation/HtmxPager.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-htmxpager--docs: Previous / Next (total pages), First page: Previous disabled, Last page: Next disabled, Single page: status only, Newer / Older (has_more), Has more, first page: only Older, No more, later page: only Newer, Lone first page renders nothing, Request attributes (hx-include, hx-select), Status and actions slots, Swaps the list on click
+- Stories (13): `frontend/app/rust/stories/components/navigation/HtmxPager.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-htmxpager--docs: Previous / Next (total pages), First page: Previous disabled, Last page: Next disabled, Single page: status only, Newer / Older (has_more), Has more, first page: only Older, No more, later page: only Newer, Lone first page renders nothing, Request attributes (hx-include, hx-select), Status and actions slots, Swaps the list on click, Numbered pages (long list), Numbered: one hidden page is shown, not "…"
 
 ### FilterChip
 
@@ -627,6 +635,22 @@ The site-wide content modal: one instance in the page layout, opened with `show_
 - Import: `import Modal from '@components/blocks/Modal.astro'`
 - Props: `persistent?: boolean = false } = Astro.props`
 - Stories (8): `frontend/app/rust/stories/components/overlays/Modal.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-modal--docs: Default, Corner button closes, Backdrop click closes, Escape closes, Loads a partial through htmx, Persistent ignores backdrop clicks, Persistent closes from the corner button, Focus returns to the trigger
+
+### ContentViewer
+
+Reads, plays or shows a post or guide without leaving the page.
+
+- Import: `import ContentViewer from '@components/blocks/ContentViewer.astro'`
+- Stories (5): `frontend/app/rust/stories/components/overlays/ContentViewer.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-contentviewer--docs: Closed until a link opens it, Opens with the title and a link to the page, Close button empties and closes it, Loads a poster through htmx, A click on an image zooms it; Escape leaves the zoom first
+
+### ContentViewerLink
+
+Opens a post or guide in the page's `ContentViewer`.
+
+- Import: `import ContentViewerLink from '@components/blocks/ContentViewerLink.astro'`
+- Props: `href: string`, `post?: number = ${post}` : guide ? `guide=${encodeURIComponent(guide)}` : ''`, `guide?: string = ${encodeURIComponent(guide)}` : ''`, `title?: string`
+- Slots: `default`
+- Stories (4): `frontend/app/rust/stories/components/overlays/ContentViewerLink.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-contentviewerlink--docs: A post, A guide, Neither post nor guide: a plain link, A plain click opens the viewer, a ctrl click does not
 
 ### Tippy
 

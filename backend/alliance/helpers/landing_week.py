@@ -1,5 +1,5 @@
 """
-"The week in the alliance" on the new landing page (/landing-new).
+"The week in the alliance" on the homepage (/).
 
 Four tabs, every row of the last 7 days, 12 to a page:
 
@@ -37,10 +37,14 @@ from alliance.helpers.landing_pulse import (
     event_rows,
 )
 from app.cache import CachedRollup
+from eveonline.helpers.killmail_text import parse_killmail_list
+from eveonline.models import EveCharacterKillmail
 from eveuniverse.models import EveSolarSystem
+from feed.models import FeedKillmail
+from market.helpers.pricing import get_prices_by_type_id
 
 WEEK = CachedRollup(
-    key="alliance:landing_week:v1",
+    key="alliance:landing_week:v2",
     ttl=600,
     lock_key="alliance:landing_week:lock",
     lock_ttl=180,
@@ -49,28 +53,6 @@ WEEK = CachedRollup(
 TABS = ("fights", "kills", "warzone", "mining")
 PER_PAGE = 12
 ENGAGEMENT_GAP = timedelta(minutes=20)
-SMALL_GANG_MAX = 5
-MEDIUM_GANG_MAX = 14
-
-
-def _size(pilots: int) -> str:
-    if pilots <= SMALL_GANG_MAX:
-        return "Small gang"
-    if pilots <= MEDIUM_GANG_MAX:
-        return "Medium gang"
-    return "Large fleet"
-
-
-def _length(minutes: int) -> str:
-    if minutes < 1:
-        return ""
-    if minutes < 60:
-        return f"{minutes} min"
-    return f"{minutes // 60} h {minutes % 60:02d} min"
-
-
-def _plural(count: int, word: str, plural: str) -> str:
-    return f"{count} {word if count == 1 else plural}"
 
 
 def _our_mails(start, end) -> list[tuple]:
@@ -154,20 +136,55 @@ def _enemy(tally, names) -> tuple[str, str, int]:
     return "", "", 0
 
 
-def _engagement_tail(cluster, tally) -> str:
-    kills = tally["kills"]
-    losses = len(cluster["mails"]) - kills
-    minutes = round((cluster["last"] - cluster["first"]).total_seconds() / 60)
-    score = ", ".join(
-        p
-        for p in (
-            _plural(kills, "kill", "kills") if kills else "",
-            _plural(losses, "loss", "losses") if losses else "",
-        )
-        if p
+def _count_items(items, quantities: Counter) -> None:
+    for item in items or []:
+        # Blueprint copies have no market price.
+        if item.get("singleton") != 2 and item.get("item_type_id"):
+            quantities[item["item_type_id"]] += (
+                item.get("quantity_destroyed") or 0
+            ) + (item.get("quantity_dropped") or 0)
+        _count_items(item.get("items"), quantities)
+
+
+def _isk_destroyed(picked) -> dict[int, int]:
+    """ISK of the ships we killed in each engagement, valued like zKill:
+    hull plus destroyed and dropped items at the baseline guide price."""
+    kill_rows = {
+        first["id"]: index
+        for index, (cluster, _) in enumerate(picked)
+        for first, loss, _ in cluster["mails"]
+        if not loss
+    }
+    feed_rows = {
+        int(row_id.removeprefix("feed:")): index
+        for row_id, index in kill_rows.items()
+        if isinstance(row_id, str)
+    }
+    per_cluster: dict[int, Counter] = {}
+
+    def count(index, ship_type_id, items):
+        quantities = per_cluster.setdefault(index, Counter())
+        if ship_type_id:
+            quantities[ship_type_id] += 1
+        _count_items(items, quantities)
+
+    for row_id, ship_type_id, items in EveCharacterKillmail.objects.filter(
+        id__in=[r for r in kill_rows if not isinstance(r, str)]
+    ).values_list("id", "ship_type_id", "items"):
+        count(kill_rows[row_id], ship_type_id, parse_killmail_list(items))
+    for killmail_id, ship_type_id, items in FeedKillmail.objects.filter(
+        killmail_id__in=list(feed_rows)
+    ).values_list(
+        "killmail_id", "victim_ship_type_id", "raw_killmail__victim__items"
+    ):
+        count(feed_rows[killmail_id], ship_type_id, items or [])
+    prices = get_prices_by_type_id(
+        list({t for q in per_cluster.values() for t in q})
     )
-    parts = (_size(len(tally["pilots"])), score, _length(minutes))
-    return "· " + " · ".join(p for p in parts if p)
+    return {
+        index: sum(prices.get(t, 0) * n for t, n in quantities.items())
+        for index, quantities in per_cluster.items()
+    }
 
 
 def _engagements(start, end) -> list[Event]:
@@ -175,7 +192,7 @@ def _engagements(start, end) -> list[Event]:
     if not mails:
         return []
     sides, factions = _attacker_sides(
-        [first["id"] for first, loss, _ in mails if loss]
+        [first for first, loss, _ in mails if loss]
     )
     systems = _system_areas(mails)
     picked = []
@@ -188,8 +205,9 @@ def _engagements(start, end) -> list[Event]:
         (k[1] for k in keys if k[0] == "alliance"),
         (k[1] for k in keys if k[0] == "corporation"),
     )
+    isk = _isk_destroyed(picked)
     events = []
-    for cluster, tally in picked:
+    for index, (cluster, tally) in enumerate(picked):
         subject, subject_type, subject_id = _enemy(tally, names)
         events.append(
             Event(
@@ -200,9 +218,9 @@ def _engagements(start, end) -> list[Event]:
                 subject,
                 subject_type,
                 subject_id,
-                _engagement_tail(cluster, tally),
                 others=len(tally["pilots"]) - 1,
                 region=tally["regions"].most_common(1)[0][0],
+                amount=isk.get(index, 0),
             )
         )
     return events

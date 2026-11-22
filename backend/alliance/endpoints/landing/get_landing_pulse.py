@@ -15,6 +15,6 @@ router = Router(tags=["Alliance"])
     summary="Alliance activity for the new landing page (public)",
 )
 def get_landing_pulse(request):
-    # Public: /landing-new is open to everyone at its hidden URL. Kills and
+    # Public: the homepage shows it to everyone. Kills and
     # sites are live; fleets and comms in the totals stay an hour behind.
     return 200, landing_pulse()

@@ -9,6 +9,10 @@ const { t } = i18n(Astro.url)
  * - With `total_pages`: Previous / Next (disabled at either end) after a
  *   status line (the `status` slot, or "Page N"). The `actions` slot adds
  *   buttons before them, e.g. an export.
+ *   `numbered` puts page numbers between them: the first, the last and the
+ *   pages around the current one, with gaps as "…", so a long list can be
+ *   jumped through instead of paged one at a time. Phones show only the
+ *   current page between them.
  * - With `has_more` (no total known): Newer / Older around "Page N", each
  *   shown only when that page exists; nothing renders on a lone first page.
  *
@@ -20,6 +24,8 @@ interface Props {
     url_for:            (page:number) => string;
     total_pages?:       number;
     has_more?:          boolean;
+    /** With `total_pages`: page numbers between Previous and Next. */
+    numbered?:          boolean;
     target?:            string;
     swap?:              string;
     request?:           Record<string, string>;
@@ -34,6 +40,7 @@ const {
     url_for,
     total_pages,
     has_more = false,
+    numbered = false,
     target,
     swap = 'outerHTML',
     request = {},
@@ -54,6 +61,24 @@ const hx = (to:number) => ({
 
 const page_label = t('pager.page').replace('{page}', String(page))
 
+// 1 … 4 5 [6] 7 8 … 20: the ends, two either side of the current page, and a
+// gap only where it hides two or more pages (one hidden page is shown).
+const NEIGHBOURS = 2
+const page_numbers: (number | null)[] = []
+if (numbered && total_pages && total_pages > 1) {
+    const shown = new Set([1, total_pages])
+    for (let n = page - NEIGHBOURS; n <= page + NEIGHBOURS; n++) {
+        if (n >= 1 && n <= total_pages) shown.add(n)
+    }
+    const sorted = [...shown].sort((a, b) => a - b)
+    sorted.forEach((n, index) => {
+        const previous = sorted[index - 1]
+        if (previous !== undefined && n - previous === 2) page_numbers.push(n - 1)
+        else if (previous !== undefined && n - previous > 2) page_numbers.push(null)
+        page_numbers.push(n)
+    })
+}
+
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
 ---
@@ -66,12 +91,30 @@ import Button from '@components/blocks/Button.astro'
         {...attributes}
     >
         <slot name="status"><small class="[ htmx-pager-page ]">{page_label}</small></slot>
-        <FlexInline gap={buttons_gap}>
+        <FlexInline gap={buttons_gap} class="[ items-center ]">
             <slot name="actions" />
             {total_pages > 1 && <>
                 <Button size='sm' color='transparent' type='button' disabled={page <= 1} {...hx(page - 1)}>
                     {t('pager.previous')}
                 </Button>
+                {page_numbers.map((n) => n === null
+                    ? <span class="[ htmx-pager-gap ]" aria-hidden="true">…</span>
+                    : n === page
+                        ? <Button size='sm' color='fleet-red' narrow={true} type='button' aria-current="page" class="[ htmx-pager-number ]" off_disable={true}>
+                            {n}
+                        </Button>
+                        : <Button
+                            size='sm'
+                            color='transparent'
+                            narrow={true}
+                            type='button'
+                            class="[ htmx-pager-number ]"
+                            aria-label={t('pager.page').replace('{page}', String(n))}
+                            {...hx(n)}
+                        >
+                            {n}
+                        </Button>
+                )}
                 <Button size='sm' color='transparent' type='button' disabled={page >= total_pages} {...hx(page + 1)}>
                     {t('pager.next')}
                 </Button>
@@ -106,5 +149,22 @@ import Button from '@components/blocks/Button.astro'
 <style lang="scss">
     .htmx-pager-page {
         color: var(--foreground);
+    }
+
+    .htmx-pager-gap {
+        padding-inline: var(--space-3xs);
+        color: var(--foreground);
+    }
+
+    .htmx-pager-number {
+        font-variant-numeric: tabular-nums;
+    }
+
+    // Phones: Previous [current] Next, on one line.
+    @media (max-width: 48rem) {
+        .htmx-pager-number:not([aria-current]),
+        .htmx-pager-gap {
+            display: none;
+        }
     }
 </style>

@@ -2,49 +2,32 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import type { LandingEvent, LandingPulse } from '@dtypes/api.minmatar.org'
-import { eve_clock, short_number, stat_steps, format_number } from '@helpers/landing'
-import type { LandingDayStats } from '@helpers/landing'
+import type { LandingEvent } from '@dtypes/api.minmatar.org'
+import { eve_clock } from '@helpers/landing'
 
 import EmptyState from '@components/blocks/EmptyState.astro'
 import LandingLine from '@components/blocks/landing/LandingLine.astro'
 
 /**
  * The hero's Live band: the newest pilot lines pop in at the top one at a
- * time and the oldest fades out, three on show; the 24-hour numbers beside
- * them step up as each line lands. Every step is rendered here; Alpine only
- * moves `head` along them.
+ * time and the oldest fades out, five on show, across the full width. Every
+ * line is rendered here; Alpine only moves `head` along them.
  */
 interface Props {
     events:         LandingEvent[];
-    day:            LandingPulse['day'];
     view_all_href:  string;
     [propName: string]: any;
 }
 
-const { events, day, view_all_href, ...attributes } = Astro.props
+const { events, view_all_href, ...attributes } = Astro.props
 
 delete attributes.class
 
-const VISIBLE = 3
+const VISIBLE = 5
 // Oldest first, so playback runs forward to the newest line and stops there.
 const played = events.slice(0, 12).reverse()
 const start = Math.min(VISIBLE - 1, Math.max(played.length - 1, 0))
 const last = Math.max(played.length - 1, 0)
-
-const totals: LandingDayStats = {
-    ships_destroyed: day.ships_destroyed,
-    warzone_sites: day.warzone_sites,
-    complexes: day.complexes,
-    mined_volume: day.mined_volume ?? 0,
-}
-const steps = stat_steps(totals, played, start)
-const STATS: { key: keyof LandingDayStats, label: string, short?: boolean }[] = [
-    { key: 'ships_destroyed', label: t('landing_new.ships_destroyed') },
-    { key: 'warzone_sites', label: t('landing_new.warzone_sites') },
-    { key: 'complexes', label: t('landing_new.complexes') },
-    { key: 'mined_volume', label: t('landing_new.mined_volume'), short: true },
-]
 ---
 
 <div
@@ -71,50 +54,25 @@ const STATS: { key: keyof LandingDayStats, label: string, short?: boolean }[] = 
             <a class="[ landing-live__all ]" href={view_all_href}>{t('landing_new.view_all')}</a>
         </p>
         {played.length === 0 && <EmptyState title={t('landing_new.feed_empty')} />}
-        <ol class="[ landing-live__list ]" aria-live="off">
+        <ol class="[ landing-live__list ]" aria-live="off" style={`--live_rows: ${VISIBLE}`}>
             {played.map((event, index) => ({ event, index })).reverse().map(({ event, index }) =>
                 <li
                     class="[ landing-live__row ]"
                     x-show={`${index} <= head && ${index} >= head - ${VISIBLE}`}
-                    x-bind:class={`{ 'is-new': ${index} === head && head > start, 'is-older': ${index} === head - 1, 'is-oldest': ${index} === head - 2, 'is-out': ${index} === head - ${VISIBLE} }`}
+                    x-bind:class={`{ 'is-new': ${index} === head && head > start, 'is-older': ${index} <= head - 2, 'is-oldest': ${index} === head - ${VISIBLE - 1}, 'is-out': ${index} === head - ${VISIBLE} }`}
                     style={index <= start && index > start - VISIBLE ? undefined : 'display: none;'}
                 >
-                    <LandingLine event={event} size="md" />
+                    <LandingLine event={event} />
                     <span class="[ landing-live__region ]">{event.region}</span>
                     <time datetime={event.occurred_at}>{eve_clock(event.occurred_at)}</time>
                 </li>
             )}
         </ol>
     </div>
-
-    <div class="[ landing-live__stats ]">
-        <p class="[ landing-live__label ]">{t('landing_new.last_24_hours')}</p>
-        <dl>
-            {STATS.map((stat) =>
-                <div>
-                    <dt>{stat.label}</dt>
-                    <dd>
-                        {steps.map((step, k) =>
-                            <span
-                                class:list={['[ landing-live__value ]', { 'is-bumped': k > 0 && step[stat.key] !== steps[k - 1][stat.key] }]}
-                                x-show={`head - start === ${k}`}
-                                style={k === 0 ? undefined : 'display: none;'}
-                            >
-                                {stat.short ? short_number(step[stat.key]) : format_number(step[stat.key])}
-                            </span>
-                        )}
-                    </dd>
-                </div>
-            )}
-        </dl>
-    </div>
 </div>
 
 <style lang="scss">
     .landing-live {
-        display: grid;
-        grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-        gap: var(--space-xl);
         padding-top: var(--space-m);
         border-top: 1px solid var(--hairline-medium);
     }
@@ -154,9 +112,14 @@ const STATS: { key: keyof LandingDayStats, label: string, short?: boolean }[] = 
         animation: landing-live-beat 1.6s ease-in-out infinite;
     }
 
+    // Always exactly VISIBLE rows tall: a new line pops in while the oldest
+    // collapses, and that would otherwise push the whole page down and back
+    // every few seconds.
     .landing-live__list {
         display: flex;
         flex-direction: column;
+        block-size: calc(var(--space-xl) * var(--live_rows));
+        overflow: hidden;
         margin: 0;
         padding: 0;
         list-style: none;
@@ -167,7 +130,10 @@ const STATS: { key: keyof LandingDayStats, label: string, short?: boolean }[] = 
         grid-template-columns: minmax(0, 1fr) auto auto;
         gap: var(--space-s);
         align-items: center;
+        flex: none;
+        block-size: var(--space-xl);
         max-height: var(--space-xl);
+        box-sizing: border-box;
         padding: var(--space-2xs) 0;
         overflow: hidden;
         border-bottom: 1px solid var(--hairline);
@@ -190,39 +156,6 @@ const STATS: { key: keyof LandingDayStats, label: string, short?: boolean }[] = 
         white-space: nowrap;
     }
 
-    .landing-live__stats dl {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: var(--space-m) var(--space-l);
-        margin: 0;
-
-        div {
-            display: flex;
-            flex-direction: column-reverse;
-            gap: var(--space-3xs);
-        }
-
-        dt {
-            font-size: var(--step--1);
-            color: var(--text-muted);
-        }
-
-        dd {
-            margin: 0;
-            font-family: var(--heading-font);
-            font-size: var(--step-4);
-            line-height: 1;
-            color: var(--highlight);
-            font-variant-numeric: tabular-nums;
-        }
-    }
-
-    .landing-live__value {
-        display: inline-block;
-
-        &.is-bumped { animation: landing-live-bump 900ms ease-out both; }
-    }
-
     @keyframes landing-live-pop {
         0% { opacity: 0; transform: scale(0.86); }
         35% { opacity: 1; transform: scale(1.04); background: color-mix(in srgb, var(--fleet-yellow) 16%, transparent); }
@@ -236,26 +169,14 @@ const STATS: { key: keyof LandingDayStats, label: string, short?: boolean }[] = 
         100% { opacity: 0; max-height: 0; padding-block: 0; border-bottom-width: 0; }
     }
 
-    @keyframes landing-live-bump {
-        0% { color: var(--fleet-yellow); transform: translateY(-0.1em); }
-        100% { color: var(--highlight); transform: none; }
-    }
-
     @keyframes landing-live-beat {
         50% { opacity: 0.35; }
     }
 
     @media (prefers-reduced-motion: reduce) {
         .landing-live__row,
-        .landing-live__value,
         .landing-live__dot {
             animation: none !important;
-        }
-    }
-
-    @media (max-width: 64rem) {
-        .landing-live {
-            grid-template-columns: minmax(0, 1fr);
         }
     }
 

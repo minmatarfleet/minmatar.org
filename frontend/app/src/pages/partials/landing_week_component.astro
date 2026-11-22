@@ -4,7 +4,8 @@ const { t, translatePath } = i18n(Astro.url)
 
 import type { LandingWeek } from '@dtypes/api.minmatar.org'
 import { get_landing_week } from '@helpers/api.minmatar.org/landing'
-import { eve_clock, eve_day, format_number } from '@helpers/landing'
+import { amount_grade, eve_clock, eve_day, format_number, week_last_column, WEEK_GRID, WEEK_LAST_LABELS } from '@helpers/landing'
+import { format_compact, ISK_COMPACT } from '@helpers/numbers'
 import { query_string } from '@helpers/string'
 
 // "The week in the alliance": one tab's rows, 12 to a page, padded so every
@@ -25,6 +26,7 @@ try {
 const root_id = `landing-week-${tab}`
 const partial_url = (to:number) => translatePath(`/partials/landing_week_component/?${query_string({ tab, page: String(to) })}`)
 const rows = week?.rows ?? []
+const last_column = week_last_column(tab)
 const padding = Math.max(0, (week?.per_page ?? 12) - rows.length)
 const first = week ? (week.page - 1) * week.per_page + 1 : 0
 const range = week && week.total
@@ -34,6 +36,7 @@ const range = week && week.total
         .replace('{total}', format_number(week.total))
     : ''
 
+import DataGrid from '@components/blocks/DataGrid.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import HtmxPager from '@components/blocks/HtmxPager.astro'
@@ -45,31 +48,44 @@ import LandingLine from '@components/blocks/landing/LandingLine.astro'
     {week && week.total === 0 && <EmptyState title={t('landing_new.week_empty')} />}
     {week && week.total > 0 &&
         <>
-            <div class="[ landing-week__table ]" role="table" aria-label={t(t_key('landing_new.tab.', tab)) ?? tab}>
-                <div class="[ landing-week__row landing-week__head ]" role="row">
-                    <span role="columnheader">{t('landing_new.week_time')}</span>
-                    <span role="columnheader">{t('landing_new.week_what')}</span>
-                    <span role="columnheader" class="[ landing-week__region ]">{t('landing_new.week_region')}</span>
-                </div>
+            <DataGrid
+                columns={[t('landing_new.week_time'), t('landing_new.week_what'), t(WEEK_LAST_LABELS[last_column])]}
+                template={WEEK_GRID.template}
+                numeric={[2]}
+                min_width="0"
+                variant="ledger"
+                stack={true}
+                aria-label={t(t_key('landing_new.tab.', tab)) ?? tab}
+                class="[ landing-week-grid ]"
+            >
                 {rows.map((event) =>
-                    <div class="[ landing-week__row ]" role="row">
+                    <div class="[ data-grid-row landing-week__row ]" role="row">
                         <span role="cell" class="[ landing-week__time ]">
                             <time datetime={event.occurred_at}>{eve_day(event.occurred_at)} · {eve_clock(event.occurred_at)}</time>
                         </span>
-                        <span role="cell" class="[ landing-week__what ]"><LandingLine event={event} /></span>
-                        <span role="cell" class="[ landing-week__region ]">{event.region}</span>
+                        <span role="cell" class="[ landing-week__what ]"><LandingLine event={event} wrap /></span>
+                        {last_column === 'region'
+                            ? <span role="cell" class="[ data-grid-numeric landing-week__region ]">{event.region}</span>
+                            : <span role="cell" class:list={['[ data-grid-numeric landing-week__amount ]', `landing-week__amount--${event.amount ? amount_grade(last_column, event.amount) : 0}`]}>
+                                {!event.amount ? '—'
+                                    : last_column === 'isk' ? format_compact(event.amount, ISK_COMPACT)
+                                    : `${format_number(event.amount)} LP`}
+                            </span>
+                        }
                     </div>
                 )}
                 {Array.from({ length: padding }).map(() =>
-                    <div class="[ landing-week__row landing-week__row--empty ]" aria-hidden="true"></div>
+                    <div class="[ data-grid-row landing-week__row landing-week__row--empty ]" aria-hidden="true"></div>
                 )}
-            </div>
+            </DataGrid>
             <HtmxPager
                 class="[ landing-week__pager ]"
                 page={week.page}
                 total_pages={week.pages}
+                numbered={true}
                 url_for={partial_url}
                 target={`#${root_id}`}
+                request={{ 'hx-indicator': `#${root_id}` }}
             >
                 <small slot="status" class="[ landing-week__range ]">{range}</small>
             </HtmxPager>
@@ -78,35 +94,20 @@ import LandingLine from '@components/blocks/landing/LandingLine.astro'
 </div>
 
 <style lang="scss">
-    .landing-week__table {
-        display: flex;
-        flex-direction: column;
-    }
+    // The grid's own look (padding, header, phone layout) lives in
+    // landing-new.astro under .landing-week-grid, shared with its skeleton.
 
-    .landing-week__row {
-        display: grid;
-        grid-template-columns: 9rem minmax(0, 1fr) 9rem;
-        gap: var(--space-s);
-        align-items: center;
-        min-height: var(--space-xl);
-        padding: 0 var(--space-m);
-        border-bottom: 1px solid var(--hairline);
-        box-sizing: border-box;
-    }
+    // While another page loads, keep this one in place, dimmed.
+    .landing-week {
+        transition: opacity var(--fast-transition);
 
-    .landing-week__head {
-        min-height: auto;
-        padding-block: var(--space-xs);
-        border-bottom-color: var(--hairline-strong);
-        font-size: var(--step--2);
-        font-weight: 600;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: var(--text-muted);
+        &.htmx-request {
+            opacity: 0.5;
+            pointer-events: none;
+        }
     }
 
     .landing-week__time {
-        font-size: var(--step--1);
         color: var(--text-muted);
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
@@ -117,17 +118,29 @@ import LandingLine from '@components/blocks/landing/LandingLine.astro'
     }
 
     .landing-week__region {
+        color: var(--text-muted);
         overflow: hidden;
-        text-align: right;
         text-overflow: ellipsis;
         white-space: nowrap;
-        font-size: var(--step--1);
-        color: var(--text-muted);
     }
 
     .landing-week__pager {
-        padding: var(--space-xs) var(--space-m);
+        padding: var(--space-s) var(--space-l);
+        border-top: 1px solid var(--border-color);
     }
+
+    .landing-week__amount {
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    // Colour grade by size (helpers/landing amount_grade): small amounts
+    // recede, the biggest fights and payouts stand out.
+    .landing-week__amount--0 { color: var(--text-muted); }
+    .landing-week__amount--1 { color: var(--highlight); }
+    .landing-week__amount--2 { color: var(--fleet-yellow); }
+    .landing-week__amount--3 { color: var(--green); }
 
     .landing-week__range {
         color: var(--text-muted);
@@ -135,13 +148,17 @@ import LandingLine from '@components/blocks/landing/LandingLine.astro'
     }
 
     @media (max-width: 48rem) {
-        .landing-week__row {
-            grid-template-columns: 5rem minmax(0, 1fr);
-            padding: 0 var(--space-s);
+        .landing-week__time {
+            font-size: var(--step--2);
         }
 
-        .landing-week__region {
-            display: none;
+        .landing-week__region,
+        .landing-week__amount {
+            font-size: var(--step--2);
+        }
+
+        .landing-week__pager {
+            padding: var(--space-s) var(--space-m);
         }
     }
 </style>

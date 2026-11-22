@@ -13,6 +13,8 @@ interface Props {
     href?:              string;
     size?:              ButtonSizes;
     narrow?:            boolean;
+    /** The secondary button: no fill, a hairline border in --highlight text. */
+    outline?:           boolean;
     centered?:          boolean;
     off_disable?:       boolean;
     disabled?:          boolean;
@@ -26,6 +28,7 @@ const {
     href,
     size = 'lg',
     narrow = false,
+    outline = false,
     centered = true,
     off_disable = false,
     disabled = false,
@@ -71,7 +74,7 @@ const nested_x_data = external_link ? external_link.x_data : (wants_alpine_scope
 
 <Element
     href={ href }
-    class:list={['[ button ]', { narrow: narrow, 'is-disabled': static_disabled }, Astro.props.class]}
+    class:list={['[ button ]', { narrow: narrow, outline: outline, 'is-disabled': static_disabled }, Astro.props.class]}
     {...attributes}
     data-size={size}
     style={`--button_background_color: ${button_background_color}; --inner_button_color: ${button_color}`}
@@ -111,6 +114,20 @@ const nested_x_data = external_link ? external_link.x_data : (wants_alpine_scope
 
         &.narrow {
             padding-inline: var(--space-s);
+        }
+
+        &.outline {
+            --background-color: transparent;
+            --inner-button-color: var(--highlight);
+
+            border-color: var(--hairline-strong);
+
+            @media (hover: hover) {
+                &:hover:not([disabled]),
+                &:focus-visible {
+                    border-color: var(--highlight);
+                }
+            }
         }
 
         &[disabled] {

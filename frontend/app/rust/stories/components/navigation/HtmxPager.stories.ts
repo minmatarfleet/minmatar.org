@@ -19,6 +19,7 @@ export default {
             description: {
                 component: [
                     'Pager for a list fed by an htmx partial: each button requests another page and swaps it into `target`. With `total_pages` it shows Previous / Next (disabled at the ends) after a status line; with `has_more` (total unknown) it shows Newer / Older around "Page N", each only when that page exists, and nothing at all on a lone first page.',
+                    '`numbered` adds page numbers between Previous and Next for long lists: the first and last page, two either side of the current one, and `…` where two or more pages are skipped. The current page is a red button with `aria-current="page"`; phones show only that one between Previous and Next.',
                     '`url_for` builds the partial URL for a page number. `request` adds attributes to every request (`hx-include`, `hx-select`) and its `hx-target` / `hx-swap` win over `target` / `swap`. The `status` slot replaces "Page N" and `actions` adds buttons before Previous / Next (an export, say).',
                     'Rust runs htmx against mocked endpoints (`parameters.htmx`), so the swap stories answer from a fixture. A pager with a single page renders only its status line.',
                 ].join('\n\n'),
@@ -33,6 +34,7 @@ export default {
         url_pattern: { control: 'text', description: 'Stories only: the partial URL with `{page}`. On a page, pass `url_for`, a function `(page) => url`.' },
         total_pages: { control: 'number', description: 'Known page count: switches to Previous / Next mode.' },
         has_more: { control: 'boolean', description: 'Without a total: whether an older page exists (Newer / Older mode).' },
+        numbered: { control: 'boolean', description: 'With `total_pages`: page numbers between Previous and Next (the ends, two either side of the current page, `…` for gaps).' },
         target: { control: 'text', description: 'CSS selector `hx-target` of the swap.' },
         swap: { control: 'text', description: '`hx-swap` strategy; `outerHTML` replaces the target.' },
         request: { control: 'object', description: 'Extra attributes on every page button, e.g. `hx-include`, `hx-select`.' },
@@ -45,6 +47,7 @@ export default {
         url_pattern,
         total_pages: 5,
         has_more: false,
+        numbered: false,
         target: '#fleet-list',
         swap: 'outerHTML',
         request: {},
@@ -192,5 +195,30 @@ export const SwapsThePage = {
             expect(requests.some((request: { url: string }) => request.url.includes('page=3'))).toBe(true)
         })
         await waitFor(() => expect(canvas.getByText(/Fleet page 3/)).toBeVisible())
+    },
+}
+
+export const Numbered = {
+    name: 'Numbered pages (long list)',
+    args: { page: 6, total_pages: 20, numbered: true },
+    play: async ({ canvasElement }: Ctx) => {
+        const canvas = within(canvasElement)
+        const numbers = [...canvasElement.querySelectorAll('.htmx-pager-number')].map((b) => b.textContent?.trim())
+        await expect(numbers).toEqual(['1', '4', '5', '6', '7', '8', '20'])
+        await expect(canvasElement.querySelectorAll('.htmx-pager-gap')).toHaveLength(2)
+        const current = canvas.getByRole('button', { name: '6' })
+        await expect(current).toHaveAttribute('aria-current', 'page')
+        await expect(current).not.toHaveAttribute('hx-get')
+        await expect(canvas.getByRole('button', { name: 'Page 20' })).toHaveAttribute('hx-get', '/partials/fleet_history_component?page=20')
+    },
+}
+
+export const NumberedNearTheStart = {
+    name: 'Numbered: one hidden page is shown, not "…"',
+    args: { page: 2, total_pages: 6, numbered: true },
+    play: async ({ canvasElement }: Ctx) => {
+        const numbers = [...canvasElement.querySelectorAll('.htmx-pager-number')].map((b) => b.textContent?.trim())
+        await expect(numbers).toEqual(['1', '2', '3', '4', '5', '6'])
+        await expect(canvasElement.querySelectorAll('.htmx-pager-gap')).toHaveLength(0)
     },
 }

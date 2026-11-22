@@ -1,0 +1,335 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+/**
+ * ContentViewer's body: one post (`?post=<id>`) or one guide (`?guide=<slug>`)
+ * shown the way its kind reads best. Videos play, posters fill the screen,
+ * articles and guides read like their pages. Public, like the pages: a
+ * members-only post shows a gate and the link to its page.
+ */
+import { get_request_user } from '@helpers/request_user'
+import { fetch_post_access } from '@helpers/fetching/posts'
+import { classify_post, post_page_path, post_source_url } from '@helpers/content_viewer'
+import type { ViewerPost } from '@helpers/content_viewer'
+import type { PostUI } from '@dtypes/layout_components'
+import { getGuideBySlug } from '@/data/guides'
+import { guidePath } from '@/data/guides/urls'
+import { pageProgressFromMarkdown, wrapMarkdownSectionsInPanels } from '@helpers/pageProgress'
+import { marked } from 'marked'
+import { renderer as site_renderer } from '@helpers/marked'
+import { format_date } from '@helpers/date'
+
+const { auth_token } = get_request_user(Astro)
+
+// Links in a post open the way they do on its page, except links off the
+// site: the page asks "leaving the website?" in an alert dialog, which would
+// open behind this modal viewer. Here they just open in a new tab.
+const renderer = new marked.Renderer()
+renderer.link = (href, title, text) => {
+    const html = site_renderer.link.call(site_renderer, href, title, text)
+    const external = /^https?:\/\//.test(href) && !href.startsWith('https://my.minmatar.org')
+    return external
+        ? `<a href="${href}" target="_blank" rel="nofollow noopener noreferrer"${title ? ` title="${title}"` : ''}>${text}</a>`
+        : html
+}
+
+const post_id = parseInt(Astro.url.searchParams.get('post') ?? '')
+const guide_slug = Astro.url.searchParams.get('guide') ?? ''
+
+let post: PostUI | null = null
+let fetch_error: Error | null = null
+let members_only = false
+let view: ViewerPost | { kind: 'guide' } | null = null
+let title = ''
+let page_href = ''
+let html = ''
+
+if (!isNaN(post_id)) {
+    page_href = translatePath(post_page_path({ post_id }))
+    try {
+        const access = await fetch_post_access(post_id, auth_token)
+        post = access.post?.state === 'published' ? access.post : null
+        members_only = Boolean(access.restricted)
+    } catch (error) {
+        fetch_error = error instanceof Error ? error : new Error(String(error))
+    }
+    if (post) {
+        title = post.title
+        page_href = translatePath(post_page_path(post))
+        view = classify_post(post.content ?? '')
+        if (view.kind === 'article')
+            html = await marked.parse(post.content ?? '', { renderer })
+    }
+} else if (guide_slug) {
+    const guide = getGuideBySlug(guide_slug)
+    if (guide) {
+        title = guide.title
+        page_href = translatePath(guidePath(guide.slug))
+        const { html: markdown_html } = pageProgressFromMarkdown({
+            page_key: `guides/${guide.slug}`,
+            page_title: guide.title,
+            markdown: guide.module.rawContent(),
+        })
+        html = wrapMarkdownSectionsInPanels(markdown_html)
+        view = { kind: 'guide' }
+    }
+}
+
+const source = post ? post_source_url(post.content ?? '') : null
+// A poster's or video's own words (links like "⬅ PREV - EPISODE 06" too).
+const caption = view && 'text' in view && view.text ? await marked.parse(view.text, { renderer }) : ''
+const self_url = `${translatePath('/partials/content_viewer_component/')}${Astro.url.search}`
+
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import GuideMarkdown from '@components/blocks/GuideMarkdown.astro'
+import PilotBadge from '@components/blocks/PilotBadge.astro'
+
+// Images zoom in the ContentViewer's own zoom layer (pinch, wheel, drag).
+// Not medium-zoom: that draws its overlay on <body>, behind the modal
+// dialog, so the click landed on the page underneath.
+---
+
+<div
+    class="[ content-viewer-content ]"
+    data-kind={view?.kind ?? 'missing'}
+    data-title={title}
+    data-href={page_href}
+>
+    {!view && members_only &&
+        <EmptyState title={t('content_viewer.members_only')} hint={t('content_viewer.members_only_hint')} />
+    }
+    {fetch_error &&
+        <ErrorRefetch args={{ partial: self_url, error: fetch_error, delay: 0, target: '#content-viewer-body' }} />
+    }
+    {!view && !members_only && !fetch_error &&
+        <EmptyState title={t('content_viewer.not_found')} hint={t('content_viewer.not_found_hint')} />
+    }
+
+    {view?.kind === 'video' &&
+        <div class:list={['[ content-viewer-content__video ]', { 'content-viewer-content__video--reddit': view.embed_url.includes('embed.reddit.com') }]}>
+            <iframe
+                src={view.embed_url}
+                title={title}
+                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                allowfullscreen
+                referrerpolicy="strict-origin-when-cross-origin"
+            ></iframe>
+        </div>
+    }
+
+    {view?.kind === 'image' &&
+        <figure class="[ content-viewer-content__poster ]">
+            <img src={view.image} alt={title} />
+        </figure>
+    }
+
+    {view?.kind === 'gallery' &&
+        <div
+            class="[ content-viewer-content__gallery ]"
+            x-data={`{
+                at: 0,
+                count: ${view.images.length},
+                go(to) {
+                    const track = this.$refs.track
+                    this.at = Math.max(0, Math.min(this.count - 1, to))
+                    track.scrollTo({ left: this.at * track.clientWidth, behavior: 'smooth' })
+                },
+                seen() { this.at = Math.round(this.$refs.track.scrollLeft / this.$refs.track.clientWidth) },
+            }`}
+            x-on:keydown.left.prevent="go(at - 1)"
+            x-on:keydown.right.prevent="go(at + 1)"
+            tabindex="0"
+            role="region"
+            aria-roledescription="carousel"
+            aria-label={title}
+        >
+            <div class="[ content-viewer-content__track ]" x-ref="track" x-on:scroll.debounce.100ms="seen()">
+                {view.images.map((image, index) =>
+                    <figure>
+                        <img src={image} alt={`${title} (${index + 1}/${view.images.length})`} loading={index === 0 ? 'eager' : 'lazy'} />
+                    </figure>
+                )}
+            </div>
+            <div class="[ content-viewer-content__gallery-bar ]">
+                <button type="button" x-on:click="go(at - 1)" x-bind:disabled="at === 0" aria-label={t('content_viewer.previous')}>‹</button>
+                <span class="[ content-viewer-content__count ]"><strong x-text="at + 1">1</strong> / {view.images.length}</span>
+                <button type="button" x-on:click="go(at + 1)" x-bind:disabled="at === count - 1" aria-label={t('content_viewer.next')}>›</button>
+            </div>
+        </div>
+    }
+
+    {(view?.kind === 'video' || view?.kind === 'image' || view?.kind === 'gallery') && view.text &&
+        <div class="[ content-viewer-content__caption prose ]" set:html={caption} />
+    }
+
+    {view?.kind === 'article' && post &&
+        <article class="[ content-viewer-content__article ]">
+            <PilotBadge
+                character_id={post.author.character_id as number}
+                character_name={post.author.character_name as string}
+                size={32}
+            >
+                <small>{format_date(lang, post.date_posted)}</small>
+            </PilotBadge>
+            <div class="[ prose ]" set:html={html} />
+        </article>
+    }
+
+    {view?.kind === 'guide' &&
+        <article class="[ content-viewer-content__article ]">
+            <GuideMarkdown html={html} />
+        </article>
+    }
+
+    {post && (source || view?.kind !== 'article') &&
+        <p class="[ content-viewer-content__meta ]">
+            <span>{post.author.character_name} · {format_date(lang, post.date_posted)}</span>
+            {source && <a href={source} target="_blank" rel="nofollow noopener noreferrer">{t('content_viewer.source')}</a>}
+        </p>
+    }
+</div>
+
+<style lang="scss">
+    .content-viewer-content {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        min-height: 100%;
+    }
+
+    // 16:9, as wide as the panel, never taller than the screen.
+    .content-viewer-content__video {
+        position: relative;
+        width: 100%;
+        max-height: calc(100dvh - var(--space-3xl) * 2);
+        aspect-ratio: 16 / 9;
+        background: var(--surface-sunken);
+
+        iframe {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+    }
+
+    // The poster whole, fitted to the screen; a click zooms it.
+    .content-viewer-content__poster {
+        display: flex;
+        justify-content: center;
+        margin: 0;
+
+        img {
+            display: block;
+            max-width: 100%;
+            max-height: calc(100dvh - var(--space-3xl) * 2);
+            object-fit: contain;
+            cursor: zoom-in;
+        }
+
+    }
+
+    // Reddit's player is a post card (title, video, votes): taller than 16:9.
+    .content-viewer-content__video--reddit {
+        aspect-ratio: 4 / 3;
+    }
+
+    // Swipe on a phone, arrows or keys on desktop; one image per screen.
+    .content-viewer-content__gallery {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        outline-offset: var(--space-3xs);
+    }
+
+    .content-viewer-content__track {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 100%;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
+
+        figure {
+            display: flex;
+            justify-content: center;
+            margin: 0;
+            scroll-snap-align: center;
+        }
+
+        img {
+            display: block;
+            max-width: 100%;
+            max-height: calc(100dvh - var(--space-3xl) * 3);
+            object-fit: contain;
+        }
+    }
+
+    .content-viewer-content__gallery-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-s);
+
+        button {
+            padding: var(--space-3xs) var(--space-s);
+            border: 1px solid var(--hairline-strong);
+            background: transparent;
+            color: var(--highlight);
+            font-size: var(--step-1);
+            line-height: 1;
+            cursor: pointer;
+
+            &:disabled {
+                opacity: 0.35;
+                cursor: default;
+            }
+        }
+    }
+
+    .content-viewer-content__count {
+        font-variant-numeric: tabular-nums;
+        color: var(--text-muted);
+
+        strong {
+            color: var(--highlight);
+        }
+    }
+
+    .content-viewer-content__caption {
+        margin: 0;
+        max-width: var(--max-text-width);
+        color: var(--highlight);
+    }
+
+    .content-viewer-content__article {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        max-width: var(--max-text-width);
+        margin-inline: auto;
+        width: 100%;
+
+        :global(img) {
+            max-width: 100%;
+            height: auto;
+        }
+    }
+
+    .content-viewer-content__meta {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: var(--space-xs);
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+</style>

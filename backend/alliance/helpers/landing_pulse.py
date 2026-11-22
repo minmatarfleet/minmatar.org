@@ -1,5 +1,5 @@
 """
-Public "heartbeat" for the new landing page (/landing-new).
+Public "heartbeat" for the homepage (/).
 
 Killmails are live: they are public on zKillboard the moment they happen.
 Fleets and voice comms run 60 minutes behind, so the page never says that
@@ -13,6 +13,7 @@ The rollup is cached: the cheap 24-hour/7-day part for five minutes and the
 from __future__ import annotations
 
 import logging
+import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -29,8 +30,8 @@ from eveonline.constants import (
     AMARR_FACTION_ID,
     CALDARI_FACTION_ID,
     GALLENTE_FACTION_ID,
+    FL33T_MEMBER_ALLIANCE_IDS,
     MINMATAR_FACTION_ID,
-    MINMATAR_FLEET_ALLIANCE_ID,
 )
 from eveonline.models import (
     EveAlliance,
@@ -44,19 +45,20 @@ from eveonline.models import (
 )
 from eveuniverse.models import EveSolarSystem, EveType
 from feed.helpers.eve_names import resolve_entity_names
+from feed.models import FeedKillmail
 from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
 
 logger = logging.getLogger(__name__)
 
 DELAY = timedelta(minutes=60)
 FAST = CachedRollup(
-    key="alliance:landing_pulse:fast:v1",
+    key="alliance:landing_pulse:fast:v2",
     ttl=300,
     lock_key="alliance:landing_pulse:fast:lock",
     lock_ttl=60,
 )
 SLOW = CachedRollup(
-    key="alliance:landing_pulse:slow:v1",
+    key="alliance:landing_pulse:slow:v2",
     ttl=3600,
     lock_key="alliance:landing_pulse:slow:lock",
     lock_ttl=120,
@@ -103,7 +105,10 @@ class Event:
     # A large-fleet line ("fought X and won"); the hero's Live band leaves
     # these to the week table's Fleet activity tab.
     group: bool = False
-    # m³ for a mining line, so the page can add it to the day's total.
+    # Shown on hover over the subject: the ores of a many-ore mining line.
+    detail: str = ""
+    # m³ for a mining line, ISK destroyed for a fight, LP paid for a
+    # warzone site (the week table's last column).
     amount: int = 0
 
     @property
@@ -117,9 +122,9 @@ class Event:
 
 
 def _kills_q():
-    """Killmails where the victim is not one of ours."""
+    """Killmails where the victim is not one of ours (FL33T or BUILD)."""
     return Q(victim_alliance_id__isnull=True) | ~Q(
-        victim_alliance_id=MINMATAR_FLEET_ALLIANCE_ID
+        victim_alliance_id__in=FL33T_MEMBER_ALLIANCE_IDS
     )
 
 
@@ -427,10 +432,19 @@ def _moments(end) -> list[dict]:
 
 
 def _is_loss(row) -> bool:
-    return row["victim_alliance_id"] == MINMATAR_FLEET_ALLIANCE_ID
+    """Ours includes Minmatar Fleet Associates (BUILD), the alt alliance."""
+    return row["victim_alliance_id"] in FL33T_MEMBER_ALLIANCE_IDS
 
 
 def _killmail_groups(start, end) -> dict[int, list[dict]]:
+    """Our killmails in the window, one row per pilot of ours on each.
+
+    The ESI killmail sync stores every registered character's mails but runs
+    hours behind (each character's ESI list is cached and polled in turn);
+    the zKill feed has a mail about two minutes after it happens but keeps
+    only the warzone and tracked fleets. Both, by killmail id, so the page is
+    fresh without missing anything.
+    """
     by_killmail: dict[int, list[dict]] = defaultdict(list)
     for row in EveCharacterKillmail.objects.filter(
         killmail_time__gte=start, killmail_time__lt=end
@@ -447,32 +461,108 @@ def _killmail_groups(start, end) -> dict[int, list[dict]]:
         "character__character_id",
     ):
         by_killmail[row["killmail_id"]].append(row)
+    for killmail_id, rows in _feed_rows(start, end).items():
+        if killmail_id not in by_killmail:
+            by_killmail[killmail_id] = rows
     return by_killmail
 
 
-def _attacker_sides(killmail_row_ids):
-    """Per loss: who killed us, counted by alliance (or corporation) and
-    by faction, so the line can name the biggest side."""
-    sides: dict[int, Counter] = defaultdict(Counter)
-    factions: dict[int, Counter] = defaultdict(Counter)
+def _feed_rows(start, end) -> dict[int, list[dict]]:
+    """Feed mails with FL33T or BUILD on them, shaped like ESI sync rows.
+    The row ``id`` is "feed:<killmail id>" and the row carries its own
+    ``attackers``, since there are no EveCharacterKillmailAttacker rows."""
+    by_killmail: dict[int, list[dict]] = {}
     for (
-        row_id,
-        alliance_id,
-        corporation_id,
-        faction_id,
-    ) in EveCharacterKillmailAttacker.objects.filter(
-        killmail_id__in=killmail_row_ids
+        killmail_id,
+        when,
+        system_id,
+        ship_type_id,
+        attackers,
+        victim_character_id,
+        victim_corporation_id,
+        victim_alliance_id,
+        victim_faction_id,
+    ) in FeedKillmail.objects.filter(
+        killmail_time__gte=start, killmail_time__lt=end
+    ).values_list(
+        "killmail_id",
+        "killmail_time",
+        "solar_system_id",
+        "victim_ship_type_id",
+        "attacker_summary",
+        "victim_character_id",
+        "raw_killmail__victim__corporation_id",
+        "raw_killmail__victim__alliance_id",
+        "raw_killmail__victim__faction_id",
+    ):
+        ours = sorted(
+            {
+                a["character_id"]
+                for a in attackers or []
+                if a.get("character_id")
+                and a.get("alliance_id") in FL33T_MEMBER_ALLIANCE_IDS
+            }
+        )
+        if (
+            not ours
+            and victim_alliance_id in FL33T_MEMBER_ALLIANCE_IDS
+            and victim_character_id
+        ):
+            ours = [victim_character_id]
+        if not ours:
+            continue
+        by_killmail[killmail_id] = [
+            {
+                "id": f"feed:{killmail_id}",
+                "killmail_id": killmail_id,
+                "killmail_time": when,
+                "solar_system_id": system_id,
+                "victim_character_id": victim_character_id,
+                "victim_corporation_id": victim_corporation_id,
+                "victim_alliance_id": victim_alliance_id,
+                "victim_faction_id": victim_faction_id,
+                "ship_type_id": ship_type_id,
+                "character__character_id": character_id,
+                "attackers": attackers or [],
+            }
+            for character_id in ours
+        ]
+    return by_killmail
+
+
+def _count_side(sides, factions, key, alliance_id, corporation_id, faction_id):
+    if alliance_id in FL33T_MEMBER_ALLIANCE_IDS:
+        return
+    if alliance_id:
+        sides[key][("alliance", alliance_id)] += 1
+    elif corporation_id:
+        sides[key][("corporation", corporation_id)] += 1
+    if faction_id:
+        factions[key][faction_id] += 1
+
+
+def _attacker_sides(losses):
+    """Per loss (a first row of each lost mail, keyed by its ``id``): who
+    killed us, counted by alliance (or corporation) and by faction, so the
+    line can name the biggest side."""
+    sides: dict = defaultdict(Counter)
+    factions: dict = defaultdict(Counter)
+    for row_id, *attacker in EveCharacterKillmailAttacker.objects.filter(
+        killmail_id__in=[r["id"] for r in losses if "attackers" not in r]
     ).values_list(
         "killmail_id", "alliance_id", "corporation_id", "faction_id"
     ):
-        if alliance_id == MINMATAR_FLEET_ALLIANCE_ID:
-            continue
-        if alliance_id:
-            sides[row_id][("alliance", alliance_id)] += 1
-        elif corporation_id:
-            sides[row_id][("corporation", corporation_id)] += 1
-        if faction_id:
-            factions[row_id][faction_id] += 1
+        _count_side(sides, factions, row_id, *attacker)
+    for row in losses:
+        for a in row.get("attackers", ()):
+            _count_side(
+                sides,
+                factions,
+                row["id"],
+                a.get("alliance_id"),
+                a.get("corporation_id"),
+                a.get("faction_id"),
+            )
     return sides, factions
 
 
@@ -546,7 +636,7 @@ def _combat_events(start, end) -> list[Event]:
         return []
     firsts = [group[0] for group in by_killmail.values()]
     sides, factions = _attacker_sides(
-        [first["id"] for first in firsts if _is_loss(first)]
+        [first for first in firsts if _is_loss(first)]
     )
     keys = {
         _victim_entity(first) for first in firsts if not _is_loss(first)
@@ -631,6 +721,7 @@ def _site_events(start, end) -> list[Event]:
         "character_id",
         "site_kind",
         "campaign_system__eve_solar_system_id",
+        "amount_lp",
     )
     rows = list(rows)
     regions = _region_names_for_systems(r[3] for r in rows)
@@ -641,13 +732,24 @@ def _site_events(start, end) -> list[Event]:
             character_id,
             SITE_ACTIONS.get(kind, DEFAULT_SITE_ACTION),
             region=regions.get(system_id, ""),
+            amount=amount_lp or 0,
         )
-        for when, character_id, kind, system_id in rows
+        for when, character_id, kind, system_id, amount_lp in rows
     ]
 
 
+# "Scordite III-Grade", "Moissanite X-Grade" and "Compressed Scordite" all
+# read as one ore.
+_ORE_GRADE = re.compile(r"\s+[IVX]+-Grade$")
+
+
+def _ore_family(name: str) -> str:
+    return _ORE_GRADE.sub("", name or "").removeprefix("Compressed ").strip()
+
+
 def _mining_events(start, end) -> list[Event]:
-    """What each ledger sync saw a pilot mine, one line per pilot and ore."""
+    """What each ledger sync saw a pilot mine: one line per pilot and sync,
+    the total m³ of one ore, or of "N ores" with the ores in ``detail``."""
     rows = list(
         EveCharacterMiningDelta.objects.filter(
             observed_at__gte=start, observed_at__lt=end
@@ -662,26 +764,41 @@ def _mining_events(start, end) -> list[Event]:
         )
     )
     regions = _region_names_for_systems(r[6] for r in rows)
-    batches: dict[tuple, list] = {}
+    batches: dict[tuple, dict] = {}
     for when, character_id, type_id, ore, volume, quantity, sid in rows:
-        key = (character_id, type_id, when.replace(second=0, microsecond=0))
-        batch = batches.setdefault(key, [when, ore, 0.0, sid])
-        batch[2] += (volume or 0) * quantity
-    return [
-        Event(
-            when,
-            "mining",
-            character_id,
-            f"mined {round(m3):,} m³ of",
-            ore,
-            "type",
-            type_id,
-            region=regions.get(sid, ""),
-            amount=round(m3),
+        key = (character_id, when.replace(second=0, microsecond=0))
+        batch = batches.setdefault(
+            key, {"when": when, "sid": sid, "ores": Counter(), "names": {}}
         )
-        for (character_id, type_id, _), (when, ore, m3, sid) in batches.items()
-        if m3 >= 1
-    ]
+        batch["ores"][type_id] += (volume or 0) * quantity
+        batch["names"][type_id] = ore
+    events = []
+    for (character_id, _), batch in batches.items():
+        m3 = sum(batch["ores"].values())
+        if m3 < 1:
+            continue
+        families: Counter = Counter()
+        for type_id, volume in batch["ores"].items():
+            families[_ore_family(batch["names"][type_id])] += volume
+        top_type = batch["ores"].most_common(1)[0][0]
+        named = [family for family, _ in families.most_common()]
+        # One ore reads "of Veldspar"; several read "of 4 ores", with the
+        # ores (biggest first) on hover, so the line stays on one row.
+        events.append(
+            Event(
+                batch["when"],
+                "mining",
+                character_id,
+                f"mined {round(m3):,} m³ of",
+                named[0] if len(named) == 1 else f"{len(named)} ores",
+                "type",
+                top_type,
+                region=regions.get(batch["sid"], ""),
+                detail="" if len(named) == 1 else ", ".join(named),
+                amount=round(m3),
+            )
+        )
+    return events
 
 
 def event_rows(events: list[Event]) -> list[dict]:
@@ -701,6 +818,7 @@ def event_rows(events: list[Event]) -> list[dict]:
             "subject_type": e.subject_type,
             "subject_id": e.subject_id,
             "tail": e.tail,
+            "detail": e.detail,
             "region": e.region,
             "amount": e.amount,
         }

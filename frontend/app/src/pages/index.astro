@@ -1,608 +1,891 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { lang, t, translatePath } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
-import { get_request_user } from '@helpers/request_user'
-
-const { user } = get_request_user(Astro)
-
-
-import { get_gates, can } from '@helpers/gates'
-const gates = await get_gates(Astro)
-
-const can_view_fleets = can(gates, 'fleets.view')
-
-import type { Alert, StagingType } from '@dtypes/layout_components'
-import type { PostListUI } from '@dtypes/layout_components'
+// The homepage. (It was tried out at /landing-new, which now redirects here.)
+import type { LandingPulse, LandingMoment, LandingWeek } from '@dtypes/api.minmatar.org'
+import type { Alert, PostListUI } from '@dtypes/layout_components'
+import { get_landing_pulse, get_landing_week } from '@helpers/api.minmatar.org/landing'
 import { fetch_latest_published_posts } from '@helpers/fetching/posts'
-import { is_seasonal_date } from '@helpers/date'
+import { dedupe_posts, format_number, week_last_column, WEEK_GRID, WEEK_LAST_LABELS } from '@helpers/landing'
+import { t_key } from '@helpers/i18n'
+import { post_page_path } from '@helpers/content_viewer'
 
-let posts:PostListUI[] = []
-const PAGE_LENGTH = 3
-let post_fetching_error: Error | false = false
-
-try {
-    const paginated_posts = await fetch_latest_published_posts(PAGE_LENGTH)
-
-    posts = paginated_posts.chunk
-} catch (error) {
-    post_fetching_error = error
-}
-
-const NEY_YEAR_EVE_DECORATION = is_seasonal_date('12-31', '12-31')
-const WINTER_NEXUS_DECORATION = !NEY_YEAR_EVE_DECORATION ? is_seasonal_date('12-05', '01-06') : false
-const CRIMSON_HARVEST_DECORATION = is_seasonal_date('10-03', '11-05')
-
-import { is_referral_url } from '@helpers/fetching/referrals'
-const is_referral_page = user ? is_referral_url(Astro.url.pathname, lang) : false
-
-import { query_string } from '@helpers/string';
-
-type StagingTranslation = {
-	[key in StagingType]: string;
-}
-
-const STAGINGS_STATIONS:StagingTranslation = {
-	watermellon: 'Sosala - WATERMELLON',
-	amarr: 'Amarr VIII (Oris) - Emperor Family Academy',
-	amamake: 'Amamake - 5 times nearly AT winners',
-}
-
-const STAGINGS_SYSTEMS:StagingTranslation = {
-	watermellon: 'Sosala',
-	amarr: 'Amarr',
-	amamake: 'Amamake',
-}
-
-/*const RATTINI_TRIBE_ID = 98726134
-const BLACK_OMEGA_SECUTIRY_ID = 263585335
-const EMPEROR_FAMILY_ID = 1000086
-const OBLIVION_WATCH_ID = 98217709
-
-const STAGING_CORPORATIONS = {
-	amarr: {
-		id: EMPEROR_FAMILY_ID,
-		name: 'Emperor Family',
-	},
-	amamake: {
-		id: OBLIVION_WATCH_ID,
-		name: 'Oblivion Watch'
-	},
-	r6: {
-		id: RATTINI_TRIBE_ID,
-		name: 'R-6KYM - DO NOT USE'
-	},
-	watermellon:  {
-		id: BLACK_OMEGA_SECUTIRY_ID,
-		name: 'Black Omega Security'
-	}
-}*/
-
-const STAGING_DOCTRINES = {
-	amamake: 1022167642188,
-}
-
-const FREIGHT_ORDERS = {
-	amamake: 'Amamake - 5 times nearly AT winners',
-}
-
-const INDUSTRY_ORDERS = {
-	amamake: 'Amamake - 5 times nearly AT winners',
-}
-
-const IS_APRIL_FOOLS = is_seasonal_date('04-01', '04-01')
-
-import { stagings } from '@dtypes/layout_components'
-
-const user_staging = Astro.cookies.has('staging') ? Astro.cookies.get('staging')?.value as StagingType : ''
-if (user_staging && !stagings.includes(user_staging))
-	Astro.cookies.delete('staging', { path: '/' })
-
-const is_random_staging = !Astro.cookies.has('staging')
-
-const staging = IS_APRIL_FOOLS ?
-	'amarr' :
-	is_random_staging ?
-	stagings[Math.floor(Math.random() * (stagings.length - 2))] : // removing amarr and watermelon from random
-	user_staging
-	
-const auth_error = Astro.cookies.has('auth_error') ? Astro.cookies.get('auth_error')?.value : false
+// A failed EVE SSO login comes back here with an auth_error cookie: show it once.
+const auth_error = Astro.cookies.get('auth_error')?.value ?? false
 if (auth_error) Astro.cookies.delete('auth_error', { path: '/' })
+const alert = auth_error ? { title: t('auth_error_dialog_title'), content: auth_error } as Alert : false
 
-const alert = auth_error ? {
-	title: t('auth_error_dialog_title'),
-	content: auth_error,
-} as Alert : false
+// The pulse, the week's tab counts (the rows load through the partial) and
+// the news don't depend on each other, so fetch them together.
+const [pulse_result, week_result, posts_result] = await Promise.allSettled([
+    get_landing_pulse(),
+    get_landing_week('fights', 1),
+    fetch_latest_published_posts(16),
+])
 
-import {
-    get_location_video_cover,
-    get_location_video_cover_thumb,
-    get_location_cover,
-    get_location_cover_990,
-} from '@helpers/covers'
+const pulse: LandingPulse | null = pulse_result.status === 'fulfilled' ? pulse_result.value : null
+const pulse_error: string | null = pulse_result.status === 'rejected'
+    ? (pulse_result.reason instanceof Error ? pulse_result.reason.message : String(pulse_result.reason))
+    : null
+const week: LandingWeek | null = week_result.status === 'fulfilled' ? week_result.value : null
+const WEEK_TABS = ['fights', 'kills', 'warzone', 'mining'] as const
+const week_tabs = WEEK_TABS.map((id) => ({
+    id,
+    label: t(t_key('landing_new.tab.', id)) ?? id,
+    meta: week ? format_number(week.counts[id]) : undefined,
+}))
+const week_url = (tab:string) => translatePath(`/partials/landing_week_component/?tab=${tab}&page=1`)
 
-import Viewport from '@layouts/Viewport.astro';
+const posts: PostListUI[] = posts_result.status === 'fulfilled' ? dedupe_posts(posts_result.value.chunk) : []
 
-import PageLanding from '@components/page/PageLanding.astro';
+// The public post page (/posts/<id> is the editor). Cards open the post in
+// the page's ContentViewer; the link stays for new tabs and no-JS.
+// The hero's one button cycles through what a visitor can do here, every
+// HERO_CTA_SECONDS, and holds still while hovered or focused.
+const HERO_CTA_SECONDS = 4
+// Each destination has its own colour, so the change reads at a glance.
+const HERO_CTAS = [
+    { label: t('landing_new.cta.corporation'), href: translatePath('/alliance/corporations/'), color: 'fleet-red' },
+    { label: t('landing_new.cta.values'), href: translatePath('/alliance/values/'), color: 'militia-purple' },
+    { label: t('landing_new.cta.discord'), href: 'https://discord.gg/minmatar', external: true, color: 'discord-blurple' },
+    { label: t('landing_new.cta.market'), href: translatePath('/amamake-market/'), color: 'green' },
+    { label: t('landing_new.cta.structures'), href: translatePath('/structures/'), color: 'alliance-blue' },
+    { label: t('landing_new.cta.learn'), href: translatePath('/learning/'), color: 'tech-ii' },
+]
 
-import Flexblock from '@components/compositions/Flexblock.astro';
-import Wrapper from '@components/compositions/Wrapper.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
-import FluidFixed from '@components/compositions/FluidFixed.astro';
+const post_href = (post: PostListUI) => translatePath(post_page_path(post))
+const post_image = (post: PostListUI, fallback: string) => post.image || fallback
+// YouTube's maxresdefault is 1280px; the thumbnails here are a few hundred.
+const post_thumb = (post: PostListUI, fallback: string) =>
+    post_image(post, fallback).replace(/(\/\/i\.ytimg\.com\/vi\/[^/]+\/)maxresdefault\.jpg$/, '$1hqdefault.jpg')
 
-import StagingInfo from '@components/blocks/StagingInfo.astro';
-import HomeCorporations from '@components/blocks/HomeCorporations.astro';
-import FleetFeed from '@components/blocks/FleetFeed.astro';
-import ColorBlindPrompt from '@components/blocks/ColorBlindPrompt.astro';
-import MediaFeed from '@components/blocks/MediaFeed.astro';
-import ComicsWidget from '@components/blocks/ComicsWidget.astro';
-import RatBibbleWidget from '@components/blocks/RatBibbleWidget.astro';
-import DiscordSmall from '@components/blocks/DiscordSmall.astro';
-import RedditSmall from '@components/blocks/RedditSmall.astro';
-import VerticalCenter from '@components/blocks/VerticalCenter.astro';
-import StylessButton from '@components/blocks/StylessButton.astro';
-import MetaGuideWidget from '@components/blocks/MetaGuideWidget.astro';
-import NewsFeed from '@components/blocks/NewsFeed.astro';
+// Latest cycles through the five newest; the grid below starts after them.
+const latest = posts.slice(0, 5)
+const more_news = posts.slice(5, 9)
+const LATEST_SECONDS = 7
+
+const MOMENT_IMAGES: Record<string, string> = {
+    record: '/images/videos-cover.jpg',
+    comms: '/images/ceos.webp',
+    warzone: '/images/propaganda-cover.jpg',
+    fleet: '/images/fleets-cover.jpg',
+}
+
+const month_ago = Date.now() - 30 * 24 * 3600 * 1000
+const reel_items = [
+    ...(pulse?.moments ?? []).map((moment: LandingMoment) => ({
+        kicker: t(t_key('landing_new.moment.', moment.kind)) ?? moment.kind,
+        occurred_at: moment.occurred_at,
+        title: moment.title,
+        image: MOMENT_IMAGES[moment.kind] ?? '/images/alliance-cover.jpg',
+        value: format_number(moment.value),
+        unit: moment.unit,
+    })),
+    ...posts
+        .filter((post) => new Date(post.date_posted).getTime() >= month_ago)
+        .slice(0, 4)
+        .map((post) => ({
+            kicker: t('landing_new.moment.post'),
+            occurred_at: post.date_posted,
+            title: post.title,
+            image: post_image(post, '/images/posts-cover.jpg'),
+            href: post_href(post),
+            post_id: post.post_id,
+        })),
+].sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime())
+ .slice(0, 8)
+
+const PUBLICATIONS = [
+    { name: 'Metropolis', image: '/images/icons/Metropolis.webp' },
+    { name: 'Frontlines', image: '/images/icons/Frontlines.webp' },
+    { name: 'Metro Daily News', image: '/images/icons/Metro-Daily-News.webp' },
+    { name: 'The Cope', image: '/images/icons/The-Cope.webp' },
+    { name: 'The Waifu Wars', image: '/images/icons/Waifu-Wars.webp' },
+    { name: 'Rust and Blood', image: '/images/icons/Rust-and-Blood.webp' },
+]
+
+import Viewport from '@layouts/Viewport.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+
+import Button from '@components/blocks/Button.astro'
+import ColorBlindPrompt from '@components/blocks/ColorBlindPrompt.astro'
+import ContentViewer from '@components/blocks/ContentViewer.astro'
+import ContentViewerLink from '@components/blocks/ContentViewerLink.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
-import ReferralLink from '@components/blocks/ReferralLink.astro';
-import ShowAlert from '@components/blocks/ShowAlert.astro';
-import ExternalLink from '@components/blocks/ExternalLink.astro';
-
-import FleetLogo from '@components/icons/FleetLogo.astro';
-import MapEvEIcon from '@components/icons/MapEvEIcon.astro';
-import DoctrinesEvEIcon from '@components/icons/DoctrinesEvEIcon.astro';
-import FreightServiceEvEIcon from '@components/icons/FreightServiceEvEIcon.astro';
-import IndustryEVEIcon from '@components/icons/IndustryEVEIcon.astro';
-import FleetFeedUpdater from '@components/blocks/FleetFeedUpdater.astro'
-
-const page_title = t('index.page_title');
-const page_description = t('index.leading_text');
+import DataGridSkeleton from '@components/blocks/DataGridSkeleton.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ShowAlert from '@components/blocks/ShowAlert.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
+import SectionTabs from '@components/blocks/SectionTabs.astro'
+import LandingBars from '@components/blocks/landing/LandingBars.astro'
+import LandingLive from '@components/blocks/landing/LandingLive.astro'
+import LandingReel from '@components/blocks/landing/LandingReel.astro'
 ---
 
 <Viewport
-	title={page_title}
-	meta_description={page_description}
-	components={{
-		alert_dialog: true,
-	}}
+    title={t('index.page_title')}
+    meta_description={t('index.leading_text')}
+    components={{
+        alert_dialog: true,
+    }}
 >
-    <PageLanding
-        cover={{
-			video: get_location_video_cover(staging) ?? undefined,
-			video_thumb: get_location_video_cover_thumb(staging) ?? undefined,
-            image: get_location_cover(staging) ?? undefined,
-            image_990: get_location_cover_990(staging) ?? undefined,
-            animated: false,
-			full_screen: true,
-        }}
-        fullscreen={true}
-        wide={true}
-		x-data={`{
-			show_fleet_feeds: true,
-			show_stagging_info: true,
-        }`}
-    >
-		{alert && <ShowAlert alert={alert} /> }
+    {alert && <ShowAlert alert={alert} />}
+    <ColorBlindPrompt />
+    <script is:inline>
+        // A rotator for the hero's button and Latest: shows item `index`,
+        // fills the x-ref="bar" over `ms`, then moves to the next. Hover or
+        // focus pauses both; reduced motion never advances.
+        window.landing_rotator = (count, ms) => ({
+            index: 0,
+            count,
+            paused: false,
+            still: false,
+            timer: null,
+            init() {
+                this.still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                if (!this.still && this.count > 1) this.run()
+            },
+            run() {
+                this.timer?.cancel()
+                this.timer = this.$refs.bar.animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: ms, fill: 'forwards' })
+                if (this.paused) this.timer.pause()
+                this.timer.onfinish = () => { this.index = (this.index + 1) % this.count; this.run() }
+            },
+            go(to) {
+                this.index = (to + this.count) % this.count
+                if (!this.still) this.run()
+            },
+            pause(on) {
+                this.paused = on
+                if (!this.timer) return
+                on ? this.timer.pause() : this.timer.play()
+            },
+            // How many places after the current one `i` comes (0 = current).
+            after(i) { return (i - this.index + this.count) % this.count },
+        })
+    </script>
+    <div class="landing">
+        <section class="landing-hero">
+            <img class="landing-hero__cover" src="/images/home-amamake-cover.jpg" alt="" />
 
-		<div x-show="show_stagging_info">
-			<Flexblock 
-				class="[ station-info ][ !hidden xl:!block ]"
-				gap='0'
-			>
-				<StagingInfo slug={staging} is_random={is_random_staging} />
-				<FlexInline gap='var(--space-3xs)'>
-					{/*(user && staging !== 'watermellon' && STAGINGS_STATIONS[staging]) &&
-						<StationAssets
-							corporation={
-								STAGING_CORPORATIONS[staging]
-							}
-							station={STAGINGS_STATIONS[staging]}
-						/>
-					*/}
-					{STAGING_DOCTRINES[staging] &&
-						<a
-							class="[ neocom-button ][ w-[32px] animate-fade-in-up ]"
-							data-tippy-content={t('view_station_doctrines')}
-							href={translatePath(`/ships/doctrines?${query_string({location_id: STAGING_DOCTRINES[staging]})}`)}
-						>
-							<DoctrinesEvEIcon />
-						</a>
-					}
-					{FREIGHT_ORDERS[staging] &&
-						<a
-							class="[ neocom-button ][ w-[32px] animate-fade-in-up ]"
-							data-tippy-content={t('view_station_freight_orders')}
-							href={translatePath(`/market/freight/contracts?${query_string({location_name: FREIGHT_ORDERS[staging]})}`)}
-						>
-							<FreightServiceEvEIcon />
-						</a>
-					}
-					{INDUSTRY_ORDERS[staging] &&
-						<a
-							class="[ neocom-button ][ w-[32px] animate-fade-in-up ]"
-							data-tippy-content={t('view_station_industry_orders')}
-							href={translatePath(`/industry/orders?${query_string({location_name: INDUSTRY_ORDERS[staging]})}`)}
-						>
-							<IndustryEVEIcon />
-						</a>
-					}
-					<ExternalLink
-						class="[ neocom-button ][ w-[32px] animate-fade-in-up ]"
-						data-tippy-content={t('view_on_dotlan')}
-						href={`https://evemaps.dotlan.net/system/${STAGINGS_SYSTEMS[staging] ?? 'Sosala'}`}
-					>
-						<MapEvEIcon />
-					</ExternalLink>
-				</FlexInline>
-			</Flexblock>
-		</div>
+            <Wrapper padding_inline="var(--landing-gutter)" padding_block="0" centered={true} class="[ landing-hero__inner ]">
+                <div class="landing-hero__main">
+                    <div class="landing-hero__pitch">
+                        <p class="landing-eyebrow">{t('landing_new.eyebrow')}</p>
+                        <h1>{t('landing_new.title_1')}<br />{t('landing_new.title_2')}</h1>
+                        <p class="landing-hero__lead">{t('landing_new.lead')}</p>
+                        <div
+                            class="[ landing-actions landing-cta ]"
+                            x-data={`{
+                                ...landing_rotator(${HERO_CTAS.length}, ${HERO_CTA_SECONDS * 1000}),
+                                items: ${JSON.stringify(HERO_CTAS)},
+                                get item() { return this.items[this.index] },
+                            }`}
+                            x-on:mouseenter="pause(true)"
+                            x-on:mouseleave="pause(false)"
+                            x-on:focusin="pause(true)"
+                            x-on:focusout="pause(false)"
+                        >
+                            <Button
+                                href={HERO_CTAS[0].href}
+                                class="[ landing-cta__button ]"
+                                x-bind:href="item.href"
+                                x-bind:target="item.external ? '_blank' : null"
+                                x-bind:rel="item.external ? 'noopener noreferrer' : null"
+                                x-bind:style="`--button_background_color: var(--${item.color}); --inner_button_color: var(--highlight)`"
+                            >
+                                <span
+                                    class="[ landing-cta__label ]"
+                                    x-text="item.label"
+                                    x-effect="index; if (!still) $el.animate([{ opacity: 0, transform: 'translateY(0.25em)' }, { opacity: 1, transform: 'none' }], 250)"
+                                >{HERO_CTAS[0].label}</span>
+                            </Button>
+                            <span class="[ landing-cta__bar ]" aria-hidden="true" x-show="!still"><span x-ref="bar"></span></span>
+                        </div>
+                    </div>
+    
+                    {latest.length > 0 &&
+                        <aside
+                            class="landing-latest"
+                            aria-label={t('landing_new.latest')}
+                            x-data={`landing_rotator(${latest.length}, ${LATEST_SECONDS * 1000})`}
+                            x-on:mouseenter="pause(true)"
+                            x-on:mouseleave="pause(false)"
+                            x-on:focusin="pause(true)"
+                            x-on:focusout="pause(false)"
+                        >
+                            <div class="landing-latest__header">
+                                <h2>{t('landing_new.latest')}</h2>
+                                <a href={translatePath('/alliance/content/')}>{t('landing_new.all_news')}</a>
+                            </div>
+                            {/* Every lead is rendered, stacked in one cell; the current one shows. */}
+                            <div class="landing-latest__leads">
+                                {latest.map((post, i) =>
+                                    <ContentViewerLink
+                                        class:list={['landing-latest__lead', { 'is-current': i === 0 }]}
+                                        href={post_href(post)}
+                                        post={post.post_id}
+                                        title={post.title}
+                                        x-bind:class={`{ 'is-current': index === ${i} }`}
+                                        x-bind:tabindex={`index === ${i} ? null : -1`}
+                                        x-bind:aria-hidden={`index === ${i} ? null : 'true'`}
+                                        tabindex={i === 0 ? undefined : -1}
+                                        aria-hidden={i === 0 ? undefined : 'true'}
+                                    >
+                                        <img src={post_image(post, '/images/posts-cover.jpg')} alt="" loading={i === 0 ? 'eager' : 'lazy'} />
+                                        <span class="landing-latest__lead-copy">
+                                            <span class="landing-latest__kicker">{post.tags[0] ?? ''}</span>
+                                            <span class="landing-latest__lead-title">{post.title}</span>
+                                        </span>
+                                    </ContentViewerLink>
+                                )}
+                            </div>
+                            <span class="[ landing-latest__bar ]" aria-hidden="true" x-show="!still && count > 1"><span x-ref="bar"></span></span>
+                            {/* Up next: the two after the current lead. */}
+                            {latest.map((post, i) =>
+                                <ContentViewerLink
+                                    class="landing-latest__row"
+                                    href={post_href(post)}
+                                    post={post.post_id}
+                                    title={post.title}
+                                    x-show={`after(${i}) === 1 || after(${i}) === 2`}
+                                    x-bind:style={`{ order: after(${i}) }`}
+                                    style={i === 1 || i === 2 ? `order: ${i}` : 'display: none;'}
+                                >
+                                    <img src={post_thumb(post, '/images/posts-cover.jpg')} alt="" loading="lazy" />
+                                    <span>
+                                        <span class="landing-latest__kicker">{post.tags[0] ?? ''}</span>
+                                        <span class="landing-latest__row-title">{post.title}</span>
+                                    </span>
+                                </ContentViewerLink>
+                            )}
+                        </aside>
+                    }
+                </div>
+    
+                {pulse && <LandingLive events={pulse.events} view_all_href="#week" />}
+    
+                {pulse_error && <EmptyState title={t('landing_new.error')} hint={pulse_error} />}
+            </Wrapper>
+        </section>
 
-		<VerticalCenter
-			class="[ content-section ][ min-h-[100vh] max-w-[48rem] ]"
-			x-intersect:enter.margin.-230px="show_stagging_info = true;"
-			x-intersect:leave.margin.-230px="show_stagging_info = false"
-		>
-			<Wrapper
-				max_width='48rem'
-				padding_inline='0'
-				padding_block="var(--space-l)"
-			>
-				<Flexblock
-					gap='var(--space-xl)'
-					class="[ text-center ]"
-				>	
-					<Flexblock
-						gap='var(--space-m)'
-						class="[ text-center ]"
-					>	
-						<h1 class="[ flex justify-center ]"><FleetLogo width='256' height='256' /></h1>
+        {reel_items.length > 0 &&
+            <section class="landing-section">
+                <Wrapper padding_inline="var(--landing-gutter)" padding_block="0" centered={true}>
+                    <LandingReel items={reel_items} />
+                </Wrapper>
+            </section>
+        }
 
-						<h2 class="[ welcome-heading ]">{t('index.title')}</h2>
+        <section id="week" class="landing-section">
+            <Wrapper padding_inline="var(--landing-gutter)" padding_block="0" centered={true}>
+                <p class="landing-eyebrow">{t('landing_new.week_eyebrow')}</p>
+                <h2 class="landing-title">{t('landing_new.week_title')}</h2>
+                <SectionTabs tabs={week_tabs} aria_label={t('landing_new.week_title')} id_prefix="landing-week" default_tab="fights">
+                    {WEEK_TABS.map((id) =>
+                        <SectionTabPanel id={id} id_prefix="landing-week" is_default={id === 'fights'}>
+                            <ComponentBlock padding_block="0" padding_inline="0" class="[ landing-week-panel ]">
+                                <LazyPartial url={week_url(id)} swap="outerHTML" trigger={id === 'fights' ? 'load' : 'reveal'} indicator={false}>
+                                    <DataGridSkeleton
+                                        columns={[t('landing_new.week_time'), t('landing_new.week_what'), t(WEEK_LAST_LABELS[week_last_column(id)])]}
+                                        template={WEEK_GRID.template}
+                                        rows={WEEK_GRID.rows}
+                                        media={[1]}
+                                        numeric={[2]}
+                                        min_width="0"
+                                        variant="ledger"
+                                        stack={true}
+                                        pager={true}
+                                        class="[ landing-week-grid ]"
+                                    />
+                                </LazyPartial>
+                            </ComponentBlock>
+                        </SectionTabPanel>
+                    )}
+                </SectionTabs>
+            </Wrapper>
+        </section>
 
-						<p>{t('index.leading_text')}</p>
-					</Flexblock>
+        <section class="landing-section">
+            <Wrapper padding_inline="var(--landing-gutter)" padding_block="0" centered={true}>
+                <div class="landing-section__header">
+                    <div>
+                        <p class="landing-eyebrow">{t('landing_new.news_eyebrow')}</p>
+                        <h2 class="landing-title">{t('landing_new.news_title')}</h2>
+                    </div>
+                    <a href={translatePath('/posts/')}>{t('landing_new.all_stories')}</a>
+                </div>
+                {more_news.length > 0 &&
+                    <ol class="landing-news">
+                        {more_news.map((post) =>
+                            <li>
+                                <ContentViewerLink href={post_href(post)} post={post.post_id} title={post.title}>
+                                    <img src={post_thumb(post, '/images/series-cover.jpg')} alt="" loading="lazy" />
+                                    <span class="landing-news__copy">
+                                        <span class="landing-latest__kicker">{post.tags[0] ?? ''}</span>
+                                        <span class="landing-news__title">{post.title}</span>
+                                        <span class="landing-muted">{new Date(post.date_posted).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', timeZone: 'UTC' })}</span>
+                                    </span>
+                                </ContentViewerLink>
+                            </li>
+                        )}
+                    </ol>
+                }
+                <nav class="landing-publications" aria-label={t('landing_new.publications')}>
+                    <p class="landing-muted landing-eyebrow">{t('landing_new.publications')}</p>
+                    <div>
+                        {PUBLICATIONS.map((publication) =>
+                            <a href={translatePath('/alliance/content/')}>
+                                <img src={publication.image} alt={publication.name} loading="lazy" />
+                            </a>
+                        )}
+                    </div>
+                </nav>
+            </Wrapper>
+        </section>
 
-					<FlexInline justification='center'>
-						<StylessButton href='#widgets' class="[ caret-down ]" aria-label={t('scroll_down')} />
-					</FlexInline>
-				</Flexblock>
-			</Wrapper>
-		</VerticalCenter>
+        <section class="landing-section">
+            <Wrapper padding_inline="var(--landing-gutter)" padding_block="0" centered={true} class="[ landing-join ]">
+                <div class="landing-join__pitch">
+                    <p class="landing-eyebrow">{t('landing_new.join_eyebrow')}</p>
+                    <h2 class="landing-title">{t('landing_new.join_title')}</h2>
+                    <p class="landing-join__lead">{t('landing_new.join_lead')}</p>
+                    <FlexInline gap="var(--space-s)" class="[ landing-actions ]">
+                        <Button href="https://discord.gg/minmatar" narrow={true} new_tab={true}>{t('landing_new.join_discord')}</Button>
+                    </FlexInline>
+                </div>
+                {pulse &&
+                    <div class="landing-join__chart">
+                        <p class="landing-join__chart-title">
+                            <span>{t('landing_new.tz_chart_title')}</span>
+                            <span class="landing-muted">{t('landing_new.tz_chart_note')}</span>
+                        </p>
+                        <LandingBars
+                            values={pulse.timezone_kills.map((h) => h.average_kills)}
+                            hours={pulse.timezone_kills.map((h) => h.hour)}
+                            label={t('landing_new.tz_chart_title')}
+                            height="var(--space-3xl)"
+                        />
+                        <div class="landing-join__zones" aria-hidden="true">
+                            <span>USTZ</span>
+                            <span>AUTZ</span>
+                            <span>EUTZ</span>
+                        </div>
+                    </div>
+                }
+            </Wrapper>
+        </section>
+    </div>
 
-		<Wrapper
-			max_width='90rem'
-			padding_inline='0'
-			padding_block="0"
-			class="[ content-section mt-2 ]"
-		>
-
-			<Flexblock
-				id="widgets"
-				gap='var(--space-2xl)'
-				class="[ w-full ]"
-				x-intersect:enter="show_fleet_feeds = false"
-				x-intersect:leave="show_fleet_feeds = true"
-			>
-				<Flexblock gap='var(--space-3xs)'>
-					<FluidFixed
-						width='656px'
-						gap='var(--space-3xs)'
-						breakpoint='49%'
-						class="[ w-full ]"
-					>
-						<Wrapper
-							padding_block='0'
-							padding_inline='0'
-							class="[ relative w-full ]"
-							max_width='656px'
-						>
-							<Flexblock gap='var(--space-3xs)'>
-								<HomeCorporations />
-							</Flexblock>
-						</Wrapper>
-
-						<Wrapper
-							padding_block='0'
-							padding_inline='0'
-							max_width='656px'
-							class="[ relative z-10 w-full ]"
-						>
-							<MediaFeed />
-						</Wrapper>
-					</FluidFixed>
-
-					<FluidFixed
-						width='656px'
-						gap='var(--space-3xs)'
-						breakpoint='49%'
-						class="[ !items-start w-full ]"
-					>
-						<MetaGuideWidget />
-						<Flexblock class="[ w-full ]" gap='var(--space-3xs)'>
-							{posts?.length > 0 &&
-								<ComponentBlock class="[ w-full relative ]" padding_block='0' padding_inline='0' max_width='656px'>
-									<NewsFeed posts={posts} />
-								</ComponentBlock>
-							}
-							<RatBibbleWidget						
-								padding_block='0'
-								padding_inline='var(--space-s)'
-								class="[ basis-[50%] shrink ]"
-							/>
-						</Flexblock>
-					</FluidFixed>
-				</Flexblock>
-
-				<ComicsWidget />
-			</Flexblock>
-
-			<Wrapper
-				padding_inline="0"
-				padding_block="var(--space-3xl)"
-				max_width='100%'
-				centered={true}
-			>
-				<Flexblock>
-					<FlexInline
-						gap='var(--space-l)'
-						justification='center'
-					>
-						<RedditSmall						
-							padding_block='0'
-							padding_inline='var(--space-s)'
-						/>
-						<DiscordSmall						
-							padding_block='0'
-							padding_inline='var(--space-s)'
-						/>
-					</FlexInline>
-
-					<Wrapper
-						padding_inline="0"
-						padding_block="0"
-						max_width='40rem'
-						centered={true}
-					>
-						<p class="[ ccp-disclaimer ][ text-center ]">{t('ccp_disclaimer')}</p>
-						<FlexInline
-							class="[ legal-links ]"
-							gap="var(--space-m)"
-							justification="center"
-						>
-							<a href={translatePath('/legal/privacy/')}>{t('legal.privacy')}</a>
-							<a href={translatePath('/legal/terms/')}>{t('legal.terms')}</a>
-						</FlexInline>
-					</Wrapper>
-				</Flexblock>
-			</Wrapper>
-		</Wrapper>
-
-		{(WINTER_NEXUS_DECORATION || NEY_YEAR_EVE_DECORATION || CRIMSON_HARVEST_DECORATION) &&
-			<canvas id="decoration_overlay" />
-		}
-
-		<ColorBlindPrompt />
-
-		{can_view_fleets &&
-			<div x-show="show_fleet_feeds">
-				<FleetFeedUpdater refresh_rate_seconds={260}>
-					<FleetFeed />
-				</FleetFeedUpdater>
-			</div>
-		}
-    </PageLanding>
+    <ContentViewer />
 </Viewport>
 
-
-{WINTER_NEXUS_DECORATION && (
-	<script is:inline src="https://cdn.jsdelivr.net/npm/@tsparticles/preset-snow@3.2.0/tsparticles.preset.snow.bundle.min.js"></script>
-
-	<script is:inline>
-		async function initSnow() {
-			if (!document.getElementById('decoration_overlay')) return
-
-			await loadSnowPreset(tsParticles)
-
-			await tsParticles.load({
-				id: "decoration_overlay",
-				options: {
-					preset: "snow",
-					fullScreen: { enable: false },
-					background: { opacity: 0 },
-				},
-			})
-		}
-
-		document.addEventListener("astro:page-load", initSnow)
-	</script>
-)}
-
-{NEY_YEAR_EVE_DECORATION && (
-	<script is:inline>
-		(async () => {
-			const canvas = document.getElementById("decoration_overlay")
-
-			canvas.confetti =
-				canvas.confetti || (await confetti.create(canvas, { resize: true }))
-
-			let tick = 0
-
-			function randomInRange(min, max) {
-				return Math.random() * (max - min) + min
-			}
-
-			(function frame() {
-				skew = 0.8
-				tick += 1
-
-				const DEFAULTS = {
-					startVelocity: 30,
-					spread: 360,
-					ticks: 60,
-					particleCount: 50,
-					zIndex: 0,
-				}
-
-				tick % 150 === 0 && canvas.confetti({
-					...DEFAULTS,
-					scalar: randomInRange(0.5, 2),
-					origin: { x: randomInRange(0.1, 0.9), y: randomInRange(0.1, 0.6) },
-					ticks: 200,
-				})
-
-				if (document.querySelector('.ccp-disclaimer')) requestAnimationFrame(frame)
-			})()
-		})()
-	</script>
-)}
-
-{CRIMSON_HARVEST_DECORATION && (
-	<script is:inline>
-		tsParticles.load(
-			"decoration_overlay", {
-				fpsLimit: 60,
-				emitters: {
-					autoPlay: true,
-					rate: {
-						delay: 1,
-						quantity: 1
-					},
-					size: {
-						mode: "percent",
-						height: 100,
-						width: 100
-					},
-				},
-  				particles: {
-					number: {
-						value: 0
-					},
-					shape: {
-						type: [
-							"image"
-						],
-						options: {
-							image: [
-								{
-									src: "/images/jack_o_lantern.svg",
-									width: 32,
-									height: 32,
-									particles: {
-										size: {
-											value: 30
-										}
-									}
-								}
-							]
-						},
-					},
-					opacity: {
-						value: 1,
-						animation: {
-							enable: true,
-							startValue: "max",
-							speed: 1,
-							decay: 0.5,
-							destroy: "min"
-						},
-					},
-					size: {
-						value: 60,
-						animation: {
-							enable: true,
-							startValue: "min",
-							speed: 1
-						},
-					},
-					move: {
-						enable: false
-					},
-					life: {
-						duration: {
-							sync: false,
-							value: 20
-						},
-						count: 1
-					},
-				},
-		})
-	</script>
-)}
-
 <style lang="scss">
-	#waifu-intro {
-		position: fixed;
-		right: 11vw;
-		top: 220px;
-		height: min(50%, 500px);
-		mix-blend-mode: screen;
-		display: none;
+    // One gutter and one section rhythm for the whole page: the content sits
+    // in an 80rem column (Wrapper), sections are --space-2xl-3xl apart.
+    .landing {
+        --landing-gutter: var(--space-2xl-3xl);
 
-		@media screen and (min-width:980px) {
-			display: block;
-		}
-	}
-
-	#decoration_overlay {
-		position: absolute;
-		inset: 0;
-		height: 100%;
-		width: 100%;
-	}
-
-	.station-info {
-		position: fixed;
-		top: var(--space-l);
-		right: var(--space-xl);
-		z-index: 2;
-	}
-
-	.ccp-disclaimer {
-		font-size: var(--step--2);
-	}
-
-	.legal-links {
-		margin-block-start: var(--space-s);
-		font-size: var(--step--1);
-	}
-
-	.welcome-heading {
-		font-size: var(--step-5);
-	}
-
-    .left-panel {
-        position: absolute;
+        background: var(--background);
+        color: var(--fleet-yellow);
     }
 
-	.content-section {
-		position: relative;
-		z-index: 1;
-		align-items: center;
-	}
+    .landing-eyebrow {
+        margin: 0 0 var(--space-2xs);
+        font-size: var(--step--1);
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+    }
 
-	.caret-down {
-		transform: rotate(90deg);
+    .landing-title {
+        margin: 0 0 var(--space-xl);
+        font-family: var(--heading-font);
+        font-weight: normal;
+        font-size: var(--step-4);
+        line-height: 1;
+        color: var(--highlight);
+    }
 
-		&:before {
-			content: 'next';
-			color: var(--highlight);
-			font-family: swiper-icons;
-			font-size: var(--swiper-navigation-size);
-			text-transform: none !important;
-			letter-spacing: 0;
-			font-variant: initial;
-			line-height: 1;
-		}
-	}
+    .landing-muted {
+        color: var(--text-muted);
+    }
+
+    .landing-actions {
+        margin-top: var(--space-l);
+    }
+
+    // The label fades in (x-effect) each time the button changes; the button
+    // keeps one width (the longest label's) so nothing around it moves.
+    .landing-cta__label {
+        display: inline-block;
+    }
+
+    .landing-cta {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-3xs);
+    }
+
+    // The colour eases from one destination to the next.
+    .landing-cta :global(.landing-cta__button) {
+        transition: var(--slow-transition);
+        min-inline-size: min(100%, calc(var(--space-3xl) * 3));
+
+        @media (max-width: 48rem) {
+            inline-size: 100%;
+        }
+    }
+
+    // Fills while the current destination shows, then the next takes over.
+    .landing-cta__bar {
+        display: block;
+        inline-size: min(100%, calc(var(--space-3xl) * 3));
+        block-size: 2px;
+        background: var(--hairline-strong);
+
+        @media (max-width: 48rem) {
+            inline-size: 100%;
+        }
+
+        span {
+            display: block;
+            block-size: 100%;
+            background: var(--highlight);
+            transform: scaleX(0);
+            transform-origin: left;
+        }
+    }
+
+    .landing-week-panel {
+        overflow: hidden;
+    }
+
+    /* Hero: everything the page is for, inside the first screen. */
+    .landing-hero {
+        position: relative;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        padding-block: var(--space-xl) var(--space-2xl);
+        overflow: hidden;
+
+        > *:not(.landing-hero__cover) {
+            position: relative;
+        }
+    }
+
+    .landing-hero__inner {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xl);
+    }
+
+    .landing-hero__cover {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: 60% 35%;
+        mask-image: linear-gradient(180deg, var(--background) 45%, transparent 100%);
+        opacity: 0.45;
+    }
+
+    .landing-hero__main {
+        display: grid;
+        grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+        gap: var(--space-xl);
+        align-items: start;
+
+        h1 {
+            margin: 0;
+            font-family: var(--heading-font);
+            font-weight: normal;
+            font-size: clamp(3.5rem, 7vw, 6rem);
+            line-height: 0.95;
+            color: var(--highlight);
+        }
+    }
+
+    .landing-hero__lead {
+        margin: var(--space-m) 0 0;
+        max-width: 36rem;
+        font-size: var(--step-1);
+        line-height: 1.55;
+        color: var(--highlight);
+        opacity: 0.85;
+    }
+
+    .landing-latest {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+    }
+
+    .landing-latest__header {
+        order: -3;
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+
+        h2 {
+            margin: 0;
+            font-size: var(--step--1);
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--highlight);
+        }
+    }
+
+    // One cell for every lead, so a change never moves anything; the current
+    // one fades in over the last.
+    .landing-latest__leads {
+        display: grid;
+        order: -2;
+
+        > :global(*) {
+            grid-area: 1 / 1;
+        }
+    }
+
+    .landing-latest__lead {
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity var(--slow-transition), visibility 0s linear 1s;
+
+        &.is-current {
+            opacity: 1;
+            visibility: visible;
+            transition: opacity var(--slow-transition), visibility 0s;
+        }
+    }
+
+    .landing-latest__bar {
+        display: block;
+        order: -1;
+        block-size: 2px;
+        margin-top: calc(var(--space-xs) * -1);
+        background: var(--hairline-strong);
+
+        span {
+            display: block;
+            block-size: 100%;
+            background: var(--fleet-yellow);
+            transform: scaleX(0);
+            transform-origin: left;
+        }
+    }
+
+    .landing-latest__lead {
+        position: relative;
+        display: flex;
+        align-items: flex-end;
+        height: 15rem;
+        overflow: hidden;
+        text-decoration: none;
+
+        img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, transparent 20%, var(--background) 100%);
+        }
+    }
+
+    .landing-latest__lead-copy {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding: var(--space-s) var(--space-m);
+    }
+
+    .landing-latest__kicker {
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--fleet-yellow);
+    }
+
+    .landing-latest__lead-title {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        line-height: 1.1;
+        color: var(--highlight);
+    }
+
+    .landing-latest__row {
+        display: grid;
+        grid-template-columns: 7rem minmax(0, 1fr);
+        gap: var(--space-s);
+        align-items: center;
+        padding: var(--space-xs);
+        background: var(--component-background);
+        border: 1px solid var(--border-color);
+        text-decoration: none;
+
+        img {
+            width: 7rem;
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+        }
+
+        > span {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3xs);
+        }
+    }
+
+    // Two lines at most, so every pair of up-next rows is the same height.
+    .landing-latest__row-title {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        font-size: var(--step--1);
+        font-weight: 600;
+        line-height: 1.35;
+        color: var(--highlight);
+    }
+
+    /* Sections below the fold */
+    .landing-section {
+        padding-block: var(--space-2xl-3xl);
+
+        & + & {
+            border-top: 1px solid var(--hairline);
+        }
+    }
+
+    .landing-section__header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: var(--space-m);
+        margin-bottom: var(--space-l);
+
+        .landing-title {
+            margin: 0;
+        }
+    }
+
+    .landing-news {
+        margin: 0 0 var(--space-xl);
+        padding: 0;
+        list-style: none;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+        gap: var(--space-m);
+
+        li {
+            display: flex;
+        }
+
+        a {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--component-background);
+            border: 1px solid var(--border-color);
+            text-decoration: none;
+        }
+
+        img {
+            width: 100%;
+            aspect-ratio: 16 / 10;
+            object-fit: cover;
+        }
+    }
+
+    .landing-news__copy {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding: var(--space-m);
+        font-size: var(--step--1);
+    }
+
+    .landing-news__title {
+        font-size: var(--step-0);
+        font-weight: 600;
+        line-height: 1.35;
+        color: var(--highlight);
+    }
+
+    .landing-publications > div {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+        gap: var(--space-s);
+
+        a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 6rem;
+            background: var(--component-background);
+            border: 1px solid var(--border-color);
+        }
+
+        img {
+            max-width: 72%;
+            max-height: 4rem;
+            object-fit: contain;
+        }
+    }
+
+    .landing-join {
+        display: grid;
+        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+        gap: var(--space-2xl);
+        align-items: center;
+    }
+
+    .landing-join__lead {
+        margin: 0;
+        font-size: var(--step-0);
+        line-height: 1.6;
+        color: var(--text-muted);
+    }
+
+    .landing-join__chart {
+        padding: var(--space-l);
+        background: var(--component-background);
+        border: 1px solid var(--border-color);
+    }
+
+    .landing-join__chart-title {
+        display: flex;
+        justify-content: space-between;
+        gap: var(--space-s);
+        margin: 0 0 var(--space-m);
+        font-weight: 600;
+        color: var(--highlight);
+
+        .landing-muted {
+            font-size: var(--step--1);
+            font-weight: normal;
+        }
+    }
+
+    .landing-join__zones {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--space-3xs);
+        margin-top: var(--space-xs);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-align: center;
+
+        span {
+            padding-top: var(--space-2xs);
+            border-top: 2px solid var(--hairline-strong);
+        }
+    }
+
+    @media (max-width: 64rem) {
+        .landing-hero__main,
+        .landing-join {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    @media (max-width: 48rem) {
+        .landing {
+            --landing-gutter: var(--space-m);
+        }
+
+        // Clear the floating menu button.
+        .landing-hero {
+            min-height: auto;
+            padding-block: var(--space-2xl) var(--space-xl);
+        }
+
+        .landing-section {
+            padding-block: var(--space-2xl);
+        }
+
+        .landing-join__chart {
+            padding: var(--space-s);
+        }
+    }
 </style>
 
-<style is:global>
-	#tsparticles {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background: none; /* Ensures no conflicting background */
-	}
+<style lang="scss" is:global>
+    // "The week in the alliance" table and its loading skeleton share this,
+    // so the skeleton is the same size as the table that replaces it.
+    .landing-week-grid {
+        .data-grid-row {
+            min-height: var(--space-xl);
+            padding: var(--space-xs) var(--space-l);
+            column-gap: var(--space-m);
+        }
+
+        // Every cell lines up with the first line of the entry, whose
+        // portrait is --space-m tall, so a wrapped entry doesn't push the
+        // time and the last column down to its middle.
+        .data-grid-row:not(.data-grid-head) {
+            align-items: start;
+
+            > [role="cell"] {
+                display: flex;
+                align-items: center;
+                min-height: var(--space-m);
+            }
+
+            > .data-grid-numeric {
+                justify-content: flex-end;
+            }
+        }
+
+        .data-grid-head {
+            min-height: auto;
+            padding-block: var(--space-s);
+            font-family: inherit;
+            font-size: var(--step--2);
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        // DataGrid's stack hides the header on phones; the time sits over
+        // the line, which gets the full width, and the last column (ISK, LP
+        // or region) sits beside the time.
+        @media (max-width: 48rem) {
+            .data-grid-row {
+                grid-template-columns: minmax(0, 1fr) auto;
+                grid-template-areas: "time last" "what what";
+                row-gap: var(--space-3xs);
+                padding: var(--space-s) var(--space-m);
+            }
+
+            .data-grid-row > :nth-child(1) { grid-area: time; }
+            .data-grid-row > :nth-child(2) { grid-area: what; }
+            .data-grid-row > :nth-child(3) { grid-area: last; }
+        }
+    }
 </style>
+

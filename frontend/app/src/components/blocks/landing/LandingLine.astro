@@ -8,14 +8,17 @@ import { character_portrait, event_who, subject_icon } from '@helpers/landing'
 /**
  * One feed line on one row: portrait, "<pilot> <verb> [icon] <subject> <tail>".
  * The icon is the ship or ore, or the logo of the side we fought (round).
+ * A subject with `detail` ("4 ores") shows it on hover or focus.
  */
 interface Props {
     event:          LandingEvent;
     size?:          'sm' | 'md';
+    /** Let the line wrap instead of cutting it off (the week table). */
+    wrap?:          boolean;
     [propName: string]: any;
 }
 
-const { event, size = 'sm', ...attributes } = Astro.props
+const { event, size = 'sm', wrap = false, ...attributes } = Astro.props
 
 delete attributes.class
 
@@ -23,7 +26,7 @@ const icon = subject_icon(event, 32)
 const who = event_who(event, t('landing_new.and_others'), t('landing_new.and_other'))
 ---
 
-<span class:list={['[ landing-line ]', `landing-line--${size}`, Astro.props.class]} {...attributes}>
+<span class:list={['[ landing-line ]', `landing-line--${size}`, { 'landing-line--wrap': wrap }, Astro.props.class]} {...attributes}>
     <img class="[ landing-line__portrait ]" src={character_portrait(event.character_id, 64)} alt="" loading="lazy" />
     <span class="[ landing-line__text ]">
         <strong>{who}</strong>{' '}{event.verb || event.action}
@@ -38,10 +41,13 @@ const who = event_who(event, t('landing_new.and_others'), t('landing_new.and_oth
                         loading="lazy"
                     />
                 }
-                <strong>{event.subject}</strong>
+                {event.detail
+                    ? <strong class="[ landing-line__more ]" data-tippy-content={event.detail} tabindex="0">{event.subject}</strong>
+                    : <strong>{event.subject}</strong>
+                }
             </>
         }
-        {event.tail && <>{' '}{event.tail}</>}
+        {event.tail && <>{' '}<span class="[ landing-line__tail ]">{event.tail}</span></>}
     </span>
 </span>
 
@@ -90,11 +96,40 @@ const who = event_who(event, t('landing_new.and_others'), t('landing_new.and_oth
         text-overflow: ellipsis;
     }
 
+    .landing-line__more {
+        cursor: help;
+        text-decoration: underline dotted var(--text-muted);
+        text-underline-offset: 0.2em;
+    }
+
+    .landing-line--wrap {
+        align-items: flex-start;
+        white-space: normal;
+
+        // Each line as tall as the portrait, so the first one sits level
+        // with it (and with the table's other cells).
+        .landing-line__text {
+            line-height: var(--space-m);
+        }
+
+        // When the line wraps, "· 14.6M ISK destroyed" moves as one piece.
+        .landing-line__tail {
+            white-space: nowrap;
+        }
+
+        .landing-line__text {
+            overflow: visible;
+        }
+    }
+
+    // Tailwind's preflight makes every img a block, which put the icon on a
+    // line of its own between the verb and the subject.
     .landing-line__icon {
-        width: 1.15em;
-        height: 1.15em;
+        display: inline-block;
+        width: 1.5em;
+        height: 1.5em;
         margin-inline-end: var(--space-3xs);
-        vertical-align: -0.2em;
+        vertical-align: -0.4em;
         object-fit: cover;
         border-radius: 2px;
     }

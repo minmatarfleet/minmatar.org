@@ -4,6 +4,8 @@ const { t } = i18n(Astro.url)
 
 import { eve_day } from '@helpers/landing'
 
+import ContentViewerLink from '@components/blocks/ContentViewerLink.astro'
+
 export interface LandingReelItem {
     kicker:         string;
     occurred_at:    string;
@@ -12,6 +14,8 @@ export interface LandingReelItem {
     value?:         string;
     unit?:          string;
     href?:          string;
+    /** A post opens in the page's ContentViewer instead of navigating. */
+    post_id?:       number;
 }
 
 interface Props {
@@ -61,13 +65,13 @@ const pad = (n: number) => String(n).padStart(2, '0')
         </div>
 
         <div class="landing-reel__stage" aria-live="polite">
-            {items.map((item, index) =>
-                <a
-                    class="landing-reel__slide"
-                    href={item.href}
-                    x-show={`index === ${index}`}
-                    style={index === 0 ? undefined : 'display: none;'}
-                >
+            {items.map((item, index) => {
+                const slide = {
+                    class: 'landing-reel__slide',
+                    'x-show': `index === ${index}`,
+                    style: index === 0 ? undefined : 'display: none;',
+                }
+                const body = <Fragment>
                     <img src={item.image} alt="" loading={index === 0 ? 'eager' : 'lazy'} />
                     <span class="landing-reel__copy">
                         <span class="landing-reel__meta">
@@ -80,8 +84,11 @@ const pad = (n: number) => String(n).padStart(2, '0')
                             : <span class="landing-reel__read">{t('landing_new.reel_read')}</span>
                         }
                     </span>
-                </a>
-            )}
+                </Fragment>
+                return item.post_id !== undefined && item.href
+                    ? <ContentViewerLink href={item.href} post={item.post_id} title={item.title} {...slide}>{body}</ContentViewerLink>
+                    : <a href={item.href} {...slide}>{body}</a>
+            })}
         </div>
 
         <ol class="landing-reel__strip">
@@ -246,7 +253,7 @@ const pad = (n: number) => String(n).padStart(2, '0')
         padding: 0;
         list-style: none;
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
         gap: var(--space-xs);
 
         button {

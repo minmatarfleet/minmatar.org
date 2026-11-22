@@ -1,0 +1,56 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+/**
+ * Opens a post or guide in the page's ContentViewer. Wrap any card or link
+ * in it: it renders a real link to the full page (`href`), so a new tab,
+ * a ctrl/cmd/middle click or no JavaScript still lands on the page, and a
+ * plain click opens the viewer and loads the content with htmx.
+ *
+ * Give it `post` (a post id) or `guide` (a guide slug) and the page's `href`.
+ */
+interface Props {
+    href:               string;
+    post?:              number;
+    guide?:             string;
+    /** Shown in the viewer's header while the content loads. */
+    title?:             string;
+    [propName: string]: any;
+}
+
+const { href, post, guide, title = '', ...attributes } = Astro.props
+
+delete attributes.class
+
+const query = post !== undefined ? `post=${post}` : guide ? `guide=${encodeURIComponent(guide)}` : ''
+const partial = query ? `${translatePath('/partials/content_viewer_component/')}?${query}` : ''
+
+// A plain click opens the viewer; with a modifier key (new tab, new window)
+// or a middle click (auxclick, never click) the link does what links do.
+// htmx listens for its own event rather than click: on a click trigger it
+// cancels the link before checking any filter, which ate ctrl-clicks.
+const PLAIN = '!$event.ctrlKey && !$event.metaKey && !$event.shiftKey && !$event.altKey'
+const open = `if (${PLAIN}) { $event.preventDefault(); $dispatch('content-viewer-open', ${JSON.stringify({ title, href })}); htmx.trigger($el, 'content-viewer-load') }`
+---
+
+{partial ?
+    <a
+        href={href}
+        class:list={['[ content-viewer-link ]', Astro.props.class]}
+        hx-get={partial}
+        hx-target="#content-viewer-body"
+        hx-swap="innerHTML"
+        hx-trigger="content-viewer-load"
+        hx-indicator="#content-viewer-body"
+        x-data
+        x-on:click={open}
+        {...attributes}
+    >
+        <slot />
+    </a>
+:
+    <a href={href} class:list={['[ content-viewer-link ]', Astro.props.class]} {...attributes}>
+        <slot />
+    </a>
+}
