@@ -1,0 +1,24 @@
+---
+/**
+ * The body of Our values: the values markdown, with the section ids its page's
+ * progress rail tracks. The page (`/alliance/values/`) and the ContentViewer
+ * both render it.
+ */
+import * as page from '@markdown/values.md'
+import { pageProgressFromMarkdown } from '@helpers/pageProgress'
+
+interface Props {
+    [propName: string]: any;
+}
+
+const attributes = { ...Astro.props }
+delete attributes.class
+
+const { html } = pageProgressFromMarkdown({
+    page_key: 'alliance/values',
+    page_title: page.frontmatter.title,
+    markdown: page.rawContent(),
+})
+---
+
+<div class:list={['[ prose ]', Astro.props.class]} set:html={html} {...attributes} />

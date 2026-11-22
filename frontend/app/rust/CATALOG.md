@@ -638,19 +638,19 @@ The site-wide content modal: one instance in the page layout, opened with `show_
 
 ### ContentViewer
 
-Reads, plays or shows a post or guide without leaving the page.
+Reads, plays or shows a page without leaving the one you are on: a post, a guide, a Warzone or Amamake Market report, a newsletter, Our values or a chapter of Our story.
 
 - Import: `import ContentViewer from '@components/blocks/ContentViewer.astro'`
 - Stories (5): `frontend/app/rust/stories/components/overlays/ContentViewer.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-contentviewer--docs: Closed until a link opens it, Opens with the title and a link to the page, Close button empties and closes it, Loads a poster through htmx, A click on an image zooms it; Escape leaves the zoom first
 
 ### ContentViewerLink
 
-Opens a post or guide in the page's `ContentViewer`.
+Opens a page in the page's `ContentViewer`.
 
 - Import: `import ContentViewerLink from '@components/blocks/ContentViewerLink.astro'`
-- Props: `href: string`, `post?: number = ${post}` : guide ? `guide=${encodeURIComponent(guide)}` : ''`, `guide?: string = ${encodeURIComponent(guide)}` : ''`, `title?: string`
+- Props: `href: string`, `post?: number`, `guide?: string`, `title?: string`
 - Slots: `default`
-- Stories (4): `frontend/app/rust/stories/components/overlays/ContentViewerLink.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-contentviewerlink--docs: A post, A guide, Neither post nor guide: a plain link, A plain click opens the viewer, a ctrl click does not
+- Stories (6): `frontend/app/rust/stories/components/overlays/ContentViewerLink.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-contentviewerlink--docs: A post, A guide, A report, from its href, Our values, from its href, Any other page: a plain link, A plain click opens the viewer, a ctrl click does not
 
 ### Tippy
 

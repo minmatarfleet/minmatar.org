@@ -70,7 +70,7 @@ const { html, ...progress } = pageProgressFromMarkdown({
 
 Destructure `html` out before spreading into `<PageProgress />` so you do not pass HTML as a component prop.
 
-**Live reference:** `frontend/app/src/pages/guides/[name].astro`, `frontend/app/src/pages/alliance/values.astro`
+**Live reference:** `frontend/app/src/pages/guides/[name].astro`, `frontend/app/src/pages/alliance/values.astro` (its body, `AllianceValues.astro`, renders the tagged HTML so the ContentViewer can show it too)
 
 ---
 

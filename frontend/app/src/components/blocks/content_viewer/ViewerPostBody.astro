@@ -1,0 +1,190 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+/**
+ * A post in the ContentViewer, shown the way its kind reads best: videos
+ * play, posters fill the screen, galleries swipe, articles read like the page.
+ */
+import type { PostUI } from '@dtypes/layout_components'
+import type { ViewerPost } from '@helpers/content_viewer'
+import { post_source_url } from '@helpers/content_viewer'
+import { marked } from 'marked'
+import { renderer as site_renderer } from '@helpers/marked'
+import { format_date } from '@helpers/date'
+
+import Carousel from '@components/blocks/Carousel.astro'
+import PilotBadge from '@components/blocks/PilotBadge.astro'
+
+interface Props {
+    post: PostUI
+    view: ViewerPost
+}
+
+const { post, view } = Astro.props
+const title = post.title
+
+// Links in a post open the way they do on its page, except links off the
+// site: the page asks "leaving the website?" in an alert dialog, which would
+// open behind this modal viewer. Here they just open in a new tab.
+const renderer = new marked.Renderer()
+renderer.link = (href, link_title, text) => {
+    const html = site_renderer.link.call(site_renderer, href, link_title, text)
+    const external = /^https?:\/\//.test(href) && !href.startsWith('https://my.minmatar.org')
+    return external
+        ? `<a href="${href}" target="_blank" rel="nofollow noopener noreferrer"${link_title ? ` title="${link_title}"` : ''}>${text}</a>`
+        : html
+}
+
+const html = view.kind === 'article' ? await marked.parse(post.content ?? '', { renderer }) : ''
+// A poster's or video's own words (links like "⬅ PREV - EPISODE 06" too).
+const caption = 'text' in view && view.text ? await marked.parse(view.text, { renderer }) : ''
+const source = post_source_url(post.content ?? '')
+
+// Images zoom in the ContentViewer's own zoom layer (pinch, wheel, drag).
+// Not medium-zoom: that draws its overlay on <body>, behind the modal
+// dialog, so the click landed on the page underneath.
+---
+
+{view.kind === 'video' &&
+    <div class:list={['[ viewer-post__video ]', { 'viewer-post__video--reddit': view.embed_url.includes('embed.reddit.com') }]}>
+        <iframe
+            src={view.embed_url}
+            title={title}
+            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+            allowfullscreen
+            referrerpolicy="strict-origin-when-cross-origin"
+        ></iframe>
+    </div>
+}
+
+{view.kind === 'image' &&
+    <figure class="[ viewer-post__poster ]">
+        <img src={view.image} alt={title} />
+    </figure>
+}
+
+{view.kind === 'gallery' &&
+    <Carousel
+        class="[ viewer-post__gallery ]"
+        pagination={true}
+        align="center"
+        aria-roledescription="carousel"
+        aria-label={title}
+    >
+        {view.images.map((image, index) =>
+            <div class="swiper-slide">
+                <figure>
+                    <img src={image} alt={`${title} (${index + 1}/${view.images.length})`} loading={index === 0 ? 'eager' : 'lazy'} />
+                </figure>
+            </div>
+        )}
+    </Carousel>
+}
+
+{caption &&
+    <div class="[ viewer-post__caption prose ]" set:html={caption} />
+}
+
+{view.kind === 'article' &&
+    <article class="[ viewer-post__article ]">
+        <PilotBadge
+            character_id={post.author.character_id as number}
+            character_name={post.author.character_name as string}
+            size={32}
+        >
+            <small>{format_date(lang, post.date_posted)}</small>
+        </PilotBadge>
+        <div class="[ prose ]" set:html={html} />
+    </article>
+}
+
+{(source || view.kind !== 'article') &&
+    <p class="[ viewer-post__meta ]">
+        <span>{post.author.character_name} · {format_date(lang, post.date_posted)}</span>
+        {source && <a href={source} target="_blank" rel="nofollow noopener noreferrer">{t('content_viewer.source')}</a>}
+    </p>
+}
+
+<style lang="scss">
+    // 16:9, as wide as the panel, never taller than the screen.
+    .viewer-post__video {
+        position: relative;
+        width: 100%;
+        max-height: calc(100dvh - var(--space-3xl) * 2);
+        aspect-ratio: 16 / 9;
+        background: var(--surface-sunken);
+
+        iframe {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+    }
+
+    // Reddit's player is a post card (title, video, votes): taller than 16:9.
+    .viewer-post__video--reddit {
+        aspect-ratio: 4 / 3;
+    }
+
+    // The poster whole, fitted to the screen; a click zooms it.
+    .viewer-post__poster {
+        display: flex;
+        justify-content: center;
+        margin: 0;
+
+        img {
+            display: block;
+            max-width: 100%;
+            max-height: calc(100dvh - var(--space-3xl) * 2);
+            object-fit: contain;
+            cursor: zoom-in;
+        }
+    }
+
+    // A Carousel: swipe on a phone, arrows on desktop, one image per slide.
+    .viewer-post__gallery :global(figure) {
+        display: flex;
+        justify-content: center;
+        margin: 0;
+    }
+
+    .viewer-post__gallery :global(img) {
+        display: block;
+        max-width: 100%;
+        max-height: calc(100dvh - var(--space-3xl) * 3);
+        object-fit: contain;
+    }
+
+    .viewer-post__caption {
+        margin: 0;
+        max-width: var(--max-text-width);
+        color: var(--highlight);
+    }
+
+    .viewer-post__article {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        max-width: var(--max-text-width);
+        margin-inline: auto;
+        width: 100%;
+
+        :global(img) {
+            max-width: 100%;
+            height: auto;
+        }
+    }
+
+    .viewer-post__meta {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: var(--space-xs);
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+</style>

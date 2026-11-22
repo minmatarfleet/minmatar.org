@@ -17,10 +17,11 @@ import Wrapper from '@components/compositions/Wrapper.astro'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import PageProgress from '@components/blocks/guides/PageProgress.astro'
+import AllianceValues from '@components/blocks/AllianceValues.astro'
 
 const page_title = page.frontmatter.title
 const page_description = page.frontmatter.excerpt
-const { html: values_html, sections: _sections, ...progress } = pageProgressFromMarkdown({
+const { html: _html, sections: _sections, ...progress } = pageProgressFromMarkdown({
     page_key: 'alliance/values',
     page_title,
     markdown: page.rawContent(),
@@ -59,9 +60,7 @@ const { html: values_html, sections: _sections, ...progress } = pageProgressFrom
 
             <TextBox>
                 <Flexblock gap='var(--space-xl)'>
-                    <div
-                        class="[ prose ]"
-                        set:html={values_html}
+                    <AllianceValues
                         x-data={`{
                             init_zoom() {
                                 mediumZoom('img[data-zoomable]', {

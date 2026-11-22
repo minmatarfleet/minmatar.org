@@ -185,6 +185,23 @@ Reach for these before building a variant of your own (all in `src/components/bl
 | `HtmxPager` | Paging a partial: `total_pages` (Previous/Next) or `has_more` (Newer/Older). |
 | `FilterChip` + `ChipGroup` | Filter chips over rendered content (`aria-pressed`) or filtered-view links (`aria-current`). |
 | `CorporationBadge` / `AllianceBadge` | Entity logo + name; the default slot renders at every size. |
+| `ContentViewer` + `ContentViewerLink` | Opening a page in a modal without leaving the one you are on. See below. |
+
+### Pages the ContentViewer can show
+
+A page the `ContentViewer` can show is split in two: the page route renders its frame (`Viewport`, cover, hero,
+SEO) around a **body component**, and the viewer's partial (`src/pages/partials/content_viewer_component.astro`)
+renders the same body. Today that is posts, guides, the Warzone and Amamake Market reports, newsletters, Our values
+and Our story. `src/helpers/content_viewer_sources.ts` lists every viewable page path, what each resolves to (title,
+full page, width) and how wide the viewer opens.
+
+- A `ContentViewerLink` to any viewable `href` opens it in the viewer; other hrefs stay plain links.
+- Inside the viewer, a link to another viewable page (the next chapter, an older issue) opens in the viewer, and a
+  section link (`#pilots`) scrolls the viewer.
+- A body has no `<script>` (htmx swaps it in and would not run it) and no page frame or progress rail.
+- To make a page viewable: give it a body component its route renders, add a source to `content_viewer_sources.ts`,
+  and add the body to the partial's `BODIES`. `testing/helpers/content_viewer_sources.test.ts` checks each source's
+  page and body.
 
 ## 4.2 Rust, the component library
 

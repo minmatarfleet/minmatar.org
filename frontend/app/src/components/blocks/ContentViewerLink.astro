@@ -3,13 +3,20 @@ import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
 /**
- * Opens a post or guide in the page's ContentViewer. Wrap any card or link
- * in it: it renders a real link to the full page (`href`), so a new tab,
- * a ctrl/cmd/middle click or no JavaScript still lands on the page, and a
- * plain click opens the viewer and loads the content with htmx.
+ * Opens a page in the page's ContentViewer. Wrap any card or link in it: it
+ * renders a real link to the full page (`href`), so a new tab, a ctrl/cmd/middle
+ * click or no JavaScript still lands on the page, and a plain click opens the
+ * viewer and loads the content with htmx.
  *
- * Give it `post` (a post id) or `guide` (a guide slug) and the page's `href`.
+ * Any `href` the viewer can show opens in it: a post, a guide, a Warzone or
+ * Amamake Market report, a newsletter, Our values or a chapter of Our story
+ * (the list is `@helpers/content_viewer_sources`). Anything else is a plain
+ * link. `post` (a post id) and `guide` (a guide slug) name the content directly.
  */
+import { ui } from '@i18n/ui'
+import { resolve_viewer_path, viewer_query } from '@helpers/content_viewer_sources'
+import type { ViewerTarget } from '@helpers/content_viewer_sources'
+
 interface Props {
     href:               string;
     post?:              number;
@@ -23,8 +30,12 @@ const { href, post, guide, title = '', ...attributes } = Astro.props
 
 delete attributes.class
 
-const query = post !== undefined ? `post=${post}` : guide ? `guide=${encodeURIComponent(guide)}` : ''
-const partial = query ? `${translatePath('/partials/content_viewer_component/')}?${query}` : ''
+const target: ViewerTarget | null = post !== undefined
+    ? { source: 'post', id: String(post) }
+    : guide
+        ? { source: 'guide', id: guide }
+        : resolve_viewer_path(href, Object.keys(ui))
+const partial = target ? `${translatePath('/partials/content_viewer_component/')}?${viewer_query(target)}` : ''
 
 // A plain click opens the viewer; with a modifier key (new tab, new window)
 // or a middle click (auxclick, never click) the link does what links do.

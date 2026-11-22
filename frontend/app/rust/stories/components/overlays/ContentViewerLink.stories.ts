@@ -26,14 +26,14 @@ export default {
         docs: {
             description: {
                 component: [
-                    'Opens a post or guide in the page\'s `ContentViewer`. Wrap a card, a thumbnail or a headline in it: it renders a real link to the full page (`href`), so new tabs, ctrl/cmd/middle clicks and no-JS visitors still land on the page, and a plain click opens the viewer and loads the content with htmx.',
-                    'Give it `post` (a post id) or `guide` (a guide slug), plus `title` to show in the viewer\'s header while it loads. Without either it is a plain link. Classes and attributes pass through, so it can be the card itself.',
+                    'Opens a page in the page\'s `ContentViewer`. Wrap a card, a thumbnail or a headline in it: it renders a real link to the full page (`href`), so new tabs, ctrl/cmd/middle clicks and no-JS visitors still land on the page, and a plain click opens the viewer and loads the content with htmx.',
+                    'Any `href` the viewer can show opens in it: a post, a guide, a Warzone or Amamake Market report, a newsletter, Our values or a chapter of Our story (the list is `@helpers/content_viewer_sources`). Any other `href` is a plain link. `post` (a post id) or `guide` (a guide slug) name the content directly; `title` shows in the viewer\'s header while it loads. Classes and attributes pass through, so it can be the card itself.',
                 ].join('\n\n'),
             },
         },
     },
     argTypes: {
-        href: { control: 'text', description: 'The full page: where a new tab, a modified click or no-JS goes.' },
+        href: { control: 'text', description: 'The full page: where a new tab, a modified click or no-JS goes. A viewable page opens in the viewer.' },
         post: { control: 'number', description: 'A post id to open in the viewer.' },
         guide: { control: 'text', description: 'A guide slug to open in the viewer.' },
         title: { control: 'text', description: 'Shown in the viewer header while the content loads.' },
@@ -52,7 +52,7 @@ export const Post = {
     play: async ({ canvasElement }: Ctx) => {
         const a = link(canvasElement)
         await expect(a).toHaveAttribute('href', '/alliance/propaganda/eve-online---the-cope-275')
-        await expect(a.getAttribute('hx-get')).toContain('/partials/content_viewer_component/?post=275')
+        await expect(a.getAttribute('hx-get')).toContain('/partials/content_viewer_component/?source=post&id=275')
         await expect(a).toHaveAttribute('hx-target', '#content-viewer-body')
         await expect(a.getAttribute('hx-trigger')).toBe('content-viewer-load')
     },
@@ -62,12 +62,30 @@ export const Guide = {
     name: 'A guide',
     args: { href: '/learning/guides/onboarding-first-fleet/', post: undefined, guide: 'onboarding-first-fleet', title: 'Your first fleet', slots: { default: 'Your first fleet' } },
     play: async ({ canvasElement }: Ctx) => {
-        await expect(link(canvasElement).getAttribute('hx-get')).toContain('?guide=onboarding-first-fleet')
+        await expect(link(canvasElement).getAttribute('hx-get')).toContain('?source=guide&id=onboarding-first-fleet')
+    },
+}
+
+export const Report = {
+    name: 'A report, from its href',
+    args: { href: '/warzone/', post: undefined, title: 'Frontline Report', slots: { default: 'Frontline Report' } },
+    play: async ({ canvasElement }: Ctx) => {
+        const a = link(canvasElement)
+        await expect(a).toHaveAttribute('href', '/warzone/')
+        await expect(a.getAttribute('hx-get')).toMatch(/\?source=warzone&id=[\w-]+$/)
+    },
+}
+
+export const Values = {
+    name: 'Our values, from its href',
+    args: { href: '/alliance/values/', post: undefined, title: 'Our values', slots: { default: 'Our values' } },
+    play: async ({ canvasElement }: Ctx) => {
+        await expect(link(canvasElement).getAttribute('hx-get')).toContain('?source=values')
     },
 }
 
 export const PlainLink = {
-    name: 'Neither post nor guide: a plain link',
+    name: 'Any other page: a plain link',
     args: { href: '/alliance/content/', post: undefined, title: '', slots: { default: 'All our content' } },
     play: async ({ canvasElement }: Ctx) => {
         const a = link(canvasElement)
