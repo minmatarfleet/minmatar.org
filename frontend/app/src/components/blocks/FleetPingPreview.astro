@@ -18,6 +18,9 @@ const { preview } = Astro.props
 import DiscordEmbedPreview from '@components/blocks/DiscordEmbedPreview.astro'
 ---
 
+{preview.warning &&
+    <p class="[ fleet-ping-preview__warning ]" role="status">{t(`fleets.host.preview_${preview.warning}`)}</p>
+}
 <DiscordEmbedPreview
     kind="fleet_ping"
     channel_name={preview.channel_name}
@@ -29,6 +32,11 @@ import DiscordEmbedPreview from '@components/blocks/DiscordEmbedPreview.astro'
 }
 
 <style lang="scss">
+    .fleet-ping-preview__warning {
+        margin-block-end: var(--space-2xs);
+        color: var(--fleet-red);
+    }
+
     .fleet-ping-preview__error {
         display: block;
         margin-top: var(--space-2xs);

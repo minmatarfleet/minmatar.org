@@ -565,6 +565,12 @@ def get_user_feature_codes(user) -> list[str]:
 # FRONTEND_GATE_SOURCE is legacy.
 _PROFILE_BRIDGE_CODES = frozenset({"freight.manage"})
 
+# resource_match features whose site pages gate on the feature alone, which
+# without a resource is the affiliation check. The Fleets pages open for a
+# wired affiliation (Associate, ...) while FRONTEND_GATE_SOURCE is legacy;
+# the fleet API still checks each fleet's audience.
+_PROFILE_RESOURCE_MATCH_CODES = frozenset({"fleets.view"})
+
 
 def _status_blocks(feature: _FeatureSnapshot, status: str | None) -> bool:
     return bool(status and status in feature.deny_community_statuses)
@@ -600,8 +606,9 @@ def legacy_permissions_for_profile(user) -> set[str]:
     ``campaigns.view`` do not assign those permissions on auth groups, so a
     wired member 403s on the page even though ``can_use_feature`` would
     allow the API. Return the feature's ``legacy_permission`` when
-    affiliation scope passes, and for ``_PROFILE_BRIDGE_CODES`` when the
-    user leads a wired tribe group.
+    affiliation scope passes (also for ``_PROFILE_RESOURCE_MATCH_CODES``,
+    whose page check is the affiliation), and for ``_PROFILE_BRIDGE_CODES``
+    when the user leads a wired tribe group.
     """
     if (
         user is None
@@ -617,8 +624,12 @@ def legacy_permissions_for_profile(user) -> set[str]:
     affiliation = user_affiliation(user)
     if affiliation is not None:
         for feature in features.values():
+            page_level = feature.scope == FeatureScope.AFFILIATION or (
+                feature.scope == FeatureScope.RESOURCE_MATCH
+                and feature.code in _PROFILE_RESOURCE_MATCH_CODES
+            )
             if (
-                feature.scope != FeatureScope.AFFILIATION
+                not page_level
                 or not feature.legacy_permission
                 or _status_blocks(feature, status)
             ):

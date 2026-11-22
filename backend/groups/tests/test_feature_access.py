@@ -6,6 +6,7 @@ from django.db.models import signals
 
 from app.test import TestCase
 from fleets.models import EveFleet, EveFleetAudience
+from groups.features.registry import FEATURE_DEFINITIONS
 from groups.helpers.feature_access import (
     can_use_feature,
     clear_feature_cache,
@@ -102,6 +103,39 @@ class FeatureAccessTestCase(TestCase):
         self.assertNotIn(
             "campaigns.view_campaign", get_user_permissions(user.id)
         )
+
+    def test_profile_lists_fleets_view_for_wired_affiliation(self):
+        # fleets.view is resource_match: without a fleet it is the
+        # affiliation check, and the Fleets pages gate on it.
+        user = User.objects.create_user(username="fleet_associate")
+        affiliation = self._alliance_affiliation()
+        UserAffiliation.objects.create(user=user, affiliation=affiliation)
+        feature = PilotFeature.objects.get(code="fleets.view")
+        feature.affiliations.set([affiliation])
+        clear_feature_cache()
+
+        self.assertFalse(user.has_perm("fleets.view_evefleet"))
+        self.assertIn("fleets.view_evefleet", get_user_permissions(user.id))
+
+    def test_profile_hides_fleets_view_from_unwired_affiliation(self):
+        user = User.objects.create_user(username="fleet_guest")
+        affiliation = self._alliance_affiliation()
+        UserAffiliation.objects.create(user=user, affiliation=affiliation)
+        PilotFeature.objects.get(code="fleets.view").affiliations.clear()
+        clear_feature_cache()
+
+        self.assertNotIn("fleets.view_evefleet", get_user_permissions(user.id))
+
+    def test_profile_does_not_bridge_other_resource_match_features(self):
+        user = User.objects.create_user(username="srp_member")
+        affiliation = self._alliance_affiliation()
+        UserAffiliation.objects.create(user=user, affiliation=affiliation)
+        feature = PilotFeature.objects.get(code="srp.submit")
+        feature.affiliations.set([affiliation])
+        clear_feature_cache()
+
+        legacy = FEATURE_DEFINITIONS["srp.submit"].legacy_permission
+        self.assertNotIn(legacy, get_user_permissions(user.id))
 
     def _freighters(self, *, chief=None, tribe_chief=None):
         tribe = Tribe.objects.create(

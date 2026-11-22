@@ -394,7 +394,22 @@ class GroupFleetStartPingTests(GroupFleetTestBase):
         self.assertEqual(response.status_code, 200, response.content)
         body = response.json()
         self.assertEqual(body["channel_name"], "dreads")
+        self.assertTrue(body["has_channel"])
         self.assertEqual(body["payload"]["content"], f"<@&{ROLE_ID}>")
+        # Discord unreachable: the name is unknown, but the ping still goes
+        # out, so the preview still says the group has a channel.
+        with patch(
+            "tribes.helpers.discord_channels.guild_channels", return_value=[]
+        ):
+            response = self.call(
+                "post",
+                "/ping-preview",
+                self.chief,
+                {"type": "non_strategic", "host_group_id": self.group.id},
+            )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertIsNone(response.json()["channel_name"])
+        self.assertTrue(response.json()["has_channel"])
         # Outsiders can't preview a group's ping.
         response = self.call(
             "post",

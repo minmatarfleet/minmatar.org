@@ -22454,6 +22454,11 @@
             ],
             "title": "Channel Name"
           },
+          "has_channel": {
+            "default": false,
+            "title": "Has Channel",
+            "type": "boolean"
+          },
           "payload": {
             "additionalProperties": true,
             "title": "Payload",

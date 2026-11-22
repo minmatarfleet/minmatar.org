@@ -124,15 +124,16 @@ class GateParityAuditTestCase(TestCase):
     def _rows(self, users):
         return audit(self.gates, users)
 
-    def test_reports_gains_from_wider_wiring(self):
+    def test_profile_bridge_leaves_no_gain_for_wired_members(self):
         member = User.objects.create_user(username="wired_member")
         UserAffiliation.objects.create(user=member, affiliation=self.alliance)
-        # fleets.view is resource_match, so the profile bridge doesn't add
-        # its permission: the frontend hides fleets today, features show it.
         report = self._rows([member])
-        self.assertEqual(report["fleets.view"]["gains"], [member.id])
+        # fleets.view is resource_match, but its pages gate on the
+        # affiliation, so the profile bridge lists its permission and the
+        # legacy gate already opens the Fleets pages.
+        self.assertEqual(report["fleets.view"]["gains"], [])
         self.assertEqual(report["fleets.view"]["losses"], [])
-        # campaigns.view is affiliation scope: the bridge already lists it.
+        # campaigns.view is affiliation scope: the bridge lists it too.
         self.assertEqual(report["campaigns.view"]["gains"], [])
 
     def test_permission_holders_lose_nothing(self):

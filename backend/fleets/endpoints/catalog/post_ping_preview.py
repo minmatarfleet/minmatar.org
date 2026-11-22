@@ -78,5 +78,6 @@ def post_ping_preview(request, payload: FleetPingPreviewRequest):
         channel_name = lookup(ping.channel_id)
     return FleetPingPreviewResponse(
         channel_name=channel_name if ping.channel_id else None,
+        has_channel=ping.channel_id is not None,
         payload=ping.payload,
     )

@@ -201,6 +201,10 @@ class FleetPingPreviewResponse(BaseModel):
     """The start ping exactly as the bot would post it."""
 
     channel_name: Optional[str] = None
+    # True when the ping has a channel to post in. A group channel's name
+    # can be unknown (Discord unreachable, channel not cached yet) while
+    # the ping still goes out, so warn on this, not on channel_name.
+    has_channel: bool = False
     payload: Dict[str, Any]
 
 
