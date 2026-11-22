@@ -16,7 +16,6 @@ from __future__ import annotations
 import logging
 from contextlib import contextmanager
 
-from django.contrib.auth.models import Group
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
 from django.db.models import Q
@@ -93,6 +92,11 @@ def _models(apps):
         return apps.get_model(app_label, name)
 
     return {
+        # The auth Group from the same registry as the users. During
+        # ``migrate`` the users are historical models, and their
+        # ``groups.add`` refuses django.contrib.auth.models.Group
+        # (MINMATAR-REST-API-PG/PH).
+        "AuthGroup": get("auth", "Group"),
         "Tribe": get("tribes", "Tribe"),
         "TribeGroup": get("tribes", "TribeGroup"),
         "Membership": get("tribes", "TribeGroupMembership"),
@@ -721,7 +725,7 @@ def _backfill_role_holders(models, groups, primary, ranks, log):
         (_group_with_codes(groups, CAPITAL_CODES), CAPITAL_RANK),
         (_group_with_codes(groups, SUBCAP_CODES), SUBCAP_RANK),
     ):
-        auth = _specialty_auth(group, _auth_name(rank_code))
+        auth = _specialty_auth(models, group, _auth_name(rank_code))
         if auth is None:
             continue
         for user in auth.user_set.all().order_by("id"):
@@ -747,12 +751,13 @@ def _auth_name(rank_code):
     return SUBCAP_AUTH
 
 
-def _specialty_auth(group, expected_name):
+def _specialty_auth(models, group, expected_name):
+    auth_group = models["AuthGroup"]
     if group is not None and group.group_id:
-        auth = Group.objects.filter(pk=group.group_id).first()
+        auth = auth_group.objects.filter(pk=group.group_id).first()
         if auth is not None and auth.name != PRODUCTION_AUTH:
             return auth
-    return Group.objects.filter(name=expected_name).first()
+    return auth_group.objects.filter(name=expected_name).first()
 
 
 def _create_active_membership(models, user, primary, rank, log):
@@ -807,12 +812,12 @@ def _attach_primary_character(models, membership, user):
 
 def _link_auth(models, groups, primary, ranks, log):
     capital_auth = _specialty_auth(
-        _group_with_codes(groups, CAPITAL_CODES), CAPITAL_AUTH
+        models, _group_with_codes(groups, CAPITAL_CODES), CAPITAL_AUTH
     )
     subcap_auth = _specialty_auth(
-        _group_with_codes(groups, SUBCAP_CODES), SUBCAP_AUTH
+        models, _group_with_codes(groups, SUBCAP_CODES), SUBCAP_AUTH
     )
-    production_auth = _ensure_production_auth(log)
+    production_auth = _ensure_production_auth(models, log)
     if production_auth is not None:
         _release_auth(models, capital_auth, production_auth)
         _release_auth(models, subcap_auth, production_auth)
@@ -839,13 +844,14 @@ def _link_auth(models, groups, primary, ranks, log):
     }
 
 
-def _ensure_production_auth(log):
-    existing = Group.objects.filter(name=PRODUCTION_AUTH).first()
+def _ensure_production_auth(models, log):
+    auth_group = models["AuthGroup"]
+    existing = auth_group.objects.filter(name=PRODUCTION_AUTH).first()
     if existing is not None:
         return existing
     try:
         with transaction.atomic():
-            return Group.objects.create(name=PRODUCTION_AUTH)
+            return auth_group.objects.create(name=PRODUCTION_AUTH)
     except Exception:  # pylint: disable=broad-exception-caught
         logger.exception(
             "Production merge: could not create %s", PRODUCTION_AUTH
@@ -996,7 +1002,7 @@ def _sync_auth(apps, state, log):
     if primary is None:
         return
     production_auth = (
-        Group.objects.filter(pk=primary.group_id).first()
+        models["AuthGroup"].objects.filter(pk=primary.group_id).first()
         if primary.group_id
         else None
     )
@@ -1004,8 +1010,8 @@ def _sync_auth(apps, state, log):
         rank.code: rank
         for rank in models["Rank"].objects.filter(tribe_group_id=primary.pk)
     }
-    capital_auth = _rank_auth(ranks.get(CAPITAL_RANK))
-    subcap_auth = _rank_auth(ranks.get(SUBCAP_RANK))
+    capital_auth = _rank_auth(models, ranks.get(CAPITAL_RANK))
+    subcap_auth = _rank_auth(models, ranks.get(SUBCAP_RANK))
     for membership in (
         models["Membership"]
         .objects.filter(tribe_group_id=primary.pk)
@@ -1020,10 +1026,10 @@ def _sync_auth(apps, state, log):
         )
 
 
-def _rank_auth(rank):
+def _rank_auth(models, rank):
     if rank is None or not rank.group_id:
         return None
-    return Group.objects.filter(pk=rank.group_id).first()
+    return models["AuthGroup"].objects.filter(pk=rank.group_id).first()
 
 
 def _sync_member(membership, production_auth, capital_auth, subcap_auth, log):

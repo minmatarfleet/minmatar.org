@@ -96,7 +96,7 @@ Sentry is set up once in `backend/app/monitoring.py` for the web app, beat and w
 | Queue gauges | `celery.queue.depth`, `celery.queue.oldest_wait` (per `queue`), `celery.queue.reserved` (messages held by workers), every minute | Metrics |
 | Skipped copies | `celery.task.skipped` counter per `task` and `reason` (`already queued`, `redelivered`, `cooldown`, `still running`) | Metrics |
 | Task latency and throughput | Celery spans carry the queue name and the time each message waited | Insights > Queues |
-| Scheduled job health | Cron monitors for the schedules in `CRON_MONITORED_SCHEDULES`. Queue health is one: a missed check-in means beat or the fast-lane workers are down. | Crons |
+| Scheduled job health | Cron monitors for the schedules in `CRON_MONITORED_SCHEDULES`, plus the character-sync schedule that does the work in this `CHARACTER_SYNC_MODE` (`CHARACTER_SYNC_MONITORS`). Queue health is one: a missed check-in means beat or the fast-lane workers are down. | Crons |
 | Traces and profiles | Sampled (below) | Performance, Profiles |
 | Logs | WARNING and above | Logs |
 

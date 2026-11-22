@@ -35,6 +35,7 @@ const zoomSrc = `/_image?href=${encodeURIComponent(src).replaceAll('amp%3B', '')
 <figure
     x-data={`{
         init_zoom() {
+            if (!window.mediumZoom) return
             mediumZoom($el.children[0], {
                 background: 'var(--solid-transparency-background)',
                 scrollOffset: 0,

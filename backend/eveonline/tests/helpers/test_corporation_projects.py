@@ -171,6 +171,17 @@ class CorporationProjectSyncTests(TestCase):
         self._sync(moved)
         self.assertEqual(1, moved.detail_calls)
 
+    def test_two_digit_fraction_in_last_modified(self):
+        """ESI trims trailing zeros (MINMATAR-CELERY-P0); the row still saves."""
+        modified = "2026-10-01T16:01:03.54Z"
+        esi = FakeEsi(
+            [listing_row(modified=modified)],
+            detail={**DETAIL, "last_modified": modified},
+        )
+        self.assertEqual("ok", self._sync(esi))
+        project = EveCorporationProject.objects.get()
+        self.assertEqual(540000, project.last_modified.microsecond)
+
     def test_failed_contributors_keep_old_rows_and_retry(self):
         self._sync(FakeEsi([listing_row()]))
         later = listing_row(modified="2026-10-02T10:00:00Z")

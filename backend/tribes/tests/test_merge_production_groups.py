@@ -8,8 +8,10 @@ from unittest.mock import patch
 from django.apps import apps
 from django.contrib.auth.models import Group, User
 from django.core.management import call_command
+from django.db import connection
+from django.db.migrations.loader import MigrationLoader
 from django.db.models import signals as django_signals
-from django.test import TestCase
+from django.test import TestCase, tag
 from django.utils import timezone
 
 from discord.models import DiscordRole
@@ -572,6 +574,70 @@ class MergeProductionGroupsTestCase(TestCase):
         merge_production(apps, None)
         self.capital.refresh_from_db()
         self.assertEqual(self.capital.code, "supply.capital-production")
+
+    def _merged_with_failed_auth_adds(self):
+        """The 2026-11-21 production state: roster merged, auth adds failed."""
+        capital = self._user("cap-pilot")
+        subcap = self._user("sub-pilot")
+        self._membership(capital, self.capital, ACTIVE)
+        self._membership(subcap, self.subcap, ACTIVE)
+        merge_production_groups(apps)
+        production = Group.objects.get(name=PRODUCTION_AUTH)
+        for user in (capital, subcap):
+            user.groups.clear()
+        memberships = list(
+            TribeGroupMembership.objects.order_by("pk").values_list(
+                "pk", "user_id", "tribe_group_id", "rank_id", "status"
+            )
+        )
+        history = TribeGroupMembershipHistory.objects.count()
+        return capital, subcap, production, memberships, history
+
+    def _assert_auth_reattached(self, capital, subcap, production, before):
+        memberships, history = before
+        self.assertEqual(
+            {production.pk, self.capital_auth.pk},
+            set(capital.groups.values_list("pk", flat=True)),
+        )
+        self.assertEqual(
+            {production.pk, self.subcap_auth.pk},
+            set(subcap.groups.values_list("pk", flat=True)),
+        )
+        # Nothing on the roster is merged a second time.
+        self.assertEqual(
+            memberships,
+            list(
+                TribeGroupMembership.objects.order_by("pk").values_list(
+                    "pk", "user_id", "tribe_group_id", "rank_id", "status"
+                )
+            ),
+        )
+        self.assertEqual(history, TribeGroupMembershipHistory.objects.count())
+
+    def test_rerun_attaches_auth_groups_that_failed(self):
+        capital, subcap, production, memberships, history = (
+            self._merged_with_failed_auth_adds()
+        )
+        call_command("merge_production_groups", stdout=StringIO())
+        self._assert_auth_reattached(
+            capital, subcap, production, (memberships, history)
+        )
+
+    @tag("migration")
+    def test_rerun_with_migration_models_attaches_auth_groups(self):
+        """``migrate`` passes historical models (MINMATAR-REST-API-PG/PH)."""
+        capital, subcap, production, memberships, history = (
+            self._merged_with_failed_auth_adds()
+        )
+        historical = MigrationLoader(connection).project_state().apps
+        with self.assertNoLogs(
+            "tribes.helpers.merge_production_groups", level="ERROR"
+        ):
+            lines = merge_production_groups(historical)
+        self.assertIn(f"Auth add: cap-pilot -> {PRODUCTION_AUTH}", lines)
+        self._assert_auth_reattached(
+            capital, subcap, production, (memberships, history)
+        )
 
     def test_command_merges_and_can_run_again(self):
         stdout = StringIO()

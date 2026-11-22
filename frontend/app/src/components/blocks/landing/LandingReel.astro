@@ -43,10 +43,20 @@ const pad = (n: number) => String(n).padStart(2, '0')
             timer: null,
             init() {
                 if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-                this.timer = setInterval(() => { this.index = (this.index + 1) % this.count }, 6000)
+                this.timer = setInterval(() => {
+                    if (!this.$el.isConnected) return this.stop()
+                    this.index = (this.index + 1) % this.count
+                }, 6000)
+            },
+            destroy() {
+                this.stop()
+            },
+            stop() {
+                clearInterval(this.timer)
+                this.timer = null
             },
             go(i) {
-                clearInterval(this.timer)
+                this.stop()
                 this.index = (i + this.count) % this.count
             },
         }`}

@@ -110,3 +110,50 @@ class ReferralRouterTestCase(TestCase):
             },
             {link["target"] for link in response.json()},
         )
+
+
+@override_settings(
+    SHARED_SECRET=SECRET, WEB_LINK_URL="https://my.minmatar.org"
+)
+class ReferralUnknownUserTestCase(TestCase):
+    """A code for a deleted or unknown user still redirects (REST-API-JS)."""
+
+    def test_redirect_for_deleted_user_is_not_recorded(self):
+        missing = self.user.id + 1000
+        response = Client().get(
+            BASE_URL, {"code": f"Q{missing * 83 + 7}", "page": "Corps"}
+        )
+        self.assertEqual(302, response.status_code)
+        self.assertEqual(
+            "https://my.minmatar.org/alliance/corporations/list/",
+            response["Location"],
+        )
+        self.assertFalse(ReferralClick.objects.exists())
+
+    def test_malformed_codes_still_redirect(self):
+        for code in ("Q91", "Qabc", "X7", "Q", "Q-76"):
+            response = Client().get(BASE_URL, {"code": code, "page": "Corps"})
+            self.assertEqual(302, response.status_code, code)
+        self.assertFalse(ReferralClick.objects.exists())
+
+    def test_known_user_is_recorded_with_an_integer_id(self):
+        response = Client().get(
+            BASE_URL, {"code": f"Q{self.user.id * 83 + 7}", "page": "Corps"}
+        )
+        self.assertEqual(302, response.status_code)
+        click = ReferralClick.objects.get()
+        self.assertEqual(self.user.id, click.user_id)
+
+    def test_frontend_record_for_unknown_user_is_skipped(self):
+        response = Client().post(
+            BASE_URL,
+            {
+                "page": "Corps",
+                "user_id": self.user.id + 1000,
+                "client_ip": "192.168.0.1",
+            },
+            content_type="application/json",
+            headers={"X-Shared-Secret": SECRET},
+        )
+        self.assertEqual(201, response.status_code)
+        self.assertFalse(ReferralClick.objects.exists())

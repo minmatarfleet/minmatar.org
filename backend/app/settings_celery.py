@@ -88,8 +88,9 @@ CELERYBEAT_CHARACTERS = [
         },
     ),
     (
-        # Fanout mode only (CHARACTER_SYNC_MODE); returns early when the
-        # scheduler below runs the sync.
+        # Fanout and shadow modes (CHARACTER_SYNC_MODE); returns early only
+        # in scheduled mode. Its cron monitor follows the mode
+        # (app.monitoring.monitored_schedules).
         "[Characters] Update Characters (assets, skills, killmails)",
         {
             "task": "eveonline.tasks.characters.update_alliance_characters",

@@ -14,7 +14,7 @@ from django.conf import settings
 from django.test import SimpleTestCase
 
 from app.celery import app
-from app.monitoring import CRON_MONITORED_SCHEDULES
+from app.monitoring import CHARACTER_SYNC_MONITORS, CRON_MONITORED_SCHEDULES
 from app.queues import (
     FAST_LANE,
     FAST_TASKS,
@@ -165,9 +165,10 @@ class QueueWorkersTestCase(SimpleTestCase):
 
 class QueueMonitoringTestCase(SimpleTestCase):
     def test_cron_monitors_name_real_schedules(self):
-        missing = sorted(
-            set(CRON_MONITORED_SCHEDULES) - set(settings.CELERYBEAT_SCHEDULE)
+        monitored = set(CRON_MONITORED_SCHEDULES).union(
+            *CHARACTER_SYNC_MONITORS.values()
         )
+        missing = sorted(monitored - set(settings.CELERYBEAT_SCHEDULE))
         self.assertEqual(missing, [])
 
     def test_queue_limits_are_sane(self):
