@@ -13,6 +13,7 @@ export default {
                     'A big-number card: an uppercase label, the value in the heading font, and an optional hint line. Use it for tribe and fleet headline numbers; for a row of them lay the cards out with Grid.',
                     '`value` and `hint` also come as named slots for markup such as a tooltip span (see NumberNameTooltip). `coming_soon` swaps the value for a dashed placeholder, for metrics that are announced but not wired up yet; `coming_soon_label` changes its text.',
                     '`variant="compact"` is a smaller card for dense rows of stats. `variant="bar"` adds a thin progress bar under the value, filled to `bar_value` (0 to 1). `tone` colours the value and the bar.',
+                    '`variant="glass"` is the translucent campaign card: an `icon` slot beside the label and value, and the value may also be the default slot; tones `info`, `success`, `danger`, `minmatar`, `amarr` and `angel` alias the site colours. `variant="inline"` renders only the figure (value slot) with an optional `icon` slot, for a line of text such as the SRP approved/rejected totals. `variant="cell"` is one value-over-label cell of a divided stat bar (see CampaignStatBar); `title` is its tooltip.',
                 ].join('\n\n'),
             },
         },
@@ -23,9 +24,9 @@ export default {
         hint: { control: 'text', description: 'Small line under the value. Use the `hint` slot for markup.' },
         coming_soon: { control: 'boolean', description: 'Dashed card with a "coming soon" label instead of the value.' },
         coming_soon_label: { control: 'text', description: 'Text of the placeholder; the translated "coming soon" when unset.' },
-        variant: radio_control(['default', 'compact', 'bar'] as const, '`compact`: smaller card. `bar`: progress bar under the value.'),
+        variant: radio_control(['default', 'compact', 'bar', 'glass', 'inline', 'cell'] as const, '`compact`: smaller card. `bar`: progress bar under the value. `glass`: translucent card with an icon slot. `inline`: the figure alone. `cell`: value over label, for a divided bar.'),
         bar_value: { control: { type: 'range', min: 0, max: 1, step: 0.05 }, description: 'Bar fill from 0 to 1 (`variant: bar`).' },
-        tone: radio_control(['fleet-red', 'green', 'alliance-blue', 'fleet-yellow'] as const, 'Colour of the value and the bar; highlight when unset.'),
+        tone: radio_control(['fleet-red', 'green', 'alliance-blue', 'fleet-yellow', 'info', 'success', 'danger', 'minmatar', 'amarr', 'angel'] as const, 'Colour of the value and the bar; highlight when unset.'),
     },
     args: {
         label: 'Fleets this month',
@@ -149,5 +150,47 @@ export const ComingSoonLabel = {
     args: { label: 'Tournament wins', coming_soon: true, coming_soon_label: 'After the next tournament', hint: undefined },
     play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
         await expect(within(canvasElement).getByText('After the next tournament')).toBeVisible()
+    },
+}
+
+export const Glass = {
+    args: { variant: 'glass', label: 'ISK destroyed', value: '128.4b', tone: 'success', hint: undefined, slots: { icon: '<span data-testid="icon" aria-hidden="true">*</span>' } },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const card = canvasElement.querySelector('.stat-card--glass') as HTMLElement
+        await expect(card).toHaveClass('card', 'border', 'light-transparency')
+        await expect(card.querySelector('b')?.getAttribute('style')).toContain('--stat-tone: var(--green)')
+        await expect(within(card).getByText('ISK destroyed')).toBeVisible()
+        await expect(within(card).getByText('128.4b')).toBeVisible()
+        await expect(within(card).getByTestId('icon')).toBeInTheDocument()
+    },
+}
+
+export const GlassFactionTone = {
+    name: 'Glass, faction tone',
+    args: { variant: 'glass', label: 'Amarr pilots', value: '212', tone: 'amarr', hint: undefined },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const card = canvasElement.querySelector('.stat-card--glass') as HTMLElement
+        await expect(card.querySelector('b')?.getAttribute('style')).toContain('--stat-tone: var(--fleet-yellow)')
+        await expect(within(card).getByText('212')).toBeVisible()
+    },
+}
+
+export const Inline = {
+    args: { variant: 'inline', label: undefined, value: '4,210,000,000 ISK', hint: undefined, slots: { icon: '<span class="text-green" data-tippy-content="Approved, last 90 days">▲</span>' } },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const inline = canvasElement.querySelector('.stat-card--inline') as HTMLElement
+        await expect(inline.querySelector('h3')?.textContent).toContain('4,210,000,000 ISK')
+        await expect(within(inline).getByText('▲')).toBeVisible()
+        await expect(inline.querySelector('.stat-card__label')).toBeNull()
+    },
+}
+
+export const Cell = {
+    args: { variant: 'cell', label: 'Ships destroyed', value: '1,284', title: '1,284 ships', hint: undefined },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const cell = canvasElement.querySelector('.stat-card--cell') as HTMLElement
+        await expect(cell).toHaveAttribute('title', '1,284 ships')
+        await expect(within(cell).getByText('1,284')).toBeVisible()
+        await expect(within(cell).getByText('Ships destroyed').tagName).toBe('SMALL')
     },
 }

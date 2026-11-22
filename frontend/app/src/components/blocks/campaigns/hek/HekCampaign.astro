@@ -22,7 +22,7 @@ import Grid from '@components/compositions/Grid.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
-import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
+import StatCard from '@components/blocks/StatCard.astro'
 import CharacterCard from '@components/blocks/CharacterCard.astro'
 import CharacterPicture from '@components/blocks/CharacterPicture.astro'
 import CountUpAnimation from '@components/blocks/CountUpAnimation.astro'
@@ -75,7 +75,7 @@ import { number_name } from '@helpers/numbers'
             column_gap="var(--space-3xs)"
             min_item_width="300px"
         >
-            <CampaignStat
+            <StatCard variant="glass"
                 label="ISK destroyed"
                 tone="success"
             >
@@ -84,9 +84,9 @@ import { number_name } from '@helpers/numbers'
                     target={ISK_DESTROYED}
                     data-tippy-content={number_name(ISK_DESTROYED, lang)}
                 />
-            </CampaignStat>
+            </StatCard>
             
-            <CampaignStat
+            <StatCard variant="glass"
                 label="ISK lost"
                 tone='danger'
             >
@@ -95,9 +95,9 @@ import { number_name } from '@helpers/numbers'
                     target={ISK_LOST}
                     data-tippy-content={number_name(ISK_LOST, lang)}
                 />
-            </CampaignStat>
+            </StatCard>
 
-            <CampaignStat
+            <StatCard variant="glass"
                 label="Surrender ISK"
             >
                 <CountUpAnimation
@@ -105,7 +105,7 @@ import { number_name } from '@helpers/numbers'
                     target={SURRENDER_ISK}
                     data-tippy-content={number_name(SURRENDER_ISK, lang)}
                 />
-            </CampaignStat>
+            </StatCard>
         </Grid>
     </Flexblock>
 </TextBox>

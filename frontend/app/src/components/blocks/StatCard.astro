@@ -1,5 +1,8 @@
 ---
 import { i18n } from '@helpers/i18n'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import TextGroup from '@components/blocks/TextGroup.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
 const { t } = i18n(Astro.url)
 
 /**
@@ -8,16 +11,21 @@ const { t } = i18n(Astro.url)
  * tooltip spans.
  */
 interface Props {
-    label: string
+    label?: string
     value?: string | number
     hint?: string
     coming_soon?: boolean
-    /** `compact` is a smaller card for dense rows of stats; `bar` adds a progress bar under the value (see `bar_value`). */
-    variant?: 'default' | 'compact' | 'bar'
+    /**
+     * `compact` is a smaller card for dense rows of stats; `bar` adds a progress bar under the value (see `bar_value`).
+     * `glass` is a translucent bordered card with an `icon` slot beside the label and value.
+     * `inline` is just the figure with an optional `icon` slot beside it, no card and no label (for a line of text).
+     * `cell` is a borderless cell of a divided stat bar: the value above a small label, `title` as a tooltip.
+     */
+    variant?: 'default' | 'compact' | 'bar' | 'glass' | 'inline' | 'cell'
     /** Fill of the bar for `variant="bar"`, from 0 to 1. */
     bar_value?: number
     /** Colours the value and the bar; the highlight colour when unset. */
-    tone?: 'fleet-red' | 'green' | 'alliance-blue' | 'fleet-yellow'
+    tone?: 'fleet-red' | 'green' | 'alliance-blue' | 'fleet-yellow' | 'info' | 'success' | 'danger' | 'minmatar' | 'amarr' | 'angel'
     /** Text of the "coming soon" placeholder; defaults to the translated `tribes.activity.coming_soon`. */
     coming_soon_label?: string
     /** Makes the whole card a link to where the number is worked on. */
@@ -41,24 +49,60 @@ const {
 delete attributes.class
 
 const bar_percent = Math.round(Math.min(1, Math.max(0, Number(bar_value) || 0)) * 100)
-const style = [tone ? `--stat-tone: var(--${tone})` : '', attributes.style ?? ''].filter(Boolean).join('; ')
+/* `info`/`success`/`danger` and the EVE faction tones are aliases of the site colour tokens. */
+const tone_colors: Record<string, string> = {
+    info: 'var(--alliance-blue)',
+    success: 'var(--green)',
+    danger: 'var(--fleet-red)',
+    minmatar: 'var(--fleet-red-blind, var(--fleet-red))',
+    amarr: 'var(--fleet-yellow)',
+    angel: 'color-mix(in srgb, var(--fleet-yellow) 55%, var(--alliance-blue) 45%)',
+}
+const style = [tone ? `--stat-tone: ${tone_colors[tone] ?? `var(--${tone})`}` : '', attributes.style ?? ''].filter(Boolean).join('; ')
 delete attributes.style
 
 const Element = href ? 'a' : 'article'
 const has_hint = Boolean(hint) || Astro.slots.has('hint')
 ---
 
+{variant === 'glass' ?
+    <Wrapper
+        class:list={['[ stat-card--glass card border light-transparency ]', Astro.props.class]}
+        padding_block='var(--space-s)'
+        padding_inline='var(--space-s)'
+        {...attributes}
+    >
+        <FlexInline gap="var(--space-s)" class="[ items-start ]">
+            <slot name="icon" />
+            <div class="[ grow min-w-0 ]">
+                <TextGroup title={label}>
+                    <b class="[ stat-card__glass-value ]" style={style || undefined}><slot name="value"><slot>{value}</slot></slot></b>
+                </TextGroup>
+            </div>
+        </FlexInline>
+    </Wrapper>
+: variant === 'inline' ?
+    <FlexInline gap="var(--space-3xs)" class:list={['[ stat-card--inline ]', Astro.props.class]} {...attributes}>
+        <slot name="icon" />
+        <h3><slot name="value"><slot>{value}</slot></slot></h3>
+    </FlexInline>
+: variant === 'cell' ?
+    <div class:list={['[ stat-card--cell campaign-stat ]', Astro.props.class]} {...attributes}>
+        <span class="[ stat-card__cell-value campaign-stat-value ]"><slot name="value"><slot>{value}</slot></slot></span>
+        <small class="[ stat-card__cell-label campaign-stat-label ]">{label}</small>
+    </div>
+:
 <Element
     href={href}
     class:list={['[ stat-card ]', variant !== 'default' && `stat-card--${variant}`, { 'stat-card--soon': coming_soon, 'stat-card--link': Boolean(href) }, Astro.props.class]}
     style={style || undefined}
     {...attributes}
 >
-    <p class="[ stat-card__label ]">{label}</p>
+    {label && <p class="[ stat-card__label ]">{label}</p>}
     {coming_soon ?
         <p class="[ stat-card__soon ]">{coming_soon_label ?? t('tribes.activity.coming_soon')}</p>
         :
-        <p class="[ stat-card__value ]"><slot name="value">{value}</slot></p>
+        <p class="[ stat-card__value ]"><slot name="value"><slot>{value}</slot></slot></p>
     }
     {variant === 'bar' && !coming_soon &&
         <div
@@ -73,6 +117,7 @@ const has_hint = Boolean(hint) || Astro.slots.has('hint')
     }
     {has_hint && <p class="[ stat-card__hint ]"><slot name="hint">{hint}</slot></p>}
 </Element>
+}
 
 <style lang="scss">
     .stat-card {
@@ -104,6 +149,35 @@ const has_hint = Boolean(hint) || Astro.slots.has('hint')
         .stat-card__label {
             color: var(--faded);
         }
+    }
+
+    .stat-card__glass-value {
+        font-size: var(--step-0);
+        color: var(--stat-tone, inherit);
+    }
+
+    .stat-card--cell {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-2xs) var(--space-xs);
+        min-width: 0;
+    }
+
+    .stat-card__cell-value {
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        color: var(--highlight);
+        line-height: 1;
+        overflow-wrap: anywhere;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .stat-card__cell-label {
+        color: var(--foreground);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
     }
 
     .stat-card__label {
