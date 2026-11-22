@@ -55,7 +55,7 @@ const eft_url = `${SHIPS_PARTIAL_URL}?${query_string({ ...base_params, action: '
 const remove_url = (fleet_fitting_id:number) => `${SHIPS_PARTIAL_URL}?${query_string({ ...base_params, remove_fleet_fitting_id: fleet_fitting_id })}`
 const role_label = (role:string) => t(t_key('fitting_role_', role))
 
-const CLOSE_MODAL = "if (event.detail.successful) document.querySelector('.modal-backdrop')?.click()"
+const CLOSE_MODAL = "if (event.detail.successful) close_modal()"
 
 // Custom (EFT) fits are saved in-game under the FC and need the fittings
 // scope; catalog picks only link to their web page and stay available.

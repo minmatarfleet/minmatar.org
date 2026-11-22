@@ -274,7 +274,7 @@ const SAVE_URL = `${translatePath('/partials/fleet_ship_volunteers_component/')}
     ...(can_manage && { can_manage: true }),
 })}`
 
-const CLOSE_MODAL = "if (event.detail.successful) document.querySelector('.modal-backdrop')?.click()"
+const CLOSE_MODAL = "if (event.detail.successful) close_modal()"
 // The save response sends fleet-ships-picked only when it stored at least one ship.
 const SIGNED_UP = "window.capture_event && window.capture_event('fleet_signed_up', { fleet_id: event.detail.fleet_id, ships: event.detail.ships })"
 

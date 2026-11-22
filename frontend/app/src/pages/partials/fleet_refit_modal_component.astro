@@ -65,7 +65,7 @@ const post_url = (extra:Record<string, string | number | boolean> = {}) => `${RO
     ...extra,
 })}`
 
-const CLOSE_MODAL = "if (event.detail.successful) document.querySelector('.modal-backdrop')?.click()"
+const CLOSE_MODAL = "if (event.detail.successful) close_modal()"
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import Wrapper from '@components/compositions/Wrapper.astro'

@@ -38,7 +38,7 @@ export const RUST_LIBRARY = {
         'blocks/HtmxPager', 'blocks/FilterChip', 'blocks/ChipGroup', 'blocks/Breadcrumb', 'blocks/ExternalLink',
     ],
     'Components/Overlays': [
-        'blocks/Dialog', 'blocks/DialogButton', 'blocks/AlertDialog', 'blocks/ConfirmDialog', 'blocks/Modal', 'blocks/Tippy',
+        'blocks/Dialog', 'blocks/DialogBase', 'blocks/DialogButton', 'blocks/AlertDialog', 'blocks/ConfirmDialog', 'blocks/Modal', 'blocks/Tippy',
     ],
     'EVE': [
         'blocks/Picture', 'blocks/CharacterPicture', 'blocks/CorporationPicture', 'blocks/ItemPicture',

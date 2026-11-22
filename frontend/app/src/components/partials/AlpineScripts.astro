@@ -1,8 +1,9 @@
 ---
-import { is_prod_mode } from '@helpers/env'
+import { dialog_close_member, modal_x_data } from '@helpers/dialog_x_data'
 
 export const AlertDialogXData = `
     alert_dialog_open: false,
+    alert_dialog_shown: 0,
     alert_dialog_title: '',
     alert_dialog_content: '',
     alert_dialog_return_on_accept: true,
@@ -43,18 +44,15 @@ export const AlertDialogXData = `
         this.alert_dialog_title = properties.title
         this.alert_dialog_return_on_accept = properties.return_on_accept
         this.alert_dialog_accept_href = properties.accept_href || ''
-        this.alert_dialog_accept_label = properties.accept_label || (properties.accept_href ? 'Open' : '')
+        this.alert_dialog_accept_label = properties.accept_label || ''
         this.alert_dialog_cancel_label = properties.cancel_label || ''
         this.alert_dialog_show_cancel = !!(properties.show_cancel || properties.accept_href)
         this.alert_dialog_partial = properties.partial
         this.alert_dialog_hx = properties.hx
 
         this.alert_dialog_open = true
+        this.alert_dialog_shown++
 
-        setTimeout(function () {
-            htmx.process(document.querySelector('.alert-dialog'))
-        })
-        
         return new Promise((resolve) => {
             this.alert_dialog_close().then((result) => {
                 const accepted = result.action == 'accept' ? this.alert_dialog_return_on_accept : false
@@ -82,24 +80,11 @@ export const AlertDialogXData = `
             })
         })
     },
-    alert_dialog_close() {
-        const body = document.querySelector("body");
-
-        return new Promise(function (resolve, reject) {
-            var listener = event => {
-                if (event.target.hasAttribute('alert-dialog-action')) {
-                    body.removeEventListener('click', listener);
-                    resolve({
-                        action: event.target.getAttribute('alert-dialog-action')
-                    });
-                }
-            };
-            body.addEventListener('click', listener);
-        });
-    },`
+    ${dialog_close_member('alert_dialog')}`
 
 export const ConfirmDialogXData = `
     confirm_dialog_open: false,
+    confirm_dialog_shown: 0,
     confirm_dialog_title: '',
     confirm_dialog_content: '',
     confirm_dialog_accept_disabled: false,
@@ -140,10 +125,7 @@ export const ConfirmDialogXData = `
         this.confirm_dialog_hx = properties.hx
 
         this.confirm_dialog_open = true
-
-        setTimeout(function () {
-            htmx.process(document.querySelector('.confirm-dialog'))
-        })
+        this.confirm_dialog_shown++
 
         return new Promise((resolve) => {
             this.confirm_dialog_close().then((result) => {
@@ -152,158 +134,16 @@ export const ConfirmDialogXData = `
             })
         })
     },
-    confirm_dialog_close() {
-        const body = document.querySelector("body");
-
-        return new Promise(function (resolve, reject) {
-            var listener = event => {
-                if (event.target.hasAttribute('confirm-dialog-action')) {
-                    body.removeEventListener('click', listener);
-                    resolve({
-                        action: event.target.getAttribute('confirm-dialog-action')
-                    });
-                }
-            };
-            body.addEventListener('click', listener);
-        });
-    },
+    ${dialog_close_member('confirm_dialog')}
     confirm_dialog_set_accept_disable(val) {
         this.confirm_dialog_accept_disabled // dont remove this line
         this.confirm_dialog_accept_disabled = val
     },`
 
-export const ModalXData = `
-    modal_open: false,
-    modal_content: '',
-    modal_partial: '',
-    modal_partial_params: '',
-    async show_modal(args) {
-        const defaults =  {
-            content: '',
-            partial: '',
-            return_on_accept: true,
-        }
+export const ModalXData = modal_x_data('modal')
 
-        const properties = {...defaults, ...args}
+export const PersistentModalXData = modal_x_data('persistent_modal')
 
-        if (this.modal_partial != properties.partial) {
-            this.modal_content = ''
-            ${!is_prod_mode() ? `console.log('Modal cache cleared!')` : ''}
-        }
-
-        if (properties.partial_params && (JSON.stringify(properties.partial_params) != JSON.stringify(this.modal_partial_params))) {
-            this.modal_content = ''
-            ${!is_prod_mode() ? `console.log('Modal cache cleared!')` : ''}
-        }
-
-        if (properties.partial) {
-            this.modal_content = '<div class="[ rifter-modal ]">'+this.rifter_animation+'</div>'
-        } else
-            this.modal_content = properties.content
-
-        this.modal_return_on_accept = properties.return_on_accept
-        this.modal_partial = properties.partial
-
-        if (properties.partial_params)
-            this.modal_partial_params = properties.partial_params
-        else
-            this.modal_partial_params = ''
-
-        this.modal_open = true
-
-        setTimeout(function () {
-            htmx.process(document.querySelector('.modal'))
-        })
-
-        return new Promise((resolve) => {
-            this.modal_close().then((result) => {
-                this.modal_open = false
-                resolve(result.action == 'accept' ? this.modal_return_on_accept : false)
-            })
-        })
-    },
-    modal_close() {
-        const body = document.querySelector("body");
-
-        return new Promise(function (resolve, reject) {
-            var listener = event => {
-                if (event.target.hasAttribute('modal-action')) {
-                    body.removeEventListener('click', listener);
-                    resolve({
-                        action: event.target.getAttribute('modal-action')
-                    });
-                }
-            };
-            body.addEventListener('click', listener);
-        });
-    },`
-
-export const PersistentModalXData = `
-    persistent_modal_open: false,
-    persistent_modal_content: '',
-    persistent_modal_partial: '',
-    persistent_modal_partial_params: '',
-    async show_persistent_modal(args) {
-        const defaults =  {
-            content: '',
-            partial: '',
-            return_on_accept: true,
-        }
-
-        const properties = {...defaults, ...args}
-
-        if (this.persistent_modal_partial != properties.partial) {
-            this.persistent_modal_content = ''
-            ${!is_prod_mode() ? `console.log('Modal cache cleared!')` : ''}
-        }
-
-        if (properties.partial_params && (JSON.stringify(properties.partial_params) != JSON.stringify(this.persistent_modal_partial_params))) {
-            this.persistent_modal_content = ''
-            ${!is_prod_mode() ? `console.log('Modal cache cleared!')` : ''}
-        }
-
-        if (properties.partial) {
-            this.persistent_modal_content = '<div class="[ rifter-modal ]">'+this.rifter_animation+'</div>'
-        } else
-            this.persistent_modal_content = properties.content
-
-        this.persistent_modal_return_on_accept = properties.return_on_accept
-        this.persistent_modal_partial = properties.partial
-
-        if (properties.partial_params)
-            this.persistent_modal_partial_params = properties.partial_params
-        else
-            properties.partial_params = null
-
-        this.persistent_modal_open = true
-
-        setTimeout(function () {
-            htmx.process(document.querySelector('.persistent-modal'))
-        })
-
-        return new Promise((resolve) => {
-            this.persistent_modal_close().then((result) => {
-                this.persistent_modal_open = false
-                resolve(result.action == 'accept' ? this.persistent_modal_return_on_accept : false)
-            })
-        })
-    },
-    persistent_modal_close() {
-        const body = document.querySelector("body");
-
-        return new Promise(function (resolve, reject) {
-            var listener = event => {
-                if (event.target.hasAttribute('persistent-modal-action')) {
-                    body.removeEventListener('click', listener);
-                    resolve({
-                        action: event.target.getAttribute('persistent-modal-action')
-                    });
-                }
-            };
-            body.addEventListener('click', listener);
-        });
-    },`
-    
 export const PersonaFinderXData = `
     personas_finder_open: false,
     persona_finder_role: 'all',
