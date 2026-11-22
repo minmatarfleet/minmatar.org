@@ -84,14 +84,6 @@
         "src/pages/account.astro": 1
     },
     "raw_eve_image": {},
-    "raw_table": {
-        "src/components/blocks/ship-guide/GuideMatchupChart.astro": 1,
-        "src/components/blocks/structures/StructureRigChip.astro": 1,
-        "src/pages/list_data.astro": 1,
-        "src/pages/partials/corporation_members_table_component.astro": 1,
-        "src/pages/partials/corporation_requirements_settings_component.astro": 1,
-        "src/pages/partials/landing_week_component.astro": 1
-    },
     "overflow_x_scroll": {},
     "direct_tippy": {},
     "hand_rolled_pager": {},

@@ -304,8 +304,16 @@ const RULE_DEFINITIONS: ConventionRule[] = [
     },
     {
         id: 'raw_table',
-        kind: 'ratchet',
+        kind: 'absolute',
         why: 'Tables are <DataGrid> (sortable, responsive) or <RowList> (the styled base); a hand-written <table> or role="table" skips both. Use the library table.',
+        exempt: {
+            'src/components/blocks/ship-guide/GuideMatchupChart.astro': 'heatmap matrix: ship-by-ship cells coloured by value, rows and columns are the data',
+            'src/components/blocks/structures/StructureRigChip.astro': 'tooltip table: a small key/value table inside a Tippy popover, styled by global popover rules',
+            'src/pages/list_data.astro': 'in-flight landing work (owner: keep untouched)',
+            'src/pages/partials/landing_week_component.astro': 'in-flight landing work (owner: keep untouched)',
+            'src/pages/partials/corporation_members_table_component.astro': 'bulk-select header is swapped by Alpine and column headers sort by htmx (hx-get on th); DataGrid owns neither',
+            'src/pages/partials/corporation_requirements_settings_component.astro': 'inline editor with row groups that expand into forms; not a plain data grid',
+        },
         find: (file) => {
             if (!is_astro(file) || COMPONENT_FILES('blocks/DataGrid', 'blocks/DataTable', 'blocks/RowList', 'blocks/campaigns/etherium-reach/CampaignDataTable', 'blocks/manage/ManageTable', 'blocks/manage/RowSwapFrame').includes(file.path)) return []
             return hits_in(file, [astro_template(file.text)], RAW_TABLE)
