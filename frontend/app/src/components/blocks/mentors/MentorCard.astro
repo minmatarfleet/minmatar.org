@@ -205,7 +205,7 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
         display: flex;
         align-items: center;
         gap: var(--space-3xs);
-        color: var(--text-muted);
+        color: var(--faded);
         font-size: var(--step--1);
     }
 
@@ -224,7 +224,7 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
         dt {
             flex-shrink: 0;
             width: 6em;
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         dd {
@@ -247,15 +247,15 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
         justify-content: center;
         width: var(--space-s);
         height: var(--space-s);
-        border: 1px dashed var(--hairline-strong);
-        color: var(--text-muted);
+        border: 1px dashed var(--border-color-hover);
+        color: var(--faded);
         font-size: var(--step--2);
         font-weight: 600;
     }
 
     .mentor-card__day--on {
-        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 50%, transparent);
-        background: color-mix(in srgb, var(--fleet-yellow) 16%, transparent);
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
+        background: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
         color: var(--fleet-yellow);
     }
 
@@ -283,9 +283,9 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
         height: 100%;
         min-block-size: var(--space-2xl);
         padding: var(--space-2xs);
-        border: solid 1px var(--hairline-strong);
+        border: solid 1px var(--border-color-hover);
         background-image:
-            linear-gradient(180deg, color-mix(in srgb, var(--black) 10%, transparent) 20%, color-mix(in srgb, var(--black) 85%, transparent) 100%),
+            linear-gradient(180deg, color-mix(in srgb, var(--black) var(--tint-subtle), transparent) 20%, color-mix(in srgb, var(--black) var(--tint-strong), transparent) 100%),
             var(--cover);
         background-position: center;
         background-size: cover;
@@ -298,7 +298,7 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
     .mentor-card__tile--more {
         align-items: center;
         justify-content: center;
-        background: var(--hairline);
+        background: var(--border-color);
         font: inherit;
         text-align: center;
         cursor: pointer;
@@ -318,12 +318,12 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
     }
 
     .mentor-card__tile-meta {
-        color: color-mix(in srgb, var(--highlight) 80%, transparent);
+        color: color-mix(in srgb, var(--highlight) var(--tint-strong), transparent);
         font-size: var(--step--2);
     }
 
     .mentor-card__tile--more .mentor-card__tile-meta {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .mentor-card__foot {

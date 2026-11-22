@@ -1021,8 +1021,8 @@ const featured_guides = issue.get_involved.featured_guides
         --wz-minmatar: color-mix(in srgb, var(--fleet-red) 78%, white 22%);
         --wz-amarr: var(--fleet-yellow);
         --wz-other: color-mix(in srgb, var(--alliance-blue) 70%, white 30%);
-        --wz-track: var(--hairline);
-        --wz-rule: var(--hairline-medium);
+        --wz-track: var(--border-color);
+        --wz-rule: var(--border-color);
 
         display: flex;
         flex-direction: column;
@@ -1063,7 +1063,7 @@ const featured_guides = issue.get_involved.featured_guides
         a:not(.button) {
             color: var(--highlight);
             text-decoration: underline;
-            text-decoration-color: color-mix(in srgb, var(--highlight) 35%, transparent);
+            text-decoration-color: color-mix(in srgb, var(--highlight) var(--tint-strong), transparent);
             text-underline-offset: 0.15em;
 
             &:hover {
@@ -1369,7 +1369,7 @@ const featured_guides = issue.get_involved.featured_guides
     }
     .wz-group-pilots {
         margin-inline-start: var(--space-xs);
-        color: var(--text-muted);
+        color: var(--faded);
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
     }
@@ -1383,8 +1383,8 @@ const featured_guides = issue.get_involved.featured_guides
         letter-spacing: 0.06em;
         text-transform: uppercase;
         color: var(--green);
-        border: solid 1px color-mix(in srgb, var(--green) 45%, transparent);
-        background: color-mix(in srgb, var(--green) 14%, transparent);
+        border: solid 1px color-mix(in srgb, var(--green) var(--tint-strong), transparent);
+        background: color-mix(in srgb, var(--green) var(--tint-soft), transparent);
         vertical-align: middle;
         white-space: nowrap;
         align-self: flex-start;

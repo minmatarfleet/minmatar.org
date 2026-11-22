@@ -363,7 +363,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
 
         button {
             padding: var(--space-3xs) var(--space-s);
-            border: 1px solid var(--hairline-strong);
+            border: 1px solid var(--border-color-hover);
             background: none;
             color: var(--highlight);
             font-family: var(--button-font);
@@ -434,7 +434,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
 
         &--sub {
             margin-top: var(--space-s);
-            border-top: 1px solid var(--hairline);
+            border-top: 1px solid var(--border-color);
         }
     }
 
@@ -457,7 +457,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         min-height: 2.5rem;
         padding: 0 var(--space-s);
         border: 0;
-        border-top: 1px solid var(--hairline);
+        border-top: 1px solid var(--border-color);
         background: none;
         color: var(--foreground);
         font: inherit;
@@ -475,7 +475,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         }
 
         &.is-hl {
-            background-color: color-mix(in srgb, var(--fleet-red) 30%, transparent);
+            background-color: color-mix(in srgb, var(--fleet-red) var(--tint-soft), transparent);
 
             .scan-report__name {
                 color: var(--highlight);
@@ -493,7 +493,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
 
         @media (hover: hover) {
             &:hover:not(.is-hl) {
-                background-color: var(--hairline);
+                background-color: var(--border-color);
             }
         }
     }
@@ -504,14 +504,14 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         text-overflow: ellipsis;
 
         small {
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
     .scan-report__blank {
         width: 1.75rem;
         height: 1.75rem;
-        background-color: var(--hairline-medium);
+        background-color: var(--border-color);
     }
 
     .scan-report__count {
@@ -537,7 +537,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         top: 50%;
         right: calc(var(--space-s) + 3.5rem);
         transform: translateY(-50%);
-        color: var(--text-muted);
+        color: var(--faded);
         text-decoration: none;
     }
 
@@ -546,7 +546,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
     }
 
     .standing-neutral {
-        background-color: var(--text-muted);
+        background-color: var(--faded);
     }
 
     .standing-friendly {
@@ -595,12 +595,12 @@ import EmptyState from '@components/blocks/EmptyState.astro'
 
     .scan-report__note {
         margin: 0;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .scan-report__raw {
         summary {
-            color: var(--text-muted);
+            color: var(--faded);
             cursor: pointer;
         }
 
@@ -610,7 +610,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
             overflow-x: auto;
             font-size: var(--step--1);
             background-color: var(--surface-sunken);
-            border: 1px solid var(--hairline);
+            border: 1px solid var(--border-color);
         }
     }
 </style>

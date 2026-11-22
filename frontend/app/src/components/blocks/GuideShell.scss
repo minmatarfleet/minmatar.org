@@ -54,7 +54,7 @@
     margin-bottom: var(--space-2xl);
     padding-bottom: var(--space-xl);
     text-align: center;
-    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
 }
 
 .guide-shell__title {

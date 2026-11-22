@@ -488,7 +488,7 @@ import ProductWeeklyChart from '@components/blocks/ProductWeeklyChart.astro'
 
 <style lang="scss">
     .product-insights {
-        --built_color: color-mix(in srgb, var(--alliance-blue) 60%, white);
+        --built_color: var(--alliance-blue-300);
     }
 
     h3 {
@@ -552,11 +552,11 @@ import ProductWeeklyChart from '@components/blocks/ProductWeeklyChart.astro'
         color: var(--highlight);
 
         &.tone-warn {
-            color: color-mix(in srgb, var(--fleet-red) 70%, white);
+            color: var(--fleet-red-text);
         }
 
         &.tone-good {
-            color: color-mix(in srgb, var(--green) 65%, white);
+            color: var(--green-text);
         }
     }
 
@@ -699,7 +699,7 @@ import ProductWeeklyChart from '@components/blocks/ProductWeeklyChart.astro'
         color: var(--foreground);
 
         &.tone-warn {
-            color: color-mix(in srgb, var(--fleet-red) 55%, white);
+            color: var(--fleet-red-300);
         }
     }
 
@@ -743,7 +743,7 @@ import ProductWeeklyChart from '@components/blocks/ProductWeeklyChart.astro'
         flex-shrink: 0;
 
         &.lost {
-            color: color-mix(in srgb, var(--fleet-red) 55%, white);
+            color: var(--fleet-red-300);
         }
     }
 
@@ -786,7 +786,7 @@ import ProductWeeklyChart from '@components/blocks/ProductWeeklyChart.astro'
         white-space: nowrap;
 
         &.is-overdue {
-            color: color-mix(in srgb, var(--fleet-red) 55%, white);
+            color: var(--fleet-red-300);
         }
     }
 

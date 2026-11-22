@@ -12,8 +12,8 @@
 
 .cap-guide .cap-panel {
     padding: var(--cap-panel-padding-block) var(--cap-panel-padding-inline);
-    background: color-mix(in srgb, var(--component-background) 72%, transparent);
-    border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+    background: color-mix(in srgb, var(--component-background) var(--tint-strong), transparent);
+    border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
     min-width: 0;
 }
 
@@ -30,7 +30,7 @@
 .cap-guide .cap-section__title {
     margin: 0 0 var(--space-m);
     padding-bottom: var(--space-s);
-    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
     font-family: var(--cap-display-font);
     font-size: clamp(var(--step-1), 2.5vw, var(--step-2));
     letter-spacing: 0.08em;
@@ -56,7 +56,7 @@
 .cap-guide .cap-section__quote {
     margin: 0 0 var(--space-m);
     padding-left: var(--space-m);
-    border-left: 3px solid color-mix(in srgb, var(--fleet-red) 70%, transparent);
+    border-left: 3px solid color-mix(in srgb, var(--fleet-red) var(--tint-strong), transparent);
     color: var(--text-color-secondary, var(--faded));
     max-width: var(--max-text-width);
     font-size: var(--step-0);
@@ -112,7 +112,7 @@
 .cap-guide .cap-table th,
 .cap-guide .cap-table td {
     padding: var(--space-2xs) var(--space-s);
-    border: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
     text-align: left;
     vertical-align: top;
 }
@@ -122,7 +122,7 @@
     font-size: var(--step--2);
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    background: color-mix(in srgb, var(--component-background) 88%, transparent);
+    background: color-mix(in srgb, var(--component-background) var(--tint-strong), transparent);
     color: var(--highlight);
 }
 
@@ -152,7 +152,7 @@
 
     .cap-guide .cap-table tr {
         padding-block: var(--space-2xs);
-        border: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
         border-top-width: 0;
 
         &:first-child {
@@ -254,8 +254,8 @@
     margin-top: 0;
     max-width: none;
     padding: var(--space-s);
-    border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
-    background: color-mix(in srgb, var(--component-background) 88%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
+    background: color-mix(in srgb, var(--component-background) var(--tint-strong), transparent);
 }
 
 .cap-guide .cap-skill-plan__header {
@@ -290,8 +290,8 @@
     font-family: var(--default-font);
     font-size: var(--step--2);
     line-height: 1.55;
-    background: color-mix(in srgb, var(--background) 55%, transparent);
-    border: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+    background: color-mix(in srgb, var(--background) var(--tint-strong), transparent);
+    border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
 
     li {
         counter-increment: skill-step;

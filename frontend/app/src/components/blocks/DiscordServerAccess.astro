@@ -522,7 +522,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
     }
 
     .server-access__panel {
-        border: solid 1px var(--hairline-medium);
+        border: solid 1px var(--border-color);
         border-radius: var(--space-3xs);
         background-color: var(--component-background);
         transition: opacity var(--fast-transition);
@@ -538,7 +538,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         align-items: start;
         gap: var(--space-2xs) var(--space-xs);
         padding: var(--space-s) var(--space-m);
-        border-bottom: solid 1px var(--hairline);
+        border-bottom: solid 1px var(--border-color);
 
         .is-off & {
             border-bottom: none;
@@ -552,7 +552,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         width: var(--space-m);
         height: var(--space-m);
         border-radius: 50%;
-        background-color: var(--hairline-strong);
+        background-color: var(--border-color-hover);
         color: var(--highlight);
         font-size: var(--step--2);
         font-weight: 700;
@@ -577,7 +577,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
     }
 
     .server-access__count {
-        color: var(--text-muted);
+        color: var(--faded);
         font-weight: 500;
     }
 
@@ -585,7 +585,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
     .server-access__muted {
         margin-block-start: var(--space-3xs);
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .server-access__muted {
@@ -604,7 +604,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         flex-direction: column;
         gap: var(--space-2xs);
         padding-top: var(--space-s);
-        border-top: solid 1px var(--hairline);
+        border-top: solid 1px var(--border-color);
 
         .server-access__option-title,
         .server-access__option-sub {
@@ -624,7 +624,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         align-items: flex-start;
         gap: var(--space-xs);
         padding: var(--space-xs) var(--space-s);
-        border: solid 1px var(--hairline-strong);
+        border: solid 1px var(--border-color-hover);
         border-radius: var(--space-3xs);
         background-color: var(--surface-sunken);
         cursor: pointer;
@@ -638,7 +638,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
 
         &:has(input:checked) {
             border-color: var(--foreground);
-            background-color: color-mix(in srgb, var(--foreground) 6%, transparent);
+            background-color: color-mix(in srgb, var(--foreground) var(--tint-subtle), transparent);
         }
 
         &:has(input:focus-visible) {
@@ -679,18 +679,18 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         display: inline-block;
         margin-inline-start: var(--space-3xs);
         font-size: var(--step--2);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .server-access__option-sub {
         display: block;
         margin-block-start: var(--space-3xs);
         font-size: var(--step--2);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .server-access__table {
-        border: solid 1px var(--hairline-medium);
+        border: solid 1px var(--border-color);
         border-radius: var(--space-3xs);
     }
 
@@ -709,13 +709,13 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         font-weight: 600;
         letter-spacing: 0.06em;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .server-access__row {
         min-height: var(--space-xl);
         padding-block: var(--space-2xs);
-        border-top: solid 1px var(--hairline);
+        border-top: solid 1px var(--border-color);
         color: var(--highlight);
     }
 
@@ -787,7 +787,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
 
         small {
             font-size: var(--step--2);
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
@@ -816,7 +816,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
     .server-access__status {
         font-size: var(--step--1);
         font-variant-numeric: tabular-nums;
-        color: var(--text-muted);
+        color: var(--faded);
 
         &.is-waiting {
             color: var(--fleet-yellow);
@@ -845,7 +845,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
     .server-access__help {
         margin-block-start: var(--space-3xs);
         font-size: var(--step--2);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .server-access__chips {
@@ -855,7 +855,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         gap: var(--space-3xs);
         min-height: var(--space-xl);
         padding: var(--space-3xs) var(--space-2xs);
-        border: solid 1px var(--hairline-strong);
+        border: solid 1px var(--border-color-hover);
         border-radius: var(--space-3xs);
         background-color: var(--surface-sunken);
 
@@ -870,7 +870,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         gap: var(--space-3xs);
         padding: var(--space-3xs) var(--space-3xs) var(--space-3xs) var(--space-2xs);
         border-radius: var(--space-s);
-        background-color: var(--hairline-strong);
+        background-color: var(--border-color-hover);
         font-size: var(--step--1);
         color: var(--highlight);
 
@@ -906,9 +906,9 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         align-items: center;
         gap: var(--space-xs) var(--space-s);
         padding: var(--space-xs) var(--space-s);
-        border: solid 1px color-mix(in srgb, var(--fleet-yellow) 30%, transparent);
+        border: solid 1px color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
         border-radius: var(--space-3xs);
-        background-color: color-mix(in srgb, var(--fleet-yellow) 8%, transparent);
+        background-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
         color: var(--fleet-yellow);
     }
 

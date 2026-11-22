@@ -245,8 +245,8 @@ const chips = [
         letter-spacing: 0.06em;
         text-transform: uppercase;
         color: var(--green);
-        border: solid 1px color-mix(in srgb, var(--green) 45%, transparent);
-        background: color-mix(in srgb, var(--green) 14%, transparent);
+        border: solid 1px color-mix(in srgb, var(--green) var(--tint-strong), transparent);
+        background: color-mix(in srgb, var(--green) var(--tint-soft), transparent);
         vertical-align: middle;
         white-space: nowrap;
     }
@@ -270,7 +270,7 @@ const chips = [
     .mk-bar {
         width: 100%;
         height: var(--space-2xs);
-        background: var(--mk-track, color-mix(in srgb, var(--highlight) 6%, transparent));
+        background: var(--mk-track, color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent));
     }
 
     .mk-bar__fill {

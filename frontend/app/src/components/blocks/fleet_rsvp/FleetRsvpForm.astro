@@ -346,7 +346,7 @@ const hidden = 'display: none'
     .rsvp-form__error {
         padding: var(--space-xs) var(--space-s);
         border: 1px solid var(--fleet-red);
-        background-color: color-mix(in srgb, var(--fleet-red) 15%, transparent);
+        background-color: color-mix(in srgb, var(--fleet-red) var(--tint-soft), transparent);
     }
 
     .rsvp-form__sure {
@@ -370,7 +370,7 @@ const hidden = 'display: none'
         gap: var(--space-3xs);
         padding: var(--space-3xs);
         background-color: var(--component-background);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
         border-radius: var(--space-3xs);
 
         &:has(:focus-visible) {
@@ -424,7 +424,7 @@ const hidden = 'display: none'
         display: flex;
         flex-direction: column;
         background-color: var(--component-background);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
         border-radius: var(--space-3xs);
         overflow: hidden;
 
@@ -434,7 +434,7 @@ const hidden = 'display: none'
         }
 
         &.is-clash {
-            border-color: color-mix(in srgb, var(--attention) 60%, transparent);
+            border-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
         }
     }
 
@@ -454,13 +454,13 @@ const hidden = 'display: none'
 
         @media (hover: hover) {
             &:hover {
-                background-color: color-mix(in srgb, var(--fleet-yellow) 5%, transparent);
+                background-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
             }
         }
 
         @media (hover: none) {
             &:active {
-                background-color: color-mix(in srgb, var(--fleet-yellow) 10%, transparent);
+                background-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
             }
         }
     }
@@ -481,7 +481,7 @@ const hidden = 'display: none'
 
     .rsvp-row__warning {
         font-size: var(--step--1);
-        color: var(--attention);
+        color: var(--fleet-yellow);
     }
 
     /* Round tick: on the right on phones, first on wide screens (DesktopPick). */
@@ -516,13 +516,13 @@ const hidden = 'display: none'
         margin: 0 var(--space-xs) var(--space-3xs);
         padding: var(--space-2xs) var(--space-xs);
         border-radius: var(--space-3xs);
-        background-color: color-mix(in srgb, var(--attention) 10%, transparent);
+        background-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
         font-size: var(--step--1);
     }
 
     .rsvp-row__ship {
         padding: var(--space-xs) var(--space-xs) var(--space-s);
-        border-top: 1px solid var(--hairline-medium);
+        border-top: 1px solid var(--border-color);
     }
 
     .rsvp-row__ship-pick {

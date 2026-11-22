@@ -1,5 +1,5 @@
 [data-tippy-root] {
-    --tippy-background-color: #171616;
+    --tippy-background-color: var(--neutral-900);
     --tippy-border-color:       var(--border-color);
 
     filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.75));
@@ -53,5 +53,5 @@
 p[data-tippy-content]:not([data-tippy-content=""]),
 small[data-tippy-content]:not([data-tippy-content=""]),
 span[data-tippy-content]:not([data-tippy-content=""]) {
-    border-bottom: dotted 2px color-mix(in srgb, currentColor 30%, transparent);
+    border-bottom: dotted 2px color-mix(in srgb, currentColor var(--tint-soft), transparent);
 }

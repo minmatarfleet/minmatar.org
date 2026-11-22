@@ -313,12 +313,12 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
             line-height: 1;
             text-transform: uppercase;
             color: var(--highlight);
-            background-color: var(--hairline-strong);
+            background-color: var(--border-color-hover);
         }
     }
 
     .structure-hero__full {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .structure-hero__line {
@@ -335,7 +335,7 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
     }
 
     .structure-hero__type {
-        color: var(--text-muted);
+        color: var(--faded);
 
         &::before {
             content: "·";
@@ -354,7 +354,7 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
         color: var(--highlight);
         cursor: pointer;
         background-color: var(--component-background);
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
 
         kbd {
             display: inline-flex;
@@ -363,8 +363,8 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
             padding: var(--space-3xs) var(--space-xs);
             font: inherit;
             font-weight: 600;
-            color: var(--text-muted);
-            border-inline-start: 1px solid var(--hairline-strong);
+            color: var(--faded);
+            border-inline-start: 1px solid var(--border-color-hover);
         }
 
         svg {
@@ -426,20 +426,20 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
 
         p {
             font-size: var(--step--1);
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         &:is(a):focus-visible,
         &:is(a):hover {
-            border-color: var(--hairline-strong);
+            border-color: var(--border-color-hover);
         }
 
         &.off {
             background: none;
-            border: 1px dashed var(--hairline-strong);
+            border: 1px dashed var(--border-color-hover);
 
             h3 {
-                color: var(--text-muted);
+                color: var(--faded);
             }
         }
     }
@@ -454,7 +454,7 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
             padding: var(--space-s) var(--space-m) var(--space-2xs);
 
             span {
-                color: var(--text-muted);
+                color: var(--faded);
             }
         }
 
@@ -470,7 +470,7 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
             gap: var(--space-s);
             padding: var(--space-xs) var(--space-m);
             color: var(--highlight);
-            border-top: 1px solid var(--hairline-medium);
+            border-top: 1px solid var(--border-color);
         }
     }
 
@@ -500,7 +500,7 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
             align-items: center;
             gap: var(--space-s);
             padding: var(--space-xs) var(--space-m);
-            border-bottom: 1px solid var(--hairline-medium);
+            border-bottom: 1px solid var(--border-color);
         }
 
         p {
@@ -513,7 +513,7 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
 
         time {
             font-size: var(--step--1);
-            color: var(--text-muted);
+            color: var(--faded);
             white-space: nowrap;
         }
     }
@@ -535,7 +535,7 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
         }
 
         .del {
-            color: var(--attention);
+            color: var(--fleet-yellow);
             text-decoration: line-through;
         }
     }

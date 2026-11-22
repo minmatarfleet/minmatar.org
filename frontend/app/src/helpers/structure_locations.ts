@@ -161,7 +161,7 @@ export function in_view(card: StructureLocationCard, view: StructureView) {
 
 /** CSS colour token for a system's security status, as EVE colours it. */
 export function security_colour(security: number | null | undefined) {
-    if (security === null || security === undefined) return 'var(--text-muted)'
+    if (security === null || security === undefined) return 'var(--faded)'
     if (security >= 0.95) return 'var(--security-status-1)'
     if (security <= 0) return 'var(--security-status-null)'
     const step = Math.max(1, Math.min(9, Math.round(security * 10)))

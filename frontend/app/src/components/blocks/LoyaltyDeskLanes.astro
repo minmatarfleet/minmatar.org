@@ -222,7 +222,7 @@ const chip_for = (order: LoyaltyMarketOrder, lane: LoyaltyLaneKey): Chip => {
         background-color: var(--component-background);
 
         &.is-late {
-            border-color: color-mix(in srgb, var(--fleet-red) 60%, transparent);
+            border-color: color-mix(in srgb, var(--fleet-red) var(--tint-strong), transparent);
         }
     }
 

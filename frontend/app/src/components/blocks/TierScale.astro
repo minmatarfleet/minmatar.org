@@ -49,7 +49,7 @@ const tier_label = index < 0 ? t('trial.tier.none') : t(t_key('trial.tier.', tie
 
 <style lang="scss">
     .tier-scale {
-        --tier_color: var(--text-muted);
+        --tier_color: var(--faded);
 
         display: flex;
         flex-wrap: wrap;
@@ -58,7 +58,7 @@ const tier_label = index < 0 ? t('trial.tier.none') : t(t_key('trial.tier.', tie
 
         &.is-warn { --tier_color: color-mix(in srgb, var(--fleet-red) 45%, var(--fleet-yellow)); }
         &.is-average { --tier_color: var(--fleet-yellow); }
-        &.is-good { --tier_color: color-mix(in srgb, var(--green) 60%, var(--highlight)); }
+        &.is-good { --tier_color: var(--green-300); }
     }
 
     .tier-scale__label {
@@ -75,7 +75,7 @@ const tier_label = index < 0 ? t('trial.tier.none') : t(t_key('trial.tier.', tie
 
     .tier-scale__hint {
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .tier-scale__value {
@@ -94,7 +94,7 @@ const tier_label = index < 0 ? t('trial.tier.none') : t(t_key('trial.tier.', tie
 
         span {
             height: var(--space-xs);
-            background: var(--hairline-medium);
+            background: var(--border-color);
 
             &.is-on {
                 background: var(--tier_color);

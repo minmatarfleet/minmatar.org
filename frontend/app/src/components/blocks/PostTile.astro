@@ -79,7 +79,7 @@ import VisibilityTag from '@components/blocks/tribes/VisibilityTag.astro'
         flex-direction: column;
         min-width: 0;
         background-color: var(--component-background);
-        border: 1px solid var(--hairline);
+        border: 1px solid var(--border-color);
         overflow: hidden;
         transition: border-color var(--fast-transition);
     }
@@ -96,7 +96,7 @@ import VisibilityTag from '@components/blocks/tribes/VisibilityTag.astro'
             align-items: center;
             justify-content: center;
             background-color: var(--surface-sunken);
-            border-bottom: 1px solid var(--hairline);
+            border-bottom: 1px solid var(--border-color);
 
             img {
                 display: block;
@@ -132,7 +132,7 @@ import VisibilityTag from '@components/blocks/tribes/VisibilityTag.astro'
 
     .post-tile__excerpt {
         margin: 0;
-        color: var(--text-muted);
+        color: var(--faded);
         font-size: var(--step--1);
         line-height: 1.55;
         display: -webkit-box;
@@ -174,7 +174,7 @@ import VisibilityTag from '@components/blocks/tribes/VisibilityTag.astro'
 
     @media (hover: hover) {
         .post-tile:hover {
-            border-color: color-mix(in srgb, var(--fleet-yellow) 50%, transparent);
+            border-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
         }
 
         .post-tile:hover .post-tile__cover:not(.post-tile__cover--crest) {

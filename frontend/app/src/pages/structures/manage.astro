@@ -161,7 +161,7 @@ import ManageTable from '@components/blocks/manage/ManageTable.astro'
             justify-content: space-between;
             gap: var(--space-s);
             padding: var(--space-xs) var(--space-m);
-            border-bottom: 1px solid var(--hairline-medium);
+            border-bottom: 1px solid var(--border-color);
         }
 
         :global(b) {
@@ -170,12 +170,12 @@ import ManageTable from '@components/blocks/manage/ManageTable.astro'
 
         :global(small) {
             display: block;
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
     .structures-manage__warn {
         margin-left: var(--space-2xs);
-        color: var(--attention);
+        color: var(--fleet-yellow);
     }
 </style>

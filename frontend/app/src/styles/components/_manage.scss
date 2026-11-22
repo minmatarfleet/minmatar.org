@@ -8,8 +8,6 @@
 
 :root {
     // Members table: good reads green toward white, attention red toward yellow.
-    --manage_good: color-mix(in srgb, var(--green) 60%, var(--highlight));
-    --manage_warn: color-mix(in srgb, var(--fleet-red) 45%, var(--fleet-yellow));
 }
 
 .manage-eyebrow {
@@ -19,7 +17,7 @@
     font-weight: normal;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: var(--faded);
 }
 
 .manage-eyebrow.is-red {
@@ -27,21 +25,21 @@
 }
 
 .manage-muted {
-    color: var(--text-muted);
+    color: var(--faded);
 }
 
 .manage-good {
-    color: var(--manage_good);
+    color: var(--green-text);
 }
 
 .manage-warn {
-    color: var(--manage_warn);
+    color: var(--fleet-yellow);
 }
 
 // "Saved" after a save swaps a row or section back; fades so it never sticks.
 .manage-saved {
     font-size: var(--step--1);
-    color: var(--manage_good);
+    color: var(--green-text);
     white-space: nowrap;
     animation: manage-saved-fade 3s ease-in forwards;
 }
@@ -199,7 +197,7 @@
     flex: 0 0 auto;
     width: var(--space-l);
     height: var(--space-s);
-    background: var(--hairline-strong);
+    background: var(--border-color-hover);
     transition: background-color var(--fast-transition);
 
     &::after {
@@ -262,7 +260,7 @@
 
 .manage-chips.is-attention {
     padding-inline-start: var(--space-s);
-    border-inline-start: 1px solid var(--hairline-strong);
+    border-inline-start: 1px solid var(--border-color-hover);
 
     legend {
         float: left;
@@ -283,7 +281,7 @@
     gap: var(--space-2xs);
     min-height: var(--space-l);
     padding-inline: var(--space-xs);
-    border: 1px solid var(--hairline-strong);
+    border: 1px solid var(--border-color-hover);
     color: var(--chip_color);
     font-family: var(--button-font);
     font-size: var(--step--1);
@@ -296,13 +294,13 @@
         color var(--fast-transition);
 
     &.is-good {
-        --chip_color: var(--manage_good);
-        border-color: color-mix(in srgb, var(--chip_color) 40%, transparent);
+        --chip_color: var(--green-text);
+        border-color: color-mix(in srgb, var(--chip_color) var(--tint-strong), transparent);
     }
 
     &.is-warn {
-        --chip_color: var(--manage_warn);
-        border-color: color-mix(in srgb, var(--chip_color) 40%, transparent);
+        --chip_color: var(--fleet-yellow);
+        border-color: color-mix(in srgb, var(--chip_color) var(--tint-strong), transparent);
     }
 
     &.is-on,
@@ -314,7 +312,7 @@
 
     @media (hover: hover) {
         &:not(.is-on):not(:has(input:checked)):hover {
-            border-color: color-mix(in srgb, var(--chip_color) 60%, transparent);
+            border-color: color-mix(in srgb, var(--chip_color) var(--tint-strong), transparent);
             color: var(--highlight);
         }
     }
@@ -349,7 +347,7 @@
     input,
     select {
         background-color: var(--component-background);
-        border-color: var(--hairline-strong);
+        border-color: var(--border-color-hover);
     }
 
     @media (max-width: 48rem) {
@@ -405,9 +403,9 @@
         font-weight: normal;
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--faded);
         white-space: nowrap;
-        border-bottom: 1px solid var(--hairline-strong);
+        border-bottom: 1px solid var(--border-color-hover);
     }
 
     th[aria-sort] {
@@ -426,7 +424,7 @@
     }
 
     tbody + tbody > .manage-row > td {
-        border-top: 1px solid var(--hairline);
+        border-top: 1px solid var(--border-color);
     }
 
     .is-dim > .manage-row > td {
@@ -435,7 +433,7 @@
 
     tr.is-dirty > td,
     tbody.is-dirty > .manage-row > td {
-        background: color-mix(in srgb, var(--manage_warn) 7%, transparent);
+        background: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
     }
 }
 
@@ -445,12 +443,12 @@
 
 @media (hover: hover) {
     .manage-row:hover {
-        background: var(--hairline);
+        background: var(--border-color);
     }
 }
 
 tbody.is-open > .manage-row {
-    background: var(--hairline);
+    background: var(--border-color);
 }
 
 .manage-row__chevron {
@@ -477,7 +475,7 @@ tbody.is-open > .manage-row {
 
     @media (hover: hover) {
         &:hover {
-            border-color: color-mix(in srgb, var(--fleet-yellow) 50%, transparent);
+            border-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
             color: var(--highlight);
         }
     }
@@ -489,7 +487,7 @@ tbody.is-open .manage-chevron svg {
 
 .manage-table .manage-detail > td {
     padding: 0 var(--space-xs) var(--space-m);
-    background: var(--hairline);
+    background: var(--border-color);
 }
 
 .manage-detail__body {
@@ -497,7 +495,7 @@ tbody.is-open .manage-chevron svg {
     flex-direction: column;
     gap: var(--space-s);
     padding-block-start: var(--space-s);
-    border-top: 1px solid var(--hairline);
+    border-top: 1px solid var(--border-color);
 }
 
 // The first cell of a row: image, name, one line under it.
@@ -590,18 +588,18 @@ button.manage-who {
     > label,
     .manage-field__label {
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 }
 
 .manage-field__hint {
     font-size: var(--step--1);
-    color: var(--text-muted);
+    color: var(--faded);
 }
 
 .manage-field__error {
     font-size: var(--step--1);
-    color: var(--manage_warn);
+    color: var(--fleet-yellow);
 }
 
 // An open row's or section's form: fields, then the actions row.
@@ -632,8 +630,8 @@ button.manage-who {
     align-items: center;
     gap: var(--space-xs) var(--space-s);
     padding: var(--space-2xs) var(--space-s);
-    background: color-mix(in srgb, var(--manage_warn) 10%, var(--background));
-    border: 1px solid color-mix(in srgb, var(--manage_warn) 40%, transparent);
+    background: color-mix(in srgb, var(--fleet-yellow) 10%, var(--background));
+    border: 1px solid color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
 }
 
 // A number input in a grid cell (SRP amounts): right-aligned, sunken.
@@ -643,7 +641,7 @@ button.manage-who {
     max-width: 40vw;
     padding: var(--space-2xs) var(--space-xs);
     background: var(--surface-sunken);
-    border: 1px solid var(--hairline-medium);
+    border: 1px solid var(--border-color);
     color: var(--foreground);
     font: inherit;
     text-align: end;
@@ -700,7 +698,7 @@ button.manage-who {
     max-height: 20rem;
     overflow-y: auto;
     background: var(--component-background);
-    border: 1px solid var(--hairline-strong);
+    border: 1px solid var(--border-color-hover);
 
     &:empty {
         display: none;
@@ -730,14 +728,14 @@ button.manage-who {
 
     &:hover,
     &:focus-visible {
-        background: color-mix(in srgb, var(--fleet-yellow) 8%, transparent);
+        background: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
         outline: none;
     }
 }
 
 .manage-picker__detail {
     margin-inline-start: auto;
-    color: var(--text-muted);
+    color: var(--faded);
     white-space: nowrap;
 }
 
@@ -745,7 +743,7 @@ button.manage-who {
     margin: 0;
     padding: var(--space-2xs) var(--space-xs);
     font-size: var(--step--1);
-    color: var(--text-muted);
+    color: var(--faded);
 }
 
 // EveTimeInput: "EVE" inside the field, the pilot's time under it.
@@ -755,7 +753,7 @@ button.manage-who {
 
 .manage-time__unit {
     font-size: var(--step--1);
-    color: var(--text-muted);
+    color: var(--faded);
 }
 
 
@@ -818,7 +816,7 @@ button.manage-who {
 }
 
 .manage-stat.is-warn .manage-stat__value {
-    color: var(--manage_warn);
+    color: var(--fleet-yellow);
 }
 
 .manage-stat__detail {
@@ -879,7 +877,7 @@ button.manage-who {
     margin-inline-start: auto;
     font-size: var(--step--1);
     font-weight: 600;
-    color: var(--manage_warn);
+    color: var(--fleet-yellow);
 }
 
 // The Tasks Neocom button's count (pages/partials/tasks_neocom_badge_component).
@@ -891,7 +889,7 @@ button.manage-who {
     height: var(--space-s);
     padding-inline: var(--space-3xs);
     border-radius: var(--space-s);
-    background: var(--manage_warn);
+    background: var(--fleet-yellow);
     color: var(--background);
     font-family: var(--default-font);
     font-size: var(--step--2);

@@ -82,7 +82,7 @@ import AmarrLogo from '@components/logos/AmarrLogo.astro'
         percent={row.meter_percent}
         marker_percent={row.marker_percent}
         delta_from_percent={row.delta_from_percent}
-        color='color-mix(in srgb, var(--highlight) 62%, transparent)'
+        color='color-mix(in srgb, var(--highlight) var(--tint-strong), transparent)'
         track_color='var(--border-color-hover)'
         height='var(--space-3xs)'
         label={`${row.system_name} · ${row.label} · ${row.now_text}`}

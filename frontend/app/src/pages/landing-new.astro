@@ -263,7 +263,7 @@ import LandingReel from '@components/blocks/landing/LandingReel.astro'
     }
 
     .landing-muted {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .landing-actions {
@@ -278,7 +278,7 @@ import LandingReel from '@components/blocks/landing/LandingReel.astro'
         align-items: center;
         min-height: var(--space-xl);
         padding: 0 var(--space-m);
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
         font-family: var(--button-font);
         font-weight: 600;
         color: var(--fleet-yellow);
@@ -287,7 +287,7 @@ import LandingReel from '@components/blocks/landing/LandingReel.astro'
 
         &:hover,
         &:focus-visible {
-            background: var(--hairline-medium);
+            background: var(--border-color);
         }
     }
 
@@ -310,7 +310,7 @@ import LandingReel from '@components/blocks/landing/LandingReel.astro'
 
         &:hover,
         &:focus-visible {
-            background: color-mix(in srgb, var(--fleet-red) 85%, var(--highlight));
+            background: var(--fleet-red-400);
         }
     }
 
@@ -562,7 +562,7 @@ import LandingReel from '@components/blocks/landing/LandingReel.astro'
         margin: 0;
         font-size: var(--step-0);
         line-height: 1.6;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .landing-join__chart {
@@ -596,7 +596,7 @@ import LandingReel from '@components/blocks/landing/LandingReel.astro'
 
         span {
             padding-top: var(--space-2xs);
-            border-top: 2px solid var(--hairline-strong);
+            border-top: 2px solid var(--border-color-hover);
         }
     }
 

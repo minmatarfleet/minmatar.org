@@ -136,7 +136,7 @@ import IntelBlocTag from '@components/blocks/IntelBlocTag.astro'
         flex-direction: column;
         gap: var(--space-3xs);
         padding: var(--space-xs) var(--space-s);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
         border-inline-start: 3px solid var(--fleet-yellow);
         background-color: var(--surface-sunken);
     }
@@ -150,7 +150,7 @@ import IntelBlocTag from '@components/blocks/IntelBlocTag.astro'
     }
 
     .intel-affiliation--ended {
-        border-inline-start-color: var(--hairline-strong);
+        border-inline-start-color: var(--border-color-hover);
     }
 
     .intel-affiliation__head {
@@ -190,7 +190,7 @@ import IntelBlocTag from '@components/blocks/IntelBlocTag.astro'
     }
 
     .intel-affiliation__arrow {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .intel-affiliation__relation,
@@ -221,11 +221,11 @@ import IntelBlocTag from '@components/blocks/IntelBlocTag.astro'
     }
 
     .intel-affiliation__status--ended {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .intel-affiliation__confidence {
-        color: var(--text-muted);
+        color: var(--faded);
         font-variant-numeric: tabular-nums;
     }
 
@@ -238,7 +238,7 @@ import IntelBlocTag from '@components/blocks/IntelBlocTag.astro'
     .intel-affiliation__meta {
         margin: 0;
         font-size: var(--step--2);
-        color: var(--text-muted);
+        color: var(--faded);
 
         q {
             margin-inline-start: var(--space-2xs);

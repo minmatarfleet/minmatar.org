@@ -212,7 +212,7 @@ import Switch from '@components/blocks/Switch.astro'
         min-width: 0;
         margin: 0;
         padding: var(--space-xs) var(--space-s) var(--space-s);
-        border: 1px solid var(--hairline);
+        border: 1px solid var(--border-color);
         background-color: var(--surface-sunken);
 
         legend {
@@ -242,7 +242,7 @@ import Switch from '@components/blocks/Switch.astro'
             align-items: center;
             gap: var(--space-3xs);
             padding: var(--space-3xs) var(--space-3xs) var(--space-3xs) var(--space-3xs);
-            border: 1px solid var(--hairline-strong);
+            border: 1px solid var(--border-color-hover);
             font-size: var(--step--1);
             color: var(--highlight);
         }
@@ -258,7 +258,7 @@ import Switch from '@components/blocks/Switch.astro'
             padding: 0 var(--space-3xs);
             font: inherit;
             line-height: 1;
-            color: var(--text-muted);
+            color: var(--faded);
             cursor: pointer;
 
             &:focus-visible {
@@ -268,7 +268,7 @@ import Switch from '@components/blocks/Switch.astro'
         }
 
         small {
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
@@ -279,7 +279,7 @@ import Switch from '@components/blocks/Switch.astro'
     }
 
     .tribe-publishing-settings__hint {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .tribe-publishing-settings__switches {
@@ -287,6 +287,6 @@ import Switch from '@components/blocks/Switch.astro'
         flex-direction: column;
         gap: var(--space-s);
         padding-top: var(--space-xs);
-        border-top: 1px solid var(--hairline);
+        border-top: 1px solid var(--border-color);
     }
 </style>

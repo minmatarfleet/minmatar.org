@@ -216,7 +216,7 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
     }
 
     .mentors-muted {
-        color: var(--text-muted);
+        color: var(--faded);
         font-size: var(--step--1);
     }
 
@@ -229,7 +229,7 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
     .mentors-period {
         min-height: var(--space-l);
         padding: 0 var(--space-s);
-        border: solid 1px var(--hairline-strong);
+        border: solid 1px var(--border-color-hover);
         background: none;
         color: var(--foreground);
         font-size: var(--step--1);
@@ -255,13 +255,13 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
         th,
         td {
             padding: var(--space-2xs) var(--space-s);
-            border-bottom: solid 1px var(--hairline);
+            border-bottom: solid 1px var(--border-color);
             text-align: start;
             white-space: nowrap;
         }
 
         thead th {
-            color: var(--text-muted);
+            color: var(--faded);
             font-weight: 600;
         }
 
@@ -295,7 +295,7 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
 
         span,
         small {
-            color: var(--text-muted);
+            color: var(--faded);
             font-size: var(--step--1);
         }
 
@@ -342,7 +342,7 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
         font-size: var(--step--1);
 
         span:first-child {
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         strong {
@@ -352,13 +352,13 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
 
     .mentors-impact__track {
         block-size: var(--space-2xs);
-        background: var(--hairline);
+        background: var(--border-color);
     }
 
     .mentors-impact__fill {
         display: block;
         block-size: 100%;
-        background: var(--text-muted);
+        background: var(--faded);
 
         &.is-mentored {
             background: var(--fleet-yellow);

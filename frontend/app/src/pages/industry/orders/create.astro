@@ -804,7 +804,7 @@ const breadcrumbs = [
     }
 
     .create-order-form__pricing small {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .create-order-form__product-name {
@@ -830,7 +830,7 @@ const breadcrumbs = [
 
     .create-order-form__qty-input {
         width: 3.5rem;
-        background-color: rgba(85, 85, 85, 0.15);
+        background-color: color-mix(in srgb, var(--neutral-600) var(--tint-soft), transparent);
         color: var(--foreground);
         border: 1px solid var(--border-color-hover);
         padding: var(--space-3xs) var(--space-2xs);
@@ -854,7 +854,7 @@ const breadcrumbs = [
         &:focus-visible {
             outline: 2px solid var(--highlight);
             outline-offset: 2px;
-            background-color: rgba(85, 85, 85, 0.25);
+            background-color: color-mix(in srgb, var(--neutral-600) var(--tint-soft), transparent);
         }
     }
 

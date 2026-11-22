@@ -17,7 +17,7 @@
     inset-block-start: 50%;
     transform: translateY(-50%);
     font-size: var(--step--1);
-    color: var(--text-muted);
+    color: var(--faded);
     pointer-events: none;
 }
 
@@ -57,7 +57,7 @@
 // The open row's footer: last change, quote preview.
 .market-note {
     font-size: var(--step--1);
-    color: var(--text-muted);
+    color: var(--faded);
 
     b {
         color: var(--highlight);
@@ -77,7 +77,7 @@
 // A number cell's quiet trailing word ("100% in demand").
 .market-cell-note {
     font-size: var(--step--1);
-    color: var(--text-muted);
+    color: var(--faded);
 }
 
 .market-account__edit {
@@ -148,7 +148,7 @@
     display: grid;
     gap: var(--space-xs);
     padding: var(--space-s);
-    border: solid 1px var(--hairline-strong);
+    border: solid 1px var(--border-color-hover);
     border-inline-start: solid 2px color-mix(in srgb, var(--fleet-red) 70%, var(--fleet-yellow));
     background-color: var(--surface-sunken);
 }

@@ -187,7 +187,7 @@ const add_skill = `
         margin: 0;
         padding: 0;
         list-style: none;
-        border: 1px solid var(--hairline);
+        border: 1px solid var(--border-color);
 
         &:empty {
             display: none;
@@ -202,7 +202,7 @@ const add_skill = `
         background-color: var(--surface-sunken);
 
         & + & {
-            border-top: 1px solid var(--hairline);
+            border-top: 1px solid var(--border-color);
         }
 
         &[draggable='true'] {
@@ -221,7 +221,7 @@ const add_skill = `
         align-items: center;
         gap: var(--space-2xs);
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
 
         select {
             padding: var(--space-3xs) var(--space-2xs);
@@ -236,7 +236,7 @@ const add_skill = `
         padding: 0 var(--space-2xs);
         background: none;
         border: 1px solid transparent;
-        color: var(--text-muted);
+        color: var(--faded);
         font-size: var(--step-1);
         line-height: 1;
         cursor: pointer;
@@ -244,7 +244,7 @@ const add_skill = `
         &:hover,
         &:focus-visible {
             color: var(--fleet-red);
-            border-color: var(--hairline-medium);
+            border-color: var(--border-color);
         }
     }
 </style>

@@ -168,11 +168,11 @@ function step_href(href: string): string {
     }
 
     .mk-ghost {
-        border: solid 1px color-mix(in srgb, var(--highlight) 22%, transparent) !important;
+        border: solid 1px color-mix(in srgb, var(--highlight) var(--tint-soft), transparent) !important;
 
         &:hover,
         &:focus-visible {
-            border-color: color-mix(in srgb, var(--highlight) 60%, transparent) !important;
+            border-color: color-mix(in srgb, var(--highlight) var(--tint-strong), transparent) !important;
         }
     }
 </style>

@@ -66,13 +66,13 @@ import Button from '@components/blocks/Button.astro'
         padding: var(--space-xl) var(--space-l);
         text-align: center;
         background-color: var(--component-background);
-        border: 1px solid var(--hairline);
+        border: 1px solid var(--border-color);
     }
 
     .members-only-gate__crest {
         display: block;
         object-fit: cover;
-        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 35%, transparent);
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
     }
 
     .members-only-gate__title {
@@ -104,7 +104,7 @@ import Button from '@components/blocks/Button.astro'
 
     .members-only-gate :global(a.members-only-gate__back[href]) {
         text-align: center;
-        border: solid 1px color-mix(in srgb, var(--highlight) 25%, transparent);
+        border: solid 1px color-mix(in srgb, var(--highlight) var(--tint-soft), transparent);
         color: var(--highlight);
     }
 </style>

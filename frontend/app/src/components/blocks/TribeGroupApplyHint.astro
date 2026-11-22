@@ -104,7 +104,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
     .tribe-group-apply-hint {
         font-family: var(--default-font);
         font-size: var(--step--1);
-        color: color-mix(in srgb, var(--highlight) 65%, transparent);
+        color: color-mix(in srgb, var(--highlight) var(--tint-strong), transparent);
 
         :global(.flex) {
             display: inline;
@@ -126,6 +126,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
 
     .tribe-group-apply-hint__ineligible {
         margin: 0;
-        color: color-mix(in srgb, var(--foreground) 55%, transparent);
+        color: color-mix(in srgb, var(--foreground) var(--tint-strong), transparent);
     }
 </style>

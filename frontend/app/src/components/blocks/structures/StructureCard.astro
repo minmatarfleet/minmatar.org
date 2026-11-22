@@ -133,7 +133,7 @@ import StructureRigChip from '@components/blocks/structures/StructureRigChip.ast
 
         &.no-art {
             background:
-                radial-gradient(circle at 70% 25%, color-mix(in srgb, var(--alliance-blue) 35%, transparent), transparent 60%),
+                radial-gradient(circle at 70% 25%, color-mix(in srgb, var(--alliance-blue) var(--tint-strong), transparent), transparent 60%),
                 var(--component-background);
         }
 
@@ -182,11 +182,11 @@ import StructureRigChip from '@components/blocks/structures/StructureRigChip.ast
         inset: 0;
         background: linear-gradient(
             180deg,
-            color-mix(in srgb, var(--background) 30%, transparent) 0%,
+            color-mix(in srgb, var(--background) var(--tint-soft), transparent) 0%,
             transparent 24%,
             transparent 38%,
-            color-mix(in srgb, var(--background) 90%, transparent) 62%,
-            color-mix(in srgb, var(--background) 97%, transparent) 100%
+            color-mix(in srgb, var(--background) var(--tint-strong), transparent) 62%,
+            color-mix(in srgb, var(--background) var(--tint-strong), transparent) 100%
         );
     }
 
@@ -245,8 +245,8 @@ import StructureRigChip from '@components/blocks/structures/StructureRigChip.ast
         block-size: 100%;
         margin: 0;
         padding-inline: var(--space-s);
-        background-color: color-mix(in srgb, var(--background) 78%, transparent);
-        border-bottom: 1px solid var(--hairline-strong);
+        background-color: color-mix(in srgb, var(--background) var(--tint-strong), transparent);
+        border-bottom: 1px solid var(--border-color-hover);
 
         div {
             display: flex;
@@ -259,7 +259,7 @@ import StructureRigChip from '@components/blocks/structures/StructureRigChip.ast
             font-weight: 700;
             letter-spacing: 0.06em;
             text-transform: uppercase;
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         dd {
@@ -272,7 +272,7 @@ import StructureRigChip from '@components/blocks/structures/StructureRigChip.ast
 
             &.none {
                 font-weight: 500;
-                color: var(--text-muted);
+                color: var(--faded);
             }
         }
     }
@@ -296,8 +296,8 @@ import StructureRigChip from '@components/blocks/structures/StructureRigChip.ast
         justify-content: center;
         inline-size: 2rem;
         block-size: 2rem;
-        background-color: color-mix(in srgb, var(--background) 70%, transparent);
-        border: 1px solid var(--hairline-strong);
+        background-color: color-mix(in srgb, var(--background) var(--tint-strong), transparent);
+        border: 1px solid var(--border-color-hover);
 
         img {
             inline-size: 1.65rem;
@@ -393,10 +393,10 @@ import StructureRigChip from '@components/blocks/structures/StructureRigChip.ast
         inline-size: 2.25rem;
         block-size: 2.25rem;
         padding: 0;
-        color: var(--text-muted);
+        color: var(--faded);
         cursor: pointer;
-        background-color: color-mix(in srgb, var(--background) 50%, transparent);
-        border: 1px solid var(--hairline-strong);
+        background-color: color-mix(in srgb, var(--background) var(--tint-strong), transparent);
+        border: 1px solid var(--border-color-hover);
 
         svg {
             inline-size: 1rem;
@@ -451,7 +451,7 @@ import StructureRigChip from '@components/blocks/structures/StructureRigChip.ast
     }
 
     .structure-card__type {
-        color: var(--text-muted);
+        color: var(--faded);
 
         &::before {
             content: "·";
@@ -509,6 +509,6 @@ import StructureRigChip from '@components/blocks/structures/StructureRigChip.ast
     .structure-card__unscanned {
         margin: 0;
         font-size: var(--step--2);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 </style>

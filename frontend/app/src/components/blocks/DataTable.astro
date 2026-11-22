@@ -173,13 +173,13 @@ const sort_state = `{
         :global(th),
         :global(td) {
             padding: var(--space-s);
-            border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+            border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
             text-align: left;
             vertical-align: top;
         }
 
         :global(th) {
-            background: color-mix(in srgb, var(--component-background) 90%, transparent);
+            background: color-mix(in srgb, var(--component-background) var(--tint-strong), transparent);
             font-weight: 600;
             color: var(--highlight);
             background-color: var(--light-transparency-background-mobile);

@@ -165,7 +165,7 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
         inset: 0;
         z-index: -1;
         background:
-            linear-gradient(90deg, var(--background) 0%, color-mix(in srgb, var(--background) 55%, transparent) 55%, color-mix(in srgb, var(--background) 35%, transparent) 100%),
+            linear-gradient(90deg, var(--background) 0%, color-mix(in srgb, var(--background) var(--tint-strong), transparent) 55%, color-mix(in srgb, var(--background) var(--tint-strong), transparent) 100%),
             linear-gradient(0deg, var(--background) 0%, transparent 45%);
     }
 
@@ -235,7 +235,7 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
         list-style: none;
         cursor: pointer;
         background-color: var(--component-background);
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
 
         &::-webkit-details-marker {
             display: none;
@@ -268,8 +268,8 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
         margin-top: var(--space-2xs);
         padding: var(--space-m);
         background-color: var(--component-background);
-        border: 1px solid var(--hairline-strong);
-        box-shadow: 0 var(--space-m) var(--space-l) color-mix(in srgb, var(--background) 60%, transparent);
+        border: 1px solid var(--border-color-hover);
+        box-shadow: 0 var(--space-m) var(--space-l) color-mix(in srgb, var(--background) var(--tint-strong), transparent);
     }
 
     .structures-rigs__sections {
@@ -319,7 +319,7 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
         align-items: center;
         justify-content: space-between;
         padding-top: var(--space-s);
-        border-top: 1px solid var(--hairline-strong);
+        border-top: 1px solid var(--border-color-hover);
 
         a {
             font-size: var(--step--1);
@@ -345,8 +345,8 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
             font-size: var(--step--1);
             font-weight: 600;
             color: var(--highlight);
-            background-color: color-mix(in srgb, var(--green) 22%, transparent);
-            border: 1px solid color-mix(in srgb, var(--green) 60%, transparent);
+            background-color: color-mix(in srgb, var(--green) var(--tint-soft), transparent);
+            border: 1px solid color-mix(in srgb, var(--green) var(--tint-strong), transparent);
         }
 
         li a {

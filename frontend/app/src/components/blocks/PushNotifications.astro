@@ -138,7 +138,9 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
         align-items: center;
         gap: var(--space-3xs);
         font-weight: 600;
-        color: var(--security-status-point-4);
+        padding-inline: var(--space-2xs);
+        background-color: var(--fleet-yellow);
+        color: var(--background);
 
         &::before {
             content: '';
@@ -150,6 +152,8 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
     }
 
     .push-status--good {
-        color: var(--green);
+        padding-inline: 0;
+        background-color: transparent;
+        color: var(--green-text);
     }
 </style>

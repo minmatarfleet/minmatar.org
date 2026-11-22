@@ -111,7 +111,7 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
         border: 1px solid var(--border-color);
 
         li + li {
-            border-top: 1px solid var(--hairline);
+            border-top: 1px solid var(--border-color);
         }
 
         button {
@@ -128,7 +128,7 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
             cursor: pointer;
 
             &:hover {
-                background-color: var(--hairline);
+                background-color: var(--border-color);
             }
         }
 
@@ -145,11 +145,11 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
         }
 
         small {
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         .is-blocked b {
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         .is-skipped small,

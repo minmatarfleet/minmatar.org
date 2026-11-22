@@ -758,9 +758,9 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         font-size: var(--step--1);
 
         --br-team-a: var(--fleet-yellow);
-        --br-team-b: color-mix(in srgb, var(--alliance-blue) 45%, white);
+        --br-team-b: var(--alliance-blue-300);
         --br-team-c: color-mix(in srgb, var(--highlight) 45%, var(--background));
-        --br-loss: color-mix(in srgb, var(--fleet-red) 60%, white);
+        --br-loss: var(--fleet-red-300);
         --br-class-col: 15rem;
 
         :global(button:focus-visible),
@@ -781,11 +781,11 @@ import EmptyState from '@components/blocks/EmptyState.astro'
 
     .br__panel {
         background-color: var(--component-background);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
     }
 
     .br__muted {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .br__cap {
@@ -793,7 +793,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         font-weight: 600;
         letter-spacing: 0.06em;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .br__r {
@@ -816,7 +816,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
     }
 
     .br__top {
-        color: color-mix(in srgb, var(--green) 55%, white);
+        color: var(--green-300);
         font-weight: 700;
     }
 
@@ -827,7 +827,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         min-height: 2.25rem;
         padding: 0 var(--space-xs);
         background: transparent;
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
         color: var(--foreground);
         font: inherit;
         font-weight: 600;
@@ -859,7 +859,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
     }
 
     .br__back {
-        color: var(--text-muted);
+        color: var(--faded);
         text-decoration: none;
 
         &:hover {
@@ -886,7 +886,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         flex-wrap: wrap;
         gap: var(--space-3xs) var(--space-s);
         margin: var(--space-3xs) 0 0;
-        color: var(--text-muted);
+        color: var(--faded);
 
         a {
             font-weight: 600;
@@ -933,7 +933,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         display: inline-flex;
         align-items: center;
         background-color: var(--surface-sunken);
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
 
         > a {
             display: inline-flex;
@@ -941,7 +941,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
             gap: var(--space-2xs);
             min-height: 2.25rem;
             padding: 0 var(--space-xs);
-            color: var(--text-muted);
+            color: var(--faded);
             text-decoration: none;
         }
 
@@ -969,7 +969,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         min-height: 2.25rem;
         background: transparent;
         border: 0;
-        color: var(--text-muted);
+        color: var(--faded);
         cursor: pointer;
 
         &:hover {
@@ -982,7 +982,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         height: 7rem;
         margin-bottom: var(--space-m);
         background-color: var(--surface-sunken);
-        border-bottom: 1px solid var(--hairline-strong);
+        border-bottom: 1px solid var(--border-color-hover);
         cursor: crosshair;
         touch-action: none;
         user-select: none;
@@ -1004,7 +1004,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         position: absolute;
         top: 0;
         bottom: 0;
-        background-color: color-mix(in srgb, var(--background) 62%, transparent);
+        background-color: color-mix(in srgb, var(--background) var(--tint-strong), transparent);
         pointer-events: none;
     }
 
@@ -1018,7 +1018,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
     }
 
     .br__drag {
-        background-color: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+        background-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
     }
 
     .br__sel span {
@@ -1039,7 +1039,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         margin-top: var(--space-3xs);
         transform: translateX(-50%);
         font-size: var(--step--2);
-        color: var(--text-muted);
+        color: var(--faded);
         pointer-events: none;
         font-variant-numeric: tabular-nums;
     }
@@ -1050,7 +1050,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         gap: var(--space-3xs) var(--space-s);
         margin: 0;
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
 
         span {
             display: inline-flex;
@@ -1072,7 +1072,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         gap: var(--space-2xs) var(--space-s);
         padding: var(--space-xs) var(--space-s);
         background-color: color-mix(in srgb, var(--fleet-yellow) 12%, var(--component-background));
-        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 50%, transparent);
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
 
         :global(b) {
             color: var(--highlight);
@@ -1090,7 +1090,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
             min-height: 2.25rem;
             padding: 0 var(--space-xs);
             background-color: var(--background);
-            border: 1px solid var(--hairline-strong);
+            border: 1px solid var(--border-color-hover);
             color: var(--highlight);
             font: inherit;
         }
@@ -1103,7 +1103,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         gap: var(--space-xs);
         padding: 0 var(--space-2xs);
         background-color: var(--component-background);
-        border-bottom: 1px solid var(--hairline-medium);
+        border-bottom: 1px solid var(--border-color);
     }
 
     .br__tab-list {
@@ -1138,7 +1138,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
     .br__partial {
         margin: 0;
         padding: var(--space-s);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .br__switch {
@@ -1202,7 +1202,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
     .br__ours {
         margin-left: auto;
         padding: var(--space-3xs) var(--space-2xs);
-        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 40%, transparent);
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
         font-size: var(--step--2);
         font-weight: 600;
         letter-spacing: 0.06em;
@@ -1214,8 +1214,8 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 1px;
         margin: 0;
-        background-color: var(--hairline-medium);
-        border: 1px solid var(--hairline-medium);
+        background-color: var(--border-color);
+        border: 1px solid var(--border-color);
 
         > div {
             display: flex;
@@ -1238,7 +1238,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         display: flex;
         height: 3px;
         margin-top: var(--space-3xs);
-        background-color: color-mix(in srgb, var(--fleet-red) 55%, transparent);
+        background-color: color-mix(in srgb, var(--fleet-red) var(--tint-strong), transparent);
 
         span {
             background-color: var(--green);
@@ -1258,7 +1258,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
             align-items: center;
             column-gap: var(--space-2xs);
             min-height: 2.25rem;
-            border-top: 1px solid var(--hairline);
+            border-top: 1px solid var(--border-color);
         }
 
         img {
@@ -1286,7 +1286,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
     }
 
     .br__group-count {
-        color: var(--text-muted);
+        color: var(--faded);
         font-variant-numeric: tabular-nums;
     }
 
@@ -1296,13 +1296,13 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         justify-content: center;
         min-width: 2rem;
         min-height: 2rem;
-        color: var(--text-muted);
+        color: var(--faded);
         font-size: var(--step-0);
         text-decoration: none;
 
         &:hover {
             color: var(--highlight);
-            background-color: var(--hairline);
+            background-color: var(--border-color);
         }
     }
 
@@ -1311,8 +1311,8 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         padding: 0 0 0 calc(3.5rem + 2 * var(--space-2xs));
         background: transparent;
         border: 0;
-        border-top: 1px solid var(--hairline);
-        color: var(--text-muted);
+        border-top: 1px solid var(--border-color);
+        color: var(--faded);
         font: inherit;
         text-align: left;
         cursor: pointer;
@@ -1365,7 +1365,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
     .br__band-cell {
         min-width: 0;
         container-type: inline-size;
-        border: 1px solid var(--hairline);
+        border: 1px solid var(--border-color);
     }
 
     .br__head {
@@ -1374,12 +1374,12 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         column-gap: var(--space-2xs);
         min-height: 2rem;
         padding: 0 var(--space-2xs);
-        border-bottom: 1px solid var(--hairline-medium);
+        border-bottom: 1px solid var(--border-color);
         font-size: var(--step--2);
         font-weight: 600;
         letter-spacing: 0.06em;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .br__head--pilots {
@@ -1398,12 +1398,12 @@ import EmptyState from '@components/blocks/EmptyState.astro'
 
     .br__class {
         padding: var(--space-xs) var(--space-2xs) var(--space-3xs);
-        border-bottom: 1px solid var(--hairline);
+        border-bottom: 1px solid var(--border-color);
         font-size: var(--step--2);
         font-weight: 600;
         letter-spacing: 0.06em;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .br__type,
@@ -1413,7 +1413,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         column-gap: var(--space-2xs);
         min-height: 2.5rem;
         padding: 2px var(--space-2xs);
-        border-bottom: 1px solid var(--hairline);
+        border-bottom: 1px solid var(--border-color);
 
         img {
             display: block;
@@ -1459,7 +1459,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         justify-content: center;
         gap: var(--space-3xs);
         min-height: 2.25rem;
-        border-top: 1px solid var(--hairline);
+        border-top: 1px solid var(--border-color);
     }
 
     .br__matchup-class {
@@ -1478,14 +1478,14 @@ import EmptyState from '@components/blocks/EmptyState.astro'
     .br__matchup-bar {
         position: relative;
         height: 6px;
-        background-color: var(--hairline);
+        background-color: var(--border-color);
 
         span {
             position: absolute;
             top: 0;
             bottom: 0;
             left: 0;
-            background-color: color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
+            background-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
         }
 
         .br__matchup-lost {
@@ -1501,11 +1501,11 @@ import EmptyState from '@components/blocks/EmptyState.astro'
     .br__minute {
         margin: 0;
         padding: var(--space-xs) 0 var(--space-3xs);
-        border-bottom: 1px solid var(--hairline-medium);
+        border-bottom: 1px solid var(--border-color);
         font-size: var(--step--2);
         font-weight: 600;
         letter-spacing: 0.06em;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .br__tl-row {
@@ -1581,7 +1581,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
     .br__kill-time,
     .br__kill-foot {
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
         white-space: nowrap;
         font-variant-numeric: tabular-nums;
     }
@@ -1598,17 +1598,17 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         text-overflow: ellipsis;
         white-space: nowrap;
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .br__kill-by {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .br__sys {
         margin-left: var(--space-3xs);
         padding: 0 var(--space-3xs);
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
         font-size: var(--step--2);
         font-weight: 600;
         text-transform: uppercase;
@@ -1625,7 +1625,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
     }
 
     .br__rank {
-        color: var(--text-muted);
+        color: var(--faded);
         text-align: right;
         font-variant-numeric: tabular-nums;
     }
@@ -1648,21 +1648,21 @@ import EmptyState from '@components/blocks/EmptyState.astro'
 
         span {
             font-size: var(--step--1);
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
     .br__dmg-bar {
         position: relative;
         height: 1.375rem;
-        background-color: var(--hairline);
+        background-color: var(--border-color);
 
         span {
             position: absolute;
             top: 0;
             bottom: 0;
             left: 0;
-            background-color: color-mix(in srgb, var(--fleet-yellow) 32%, transparent);
+            background-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
         }
 
         b {
@@ -1680,7 +1680,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         flex-direction: column;
         gap: var(--space-2xs);
         padding: var(--space-xs);
-        border-bottom: 1px solid var(--hairline);
+        border-bottom: 1px solid var(--border-color);
     }
 
     .br__ally-head {
@@ -1710,12 +1710,12 @@ import EmptyState from '@components/blocks/EmptyState.astro'
     .br__share {
         height: 3px;
         margin-top: var(--space-3xs);
-        background-color: var(--hairline);
+        background-color: var(--border-color);
 
         span {
             display: block;
             height: 100%;
-            background-color: color-mix(in srgb, var(--fleet-yellow) 55%, transparent);
+            background-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
         }
     }
 
@@ -1731,7 +1731,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         align-items: center;
         gap: var(--space-3xs);
         padding: 2px var(--space-3xs) 2px 2px;
-        background-color: var(--hairline);
+        background-color: var(--border-color);
         font-size: var(--step--1);
         font-variant-numeric: tabular-nums;
     }
@@ -1851,8 +1851,8 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                 gap: var(--space-2xs);
                 min-height: 2.75rem;
                 background-color: var(--component-background);
-                border: 1px solid var(--hairline-medium);
-                color: var(--text-muted);
+                border: 1px solid var(--border-color);
+                color: var(--faded);
                 font: inherit;
                 font-weight: 600;
                 cursor: pointer;

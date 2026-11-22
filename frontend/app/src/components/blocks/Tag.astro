@@ -37,8 +37,8 @@ const outline = variant === 'outline'
 const has_color = Astro.props.color !== undefined
 const outline_color = text_color ?? (has_color ? tag_color : 'var(--highlight)')
 const outline_border = has_color
-    ? `color-mix(in srgb, ${tag_color} 60%, transparent)`
-    : 'color-mix(in srgb, var(--highlight) 20%, transparent)'
+    ? `color-mix(in srgb, ${tag_color} var(--tint-strong), transparent)`
+    : 'color-mix(in srgb, var(--highlight) var(--tint-soft), transparent)'
 ---
 
 {outline ?

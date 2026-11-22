@@ -266,7 +266,7 @@ const training_id = character.training?.fitting_id
     }
 
     .training-muted {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .training-link {
@@ -282,7 +282,7 @@ const training_id = character.training?.fitting_id
     }
 
     .training-link--muted {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .training-ship {
@@ -293,7 +293,7 @@ const training_id = character.training?.fitting_id
         padding-block: var(--space-xs);
 
         & + & {
-            border-top: 1px solid var(--hairline);
+            border-top: 1px solid var(--border-color);
         }
 
         img {
@@ -351,7 +351,7 @@ const training_id = character.training?.fitting_id
             font-size: var(--step--2);
             letter-spacing: 0.06em;
             text-transform: uppercase;
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         th:last-child,
@@ -360,7 +360,7 @@ const training_id = character.training?.fitting_id
         }
 
         tbody tr {
-            border-top: 1px solid var(--hairline);
+            border-top: 1px solid var(--border-color);
         }
     }
 
@@ -368,7 +368,7 @@ const training_id = character.training?.fitting_id
         display: block;
         font-size: var(--step--2);
         font-weight: 400;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .training-roles__ships {
@@ -382,7 +382,7 @@ const training_id = character.training?.fitting_id
         align-items: center;
         gap: var(--space-2xs);
         padding: var(--space-3xs) var(--space-xs) var(--space-3xs) var(--space-3xs);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
         border-radius: var(--space-3xs);
         font-size: var(--step--1);
         font-weight: 600;

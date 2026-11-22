@@ -112,7 +112,7 @@ import Button from '@components/blocks/Button.astro'
 
 <style lang="scss">
     .esi-readd {
-        border-color: color-mix(in srgb, var(--security-status-point-4) 55%, transparent);
+        border-color: var(--fleet-yellow);
     }
 
     .esi-readd__head {
@@ -123,7 +123,7 @@ import Button from '@components/blocks/Button.astro'
         margin-block-end: var(--space-xs);
 
         small {
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
@@ -133,7 +133,7 @@ import Button from '@components/blocks/Button.astro'
         align-items: center;
         gap: var(--space-s);
         padding-block: var(--space-xs);
-        border-block-start: 1px solid var(--hairline-medium);
+        border-block-start: 1px solid var(--border-color);
     }
 
     .esi-readd__text {
@@ -147,7 +147,7 @@ import Button from '@components/blocks/Button.astro'
         }
 
         small {
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 

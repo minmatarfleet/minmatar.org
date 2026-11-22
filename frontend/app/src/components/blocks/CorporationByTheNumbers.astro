@@ -432,7 +432,7 @@ const hull_peak = Math.max(1, ...hulls.map((hull) => hull.pilots))
     .track {
         display: block;
         height: var(--space-3xs);
-        background: color-mix(in srgb, var(--highlight) 10%, transparent);
+        background: color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent);
 
         span {
             display: block;

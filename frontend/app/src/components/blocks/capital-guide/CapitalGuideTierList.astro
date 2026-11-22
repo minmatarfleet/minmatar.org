@@ -83,8 +83,8 @@ function row_label(row: TierRow): string | null {
         display: flex;
         flex-direction: column;
         gap: 0;
-        border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
-        background: color-mix(in srgb, var(--component-background) 88%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
+        background: color-mix(in srgb, var(--component-background) var(--tint-strong), transparent);
         overflow: hidden;
     }
 
@@ -92,7 +92,7 @@ function row_label(row: TierRow): string | null {
         display: grid;
         grid-template-columns: var(--cap-tier-badge-width) minmax(0, 1fr);
         align-items: stretch;
-        border-bottom: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+        border-bottom: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
 
         &:last-child {
             border-bottom: 0;
@@ -110,7 +110,7 @@ function row_label(row: TierRow): string | null {
         min-height: 100%;
         padding: var(--space-s) var(--space-2xs);
         font-family: var(--cap-display-font, var(--heading-font));
-        border-right: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+        border-right: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
         text-align: center;
     }
 
@@ -135,12 +135,12 @@ function row_label(row: TierRow): string | null {
     }
 
     .cap-tiers__badge--s {
-        background: color-mix(in srgb, var(--fleet-red) 85%, transparent);
+        background: color-mix(in srgb, var(--fleet-red) var(--tint-strong), transparent);
         color: var(--foreground);
     }
 
     .cap-tiers__badge--c {
-        background: color-mix(in srgb, var(--fleet-yellow) 80%, transparent);
+        background: color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
         color: var(--background, #111);
     }
 
@@ -150,17 +150,17 @@ function row_label(row: TierRow): string | null {
     }
 
     .cap-tiers__badge--shield {
-        background: color-mix(in srgb, var(--alliance-blue) 75%, transparent);
+        background: color-mix(in srgb, var(--alliance-blue) var(--tint-strong), transparent);
         color: var(--foreground);
     }
 
     .cap-tiers__badge--armor {
-        background: color-mix(in srgb, var(--fleet-red) 85%, transparent);
+        background: color-mix(in srgb, var(--fleet-red) var(--tint-strong), transparent);
         color: var(--foreground);
     }
 
     .cap-tiers__badge--both {
-        background: color-mix(in srgb, var(--fleet-yellow) 80%, transparent);
+        background: color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
         color: var(--background, #111);
     }
 

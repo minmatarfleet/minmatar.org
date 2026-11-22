@@ -738,13 +738,13 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
         th,
         td {
             padding: var(--space-s);
-            border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+            border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
             text-align: left;
             vertical-align: middle;
         }
 
         th {
-            background: color-mix(in srgb, var(--component-background) 90%, transparent);
+            background: color-mix(in srgb, var(--component-background) var(--tint-strong), transparent);
             font-weight: 600;
             color: var(--highlight);
             background-color: var(--light-transparency-background-mobile);
@@ -788,8 +788,8 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
         --er-headline-accent: var(--fleet-yellow);
         --er-headline-tint: var(--fleet-red);
         --er-headline-tag-fg: var(--fleet-yellow);
-        --er-headline-tag-bg: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
-        --er-headline-tag-border: color-mix(in srgb, var(--fleet-yellow) 28%, transparent);
+        --er-headline-tag-bg: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
+        --er-headline-tag-border: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
 
         position: relative;
         isolation: isolate;
@@ -802,7 +802,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
         overflow: hidden;
         text-decoration: none;
         color: inherit;
-        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
         border-left-width: 3px;
         border-left-color: var(--er-headline-accent);
         transition:
@@ -841,7 +841,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
 
         &:hover,
         &:focus-visible {
-            border-color: color-mix(in srgb, var(--border-color-hover) 80%, transparent);
+            border-color: color-mix(in srgb, var(--border-color-hover) var(--tint-strong), transparent);
             border-left-color: var(--er-headline-accent);
         }
 
@@ -886,25 +886,25 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
         --er-headline-accent: var(--fleet-yellow);
         --er-headline-tint: var(--fleet-red);
         --er-headline-tag-fg: var(--fleet-yellow);
-        --er-headline-tag-bg: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
-        --er-headline-tag-border: color-mix(in srgb, var(--fleet-yellow) 28%, transparent);
+        --er-headline-tag-bg: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
+        --er-headline-tag-border: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
     }
 
     .er-headline-card--propaganda {
         --er-headline-accent: var(--fleet-yellow);
         --er-headline-tint: var(--fleet-red);
         --er-headline-tag-fg: var(--fleet-yellow);
-        --er-headline-tag-bg: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
-        --er-headline-tag-border: color-mix(in srgb, var(--fleet-yellow) 28%, transparent);
+        --er-headline-tag-bg: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
+        --er-headline-tag-border: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
     }
 
     /* ER industry chrome (blue border / blue wash / blue tag) — video */
     .er-headline-card--video {
         --er-headline-accent: var(--alliance-blue);
         --er-headline-tint: var(--alliance-blue);
-        --er-headline-tag-fg: color-mix(in srgb, var(--alliance-blue) 65%, white);
-        --er-headline-tag-bg: color-mix(in srgb, var(--alliance-blue) 18%, transparent);
-        --er-headline-tag-border: color-mix(in srgb, var(--alliance-blue) 35%, transparent);
+        --er-headline-tag-fg: var(--alliance-blue-text);
+        --er-headline-tag-bg: color-mix(in srgb, var(--alliance-blue) var(--tint-soft), transparent);
+        --er-headline-tag-border: color-mix(in srgb, var(--alliance-blue) var(--tint-strong), transparent);
     }
 
     .er-headline-card__body {
@@ -956,7 +956,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
         gap: 0.45em;
         margin: 0;
         font-size: var(--step--2);
-        color: color-mix(in srgb, var(--faded) 88%, transparent);
+        color: color-mix(in srgb, var(--faded) var(--tint-strong), transparent);
         line-height: 1.4;
     }
 

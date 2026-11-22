@@ -170,7 +170,7 @@ const PUBLIC_URL = translatePath(`/fleets/${fleet_id}/kills`)
         min-height: 2.75rem;
         padding: 0 var(--space-s);
         background: transparent;
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
         color: var(--foreground);
         font: inherit;
         font-weight: 700;
@@ -260,15 +260,15 @@ const PUBLIC_URL = translatePath(`/fleets/${fleet_id}/kills`)
     }
 
     .kill-feed__kill {
-        color: color-mix(in srgb, var(--alliance-blue) 55%, white);
+        color: var(--alliance-blue-300);
     }
 
     .kill-feed__loss {
-        color: color-mix(in srgb, var(--fleet-red) 70%, white);
+        color: var(--fleet-red-text);
     }
 
     .kill-feed__tag {
-        color: var(--text-muted);
+        color: var(--faded);
         text-align: center;
     }
 

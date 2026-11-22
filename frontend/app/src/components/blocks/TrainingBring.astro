@@ -174,7 +174,7 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
         font-weight: 600;
         letter-spacing: 0.06em;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--faded);
         text-align: center;
 
         &:first-child {
@@ -184,17 +184,17 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
 
     .training-bring__group th {
         padding: var(--space-s) var(--space-s) var(--space-2xs);
-        border-top: 1px solid var(--hairline);
+        border-top: 1px solid var(--border-color);
         font-family: var(--heading-font);
         font-size: var(--step--1);
         font-weight: normal;
         letter-spacing: 0.06em;
-        color: var(--text-muted);
+        color: var(--faded);
         text-align: start;
     }
 
     .training-bring__row {
-        border-top: 1px solid var(--hairline);
+        border-top: 1px solid var(--border-color);
         transition: var(--fast-transition);
 
         &:hover {
@@ -224,7 +224,7 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
         small {
             font-size: var(--step--2);
             font-weight: normal;
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
@@ -238,7 +238,7 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
         padding-inline: var(--space-2xs);
         border: 1px solid transparent;
         border-radius: var(--space-3xs);
-        background: color-mix(in srgb, var(--green) 30%, transparent);
+        background: color-mix(in srgb, var(--green) var(--tint-soft), transparent);
         color: var(--highlight);
         font-size: var(--step-0);
         font-weight: 700;
@@ -246,7 +246,7 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
         white-space: nowrap;
 
         &.wait {
-            border-color: color-mix(in srgb, var(--fleet-yellow) 35%, transparent);
+            border-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
             background: none;
             color: var(--fleet-yellow);
             font-size: var(--step--1);
@@ -259,13 +259,13 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
         transition: var(--fast-transition);
 
         &:hover {
-            outline: 2px solid var(--hairline-strong);
+            outline: 2px solid var(--border-color-hover);
             outline-offset: 1px;
         }
     }
 
     .training-bring__none {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .training-bring__narrow {
@@ -276,11 +276,11 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
             font-family: var(--heading-font);
             font-size: var(--step--1);
             letter-spacing: 0.06em;
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         details {
-            border-top: 1px solid var(--hairline);
+            border-top: 1px solid var(--border-color);
         }
 
         summary {
@@ -300,7 +300,7 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
             &::after {
                 content: '›';
                 font-size: var(--step-1);
-                color: var(--text-muted);
+                color: var(--faded);
                 transition: var(--fast-transition);
             }
         }

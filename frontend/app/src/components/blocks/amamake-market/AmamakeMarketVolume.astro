@@ -544,7 +544,7 @@ const hx_body = {
         inset: 0;
         z-index: 1;
         padding-block: var(--space-3xs);
-        background: color-mix(in srgb, var(--background) 88%, transparent);
+        background: color-mix(in srgb, var(--background) var(--tint-strong), transparent);
     }
 
     .mk-volume__indicator.htmx-request {
@@ -722,7 +722,7 @@ const hx_body = {
     .mk-bar {
         width: 100%;
         height: 0.75rem;
-        background: var(--mk-track, color-mix(in srgb, var(--highlight) 6%, transparent));
+        background: var(--mk-track, color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent));
     }
 
     .mk-bar__fill {

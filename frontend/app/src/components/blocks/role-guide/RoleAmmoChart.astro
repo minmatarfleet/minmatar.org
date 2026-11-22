@@ -194,7 +194,7 @@ const TYPE_CLASS = { em: 'rd-blue', thermal: 'rd-red', kinetic: 'rd-kinetic', ex
         flex-direction: column;
         gap: var(--space-xs);
         padding: var(--space-s);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
         background: var(--surface-sunken);
 
         header {
@@ -215,7 +215,7 @@ const TYPE_CLASS = { em: 'rd-blue', thermal: 'rd-red', kinetic: 'rd-kinetic', ex
         header p {
             margin: 0;
             font-size: var(--step--1);
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         svg {
@@ -227,12 +227,12 @@ const TYPE_CLASS = { em: 'rd-blue', thermal: 'rd-red', kinetic: 'rd-kinetic', ex
 
         .rd-text { fill: var(--foreground); }
         .rd-strong { fill: var(--highlight); font-weight: 600; }
-        .rd-muted { fill: var(--text-muted); }
-        .rd-grid { stroke: var(--hairline-strong); fill: none; }
+        .rd-muted { fill: var(--faded); }
+        .rd-grid { stroke: var(--border-color-hover); fill: none; }
         .rd-blue { fill: var(--alliance-blue); }
         .rd-red { fill: var(--fleet-red); }
         .rd-yellow { fill: var(--fleet-yellow); }
-        .rd-kinetic { fill: var(--text-muted); }
+        .rd-kinetic { fill: var(--faded); }
         .rd-best { fill: var(--green); font-weight: 600; }
     }
 
@@ -250,7 +250,7 @@ const TYPE_CLASS = { em: 'rd-blue', thermal: 'rd-red', kinetic: 'rd-kinetic', ex
     .role-ammo-chart__against {
         margin: 0;
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .role-ammo-chart__tabs {
@@ -258,7 +258,7 @@ const TYPE_CLASS = { em: 'rd-blue', thermal: 'rd-red', kinetic: 'rd-kinetic', ex
         grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: var(--space-2xs);
         padding-top: var(--space-xs);
-        border-top: 1px solid var(--hairline);
+        border-top: 1px solid var(--border-color);
     }
 
     .role-ammo-chart__tab {
@@ -267,9 +267,9 @@ const TYPE_CLASS = { em: 'rd-blue', thermal: 'rd-red', kinetic: 'rd-kinetic', ex
         justify-content: center;
         gap: var(--space-2xs);
         padding: var(--space-2xs);
-        border: 1px solid var(--hairline);
+        border: 1px solid var(--border-color);
         background: var(--background);
-        color: var(--text-muted);
+        color: var(--faded);
         font: inherit;
         font-size: var(--step--1);
         cursor: pointer;
@@ -281,7 +281,7 @@ const TYPE_CLASS = { em: 'rd-blue', thermal: 'rd-red', kinetic: 'rd-kinetic', ex
 
         &[aria-selected='true'] {
             border-color: var(--fleet-yellow);
-            background: color-mix(in srgb, var(--fleet-yellow) 10%, transparent);
+            background: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
             color: var(--highlight);
         }
 
@@ -320,7 +320,7 @@ const TYPE_CLASS = { em: 'rd-blue', thermal: 'rd-red', kinetic: 'rd-kinetic', ex
         th,
         td {
             padding: var(--space-2xs) var(--space-xs);
-            border-bottom: 1px solid var(--hairline);
+            border-bottom: 1px solid var(--border-color);
             text-align: left;
             white-space: nowrap;
         }
@@ -329,7 +329,7 @@ const TYPE_CLASS = { em: 'rd-blue', thermal: 'rd-red', kinetic: 'rd-kinetic', ex
             font-size: var(--step--2);
             letter-spacing: 0.04em;
             text-transform: uppercase;
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         tbody th {

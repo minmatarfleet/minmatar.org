@@ -173,7 +173,7 @@ const title_of = (id: string) => sections.find((section) => section.id === id)?.
         flex-direction: column;
         gap: var(--space-m);
         padding: var(--space-l) 0 var(--space-m);
-        border-top: 1px solid var(--hairline);
+        border-top: 1px solid var(--border-color);
         min-width: 0;
         scroll-margin-top: calc(var(--header-height, 4rem) + var(--space-l));
 
@@ -218,14 +218,14 @@ const title_of = (id: string) => sections.find((section) => section.id === id)?.
 
         figcaption {
             font-size: var(--step--1);
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
     .role-guide__muted {
         margin: 0;
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .role-guide__lessons {
@@ -314,7 +314,7 @@ const title_of = (id: string) => sections.find((section) => section.id === id)?.
 
     .role-guide__pilots {
         padding: var(--space-m) var(--space-l);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
         background: var(--surface-sunken);
     }
 
