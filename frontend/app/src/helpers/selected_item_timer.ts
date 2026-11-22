@@ -6,7 +6,7 @@
  *     Anchoring until 2026.11.22 00:41:49
  *
  * Skyhooks and customs offices copy as `Name (Location) [Owner]` instead of
- * `System - Name`. Anything we cannot read comes back empty, so the pilot
+ * `System - Name`, and jump gates as `From » To - Name` (the system is From). Anything we cannot read comes back empty, so the pilot
  * fills it in by hand on the Check step.
  */
 
@@ -54,7 +54,7 @@ export const parse_selected_item_timer = (text: string): SelectedItemTimer => {
     } else {
         const dash = first.indexOf(' - ')
         if (dash > 0) {
-            parsed.system_name = first.slice(0, dash)
+            parsed.system_name = first.slice(0, dash).split(' » ')[0]
             parsed.name = first.slice(dash + 3)
         } else {
             parsed.name = first
