@@ -104,7 +104,8 @@ const active_first = (pilots: FleetParticipants['flew'][number]['pilots']) => [.
 const chip_kills = (count: number) => count === 1 ? t('fleets.after.chip_kill') : t('fleets.after.chip_kills').replace('{count}', count.toString())
 
 import EmptyState from '@components/blocks/EmptyState.astro'
-import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 ---
 
 <section id="fleet-pilots" class="[ fleet-pilots ]" aria-labelledby="fleet-pilots-title">
@@ -185,21 +186,17 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
     </div>
 
     {fights.length > 0 &&
-        <XFadeScroll>
-        <div class="[ fleet-pilots__pills ]" role="group" aria-label={t('fleets.killfeed.engagement')}>
+        <ChipGroup wrap={true} scroll_below="48rem" aria_label={t('fleets.killfeed.engagement')}>
             {pills.map(pill =>
-                <button
-                    type="button"
-                    class:list={['[ fleet-pilots__pill ]', { 'fleet-pilots__pill--minor': !pill.round }]}
-                    aria-pressed={pill.position === participants.engagement ? 'true' : 'false'}
+                <FilterChip
+                    active={pill.position === participants.engagement}
                     hx-get={PARTIAL_URL(pill.position)}
                     hx-target="#fleet-pilots"
                     hx-swap="outerHTML"
                     hx-disabled-elt="this"
-                >{pill.label}{pill.meta && <small>{pill.meta}</small>}</button>
+                >{pill.label}{pill.meta && <small>{pill.meta}</small>}</FilterChip>
             )}
-        </div>
-        </XFadeScroll>
+        </ChipGroup>
     }
 
     {fight ?
@@ -255,13 +252,12 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
                     <div class="[ fleet-pilots__order ]" role="group" aria-label={t('fleets.after.order')}>
                         <small>{t('fleets.after.order')}</small>
                         {([['joined', t('fleets.after.order_joined')], ...(kills_known ? [['kills', t('fleets.after.order_kills')]] : []), ['ship', t('fleets.after.order_ship')]] as [string, string][]).map(([id, label]) =>
-                            <button
-                                type="button"
-                                class="[ fleet-pilots__pill ]"
-                                aria-pressed={id === 'joined' ? 'true' : 'false'}
+                            <FilterChip
+                                active={id === 'joined'}
                                 x-bind:aria-pressed={`order === '${id}' ? 'true' : 'false'`}
+                                x-bind:class={`{ 'is-active': order === '${id}' }`}
                                 x-on:click={`order = '${id}'`}
-                            >{label}</button>
+                            >{label}</FilterChip>
                         )}
                     </div>
                 }
@@ -641,7 +637,6 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
         }
     }
 
-    .fleet-pilots__pills,
     .fleet-pilots__order {
         display: flex;
         flex-wrap: wrap;
@@ -655,49 +650,6 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
         letter-spacing: 0.1em;
         text-transform: uppercase;
         color: var(--faded);
-    }
-
-    .fleet-pilots__pill {
-        display: inline-flex;
-        align-items: baseline;
-        gap: var(--space-2xs);
-        min-height: 2.75rem;
-        padding: 0 var(--space-s);
-        background: transparent;
-        border: 1px solid var(--border-color-hover);
-        color: var(--foreground);
-        font: inherit;
-        font-weight: 700;
-        line-height: 2.75rem;
-        cursor: pointer;
-
-        small {
-            font-weight: 600;
-            color: var(--faded);
-        }
-
-        &:hover {
-            border-color: var(--foreground);
-        }
-
-        &:focus-visible {
-            outline: 2px solid var(--fleet-yellow);
-            outline-offset: 2px;
-        }
-
-        &[aria-pressed='true'] {
-            background-color: var(--highlight);
-            border-color: var(--highlight);
-            color: var(--background);
-
-            small {
-                color: var(--background);
-            }
-        }
-    }
-
-    .fleet-pilots__pill--minor {
-        font-weight: 500;
     }
 
     // One row per character: who, kills, losses, then their ships in time.
@@ -1022,15 +974,6 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 
         .fleet-pilots__events {
             display: none;
-        }
-
-        .fleet-pilots__pills {
-            flex-wrap: nowrap;
-
-            .fleet-pilots__pill {
-                flex: 0 0 auto;
-                white-space: nowrap;
-            }
         }
 
         .fleet-pilots__row,
