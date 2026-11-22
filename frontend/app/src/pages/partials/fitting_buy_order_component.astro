@@ -32,6 +32,9 @@ import { is_fitting_buy_complete } from '@helpers/fitting_buy_status'
 
 let order: FittingBuyOrderDetail | null = null
 let error_message: string | false = false
+let landed_saved: number | null = null
+let landed_unresolved: string[] = []
+let landed_paste = ''
 let check_id = parseInt(Astro.url.searchParams.get('check_id') ?? '', 10)
 let poll_check = Astro.url.searchParams.get('poll') === '1'
 
@@ -149,12 +152,18 @@ async function handle_post_action(action: string, form: FormData): Promise<Respo
             break
         }
         case 'landed_prices': {
+            const paste = String(form.get('paste') ?? '')
+            landed_paste = paste
             const result = await paste_fitting_buy_landed_prices(
                 token,
                 order_id,
-                String(form.get('paste') ?? ''),
+                paste,
             )
             order = result.order
+            landed_saved = result.updated
+            landed_unresolved = result.unresolved ?? []
+            if (result.updated > 0)
+                landed_paste = ''
             break
         }
         default: {
@@ -372,6 +381,9 @@ const guide_steps = [
                             order={order}
                             partial_base={PARTIAL_BASE}
                             shopping_landed_complete={!!order.shopping_landed_complete}
+                            saved_count={landed_saved}
+                            unresolved_names={landed_unresolved}
+                            paste_value={landed_paste}
                         />
                     )}
                 </>
