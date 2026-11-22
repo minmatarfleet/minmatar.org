@@ -61,5 +61,47 @@
     "path": "converge",
     "pattern": "component-block",
     "note": "Flat component-background panel became the glass ComponentBlock with a Flexblock inside (padding kept at --space-m). The .component class sets p/li/h4 to --step--1 and h2 to --step-1, so the swapped-in pilot list rows are now --step--1."
+  },
+  {
+    "file": "src/components/blocks/ButtonViewHealthChartData.astro",
+    "selector": ".data-table-wrap",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Raw table inside RowList width 635px becomes DataTable: the dialog table now fills the dialog width, cells align to the top, and the header sits in a thead; fonts, borders and padding already matched the global table style."
+  },
+  {
+    "file": "src/pages/surveys/index.astro",
+    "selector": ".button[data-size=\"sm\"]",
+    "path": "converge",
+    "pattern": "button-primary",
+    "note": "Hand-styled .mbtn--go submit and anchor become Button color=green size=sm: 4px radius, 0.85em type and the inline-flex row give way to the library's padding, scale-on-hover and focus ring. The create form is a native POST, so the button keeps off_disable."
+  },
+  {
+    "file": "src/components/blocks/FleetKillFeed.astro",
+    "selector": ".kill-feed__engagement .select-group",
+    "path": "converge",
+    "pattern": "select-library",
+    "note": "The engagement select was a transparent 2.75rem box styled to match the filter buttons (scoped .kill-feed__engagement select). It becomes Select size=sm: the library field chrome and caret, wrapped in .select-group. The scoped select rules are removed because they no longer reach the select inside the component."
+  },
+  {
+    "file": "src/pages/partials/mentors_home_component.astro",
+    "selector": ".mentors-apply textarea",
+    "path": "converge",
+    "pattern": "textarea-library",
+    "note": "Raw textarea (browser default chrome) becomes Textarea, so the application note takes the library field look; it was already width 100%."
+  },
+  {
+    "file": "src/components/blocks/market_settings/FreightPricingFields.astro",
+    "selector": ".market-mode .filter-chip--input",
+    "path": "converge",
+    "pattern": "radio-chip",
+    "note": "Hand-rolled global .manage-chip radio chips (sentence case, --step--1, 2.75rem-ish row height) become FilterChip type=radio: uppercase tracked --step--2 chips with the yellow fill when checked. Inputs keep name, value, checked and x-model; the manage-chips fieldset flex row becomes a wrapping ChipGroup."
+  },
+  {
+    "file": "src/components/blocks/CampaignNewForm.astro",
+    "selector": ".campaign-new__kinds .filter-chip--input",
+    "path": "converge",
+    "pattern": "radio-chip",
+    "note": "Hand-rolled global .manage-chip radio chips (sentence case, --step--1, 2.75rem-ish row height) become FilterChip type=radio: uppercase tracked --step--2 chips with the yellow fill when checked. Inputs keep name, value, checked and x-model; the manage-chips fieldset flex row becomes a wrapping ChipGroup."
   }
 ]

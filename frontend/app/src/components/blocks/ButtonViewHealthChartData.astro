@@ -48,10 +48,16 @@ labels.map((label, index) => {
     copy_data = copy_data.concat(`${label}\t${coverage[index] ?? '-'}\t${viability[index] ?? '-'}\r\n`)
 })
 
+const columns = [
+    { key: 'timestamp', label: t('timestamp') },
+    { key: 'coverage', label: `${t('coverage')} (%)` },
+    { key: 'viability', label: `${t('viability')} (%)` },
+]
+
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
-import RowList from '@components/blocks/RowList.astro';
+import DataTable from '@components/blocks/DataTable.astro';
 import Button from '@components/blocks/Button.astro';
 import DialogButton from '@components/blocks/DialogButton.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
@@ -75,33 +81,26 @@ import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 
     <Flexblock gap="var(--space-l)" slot="dialog">
         <Flexblock gap="var(--space-s)">
-            <RowList width='635px'>
-                <table style={`--coverage_color: ${coverage_color}; --viability_color: ${viability_color};`}>
-                    <tr>
-                        <th class="[ w-[] ]">{t('timestamp')}</th>
-                        <th>{t('coverage')} (%)</th>
-                        <th>{t('viability')} (%)</th>
-                    </tr>
-                    {labels.map((label, index) => {
-                        const coverage_delta = index > 0 ? (coverage[index] ?? 0) - (coverage[index - 1] ?? 0) : 0
-                        const viability_delta = index > 0 ? (viability[index] ?? 0) - (viability[index - 1] ?? 0) : 0
+            <DataTable columns={columns} style={`--coverage_color: ${coverage_color}; --viability_color: ${viability_color};`}>
+                {labels.map((label, index) => {
+                    const coverage_delta = index > 0 ? (coverage[index] ?? 0) - (coverage[index - 1] ?? 0) : 0
+                    const viability_delta = index > 0 ? (viability[index] ?? 0) - (viability[index - 1] ?? 0) : 0
 
-                        return(<tr>
-                            <td>{label}</td>
-                            <td>
-                                {coverage[index] ? coverage[index].toFixed(2) : '-'} {coverage_delta !== 0 && <span class:list={[ coverage_delta > 0 ? 'text-green' : 'text-red' ]}>
-                                    {coverage_delta > 0 ? '▲' : '▼'} <small>{Math.abs(coverage_delta).toFixed(2)}</small>
-                                </span>}
-                            </td>
-                            <td>
-                                {viability[index] ? viability[index].toFixed(2) : '-'} {viability_delta !== 0 && <span class:list={[ viability_delta > 0 ? 'text-green' : 'text-red' ]}>
-                                    {viability_delta > 0 ? '▲' : '▼'} <small>{Math.abs(viability_delta).toFixed(2)}</small>
-                                </span>}
-                            </td>
-                        </tr>)
-                    })}
-                </table>
-            </RowList>
+                    return(<tr>
+                        <td>{label}</td>
+                        <td>
+                            {coverage[index] ? coverage[index].toFixed(2) : '-'} {coverage_delta !== 0 && <span class:list={[ coverage_delta > 0 ? 'text-green' : 'text-red' ]}>
+                                {coverage_delta > 0 ? '▲' : '▼'} <small>{Math.abs(coverage_delta).toFixed(2)}</small>
+                            </span>}
+                        </td>
+                        <td>
+                            {viability[index] ? viability[index].toFixed(2) : '-'} {viability_delta !== 0 && <span class:list={[ viability_delta > 0 ? 'text-green' : 'text-red' ]}>
+                                {viability_delta > 0 ? '▲' : '▼'} <small>{Math.abs(viability_delta).toFixed(2)}</small>
+                            </span>}
+                        </td>
+                    </tr>)
+                })}
+            </DataTable>
         </Flexblock>
     </Flexblock>
 

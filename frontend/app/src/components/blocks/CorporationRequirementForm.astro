@@ -13,6 +13,7 @@ import {
 } from '@helpers/corporations/requirements'
 
 import Button from '@components/blocks/Button.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
 
@@ -189,22 +190,22 @@ const alpine_state = JSON.stringify({
 
     <div class="[ req-form__actions ]">
         {editing &&
-            <button
+            <StylessButton
                 type="button"
                 class="[ req-form__quiet ]"
                 hx-post={partial_url}
                 hx-target={target}
                 hx-swap="outerHTML"
                 hx-vals={JSON.stringify({ action: 'remove', rule_id: String(rule!.id) })}
-            >{t('corporations.requirements.remove')}</button>
+            >{t('corporations.requirements.remove')}</StylessButton>
         }
-        <button
+        <StylessButton
             type="button"
             class="[ req-form__quiet ]"
             hx-get={partial_url}
             hx-target={target}
             hx-swap="outerHTML"
-        >{t('corporations.requirements.cancel')}</button>
+        >{t('corporations.requirements.cancel')}</StylessButton>
         <Button type="submit" size="sm">{editing ? t('corporations.requirements.save') : t('corporations.requirements.add')}</Button>
     </div>
 </form>

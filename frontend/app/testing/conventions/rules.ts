@@ -282,7 +282,7 @@ export const RULES: ConventionRule[] = [
         kind: 'ratchet',
         why: 'Tables are <DataGrid> (sortable, responsive) or <RowList> (the styled base); a hand-written <table> or role="table" skips both. Use the library table.',
         find: (file) => {
-            if (!is_astro(file) || COMPONENT_FILES('blocks/DataGrid', 'blocks/DataTable', 'blocks/RowList', 'blocks/campaigns/etherium-reach/CampaignDataTable').includes(file.path)) return []
+            if (!is_astro(file) || COMPONENT_FILES('blocks/DataGrid', 'blocks/DataTable', 'blocks/RowList', 'blocks/campaigns/etherium-reach/CampaignDataTable', 'blocks/manage/ManageTable', 'blocks/manage/RowSwapFrame').includes(file.path)) return []
             return hits_in(file, [astro_template(file.text)], RAW_TABLE)
         },
     },
@@ -338,7 +338,7 @@ export const RULES: ConventionRule[] = [
             if (!is_astro(file)) return []
             const exempt = COMPONENT_FILES(
                 'blocks/Input', 'blocks/Select', 'blocks/Textarea', 'blocks/RadioCheckInput',
-                'blocks/Switch', 'blocks/FlatPicker',
+                'blocks/Switch', 'blocks/FlatPicker', 'blocks/FilterChip', 'blocks/OptionCard', 'blocks/RadioCheckPill',
             )
             if (exempt.includes(file.path)) return []
             return hits_in(file, [astro_template(file.text)], RAW_FORM_CONTROL)

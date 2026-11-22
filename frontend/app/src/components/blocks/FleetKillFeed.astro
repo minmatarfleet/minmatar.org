@@ -6,6 +6,7 @@ import type { FleetKills, FleetFightRound } from '@helpers/api.minmatar.org/flee
 import { format_isk } from '@helpers/numbers'
 import { get_item_icon } from '@helpers/eve_image'
 import { killmail_engagement } from '@helpers/fleet_fights'
+import Select from '@components/blocks/Select.astro'
 
 /**
  * The Kills tab: every killmail of a finished fleet, oldest first, filtered
@@ -87,12 +88,12 @@ const PUBLIC_URL = translatePath(`/fleets/${fleet_id}/kills`)
             {engagements.length > 1 &&
                 <label class="[ kill-feed__engagement ]">
                     <span class="visually-hidden">{t('fleets.killfeed.engagement')}</span>
-                    <select x-model="engagement">
+                    <Select size="sm" width="auto" x-model="engagement">
                         <option value="">{t('fleets.killfeed.every_engagement')}</option>
                         {engagements.map(number =>
                             <option value={number.toString()}>{t('fleets.fights.round').replace('{number}', number.toString())}</option>
                         )}
-                    </select>
+                    </Select>
                 </label>
             }
         </div>
@@ -165,7 +166,6 @@ const PUBLIC_URL = translatePath(`/fleets/${fleet_id}/kills`)
 
     .kill-feed__filters button,
     .kill-feed__share button,
-    .kill-feed__engagement select,
     .kill-feed__more {
         min-height: 2.75rem;
         padding: 0 var(--space-s);
@@ -190,10 +190,6 @@ const PUBLIC_URL = translatePath(`/fleets/${fleet_id}/kills`)
         background-color: var(--highlight);
         border-color: var(--highlight);
         color: var(--background);
-    }
-
-    .kill-feed__engagement select {
-        background-color: var(--component-background);
     }
 
     .kill-feed__share a {
