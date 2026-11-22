@@ -42,8 +42,8 @@ delete attributes.class
 <style lang="scss">
     // The panel look of the ship guides: a flat, bordered, translucent panel with display-font headings.
     :global(.component-block--guide) {
-        background: color-mix(in srgb, var(--component-background) var(--tint-strong), transparent);
-        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
+        background: color-mix(in srgb, var(--component-background) var(--tint-heavy), transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
         min-width: 0;
 
         @media (max-width: 48rem) {
@@ -53,7 +53,7 @@ delete attributes.class
         :global(h2) {
             margin: 0 0 var(--space-m);
             padding-bottom: var(--space-s);
-            border-bottom: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
+            border-bottom: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
             font-family: var(--guide-display-font, var(--heading-font));
             font-size: clamp(var(--step-1), 2.5vw, var(--step-2));
             letter-spacing: 0.08em;

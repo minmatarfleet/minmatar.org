@@ -181,7 +181,7 @@ export const RULES: ConventionRule[] = [
     {
         id: 'tint_off_ladder',
         kind: 'ratchet',
-        why: 'Rule 3: a colour over transparent uses the tint ladder: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent) with --tint-subtle (8%), --tint-soft (15%) or --tint-strong (45%), not a literal percentage.',
+        why: 'Rule 3: a colour over transparent uses the tint ladder: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent) with --tint-subtle (8%), --tint-soft (15%), --tint-medium (30%), --tint-strong (45%), --tint-bold (60%), --tint-heavy (75%) or --tint-dense (90%), not a literal percentage.',
         find: (file) => hits_in(file, [{ text: file.text, offset: 0 }], TINT_LITERAL),
     },
     {

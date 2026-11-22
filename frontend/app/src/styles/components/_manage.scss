@@ -312,7 +312,7 @@
 
     @media (hover: hover) {
         &:not(.is-on):not(:has(input:checked)):hover {
-            border-color: color-mix(in srgb, var(--chip_color) var(--tint-strong), transparent);
+            border-color: color-mix(in srgb, var(--chip_color) var(--tint-bold), transparent);
             color: var(--highlight);
         }
     }

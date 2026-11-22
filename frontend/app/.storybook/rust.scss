@@ -40,7 +40,7 @@ body.sb-show-main {
 $docs: '#storybook-docs .sbdocs-wrapper';
 
 #{$docs} {
-    --docs-text:        color-mix(in srgb, var(--highlight) var(--tint-strong), transparent);
+    --docs-text:        color-mix(in srgb, var(--highlight) var(--tint-heavy), transparent);
     --docs-text-strong: var(--highlight);
     --docs-rule:        var(--border-color);
 

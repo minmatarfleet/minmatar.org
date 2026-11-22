@@ -95,8 +95,8 @@ function ratingClassName(rating: MatchupRating): string {
         gap: var(--space-s);
         min-width: 0;
         padding: var(--component-padding-block);
-        background: color-mix(in srgb, var(--component-background) var(--tint-strong), transparent);
-        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
+        background: color-mix(in srgb, var(--component-background) var(--tint-bold), transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
     }
 
     @media (max-width: 48rem) {
@@ -129,8 +129,8 @@ function ratingClassName(rating: MatchupRating): string {
 
     .guide-chart__scroll {
         padding: var(--space-xs);
-        background: color-mix(in srgb, var(--component-background) var(--tint-strong), transparent);
-        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
+        background: color-mix(in srgb, var(--component-background) var(--tint-bold), transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
     }
 
     @media (max-width: 40rem) {
@@ -157,8 +157,8 @@ function ratingClassName(rating: MatchupRating): string {
         padding: var(--space-xs) var(--space-s);
         text-align: left;
         vertical-align: middle;
-        background: color-mix(in srgb, var(--component-background) var(--tint-strong), transparent);
-        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
+        background: color-mix(in srgb, var(--component-background) var(--tint-dense), transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
         font-weight: 600;
         line-height: 1.25;
     }
@@ -228,6 +228,6 @@ function ratingClassName(rating: MatchupRating): string {
     .guide-chart__rating--unknown {
         background: color-mix(in srgb, var(--faded) var(--tint-soft), transparent);
         color: var(--text-color-secondary, var(--faded));
-        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
     }
 </style>

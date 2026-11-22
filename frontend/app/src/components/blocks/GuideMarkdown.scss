@@ -22,8 +22,8 @@
 
 .guide-md-panel {
     padding: var(--guide-md-panel-padding-block) var(--guide-md-panel-padding-inline);
-    background: color-mix(in srgb, var(--component-background) var(--tint-strong), transparent);
-    border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
+    background: color-mix(in srgb, var(--component-background) var(--tint-heavy), transparent);
+    border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
     min-width: 0;
 }
 
@@ -40,7 +40,7 @@
 .guide-md-section__title {
     margin: 0 0 var(--space-m);
     padding-bottom: var(--space-s);
-    border-bottom: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
     font-family: var(--guide-md-display-font);
     font-size: clamp(var(--step-1), 2.5vw, var(--step-2));
     letter-spacing: 0.08em;
@@ -94,8 +94,8 @@
     margin: 0 0 var(--space-m);
     padding: var(--space-s) var(--space-m);
     overflow-x: auto;
-    background: color-mix(in srgb, var(--component-background) var(--tint-strong), transparent);
-    border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
+    background: color-mix(in srgb, var(--component-background) var(--tint-dense), transparent);
+    border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
     font-size: var(--step--1);
     line-height: 1.5;
 }
@@ -118,7 +118,7 @@
 
 .guide-md-section :is(th, td) {
     padding: var(--space-2xs) var(--space-s);
-    border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
+    border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
     text-align: left;
     vertical-align: top;
 }
@@ -135,25 +135,25 @@
     font-size: var(--step--2);
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    background: color-mix(in srgb, var(--component-background) var(--tint-strong), transparent);
+    background: color-mix(in srgb, var(--component-background) var(--tint-dense), transparent);
 }
 
 .guide-md-section :is(blockquote) {
     margin: 0 0 var(--space-m);
     padding-left: var(--space-m);
-    border-left: 3px solid color-mix(in srgb, var(--fleet-red) var(--tint-strong), transparent);
+    border-left: 3px solid color-mix(in srgb, var(--fleet-red) var(--tint-heavy), transparent);
     color: var(--text-color-secondary, var(--faded));
 }
 
 .guide-md-section :is(hr) {
     margin: var(--space-l) 0;
     border: 0;
-    border-top: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
+    border-top: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
 }
 
 .guide-md-section :is(img) {
     display: block;
     max-width: 100%;
     height: auto;
-    border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
+    border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
 }

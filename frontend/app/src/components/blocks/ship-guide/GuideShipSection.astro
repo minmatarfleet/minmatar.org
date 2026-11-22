@@ -148,8 +148,8 @@ const verdict_labels: Record<MatchupVerdict, string> = {
         min-width: 0;
         overflow-x: clip;
         padding: var(--component-padding-block) var(--space-l-xl);
-        background: color-mix(in srgb, var(--component-background) var(--tint-strong), transparent);
-        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
+        background: color-mix(in srgb, var(--component-background) var(--tint-heavy), transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
     }
 
     @media (max-width: 48rem) {
@@ -163,7 +163,7 @@ const verdict_labels: Record<MatchupVerdict, string> = {
         gap: var(--space-l);
         margin-bottom: var(--space-l);
         padding-bottom: var(--space-l);
-        border-bottom: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
+        border-bottom: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
         align-items: stretch;
     }
 
@@ -181,8 +181,8 @@ const verdict_labels: Record<MatchupVerdict, string> = {
         padding: var(--component-padding-block);
         background:
             radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--fleet-red) var(--tint-soft), transparent), transparent 70%),
-            color-mix(in srgb, var(--component-background) var(--tint-strong), transparent);
-        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
+            color-mix(in srgb, var(--component-background) var(--tint-heavy), transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
 
         :global(picture) {
             width: min(100%, 512px);
@@ -198,8 +198,8 @@ const verdict_labels: Record<MatchupVerdict, string> = {
     .guide-ship__stats {
         min-width: 0;
         padding: var(--component-padding-block) var(--space-m);
-        background: color-mix(in srgb, var(--component-background) var(--tint-strong), transparent);
-        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
+        background: color-mix(in srgb, var(--component-background) var(--tint-dense), transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
     }
 
     .guide-ship__stats-kicker {

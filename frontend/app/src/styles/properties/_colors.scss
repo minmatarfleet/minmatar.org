@@ -60,7 +60,11 @@
     // color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent)
     --tint-subtle:          8%;
     --tint-soft:            15%;
+    --tint-medium:          30%;
     --tint-strong:          45%;
+    --tint-bold:            60%;
+    --tint-heavy:           75%;
+    --tint-dense:           90%;
     // Dark tint for sunken surfaces; for other alphas mix a token.
     --surface-sunken:       rgba(0, 0, 0, 0.22);
 
