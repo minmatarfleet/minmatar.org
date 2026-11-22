@@ -268,8 +268,9 @@ import TribeAboutGrowth from '@components/blocks/tribe_about/TribeAboutGrowth.as
         }
     }
 
-    .tribe-about-footnote,
-    .tribe-about-pending {
+    /* Doubled class: the reset has to beat Flexblock's gap rule whichever stylesheet is emitted last. */
+    .tribe-about-footnote.tribe-about-footnote,
+    .tribe-about-pending.tribe-about-pending {
         margin: 0;
         font-size: var(--step--1);
         color: var(--faded);

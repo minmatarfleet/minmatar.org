@@ -1705,5 +1705,13 @@
     "pattern": "data-table",
     "note": "Cell and header text take the DataTable colours: cells inherit the page yellow instead of white, numeric headers are white instead of yellow.",
     "batch": "fix2"
+  },
+  {
+    "file": "src/components/blocks/campaigns/auga/AugaSiegeCampaign.astro",
+    "selector": ".auga-pilot-table, .auga-alliance-table, .auga-ship-table, .auga-event-table",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Numeric columns (the er-table__numeric class had no rule, so they were left-aligned) take DataTable's right alignment with tabular figures.",
+    "batch": "fix3"
   }
 ]

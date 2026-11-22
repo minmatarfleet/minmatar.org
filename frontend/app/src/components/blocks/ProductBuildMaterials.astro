@@ -51,6 +51,7 @@ import Tag from '@components/blocks/Tag.astro'
                 <p class="[ empty ]">{t('industry.product.no_materials')}</p>
                 :
                 <DataTable
+                    class="bom"
                     density="dense"
                     borders="none"
                     columns={[
@@ -121,6 +122,29 @@ import Tag from '@components/blocks/Tag.astro'
     .muted,
     .empty {
         color: var(--foreground);
+    }
+
+    /* Doubled class: the roomier cells and small-caps header of the old table have to beat DataTable's dense cells. */
+    :global(table.bom.bom) {
+        border-collapse: collapse;
+        border-spacing: 0;
+    }
+
+    :global(table.bom.bom th),
+    :global(table.bom.bom td) {
+        padding: var(--space-2xs) var(--space-xs);
+        vertical-align: middle;
+    }
+
+    :global(table.bom.bom thead th.data-table__numeric) {
+        white-space: nowrap;
+    }
+
+    :global(table.bom.bom thead th) {
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
     }
 
     .num {

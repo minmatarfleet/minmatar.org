@@ -130,6 +130,12 @@
     white-space: nowrap;
 }
 
+/* The DataTable cell padding has the same specificity as the rule above; repeat the class so the dense guide padding wins whatever the stylesheet order. */
+.cap-guide .cap-table.cap-table th,
+.cap-guide .cap-table.cap-table td {
+    padding: var(--space-2xs) var(--space-s);
+}
+
 /* Phones: each table row becomes a stacked card with the column name above each value. */
 @media (max-width: 48rem) {
     .cap-guide .cap-table-wrap {
@@ -159,8 +165,8 @@
         }
     }
 
-    .cap-guide .cap-table th,
-    .cap-guide .cap-table td {
+    .cap-guide .cap-table.cap-table th,
+    .cap-guide .cap-table.cap-table td {
         padding: var(--space-3xs) var(--space-s);
         border: 0;
     }

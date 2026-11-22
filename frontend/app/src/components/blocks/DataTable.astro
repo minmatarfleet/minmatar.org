@@ -170,6 +170,7 @@ const sort_state = `{
     aria-label={caption}
 >
     <table
+        aria-label={caption && !caption_visible ? caption : undefined}
         {...attributes}
         class:list={[
             '[ data-table ]',
@@ -183,7 +184,7 @@ const sort_state = `{
         ]}
         x-data={sortable && !bodies ? sort_state : undefined}
     >
-        {caption && <caption class:list={[{ 'visually-hidden': !caption_visible, 'data-table__caption': caption_visible }]}>{caption}</caption>}
+        {caption && caption_visible && <caption class="data-table__caption">{caption}</caption>}
         <thead>
             <tr>
                 {columns.map((column, index) => {
