@@ -34,6 +34,7 @@ const lead = pilots.length === 1
     ? t('structures.holdings.lead_one').replace('~ITEMS', String(holdings?.items ?? 0))
     : t('structures.holdings.lead').replace('~PILOTS', String(pilots.length)).replace('~ITEMS', String(holdings?.items ?? 0))
 
+import DataTable from '@components/blocks/DataTable.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 ---
@@ -88,24 +89,17 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                                 </li>
                             ))}
                         </ul>
-                        <table class="[ structure-holdings__table ]" x-show="by === 'item'" x-cloak>
-                            <thead>
-                                <tr>
-                                    <th scope="col">{t('structures.holdings.item')}</th>
-                                    <th scope="col">{t('structures.holdings.holders')}</th>
-                                    <th scope="col">{t('structures.holdings.items')}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                        <div x-show="by === 'item'" x-cloak>
+                            <DataTable class="[ structure-holdings__table ]" density="dense" columns={[{ key: 'item', label: t('structures.holdings.item') }, { key: 'holders', label: t('structures.holdings.holders'), numeric: true }, { key: 'items', label: t('structures.holdings.items'), numeric: true }]}>
                                 {holdings!.by_item.map((item) => (
                                     <tr>
                                         <th scope="row"><img src={get_item_icon(item.type_id, 32)} alt="" width="32" height="32" loading="lazy" />{item.type_name}</th>
-                                        <td>{item.holders}</td>
-                                        <td>{item.count}</td>
+                                        <td class="data-table__numeric">{item.holders}</td>
+                                        <td class="data-table__numeric">{item.count}</td>
                                     </tr>
                                 ))}
-                            </tbody>
-                        </table>
+                        </DataTable>
+                        </div>
                     </>
                 )
             }
@@ -258,37 +252,12 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         color: var(--faded);
     }
 
-    .structure-holdings__table {
-        inline-size: 100%;
-        border-collapse: collapse;
-        background-color: var(--component-background);
-
-        th,
-        td {
-            padding: var(--space-2xs) var(--space-m);
-            text-align: end;
-            font-variant-numeric: tabular-nums;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        thead th {
-            font-size: var(--step--2);
-            font-weight: 700;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            color: var(--faded);
-        }
-
-        th:first-child {
-            text-align: start;
-        }
-
-        tbody th {
-            display: flex;
-            align-items: center;
-            gap: var(--space-xs);
-            font-weight: 500;
-            color: var(--highlight);
-        }
+    tbody th {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        font-weight: 500;
+        color: var(--highlight);
     }
+
 </style>

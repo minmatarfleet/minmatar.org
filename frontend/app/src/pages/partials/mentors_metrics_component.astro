@@ -59,7 +59,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import Grid from '@components/compositions/Grid.astro'
 import StatCard from '@components/blocks/StatCard.astro'
-import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import DataTable from '@components/blocks/DataTable.astro'
 import MentorsNav from '@components/blocks/mentors/MentorsNav.astro'
 import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
 ---
@@ -95,19 +95,7 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                     </Grid>
 
                     <MentorsSection title={t('mentors.metrics.mentors')}>
-                        <XFadeScroll>
-                            <table class="[ mentors-table ]">
-                                <thead>
-                                    <tr>
-                                        <th scope="col">{t('mentors.metrics.col.mentor')}</th>
-                                        <th scope="col">{t('mentors.metrics.col.timezones')}</th>
-                                        <th scope="col">{t('mentors.metrics.col.classes')}</th>
-                                        <th scope="col">{t('mentors.metrics.col.pilots')}</th>
-                                        <th scope="col">{t('mentors.metrics.col.answers')}</th>
-                                        <th scope="col">{t('mentors.metrics.col.passed')}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                        <DataTable class="[ mentors-table ]" density="dense" columns={[{ key: 'c0', label: t('mentors.metrics.col.mentor') }, { key: 'c1', label: t('mentors.metrics.col.timezones') }, { key: 'c2', label: t('mentors.metrics.col.classes') }, { key: 'c3', label: t('mentors.metrics.col.pilots') }, { key: 'c4', label: t('mentors.metrics.col.answers') }, { key: 'c5', label: t('mentors.metrics.col.passed') }]}>
                                     {metrics.mentors.map(row =>
                                         <tr>
                                             <th scope="row">
@@ -123,9 +111,7 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                                             <td>{row.passed}</td>
                                         </tr>
                                     )}
-                                </tbody>
-                            </table>
-                        </XFadeScroll>
+                            </DataTable>
                     </MentorsSection>
 
                     <MentorsSection title={t('mentors.metrics.zones')} hint={t('mentors.metrics.zones_hint')}>
@@ -147,17 +133,7 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
 
                     {metrics.topics.length > 0 &&
                         <MentorsSection title={t('mentors.metrics.topics')}>
-                            <XFadeScroll>
-                                <table class="[ mentors-table ]">
-                                    <thead>
-                                        <tr>
-                                            <th scope="col">{t('mentors.metrics.col.class')}</th>
-                                            <th scope="col">{t('mentors.metrics.col.requests')}</th>
-                                            <th scope="col">{t('mentors.metrics.mentors')}</th>
-                                            <th scope="col">{t('mentors.metrics.col.waiting')}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
+                            <DataTable class="[ mentors-table ]" density="dense" columns={[{ key: 'c0', label: t('mentors.metrics.col.class') }, { key: 'c1', label: t('mentors.metrics.col.requests') }, { key: 'c2', label: t('mentors.metrics.mentors') }, { key: 'c3', label: t('mentors.metrics.col.waiting') }]}>
                                         {metrics.topics.map(topic =>
                                             <tr>
                                                 <th scope="row">{topic.title}</th>
@@ -166,9 +142,7 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                                                 <td>{topic.waiting}</td>
                                             </tr>
                                         )}
-                                    </tbody>
-                                </table>
-                            </XFadeScroll>
+                                </DataTable>
                         </MentorsSection>
                     }
 
@@ -244,30 +218,6 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
         &:focus-visible {
             outline: solid 2px var(--fleet-yellow);
             outline-offset: 2px;
-        }
-    }
-
-    .mentors-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: var(--step--1);
-
-        th,
-        td {
-            padding: var(--space-2xs) var(--space-s);
-            border-bottom: solid 1px var(--border-color);
-            text-align: start;
-            white-space: nowrap;
-        }
-
-        thead th {
-            color: var(--faded);
-            font-weight: 600;
-        }
-
-        tbody th {
-            color: var(--highlight);
-            font-weight: 600;
         }
     }
 
