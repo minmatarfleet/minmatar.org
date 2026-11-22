@@ -42,8 +42,19 @@ import {
 
 import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
 import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
-import PlayerContentChartChartjs from '@components/blocks/campaigns/etherium-reach/PlayerContentChartChartjs.astro'
-import PlayerIncomeChartChartjs from '@components/blocks/campaigns/etherium-reach/PlayerIncomeChartChartjs.astro'
+import CampaignContentChart from '@components/blocks/campaigns/CampaignContentChart.astro'
+import Chart from '@components/blocks/Chart.astro'
+import {
+    CAMPAIGN_BEATS,
+    EXPLORATION_GROSS_ISK,
+    FLEETS_MONTHLY,
+    ISK_DESTROYED_MONTHLY,
+    MINING_GROSS_ISK,
+    MONTHS,
+    PI_GROSS_ISK,
+    RATTING_GROSS_ISK,
+    toBillions,
+} from '@/data/campaigns/etherium-reach'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import TextBox from '@components/layout/TextBox.astro'
 import Grid from '@components/compositions/Grid.astro'
@@ -297,7 +308,26 @@ import { number_name } from '@helpers/numbers'
     </Flexblock>
 
     <ComponentBlock>
-        <PlayerIncomeChartChartjs />
+        <Chart
+            type='line'
+            labels={[...MONTHS]}
+            datasets={[
+                { label: 'Ratting', data: RATTING_GROSS_ISK.map(toBillions), tone: 'fleet-red', gradient: 100, ring: true, suffix: ' B ISK', borderWidth: 2.5, pointRadius: 3.5, pointBorderWidth: 1.5, tension: 0 },
+                { label: 'Mining', data: MINING_GROSS_ISK.map(toBillions), tone: 'alliance-blue', gradient: 100, ring: true, suffix: ' B ISK', borderWidth: 2.5, pointRadius: 3.5, pointBorderWidth: 1.5, tension: 0 },
+                { label: 'Planetary Interaction', data: PI_GROSS_ISK.map(toBillions), tone: 'militia-purple', gradient: 100, ring: true, suffix: ' B ISK', borderWidth: 2.5, pointRadius: 3.5, pointBorderWidth: 1.5, tension: 0 },
+                { label: 'Exploration (estimated)', data: EXPLORATION_GROSS_ISK.map(toBillions), tone: 'highlight', fill: false, ring: true, suffix: ' B ISK', borderWidth: 2, borderDash: [6, 4], pointRadius: 3.5, pointBorderWidth: 1.5, pointStyle: 'rectRot', tension: 0 },
+            ]}
+            options={{
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { title: { display: true, text: 'ISK (billions)' }, grid: { display: false } },
+                },
+            }}
+            tick_suffix=' B'
+            legend={true}
+            height='min(calc(var(--space-3xl) * 6), 90vh)'
+            aria_label='Monthly gross ISK by activity: ratting, mining, planetary interaction and estimated exploration'
+        />
     </ComponentBlock>
 </Flexblock>
 
@@ -308,7 +338,16 @@ import { number_name } from '@helpers/numbers'
     </Flexblock>
 
     <ComponentBlock>
-        <PlayerContentChartChartjs />
+        <CampaignContentChart
+            months={MONTHS}
+            isk={ISK_DESTROYED_MONTHLY.map(toBillions)}
+            fleets={FLEETS_MONTHLY}
+            beats={CAMPAIGN_BEATS}
+            beat_labels={{ 3: 'SL0W collapses', 5: 'B0SS loses region', 6: 'RMC consolidates space', 7: 'TRD disbands' }}
+            beat_layout={{ 5: { anchor: 'end', dx: -10 }, 6: { anchor: 'middle', dx: 0 }, 7: { anchor: 'start', dx: 10 } }}
+            band={{ from: 0, to: 3 }}
+            aria_label='Monthly ISK destroyed in the Etherium Reach campaign against fleets flown'
+        />
     </ComponentBlock>
 </Flexblock>
 

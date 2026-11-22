@@ -1,7 +1,7 @@
 ---
 import type { OrdersProfitSummary } from '@dtypes/api.minmatar.org'
 
-import GuideOrderProfitBarChart from '@components/blocks/industry/guide-order-summary/GuideOrderProfitBarChart.astro'
+import Chart from '@components/blocks/Chart.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 
@@ -35,9 +35,20 @@ const blurb =
                 <small>{blurb}</small>
             </Flexblock>
             <ComponentBlock>
-                <GuideOrderProfitBarChart
+                <Chart
+                    type='bar'
                     labels={chartLabels}
-                    valuesM={chartValuesM}
+                    datasets={[{ label: 'Order profit (M ISK)', data: chartValuesM, tone: 'alliance-blue', suffix: 'M ISK' }]}
+                    options={{
+                        layout: { padding: { bottom: 8 } },
+                        scales: {
+                            // Full ship names: tilt rather than abbreviate.
+                            x: { ticks: { maxRotation: 90, minRotation: 55, autoSkip: false, font: { size: 11 } } },
+                            y: { title: { display: true, text: 'M ISK' } },
+                        },
+                    }}
+                    height='max(calc(var(--space-3xl) * 4), min(calc(var(--space-3xl) * 5), 75vh))'
+                    aria_label='Order profit by product in millions of ISK'
                 />
             </ComponentBlock>
         </Flexblock>

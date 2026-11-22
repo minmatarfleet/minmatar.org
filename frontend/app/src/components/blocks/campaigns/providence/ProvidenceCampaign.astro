@@ -25,7 +25,8 @@ import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignSt
 import CountUpAnimation from '@components/blocks/CountUpAnimation.astro'
 import CharacterPicture from '@components/blocks/CharacterPicture.astro'
 import CharacterCard from '@components/blocks/CharacterCard.astro'
-import ProvidenceContentChartChartjs from '@components/blocks/campaigns/providence/ProvidenceContentChartChartjs.astro'
+import CampaignContentChart from '@components/blocks/campaigns/CampaignContentChart.astro'
+import { CAMPAIGN_BEATS, FLEETS_MONTHLY, ISK_DESTROYED_MONTHLY, MONTHS, toBillions } from '@/data/campaigns/providence'
 
 function formatHeadlineDate(isoDate: string): string {
     return new Date(`${isoDate}T00:00:00Z`).toLocaleDateString('en-GB', {
@@ -111,7 +112,21 @@ import { number_name } from '@helpers/numbers'
     </Flexblock>
 
     <ComponentBlock>
-        <ProvidenceContentChartChartjs />
+        <CampaignContentChart
+            months={MONTHS}
+            isk={ISK_DESTROYED_MONTHLY.map(toBillions)}
+            fleets={FLEETS_MONTHLY}
+            beats={CAMPAIGN_BEATS}
+            beat_labels={{
+                0: 'War on CVA, RMC allies CVA and RMC contracts AO',
+                5: 'Staging Fortizar attacked',
+                8: 'Pochven / Warzone',
+                10: 'Return to Provi',
+                13: 'RMC calls Imperium',
+            }}
+            beat_layout={{ 0: { anchor: 'start', dx: 5 } }}
+            aria_label='Monthly ISK destroyed in Providence against fleets flown'
+        />
     </ComponentBlock>
 </Flexblock>
 

@@ -35,7 +35,8 @@ import type { PilotKillCount } from '@/data/campaigns/auga'
 
 import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
 import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
-import AugaDailyShipsChartChartjs from '@components/blocks/campaigns/auga/AugaDailyShipsChartChartjs.astro'
+import Chart from '@components/blocks/Chart.astro'
+import { DAYS, SHIPS_DESTROYED_DAILY } from '@/data/campaigns/auga'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import TextBox from '@components/layout/TextBox.astro'
@@ -253,7 +254,19 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
         <small>Ship kills each day in Auga (capsules not counted)</small>
     </Flexblock>
     <ComponentBlock>
-        <AugaDailyShipsChartChartjs />
+        <Chart
+            type='bar'
+            labels={[...DAYS]}
+            datasets={[{ label: 'Ships destroyed', data: [...SHIPS_DESTROYED_DAILY], tone: 'alliance-blue', suffix: ' ships', borderRadius: 2, barPercentage: 0.2, categoryPercentage: 0.8 }]}
+            options={{
+                scales: {
+                    x: { grid: { display: false }, ticks: { maxRotation: 0 } },
+                    y: { title: { display: true, text: 'Ships destroyed' } },
+                },
+            }}
+            height='min(calc(var(--space-3xl) * 6), 90vh)'
+            aria_label='Auga daily ship kills'
+        />
     </ComponentBlock>
 </Flexblock>
 

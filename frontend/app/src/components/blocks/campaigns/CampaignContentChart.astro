@@ -1,0 +1,136 @@
+---
+/**
+ * A campaign's player content over time: monthly ISK destroyed (a line, in
+ * billions, on the left axis) against fleets flown (bars, right axis), with
+ * the campaign's beats labelled under the months and, optionally, a band over
+ * the months the campaign was hottest. Shared by the Etherium Reach, Scalding
+ * Pass and Providence pages; the numbers come from each campaign's data file.
+ */
+import Chart from '@components/blocks/Chart.astro'
+
+interface Beat {
+    monthIndex: number;
+    label:      string;
+}
+
+interface BeatLayout {
+    anchor: 'start' | 'middle' | 'end';
+    dx:     number;
+}
+
+interface Props {
+    months:         readonly string[];
+    /** ISK destroyed per month, in billions. */
+    isk:            readonly number[];
+    fleets:         readonly number[];
+    beats:          readonly Beat[];
+    /** Replaces a beat's label, by month index. */
+    beat_labels?:   Record<number, string>;
+    /** Where a beat's label sits against its month, by month index. */
+    beat_layout?:   Record<number, BeatLayout>;
+    /** Shades the months `from` to `to`. */
+    band?:          { from: number; to: number };
+    aria_label:     string;
+    [propName: string]: any;
+}
+
+const {
+    months,
+    isk,
+    fleets,
+    beats,
+    beat_labels = {},
+    beat_layout = {},
+    band,
+    aria_label,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+// Labels within two months of each other stack on separate rows.
+const MIN_GAP = 2
+const rows = new Map<number, number>()
+for (const beat of [...beats].sort((a, b) => a.monthIndex - b.monthIndex)) {
+    let row = 0
+    while ([...rows.entries()].some(([index, taken]) => taken === row && Math.abs(index - beat.monthIndex) < MIN_GAP))
+        row++
+    rows.set(beat.monthIndex, row)
+}
+
+const plugins = [
+    ...(band ? [{ id: 'band' as const, from: band.from, to: band.to }] : []),
+    {
+        id: 'beats' as const,
+        beats: beats.map((beat) => ({
+            index: beat.monthIndex,
+            label: beat_labels[beat.monthIndex] ?? beat.label,
+            row: rows.get(beat.monthIndex) ?? 0,
+            anchor: beat_layout[beat.monthIndex]?.anchor ?? 'middle',
+            dx: beat_layout[beat.monthIndex]?.dx ?? 0,
+        })),
+    },
+]
+
+const datasets = [
+    {
+        type: 'line',
+        label: 'ISK Destroyed',
+        data: [...isk],
+        tone: 'green' as const,
+        gradient: 40,
+        ring: true,
+        suffix: ' B',
+        borderWidth: 2.5,
+        pointRadius: 3.5,
+        pointBorderWidth: 1.5,
+        tension: 0,
+        yAxisID: 'y',
+        order: 1,
+    },
+    {
+        type: 'bar',
+        label: 'Fleets',
+        data: [...fleets],
+        tone: 'alliance-blue' as const,
+        borderRadius: 2,
+        barPercentage: 0.26,
+        categoryPercentage: 0.8,
+        yAxisID: 'y1',
+        order: 2,
+    },
+]
+
+const options = {
+    layout: { padding: { bottom: 50 } },
+    scales: {
+        x: { grid: { display: false } },
+        y: {
+            type: 'linear',
+            position: 'left',
+            title: { display: true, text: 'ISK destroyed' },
+            grid: { display: false },
+        },
+        y1: {
+            type: 'linear',
+            position: 'right',
+            beginAtZero: true,
+            title: { display: true, text: 'Fleets' },
+            grid: { drawOnChartArea: false },
+        },
+    },
+}
+---
+
+<Chart
+    type='line'
+    labels={[...months]}
+    datasets={datasets}
+    options={options}
+    plugins={plugins}
+    tick_suffix=' B'
+    legend={true}
+    height='min(calc(var(--space-3xl) * 6), 90vh)'
+    aria_label={aria_label}
+    {...attributes}
+/>

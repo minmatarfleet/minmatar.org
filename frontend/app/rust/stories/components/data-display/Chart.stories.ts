@@ -172,3 +172,40 @@ export const Tones = {
         await expect(spec_of(canvasElement).datasets[0].tones).toHaveLength(7)
     },
 }
+
+export const Gradient = {
+    name: 'Gradient, suffix and ringed points',
+    args: {
+        datasets: [
+            { label: 'ISK destroyed', data: [4.2, 6.8, 5.1, 9.4, 7.7, 11.3], tone: 'green', gradient: 40, ring: true, suffix: ' B', tension: 0 },
+        ],
+        tick_suffix: ' B',
+        aria_label: 'ISK destroyed per week, in billions',
+    },
+    play: async ({ canvasElement }: Ctx) => {
+        const spec = spec_of(canvasElement)
+        await expect(spec.tick_suffix).toBe(' B')
+        await expect(spec.datasets[0].gradient).toBe(40)
+        await expect(spec.datasets[0].ring).toBe(true)
+        await expect(spec.datasets[0].suffix).toBe(' B')
+    },
+}
+
+export const Plugins = {
+    name: 'Droplines, band and markers',
+    args: {
+        datasets: [{ label: 'Damage', data: [3, 0, 7, 4, 9, 2], tone: 'fleet-red', fill: false, borderWidth: 0, pointRadius: 2 }],
+        options: { layout: { padding: { bottom: 50 } } },
+        plugins: [
+            { id: 'stems' },
+            { id: 'band', from: 2, to: 3 },
+            { id: 'beats', beats: [{ index: 4, label: 'Capital fight', row: 0, anchor: 'middle', dx: 0 }] },
+        ],
+        aria_label: 'Damage per tick with the capital fight marked',
+    },
+    play: async ({ canvasElement }: Ctx) => {
+        const spec = spec_of(canvasElement)
+        await expect(spec.plugins.map((plugin: { id: string }) => plugin.id)).toEqual(['stems', 'band', 'beats'])
+        await expect(spec.plugins[2].beats[0].label).toBe('Capital fight')
+    },
+}

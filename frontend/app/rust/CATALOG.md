@@ -405,8 +405,8 @@ Semantic tabular data: a real `<table>` with a `<thead>` built from `columns`, i
 A Chart.js chart in the site's colours.
 
 - Import: `import Chart from '@components/blocks/Chart.astro'`
-- Props: `type: ChartKind`, `labels: (string | number)[]`, `datasets: ChartDataset[]`, `options?: Record<string, any>`, `height?: string = 'calc(var(--space-3xl) * 2.5)'`, `aria_label: string`, `legend?: boolean`, `empty_title?: string`
-- Stories (9): `frontend/app/rust/stories/components/data-display/Chart.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-chart--docs: Line, Bar, Doughnut, Pie, Radar, Options and height, Missing data, Missing data: every point null, Tones
+- Props: `type: ChartKind`, `labels: (string | number)[]`, `datasets: ChartDataset[]`, `options?: Record<string, any>`, `height?: string = 'calc(var(--space-3xl) * 2.5)'`, `aria_label: string`, `legend?: boolean`, `tick_suffix?: string`, `plugins?: ChartPluginSpec[]`, `empty_title?: string`
+- Stories (11): `frontend/app/rust/stories/components/data-display/Chart.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-chart--docs: Line, Bar, Doughnut, Pie, Radar, Options and height, Missing data, Missing data: every point null, Tones, Gradient, suffix and ringed points, Droplines, band and markers
 
 ### Carousel
 
