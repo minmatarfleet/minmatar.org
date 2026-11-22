@@ -64,6 +64,12 @@ const {
 
 delete attributes.class
 
+// Astro hands a parent's scope attribute (data-astro-cid-*) to the components it renders.
+// Spread onto <picture>, it made the parent's `picture`/`img` rules (a fixed 64px width in
+// SRPItem, for one) hit every picture inside it, which main's pictures never matched.
+for (const key of Object.keys(attributes))
+    if (key.startsWith('data-astro-cid-')) delete attributes[key]
+
 import ZoomableImage from "@components/blocks/ZoomableImage.astro";
 import NotificationBadge from '@components/blocks/NotificationBadge.astro';
 
@@ -148,7 +154,7 @@ const img_props = {
     }
 
     /* The fade-out mask, defined once for every picture. */
-    .mask:not(.medium-zoom-image--opened) {
+    .mask:where(:not(.medium-zoom-image--opened)) {
         -webkit-mask-image: linear-gradient(to bottom,rgb(0,0,0) 0%,rgba(0,0,0,.9) 35%,rgba(0,0,0,.7) 50%,transparent 100%);
         mask-image: linear-gradient(to bottom,rgb(0,0,0) 0%,rgba(0,0,0,.9) 35%,rgba(0,0,0,.7) 50%,transparent 100%);
     }

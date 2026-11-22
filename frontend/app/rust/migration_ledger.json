@@ -1713,5 +1713,45 @@
     "pattern": "data-table",
     "note": "Numeric columns (the er-table__numeric class had no rule, so they were left-aligned) take DataTable's right alignment with tabular figures.",
     "batch": "fix3"
+  },
+  {
+    "file": "src/components/blocks/RadioCheckInput.astro",
+    "selector": ":checked ~ small",
+    "path": "converge",
+    "pattern": "radio-check-library",
+    "note": "The checked-label rule was `:checked + small`, which never matched because the box sits between the input and the label text; it is now `:checked ~ small`, so a checked option's label is bold and full-strength white instead of staying yellow, on every RadioCheckInput.",
+    "batch": "fix4"
+  },
+  {
+    "file": "src/components/blocks/manage/EntityPicker.astro",
+    "selector": ".combobox label",
+    "path": "converge",
+    "pattern": "Combobox",
+    "note": "The picker's label is the Combobox label: full-strength white (was the muted manage-field label), 18px line instead of 17px, and a 10px gap to the field instead of 5px, so each picker is 6px taller.",
+    "batch": "fix4"
+  },
+  {
+    "file": "src/components/blocks/Picture.astro",
+    "selector": ".mask",
+    "path": "converge",
+    "pattern": "picture-mask",
+    "note": "ItemPicture and CharacterPicture masks now use Picture's fade (adds a 90% stop at 35%) instead of their own 0 / 70% at 50% / transparent gradient, so a masked ship or portrait stays slightly more opaque in its upper third.",
+    "batch": "fix4"
+  },
+  {
+    "file": "src/components/blocks/AllianceHealthPilotList.astro",
+    "selector": ".alliance-health-pilot-list__order FilterChip",
+    "path": "converge",
+    "pattern": "filter-chip-toggle",
+    "note": "The order-by pills are FilterChip buttons in a wrapping ChipGroup (aria-pressed added): library tracking and a 45% border instead of 40%, so each chip is 3-5px wider.",
+    "batch": "fix4"
+  },
+  {
+    "file": "src/components/blocks/SectionTabs.astro",
+    "selector": ".section-tab meta badge",
+    "path": "converge",
+    "pattern": "warning colour",
+    "note": "A tab's attention count (the account page's '2 to fix') is a yellow-filled badge with dark text and its own padding instead of orange text with a dot, so that tab is 10px wider.",
+    "batch": "fix4"
   }
 ]

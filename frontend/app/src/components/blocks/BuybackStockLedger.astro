@@ -159,7 +159,8 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         letter-spacing: 0.03em;
     }
 
-    .buyback-stock-ledger__stock-list {
+    /* Doubled class: it must outrank the Flexblock gap margin whatever the stylesheet order. */
+    .buyback-stock-ledger__stock-list.buyback-stock-ledger__stock-list {
         list-style: none;
         margin: 0;
         padding: 0;

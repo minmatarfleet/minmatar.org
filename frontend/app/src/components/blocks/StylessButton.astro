@@ -58,4 +58,9 @@ const Element = href ? 'a' : 'button';
         color: inherit;
         cursor: pointer;
     }
+
+    /* A link keeps the colour it inherits: outranks the global a[href] colour (0,1,1) but stays under any caller class (0,2,0). */
+    :global(html a.styless-button) {
+        color: inherit;
+    }
 </style>
