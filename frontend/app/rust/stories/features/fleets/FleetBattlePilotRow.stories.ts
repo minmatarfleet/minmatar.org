@@ -59,9 +59,19 @@ export const MultiHullWithPod = {
 export const NoHullIcon = {
     args: { row: battle_pilot_no_icon },
     play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-        await expect(canvasElement.querySelector('span.br-pilot__icon')).not.toBeNull()
-        await expect(canvasElement.querySelector('.br-pilot__icon img')).toBeNull()
+        // No hull: the pilot's portrait stands in for the ship icon.
+        const icon = canvasElement.querySelector('img.br-pilot__icon')
+        await expect(icon?.getAttribute('src')).toContain(`/characters/${battle_pilot_no_icon.character_id}/portrait`)
         await expect(within(canvasElement).getByRole('link', { name: 'Ilsa Verhaaren' })).toBeVisible()
+    },
+}
+
+export const NoCharacter = {
+    args: { row: { ...battle_pilot_no_icon, character_id: 0, name: 'Undisclosed' } },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        // No hull and no character: EVE's default silhouette.
+        const icon = canvasElement.querySelector('img.br-pilot__icon')
+        await expect(icon?.getAttribute('src')).toContain('/characters/1/portrait')
     },
 }
 
