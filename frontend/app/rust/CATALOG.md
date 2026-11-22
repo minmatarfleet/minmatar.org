@@ -577,9 +577,9 @@ The generic popover: a trigger (`button` slot) that toggles a panel (default slo
 Page-section tabs: a `tablist` of buttons plus `SectionTabPanel` children (one per tab id).
 
 - Import: `import SectionTabs from '@components/blocks/SectionTabs.astro'`
-- Props: `tabs: SectionTab[]`, `aria_label: string`, `id_prefix: string`, `hash_aliases?: Record<string, string> = {}`, `default_tab?: string = requested_default && tab_ids.includes(requested_default) ? requested_default : (tab_ids[0] ?? '')`, `variant?: 'tabs' | 'pills' = 'tabs'`
+- Props: `tabs: SectionTab[]`, `aria_label: string`, `id_prefix: string`, `hash_aliases?: Record<string, string> = {}`, `default_tab?: string = requested_default && tab_ids.includes(requested_default) ? requested_default : (tab_ids[0] ?? '')`, `variant?: 'tabs' | 'pills' = 'tabs'`, `sync_hash?: boolean = true`
 - Slots: `default`
-- Stories (8): `frontend/app/rust/stories/components/navigation/SectionTabs.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-sectiontabs--docs: Default, Click through three tabs, Keyboard Navigation, aria-selected and roving tabindex follow the tab, Counts, flags and icon tab, Non-first default tab, Pills, Tab and panel ids are wired
+- Stories (9): `frontend/app/rust/stories/components/navigation/SectionTabs.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-sectiontabs--docs: Default, Click through three tabs, Keyboard Navigation, aria-selected and roving tabindex follow the tab, Counts, flags and icon tab, Non-first default tab, Pills, Tab and panel ids are wired, Inside a row: no URL hash
 
 ### SectionTabPanel
 

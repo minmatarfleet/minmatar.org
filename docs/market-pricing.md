@@ -87,7 +87,7 @@ Only need a coarse average / “has any price”?
 | Planner / order profit (ME, jobs, taxes, freight) | `plan_costing.plan_item_cost` / `cost_build_plan` |
 | Planner build-vs-buy saving per sub-step (each step built from bought inputs vs bought in Jita, both with alliance freight) | `plan_step_savings.plan_step_savings` (`jita_sell_prices_by_type_id`, same freight route as `cost_build_plan`) |
 | Product insights hull value ("ISK lost"), producers "ISK delivered", tribe mining ISK | `get_history_averages_by_type_id` (Jita guide, unrounded) |
-| Moon revenue (Metenox) | `get_history_averages_by_type_id`, with `enqueue_history_for_types` keeping moon products fresh |
+| Moon revenue and net (Metenox) | `get_history_averages_by_type_id`, with `enqueue_history_for_types` keeping moon products, Magmatic Gas and fuel blocks fresh. Net a month (`moons.profit`) subtracts 200 Magmatic Gas and 5 of the cheapest fuel block an hour |
 
 `EveMarketPrice` is read directly only for EIV (`build_planner`), market-availability filters (`compressed_ore`) and as the fallback inside the history helpers.
 

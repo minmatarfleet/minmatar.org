@@ -11099,8 +11099,9 @@ export interface paths {
          * List Moons
          * @description One page of the moons we know about, searched by system, planet,
          *     moon number and (for those who see contents) ore. Contents (ores,
-         *     scans, ISK a month) are null unless the caller may see them, so the
-         *     shape never changes; only they can filter by rarity.
+         *     scans, ISK a month, Metenox kills) are null unless the caller may see
+         *     them, so the shape never changes; only they can filter by rarity and
+         *     hide moons whose fuel costs more than they earn.
          */
         get: operations["universe_router_list_moons"];
         put?: never;
@@ -25462,6 +25463,42 @@ export interface components {
             /** Reported By */
             reported_by: string;
         };
+        /** MoonMetenoxKill */
+        MoonMetenoxKill: {
+            /**
+             * Attacker Count
+             * @default 0
+             */
+            attacker_count?: number;
+            /**
+             * Killed At
+             * Format: date-time
+             */
+            killed_at: string;
+            /** Killer Id */
+            killer_id?: number | null;
+            /**
+             * Killer Name
+             * @default
+             */
+            killer_name?: string;
+            /** Killmail Id */
+            killmail_id: number;
+            /** Owner Alliance Id */
+            owner_alliance_id?: number | null;
+            /**
+             * Owner Alliance Name
+             * @default
+             */
+            owner_alliance_name?: string;
+            /** Owner Corporation Id */
+            owner_corporation_id?: number | null;
+            /**
+             * Owner Corporation Name
+             * @default
+             */
+            owner_corporation_name?: string;
+        };
         /** MoonOre */
         MoonOre: {
             /** Ore */
@@ -25501,6 +25538,29 @@ export interface components {
              * @default 0
              */
             systems_ignored?: number;
+        };
+        /**
+         * MoonProfit
+         * @description Drill output and Metenox fuel a month, priced in Jita.
+         */
+        MoonProfit: {
+            /** Fuel */
+            fuel: components["schemas"]["MoonProfitLine"][];
+            /** Output */
+            output: components["schemas"]["MoonProfitLine"][];
+            /** Priced At */
+            priced_at?: string | null;
+        };
+        /** MoonProfitLine */
+        MoonProfitLine: {
+            /** Isk */
+            isk: number;
+            /** Name */
+            name: string;
+            /** Price */
+            price: number;
+            /** Units */
+            units: number;
         };
         /** MoonRarityCount */
         MoonRarityCount: {
@@ -32969,6 +33029,10 @@ export interface components {
             id: number;
             /** Last Scanned At */
             last_scanned_at?: string | null;
+            /** Metenox Kills */
+            metenox_kills?: components["schemas"]["MoonMetenoxKill"][] | null;
+            /** Monthly Net */
+            monthly_net?: number | null;
             /** Monthly Revenue */
             monthly_revenue?: number | null;
             /** Moon */
@@ -32977,6 +33041,7 @@ export interface components {
             ores?: components["schemas"]["MoonOre"][] | null;
             /** Planet */
             planet: string;
+            profit?: components["schemas"]["MoonProfit"] | null;
             /** Rarity */
             rarity?: number | null;
             reported_by?: components["schemas"]["PilotRef"] | null;
@@ -33013,6 +33078,11 @@ export interface components {
              * @default 0
              */
             total?: number;
+            /**
+             * Unprofitable Hidden
+             * @default 0
+             */
+            unprofitable_hidden?: number;
         };
         /** UniverseStructure */
         UniverseStructure: {
@@ -61299,6 +61369,7 @@ export interface operations {
                 page_size?: number;
                 q?: string;
                 rarity?: number;
+                hide_unprofitable?: boolean;
             };
             header?: never;
             path?: never;

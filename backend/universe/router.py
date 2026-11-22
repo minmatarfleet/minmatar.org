@@ -34,7 +34,12 @@ from campaigns.services import disclosure
 from campaigns.services.timers import TYPE_NAMES, timer_stage
 from eveonline.helpers.characters.identity import primary_refs_for_users
 from groups.helpers.feature_access import can_use_feature
-from moons.models import EveMoon, EveMoonDistribution, EveMoonScan
+from moons.models import (
+    EveMoon,
+    EveMoonDistribution,
+    EveMoonScan,
+    MetenoxKill,
+)
 from moons.parser import MoonParsingResult, process_moon_paste
 from structures.models import EveStructure, EveStructureTimer
 from structures.reported import (
@@ -170,6 +175,35 @@ class MoonScanRef(Schema):
     revenue: Optional[int] = None
 
 
+class MoonProfitLine(Schema):
+    name: str
+    # A month's worth.
+    units: int
+    price: float
+    isk: int
+
+
+class MoonProfit(Schema):
+    """Drill output and Metenox fuel a month, priced in Jita."""
+
+    output: List[MoonProfitLine]
+    fuel: List[MoonProfitLine]
+    priced_at: Optional[datetime] = None
+
+
+class MoonMetenoxKill(Schema):
+    killmail_id: int
+    killed_at: datetime
+    owner_corporation_id: Optional[int] = None
+    owner_corporation_name: str = ""
+    owner_alliance_id: Optional[int] = None
+    owner_alliance_name: str = ""
+    # The alliance (else corporation) that did the most damage.
+    killer_id: Optional[int] = None
+    killer_name: str = ""
+    attacker_count: int = 0
+
+
 class UniverseMoon(Schema):
     id: int
     system: str
@@ -180,8 +214,13 @@ class UniverseMoon(Schema):
     # Null unless the caller may see moon contents.
     rarity: Optional[int] = None
     monthly_revenue: Optional[int] = None
+    # Output value minus Metenox fuel; null until prices are known.
+    monthly_net: Optional[int] = None
+    profit: Optional[MoonProfit] = None
     ores: Optional[List[MoonOre]] = None
     scans: Optional[List[MoonScanRef]] = None
+    # Metenox drills killed here, newest first.
+    metenox_kills: Optional[List[MoonMetenoxKill]] = None
 
 
 class MoonRarityCount(Schema):
@@ -201,6 +240,8 @@ class UniverseMoonList(Schema):
     # rarity 0 counts them all.
     # Empty unless the caller may see moon contents.
     rarity_counts: List[MoonRarityCount] = []
+    # Moons left out by hide_unprofitable (search and rarity applied).
+    unprofitable_hidden: int = 0
 
 
 class MoonReportRequest(Schema):
@@ -530,11 +571,13 @@ def list_moons(
     page_size: int = MOONS_PAGE_SIZE,
     q: str = "",
     rarity: int = 0,
+    hide_unprofitable: bool = False,
 ):
     """One page of the moons we know about, searched by system, planet,
     moon number and (for those who see contents) ore. Contents (ores,
-    scans, ISK a month) are null unless the caller may see them, so the
-    shape never changes; only they can filter by rarity."""
+    scans, ISK a month, Metenox kills) are null unless the caller may see
+    them, so the shape never changes; only they can filter by rarity and
+    hide moons whose fuel costs more than they earn."""
     if not can_use_feature(request.user, MOONS_FEATURE):
         return 403, ErrorResponse(detail="You cannot view moons")
     contents = can_see_moon_contents(request.user)
@@ -555,8 +598,15 @@ def list_moons(
         moons = moons.filter(match)
 
     rarity_counts = []
+    unprofitable_hidden = 0
     if contents:
         moons = moons.annotate(rarity=_moon_rarity())
+        if hide_unprofitable:
+            losing = moons.filter(monthly_net__lte=0)
+            if rarity:
+                losing = losing.filter(rarity=rarity)
+            unprofitable_hidden = losing.count()
+            moons = moons.exclude(monthly_net__lte=0)
         counts = dict(
             moons.order_by()
             .values_list("rarity")
@@ -571,7 +621,9 @@ def list_moons(
         ]
         if rarity:
             moons = moons.filter(rarity=rarity)
-        moons = moons.order_by("-monthly_revenue", "id")
+        moons = moons.order_by(
+            F("monthly_net").desc(nulls_last=True), "-monthly_revenue", "id"
+        )
     else:
         moons = moons.annotate(last_scan=Max("scans__reported_at")).order_by(
             F("last_scan").desc(nulls_last=True), "-id"
@@ -592,6 +644,13 @@ def list_moons(
                 "scans",
                 queryset=EveMoonScan.objects.order_by("-reported_at", "-id"),
                 to_attr="scan_rows",
+            ),
+            Prefetch(
+                "metenox_kills",
+                queryset=MetenoxKill.objects.order_by(
+                    "-killed_at", "-killmail_id"
+                ),
+                to_attr="kill_rows",
             ),
         )
     )
@@ -615,6 +674,23 @@ def list_moons(
         if contents:
             row.rarity = moon.rarity or None
             row.monthly_revenue = moon.monthly_revenue
+            row.monthly_net = moon.monthly_net
+            if moon.profit.get("output"):
+                row.profit = MoonProfit(**moon.profit)
+            row.metenox_kills = [
+                MoonMetenoxKill(
+                    killmail_id=k.killmail_id,
+                    killed_at=k.killed_at,
+                    owner_corporation_id=k.owner_corporation_id,
+                    owner_corporation_name=k.owner_corporation_name,
+                    owner_alliance_id=k.owner_alliance_id,
+                    owner_alliance_name=k.owner_alliance_name,
+                    killer_id=k.killer_id,
+                    killer_name=k.killer_name,
+                    attacker_count=k.attacker_count,
+                )
+                for k in moon.kill_rows
+            ]
             row.ores = [
                 MoonOre(ore=o.ore, yield_percent=float(o.yield_percent))
                 for o in moon.ores
@@ -636,6 +712,7 @@ def list_moons(
         page=page,
         page_size=page_size,
         rarity_counts=rarity_counts,
+        unprofitable_hidden=unprofitable_hidden,
     )
 
 

@@ -25,6 +25,11 @@ interface Props {
     default_tab?: string
     /** `pills` for sub-tabs inside a tab panel. */
     variant?: 'tabs' | 'pills'
+    /**
+     * Mirror the active tab to the URL hash and follow hash links (default).
+     * `false` for tabs repeated on a page, e.g. inside each table row.
+     */
+    sync_hash?: boolean
     [propName: string]: any
 }
 
@@ -35,6 +40,7 @@ const {
     hash_aliases = {},
     default_tab: requested_default,
     variant = 'tabs',
+    sync_hash = true,
     ...attributes
 } = Astro.props
 
@@ -52,8 +58,9 @@ const default_tab = requested_default && tab_ids.includes(requested_default) ? r
             tabs: ${JSON.stringify(tab_ids)},
             tab: ${JSON.stringify(default_tab)},
             aliases: ${JSON.stringify(hash_aliases)},
+            sync_hash: ${JSON.stringify(sync_hash)},
             init() {
-                const next = this.tab_for(window.location.hash.replace('#', ''))
+                const next = this.sync_hash ? this.tab_for(window.location.hash.replace('#', '')) : null
                 if (next) this.tab = next
                 this.$watch('tab', () => this.$nextTick(() => this.refresh_panel()))
             },
@@ -65,11 +72,13 @@ const default_tab = requested_default && tab_ids.includes(requested_default) ? r
             },
             // In-page links such as href="#apply" open their tab.
             follow_hash() {
+                if (!this.sync_hash) return
                 this.open_hash(window.location.hash.replace('#', ''))
             },
             // ClientRouter turns same-page hash links into pushState, which
             // fires no hashchange, so those links are followed on click too.
             follow_link(event) {
+                if (!this.sync_hash) return
                 const link = event.target.closest?.('a[href^="#"]')
                 if (link) this.open_hash(link.getAttribute('href').slice(1))
             },
@@ -94,7 +103,7 @@ const default_tab = requested_default && tab_ids.includes(requested_default) ? r
             select(next) {
                 if (!this.tabs.includes(next)) return
                 this.tab = next
-                history.replaceState(null, '', '#' + next)
+                if (this.sync_hash) history.replaceState(null, '', '#' + next)
                 this.$nextTick(() => this.$refs['tab-' + next]?.focus())
             },
             step(offset) {

@@ -109,6 +109,9 @@ def process_moon_paste(
                 defaults={"reported_by_id": user_id},
             )
 
+            if eve_moon.eve_moon_id is None:
+                _remember_moon_id(eve_moon, parsed_moon.moon_id)
+
             if created:
                 result.moons_added += 1
             else:
@@ -139,6 +142,14 @@ def process_moon_paste(
     result.moons_ignored = len(ignored_moons)
 
     return result
+
+
+def _remember_moon_id(eve_moon: EveMoon, moon_id: int) -> None:
+    """Keep the EVE moon id, so Metenox killmails find the moon."""
+    if EveMoon.objects.filter(eve_moon_id=moon_id).exists():
+        return
+    eve_moon.eve_moon_id = moon_id
+    eve_moon.save(update_fields=["eve_moon_id"])
 
 
 def _store_scan(eve_moon: EveMoon, lines, user_id) -> EveMoonScan:

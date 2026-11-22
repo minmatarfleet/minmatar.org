@@ -47,6 +47,7 @@ export default {
         hash_aliases: { control: 'object', description: 'Hash prefixes that open a tab, e.g. `{ \'campaign-system-\': \'systems\' }`.' },
         default_tab: { control: 'text', description: 'The tab shown when the URL names none; the first tab otherwise.' },
         variant: radio_control(['tabs', 'pills'] as const, '`pills` for sub-tabs inside a tab panel.'),
+        sync_hash: { control: 'boolean', description: 'Mirror the active tab to the URL hash and follow hash links. `false` for tabs repeated on a page, such as inside each table row.' },
     },
     args: {
         tabs,
@@ -213,5 +214,17 @@ export const IdsAreWired = {
         await expect(panel).toHaveAttribute('role', 'tabpanel')
         await expect(panel).toHaveAttribute('aria-labelledby', 'tribe-tab-fleets')
         await expect(panel).toHaveAttribute('hidden')
+    },
+}
+
+export const WithoutHash = {
+    name: 'Inside a row: no URL hash',
+    args: { sync_hash: false, id_prefix: 'moon-12', aria_label: 'Moon details', slots: { default: panels('moon-12') } },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        reset_hash()
+        const canvas = within(canvasElement)
+        await userEvent.click(canvas.getByRole('tab', { name: /Fleets/ }))
+        await waitFor(() => expect(active_tab(canvasElement)).toBe('fleets'))
+        await expect(location.hash).toBe('')
     },
 }
