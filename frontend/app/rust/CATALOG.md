@@ -458,6 +458,15 @@ A grid-based table with a real header row (`role="table"`, `columnheader`, `row`
 - Slots: `default`
 - Stories (6): `frontend/app/rust/stories/components/data-display/DataGrid.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-datagrid--docs: Default, Ledger, Stacked on phones (stack), Media cells (portraits and icons), Empty grid, Narrow viewport scrolls (min_width)
 
+### DataTable
+
+Semantic tabular data: a real `<table>` with a `<thead>` built from `columns`, in an edge-fading horizontal scroller.
+
+- Import: `import DataTable from '@components/blocks/DataTable.astro'`
+- Props: `columns: DataTableColumn[]`, `caption?: string`, `density?: 'default' | 'dense' = 'default'`, `borders?: 'rows' | 'grid' | 'none' = 'rows'`, `striped?: boolean = false`, `sticky_header?: boolean = false`, `empty_title?: string`, `is_empty?: boolean = false`
+- Slots: `default`
+- Stories (8): `frontend/app/rust/stories/components/data-display/DataTable.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-datatable--docs: Default, Sorting (text, numeric and data-sort), aria-sort follows the sorted column, Only sortable columns are buttons, Empty, Dense, Sticky header (many rows), No borders, no sorting
+
 ### TextGroup
 
 A heading plus a paragraph stacked with a tight gap.
