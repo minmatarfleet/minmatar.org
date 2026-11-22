@@ -56,6 +56,7 @@ const waypoint_url = (character_id:number) => `${translatePath('/partials/fleet_
     character_id,
     destination_id: staging_id,
 })}`
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {fetch_error ?
@@ -70,14 +71,14 @@ const waypoint_url = (character_id:number) => `${translatePath('/partials/fleet_
                 <span class="[ fleet-formup__name ]">{location.character_name}</span>
                 <span class="[ fleet-formup__distance ]">{distance(location)}</span>
                 {location.solar_system_id !== staging_id &&
-                    <button
+                    <StylessButton
                         type="button"
                         class="[ fleet-formup__waypoint ]"
                         hx-post={waypoint_url(location.character_id)}
                         hx-swap="outerHTML"
                     >
                         {t('fleets.formup.set_destination')}
-                    </button>
+                    </StylessButton>
                 }
             </li>
         )}
