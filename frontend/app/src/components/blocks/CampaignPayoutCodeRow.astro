@@ -45,6 +45,7 @@ const unmapped = row.site_kind === null
 
 import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
 import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <ExpandRow
@@ -56,14 +57,14 @@ import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
     {...attributes}
 >
     <td>
-        <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+        <StylessButton type="button" class="[ manage-who ]" x-on:click="open = !open">
             <span class="[ manage-who__text ]">
                 <span class="[ manage-who__name ]">{row.event_code}</span>
                 {unmapped && <span class="[ manage-who__sub manage-warn ]">{t('campaigns.manage.code_unmapped_sub')}</span>}
                 {saved && <span class="[ manage-saved ]">{t('campaigns.manage.saved')}</span>}
                 {error && <span class="[ manage-field__error ]" role="alert">{error}</span>}
             </span>
-        </button>
+        </StylessButton>
     </td>
     <td class:list={['is-wide', unmapped ? 'manage-muted' : 'campaign-code__kind']}>{counts_as}</td>
     <td class="num">{row.seen.toLocaleString(lang)}</td>

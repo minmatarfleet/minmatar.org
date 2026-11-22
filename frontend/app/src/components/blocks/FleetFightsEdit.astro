@@ -43,6 +43,7 @@ const edit_text = (edit: FleetFights['edits'][number]) => (edit.kind === 'merge'
     t('fleets.fights.change_merge').replace('{start}', eve_clock(edit.start)).replace('{end}', eve_clock(edit.end ?? edit.start)) :
     t('fleets.fights.change_split').replace('{at}', eve_clock(edit.start)))
 import GroupLogos from '@components/blocks/GroupLogos.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <form
@@ -60,7 +61,7 @@ import GroupLogos from '@components/blocks/GroupLogos.astro'
             <span>{t('fleets.fights.editing_note')}</span>
         </div>
         <div class="[ fights-edit__actions ]">
-            <button
+            <StylessButton
                 type="button"
                 class="[ fights-edit__button ]"
                 disabled={fights.edits.length === 0}
@@ -71,8 +72,8 @@ import GroupLogos from '@components/blocks/GroupLogos.astro'
                 hx-swap="outerHTML"
             >
                 {t('fleets.fights.reset')}
-            </button>
-            <button
+            </StylessButton>
+            <StylessButton
                 type="button"
                 class="[ fights-edit__button fights-edit__button--primary ]"
                 hx-get={FIGHTS_URL}
@@ -80,7 +81,7 @@ import GroupLogos from '@components/blocks/GroupLogos.astro'
                 hx-swap="outerHTML"
             >
                 {t('fleets.fights.done')}
-            </button>
+            </StylessButton>
         </div>
     </header>
 
@@ -88,7 +89,7 @@ import GroupLogos from '@components/blocks/GroupLogos.astro'
 
     <div class="[ fights-edit__toolbar ]">
         <span x-text={`picked.length < 2 ? ${JSON.stringify(t('fleets.fights.merge_hint'))} : ''`}>{t('fleets.fights.merge_hint')}</span>
-        <button
+        <StylessButton
             type="submit"
             name="action"
             value="merge"
@@ -97,7 +98,7 @@ import GroupLogos from '@components/blocks/GroupLogos.astro'
             disabled
         >
             {t('fleets.fights.merge')}
-        </button>
+        </StylessButton>
     </div>
 
     <ol class="[ fights-edit__list ]">
@@ -128,10 +129,10 @@ import GroupLogos from '@components/blocks/GroupLogos.astro'
                         <span class="[ fights-edit__isk ]">{round.isk_destroyed ? format_isk(round.isk_destroyed) : '–'} / {format_isk(round.isk_lost)}</span>
                         <span class="[ fights-edit__row-actions ]">
                             {round.merge_edit_ids.map(edit_id =>
-                                <button type="submit" name="undo" value={edit_id} class="[ fights-edit__button fights-edit__button--small ]">{t('fleets.fights.unmerge')}</button>
+                                <StylessButton type="submit" name="undo" value={edit_id} class="[ fights-edit__button fights-edit__button--small ]">{t('fleets.fights.unmerge')}</StylessButton>
                             )}
                             {round.split_edit_ids.map(edit_id =>
-                                <button type="submit" name="undo" value={edit_id} class="[ fights-edit__button fights-edit__button--small ]">{t('fleets.fights.undo_split')}</button>
+                                <StylessButton type="submit" name="undo" value={edit_id} class="[ fights-edit__button fights-edit__button--small ]">{t('fleets.fights.undo_split')}</StylessButton>
                             )}
                         </span>
                     </div>
@@ -151,7 +152,7 @@ import GroupLogos from '@components/blocks/GroupLogos.astro'
                                                 .replace('{ak}', gap.after_kills.toString())
                                                 .replace('{al}', gap.after_losses.toString())}
                                         </span>
-                                        <button type="submit" name="split" value={gap.at} class="[ fights-edit__button fights-edit__button--small ]">{t('fleets.fights.split_here')}</button>
+                                        <StylessButton type="submit" name="split" value={gap.at} class="[ fights-edit__button fights-edit__button--small ]">{t('fleets.fights.split_here')}</StylessButton>
                                     </li>
                                 )}
                             </ul>

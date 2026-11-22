@@ -31,6 +31,7 @@ const unknown = groups.length - known.length
 const shown = known.slice(0, max)
 const rest = [...known.slice(max).map(group => group.name), ...(unknown > 0 ? [t('fleets.fights.unknown_groups')] : [])]
 const image_size = (size <= 32 ? 32 : 64) as EvEImageServiceSize
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <span class:list={['[ group-logos ]', Astro.props.class]} {...attributes}>
@@ -45,7 +46,7 @@ const image_size = (size <= 32 ? 32 : 64) as EvEImageServiceSize
         />
     )}
     {rest.length > 0 &&
-        <button
+        <StylessButton
             type="button"
             class="[ group-logos__more ]"
             data-tippy-content={rest.join(', ')}
@@ -55,7 +56,7 @@ const image_size = (size <= 32 ? 32 : 64) as EvEImageServiceSize
                 t('fleets.fights.others').replace('{count}', rest.length.toString()) :
                 rest.length === 1 ? rest[0] : t('fleets.fights.groups').replace('{count}', rest.length.toString())
             }
-        </button>
+        </StylessButton>
     }
 </span>
 

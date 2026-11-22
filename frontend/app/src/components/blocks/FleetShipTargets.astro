@@ -53,6 +53,7 @@ const SWAP = { 'hx-target': '#fleet-ship-targets', 'hx-swap': 'outerHTML' }
 
 import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
 import Button from '@components/blocks/Button.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {(can_manage || targets.length > 0) &&
@@ -66,9 +67,9 @@ import Button from '@components/blocks/Button.astro'
             }
             {status && <small role="status">{status}</small>}
             {can_manage && targets.length > 0 &&
-                <button type="button" class="[ ship-targets__link ]" hx-get={mode_url('edit', { target_id: 'new' })} {...SWAP}>
+                <StylessButton type="button" class="[ ship-targets__link ]" hx-get={mode_url('edit', { target_id: 'new' })} {...SWAP}>
                     {t('fleets.targets.add_line')}
-                </button>
+                </StylessButton>
             }
         </header>
 
@@ -82,11 +83,11 @@ import Button from '@components/blocks/Button.astro'
                         {can_manage &&
                             <span class="[ ship-targets__actions ]">
                                 {can_invite && target.short > 0 &&
-                                    <button type="button" class="[ ship-targets__link ]" hx-get={mode_url('find', { target_id: target.id })} {...SWAP}>
+                                    <StylessButton type="button" class="[ ship-targets__link ]" hx-get={mode_url('find', { target_id: target.id })} {...SWAP}>
                                         {t('fleets.targets.find_pilots')}
-                                    </button>
+                                    </StylessButton>
                                 }
-                                <button
+                                <StylessButton
                                     type="button"
                                     class="[ ship-targets__icon ]"
                                     aria-label={t('fleets.targets.edit_line_label').replace('{name}', target.name)}
@@ -94,7 +95,7 @@ import Button from '@components/blocks/Button.astro'
                                     {...SWAP}
                                 >
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg>
-                                </button>
+                                </StylessButton>
                             </span>
                         }
                     </li>
@@ -102,9 +103,9 @@ import Button from '@components/blocks/Button.astro'
                 {can_manage && unmatched.length > 0 &&
                     <li class="[ ship-targets__unmatched ]">
                         <span>{t('fleets.targets.unmatched').replace('{ships}', unmatched_text)}</span>
-                        <button type="button" class="[ ship-targets__link ]" hx-get={mode_url('edit', { target_id: 'new', add_type_id: unmatched[0].ship_type_id })} {...SWAP}>
+                        <StylessButton type="button" class="[ ship-targets__link ]" hx-get={mode_url('edit', { target_id: 'new', add_type_id: unmatched[0].ship_type_id })} {...SWAP}>
                             {t('fleets.targets.add_to_line')}
-                        </button>
+                        </StylessButton>
                     </li>
                 }
             </ul>
@@ -158,12 +159,12 @@ import Button from '@components/blocks/Button.astro'
                                     )}
                                 </select>
                             </label>
-                            <button type="submit" class="[ ship-targets__link ]">{t('fleets.targets.copy')}</button>
+                            <StylessButton type="submit" class="[ ship-targets__link ]">{t('fleets.targets.copy')}</StylessButton>
                         </form>
                     }
-                    <button type="button" class="[ ship-targets__link ]" hx-get={mode_url('edit', { target_id: 'new' })} {...SWAP}>
+                    <StylessButton type="button" class="[ ship-targets__link ]" hx-get={mode_url('edit', { target_id: 'new' })} {...SWAP}>
                         {t('fleets.targets.start_blank')}
-                    </button>
+                    </StylessButton>
                 </div>
             </div>
         }

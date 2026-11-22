@@ -35,6 +35,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <Flexblock gap="var(--space-s)" class:list={['[ dscan-controls ]', Astro.props.class]} {...attributes}>
@@ -61,7 +62,7 @@ import Input from '@components/blocks/Input.astro'
                     </label>
                 )}
             </fieldset>
-            <button type="button" class="[ dscan-controls__clear ]" x-on:click="clear_paste()">{t('dscan.clear')}</button>
+            <StylessButton type="button" class="[ dscan-controls__clear ]" x-on:click="clear_paste()">{t('dscan.clear')}</StylessButton>
         </FlexInline>
     }
 

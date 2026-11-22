@@ -37,6 +37,7 @@ const FIRST = 8
 
 import Button from '@components/blocks/Button.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <section id="fleet-ship-targets" class="[ target-owners ]" aria-labelledby="target-owners-title">
@@ -75,9 +76,9 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                         )}
                     </ul>
                     {owners.length > FIRST &&
-                        <button type="button" class="[ target-owners__link ]" x-show="!show_all" x-on:click="show_all = true">
+                        <StylessButton type="button" class="[ target-owners__link ]" x-show="!show_all" x-on:click="show_all = true">
                             {t('fleets.targets.show_more').replace('{count}', (owners.length - FIRST).toString())}
-                        </button>
+                        </StylessButton>
                     }
                 </Fragment>
                 :

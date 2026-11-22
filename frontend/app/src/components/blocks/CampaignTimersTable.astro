@@ -42,6 +42,7 @@ const local_init = `tip = ${JSON.stringify(t('campaigns.timers.your_time'))}.rep
 import CampaignTimerStage from '@components/blocks/CampaignTimerStage.astro'
 import Countdown from '@components/blocks/Countdown.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {timers.length === 0 ?
@@ -68,7 +69,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                     <div class:list={['[ campaign-timers-row ]', { 'is-done': timer.done }]} role="row">
                         <span role="cell"><CampaignTimerStage stage={timer.stage} final={timer.final} /></span>
                         <span role="cell">
-                            <button
+                            <StylessButton
                                 type="button"
                                 class="[ campaign-timers-name ]"
                                 data-name={timer.name}
@@ -79,7 +80,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                             >
                                 {icon(timer) && <img src={icon(timer)} alt="" width="32" height="32" loading="lazy" />}
                                 <span>{timer.name}</span>
-                            </button>
+                            </StylessButton>
                         </span>
                         <span role="cell">
                             <span

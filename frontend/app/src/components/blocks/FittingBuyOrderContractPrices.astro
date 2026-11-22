@@ -109,6 +109,7 @@ const hull_source_label = (row: FittingBuyContractPrice) => {
 
 const copy_label = t('fitting_buy.contract_copy_price')
 const settings_disabled = !is_owner
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <ComponentBlock
@@ -349,7 +350,7 @@ const settings_disabled = !is_owner
                                 </span>
                                 {has_price ? (
                                     <div class="[ contract-price__action ]">
-                                        <button
+                                        <StylessButton
                                             type="button"
                                             class="[ contract-price__copy ]"
                                             title={`${copy_label}: ${fmt_full(row.contract_price)}`}
@@ -371,7 +372,7 @@ const settings_disabled = !is_owner
                                             <span class="[ contract-price__hint ]" x-show="!copied">
                                                 {t('fitting_buy.contract_click_to_copy')}
                                             </span>
-                                        </button>
+                                        </StylessButton>
                                         <textarea class="[ hidden ]" id={copy_id} readonly>{row.contract_price}</textarea>
                                     </div>
                                 ) : (

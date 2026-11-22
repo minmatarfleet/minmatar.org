@@ -72,6 +72,7 @@ import FilterChip from '@components/blocks/FilterChip.astro'
 import ManageField from '@components/blocks/manage/ManageField.astro'
 import EntityPicker from '@components/blocks/manage/EntityPicker.astro'
 import EveTimeInput from '@components/blocks/manage/EveTimeInput.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <form
@@ -130,9 +131,9 @@ import EveTimeInput from '@components/blocks/manage/EveTimeInput.astro'
     <p class="[ campaign-new__page ]" x-show="!editing_slug">
         <span>{t('campaigns.manage.page_path').replace('~PATH', '')}<span x-text={`'${page_prefix}' + (page_slug || '…') + '/'`}>{page_prefix}{initial.slug || '…'}/</span></span>
         {' · '}
-        <button type="button" class="[ campaign-new__change ]" x-on:click="slug = page_slug; slug_edited = true; editing_slug = true; $nextTick(() => $refs.slug.focus())">
+        <StylessButton type="button" class="[ campaign-new__change ]" x-on:click="slug = page_slug; slug_edited = true; editing_slug = true; $nextTick(() => $refs.slug.focus())">
             {t('campaigns.manage.change')}
-        </button>
+        </StylessButton>
     </p>
     <div x-show="editing_slug" style={errors.slug ? undefined : 'display: none'}>
         <ManageField label={t('campaigns.manage.page_slug')} for={`${form_id}-slug`} hint={t('campaigns.manage.page_slug_hint')} error={errors.slug}>
