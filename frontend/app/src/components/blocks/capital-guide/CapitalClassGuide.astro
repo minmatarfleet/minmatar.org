@@ -100,6 +100,7 @@ const show_guidance = Boolean(
 const reasons_list_class = guidance_reasons_ordered
     ? 'cap-section__list cap-section__list--ordered'
     : 'cap-section__list'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 ---
 
 <GuideShell
@@ -155,7 +156,7 @@ const reasons_list_class = guidance_reasons_ordered
                 >
                     <h2 id={`${id_prefix}-${table.id}-title`} class="cap-section__title">{table.title}</h2>
                     {table.lead && <p class="cap-section__paragraph" set:html={table.lead} />}
-                    <div class="cap-table-wrap">
+                    <XFadeScroll class="cap-table-wrap">
                         <table class="cap-table">
                             <thead>
                                 <tr>
@@ -178,7 +179,7 @@ const reasons_list_class = guidance_reasons_ordered
                                 ))}
                             </tbody>
                         </table>
-                    </div>
+                    </XFadeScroll>
                 </section>
             ))}
 
@@ -227,7 +228,7 @@ const reasons_list_class = guidance_reasons_ordered
                 <section id="crosstraining" data-section-id="crosstraining" class="cap-section cap-panel" aria-labelledby={`${id_prefix}-crosstraining-title`}>
                     <h2 id={`${id_prefix}-crosstraining-title`} class="cap-section__title">Crosstraining</h2>
                     <p class="cap-section__paragraph">{crosstraining_lead}</p>
-                    <div class="cap-table-wrap">
+                    <XFadeScroll class="cap-table-wrap">
                         <table class="cap-table">
                             <thead>
                                 <tr>
@@ -244,7 +245,7 @@ const reasons_list_class = guidance_reasons_ordered
                                 ))}
                             </tbody>
                         </table>
-                    </div>
+                    </XFadeScroll>
                 </section>
             )}
 

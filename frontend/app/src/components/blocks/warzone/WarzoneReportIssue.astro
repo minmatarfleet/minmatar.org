@@ -288,11 +288,13 @@ const featured_guides = issue.get_involved.featured_guides
 
     </div>
 
-    <nav class="[ wz-jump ]" aria-label="Jump to section">
-        {SECTION_NAV.filter((section) => section.id !== 'focus' || focus).map((section) => (
-            <a class="[ wz-jump__link ]" href={`#${section.id}`}>{section.label}</a>
-        ))}
-    </nav>
+    <XFadeScroll below="45rem" class="[ wz-jump-scroll ]">
+        <nav class="[ wz-jump ]" aria-label="Jump to section">
+            {SECTION_NAV.filter((section) => section.id !== 'focus' || focus).map((section) => (
+                <a class="[ wz-jump__link ]" href={`#${section.id}`}>{section.label}</a>
+            ))}
+        </nav>
+    </XFadeScroll>
 
     <section id="scoreboard" class="[ wz-section ]">
         <header class="[ wz-section__head ]">
@@ -1177,6 +1179,8 @@ const featured_guides = issue.get_involved.featured_guides
         display: flex;
         flex-wrap: wrap;
         gap: var(--space-2xs);
+    }
+    .wz-jump-scroll {
         margin-bottom: var(--space-xl);
     }
     .wz-jump__link {
@@ -1200,10 +1204,11 @@ const featured_guides = issue.get_involved.featured_guides
     @media (max-width: 45rem) {
         .wz-jump {
             flex-wrap: nowrap;
-            overflow-x: auto;
+        }
+        .wz-jump-scroll {
             scrollbar-width: none;
         }
-        .wz-jump::-webkit-scrollbar {
+        .wz-jump-scroll::-webkit-scrollbar {
             display: none;
         }
     }

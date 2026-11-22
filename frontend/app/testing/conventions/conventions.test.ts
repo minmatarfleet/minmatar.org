@@ -219,6 +219,11 @@ describe('convention rule matchers', () => {
         expect(count('overflow_x_scroll', astro(`<style>.b { overflow: auto; overflow-y: hidden; } .c { /* overflow-x: auto; */ }</style>`))).toBe(0)
         expect(count('overflow_x_scroll', astro(`<style>.d { overflow-x: hidden; }</style>`))).toBe(0)
         expect(count('overflow_x_scroll', { path: 'src/components/compositions/XFadeScroll.astro', text: '<style>.s { overflow-x: auto; }</style>' })).toBe(0)
+        // pre blocks come from markdown and cannot be wrapped: exempt, however the selector nests them
+        expect(count('overflow_x_scroll', astro(`<style>pre { overflow-x: auto; } .md :is(pre) { overflow-x: auto }</style>`))).toBe(0)
+        expect(count('overflow_x_scroll', astro(`<style lang="scss">.a { :global(pre) { overflow-x: auto; } } .b { pre { padding: 0; overflow-x: scroll } }</style>`))).toBe(0)
+        expect(count('overflow_x_scroll', astro(`<style>.pre-view { overflow-x: auto; } .prefix { overflow-x: auto }</style>`))).toBe(2)
+        expect(count('overflow_x_scroll', astro(`<style lang="scss">pre { margin: 0 } .a { overflow-x: auto; }</style>`))).toBe(1)
     })
 
     it('direct_tippy: tippy() calls, not the component or property names', () => {

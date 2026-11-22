@@ -83,6 +83,7 @@ const type_label = (type:FleetTypes) =>
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 import FleetSpotlight from '@components/blocks/FleetSpotlight.astro'
 import FleetScheduleRow from '@components/blocks/FleetScheduleRow.astro'
 import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro'
@@ -106,69 +107,75 @@ import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro'
     }
 
     {show_host_filter &&
-        <FlexInline gap='var(--space-2xs)' role="group" aria-label={t('fleets.host.filter')} class="[ fleet-type-chips ]">
-            {FLEET_HOST_FILTERS.map(filter =>
-                <button
-                    type="button"
-                    class="[ fleet-type-chip ]"
-                    aria-pressed={filter === host_filter ? 'true' : 'false'}
-                    hx-get={`${SCHEDULE_PARTIAL_URL}${host_query(filter)}`}
-                    hx-target="#upcoming-fleets"
-                    hx-swap="innerHTML transition:true"
-                    hx-push-url={`${HUB_URL}${host_query(filter)}`}
-                    hx-indicator=".loader"
-                >
-                    {host_label(filter)}
-                </button>
-            )}
-        </FlexInline>
+        <XFadeScroll below="48rem">
+            <FlexInline gap='var(--space-2xs)' role="group" aria-label={t('fleets.host.filter')} class="[ fleet-type-chips ]">
+                {FLEET_HOST_FILTERS.map(filter =>
+                    <button
+                        type="button"
+                        class="[ fleet-type-chip ]"
+                        aria-pressed={filter === host_filter ? 'true' : 'false'}
+                        hx-get={`${SCHEDULE_PARTIAL_URL}${host_query(filter)}`}
+                        hx-target="#upcoming-fleets"
+                        hx-swap="innerHTML transition:true"
+                        hx-push-url={`${HUB_URL}${host_query(filter)}`}
+                        hx-indicator=".loader"
+                    >
+                        {host_label(filter)}
+                    </button>
+                )}
+            </FlexInline>
+        </XFadeScroll>
     }
 
     {rest.length > 0 &&
         <FlexInline justification='space-between' gap='var(--space-2xs)' class="[ w-full ]">
-            <FlexInline gap='var(--space-2xs)' role="group" aria-label={t('fleets.schedule.filter')} class="[ fleet-type-chips ]">
-                <button
-                    type="button"
-                    class="[ fleet-type-chip ]"
-                    x-bind:aria-pressed="fleet_type === 'all'"
-                    x-on:click="fleet_type = 'all'"
-                >
-                    {t('fleets.schedule.all').replace('{count}', fleets.length.toString())}
-                </button>
-                {type_counts.map(({ type, count }) =>
-                    <button
-                        type="button"
-                        class:list={['[ fleet-type-chip ]', { 'fleet-type-chip--empty': count === 0 }]}
-                        x-bind:aria-pressed={`fleet_type === '${type}'`}
-                        x-on:click={`fleet_type = '${type}'`}
-                    >
-                        <FleetTypeFlag type={type} size={22} aria-hidden="true" />
-                        {type_label(type)} {count}
-                    </button>
-                )}
-            </FlexInline>
-            {show_location_filter &&
-                <FlexInline gap='var(--space-2xs)' role="group" aria-label={t('fleets.schedule.location_filter')} class="[ fleet-type-chips ]">
+            <XFadeScroll below="48rem">
+                <FlexInline gap='var(--space-2xs)' role="group" aria-label={t('fleets.schedule.filter')} class="[ fleet-type-chips ]">
                     <button
                         type="button"
                         class="[ fleet-type-chip ]"
-                        x-bind:aria-pressed="fleet_location === -1"
-                        x-on:click="fleet_location = -1"
+                        x-bind:aria-pressed="fleet_type === 'all'"
+                        x-on:click="fleet_type = 'all'"
                     >
-                        {t('fleets.schedule.all_locations')}
+                        {t('fleets.schedule.all').replace('{count}', fleets.length.toString())}
                     </button>
-                    {locations.map((location, index) =>
+                    {type_counts.map(({ type, count }) =>
                         <button
                             type="button"
-                            class="[ fleet-type-chip ]"
-                            x-bind:aria-pressed={`fleet_location === ${index}`}
-                            x-on:click={`fleet_location = ${index}`}
-                            data-tippy-content={location.name}
+                            class:list={['[ fleet-type-chip ]', { 'fleet-type-chip--empty': count === 0 }]}
+                            x-bind:aria-pressed={`fleet_type === '${type}'`}
+                            x-on:click={`fleet_type = '${type}'`}
                         >
-                            {location.label}
+                            <FleetTypeFlag type={type} size={22} aria-hidden="true" />
+                            {type_label(type)} {count}
                         </button>
                     )}
                 </FlexInline>
+            </XFadeScroll>
+            {show_location_filter &&
+                <XFadeScroll below="48rem">
+                    <FlexInline gap='var(--space-2xs)' role="group" aria-label={t('fleets.schedule.location_filter')} class="[ fleet-type-chips ]">
+                        <button
+                            type="button"
+                            class="[ fleet-type-chip ]"
+                            x-bind:aria-pressed="fleet_location === -1"
+                            x-on:click="fleet_location = -1"
+                        >
+                            {t('fleets.schedule.all_locations')}
+                        </button>
+                        {locations.map((location, index) =>
+                            <button
+                                type="button"
+                                class="[ fleet-type-chip ]"
+                                x-bind:aria-pressed={`fleet_location === ${index}`}
+                                x-on:click={`fleet_location = ${index}`}
+                                data-tippy-content={location.name}
+                            >
+                                {location.label}
+                            </button>
+                        )}
+                    </FlexInline>
+                </XFadeScroll>
             }
         </FlexInline>
     }
@@ -227,7 +234,6 @@ import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro'
     @media (max-width: 48rem) {
         :global(.fleet-type-chips) {
             flex-wrap: nowrap !important;
-            overflow-x: auto;
             padding-bottom: var(--space-3xs);
         }
 

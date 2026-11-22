@@ -101,11 +101,13 @@ const { auth_token } = get_request_user(Astro)
             </div>
         </div>
 
-        <nav class="[ mk-jump ]" aria-label="Jump to section">
-            {SECTION_NAV.map((section) => (
-                <a class="[ mk-jump__link ]" href={`#${section.id}`}>{section.label}</a>
-            ))}
-        </nav>
+        <XFadeScroll below="45rem" class="[ mk-jump-scroll ]">
+            <nav class="[ mk-jump ]" aria-label="Jump to section">
+                {SECTION_NAV.map((section) => (
+                    <a class="[ mk-jump__link ]" href={`#${section.id}`}>{section.label}</a>
+                ))}
+            </nav>
+        </XFadeScroll>
     </div>
 
     <section id="book" class="[ mk-section ]">
@@ -355,10 +357,11 @@ const { auth_token } = get_request_user(Astro)
     @media (max-width: 45rem) {
         .mk-jump {
             flex-wrap: nowrap;
-            overflow-x: auto;
+        }
+        .mk-jump-scroll {
             scrollbar-width: none;
         }
-        .mk-jump::-webkit-scrollbar {
+        .mk-jump-scroll::-webkit-scrollbar {
             display: none;
         }
     }
