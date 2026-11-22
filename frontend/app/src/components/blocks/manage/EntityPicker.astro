@@ -70,11 +70,11 @@ const initial = {
 <div
     class:list={['[ manage-picker manage-field ]', Astro.props.class]}
     x-data={`{ icon: ${JSON.stringify(initial.icon)}, picked_name: ${JSON.stringify(initial.name)} }`}
-    x-on:combobox:select={`
+    {...{ 'x-on:combobox:select': `
         icon = $event.detail.data.icon ?? ''
         picked_name = $event.detail.label
         $dispatch('manage-entity-picked', { id: $event.detail.value, name: $event.detail.label, icon_url: icon })
-    `}
+    ` }}
     {...attributes}
 >
     <Combobox
