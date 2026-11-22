@@ -136,7 +136,7 @@ import ProductInsightsPanel from '@components/blocks/ProductInsightsPanel.astro'
                             {product.supplies.length > 0 &&
                                 <Flexblock gap="var(--space-2xs)">
                                     <small class="[ subheading ]">{t('industry.product.made_from')}</small>
-                                    <ChipGroup wrap={true}>
+                                    <ChipGroup variant="grid">
                                         {product.supplies.map(component =>
                                             <FilterChip href={translatePath(`/industry/products/${component.id}/`)}>
                                                 <ItemPicture item_id={component.type_id} size={32} icon_quality={64} />
@@ -149,7 +149,7 @@ import ProductInsightsPanel from '@components/blocks/ProductInsightsPanel.astro'
                             {product.supplied_for.length > 0 &&
                                 <Flexblock gap="var(--space-2xs)">
                                     <small class="[ subheading ]">{t('industry.product.used_in')}</small>
-                                    <ChipGroup wrap={true}>
+                                    <ChipGroup variant="grid">
                                         {product.supplied_for.map(parent =>
                                             <FilterChip href={translatePath(`/industry/products/${parent.id}/`)}>
                                                 <ItemPicture item_id={parent.type_id} size={32} icon_quality={64} />

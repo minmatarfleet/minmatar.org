@@ -23,6 +23,7 @@ export default {
         value: { control: 'text', description: 'Input value submitted when chosen.' },
         type: radio_control(['radio', 'checkbox'] as const, '`radio` picks one of the group, `checkbox` lets pilots pick several.'),
         checked: { control: 'boolean', description: 'Server-rendered selected state.' },
+        variant: radio_control(['default', 'tile'] as const, '`tile` is the lighter tinted tile: a hairline border and dim background, joined when adjacent, with the yellow tint and an underline when selected.'),
         input_attributes: { control: 'object', description: 'Extra attributes for the `<input>`: `required`, `x-model`, `hx-*`, `disabled`.' },
     },
     args: {
@@ -119,5 +120,43 @@ export const Passthrough = {
         const label = within(canvasElement).getByTestId('choice')
         await expect(label.tagName).toBe('LABEL')
         await expect(label).toHaveClass('option-card', 'my-choice')
+    },
+}
+
+export const Tile = {
+    args: {
+        variant: 'tile',
+        name: 'contract_type',
+        value: 'alliance',
+        checked: true,
+        slots: { default: '<span class="flex flex-col"><strong>Alliance</strong><small>10,000 ISK broker fee</small></span>' },
+    },
+    play: async ({ canvasElement }: Ctx) => {
+        const canvas = within(canvasElement)
+        await expect(canvasElement.querySelector('label.option-card')).toHaveClass('option-card--tile')
+        const input = canvas.getByRole('radio', { name: /Alliance/ })
+        await expect(input).toBeChecked()
+    },
+}
+
+export const TileUnchecked = {
+    name: 'Tile, unchecked',
+    args: { variant: 'tile', name: 'contract_type', value: 'public', slots: { default: '<strong>Public</strong>' } },
+    play: async ({ canvasElement }: Ctx) => {
+        const input = within(canvasElement).getByRole('radio', { name: 'Public' })
+        await expect(input).not.toBeChecked()
+        await userEvent.click(input)
+        await expect(input).toBeChecked()
+    },
+}
+
+export const TileGroupKeyboard = {
+    name: 'Tile group, arrow keys',
+    args: { variant: 'tile', name: 'contract_type', value: 'alliance', checked: true, slots: { default: '<strong>Alliance</strong>' } },
+    play: async ({ canvasElement }: Ctx) => {
+        const input = within(canvasElement).getByRole('radio', { name: 'Alliance' })
+        input.focus()
+        await expect(input).toHaveFocus()
+        await expect(input).toHaveAttribute('type', 'radio')
     },
 }

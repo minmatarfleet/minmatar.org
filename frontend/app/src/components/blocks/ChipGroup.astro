@@ -4,11 +4,19 @@
  * edge fade; `wrap` lets the chips wrap onto more lines instead.
  * `scroll_below` (a width such as '48rem') wraps the chips at and above that
  * width and scrolls them in one line below it.
+ * `variant="segmented"` joins the chips into one bordered segmented control
+ * (radio or toggle choice): equal-height segments, the chips keep their text
+ * case, and the selected segment takes the yellow tint with an underline
+ * (`selected_fill` fills it solid yellow instead).
+ * `variant="grid"` lays link chips out as a grid of cards (min 14rem wide):
+ * the chips keep their text case and show an icon beside the name.
  */
 interface Props {
     aria_label?:        string;
     wrap?:              boolean;
     scroll_below?:      string;
+    variant?:           'default' | 'segmented' | 'grid';
+    selected_fill?:     boolean;
     [propName: string]: any;
 }
 
@@ -16,6 +24,8 @@ const {
     aria_label,
     wrap = false,
     scroll_below = '',
+    variant = 'default',
+    selected_fill = false,
     ...attributes
 } = Astro.props
 
@@ -31,7 +41,25 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 ---
 
-{below_width ?
+{variant === 'grid' ?
+    <div
+        class:list={['[ chip-group chip-group--grid ]', Astro.props.class]}
+        role="group"
+        aria-label={aria_label}
+        {...attributes}
+    >
+        <slot />
+    </div>
+    : variant === 'segmented' ?
+    <div
+        class:list={['[ chip-group chip-group--segmented ]', { 'chip-group--fill': selected_fill }, Astro.props.class]}
+        role="group"
+        aria-label={aria_label}
+        {...attributes}
+    >
+        <slot />
+    </div>
+    : below_width ?
     <XFadeScroll below={below_width}>
         <FlexInline
             gap="var(--space-3xs)"
@@ -79,5 +107,91 @@ import FlexInline from '@components/compositions/FlexInline.astro'
     .chip-group--wrap {
         flex-wrap: wrap;
         padding-block: 0;
+    }
+
+    /* Segmented: one bordered control, equal-height joined segments. */
+    .chip-group--segmented {
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: stretch;
+        max-width: 100%;
+        padding-block: 0;
+        border: 1px solid var(--border-color-hover);
+        background: color-mix(in srgb, var(--background) var(--tint-strong), transparent);
+
+        :global(.filter-chip) {
+            --chip_text: var(--highlight);
+
+            min-height: var(--space-xl);
+            gap: var(--space-2xs);
+            padding: var(--space-2xs) var(--space-s);
+            border: 0;
+            background: transparent;
+            color: var(--highlight);
+            font-family: inherit;
+            font-size: var(--step--1);
+            letter-spacing: normal;
+            text-transform: none;
+        }
+
+        :global(.filter-chip + .filter-chip) {
+            border-inline-start: 1px solid var(--border-color-hover);
+        }
+
+        :global(.filter-chip:hover) {
+            background: transparent;
+            border-color: var(--border-color-hover);
+            color: var(--fleet-yellow);
+        }
+
+        :global(.filter-chip:is(.is-active, :has(> input:checked))),
+        :global(.filter-chip:is(.is-active, :has(> input:checked)):hover) {
+            background: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
+            color: var(--fleet-yellow);
+            box-shadow: inset 0 -2px 0 var(--fleet-yellow);
+        }
+
+        :global(.filter-chip:has(> input:focus-visible)) {
+            outline: 1px solid var(--foreground);
+            outline-offset: -3px;
+        }
+    }
+
+    .chip-group--segmented.chip-group--fill {
+        :global(.filter-chip:is(.is-active, :has(> input:checked))),
+        :global(.filter-chip:is(.is-active, :has(> input:checked)):hover) {
+            background: var(--fleet-yellow);
+            color: var(--background);
+            box-shadow: none;
+        }
+    }
+
+    /* Grid: link chips as cards with an icon, mixed case. */
+    .chip-group--grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+        gap: var(--space-2xs);
+        padding-block: 0;
+
+        :global(.filter-chip) {
+            min-height: var(--space-xl);
+            gap: var(--space-xs);
+            padding: var(--space-2xs) var(--space-xs);
+            border: 1px solid var(--border-color);
+            background-color: var(--background);
+            color: var(--highlight);
+            font-family: inherit;
+            font-size: var(--step--1);
+            font-weight: 400;
+            letter-spacing: normal;
+            text-transform: none;
+            white-space: normal;
+        }
+
+        :global(.filter-chip:hover) {
+            border-color: var(--fleet-yellow);
+            background-color: var(--background);
+            color: var(--highlight);
+        }
     }
 </style>

@@ -481,9 +481,9 @@ A cover-image panel for landing pages and catalogues: the picture fills the tile
 One choice of a radio group (or a pick-many group with `type="checkbox"`), drawn as a card.
 
 - Import: `import OptionCard from '@components/blocks/OptionCard.astro'`
-- Props: `name: string`, `value: string`, `type?: 'radio' | 'checkbox' = 'radio'`, `checked?: boolean = false`, `input_attributes?: Record<string, any> = {}`
+- Props: `name: string`, `value: string`, `type?: 'radio' | 'checkbox' = 'radio'`, `checked?: boolean = false`, `variant?: 'default' | 'tile' = "tile"` is the lighter tinted tile: a hairline border and a`, `input_attributes?: Record<string, any> = {}`
 - Slots: `default`
-- Stories (7): `frontend/app/rust/stories/components/data-display/OptionCard.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-optioncard--docs: Default, Checked, Checkbox (pick many), Rich content with hint, Disabled, Alpine x-model, Attributes and class on the label
+- Stories (10): `frontend/app/rust/stories/components/data-display/OptionCard.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-optioncard--docs: Default, Checked, Checkbox (pick many), Rich content with hint, Disabled, Alpine x-model, Attributes and class on the label, Tile, Tile, unchecked, Tile group, arrow keys
 
 ### PictureCard
 
@@ -564,9 +564,9 @@ A pill-shaped toggle for filtering a list.
 A labelled row of `FilterChip`s (`role="group"`).
 
 - Import: `import ChipGroup from '@components/blocks/ChipGroup.astro'`
-- Props: `aria_label?: string`, `wrap?: boolean = false`, `scroll_below?: string = ''`
+- Props: `aria_label?: string`, `wrap?: boolean = false`, `scroll_below?: string = ''`, `variant?: 'default' | 'segmented' | 'grid' = "segmented"` joins the chips into one bordered segmented control`, `selected_fill?: boolean = false`
 - Slots: `default`
-- Stories (8): `frontend/app/rust/stories/components/navigation/ChipGroup.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-chipgroup--docs: Default, Wrapping, Few chips, Scrolls in a narrow container, Link chips, Without aria_label, Alpine filter, Wraps on desktop, scrolls on phone
+- Stories (12): `frontend/app/rust/stories/components/navigation/ChipGroup.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-chipgroup--docs: Default, Wrapping, Few chips, Scrolls in a narrow container, Link chips, Without aria_label, Alpine filter, Wraps on desktop, scrolls on phone, Segmented, Segmented, arrow keys, Segmented, solid selected, Grid of link cards
 
 ### ExternalLink
 
