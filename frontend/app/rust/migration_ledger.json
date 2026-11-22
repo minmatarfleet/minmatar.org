@@ -749,9 +749,9 @@
   {
     "file": "src/components/blocks/fleet_rsvp/FleetRsvpForm.astro",
     "selector": ".fleet-rsvp__text-button",
-    "path": "converge",
-    "pattern": "button-reset",
-    "note": "StylessButton drops the browser's 1px 6px button padding; class sets no padding.",
+    "path": "variant",
+    "pattern": "segmented",
+    "note": "StylessButton drops the browser's 1px 6px button padding; class sets no padding. Drawn as ChipGroup variant=\"segmented\" (joined segments, mixed case) to match the original segmented control.",
     "batch": "w8-sonnet-buttons-4"
   },
   {
@@ -877,9 +877,9 @@
   {
     "file": "src/pages/industry/products/[id].astro",
     "selector": ".relations FilterChip",
-    "path": "converge",
-    "pattern": "filter-chip-link",
-    "note": "Made-from / used-in item cards become FilterChip links with the item icon in a wrapping ChipGroup instead of a 14rem card grid.",
+    "path": "variant",
+    "pattern": "grid",
+    "note": "Made-from / used-in item cards are FilterChip links in a ChipGroup variant=\"grid\": the 14rem card grid, icon and mixed-case name on the page background with a hairline border, as on main.",
     "batch": "w8-sonnet-chips-3"
   },
   {
@@ -972,10 +972,18 @@
   },
   {
     "file": "src/components/blocks/FittingBuyOrderContractPrices.astro",
-    "selector": ".hull-source select",
-    "path": "converge",
-    "pattern": "select-library",
-    "note": "Hull-source select takes the Select library chrome (caret, tinted background, sm padding, 16rem max width); the class's own font, border and background rules and the mobile 48px min-height override are dropped. The hidden copy textarea is now a Textarea (still display: hidden).",
+    "selector": ".contract-settings__group (markup)",
+    "path": "variant",
+    "pattern": "segmented",
+    "note": "Markup presets and Custom are FilterChip radios in a ChipGroup variant=\"segmented\": one bordered control, joined equal-height segments, mixed case, selected segment yellow-tinted with an underline, as on main (Custom keeps its inline number input).",
+    "batch": "w8-sonnet-forms-1"
+  },
+  {
+    "file": "src/components/blocks/FittingBuyOrderContractPrices.astro",
+    "selector": ".contract-settings__group (contract type)",
+    "path": "variant",
+    "pattern": "option-card-tile",
+    "note": "Contract type is two OptionCard variant=\"tile\" tiles with fee summaries: hairline border, dim background, yellow border and tint when selected, as on main.",
     "batch": "w8-sonnet-forms-1"
   },
   {
@@ -1325,9 +1333,9 @@
   {
     "file": "src/pages/partials/structure_holdings_component.astro",
     "selector": ".structure-holdings__table",
-    "path": "converge",
-    "pattern": "data-table",
-    "note": "Dense DataTable in an x-show wrapper.",
+    "path": "variant",
+    "pattern": "segmented",
+    "note": "Dense DataTable in an x-show wrapper. Drawn as ChipGroup variant=\"segmented\" (joined segments, mixed case) to match the original segmented control.",
     "batch": "w8-tables-gaps"
   },
   {
@@ -1405,9 +1413,9 @@
   {
     "file": "src/pages/industry/loyalty.astro",
     "selector": ".loyalty-book chips",
-    "path": "converge",
-    "pattern": "filter-chip-toggle",
-    "note": "Open/History segmented tabs are FilterChip buttons bound to Alpine tab (aria-pressed kept): outlined chips instead of one bordered segment box.",
+    "path": "variant",
+    "pattern": "segmented",
+    "note": "Open/History segmented tabs are FilterChip buttons bound to Alpine tab (aria-pressed kept): outlined chips instead of one bordered segment box. Drawn as ChipGroup variant=\"segmented\" (joined segments, mixed case) to match the original segmented control.",
     "batch": "w8-toggles"
   },
   {
@@ -1421,25 +1429,25 @@
   {
     "file": "src/pages/partials/corporation_requirements_settings_component.astro",
     "selector": ".corp-req__row ChipGroup",
-    "path": "converge",
-    "pattern": "filter-chip-toggle",
-    "note": "Required/Preferred toggle is two FilterChip buttons (hx-post kept) instead of a two-column segment.",
+    "path": "variant",
+    "pattern": "segmented",
+    "note": "Required/Preferred toggle is two FilterChip buttons (hx-post kept) instead of a two-column segment. Drawn as ChipGroup variant=\"segmented\" (joined segments, mixed case) to match the original segmented control.",
     "batch": "w8-toggles"
   },
   {
     "file": "src/pages/partials/structure_holdings_component.astro",
     "selector": ".structure-holdings header ChipGroup",
-    "path": "converge",
-    "pattern": "filter-chip-toggle",
-    "note": "By pilot / By item switch is two FilterChip buttons bound to Alpine by.",
+    "path": "variant",
+    "pattern": "segmented",
+    "note": "By pilot / By item switch is two FilterChip buttons bound to Alpine by. Drawn as ChipGroup variant=\"segmented\" (joined segments, mixed case) to match the original segmented control.",
     "batch": "w8-toggles"
   },
   {
     "file": "src/pages/ships/doctrines/edit/[doctrine_id].astro",
     "selector": ".doctrine-popover__bar, .doctrine-popover__filters",
-    "path": "converge",
-    "pattern": "filter-chip-toggle",
-    "note": "Add-as segments are FilterChip buttons, like the hull filters.",
+    "path": "variant",
+    "pattern": "segmented",
+    "note": "Add-as segments are FilterChip buttons, like the hull filters. Drawn as ChipGroup variant=\"segmented\" (joined segments, mixed case) to match the original segmented control.",
     "batch": "w8-toggles"
   },
   {
@@ -1468,18 +1476,26 @@
   },
   {
     "file": "src/components/blocks/FittingBuyOrderContractPrices.astro",
-    "selector": ".contract-settings__group",
+    "selector": ".contract-settings__group (markup)",
     "path": "variant",
-    "pattern": "radio-chip",
-    "note": "Markup presets and Custom are FilterChip radios in a ChipGroup (Custom keeps its inline number input inside the chip, text colour inherits); contract type is two OptionCards with fee summaries; the bordered segment bar is gone.",
+    "pattern": "segmented",
+    "note": "Markup presets and Custom are FilterChip radios in a ChipGroup variant=\"segmented\": one bordered control, joined equal-height segments, mixed case, selected segment yellow-tinted with an underline, as on main (Custom keeps its inline number input).",
+    "batch": "w8-toggles"
+  },
+  {
+    "file": "src/components/blocks/FittingBuyOrderContractPrices.astro",
+    "selector": ".contract-settings__group (contract type)",
+    "path": "variant",
+    "pattern": "option-card-tile",
+    "note": "Contract type is two OptionCard variant=\"tile\" tiles with fee summaries: hairline border, dim background, yellow border and tint when selected, as on main.",
     "batch": "w8-toggles"
   },
   {
     "file": "src/components/blocks/fleet_rsvp/FleetRsvpForm.astro",
     "selector": ".rsvp-form__sure",
-    "path": "converge",
-    "pattern": "radio-chip",
-    "note": "How sure is FilterChip radios (x-model kept) instead of a 3-column segment.",
+    "path": "variant",
+    "pattern": "segmented",
+    "note": "How sure is FilterChip radios (x-model kept) instead of a 3-column segment. Drawn as ChipGroup variant=\"segmented\" (joined segments, mixed case) to match the original segmented control.",
     "batch": "w8-toggles"
   },
   {

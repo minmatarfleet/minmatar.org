@@ -158,7 +158,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                     {rule.members_pass === null ? '—' : `${rule.members_pass}%`}
                                 </span>
                                 <span role="cell">
-                                    <ChipGroup wrap={true} aria_label={t('corporations.requirements.col_importance')}>
+                                    <ChipGroup variant="segmented" selected_fill={true} aria_label={t('corporations.requirements.col_importance')}>
                                         {(['required', 'preferred'] as const).map((value) => (
                                             <FilterChip
                                                 active={rule.importance === value}

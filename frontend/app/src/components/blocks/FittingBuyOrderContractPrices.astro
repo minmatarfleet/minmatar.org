@@ -136,7 +136,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
             <input type="hidden" name="action" value="contract_settings" />
             <fieldset class="[ contract-settings__group ]" disabled={settings_disabled}>
                 <legend class="[ contract-settings__legend ]">{t('fitting_buy.contract_markup')}</legend>
-                <ChipGroup wrap={true} role="radiogroup" aria_label={t('fitting_buy.contract_markup')}>
+                <ChipGroup variant="segmented" role="radiogroup" aria_label={t('fitting_buy.contract_markup')}>
                     {presets.map((preset) => (
                         <FilterChip
                             type="radio"
@@ -178,14 +178,14 @@ import StylessButton from '@components/blocks/StylessButton.astro'
 
             <fieldset class="[ contract-settings__group ]" disabled={settings_disabled}>
                 <legend class="[ contract-settings__legend ]">{t('fitting_buy.contract_type')}</legend>
-                <FlexInline gap="var(--space-2xs)" role="radiogroup" aria-label={t('fitting_buy.contract_type')}>
-                    <OptionCard name="contract_type" value="alliance" checked={contract_type !== 'public'}>
+                <FlexInline gap="0" role="radiogroup" aria-label={t('fitting_buy.contract_type')}>
+                    <OptionCard variant="tile" name="contract_type" value="alliance" checked={contract_type !== 'public'}>
                         <span class="[ contract-segment__text ]">
                             <span class="[ contract-segment__label ]">{t('fitting_buy.contract_type_alliance')}</span>
                             <small class="[ contract-segment__sub ]">{alliance_fee_summary}</small>
                         </span>
                     </OptionCard>
-                    <OptionCard name="contract_type" value="public" checked={contract_type === 'public'}>
+                    <OptionCard variant="tile" name="contract_type" value="public" checked={contract_type === 'public'}>
                         <span class="[ contract-segment__text ]">
                             <span class="[ contract-segment__label ]">{t('fitting_buy.contract_type_public')}</span>
                             <small class="[ contract-segment__sub ]">{public_fee_summary}</small>
@@ -454,8 +454,13 @@ import StylessButton from '@components/blocks/StylessButton.astro'
     }
 
     .contract-segment__label {
+        font-size: var(--step--1);
         font-weight: 600;
         line-height: 1.2;
+    }
+
+    :global(.option-card input:checked + .option-card__body) .contract-segment__sub {
+        color: var(--highlight);
     }
 
     .contract-segment__sub {
@@ -487,7 +492,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
             border: 0;
             border-bottom: 1px solid var(--border-color-hover);
             background: transparent;
-            color: inherit;
+            color: var(--fleet-yellow);
             font: inherit;
             font-variant-numeric: tabular-nums;
             text-align: right;
