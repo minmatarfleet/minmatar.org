@@ -78,6 +78,7 @@ import HelpCategoryForm from '@components/blocks/HelpCategoryForm.astro'
 import HelpPanelPreview from '@components/blocks/HelpPanelPreview.astro'
 import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
 import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <div
@@ -130,12 +131,12 @@ import ManageTable from '@components/blocks/manage/ManageTable.astro'
                                 aria-hidden="true"
                                 x-on:pointerdown="grab($event)"
                             >⋮⋮</span>
-                            <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+                            <StylessButton type="button" class="[ manage-who ]" x-on:click="open = !open">
                                 <span class="[ manage-who__text ]">
                                     <span class="[ manage-who__name ]">{category.title}</span>
                                     {category.section && <span class="[ manage-who__sub ]">{category.section}</span>}
                                 </span>
-                            </button>
+                            </StylessButton>
                             </div>
                         </td>
                         <td class="[ is-wide ]">

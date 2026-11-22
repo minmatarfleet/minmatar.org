@@ -72,6 +72,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
 import FleetFightRound from '@components/blocks/FleetFightRound.astro'
 import FleetFightsChart from '@components/blocks/FleetFightsChart.astro'
 import GroupLogos from '@components/blocks/GroupLogos.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {building ?
@@ -205,7 +206,7 @@ import GroupLogos from '@components/blocks/GroupLogos.astro'
                     <header>
                         <h2 id="fleet-fights-rounds">{live ? t('fleets.fights.earlier') : t('fleets.fights.rounds')}</h2>
                         {fights.can_edit &&
-                            <button
+                            <StylessButton
                                 type="button"
                                 class="[ fleet-fights__edit ]"
                                 hx-get={EDIT_URL}
@@ -214,7 +215,7 @@ import GroupLogos from '@components/blocks/GroupLogos.astro'
                                 hx-disabled-elt="this"
                             >
                                 {t('fleets.fights.edit')}
-                            </button>
+                            </StylessButton>
                         }
                     </header>
                     <div class="[ fleet-fights__list ]">
