@@ -9,7 +9,7 @@ export const providenceWar: ChronicleChapterSource = {
     realYear: '2024',
     epigraph: {
         citation: 'Rat Proverbs 30:8',
-        text: 'Give me neither poverty nor riches, but give me only my daily nibble.',
+        text: 'Give me neither poverty nor riches, but give me only my daily nibble, for an army of rats need not win, only stay fed.',
     },
     sections: [
         {
@@ -18,7 +18,7 @@ export const providenceWar: ChronicleChapterSource = {
             blocks: [
                 {
                     type: 'paragraph',
-                    text: `In January of YC126 the rats moved into the **Watermelon**, their new Fortizar in **Sosala**, and went to war with the neighbours. **CVA** was the alliance that ruled Providence, a region of nullsec. It lived four jumps from Sosala, it had a great many friends, and its fleets were big enough that Minmatar Fleet would be outnumbered every time it went there. **BearThatCares** listed these as the reasons for choosing it.`,
+                    text: `In January of YC126 the rats moved into the **Watermelon**, their new Fortizar in **Sosala**, and went to war with the neighbours. **CVA** was the alliance that ruled Providence, a region of nullsec. It lived four jumps from Sosala, it had a great many friends, and its fleets were big enough that Minmatar Fleet would be outnumbered every time it went there. To **BearThatCares** those were the attractions.`,
                 },
                 {
                     type: 'paragraph',
@@ -44,7 +44,7 @@ export const providenceWar: ChronicleChapterSource = {
             blocks: [
                 {
                     type: 'paragraph',
-                    text: `The war opened on the first Saturday of the year, straight after a town hall. Bear split the alliance into five wings, each with its own commander and its own voice channel, and sent them into the constellation on Providence's doorstep. The day's objective was a flag: a sovereignty marker in a system called **KBP7-G**, the first stone of what he called the Pride of Minmatar. They lost a capital ship and a great many cruisers, reshipped twice, and planted it. "We burned a lot of ISK today," Bear told them, "but we showed up and didn't fuck around."`,
+                    text: `The war opened on the first Saturday of the year, straight after a town hall. Bear split the alliance into five wings, each with its own commander and its own voice channel, and sent them into the constellation on Providence's doorstep. The day's objective was a flag: a sovereignty marker in a system called **KBP7-G**, proof that a lowsec militia alliance could own a piece of nullsec, and the first stone of what he called the Pride of Minmatar. They lost a capital ship and a great many cruisers, reshipped twice, and planted it. "We burned a lot of ISK today," Bear told them, "but we showed up and didn't fuck around."`,
                 },
                 {
                     type: 'paragraph',
@@ -52,7 +52,7 @@ export const providenceWar: ChronicleChapterSource = {
                 },
                 {
                     type: 'paragraph',
-                    text: `Under the heading "Circus music" the record describes fast haulers racing fuel across a live battlefield to a capital ship that could not leave. The rats ran out of ships to buy before it was over. Bear closed his account sounding like a man who had been given what he asked for.`,
+                    text: `Under the heading "Circus music" the record describes fast haulers racing fuel across a live battlefield to a capital ship that could not leave. The rats ran out of ships to buy before it was over.`,
                 },
                 {
                     type: 'quote',
@@ -69,7 +69,7 @@ export const providenceWar: ChronicleChapterSource = {
             blocks: [
                 {
                     type: 'paragraph',
-                    text: `Minmatar Fleet did not pay for its pilots' losses. "Fun is our currency," Bear had explained when asked, "and there's high inflation." The exception came on the twentieth of January and concerned the alliance's one titan, a Ragnarok flown by **Casper Sullivan** and known as the Ratmobile, which existed to throw fleets into Providence.`,
+                    text: `Minmatar Fleet did not reimburse its pilots for ships they lost. "Fun is our currency," Bear had explained when asked, "and there's high inflation." The exception came on the twentieth of January and concerned the alliance's one titan, a Ragnarok flown by **Casper Sullivan** and known as the Ratmobile, which existed to throw fleets into Providence.`,
                 },
                 {
                     type: 'paragraph',
@@ -95,7 +95,7 @@ export const providenceWar: ChronicleChapterSource = {
                 },
                 {
                     type: 'paragraph',
-                    text: `It ended as these things did. "We were doing a little too well and I fucked up our positioning," Bear admitted. Then the capital wing jumped three dreadnoughts in while Snuffed Out sat waiting with forty of its own. Bear's record of his reaction is a flat inventory: "3 revs jump in".`,
+                    text: `"We were doing a little too well and I fucked up our positioning," Bear admitted. Then the capital wing jumped three dreadnoughts in while Snuffed Out sat waiting with forty of its own. "Capital wing trolled me," he wrote.`,
                 },
             ],
         },
@@ -105,7 +105,7 @@ export const providenceWar: ChronicleChapterSource = {
             blocks: [
                 {
                     type: 'paragraph',
-                    text: `In the middle of February Bear went backpacking in Portugal. While he was gone, Providence called in everyone it knew, its coalition and the mercenaries it paid by the week, and several hundred of them came to pull the flag out of KBP7-G. The rats could not stop that. They did hold Sosala against the same crowd. Bear's public comment was a picture and a line about what the boys had got up to "while I was out backpacking in Portugal and stuffing my face with pasta del nata!"`,
+                    text: `In the middle of February Bear went backpacking in Portugal. While he was gone, Providence called in everyone it knew, its coalition and the mercenaries it paid by the week, and several hundred of them came to pull the flag out of KBP7-G. The rats could not stop that, and the Pride of Minmatar ended at one system held for six weeks. They did hold Sosala against the same crowd. Bear's public comment was a picture and a line about what the boys had got up to "while I was out backpacking in Portugal and stuffing my face with pasta del nata!"`,
                 },
                 {
                     type: 'paragraph',
@@ -138,7 +138,16 @@ export const providenceWar: ChronicleChapterSource = {
                 },
                 {
                     type: 'paragraph',
-                    text: `"see you in a month," he added. Within three weeks Providence had come to Sosala instead.`,
+                    text: `"see you in a month," he added.`,
+                },
+                {
+                    type: 'pieces',
+                    label: 'How the alliance told it',
+                    items: [
+                        { title: 'CVA feet pics fuel sov war escalation in New Eden', post_id: 49, post_slug: 'extra!!-extra!!-cva-feet-pics-fuels-sov-war-escalation-in-new-eden!!!', kind: 'Metropolis Daily News' },
+                        { title: 'Red Sky Morning Fortizar falls in Sosala', post_id: 50, post_slug: 'extra!!!-[rsm]-fortizar-falls-in-sosala.-absoh-incursion,-snuff-lif-accident-and-more-in-this-issue', kind: 'Metropolis Daily News' },
+                        { title: 'CVA\'s cash cow crashes in KBP7-G', post_id: 53, post_slug: 'extra!!!-cva\'s-cash-cow-crashes-in-kbp7-g!-attack...-our-own-fort?', kind: 'Metropolis Daily News' },
+                    ],
                 },
             ],
         },

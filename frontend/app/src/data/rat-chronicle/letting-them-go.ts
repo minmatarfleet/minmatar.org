@@ -9,7 +9,7 @@ export const lettingThemGo: ChronicleChapterSource = {
     realYear: '2025',
     epigraph: {
         citation: 'Rat Ecclesiastes 3:1',
-        text: 'There is a time for everything, and a season for every nibble under heaven.',
+        text: 'There is a time for everything, and a season for every nibble under heaven: a time to anchor, and a time to let them go.',
     },
     sections: [
         {

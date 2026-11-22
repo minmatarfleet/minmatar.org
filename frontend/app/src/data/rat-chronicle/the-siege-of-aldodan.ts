@@ -137,6 +137,15 @@ export const theSiegeOfAldodan: ChronicleChapterSource = {
                     type: 'paragraph',
                     text: `By the start of June the rats in their new home were being jumped by five alliances whenever they committed anything large. "Dreads are a non-starter," Bear told them, "we can't fight 5+ groups dogpiling us every time". Vard had put them in the middle of everything, as intended.`,
                 },
+                {
+                    type: 'pieces',
+                    label: 'How the alliance told it',
+                    items: [
+                        { title: 'Matari brothers!!! Fight for Aldodan!!!', post_id: 121, post_slug: 'matari-brothers!!!-fight-for-aldodan!!!', kind: 'Poster' },
+                        { title: 'MINMIL dunked KHESH so hard FRT is kicking them', post_id: 125, post_slug: 'minmil-dunked-khesh-so-hard-frt-is-kicking-them', kind: 'Poster' },
+                        { title: 'FL33T moves staging to Vard! Aldodan victory parade!', post_id: 129, post_slug: 'extra!!!-fl33t-moves-staging-to-vard!!!-aldodan-victory-parade!!!-frt-new-push-and-more!!!', kind: 'Frontlines' },
+                    ],
+                },
             ],
         },
     ],

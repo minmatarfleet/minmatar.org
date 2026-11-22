@@ -1,20 +1,20 @@
 import { slugifySectionId } from '@helpers/pageProgress'
-import { chapter1 } from './chapter-1'
-import { chapter2 } from './chapter-2'
 import { amarrCollapses } from './amarr-collapses'
 import { dronelands } from './dronelands'
 import { lettingThemGo } from './letting-them-go'
 import { providenceWar } from './providence-war'
+import { ratGenesis } from './rat-genesis'
 import { sosala } from './sosala'
 import { theSiegeOfAldodan } from './the-siege-of-aldodan'
+import { theSiegeOfAuga } from './the-siege-of-auga'
 import { theWaifuWars } from './the-waifu-wars'
 import { ratChronicleEras } from './eras'
 import type { ChronicleChapter, ChronicleChapterSource, ChronicleEra, ChronicleEraId, ChronicleSection } from './types'
 
 /** The book in reading order. A chapter's number is its place here. */
 const chapters_in_order: ChronicleChapterSource[] = [
-    chapter1,
-    chapter2,
+    ratGenesis,
+    theSiegeOfAuga,
     amarrCollapses,
     providenceWar,
     sosala,
@@ -39,6 +39,8 @@ export function getChronicleChapterById(chapter_id: string): ChronicleChapter | 
  * redirects them.
  */
 export const legacyChronicleChapterIds: Record<string, string> = {
+    'chapter-1': 'rat-genesis',
+    'chapter-2': 'the-siege-of-auga',
     'chapter-3': 'amarr-collapses',
     'chapter-4': 'amarr-collapses',
     'chapter-5': 'providence-war',

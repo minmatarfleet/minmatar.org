@@ -1,9 +1,8 @@
-import type { ChronicleChapter } from './types'
+import type { ChronicleChapterSource } from './types'
 
-export const chapter2: ChronicleChapter = {
-    id: 'chapter-2',
+export const theSiegeOfAuga: ChronicleChapterSource = {
+    id: 'the-siege-of-auga',
     era: 'auga',
-    number: 2,
     title: 'The Siege of Auga',
     dateRange: 'April – July',
     yc: 'YC125',
@@ -23,7 +22,7 @@ export const chapter2: ChronicleChapter = {
                 },
                 {
                     type: 'paragraph',
-                    text: 'Every fleet that wanted to fight in the southern warzone either came through Auga or watched someone else come through it. **FL33T** had known this since February. They had been fighting in its shadow since the first gatecamp. In April of YC125, with ninety days of losses and lessons behind them, they made it theirs.',
+                    text: 'Every fleet that wanted to fight in the southern warzone either came through Auga or watched someone else come through it. **FL33T** had been fighting in its shadow since the first gatecamp. In April of YC125, with ninety days of losses and lessons behind them, they moved in and began stocking it.',
                 },
                 {
                     type: 'paragraph',
@@ -31,7 +30,7 @@ export const chapter2: ChronicleChapter = {
                 },
                 {
                     type: 'paragraph',
-                    text: 'The primary commander on the Amarr side was **Kanari Xadi**, an FC with years of faction warfare experience and a particular gift for headshots. This was not coincidence — killing the enemy commander was a strong strategy, even though it was frowned upon, and Kanari understood it better than almost anyone he fought.',
+                    text: 'The commander they met most often on the Amarr side was **Kanari Xadi**, an FC with a particular gift for headshots. This was not coincidence — killing the enemy commander was a strong strategy, even though it was frowned upon, and Kanari understood it better than almost anyone he fought.',
                 },
                 { type: 'beat', text: 'He was patient.' },
                 { type: 'beat', text: 'He was disciplined.' },
@@ -60,11 +59,11 @@ export const chapter2: ChronicleChapter = {
                 },
                 {
                     type: 'paragraph',
-                    text: 'Its foundation was the Cyclone Fleet Issue — a shield battlecruiser with missile bays and enough hitpoints to survive while pilots scurried to their ship controls. Against Amarr\'s Prophecy Navy Issues, the Cyclone Fleet Issues brawled at under twenty kilometers, throwing heavy assault missiles at close range. Against kiting compositions, the heavy missile variant sat at over fifty kilometers and denied the enemy the ability to dictate range at all.',
+                    text: 'Its foundation was the Cyclone Fleet Issue — a shield battlecruiser with missile bays and enough hitpoints to survive while pilots scurried to their ship controls. Against Amarr\'s Prophecy Navy Issues, the Cyclone Fleet Issues brawled at under twenty kilometers, throwing heavy assault missiles at close range. Against kiting compositions, the heavy missile variant gave them a mid-range answer, though an enemy that chose to stay out of reach still could.',
                 },
                 {
                     type: 'paragraph',
-                    text: 'Scimitar logistics replaced the Osprey cruisers that had been dying at an unacceptable rate in the early months. The composition was not perfect, but it was better than anything they had flown before, and it improved with every outing.',
+                    text: 'Scimitar logistics flew behind them, fifteen of them on one good night in April. The composition was not perfect, but it was better than anything they had flown before, and it improved with every outing.',
                 },
             ],
         },
@@ -74,11 +73,11 @@ export const chapter2: ChronicleChapter = {
             blocks: [
                 {
                     type: 'paragraph',
-                    text: 'Kanari headshot FL33T\'s fleet commanders every time they met. If there was a commander on the field, Kanari shot the commander. If there was a second commander, Kanari shot the second commander.',
+                    text: 'The Amarr headshot FL33T\'s fleet commanders, and nobody did it more than Kanari. If there was a commander on the field, they shot the commander. If there was a second commander, they shot the second commander.',
                 },
                 {
                     type: 'paragraph',
-                    text: 'He had been doing this for years and he understood its logic: remove the person calling targets and the fleet degrades right away. He was correct to do it.',
+                    text: 'He understood its logic: remove the person calling targets and the fleet degrades right away. He was correct to do it.',
                 },
                 {
                     type: 'paragraph',
@@ -86,7 +85,7 @@ export const chapter2: ChronicleChapter = {
                 },
                 {
                     type: 'paragraph',
-                    text: '**Erik Sinulf** was headshot twice in a single Battlefield fight in Auga — first in a Cyclone Fleet Issue, then again while flying an Imperial Navy Slicer back into the fight after reshipping — leaving others to continue calling targets both times without pause. **Aelwrath Llane** was headshot in a brawl with Kanari\'s fleet and broadcast kills from his escape pod until the remaining damage pushed below the threshold the Amarr logistics could cover.',
+                    text: '**Erik Sinulf** was headshot twice in one day on the Kourmonen Battlefield — first in a battlecruiser, then again in a Cyclone Fleet Issue after reshipping — and both times somebody else picked up the target calling. Another commander was headshot in a brawl with Kanari\'s fleet and broadcast targets from his escape pod until the fleet no longer had the damage to break the Amarr logistics.',
                 },
                 {
                     type: 'paragraph',
@@ -94,7 +93,7 @@ export const chapter2: ChronicleChapter = {
                 },
                 {
                     type: 'paragraph',
-                    text: 'What Kanari showed, by attempting to kill FL33T\'s fleet commanders at every engagement, was that FL33T had enough fleet commanders to withstand it.',
+                    text: 'What the headshots showed, over a season, was that FL33T was growing enough fleet commanders to withstand them.',
                 },
             ],
         },
@@ -104,21 +103,21 @@ export const chapter2: ChronicleChapter = {
             blocks: [
                 {
                     type: 'paragraph',
-                    text: 'The twenty-eighth of June was a Tuesday. **Ibn Khatab** took a day off from whatever his life outside a capsule needed, and proceeded to fight the Amarr for **seven consecutive hours**.',
+                    text: 'The twenty-eighth of June was a Wednesday. **Ibn Khatab** spent it fighting the Amarr for the better part of **seven hours**. The fleet begged him to keep taking days off work. He said it was not a day off.',
                 },
                 {
                     type: 'paragraph',
-                    text: 'It began with petty cheese — an Exequror Navy Issue caught farming warzone advantage in Vard, killed with his Bellicose that happened to be in the neighborhood. The Amarr responded, as they always did, with more ships than the situation needed. Khatab ran the first exchange in blaster Exequror Navy Issues, trading efficiently until his entire fleet was dead and four Amarr ships remained — but the enemy hulls were worth two to four times that of his.',
+                    text: 'It began with petty cheese — a few rats farming warzone advantage in Vard until the Amarr decided to interrupt. The Amarr came in about equal numbers, every ship of it built for damage. Khatab handed out blaster Exequror Navy Issues and traded evenly until his entire fleet was dead and three or four Amarr ships remained — but the enemy hulls were worth two to four times that of his.',
                 },
                 { type: 'beat', text: 'Then snacks.' },
                 {
                     type: 'paragraph',
-                    text: 'Then a move to Lantorn and Dal. Then a Vard Battlefield erupted. He pinged for more Exequror Navy Issues, formed them, took the Battlefield, took a second, scouted the surrounding systems for the Amarr\'s staging, found the Amarr batphone response waiting in Paladins at a range that rendered his fleet irrelevant, noted the mathematics, and brought the fleet home.',
+                    text: 'Then a move to Lantorn and Dal. Then a Vard Battlefield erupted. He pinged for more Exequror Navy Issues, formed them, took the Battlefield, raided the systems around it, and was still at it in Amamake when JUTSU arrived with a dreadnought and battleships that could reach further than anything he had. He brought the fleet home.',
                 },
                 { type: 'beat', text: 'Total operation: seven hours.' },
                 { type: 'beat', text: 'Multiple engagements.' },
                 { type: 'beat', text: 'ISK positive.' },
-                { type: 'beat', text: 'Multiple battlefields captured.' },
+                { type: 'beat', text: 'One Battlefield captured.' },
                 {
                     type: 'paragraph',
                     text: 'He did not need the fight to be fair. He just needed it to be worth taking.',
@@ -135,25 +134,30 @@ export const chapter2: ChronicleChapter = {
                 },
                 {
                     type: 'paragraph',
-                    text: 'Ninety-nine pilots on the field, over a hundred and fifty in system. FL33T would extract, ISK positive, objectives contested.',
+                    text: 'Ninety-nine pilots on the other side of the field. FL33T would extract, ISK positive, objectives contested.',
                 },
                 {
                     type: 'quote',
-                    text: 'Fighting us without a two-to-one advantage isn\'t possible.',
+                    text: 'fighting us without a 2:1 advantage isn\'t possible',
                     character_id: 634915984,
                     character_name: 'BearThatCares',
                     attribution: 'battle record',
                 },
-                { type: 'beat', text: 'In July, something shifted.' },
-                { type: 'beat', text: 'Not all at once.' },
-                { type: 'beat', text: 'Not in some single cinematic moment.' },
                 {
                     type: 'paragraph',
-                    text: 'But in the records from Lantorn, Vard, Sahtogas, and Huola, a phrase began appearing: the Amarr couldn\'t bring numbers like they used to. The Prophecy Navy Issues that had defined Kanari\'s tactical identity appeared less often, replaced by cheaper ships and sniper compositions that were adaptations of organizations fighting on a shrinking budget of will.',
+                    text: 'Vard fell to the Amarr anyway, in the last days of June, and they went on pushing through the summer. The siege did not lift. What changed, in the records from Lantorn, Vard, Sahtogas, and Huola, was what the Amarr chose to bring. The Prophecy Navy Issues appeared less often, replaced by cheaper ships and sniper compositions built to stay out of reach of a Cyclone Fleet Issue.',
                 },
                 {
                     type: 'paragraph',
-                    text: 'They were still showing up. They had not broken. But the scale of what they brought was smaller. System by system, Battlefield by battlefield, structure timer by structure timer, FL33T was **grinding the Amarr war effort down** toward a point of no recovery.',
+                    text: 'They were still showing up. They had not broken. But they had stopped wanting the brawl, and system by system, Battlefield by battlefield, structure timer by structure timer, FL33T went on **offering it**.',
+                },
+                {
+                    type: 'pieces',
+                    label: 'How the alliance told it',
+                    items: [
+                        { title: 'Fight for the Motherland!', post_id: 13, post_slug: 'fight-for-the-motherland!', kind: 'Poster' },
+                        { title: 'They Shall Not Pass!!!', post_id: 16, post_slug: 'they-shall-not-pass!!!', kind: 'Poster' },
+                    ],
                 },
             ],
         },
@@ -176,7 +180,7 @@ export const chapter2: ChronicleChapter = {
                     {
                         character_id: 94335465,
                         character_name: 'Erik Sinulf',
-                        description: 'Ledger and line — joined with little history before **FL33T**, took Kanari\'s headshots without flinching, and rose to become alliance **treasurer** and a key **director** when the fighting needed someone steady behind the paperwork.',
+                        description: 'Ledger and line — joined with little history before **FL33T**, took two headshots in a day and asked only for better implants, and rose to become alliance **treasurer** and a key **director** when the fighting needed someone steady behind the paperwork.',
                     },
                 ],
             },
@@ -196,7 +200,7 @@ export const chapter2: ChronicleChapter = {
                     {
                         character_id: 2114499753,
                         character_name: 'Xadr Twitch',
-                        description: 'First fleet, second chance — arrived from **WINMATAR**, led fleets through the messy early lessons of Ardar, and kept calling targets after his Cyclone died and the grid was still nowhere near finished.',
+                        description: 'First fleet, second chance — arrived from **WINMATAR**, led fleets through the messy early lessons of Ardar, and put up the alliance\'s first sovereignty hub in nullsec.',
                     },
                 ],
             },

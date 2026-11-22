@@ -9,7 +9,7 @@ export const dronelands: ChronicleChapterSource = {
     realYear: '2025–2026',
     epigraph: {
         citation: 'Ratthew 6:19',
-        text: 'Do not store up for yourselves treasures on earth, where cats and felines destroy.',
+        text: 'Do not store up for yourselves Fortizars on earth, where cats and felines destroy.',
     },
     sections: [
         {
@@ -175,6 +175,15 @@ export const dronelands: ChronicleChapterSource = {
                     character_id: 634915984,
                     character_name: 'BearThatCares',
                     attribution: 'to the alliance, 9 July',
+                },
+                {
+                    type: 'pieces',
+                    label: 'How the alliance told it',
+                    items: [
+                        { title: 'FL33T strikes into Etherium Reach', post_id: 170, post_slug: 'extra!-extra!-fl33t-strikes-into-etherium-reach!-serpentis-parade-stuns-amamake!-...', kind: 'Frontlines' },
+                        { title: 'Titan drive-bys, dead Fortizars and an Auga battlefield brawl', post_id: 182, post_slug: 'extra!-extra!-⚡titan-drive-bys,-dead-fortizars-&-auga-battlefield-brawl!', kind: 'Frontlines' },
+                        { title: 'The Cope: The Death of Minmatar Fleet', post_id: 206, post_slug: 'eve-online---the-cope---the-death-of-minmatar-fleet', kind: 'The Cope' },
+                    ],
                 },
             ],
         },

@@ -1,9 +1,8 @@
-import type { ChronicleChapter } from './types'
+import type { ChronicleChapterSource } from './types'
 
-export const chapter1: ChronicleChapter = {
-    id: 'chapter-1',
+export const ratGenesis: ChronicleChapterSource = {
+    id: 'rat-genesis',
     era: 'auga',
-    number: 1,
     title: 'Rat Genesis',
     dateRange: 'January – March',
     yc: 'YC125',
@@ -36,7 +35,7 @@ export const chapter1: ChronicleChapter = {
                 },
                 {
                     type: 'paragraph',
-                    text: 'The Rattini approached **Ushra\'Khan**, the great Minmatar brotherhood, and were refused. They spent some time with **Wild Geese**, who welcomed them with open arms. Yet, after almost a month, the Rattini realized that it was just more of the same. Frigates and destroyers — but their creed demanded **chaotic grids, capital ships, and destruction**.',
+                    text: 'The Rattini approached **Ushra\'Khan**, the great Minmatar brotherhood, and were refused. They spent some time with **Wild Geese**, who welcomed them with open arms. Yet, after almost a month, the Rattini realized that it was just more of the same. Frigates and destroyers — but their creed demanded **chaotic grids, proper fleets, and destruction**.',
                 },
                 {
                     type: 'paragraph',
@@ -54,11 +53,11 @@ export const chapter1: ChronicleChapter = {
                 },
                 {
                     type: 'paragraph',
-                    text: 'The rats brought Cyclone Fleet Issues and Osprey logistics on their first attempt to clear the hive. Halfway through the fight, one of the logistics pilots accidentally triggered their combat drones against a fleetmate. **CONCORD** showed up right away and destroyed the entire logistics wing. The remaining Cyclone Fleet Issues did what anyone would do and got out.',
+                    text: 'The rats brought Cyclone Fleet Issues and Osprey logistics on their first attempt to clear the hive. Halfway through the fight, one of the logistics pilots accidentally set their drones on the wrong target. **CONCORD** showed up right away and destroyed the entire logistics wing. The remaining Cyclone Fleet Issues did what anyone would do and got out.',
                 },
                 {
                     type: 'paragraph',
-                    text: 'They regrouped and tried again — this time the Crimson Brotherhood\'s defenders came in such numbers that the fleet\'s weapons could not keep pace.',
+                    text: 'They regrouped and tried again — this time the base\'s defenders drained the fleet\'s capacitors dry and ripped it to shreds.',
                 },
                 { type: 'beat', text: 'Another retreat.' },
                 { type: 'beat', text: 'Not the last one, just the second.' },
@@ -66,7 +65,7 @@ export const chapter1: ChronicleChapter = {
                 { type: 'beat', text: 'Why was this so hard?' },
                 {
                     type: 'paragraph',
-                    text: 'On the third attempt, **BearThatCares** flew to Jita and imported a fleet of Muninns and Guardians. Two pilots injected training directly into the new hulls. The fleet returned to Amo with absurd EM resistance — the correct profile for the Crimson Brotherhood\'s preferred damage type — and took the base apart cleanly.',
+                    text: 'On the third attempt, **BearThatCares** ran a jump freighter to Jita and imported a fleet of Muninns and Guardians. Two pilots injected training directly into the new hulls. The fleet returned to Amo with absurd EM resistance — the correct profile for the Blood Raiders\' preferred damage type — and took the base apart cleanly.',
                 },
                 {
                     type: 'paragraph',
@@ -74,7 +73,7 @@ export const chapter1: ChronicleChapter = {
                 },
                 {
                     type: 'paragraph',
-                    text: 'BearThatCares wrote it up as the alliance\'s first formal battle record, with every detail preserved: the CONCORD intervention, the cap failure, the fix. He posted it where everyone in the alliance could read it. He would go on posting these records — after every fight, win or loss — for the next three years.',
+                    text: 'BearThatCares wrote it up as the alliance\'s first formal battle record, with every detail preserved: the CONCORD intervention, the cap failure, the fix. He posted it where everyone in the alliance could read it. He and every commander after him would go on posting these records — after every fight, win or loss — for the next three years.',
                 },
                 { type: 'beat', text: 'That habit was baked in from day one.' },
                 { type: 'beat', text: '**Try it, screw it up, figure out why, fix it, go again.**' },
@@ -99,11 +98,11 @@ export const chapter1: ChronicleChapter = {
                 },
                 {
                     type: 'paragraph',
-                    text: '**FL33T** formed Drekavacs and set out for Solitude, where the Expanse Tower stood. Half of The-Expanse\'s own allied corporations left the war before FL33T even arrived. The internal rot accelerated the timeline.',
+                    text: '**FL33T** formed armor cruisers with Drekavacs in support and set out for Solitude, where the Fortizar stood. Once the shooting started, half of The-Expanse\'s own corporations walked out of the alliance, the one that owned the Fortizar among them. The internal rot accelerated the timeline.',
                 },
                 {
                     type: 'paragraph',
-                    text: 'FL33T struck the first armor timer, then the final hull. The Fortizar died, final blow to Fariius, worth fifteen and a half billion ISK. The lesson stuck right away: **touch the industrialists, and the rats appear.**',
+                    text: 'FL33T struck the armor timers, then the final hull. The Fortizar died, final blow to Fariius, worth fifteen and a half billion ISK. The lesson stuck right away: **touch the industrialists, and the rats appear.**',
                 },
             ],
         },
@@ -117,25 +116,68 @@ export const chapter1: ChronicleChapter = {
                 },
                 {
                     type: 'paragraph',
-                    text: 'The records from these fights are honest in a way most groups never manage. A new commander named **Xadr Twitch** ran his first fleet in Ardar; his Cyclone died to pirates who rolled in before the fleet had fully put together; he called for a regroup, reshipped the fleet into Thrashers, and took the objective anyway. Their logi pilots ran out of capacitor. Their Blackbird electronic warfare ships ran fits that failed against the Amarr composition they were fighting. They analyzed the failure, wrote new fits, and banned the old ones from doctrine.',
+                    text: 'The records from these fights are honest in a way most groups never manage. A new commander named **Xadr Twitch** ran his first fleet in Ardar; his Cyclone died to pirates who rolled in before the fleet had fully put together; he called for a regroup, reshipped the fleet into Caracals, and took the objective anyway. Their logi pilots came within a breath of running out of capacitor. Their Blackbird electronic warfare ships ran out of it altogether. They analyzed the failure, wrote new fits, and banned the old ones from doctrine.',
                 },
                 {
                     type: 'paragraph',
-                    text: 'The engagement they called **Blood for the Blood God** — four consecutive rounds in one evening against the Amarr — saw FL33T cycle through four different fleet compositions in a single night, losing twice, winning twice, and ending the session with a simple note in the record:',
+                    text: 'The engagement they called **Blood for the Blood God** — four consecutive rounds in one evening against the Amarr — saw FL33T cycle through three fleet compositions in a single night, losing twice, winning once, drawing once, and ending the session with a simple note in the record:',
                 },
                 {
                     type: 'quote',
-                    text: 'We are outnumbered to hell. 22 Cyclone Fleet Issues versus 32 Prophecy Navy Issues. Just need to keep growing.',
+                    text: 'We are outnumbered to fuck (22 CFIs vs 32 PNIs). Just need to keep growing and get more CFIs, etc.',
                     character_id: 634915984,
                     character_name: 'BearThatCares',
                 },
                 {
                     type: 'paragraph',
-                    text: 'February was not about stacking wins. It was about learning faster than most groups do in a year, and paying for those lessons in hulls. Each engagement produced a critique. Each critique produced a change. The changes accumulated.',
+                    text: 'February had its wins. It was mostly about learning faster than most groups do in a year, and paying for those lessons in hulls. Each engagement produced a critique. Each critique produced a change. The changes accumulated.',
                 },
                 {
                     type: 'paragraph',
-                    text: 'By the end of March, somehow and also very much on purpose, FL33T had flown its first operation with **over two hundred pilots** on the field, ran a **titan bridge**, and run structure campaigns planned days in advance with deliberate timer choices. In ninety days from dying to NPCs in Amo, they had built from nothing a fighting force the warzone had begun to plan around.',
+                    text: 'By the end of March, somehow and also very much on purpose, FL33T had put **eighty pilots** in a single fleet, ran a **titan bridge**, and run structure campaigns planned days in advance with deliberate timer choices. In sixty days from dying to NPCs in Amo, they had built from nothing a fighting force the warzone had begun to plan around.',
+                },
+            ],
+        },
+        {
+            roman: 'V',
+            title: 'Yes or No',
+            blocks: [
+                {
+                    type: 'paragraph',
+                    text: 'While the rats were learning, the enemy was coming apart, and in the middle of March the whole warzone got to listen.',
+                },
+                {
+                    type: 'paragraph',
+                    text: 'The Amarr militia rested on two groups that did not much like each other: **CTRL-V**, led by **Mikal Vektor**, and **Red Sky Morning**, whose chief **CDLoon** also ran the militia\'s main alliance. CTRL-V had been bombed out of its home by pirates and wanted room in Sosala, where Red Sky Morning kept its factories. Red Sky Morning said no. Then Vektor was handed screenshots. One of Red Sky Morning\'s own officers, who turned out to fly with the pirates as well, had been asking around for help destroying CTRL-V\'s fortress.',
+                },
+                {
+                    type: 'paragraph',
+                    text: 'The leaders met on voice to settle it. Vektor put one question to CDLoon — had he known? — and asked for a yes or a no. He asked four times. He was told it was not that simple. He was told it was a miscommunication. **Kanari Xadi**, the militia\'s most active commander, was on the call too.',
+                },
+                {
+                    type: 'quote',
+                    text: 'i can hand on heart say i\'m not going to answer you yes or no',
+                    attribution: 'a voice from the Red Sky Morning side, on the leaked recording',
+                    source: {
+                        title: 'AmarrMil Civil war?',
+                        href: 'https://soundcloud.com/snorfleaks/amarrmil-civil-war',
+                        kind: 'Recording',
+                    },
+                },
+                {
+                    type: 'paragraph',
+                    text: 'Somebody had recorded the meeting. Within days all eighteen minutes of it were public.',
+                },
+                {
+                    type: 'paragraph',
+                    text: 'No rat was on the call. BearThatCares posted a joke about it and a word of advice for the other side — "it\'s space pixels guys, relax" — and went back to shooting them.',
+                },
+                {
+                    type: 'pieces',
+                    label: 'How the alliance told it',
+                    items: [
+                        { title: 'Enemy at the Gates', post_id: 11, post_slug: 'enemy-at-the-gates', kind: 'Poster' },
+                    ],
                 },
             ],
         },

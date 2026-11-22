@@ -161,6 +161,16 @@ export const sosala: ChronicleChapterSource = {
                     type: 'paragraph',
                     text: `The raids on Providence were another matter. They now met the whole coalition every time, and on the first of March Bear said so. "Providence has been a bit blobby, and nothing we've been throwing at them has been working lately."`,
                 },
+                {
+                    type: 'pieces',
+                    label: 'How the alliance told it',
+                    items: [
+                        { title: 'KBP7-G I-Hub battle report', post_id: 76, post_slug: 'kbp7-g-i-hub-battle-report', kind: 'Battle report' },
+                        { title: '2024 Faction Warfare Blood Brawl', post_id: 87, post_slug: '2024-faction-warfare-blood-brawl', kind: 'Poster' },
+                        { title: 'FC I\'m Dead', post_id: 109, post_slug: 'fc-i\'m-dead', kind: 'Battle report' },
+                        { title: 'Minmatar Fleet Annual Report, YC126', post_id: 96, post_slug: 'minmatar-fleet-annual-report-yc126', kind: 'Report' },
+                    ],
+                },
             ],
         },
     ],

@@ -132,6 +132,15 @@ export const amarrCollapses: ChronicleChapterSource = {
                     type: 'paragraph',
                     text: `On the first of January Minmatar Fleet was one year old. Bear's birthday message admitted that he had only agreed to run another alliance "after a severe hangover". "it's unreal the amount of growth we've had in only a year," he wrote. Then he told two hundred and twenty people that they were declaring "an *actual* war" on Providence, a region of nullsec, and on **CVA**, the alliance that ruled it with a coalition several times their size. They would fight it from the new Fortizar, which the orders called the WATERMELLON.`,
                 },
+                {
+                    type: 'pieces',
+                    label: 'How the alliance told it',
+                    items: [
+                        { title: 'Hek Mining Association: a dark story about crime and renting in Minmatar hisec', post_id: 34, post_slug: 'hek-mining-asociation:-a-dark-story-about-crime-and-renting-in-minmatar-hisec.', kind: 'Metropolis Daily News' },
+                        { title: 'Draw your Talwar and join the swordfight!', post_id: 36, post_slug: 'draw-your-talwar-and-join-the-swordfight!', kind: 'Poster' },
+                        { title: 'Hek renamed to Kek following petition by Metropolis resident', post_id: 39, post_slug: 'hek-renamed-to-kek-following-petition-by-metropolis-resident!-extra!', kind: 'Metropolis Daily News' },
+                    ],
+                },
             ],
         },
     ],
