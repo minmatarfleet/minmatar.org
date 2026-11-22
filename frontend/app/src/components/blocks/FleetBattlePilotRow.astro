@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import type { BattlePilotRow } from '@dtypes/layout_components'
-import { get_item_icon, get_corporation_logo, get_alliance_logo } from '@helpers/eve_image'
+import { get_item_icon, get_player_icon, get_corporation_logo, get_alliance_logo } from '@helpers/eve_image'
 
 /**
  * One pilot on a battle report side: the hull (the one they lost, if any)
@@ -32,7 +32,7 @@ const pilot_href = `https://zkillboard.com/character/${row.character_id}/`
                 <img src={get_item_icon(row.icon_type_id, 64)} alt="" width="36" height="36" loading="lazy" />
             </a> :
             <img class="[ br-pilot__icon ]" src={get_item_icon(row.icon_type_id, 64)} alt="" width="36" height="36" loading="lazy" />) :
-        <span class="[ br-pilot__icon ]" />
+        <img class="[ br-pilot__icon ]" src={get_player_icon(row.character_id || 1, 64)} alt="" width="36" height="36" loading="lazy" />
     }
     <div class="[ br-pilot__body ]">
         <div class="[ br-pilot__line ]">

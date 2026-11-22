@@ -6,7 +6,7 @@ import type { FleetBattleReport } from '@helpers/api.minmatar.org/fleets'
 import type { BattleScope } from '@helpers/fleet_fights'
 import type { BattlePilotRow } from '@dtypes/layout_components'
 import { format_isk } from '@helpers/numbers'
-import { get_item_icon, get_corporation_logo, get_alliance_logo, get_group_logo } from '@helpers/eve_image'
+import { get_item_icon, get_player_icon, get_corporation_logo, get_alliance_logo, get_group_logo } from '@helpers/eve_image'
 import { eve_clock, format_damage, move_to_side, scope_params, ship_group_rank, strip_bars, strip_position, strip_ticks } from '@helpers/fleet_fights'
 import { get_ships_type } from '@helpers/sde/ships'
 import { query_string } from '@helpers/string'
@@ -703,7 +703,7 @@ import SectionTabs from '@components/blocks/SectionTabs.astro'
                             {team.by_damage.map((row, rank) =>
                                 <div class="[ br__dmg-row ]">
                                     <span class="[ br__rank ]">{rank + 1}</span>
-                                    {row.icon_type_id ? <img src={get_item_icon(row.icon_type_id, 64)} alt="" width="32" height="32" loading="lazy" /> : <span />}
+                                    <img src={row.icon_type_id ? get_item_icon(row.icon_type_id, 64) : get_player_icon(row.character_id || 1, 64)} alt="" width="32" height="32" loading="lazy" />
                                     <span class="[ br__dmg-name ]"><b>{row.name}</b><span>{row.ship}</span></span>
                                     <span class="[ br__dmg-bar ]"><span style={`width: ${row.bar}%`} /><b>{row.damage}</b></span>
                                     <span class:list={['[ br__num ]', { 'br__top': row.kills_top }]}>{row.kills}</span>
