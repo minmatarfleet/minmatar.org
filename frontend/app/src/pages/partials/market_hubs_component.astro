@@ -169,6 +169,7 @@ const COLUMNS = [
     { label: t('admin_hubs.on_contract'), align: 'num' as const, phone: false },
     { label: t('admin_hubs.keep_stocked'), align: 'num' as const },
 ]
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {part === 'sync' && <SectionSummary section_id="hub-sync" text={sync_text} />}
@@ -281,14 +282,14 @@ const COLUMNS = [
                             <span class="[ manage-tile hub-tile ]">
                                 {row.ship_id && <img src={get_item_icon(row.ship_id)} alt="" width="32" height="32" loading="lazy" />}
                                 <span class="[ hub-tile__name ]">{row.fitting_name}</span>
-                                <button
+                                <StylessButton
                                     type="button"
                                     class="[ hub-tile__remove ]"
                                     aria-label={t('admin_hubs.stop_name').replace('~NAME', row.fitting_name)}
                                     hx-post={STOCK_URL}
                                     hx-vals={doctrine_vals({ action: 'fitting', fitting_id: row.fitting_id })}
                                     {...swap_body}
-                                >×</button>
+                                >×</StylessButton>
                             </span>
                         </li>
                     ))}
@@ -325,14 +326,14 @@ const COLUMNS = [
                             <span class="[ manage-tile hub-tile ]">
                                 <img src={get_item_icon(item.type_id)} alt="" width="32" height="32" loading="lazy" />
                                 <span class="[ hub-tile__name ]">{item.name}</span>
-                                <button
+                                <StylessButton
                                     type="button"
                                     class="[ hub-tile__remove ]"
                                     aria-label={t('admin_hubs.stop_name').replace('~NAME', item.name)}
                                     hx-post={STOCK_URL}
                                     hx-vals={doctrine_vals({ action: 'remove_item', type_id: item.type_id })}
                                     {...swap_body}
-                                >×</button>
+                                >×</StylessButton>
                             </span>
                         </li>
                     ))}

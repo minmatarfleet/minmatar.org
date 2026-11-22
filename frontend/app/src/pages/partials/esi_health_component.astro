@@ -150,6 +150,7 @@ const scope_row_id = (id: number) => `esi-scope-${id}`
 const saved_row = part === 'scope_save'
     ? saved_scope ?? scopes.find((scope) => scope.id === posted_scope_id) ?? null
     : null
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {part === 'corporations' && (
@@ -186,7 +187,7 @@ const saved_row = part === 'scope_save'
                                         label={t('esi_health.open').replace('~NAME', corporation.name)}
                                     >
                                         <td>
-                                            <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+                                            <StylessButton type="button" class="[ manage-who ]" x-on:click="open = !open">
                                                 <img src={get_corporation_logo(corporation.corporation_id, 64)} alt="" width="36" height="36" loading="lazy" />
                                                 <span class="[ manage-who__text ]">
                                                     <span class="[ manage-who__name ]">{corporation.name}</span>
@@ -194,7 +195,7 @@ const saved_row = part === 'scope_save'
                                                         {t('esi_health.corp_sub').replace('~TICKER', corporation.ticker).replace('~COUNT', String(corporation.members))}
                                                     </span>
                                                 </span>
-                                            </button>
+                                            </StylessButton>
                                         </td>
                                         <td class:list={['num', { 'manage-muted': corporation.needs_readd === 0 }]}>{corporation.needs_readd}</td>
                                         <td class:list={['num is-wide', { 'manage-muted': corporation.unlinked === 0 }]}>{corporation.unlinked}</td>
@@ -305,7 +306,7 @@ const saved_row = part === 'scope_save'
                                             dim={pilot.on_leave}
                                         >
                                             <td>
-                                                <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+                                                <StylessButton type="button" class="[ manage-who ]" x-on:click="open = !open">
                                                     {pilot.main_character_id &&
                                                         <img src={get_player_icon(pilot.main_character_id, 64)} alt="" width="36" height="36" loading="lazy" />
                                                     }
@@ -313,7 +314,7 @@ const saved_row = part === 'scope_save'
                                                         <span class="[ manage-who__name ]">{pilot.main_character_name}</span>
                                                         <span class="[ manage-who__sub ]">{pilot.username}</span>
                                                     </span>
-                                                </button>
+                                                </StylessButton>
                                             </td>
                                             <td class="[ is-wide ]">{pilot.corporation_ticker || '—'}</td>
                                             <td class="num">{pilot.characters.length}</td>
@@ -402,12 +403,12 @@ const saved_row = part === 'scope_save'
                                 open={part === 'scope_save'}
                             >
                                 <td>
-                                    <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+                                    <StylessButton type="button" class="[ manage-who ]" x-on:click="open = !open">
                                         <span class="[ manage-who__text ]">
                                             <span class="[ manage-who__name ]">{t('esi_health.scope_name').replace('~GROUP', scope.scope_group).replace('~LABEL', scope.label)}</span>
                                             <span class="[ manage-who__sub ]">{scope.scope}</span>
                                         </span>
-                                    </button>
+                                    </StylessButton>
                                 </td>
                                 <td class="[ is-wide ]">{date_of(scope.added_on)}</td>
                                 <td class="num">{t(t_key('esi_health.updated_', scope.unit)).replace('~DONE', String(scope.updated)).replace('~TOTAL', String(scope.total))}</td>

@@ -100,6 +100,7 @@ const fittings_json = JSON.stringify(
 const quantity_label = t('fitting_buy.quantity')
 const FORM_ID = 'fitting-buy-create'
 const CUSTOM_FIT_CHECK_URL = translatePath('/partials/fitting_buy_custom_fit_component/')
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <Viewport title={page_title} meta_description={t('fitting_buy.meta_description')}>
@@ -230,13 +231,13 @@ const CUSTOM_FIT_CHECK_URL = translatePath('/partials/fitting_buy_custom_fit_com
                                                 x-on:click.stop
                                                 aria-label={quantity_label}
                                             />
-                                            <button
+                                            <StylessButton
                                                 type="button"
                                                 class="[ fitting-buy-action ]"
                                                 x-on:click="add_fitting(fitting)"
                                             >
                                                 {t('fitting_buy.add_fitting')}
-                                            </button>
+                                            </StylessButton>
                                         </FlexInline>
                                     </FlexInline>
                                 </li>
@@ -281,13 +282,13 @@ const CUSTOM_FIT_CHECK_URL = translatePath('/partials/fitting_buy_custom_fit_com
                                                 x-on:change="set_qty(row.fitting_id, $event.target.value)"
                                                 aria-label={quantity_label}
                                             />
-                                            <button
+                                            <StylessButton
                                                 type="button"
                                                 class="[ fitting-buy-action ]"
                                                 x-on:click="remove_fitting(row.fitting_id)"
                                             >
                                                 {t('fitting_buy.remove')}
-                                            </button>
+                                            </StylessButton>
                                         </FlexInline>
                                     </FlexInline>
                                 </li>
