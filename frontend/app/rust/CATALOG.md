@@ -369,9 +369,9 @@ The header button behind CollapsibleBlock: a label with a caret that rotates wit
 A big-number card: an uppercase label, the value in the heading font, and an optional hint line.
 
 - Import: `import StatCard from '@components/blocks/StatCard.astro'`
-- Props: `label: string`, `value?: string | number`, `hint?: string`, `coming_soon?: boolean = false`, `variant?: 'default' | 'compact' | 'bar' = 'default'`, `bar_value?: number = 0`, `tone?: 'fleet-red' | 'green' | 'alliance-blue' | 'fleet-yellow'`, `coming_soon_label?: string`, `href?: string`
-- Slots: `value`, `hint`
-- Stories (11): `frontend/app/rust/stories/components/data-display/StatCard.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-statcard--docs: Default, Without hint, Coming soon, Slotted value and hint, Long label and text value, Compact, Bar (progress), Bar value is clamped to 0-1, Toned, Link (whole card), Coming soon with a custom label
+- Props: `label?: string`, `value?: string | number`, `hint?: string`, `coming_soon?: boolean = false`, `variant?: 'default' | 'compact' | 'bar' | 'glass' | 'inline' | 'cell' = 'default'`, `bar_value?: number = 0`, `tone?: 'fleet-red' | 'green' | 'alliance-blue' | 'fleet-yellow' | 'info' | 'success' | 'danger' | 'minmatar' | 'amarr' | 'angel'`, `coming_soon_label?: string`, `href?: string`
+- Slots: `icon`, `value`, `default`, `hint`
+- Stories (15): `frontend/app/rust/stories/components/data-display/StatCard.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-statcard--docs: Default, Without hint, Coming soon, Slotted value and hint, Long label and text value, Compact, Bar (progress), Bar value is clamped to 0-1, Toned, Link (whole card), Coming soon with a custom label, Glass, Glass, faction tone, Inline, Cell
 
 ### RowList
 

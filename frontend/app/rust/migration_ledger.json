@@ -251,11 +251,11 @@
     "batch": "w10b"
   },
   {
-    "file": "src/components/blocks/SRPStat.astro, CampaignStatBar.astro, campaigns/etherium-reach/CampaignStat.astro",
+    "file": "src/components/blocks/StatCard.astro (SRPStat, CampaignStatBar cells, CampaignStat deleted)",
     "selector": "-",
-    "path": "skipped",
+    "path": "variant",
     "pattern": "stat-card",
-    "note": "Not moved onto StatCard: SRPStat is an inline arrow + ISK figure, not a card; CampaignStatBar is a divider row of value-over-label cells inside heroes; CampaignStat is an icon-led glass card with tone colours and Auga rows styling .card/.wrapper. None maps without a redesign (label order, size, glass vs sunken, icon slot).",
+    "note": "StatCard variants reproduce the old looks exactly: inline (SRPStat arrow + ISK figure, SRPTile x2), glass (CampaignStat icon-led translucent card, tones info/success/danger/minmatar/amarr/angel, Auga .card/.wrapper hooks kept; ~35 uses on 7 campaign/health/order pages), cell (CampaignStatBar value-over-label cell; the bar container stays a wrapper, 3 callers).",
     "batch": "w10b"
   },
   {

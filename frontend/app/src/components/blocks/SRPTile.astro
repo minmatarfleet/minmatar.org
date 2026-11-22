@@ -43,7 +43,7 @@ import ItemBadge from '@components/blocks/ItemBadge.astro';
 import Carousel from '@components/blocks/Carousel.astro';
 import ButtonAddKillmail from '@components/blocks/ButtonAddKillmail.astro';
 import ButtonAuth from '@components/blocks/ButtonAuth.astro';
-import SRPStat from '@components/blocks/SRPStat.astro';
+import StatCard from '@components/blocks/StatCard.astro';
 ---
 <Flexblock
     id={id}
@@ -58,8 +58,19 @@ import SRPStat from '@components/blocks/SRPStat.astro';
     >
         {stats_history &&
             <FlexInline slot="subtitle" gap='var(--space-xl)'>
-                <SRPStat value={stats_history?.approved} type='approved' />
-                <SRPStat value={stats_history?.rejected} type='rejected' />
+                {(['approved', 'rejected'] as const).map(type =>
+                    <StatCard variant="inline">
+                        <span
+                            slot="icon"
+                            class:list={[ 'membership-status', type === 'approved' ? 'text-green' : 'text-red' ]}
+                            color={type === 'approved' ? 'green' : 'fleet-red'}
+                            data-tippy-content={t(`${type}_last_90_days`)}
+                        >
+                            {type === 'approved' ? '▲' : '▼'}
+                        </span>
+                        <Fragment slot="value"><span data-tippy-content={number_name(stats_history[type], lang)}>{number_thousand_separator(stats_history[type])}</span>&nbsp;ISK</Fragment>
+                    </StatCard>
+                )}
             </FlexInline>
         }
     </Tile>

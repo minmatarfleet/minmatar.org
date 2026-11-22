@@ -23,7 +23,7 @@ import Grid from '@components/compositions/Grid.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
-import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
+import StatCard from '@components/blocks/StatCard.astro'
 import CampaignContentChart from '@components/blocks/campaigns/CampaignContentChart.astro'
 import { CAMPAIGN_BEATS, FLEETS_MONTHLY, ISK_DESTROYED_MONTHLY, MONTHS, toBillions } from '@/data/campaigns/scalding-pass'
 import CountUpAnimation from '@components/blocks/CountUpAnimation.astro'
@@ -94,7 +94,7 @@ import { number_name } from '@helpers/numbers'
             column_gap="var(--space-3xs)"
             min_item_width="300px"
         >
-            <CampaignStat
+            <StatCard variant="glass"
                 label="ISK destroyed"
                 tone="success"
             >
@@ -103,8 +103,8 @@ import { number_name } from '@helpers/numbers'
                     target={PERIOD_SCALDING_ISK_KILLS}
                     data-tippy-content={number_name(PERIOD_SCALDING_ISK_KILLS, lang)}
                 />
-            </CampaignStat>
-            <CampaignStat
+            </StatCard>
+            <StatCard variant="glass"
                 label="ISK lost"
                 tone="danger"
             >
@@ -113,8 +113,8 @@ import { number_name } from '@helpers/numbers'
                     target={PERIOD_SCALDING_ISK_LOSSES}
                     data-tippy-content={number_name(PERIOD_SCALDING_ISK_LOSSES, lang)}
                 />
-            </CampaignStat>
-            <CampaignStat
+            </StatCard>
+            <StatCard variant="glass"
                 label="Campaign fleets"
             >
                 <CountUpAnimation
@@ -122,7 +122,7 @@ import { number_name } from '@helpers/numbers'
                     target={PERIOD_SCALDING_FLEETS}
                     data-tippy-content={number_name(PERIOD_SCALDING_FLEETS, lang)}
                 />
-            </CampaignStat>
+            </StatCard>
         </Grid>
     </Flexblock>
 </TextBox>

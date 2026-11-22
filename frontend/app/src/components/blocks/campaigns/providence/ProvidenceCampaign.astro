@@ -21,7 +21,7 @@ import TextBox from '@components/layout/TextBox.astro'
 import Grid from '@components/compositions/Grid.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
-import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
+import StatCard from '@components/blocks/StatCard.astro'
 import CountUpAnimation from '@components/blocks/CountUpAnimation.astro'
 import CharacterPicture from '@components/blocks/CharacterPicture.astro'
 import CharacterCard from '@components/blocks/CharacterCard.astro'
@@ -70,7 +70,7 @@ import { number_name } from '@helpers/numbers'
             column_gap="var(--space-3xs)"
             min_item_width="300px"
         >
-            <CampaignStat
+            <StatCard variant="glass"
                 label="Participation"
                 tone="success"
             >
@@ -81,8 +81,8 @@ import { number_name } from '@helpers/numbers'
                     element='span' 
                     target={FLEET_PILOTS}
                 /> pilots
-            </CampaignStat>
-            <CampaignStat
+            </StatCard>
+            <StatCard variant="glass"
                 label="ISK destroyed"
                 tone="success"
             >
@@ -91,8 +91,8 @@ import { number_name } from '@helpers/numbers'
                     target={CAMPAIGN_ISK_DESTROYED}
                     data-tippy-content={number_name(CAMPAIGN_ISK_DESTROYED, lang)}
                 />
-            </CampaignStat>
-            <CampaignStat
+            </StatCard>
+            <StatCard variant="glass"
                 label="Campaign fleets"
             >
                 <CountUpAnimation
@@ -100,7 +100,7 @@ import { number_name } from '@helpers/numbers'
                     target={PERIOD_CAMPAIGN_FLEETS}
                     data-tippy-content={number_name(PERIOD_CAMPAIGN_FLEETS, lang)}
                 />
-            </CampaignStat>
+            </StatCard>
         </Grid>
     </Flexblock>
 </TextBox>

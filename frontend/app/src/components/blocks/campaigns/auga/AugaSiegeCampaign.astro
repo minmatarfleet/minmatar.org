@@ -34,7 +34,7 @@ import type { CampaignTableRow } from '@/data/campaigns/etherium-reach'
 import type { PilotKillCount } from '@/data/campaigns/auga'
 
 import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
-import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
+import StatCard from '@components/blocks/StatCard.astro'
 import Chart from '@components/blocks/Chart.astro'
 import { DAYS, SHIPS_DESTROYED_DAILY } from '@/data/campaigns/auga'
 import Flexblock from '@components/compositions/Flexblock.astro'
@@ -126,7 +126,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
             <h4>High level summary</h4>
 
             <div class="auga-stat-row">
-                <CampaignStat label="Ships destroyed">
+                <StatCard variant="glass" label="Ships destroyed">
                     <div slot="icon" class="auga-stat__icon" aria-hidden="true">
                         <KillReportEVEIcon />
                     </div>
@@ -135,8 +135,8 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                         target={SHIPS_DESTROYED}
                         data-tippy-content={number_name(SHIPS_DESTROYED, lang)}
                     />
-                </CampaignStat>
-                <CampaignStat label="ISK destroyed" tone="success">
+                </StatCard>
+                <StatCard variant="glass" label="ISK destroyed" tone="success">
                     <div slot="icon" class="auga-stat__icon" aria-hidden="true">
                         <WalletEVEIcon />
                     </div>
@@ -145,8 +145,8 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                         target={CAMPAIGN_ISK_DESTROYED}
                         data-tippy-content={number_name(CAMPAIGN_ISK_DESTROYED, lang)}
                     />
-                </CampaignStat>
-                <CampaignStat label="Pilots who fought" tone="info">
+                </StatCard>
+                <StatCard variant="glass" label="Pilots who fought" tone="info">
                     <div slot="icon" class="auga-stat__icon" aria-hidden="true">
                         <PilotsEvEIcon />
                     </div>
@@ -155,7 +155,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                         target={UNIQUE_PILOTS}
                         data-tippy-content={number_name(UNIQUE_PILOTS, lang)}
                     />
-                </CampaignStat>
+                </StatCard>
             </div>
         </Flexblock>
 
@@ -163,7 +163,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
             <h4>ISK destroyed</h4>
 
             <div class="auga-stat-row">
-                <CampaignStat label={`Minmatar · ${MINMATAR_DESTROYED_SHIPS.toLocaleString()} ships`} tone="minmatar">
+                <StatCard variant="glass" label={`Minmatar · ${MINMATAR_DESTROYED_SHIPS.toLocaleString()} ships`} tone="minmatar">
                     <div slot="icon" class="auga-faction-stat__logo auga-faction-stat__logo--minmatar" aria-hidden="true">
                         <MinmatarLogo />
                     </div>
@@ -172,8 +172,8 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                         target={MINMATAR_DESTROYED_ISK}
                         data-tippy-content={number_name(MINMATAR_DESTROYED_ISK, lang)}
                     />
-                </CampaignStat>
-                <CampaignStat label={`Amarr · ${AMARR_DESTROYED_SHIPS.toLocaleString()} ships`} tone="amarr">
+                </StatCard>
+                <StatCard variant="glass" label={`Amarr · ${AMARR_DESTROYED_SHIPS.toLocaleString()} ships`} tone="amarr">
                     <div slot="icon" class="auga-faction-stat__logo auga-faction-stat__logo--amarr" aria-hidden="true">
                         <AmarrLogo />
                     </div>
@@ -182,8 +182,8 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                         target={AMARR_DESTROYED_ISK}
                         data-tippy-content={number_name(AMARR_DESTROYED_ISK, lang)}
                     />
-                </CampaignStat>
-                <CampaignStat label={`Third party · ${OTHER_DESTROYED_SHIPS.toLocaleString()} ships`} tone="info">
+                </StatCard>
+                <StatCard variant="glass" label={`Third party · ${OTHER_DESTROYED_SHIPS.toLocaleString()} ships`} tone="info">
                     <img
                         slot="icon"
                         class="auga-faction-stat__corp"
@@ -199,7 +199,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                         target={OTHER_DESTROYED_ISK}
                         data-tippy-content={number_name(OTHER_DESTROYED_ISK, lang)}
                     />
-                </CampaignStat>
+                </StatCard>
             </div>
         </Flexblock>
 
@@ -207,7 +207,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
             <h4>Pilot breakdown</h4>
 
             <div class="auga-stat-row">
-                <CampaignStat label="Minmatar pilots" tone="minmatar">
+                <StatCard variant="glass" label="Minmatar pilots" tone="minmatar">
                     <div slot="icon" class="auga-faction-stat__logo auga-faction-stat__logo--minmatar" aria-hidden="true">
                         <MinmatarLogo />
                     </div>
@@ -216,8 +216,8 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                         target={MINMATAR_PILOTS}
                         data-tippy-content={number_name(MINMATAR_PILOTS, lang)}
                     />
-                </CampaignStat>
-                <CampaignStat label="Amarr pilots" tone="amarr">
+                </StatCard>
+                <StatCard variant="glass" label="Amarr pilots" tone="amarr">
                     <div slot="icon" class="auga-faction-stat__logo auga-faction-stat__logo--amarr" aria-hidden="true">
                         <AmarrLogo />
                     </div>
@@ -226,8 +226,8 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                         target={AMARR_PILOTS}
                         data-tippy-content={number_name(AMARR_PILOTS, lang)}
                     />
-                </CampaignStat>
-                <CampaignStat label="Angel Cartel pilots" tone="angel">
+                </StatCard>
+                <StatCard variant="glass" label="Angel Cartel pilots" tone="angel">
                     <img
                         slot="icon"
                         class="auga-faction-stat__corp"
@@ -242,7 +242,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                         target={ANGEL_PILOTS}
                         data-tippy-content={number_name(ANGEL_PILOTS, lang)}
                     />
-                </CampaignStat>
+                </StatCard>
             </div>
         </Flexblock>
     </Flexblock>

@@ -41,7 +41,7 @@ import {
 } from '@/data/campaigns/etherium-reach'
 
 import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
-import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
+import StatCard from '@components/blocks/StatCard.astro'
 import CampaignContentChart from '@components/blocks/campaigns/CampaignContentChart.astro'
 import Chart from '@components/blocks/Chart.astro'
 import {
@@ -153,7 +153,7 @@ import { number_name } from '@helpers/numbers'
             column_gap="var(--space-3xs)"
             min_item_width="300px"
         >
-            <CampaignStat
+            <StatCard variant="glass"
                 label="Participation"
                 tone="success"
             >
@@ -164,8 +164,8 @@ import { number_name } from '@helpers/numbers'
                     element='span' 
                     target={FLEET_PILOTS}
                 /> pilots
-            </CampaignStat>
-            <CampaignStat
+            </StatCard>
+            <StatCard variant="glass"
                 label="ISK destroyed"
                 tone="success"
             >
@@ -174,8 +174,8 @@ import { number_name } from '@helpers/numbers'
                     target={CAMPAIGN_ISK_DESTROYED}
                     data-tippy-content={number_name(CAMPAIGN_ISK_DESTROYED, lang)}
                 />
-            </CampaignStat>
-            <CampaignStat
+            </StatCard>
+            <StatCard variant="glass"
                 label="Total income"
             >
                 <CountUpAnimation
@@ -183,7 +183,7 @@ import { number_name } from '@helpers/numbers'
                     target={CAMPAIGN_TOTAL_INCOME}
                     data-tippy-content={number_name(CAMPAIGN_TOTAL_INCOME, lang)}
                 />
-            </CampaignStat>
+            </StatCard>
         </Grid>
     </Flexblock>
 </TextBox>
@@ -204,7 +204,7 @@ import { number_name } from '@helpers/numbers'
                 column_gap="var(--space-3xs)"
                 min_item_width="300px"
             >
-                <CampaignStat
+                <StatCard variant="glass"
                     label="ISK destroyed"
                     tone="success"
                 >
@@ -213,8 +213,8 @@ import { number_name } from '@helpers/numbers'
                         target={PERIOD_DRONELANDS_ISK_KILLS}
                         data-tippy-content={number_name(PERIOD_DRONELANDS_ISK_KILLS, lang)}
                     />
-                </CampaignStat>
-                <CampaignStat
+                </StatCard>
+                <StatCard variant="glass"
                     label="ISK lost"
                     tone="danger"
                 >
@@ -223,14 +223,14 @@ import { number_name } from '@helpers/numbers'
                         target={PERIOD_DRONELANDS_ISK_LOSSES}
                         data-tippy-content={number_name(PERIOD_DRONELANDS_ISK_LOSSES, lang)}
                     />
-                </CampaignStat>
-                <CampaignStat label="Campaign fleets">
+                </StatCard>
+                <StatCard variant="glass" label="Campaign fleets">
                     <CountUpAnimation
                         element='span' 
                         target={PERIOD_DRONELANDS_FLEETS}
                         data-tippy-content={number_name(PERIOD_DRONELANDS_FLEETS, lang)}
                     />
-                </CampaignStat>
+                </StatCard>
             </Grid>
         </Flexblock>
 
@@ -243,7 +243,7 @@ import { number_name } from '@helpers/numbers'
                 column_gap="var(--space-3xs)"
                 min_item_width="300px"
             >
-                <CampaignStat
+                <StatCard variant="glass"
                     label="ISK destroyed"
                     tone="success"
                 >
@@ -252,8 +252,8 @@ import { number_name } from '@helpers/numbers'
                         target={PERIOD_OUTSIDE_ISK_KILLS}
                         data-tippy-content={number_name(PERIOD_OUTSIDE_ISK_KILLS, lang)}
                     />
-                </CampaignStat>
-                <CampaignStat
+                </StatCard>
+                <StatCard variant="glass"
                     label="ISK lost"
                     tone="danger"
                 >
@@ -262,14 +262,14 @@ import { number_name } from '@helpers/numbers'
                         target={PERIOD_OUTSIDE_ISK_LOSSES}
                         data-tippy-content={number_name(PERIOD_OUTSIDE_ISK_LOSSES, lang)}
                     />
-                </CampaignStat>
-                <CampaignStat label="Warzone fleets">
+                </StatCard>
+                <StatCard variant="glass" label="Warzone fleets">
                     <CountUpAnimation
                         element='span' 
                         target={PERIOD_OUTSIDE_FLEETS}
                         data-tippy-content={number_name(PERIOD_OUTSIDE_FLEETS, lang)}
                     />
-                </CampaignStat>
+                </StatCard>
             </Grid>
         </Flexblock>
     </Flexblock>
