@@ -265,7 +265,8 @@
     gap: var(--space-2xs);
 }
 
-.manage-chips.is-attention {
+.manage-chips.is-attention,
+.manage-attention {
     padding-inline-start: var(--space-s);
     border-inline-start: 1px solid var(--border-color-hover);
 

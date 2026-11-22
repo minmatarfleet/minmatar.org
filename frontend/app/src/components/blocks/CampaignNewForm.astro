@@ -65,6 +65,7 @@ const DURATION = {
     hours: t('campaigns.manage.duration_hours'),
 }
 
+import Flexblock from '@components/compositions/Flexblock.astro'
 import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
 import ChipGroup from '@components/blocks/ChipGroup.astro'
@@ -168,8 +169,8 @@ import StylessButton from '@components/blocks/StylessButton.astro'
     </div>
 
     <div class="[ manage-field campaign-new__systems ]">
-        <div
-            class="[ campaign-new__chips ]"
+        <Flexblock
+            gap="var(--space-2xs)"
             x-on:manage-entity-picked="add_system($event.detail, $event.target.closest('.manage-picker'))"
         >
             <EntityPicker
@@ -181,20 +182,21 @@ import StylessButton from '@components/blocks/StylessButton.astro'
             />
             <ul class="[ campaign-new__chip-list ]" role="list" x-show="systems.length > 0" style={initial.systems.length > 0 ? undefined : 'display: none'}>
                 <template x-for="system in systems" x-bind:key="system.id">
-                    <li class="[ manage-chip campaign-new__chip ]">
+                    <FilterChip
+                        removable={true}
+                        as="li"
+                        remove_attributes={{
+                            'x-bind:aria-label': `${JSON.stringify(t('campaigns.manage.remove_system'))}.replace('~NAME', system.name)`,
+                            'x-on:click': 'remove_system(system.id)',
+                        }}
+                    >
                         <input type="hidden" name="system_id" x-bind:value="system.id" />
                         <input type="hidden" name="system_name" x-bind:value="system.name" />
                         <span x-text="system.name"></span>
-                        <button
-                            type="button"
-                            class="[ campaign-new__chip-remove ]"
-                            x-bind:aria-label={`${JSON.stringify(t('campaigns.manage.remove_system'))}.replace('~NAME', system.name)`}
-                            x-on:click="remove_system(system.id)"
-                        >×</button>
-                    </li>
+                    </FilterChip>
                 </template>
             </ul>
-        </div>
+        </Flexblock>
         {errors.systems
             ? <span class="[ manage-field__error ]" role="alert">{errors.systems}</span>
             : <span class="[ manage-field__hint ]">{t('campaigns.manage.fw_needs_system')}</span>
@@ -262,12 +264,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         gap: var(--space-3xs);
     }
 
-    .campaign-new__chips {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-2xs);
-    }
-
     .campaign-new__chip-list {
         display: flex;
         flex-wrap: wrap;
@@ -275,26 +271,5 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         margin: 0;
         padding: 0;
         list-style: none;
-    }
-
-    .campaign-new__chip {
-        cursor: default;
-        color: var(--highlight);
-    }
-
-    .campaign-new__chip-remove {
-        background: none;
-        border: 0;
-        padding: 0 var(--space-3xs);
-        color: var(--faded);
-        cursor: pointer;
-        font-size: var(--step-0);
-        line-height: 1;
-    }
-
-    @media (hover: hover) {
-        .campaign-new__chip-remove:hover {
-            color: var(--highlight);
-        }
     }
 </style>

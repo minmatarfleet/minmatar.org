@@ -113,6 +113,8 @@ const initial_showing_after = fill_showing_part(
 
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
 import CharacterPicture from '@components/blocks/CharacterPicture.astro'
@@ -372,53 +374,49 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                     <Flexblock gap="var(--space-xs)">
                         <div class="[ ops-contracts-list__filter-row ]">
                             <span class="[ ops-contracts-list__filter-label ]">{t('ops_gap_filter_criteria')}</span>
-                            <div class="[ ops-contracts-list__chips ]">
+                            <ChipGroup wrap={true}>
                                 {criteria_options.map(opt =>
-                                    <button
-                                        type="button"
-                                        class="[ ops-contracts-list__chip ]"
+                                    <FilterChip
+                                        x-bind:aria-pressed={`criteria_active('${opt.id}')`}
                                         x-bind:class={`criteria_active('${opt.id}') && 'is-active'`}
                                         x-on:click={`toggle_criteria('${opt.id}')`}
-                                    >{opt.label}</button>
+                                    >{opt.label}</FilterChip>
                                 )}
-                            </div>
+                            </ChipGroup>
                         </div>
                         {(doctrine_options.length > 0 || has_no_doctrine) &&
                             <div class="[ ops-contracts-list__filter-row ]">
                                 <span class="[ ops-contracts-list__filter-label ]">{t('doctrine')}</span>
-                                <div class="[ ops-contracts-list__chips ]">
+                                <ChipGroup wrap={true}>
                                     {doctrine_options.map(opt =>
-                                        <button
-                                            type="button"
-                                            class="[ ops-contracts-list__chip ]"
+                                        <FilterChip
+                                            x-bind:aria-pressed={`doctrines_active('${opt.id}')`}
                                             x-bind:class={`doctrines_active('${opt.id}') && 'is-active'`}
                                             x-on:click={`toggle_doctrines('${opt.id}')`}
-                                        >{opt.label}</button>
+                                        >{opt.label}</FilterChip>
                                     )}
                                     {has_no_doctrine &&
-                                        <button
-                                            type="button"
-                                            class="[ ops-contracts-list__chip ]"
+                                        <FilterChip
+                                            x-bind:aria-pressed={`doctrines_active('${OPS_CONTRACTS_NO_DOCTRINE}')`}
                                             x-bind:class={`doctrines_active('${OPS_CONTRACTS_NO_DOCTRINE}') && 'is-active'`}
                                             x-on:click={`toggle_doctrines('${OPS_CONTRACTS_NO_DOCTRINE}')`}
-                                        >{t('ops_contracts_filter_no_doctrine')}</button>
+                                        >{t('ops_contracts_filter_no_doctrine')}</FilterChip>
                                     }
-                                </div>
+                                </ChipGroup>
                             </div>
                         }
                         <div class="[ ops-contracts-list__filter-row ]">
                             <span class="[ ops-contracts-list__filter-label ]">{t('ops_gap_order_by')}</span>
-                            <div class="[ ops-contracts-list__chips ]">
+                            <ChipGroup wrap={true}>
                                 {order_by_options.map(opt =>
-                                    <button
-                                        type="button"
-                                        class="[ ops-contracts-list__chip ]"
+                                    <FilterChip
+                                        x-bind:aria-pressed={`order_by === '${opt.id}'`}
                                         x-bind:class={`order_by === '${opt.id}' && 'is-active'`}
                                         x-on:click={`setOrderBy('${opt.id}')`}
                                         x-text={`orderLabel('${opt.id}', '${opt.label}')`}
-                                    >{opt.label}</button>
+                                    >{opt.label}</FilterChip>
                                 )}
-                            </div>
+                            </ChipGroup>
                         </div>
                     </Flexblock>
                 </ComponentBlock>
@@ -647,46 +645,6 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         letter-spacing: 0.08em;
         text-transform: uppercase;
         color: var(--fleet-yellow);
-    }
-
-    .ops-contracts-list__chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-3xs);
-    }
-
-    .ops-contracts-list__chip {
-        appearance: none;
-        margin: 0;
-        padding: var(--space-3xs) var(--space-xs);
-        border: 1px solid color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
-        background: transparent;
-        color: var(--fleet-yellow);
-        font-family: var(--button-font);
-        font-size: var(--step--2);
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        cursor: pointer;
-        transition: var(--fast-transition);
-
-        @media (hover: hover) {
-            &:hover {
-                border-color: var(--fleet-yellow);
-                background: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
-            }
-        }
-
-        &:focus-visible {
-            outline: 2px solid var(--highlight);
-            outline-offset: 2px;
-        }
-
-        &.is-active {
-            border-color: var(--fleet-yellow);
-            background: var(--fleet-yellow);
-            color: var(--background);
-        }
     }
 
     .ops-contracts-list__results {

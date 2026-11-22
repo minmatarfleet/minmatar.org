@@ -79,6 +79,8 @@ const VISIBILITY_VARIANT = { alliance: 'fill', corporation: 'fill', private: 'ou
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import DialogButton from '@components/blocks/DialogButton.astro'
@@ -99,14 +101,18 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         :
         <Flexblock gap="var(--space-s)">
             <div class="[ manage-filters ]">
-                <div class="[ manage-chips ]" role="radiogroup" aria-label={t('universe.tab.structures')}>
+                <ChipGroup wrap={true} role="radiogroup" aria_label={t('universe.tab.structures')}>
                     {(['all', 'ours', 'reported', 'reinforced'] as const).map((name) => (
-                        <button type="button" role="radio" class="[ manage-chip ]" x-bind:class={`{ 'is-on': view === '${name}' }`} x-bind:aria-checked={`view === '${name}'`} x-on:click={`view = '${name}'`}>
-                            <span>{name === 'all' ? t('universe.view_all') : t(`universe.structures.view_${name}`)}</span>
-                            <span class="[ manage-chip__count ]">{counts[name]}</span>
-                        </button>
+                        <FilterChip
+                            type="radio"
+                            name="universe-structures-view"
+                            value={name}
+                            checked={name === 'all'}
+                            count={counts[name]}
+                            input_attributes={{ 'x-model': 'view' }}
+                        >{name === 'all' ? t('universe.view_all') : t(`universe.structures.view_${name}`)}</FilterChip>
                     ))}
-                </div>
+                </ChipGroup>
                 <FlexInline gap="var(--space-s)" class="[ universe-toolbar ]">
                     <ManageSearch id="universe-structures-search" label={t('universe.structures.search')} placeholder={t('universe.structures.search')} x-model="q" />
                     <StructureReportDialog />

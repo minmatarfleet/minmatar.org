@@ -53,6 +53,8 @@ import type { TagColors } from '@dtypes/layout_components'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
 import UsefulForShips from '@components/blocks/UsefulForShips.astro'
@@ -419,59 +421,55 @@ const initial_showing_after = fill_showing_part(
                     <Flexblock gap="var(--space-xs)">
                         <div class="[ ops-sell-gaps__filter-row ]">
                             <span class="[ ops-sell-gaps__filter-label ]">{t('ops_gap_filter_criteria')}</span>
-                            <div class="[ ops-sell-gaps__chips ]">
+                            <ChipGroup wrap={true}>
                                 {criteria_options.map(opt =>
-                                    <button
-                                        type="button"
-                                        class="[ ops-sell-gaps__chip ]"
+                                    <FilterChip
+                                        x-bind:aria-pressed={`criteria_active('${opt.id}')`}
                                         x-bind:class={`criteria_active('${opt.id}') && 'is-active'`}
                                         x-on:click={`toggle_criteria('${opt.id}')`}
                                         {...('tip' in opt && opt.tip
                                             ? { 'data-tippy-content': opt.tip }
                                             : {})}
-                                    >{opt.label}</button>
+                                    >{opt.label}</FilterChip>
                                 )}
-                            </div>
+                            </ChipGroup>
                         </div>
                         <div class="[ ops-sell-gaps__filter-row ]">
                             <span class="[ ops-sell-gaps__filter-label ]">{t('ops_gap_filter_type')}</span>
-                            <div class="[ ops-sell-gaps__chips ]">
+                            <ChipGroup wrap={true}>
                                 {type_options.map(opt =>
-                                    <button
-                                        type="button"
-                                        class="[ ops-sell-gaps__chip ]"
+                                    <FilterChip
+                                        x-bind:aria-pressed={`types_active('${opt.id}')`}
                                         x-bind:class={`types_active('${opt.id}') && 'is-active'`}
                                         x-on:click={`toggle_types('${opt.id}')`}
-                                    >{opt.label}</button>
+                                    >{opt.label}</FilterChip>
                                 )}
-                            </div>
+                            </ChipGroup>
                         </div>
                         <div class="[ ops-sell-gaps__filter-row ]">
                             <span class="[ ops-sell-gaps__filter-label ]">{t('ops_gap_filter_variant')}</span>
-                            <div class="[ ops-sell-gaps__chips ]">
+                            <ChipGroup wrap={true}>
                                 {variant_options.map(opt =>
-                                    <button
-                                        type="button"
-                                        class="[ ops-sell-gaps__chip ]"
+                                    <FilterChip
+                                        x-bind:aria-pressed={`variants_active('${opt.id}')`}
                                         x-bind:class={`variants_active('${opt.id}') && 'is-active'`}
                                         x-on:click={`toggle_variants('${opt.id}')`}
-                                    >{opt.label}</button>
+                                    >{opt.label}</FilterChip>
                                 )}
-                            </div>
+                            </ChipGroup>
                         </div>
                         <div class="[ ops-sell-gaps__filter-row ]">
                             <span class="[ ops-sell-gaps__filter-label ]">{t('ops_gap_order_by')}</span>
-                            <div class="[ ops-sell-gaps__chips ]">
+                            <ChipGroup wrap={true}>
                                 {order_by_options.map(opt =>
-                                    <button
-                                        type="button"
-                                        class="[ ops-sell-gaps__chip ]"
+                                    <FilterChip
+                                        x-bind:aria-pressed={`order_by === '${opt.id}'`}
                                         x-bind:class={`order_by === '${opt.id}' && 'is-active'`}
                                         x-on:click={`setOrderBy('${opt.id}')`}
                                         x-text={`orderLabel('${opt.id}', '${opt.label}')`}
-                                    >{opt.label}</button>
+                                    >{opt.label}</FilterChip>
                                 )}
-                            </div>
+                            </ChipGroup>
                         </div>
                     </Flexblock>
                 </ComponentBlock>
@@ -699,41 +697,6 @@ const initial_showing_after = fill_showing_part(
         letter-spacing: 0.08em;
         text-transform: uppercase;
         color: var(--fleet-yellow);
-    }
-
-    .ops-sell-gaps__chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-3xs);
-    }
-
-    .ops-sell-gaps__chip {
-        appearance: none;
-        margin: 0;
-        padding: var(--space-3xs) var(--space-xs);
-        border: 1px solid color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
-        background: transparent;
-        color: var(--fleet-yellow);
-        font-family: var(--button-font);
-        font-size: var(--step--2);
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        cursor: pointer;
-        transition: var(--fast-transition);
-
-        @media (hover: hover) {
-            &:hover {
-                border-color: var(--fleet-yellow);
-                background: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
-            }
-        }
-
-        &.is-active {
-            border-color: var(--fleet-yellow);
-            background: var(--fleet-yellow);
-            color: var(--background);
-        }
     }
 
     .ops-sell-gaps__results {
