@@ -87,7 +87,7 @@ const scale_color = (color: string) => `--chip_color: ${color}; --chip_text: ${c
                     <FilterChip
                         type="radio"
                         name={`q__${q.key}`}
-                        value={opt.value}
+                        value={String(opt.value)}
                         checked={scalar_value === String(opt.value)}
                         input_attributes={{ required: q.required }}
                         style={scale_color(opt.color)}
