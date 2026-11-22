@@ -21,8 +21,6 @@ export interface UniverseReportState {
     structure_id:               number | null;
     campaign_slug:              string;
     corporation_name:           string;
-    alliance_name:              string;
-    affiliated_alliance_name:   string;
     fitting:                    string;
     reinforce_hour:             number | null;
 }
@@ -42,7 +40,7 @@ interface Props {
 const { step, candidates = [], picked = null, error = null } = Astro.props
 const state: UniverseReportState = {
     system_name: '', type_id: null, name: '', structure_id: null, campaign_slug: '',
-    corporation_name: '', alliance_name: '', affiliated_alliance_name: '', fitting: '', reinforce_hour: null,
+    corporation_name: '', fitting: '', reinforce_hour: null,
     ...(Astro.props.state ?? {}),
 }
 
@@ -64,7 +62,7 @@ const current = step === 'match' ? 0 : STEPS.indexOf(step)
 const fit_lines = state.fitting.split('\n').filter((line) => line.trim()).length
 const summary = [
     [picked?.name ?? state.name, type_name, state.system_name].filter(Boolean).join(' · '),
-    state.alliance_name || state.corporation_name,
+    state.corporation_name,
     fit_lines ? t('universe.report.fit_lines').replace('~COUNT', String(fit_lines)) : t('universe.report.skipped'),
     state.reinforce_hour === null ? t('universe.report.not_known') : `${String(state.reinforce_hour).padStart(2, '0')}:00 EVE`,
     '',
@@ -80,7 +78,7 @@ const move = (value: string, extra: Record<string, string> = {}) => ({ 'hx-post'
 const VISIBLE: Record<UniverseReportStep, string[]> = {
     find: ['system_name', 'type_id', 'name'],
     match: ['structure_id'],
-    owner: ['corporation_name', 'alliance_name', 'affiliated_alliance_name'],
+    owner: ['corporation_name'],
     fitting: ['fitting'],
     reinforce: ['reinforce_hour'],
     sent: [],
@@ -172,16 +170,8 @@ import OptionCard from '@components/blocks/OptionCard.astro'
     {step === 'owner' &&
         <div class="[ structure-add__body ]">
             <StructureHowTo topics={['owner']} />
-            <div class="[ structure-add__two ]">
-                <ManageField label={t('universe.report.corporation')} for="universe-report-corp">
-                    <Input id="universe-report-corp" name="corporation_name" value={state.corporation_name} />
-                </ManageField>
-                <ManageField label={t('universe.report.alliance')} for="universe-report-alliance">
-                    <Input id="universe-report-alliance" name="alliance_name" value={state.alliance_name} />
-                </ManageField>
-            </div>
-            <ManageField label={t('universe.report.affiliated')} for="universe-report-affiliated">
-                <Input id="universe-report-affiliated" name="affiliated_alliance_name" value={state.affiliated_alliance_name} placeholder={t('universe.report.affiliated_placeholder')} />
+            <ManageField label={t('universe.report.corporation')} for="universe-report-corp" hint={t('universe.report.corporation_hint')}>
+                <Input id="universe-report-corp" name="corporation_name" value={state.corporation_name} />
             </ManageField>
             <div class="[ manage-actions ]">
                 <Button type="button" size="sm" color="fleet-red" {...move('fitting')}>{t('universe.report.next')}</Button>

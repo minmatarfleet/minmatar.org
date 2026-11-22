@@ -52,14 +52,53 @@ def normalise_name(name: str, system_name: str = "") -> str:
     return value
 
 
+def _esi_ids(names: list[str]) -> dict:
+    """ESI's exact name lookup, or {} when ESI cannot answer."""
+    # pylint: disable=import-outside-toplevel
+    from eveonline.client import EsiClient
+
+    names = [name.strip() for name in names if name and name.strip()]
+    if not names:
+        return {}
+    try:
+        response = EsiClient(None).resolve_universe_ids(names)
+        if not response.success():
+            return {}
+        return response.results() or {}
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.warning("ESI name lookup failed for %s", names, exc_info=True)
+        return {}
+
+
+def _esi_id(found: dict, key: str, name: str) -> Optional[int]:
+    for row in found.get(key) or []:
+        if str(row.get("name", "")).lower() == name.strip().lower():
+            return int(row["id"])
+    return None
+
+
 def solar_system_id(name: str) -> Optional[int]:
-    if not name:
+    """
+    The system's id. The local universe table only holds the systems
+    something has loaded, which leaves out most of null-sec (where jump
+    gates are), so an unknown name is looked up in ESI and loaded.
+    """
+    if not name or not name.strip():
         return None
     # pylint: disable=import-outside-toplevel
     from eveuniverse.models import EveSolarSystem
 
     system = EveSolarSystem.objects.filter(name__iexact=name.strip()).first()
-    return system.id if system else None
+    if system:
+        return system.id
+    system_id = _esi_id(_esi_ids([name]), "systems", name)
+    if system_id is None:
+        return None
+    try:
+        EveSolarSystem.objects.get_or_create_esi(id=system_id)
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.warning("Could not load solar system %s", system_id)
+    return system_id
 
 
 def candidates(
@@ -142,7 +181,6 @@ class ReportDetails:
     name: str = ""
     corporation_name: str = ""
     alliance_name: str = ""
-    affiliated_alliance_name: str = ""
     reinforce_hour: Optional[int] = None
     fitting: str = ""
 
@@ -157,10 +195,9 @@ def _clean(details: ReportDetails) -> ReportDetails:
     details.name = re.sub(r"\s+", " ", details.name or "").strip()[:255]
     details.corporation_name = (details.corporation_name or "").strip()[:255]
     details.alliance_name = (details.alliance_name or "").strip()[:255]
-    details.affiliated_alliance_name = (
-        details.affiliated_alliance_name or ""
-    ).strip()[:255]
     details.fitting = (details.fitting or "").strip()
+    if details.corporation_name and not details.alliance_name:
+        details.alliance_name = owner_alliance_name(details.corporation_name)
     return details
 
 
@@ -179,22 +216,60 @@ def _corporation(name: str) -> Optional[EveCorporation]:
     return EveCorporation.objects.filter(name__iexact=name).first()
 
 
+def owner_alliance_name(corporation_name: str) -> str:
+    """
+    The alliance the owning corporation is in, so a reporter only types the
+    corporation from Show Info: from our own records when we know the
+    corporation, else from ESI. Empty when it has none or ESI cannot say.
+    """
+    if not corporation_name:
+        return ""
+    corporation = _corporation(corporation_name)
+    if corporation is not None and corporation.alliance_id:
+        return corporation.alliance.name or ""
+    # pylint: disable=import-outside-toplevel
+    from eveonline.client import EsiClient
+    from eveonline.models import EveAlliance
+
+    corporation_id = _esi_id(
+        _esi_ids([corporation_name]), "corporations", corporation_name
+    )
+    if corporation_id is None:
+        return ""
+    client = EsiClient(None)
+    try:
+        info = client.get_corporation(corporation_id)
+        if not info.success():
+            return ""
+        alliance_id = (info.results() or {}).get("alliance_id")
+        if not alliance_id:
+            return ""
+        known = EveAlliance.objects.filter(alliance_id=alliance_id).first()
+        if known is not None and known.name:
+            return known.name
+        alliance = client.get_alliance(alliance_id)
+        if not alliance.success():
+            return ""
+        return str((alliance.results() or {}).get("name") or "")
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.warning(
+            "ESI alliance lookup failed for %s",
+            corporation_name,
+            exc_info=True,
+        )
+        return ""
+
+
 def apply_report(structure: EveStructure, details: ReportDetails, user):
     """
     Update a row from a report. On an ESI row a report only fills what ESI
-    leaves empty (fitting, affiliation, reinforcement hour) and never
+    leaves empty (fitting, reinforcement hour) and never
     touches ESI-owned fields. It never changes visibility or source.
     """
     now = timezone.now()
     if structure.source == EveStructure.SOURCE_ESI:
         if details.fitting and not structure.fitting:
             structure.fitting = details.fitting
-        if details.affiliated_alliance_name and not (
-            structure.affiliated_alliance_name
-        ):
-            structure.affiliated_alliance_name = (
-                details.affiliated_alliance_name
-            )
         if (
             details.reinforce_hour is not None
             and structure.reinforce_hour is None
@@ -211,10 +286,6 @@ def apply_report(structure: EveStructure, details: ReportDetails, user):
             )
         if details.alliance_name:
             structure.owner_alliance_name = details.alliance_name
-        if details.affiliated_alliance_name:
-            structure.affiliated_alliance_name = (
-                details.affiliated_alliance_name
-            )
         if details.reinforce_hour is not None:
             structure.reinforce_hour = details.reinforce_hour
         if details.fitting:
@@ -248,7 +319,6 @@ def create_reported(
                         "" if corporation else details.corporation_name
                     ),
                     owner_alliance_name=details.alliance_name,
-                    affiliated_alliance_name=details.affiliated_alliance_name,
                     visibility=EveStructure.VISIBILITY_ALLIANCE,
                     source=EveStructure.SOURCE_REPORTED,
                     reported_by=user,

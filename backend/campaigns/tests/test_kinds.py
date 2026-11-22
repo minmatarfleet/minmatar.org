@@ -1,6 +1,7 @@
 """Campaign kinds, parties, and structure theaters."""
 
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
@@ -146,6 +147,23 @@ class StructureAttachTests(TestCase):
         self.assertEqual(
             structure.related_alliance_name, "Curatores Veritatis Alliance"
         )
+
+    def test_attach_structure_asks_esi_for_an_unknown_corps_alliance(self):
+        with patch(
+            "structures.reported.owner_alliance_name",
+            return_value="Far Away Alliance",
+        ) as lookup:
+            structure = structure_service.attach_structure(
+                self.campaign,
+                name="Far Fort",
+                structure_type="fortizar",
+                system_name="Kamela",
+                solar_system_id=KAMELA,
+                corporation_name="Far Away Corp",
+            )
+
+        lookup.assert_called_once_with("Far Away Corp")
+        self.assertEqual(structure.alliance_name, "Far Away Alliance")
 
     def test_structure_affiliation_from_parties(self):
         FeedMonitoredSystem.objects.create(

@@ -48896,11 +48896,6 @@
       },
       "StructureReportRequest": {
         "properties": {
-          "affiliated_alliance_name": {
-            "default": "",
-            "title": "Affiliated Alliance Name",
-            "type": "string"
-          },
           "alliance_name": {
             "default": "",
             "title": "Alliance Name",

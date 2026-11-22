@@ -38,6 +38,12 @@ describe('parse_selected_item_timer', () => {
         expect(parsed.name).toBe('Knock Knock Bridge')
     })
 
+    it('reads a jump gate that has no name of its own', () => {
+        const parsed = parse_selected_item_timer('1DQ1-A » 8WA-Z6\n12 km')
+        expect(parsed.system_name).toBe('1DQ1-A')
+        expect(parsed.name).toBe('1DQ1-A » 8WA-Z6')
+    })
+
     it('reads a structure with no timer line', () => {
         const parsed = parse_selected_item_timer('Kamela - Knock Knock\n3.1 AU')
         expect(parsed).toMatchObject({ system_name: 'Kamela', name: 'Knock Knock', date: '' })
