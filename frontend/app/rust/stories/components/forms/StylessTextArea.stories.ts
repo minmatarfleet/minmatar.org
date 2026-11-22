@@ -17,7 +17,6 @@ export default {
         },
     },
     argTypes: {
-        width: { control: 'text', description: 'Accepted for symmetry with `Textarea`; the field is always 100% wide.' },
         name: { control: 'text', description: 'Passed to the `<textarea>`.' },
         placeholder: { control: 'text', description: 'Passed to the `<textarea>`.' },
         rows: { control: 'number', description: 'Minimum visible lines for browsers without `field-sizing`.' },
@@ -25,7 +24,6 @@ export default {
         disabled: { control: 'boolean', description: 'Passed to the `<textarea>`.' },
     },
     args: {
-        width: '100%',
         name: 'reply',
         rows: 1,
         placeholder: 'Reply to the fleet commander',
@@ -90,5 +88,17 @@ export const FocusRing = {
         // Same double highlight outline as links (`a:focus-visible` in _global.scss).
         await expect(getComputedStyle(field).outlineStyle).toBe('double')
         await expect(getComputedStyle(field).outlineColor).not.toBe('rgba(0, 0, 0, 0)')
+    },
+}
+
+export const WidthComesFromCss = {
+    name: 'Always 100% wide, attributes reach the field',
+    args: { maxlength: 200, 'data-testid': 'reply-field' },
+    play: async ({ canvasElement }: Ctx) => {
+        const field = within(canvasElement).getByTestId('reply-field')
+        await expect(field.tagName).toBe('TEXTAREA')
+        await expect(field).toHaveAttribute('maxlength', '200')
+        // There is no `width` prop: the field is always as wide as its container.
+        await expect(field).not.toHaveAttribute('width')
     },
 }

@@ -184,18 +184,16 @@ The site dropdown: a native `<select>` styled like `Input`, with a caret icon.
 The site multi-line field, styled like `Input`: bordered glass, vertical resize only.
 
 - Import: `import Textarea from '@components/blocks/Textarea.astro'`
-- Props: `width?: string = '100%'`
 - Slots: `default`
-- Stories (8): `frontend/app/rust/stories/components/forms/Textarea.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-textarea--docs: Default, Accepts Text, With Content, Required, Limited, Disabled, Read Only, Keyboard focus ring
+- Stories (9): `frontend/app/rust/stories/components/forms/Textarea.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-textarea--docs: Default, Accepts Text, With Content, Required, Limited, Disabled, Read Only, Keyboard focus ring, Always 100% wide, attributes reach the field
 
 ### StylessTextArea
 
 A borderless, transparent `<textarea>` that grows with its content (`field-sizing: content`) up to about 132px, then scrolls.
 
 - Import: `import StylessTextArea from '@components/blocks/StylessTextArea.astro'`
-- Props: `width?: string = '100%'`
 - Slots: `default`
-- Stories (7): `frontend/app/rust/stories/components/forms/StylessTextArea.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-stylesstextarea--docs: Default, Accepts Text, With Content, Multi Line, Limited, Disabled, Keyboard focus ring
+- Stories (8): `frontend/app/rust/stories/components/forms/StylessTextArea.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-stylesstextarea--docs: Default, Accepts Text, With Content, Multi Line, Limited, Disabled, Keyboard focus ring, Always 100% wide, attributes reach the field
 
 ### RadioCheckInput
 
