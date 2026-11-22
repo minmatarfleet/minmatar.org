@@ -462,14 +462,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                     .join('')
                                 return '<strong>' + name + '</strong>' + effects
                             },
-                            fittingTippy($el) {
-                                if (!$el || typeof tippy === 'undefined')
-                                    return
-                                const opts = (typeof tippy_options !== 'undefined')
-                                    ? Object.assign({}, tippy_options, { allowHTML: true })
-                                    : { delay: [100, 200], arrow: true, allowHTML: true }
-                                tippy($el, opts)
-                            },
                             formatIsk(v) {
                                 return Number(v || 0).toLocaleString()
                             },
@@ -542,25 +534,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                     : this.copy.step_saving_total
                                 return template.replace('{isk}', this.formatIskShort(total))
                             },
-                            bindTip($el, content) {
-                                if (!$el || typeof tippy === 'undefined')
-                                    return
-                                if (!content) {
-                                    if ($el._tippy)
-                                        $el._tippy.destroy()
-                                    return
-                                }
-                                if ($el._tippy) {
-                                    $el._tippy.setContent(content)
-                                } else {
-                                    tippy($el, {
-                                        delay: [100, 200],
-                                        arrow: true,
-                                        allowHTML: true,
-                                        content,
-                                    })
-                                }
-                            },
                             costBreakdownTipHtml(mode) {
                                 const breakdown = this.cost_breakdown
                                 if (!breakdown || !breakdown.line_items)
@@ -630,41 +603,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                     )
                                 }
                                 return lines.join('<br>')
-                            },
-                            bindCostTooltip() {
-                                this.$nextTick(() => {
-                                    if (typeof tippy === 'undefined')
-                                        return
-                                    const pairs = [
-                                        [
-                                            this.$refs.cost_total,
-                                            this.costBreakdownTipHtml('total'),
-                                        ],
-                                        [
-                                            this.$refs.cost_per_unit,
-                                            this.costBreakdownTipHtml('per_unit'),
-                                        ],
-                                    ]
-                                    for (const [el, content] of pairs) {
-                                        if (!el)
-                                            continue
-                                        if (!content) {
-                                            if (el._tippy)
-                                                el._tippy.destroy()
-                                            continue
-                                        }
-                                        if (el._tippy) {
-                                            el._tippy.setContent(content)
-                                        } else {
-                                            tippy(el, {
-                                                delay: [100, 200],
-                                                arrow: true,
-                                                allowHTML: true,
-                                                content,
-                                            })
-                                        }
-                                    }
-                                })
                             },
                             defaultBuildForBucket(_bucket) {
                                 // Intermediates default to buy/import (buy all).
@@ -820,7 +758,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                     this.implant_status = ''
                                     this.ore_yields = []
                                     this.character_skills = null
-                                    this.bindRefineTooltip()
                                 } finally {
                                     this.rate_loading = false
                                 }
@@ -838,7 +775,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                             '/Ore' + s.ore_processing_level)
                                         : ''
                                     this.implant_status = this.copy.implant_off
-                                    this.bindRefineTooltip()
                                     return
                                 }
                                 if (!s) {
@@ -846,7 +782,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                     this.implant_status = (!this.character_id)
                                         ? this.copy.implant_assumed_max
                                         : ''
-                                    this.bindRefineTooltip()
                                     return
                                 }
                                 this.skill_summary =
@@ -864,7 +799,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                     this.implant_status =
                                         this.copy.implant_assumed_max
                                 }
-                                this.bindRefineTooltip()
                             },
                             refineYieldTipHtml() {
                                 const lines = [
@@ -912,27 +846,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                 if (this.implant_status)
                                     lines.push(this.escapeHtml(this.implant_status))
                                 return lines.join('<br>')
-                            },
-                            bindRefineTooltip() {
-                                this.$nextTick(() => {
-                                    if (typeof tippy === 'undefined')
-                                        return
-                                    const el = this.$refs.refine_yield
-                                    if (!el)
-                                        return
-                                    const content = this.refineYieldTipHtml()
-                                    el.setAttribute('data-tippy-content', content)
-                                    if (el._tippy) {
-                                        el._tippy.setContent(content)
-                                    } else {
-                                        tippy(el, {
-                                            delay: [100, 200],
-                                            arrow: true,
-                                            allowHTML: true,
-                                            content,
-                                        })
-                                    }
-                                })
                             },
                             async runPlan(gen) {
                                 if (gen === undefined)
@@ -1012,7 +925,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                     this.materials_tsv = data.materials_tsv || ''
                                     this.stock_applied_count = (data.stock_applied || []).length
                                     this.stock_unresolved_count = (data.stock_unresolved || []).length
-                                    this.bindCostTooltip()
                                     if (data.compressed_ore) {
                                         this.effective_refine = data.compressed_ore.refine_rate
                                         this.refine_source = data.compressed_ore.refine_rate_source
@@ -1395,6 +1307,8 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                             <span
                                                 class="[ planner-tip ]"
                                                 x-ref="refine_yield"
+                                                x-bind:data-tippy-content="refineYieldTipHtml()"
+                                                data-tippy-allowHTML="true"
                                                 x-text="(effective_refine * 100).toFixed(2) + '%' + (rate_loading ? ' …' : '')"
                                             ></span>
                                         </span>
@@ -1412,7 +1326,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                                 <div
                                                     class="[ planner-stat planner-tip ]"
                                                     data-tippy-content={t('industry.orders.planner.cost_index_mfg_tip')}
-                                                    x-init="tippy($el, tippy_options)"
                                                 >
                                                     <TextGroup title={t('industry.orders.planner.cost_index_mfg')} gap='var(--space-3xs)'>
                                                         <span
@@ -1424,7 +1337,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                                 <div
                                                     class="[ planner-stat planner-tip ]"
                                                     data-tippy-content={t('industry.orders.planner.cost_index_rxn_tip')}
-                                                    x-init="tippy($el, tippy_options)"
                                                 >
                                                     <TextGroup title={t('industry.orders.planner.cost_index_rxn')} gap='var(--space-3xs)'>
                                                         <span
@@ -1436,7 +1348,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                                 <div
                                                     class="[ planner-stat planner-tip ]"
                                                     data-tippy-content={t('industry.orders.planner.facility_tax_tip')}
-                                                    x-init="tippy($el, tippy_options)"
                                                 >
                                                     <TextGroup title={t('industry.orders.planner.facility_tax')} gap='var(--space-3xs)'>
                                                         <span
@@ -1448,7 +1359,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                                 <div
                                                     class="[ planner-stat planner-tip ]"
                                                     data-tippy-content={t('industry.orders.planner.scc_surcharge_tip')}
-                                                    x-init="tippy($el, tippy_options)"
                                                 >
                                                     <TextGroup title={t('industry.orders.planner.scc_surcharge')} gap='var(--space-3xs)'>
                                                         <span
@@ -1461,7 +1371,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                                     class="[ planner-stat planner-tip ]"
                                                     data-tippy-content={t('industry.orders.planner.system_cost_bonus_tip')}
                                                     x-show="facility_detail.system_cost_bonus"
-                                                    x-init="tippy($el, tippy_options)"
                                                 >
                                                     <TextGroup title={t('industry.orders.planner.system_cost_bonus')} gap='var(--space-3xs)'>
                                                         <span
@@ -1473,7 +1382,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                                 <div
                                                     class="[ planner-stat planner-tip ]"
                                                     data-tippy-content={t('industry.orders.planner.reprocessing_tax_tip')}
-                                                    x-init="tippy($el, tippy_options)"
                                                 >
                                                     <TextGroup title={t('industry.orders.planner.reprocessing_tax')} gap='var(--space-3xs)'>
                                                         <span
@@ -1495,7 +1403,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                                                 class="[ planner-fitting-piece planner-fitting-structure planner-tip ]"
                                                                 x-bind:data-tippy-content="fittingTooltip(structure)"
                                                                 data-tippy-allowhtml="true"
-                                                                x-init="fittingTippy($el)"
                                                             >
                                                                 <img
                                                                     loading="lazy"
@@ -1513,8 +1420,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                                                         class="[ planner-fitting-piece planner-tip ]"
                                                                         x-bind:data-tippy-content="fittingTooltip(rig)"
                                                                         data-tippy-allowhtml="true"
-                                                                        x-init="fittingTippy($el)"
-                                                                    >
+                                                                            >
                                                                         <img
                                                                             loading="lazy"
                                                                             width="40"
@@ -1548,7 +1454,8 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                             x-cloak
                                             x-text="checkedStepSavingsText()"
                                             x-bind:class="(checkedStepSavings() ?? 0) < 0 ? 'planner-saving--loss' : 'planner-saving--gain'"
-                                            x-effect="bindTip($el, checkedStepSavingsText() ? copy.step_saving_total_tip : '')"
+                                            x-bind:data-tippy-content="checkedStepSavingsText() ? copy.step_saving_total_tip : ''"
+                                            data-tippy-allowHTML="true"
                                         ></span>
                                     </FlexInline>
                                     <p class="[ text-gray planner-section-hint ]">{t('industry.orders.planner.subitems_hint')}</p>
@@ -1606,7 +1513,8 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                                             'planner-saving--gain': (stepSaving(job.product_type_id)?.saving_isk ?? 0) >= 0,
                                                             'planner-saving--off': !build_toggles[String(job.product_type_id)],
                                                         }"
-                                                        x-effect="bindTip($el, stepSavingTipHtml(job.product_type_id))"
+                                                        x-bind:data-tippy-content="stepSavingTipHtml(job.product_type_id)"
+                                                        data-tippy-allowHTML="true"
                                                     ></small>
                                                 </label>
                                             </template>
@@ -1712,6 +1620,8 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                                 <span
                                                     class="[ planner-tip ]"
                                                     x-ref="cost_total"
+                                                    x-bind:data-tippy-content="costBreakdownTipHtml('total')"
+                                                    data-tippy-allowHTML="true"
                                                     x-text="formatIsk(cost_breakdown?.grand_total_isk) + ' ISK'"
                                                 ></span>
                                             </TextGroup>
@@ -1719,6 +1629,8 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                                 <span
                                                     class="[ planner-tip ]"
                                                     x-ref="cost_per_unit"
+                                                    x-bind:data-tippy-content="costBreakdownTipHtml('per_unit')"
+                                                    data-tippy-allowHTML="true"
                                                     x-text="formatIsk(Math.round(cost_breakdown?.per_unit_isk ?? 0)) + ' ISK'"
                                                 ></span>
                                             </TextGroup>
