@@ -46,7 +46,7 @@ import Button from '@components/blocks/Button.astro';
 import SelectFinder from '@components/blocks/SelectFinder.astro';
 import CollapsableButton from '@components/blocks/CollapsableButton.astro';
 import Switch from '@components/blocks/Switch.astro';
-import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro';
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro';
 
 import TutorialIcon from '@components/icons/TutorialIcon.astro';
 import Markdown from './Markdown.astro'
@@ -145,14 +145,14 @@ import Markdown from './Markdown.astro'
                             <p>{t('analize_combatlog_dialog_text')}</p>
 
                             <FlexInline>
-                                <UnstyledRadioCheckButton
+                                <RadioCheckInput bare
                                     type='radio'
                                     label={t('paste_combat_log')}
                                     value="paste"
                                     x-model="method"
                                     checked
                                 />
-                                <UnstyledRadioCheckButton
+                                <RadioCheckInput bare
                                     type='radio'
                                     label={t('combat_log_file')}
                                     value="file"

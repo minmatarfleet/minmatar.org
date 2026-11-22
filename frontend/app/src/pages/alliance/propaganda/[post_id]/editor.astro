@@ -174,8 +174,8 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 import Button from '@components/blocks/Button.astro';
 import PostPublishAs from '@components/blocks/PostPublishAs.astro';
 import TuiEditor from '@components/blocks/TuiEditor.astro';
-import StylessTextArea from '@components/blocks/StylessTextArea.astro';
-import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro';
+import Textarea from '@components/blocks/Textarea.astro';
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro';
 import MarkdownTextArea from '@components/blocks/MarkdownTextArea.astro';
 
 import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro'
@@ -269,13 +269,13 @@ const page_title = post?.title ?? t('new_post')
             >
                 <TextBox>
                     <PageTitle no_link={true}>
-                        <StylessTextArea
+                        <Textarea variant="bare"
                             placeholder={t('add_title')}
                             class="[ uppercase !text-[var(--highlight)] !max-h-fit text-balance ]"
                             name="title"
                             x-model="title"
                             x-on:keyup="update_disable()"
-                        >{title ? title : undefined}</StylessTextArea>
+                        >{title ? title : undefined}</Textarea>
                     </PageTitle>
                 </TextBox>
                 
@@ -352,7 +352,7 @@ const page_title = post?.title ?? t('new_post')
                                         <a href={translatePath('/alliance/propaganda/tags/')}>{t('post_tags.manage.link')}</a>
                                     }
                                     {post_tags.map(tag =>
-                                        <UnstyledRadioCheckButton
+                                        <RadioCheckInput bare
                                             type='radio'
                                             label={tag.tag}
                                             value={tag.tag_id}
@@ -389,7 +389,7 @@ const page_title = post?.title ?? t('new_post')
                                         <FlexInline>
                                             <small class="[ text-highlight ]">{tribe.name}</small>
                                             {groups.map(group =>
-                                                <UnstyledRadioCheckButton
+                                                <RadioCheckInput bare
                                                     type='checkbox'
                                                     label={group.name}
                                                     value={group.id}

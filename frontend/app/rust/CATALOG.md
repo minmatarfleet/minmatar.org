@@ -184,34 +184,18 @@ The site dropdown: a native `<select>` styled like `Input`, with a caret icon.
 The site multi-line field, styled like `Input`: bordered glass, vertical resize only.
 
 - Import: `import Textarea from '@components/blocks/Textarea.astro'`
+- Props: `variant?: 'default' | 'bare' = 'default'`
 - Slots: `default`
-- Stories (9): `frontend/app/rust/stories/components/forms/Textarea.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-textarea--docs: Default, Accepts Text, With Content, Required, Limited, Disabled, Read Only, Keyboard focus ring, Always 100% wide, attributes reach the field
-
-### StylessTextArea
-
-A borderless, transparent `<textarea>` that grows with its content (`field-sizing: content`) up to about 132px, then scrolls.
-
-- Import: `import StylessTextArea from '@components/blocks/StylessTextArea.astro'`
-- Slots: `default`
-- Stories (8): `frontend/app/rust/stories/components/forms/StylessTextArea.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-stylesstextarea--docs: Default, Accepts Text, With Content, Multi Line, Limited, Disabled, Keyboard focus ring, Always 100% wide, attributes reach the field
+- Stories (17): `frontend/app/rust/stories/components/forms/Textarea.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-textarea--docs: Default, Accepts Text, With Content, Required, Limited, Disabled, Read Only, Keyboard focus ring, Always 100% wide, attributes reach the field, Bare, Bare Accepts Text, Bare With Content, Bare Multi Line, Bare Limited, Bare Disabled, Bare: keyboard focus ring, Bare: always 100% wide, attributes reach the field
 
 ### RadioCheckInput
 
 A styled checkbox or radio: the native input is hidden by the stylesheet and a `.box` element draws the state.
 
 - Import: `import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'`
-- Props: `label?: string`, `type: 'checkbox' | 'radio'`
+- Props: `label?: string`, `type: 'checkbox' | 'radio'`, `bare?: boolean = false`
 - Slots: `default`
-- Stories (7): `frontend/app/rust/stories/components/forms/RadioCheckInput.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-radiocheckinput--docs: Default, Checkbox toggles, Radio, Checked, Disabled, Custom label (default slot), Checked label turns bold
-
-### UnstyledRadioCheckButton
-
-A bare label wrapping a native radio or checkbox plus a `<small>` label, with no drawn box.
-
-- Import: `import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro'`
-- Props: `label: string`, `type: 'checkbox' | 'radio'`
-- Slots: `default`
-- Stories (5): `frontend/app/rust/stories/components/forms/UnstyledRadioCheckButton.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-unstyledradiocheckbutton--docs: Default, Selecting, Checked, Checkbox, Disabled
+- Stories (12): `frontend/app/rust/stories/components/forms/RadioCheckInput.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-radiocheckinput--docs: Default, Checkbox toggles, Radio, Checked, Disabled, Custom label (default slot), Checked label turns bold, Bare Default, Bare Selecting, Bare Checked, Bare Checkbox, Bare Disabled
 
 ### Switch
 

@@ -80,7 +80,7 @@ import Badge from '@components/blocks/Badge.astro'
 import Input from '@components/blocks/Input.astro'
 import Textarea from '@components/blocks/Textarea.astro'
 import StylessButton from '@components/blocks/StylessButton.astro'
-import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro'
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 import FleetRowAction from '@components/blocks/FleetRowAction.astro'
 import FleetFittingScopeNotice from '@components/blocks/FleetFittingScopeNotice.astro'
 
@@ -138,14 +138,14 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 
             <FlexInline justification='space-between' gap='var(--space-s)' class="[ items-center ]">
                 <FlexInline gap='var(--space-s)' role="tablist">
-                    <UnstyledRadioCheckButton type="radio" name="add_ships_mode" value="catalog" label={t('add_ships_from_catalog')} x-model="mode" />
-                    <UnstyledRadioCheckButton type="radio" name="add_ships_mode" value="eft" label={t('add_ships_paste_eft')} x-model="mode" />
+                    <RadioCheckInput bare type="radio" name="add_ships_mode" value="catalog" label={t('add_ships_from_catalog')} x-model="mode" />
+                    <RadioCheckInput bare type="radio" name="add_ships_mode" value="eft" label={t('add_ships_paste_eft')} x-model="mode" />
                 </FlexInline>
 
                 <FlexInline id="add-ships-role" gap='var(--space-s)' class="[ items-center ]" role="radiogroup" aria-label={t('add_ships_role')}>
                     <small>{t('add_ships_role')}</small>
                     {roles.map(option =>
-                        <UnstyledRadioCheckButton type="radio" name="role" value={option.value} label={option.label} x-model="role" />
+                        <RadioCheckInput bare type="radio" name="role" value={option.value} label={option.label} x-model="role" />
                     )}
                 </FlexInline>
             </FlexInline>

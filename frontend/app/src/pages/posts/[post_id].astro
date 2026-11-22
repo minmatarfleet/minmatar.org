@@ -172,8 +172,8 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import Button from '@components/blocks/Button.astro';
 import PostPublishAs from '@components/blocks/PostPublishAs.astro';
 import TuiEditor from '@components/blocks/TuiEditor.astro';
-import StylessTextArea from '@components/blocks/StylessTextArea.astro';
-import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro';
+import Textarea from '@components/blocks/Textarea.astro';
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro';
 
 import MarkdownIcon from '@components/icons/buttons/MarkdownIcon.astro';
 
@@ -227,13 +227,13 @@ const page_title = post?.title ?? t('new_post')
             >
                 <TextBox>
                     <PageTitle>
-                        <StylessTextArea
+                        <Textarea variant="bare"
                             placeholder={t('add_title')}
                             class="[ uppercase !text-[var(--highlight)] !max-h-fit text-balance ]"
                             name="title"
                             x-model="title"
                             x-on:keyup="update_disable()"
-                        >{title ? title : undefined}</StylessTextArea>
+                        >{title ? title : undefined}</Textarea>
                     </PageTitle>
                 </TextBox>
                 
@@ -281,13 +281,13 @@ const page_title = post?.title ?? t('new_post')
                             />
                         }
                         <Flexblock gap='0'>
-                            <StylessTextArea
+                            <Textarea variant="bare"
                                 name="excerpt"
                                 placeholder={t('add_excerpt')}
                                 class="[ excerpt !max-h-none ]"
                                 x-model="excerpt"
                                 x-on:keyup="update_disable()"
-                            >{seo_description ? seo_description : undefined}</StylessTextArea>
+                            >{seo_description ? seo_description : undefined}</Textarea>
                             <a href="https://www.markdownguide.org/" class="[ w-fit ]" target="_blank" rel="noreferrer noopener nofollow">
                                 <FlexInline gap='var(--space-3xs)'>
                                     <MarkdownIcon />
@@ -301,7 +301,7 @@ const page_title = post?.title ?? t('new_post')
                             <FlexInline>
                                 <label>{t('post_tags')}:</label>
                                 {post_tags.map(tag =>
-                                    <UnstyledRadioCheckButton
+                                    <RadioCheckInput bare
                                         type='checkbox'
                                         label={tag.tag}
                                         value={tag.tag_id}
@@ -320,7 +320,7 @@ const page_title = post?.title ?? t('new_post')
                                         <FlexInline>
                                             <small class="[ text-highlight ]">{tribe.name}</small>
                                             {groups.map(group =>
-                                                <UnstyledRadioCheckButton
+                                                <RadioCheckInput bare
                                                     type='checkbox'
                                                     label={group.name}
                                                     value={group.id}
