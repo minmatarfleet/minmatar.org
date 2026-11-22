@@ -1,5 +1,5 @@
 ---
-import { countdown } from '@helpers/countdown';
+import { countdown, next_countdown_serial } from '@helpers/countdown';
 
 interface Props {
     id:             number;
@@ -18,19 +18,27 @@ const {
     expired_text,
     expired_class = true,
     big_font = false,
+    ...attributes
 } = Astro.props;
 
-const timestamp = new Date().getTime()
+delete attributes.class
+
+const element_id = `${tag}-${id}-${next_countdown_serial()}`
 
 const {
     text,
     expired,
 } = countdown(date, expired_text)
+
+const date_iso = date instanceof Date ? date.toISOString() : String(date)
+const show_expired_text = expired && !!expired_text
+const initial_text = show_expired_text ? expired_text : text
 ---
 
 <p
+    {...attributes}
     x-data={`{
-        countdown_text: '${text}',
+        countdown_text: ${JSON.stringify(initial_text)},
         pad(num) {
             if (num < 10)
                 return \`0\${num}\`;
@@ -38,15 +46,28 @@ const {
             return num;
         },
         init() {
-            const date = '${date}'
-            const expired_text = '${expired_text}'
-            const countDownDate = new Date(date).getTime()
+            const date = ${JSON.stringify(date_iso)}
+            const expired_text = ${JSON.stringify(expired_text ?? '')}
+            const count_down_date = new Date(date).getTime()
             const el = $el
             
-            var x = setInterval(() => {
+            const interval = setInterval(() => {
                 const now = new Date().getTime()
                 
-                const distance = countDownDate - now
+                const distance = count_down_date - now
+
+                if (!document.getElementById(${JSON.stringify(element_id)})) {
+                    clearInterval(interval)
+                    return
+                }
+
+                if (distance < 0 && expired_text) {
+                    this.update_countdown_text(expired_text)
+                    el.classList.add('expired-text')
+                    ${expired_class ? "el.classList.add('expired')" : ''}
+                    clearInterval(interval)
+                    return
+                }
 
                 let days = distance / (1000 * 60 * 60 * 24)
                 days = (days > 0 ? Math.floor(days) : Math.ceil(days))
@@ -58,16 +79,13 @@ const {
                 seconds = (seconds > 0 ? Math.floor(seconds) : Math.ceil(seconds))
 
                 this.update_countdown_text(
-                    pad(Math.abs(days * 24 +  hours)) + " : " + pad(Math.abs(minutes)) + " : " + pad(Math.abs(seconds))
+                    this.pad(Math.abs(days * 24 +  hours)) + " : " + this.pad(Math.abs(minutes)) + " : " + this.pad(Math.abs(seconds))
                 )
                 
-                ${expired_class && `
+                ${expired_class ? `
                 if (distance < 0)
                     el.classList.add('expired')
-                `}
-                
-                if (!document.getElementById('${`${tag}-${id}-${timestamp}`}'))
-                    clearInterval(x)
+                ` : ''}
             }, 1000);
         },
         update_countdown_text(new_text) {
@@ -80,12 +98,13 @@ const {
             expired: expired && expired_class,
             'expired-text': expired && expired_text,
             'big-font': big_font
-        }
+        },
+        Astro.props.class,
     ]}
-    id={`${tag}-${id}-${timestamp}`}
+    id={element_id}
     x-text="countdown_text"
 >
-    {text}
+    {initial_text}
 </p>
 
 <style lang="scss">

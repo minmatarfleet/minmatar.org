@@ -297,7 +297,7 @@ A ticking `HH : MM : SS` timer to an EVE (UTC) time, such as fleet formup.
 
 - Import: `import Countdown from '@components/blocks/Countdown.astro'`
 - Props: `id: number`, `tag?: string = 'countdown'`, `date: Date | string`, `expired_text?: string`, `expired_class?: boolean = true`, `big_font?: boolean = false`
-- Stories (6): `frontend/app/rust/stories/components/feedback/Countdown.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-feedback-countdown--docs: Default, Expired, Expired without red (expired_class off), Expired Text, Big Font, Custom Tag
+- Stories (9): `frontend/app/rust/stories/components/feedback/Countdown.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-feedback-countdown--docs: Default, Expired, Expired without red (expired_class off), Expired Text, Big Font, Custom Tag, Expired text replaces the clock and stops it, Passes class and attributes through, Quotes in expired_text are escaped
 
 ### LocalTime
 
