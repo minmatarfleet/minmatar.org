@@ -230,7 +230,7 @@ A square-knob toggle with a highlighted title and a small description beside it,
 
 - Import: `import SwitchSquare from '@components/blocks/SwitchSquare.astro'`
 - Props: `checked?: boolean = false`, `label?: false | string = false`, `description?: false | string = false`
-- Stories (6): `frontend/app/rust/stories/components/forms/SwitchSquare.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-switchsquare--docs: Default, Checked, Toggling, Label Only, Description Only, Disabled
+- Stories (7): `frontend/app/rust/stories/components/forms/SwitchSquare.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-switchsquare--docs: Default, Checked, Toggling, Label Only, Description Only, Disabled, Attributes On Input Only
 
 ### FlatPicker
 
