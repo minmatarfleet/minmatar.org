@@ -209,7 +209,7 @@ const COLUMNS = [
                 name="corporation_id"
                 name_field="corporation_name"
                 label={t('manage.kit.demo_corporation')}
-                value={picked_corporation.id ? { id: picked_corporation.id, name: picked_corporation.name, icon_url: get_corporation_logo(picked_corporation.id, 64) } : null}
+                value={picked_corporation.id ? { id: picked_corporation.id, name: picked_corporation.name, icon_url: get_corporation_logo(Number(picked_corporation.id), 64) } : null}
             />
             <EntityPicker
                 id="kit-system"

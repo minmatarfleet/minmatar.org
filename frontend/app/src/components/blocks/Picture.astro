@@ -69,7 +69,7 @@ import NotificationBadge from '@components/blocks/NotificationBadge.astro';
 
 const Target = target?.tag
 const img_props = {
-    loading: 'lazy',
+    loading: 'lazy' as const,
     height: narrow ? height : size,
     width: size,
     src,

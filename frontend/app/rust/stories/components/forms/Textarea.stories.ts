@@ -121,7 +121,6 @@ export const WidthComesFromCss = {
 const bare_args = {
     variant: 'bare',
     name: 'reply',
-    id: undefined,
     rows: 1,
     placeholder: 'Reply to the fleet commander',
 }
@@ -191,9 +190,8 @@ export const BareFocusRing = {
 }
 
 export const BareWidthComesFromCss = {
-    args: { ...bare_args },
     name: 'Bare: always 100% wide, attributes reach the field',
-    args: { maxlength: 200, 'data-testid': 'reply-field' },
+    args: { ...bare_args, maxlength: 200, 'data-testid': 'reply-field' },
     play: async ({ canvasElement }: Ctx) => {
         const field = within(canvasElement).getByTestId('reply-field')
         await expect(field.tagName).toBe('TEXTAREA')
