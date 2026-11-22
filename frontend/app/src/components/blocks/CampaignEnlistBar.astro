@@ -42,6 +42,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import Marquee from '@components/blocks/Marquee.astro'
 import PilotBadge from '@components/blocks/PilotBadge.astro'
 import Button from '@components/blocks/Button.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 ---
 
 <div
@@ -81,7 +82,7 @@ import Button from '@components/blocks/Button.astro'
 
                 <div class="[ campaign-enlist-bar-reel ]" aria-label={t('campaigns.enlist_bar.reel_label')}>
                     {pilots.length === 0 ?
-                        <small class="[ campaign-enlist-bar-empty ]">{t('campaigns.enlist_bar.reel_empty')}</small>
+                        <EmptyState title={t('campaigns.enlist_bar.reel_empty')} />
                         : pilots.length >= 4 ?
                         <Marquee separator_width='120px'>
                             {pilots.map(row =>
@@ -179,10 +180,6 @@ import Button from '@components/blocks/Button.astro'
 
     .campaign-enlist-bar-reel {
         min-width: 0;
-    }
-
-    .campaign-enlist-bar-empty {
-        color: var(--faded);
     }
 
     @media screen and (max-width: 991px) {

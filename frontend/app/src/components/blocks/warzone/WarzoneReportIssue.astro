@@ -9,6 +9,7 @@ import { ISK_REPORT_MILLIONS, format_compact } from '@helpers/numbers'
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Button from '@components/blocks/Button.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Grid from '@components/compositions/Grid.astro'
@@ -731,7 +732,7 @@ const featured_guides = issue.get_involved.featured_guides
                                         ))}
                                     </ol>
                                 ) : (
-                                    <p class="[ wz-board__empty ]">Not in this month’s extract.</p>
+                                    <EmptyState title="Not in this month’s extract." />
                                 )}
                             </div>
                         ))}
@@ -787,7 +788,7 @@ const featured_guides = issue.get_involved.featured_guides
                                     ))}
                                 </ol>
                             ) : (
-                                <p class="[ wz-board__empty ]">Not in this month’s extract.</p>
+                                <EmptyState title="Not in this month’s extract." />
                             )}
                         </Flexblock>
                     </ComponentBlock>
@@ -902,7 +903,7 @@ const featured_guides = issue.get_involved.featured_guides
                 </table>
             </div>
         ) : (
-            <p class="[ wz-board__empty ]">Not in this month’s extract.</p>
+            <EmptyState title="Not in this month’s extract." />
         )}
         <p class="[ wz-footnote ]">{issue.groups.scope}</p>
     </section>
@@ -2484,11 +2485,6 @@ const featured_guides = issue.get_involved.featured_guides
     .wz-board__kills {
         font-size: var(--step--1);
         color: var(--highlight);
-    }
-
-    .wz-board__empty {
-        font-size: var(--step--1);
-        color: var(--faded);
     }
 
     /* Get involved -------------------------------------------------------- */

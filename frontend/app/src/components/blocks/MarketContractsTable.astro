@@ -123,6 +123,7 @@ import FittingLink from '@components/blocks/FittingLink.astro'
 import Input from '@components/blocks/Input.astro'
 import MarketContractsSkeleton from '@components/blocks/MarketContractsSkeleton.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 ---
 
 {/* Filter helpers: OpsContractsAlpine in FooterScripts (htmx-safe). */}
@@ -433,11 +434,11 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
             </div>
 
             <div x-show="!filtering">
-                <p
-                    class="[ ops-contracts-list__empty ]"
+                <EmptyState
+                    title={rows.length === 0 ? t('market_contracts.empty') : empty_label}
                     x-show="visibleCount === 0"
                     style={initial_visible_count > 0 ? 'display: none' : undefined}
-                >{rows.length === 0 ? t('market_contracts.empty') : empty_label}</p>
+                />
 
                 <Flexblock gap="var(--space-2xs)" class="[ market-contracts-table ]">
                     {rows.map(row =>
@@ -690,11 +691,6 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 
     .ops-contracts-list__results {
         min-height: min(28rem, 55vh);
-    }
-
-    .ops-contracts-list__empty {
-        margin: 0;
-        color: var(--faded);
     }
 
     .ops-contracts-list__showing {

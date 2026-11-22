@@ -4,6 +4,7 @@ const { lang, t } = i18n(Astro.url)
 
 import type { MarketHealthChartPoint } from '@dtypes/api.minmatar.org'
 import Flexblock from '@components/compositions/Flexblock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 
 interface Props {
     history:            MarketHealthChartPoint[]
@@ -237,7 +238,7 @@ const viability_label = t('viability')
 >
     <Flexblock gap="var(--space-s)">
         {points.length === 0 || !has_plottable ?
-            <p class="[ ops-history-chart__empty ]">{empty}</p>
+            <EmptyState title={empty} />
             :
             <div class="[ ops-history-chart__frame ]">
                 <canvas id={chart_id}></canvas>
@@ -247,12 +248,6 @@ const viability_label = t('viability')
 </section>
 
 <style lang="scss">
-    .ops-history-chart__empty {
-        margin: 0;
-        color: color-mix(in srgb, var(--highlight) 70%, var(--faded));
-        font-size: var(--step--1);
-    }
-
     .ops-history-chart__frame {
         position: relative;
         height: 450px;
