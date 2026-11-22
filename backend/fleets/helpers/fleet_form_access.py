@@ -3,7 +3,7 @@
 Alliance fleets need fleets.create. A pilot who may schedule fleets for a
 tribe group (its fleet policy) hosts group fleets without fleets.create, as
 POST /api/fleets already allows, so they get the reference data too.
-See docs/tribes/group-fleet-scheduling-analysis.md.
+See docs/tribes/tribe-publishing.md.
 """
 
 from __future__ import annotations

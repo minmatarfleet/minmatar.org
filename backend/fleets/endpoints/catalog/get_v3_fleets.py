@@ -102,11 +102,14 @@ def get_v3_fleets(
         fleets = fleets.filter(host_group_id=host_group_id)
     if not is_strategic_fc(request.user):
         # Group fleets have no audience; an alliance fleet still needs a
-        # visible one, as before, and one whose groups include the viewer
-        # unless they created it, as the detail endpoint checks
-        # (_fleet_authorized). Strategic FCs see every fleet.
+        # visible one, as before, and one whose groups include the viewer.
+        # The creator always sees their own fleet, as the detail endpoint
+        # lets them open it (_fleet_authorized). Strategic FCs see every
+        # fleet.
         fleets = fleets.filter(
-            Q(audience__hidden=False) | Q(host_group__isnull=False)
+            Q(audience__hidden=False)
+            | Q(host_group__isnull=False)
+            | Q(created_by_id=request.user.pk)
         )
         audience_q = fleet_audience_q(request.user)
         if audience_q:  # an empty Q means every audience

@@ -386,6 +386,8 @@ def fleet_audience_q(user) -> Q:
     otherwise the pilot needs one of the audience's groups, directly or
     through their affiliation's group. Holding the feature's legacy
     permission lifts the audience check, as it does on the detail endpoint.
+    The detail endpoint only checks audiences while ``fleets.view`` has the
+    RESOURCE_MATCH scope, so under any other scope this filters nothing.
     Host group and private fleets are filtered by ``visible_fleets_q``.
     """
     # Imported here: the fleets app imports this module, so a top-level
@@ -397,12 +399,9 @@ def fleet_audience_q(user) -> Q:
     if user.is_superuser:
         return Q()
     feature = _get_feature("fleets.view")
-    legacy_permission = (
-        feature.legacy_permission
-        if feature is not None
-        else FEATURE_DEFINITIONS["fleets.view"].legacy_permission
-    )
-    if _has_legacy_permission(user, legacy_permission):
+    if feature is None or feature.scope != FeatureScope.RESOURCE_MATCH:
+        return Q()
+    if _has_legacy_permission(user, feature.legacy_permission):
         return Q()
 
     group_ids = _user_auth_group_ids(user)

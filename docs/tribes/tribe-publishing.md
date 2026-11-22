@@ -130,7 +130,8 @@ weekday as `starts_at` (e.g. 2nd Saturday).
   when `GET /api/fleets/{id}` would show it: alliance fleets also pass the
   audience check (`groups.helpers.feature_access.fleet_audience_q`, the
   queryset form of the `resource_match` scope, lifted for holders of
-  `fleets.view_evefleet`) unless the viewer created them.
+  `fleets.view_evefleet` and skipped while `fleets.view` has another scope).
+  The viewer always sees the fleets they created, hidden audience or not.
 - `GET /api/fleets/types` and `GET /api/fleets/v2/locations` (the fleet
   form's reference data): `fleets.create`, or `can_publish(..., "fleet")`
   for at least one group (`fleets.helpers.fleet_form_access`). A pilot who

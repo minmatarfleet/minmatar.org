@@ -1,6 +1,6 @@
 """Each fleet decides who sees it: the fleet list filters by audience the
 same way the fleet detail does, and group publishers can load the fleet
-form (docs/tribes/group-fleet-scheduling-analysis.md)."""
+form (docs/tribes/tribe-publishing.md)."""
 
 from datetime import timedelta
 
@@ -197,6 +197,33 @@ class FleetListAudienceTests(FleetAudienceTestBase):
         self.assertEqual(
             self.call(f"/{own.id}", self.outsider).status_code, 200
         )
+
+    def test_creator_sees_own_fleet_with_hidden_audience(self):
+        hidden = EveFleetAudience.objects.create(name="Hidden", hidden=True)
+        own = self.fleet(audience=hidden, created_by=self.outsider)
+        self.assertIn(own.id, self.listed_ids(self.outsider))
+        self.assertNotIn(own.id, self.listed_ids(self.alliance_pilot))
+        self.assertEqual(
+            self.call(f"/{own.id}", self.outsider).status_code, 200
+        )
+
+    def test_list_matches_detail_when_fleets_view_is_not_resource_match(self):
+        # Only the RESOURCE_MATCH scope checks a fleet's audience on the
+        # detail endpoint; under the affiliation scope the list must not
+        # hide audiences the detail page shows.
+        view = PilotFeature.objects.get(code="fleets.view")
+        view.scope = "affiliation"
+        view.save()
+        clear_feature_cache()
+        listed = self.listed_ids(self.outsider)
+        self.assertIn(self.alliance_fleet.id, listed)
+        for fleet in (self.open_fleet, self.alliance_fleet):
+            with self.subTest(fleet=fleet.audience):
+                self.assertEqual(
+                    fleet.id in listed,
+                    self.call(f"/{fleet.id}", self.outsider).status_code
+                    == 200,
+                )
 
     def test_on_leave_member_list_matches_detail(self):
         # On leave is a community status: it swaps the pilot's affiliation

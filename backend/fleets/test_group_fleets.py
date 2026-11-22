@@ -241,15 +241,19 @@ class GroupFleetVisibilityTests(GroupFleetTestBase):
         no_audience = self.alliance_fleet(audience=None)
 
         upcoming = {"fleet_filter": "upcoming"}
+        # The outsider created both alliance fleets, so they also see the
+        # one with no audience: the detail endpoint lets them open it.
         self.assertEqual(
-            self.ids(self.outsider, **upcoming), {open_fleet.id, alliance.id}
+            self.ids(self.outsider, **upcoming),
+            {open_fleet.id, alliance.id, no_audience.id},
         )
         for user in (self.member, self.fc, self.chief):
             self.assertEqual(
                 self.ids(user, **upcoming),
                 {hidden.id, open_fleet.id, alliance.id},
             )
-        # An alliance fleet with no audience is still left out, as before.
+        # An alliance fleet with no audience is still left out for anyone
+        # but its creator, as before.
         self.assertNotIn(no_audience.id, self.ids(self.member, **upcoming))
 
         superuser = make_user("admin")
