@@ -2,9 +2,20 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t } = i18n(Astro.url)
 
+const shopping_columns = [
+    { key: 'item', label: t('fitting_buy.item'), width: '36%' },
+    { key: 'needed', label: t('fitting_buy.needed'), numeric: true, width: '10.5%' },
+    { key: 'on_hand', label: t('fitting_buy.on_hand'), numeric: true, width: '10.5%' },
+    { key: 'to_buy', label: t('fitting_buy.to_buy'), numeric: true, width: '10.5%' },
+    { key: 'jita_volume', label: t('fitting_buy.jita_volume'), numeric: true, width: '10.5%' },
+    { key: 'shortfall', label: t('fitting_buy.shortfall'), numeric: true, width: '10.5%' },
+    { key: 'unit_price', label: t('fitting_buy.unit_price'), numeric: true, width: '10.5%' },
+]
+
 import type { FittingBuyOrderDetail } from '@helpers/api.minmatar.org/fitting_buy_orders'
 import { format_number, number_thousand_separator } from '@helpers/numbers'
 
+import DataTable from '@components/blocks/DataTable.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
@@ -266,20 +277,7 @@ const cpu_pg_label = (
         ) : order.items.length === 0 ? (
             <p class="[ text-[var(--highlight)] ]">{t('fitting_buy.no_items')}</p>
         ) : (
-            <div class="[ fitting-buy-table-wrap ]">
-                <table class="[ fitting-buy-table ]">
-                    <thead>
-                        <tr>
-                            <th>{t('fitting_buy.item')}</th>
-                            <th class="[ is-num ]">{t('fitting_buy.needed')}</th>
-                            <th class="[ is-num ]">{t('fitting_buy.on_hand')}</th>
-                            <th class="[ is-num ]">{t('fitting_buy.to_buy')}</th>
-                            <th class="[ is-num ]">{t('fitting_buy.jita_volume')}</th>
-                            <th class="[ is-num ]">{t('fitting_buy.shortfall')}</th>
-                            <th class="[ is-num ]">{t('fitting_buy.unit_price')}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <DataTable columns={shopping_columns} class="[ fitting-buy-table ]">
                         {order.items.map((item) => {
                             const allocate_buy = item.allocate_buy_qty ?? item.buy_qty
                             const alloc_by_id = Object.fromEntries(
@@ -548,9 +546,7 @@ const cpu_pg_label = (
                                 </tr>
                             )
                         })}
-                    </tbody>
-                </table>
-            </div>
+            </DataTable>
         )}
         </div>
     </Flexblock>
@@ -620,38 +616,21 @@ const cpu_pg_label = (
         color: var(--highlight);
     }
 
-    .fitting-buy-table-wrap {
-        overflow-x: auto;
-        width: 100%;
-        max-width: 100%;
-        -webkit-overflow-scrolling: touch;
-    }
-
     .fitting-buy-table {
-        width: 100%;
         table-layout: fixed;
-        border-collapse: collapse;
-        font-size: var(--step--1);
 
-        th,
         td {
-            text-align: left;
-            padding: var(--space-2xs) var(--space-xs);
-            border-bottom: 1px solid var(--border-color);
             white-space: nowrap;
         }
 
-        th:first-child,
         td:first-child {
             white-space: normal;
-            width: 36%;
             min-width: 12rem;
         }
 
         .is-num {
             text-align: right;
             font-variant-numeric: tabular-nums;
-            width: 10.5%;
         }
 
         tr.is-short td {
@@ -902,7 +881,6 @@ const cpu_pg_label = (
             justify-self: start;
         }
 
-        .fitting-buy-table th:first-child,
         .fitting-buy-table td:first-child {
             min-width: 8rem;
         }
