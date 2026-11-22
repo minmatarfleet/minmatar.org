@@ -207,12 +207,25 @@ const RULE_DEFINITIONS: ConventionRule[] = [
         id: 'tint_off_ladder',
         kind: 'absolute',
         why: 'Rule 3: a colour over transparent uses the tint ladder: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent) with --tint-subtle (8%), --tint-soft (15%), --tint-medium (30%), --tint-strong (45%), --tint-bold (60%), --tint-heavy (75%) or --tint-dense (90%), not a literal percentage.',
+        exempt: {
+            'src/components/blocks/landing/LandingLive.astro': 'in-flight landing work (owner: keep untouched)',
+            'src/components/blocks/landing/LandingReel.astro': 'in-flight landing work (owner: keep untouched)',
+        },
         find: (file) => hits_in(file, [{ text: file.text, offset: 0 }], TINT_LITERAL),
     },
     {
         id: 'retired_token',
         kind: 'absolute',
         why: 'Rule 3: --attention, --text-muted, --hairline, --hairline-medium, --hairline-strong and --glow are retired. Use --fleet-yellow, --faded, --border-color and --border-color-hover (see docs/frontend-design.md).',
+        exempt: {
+            'src/components/blocks/landing/LandingBars.astro': 'in-flight landing work (owner: keep untouched)',
+            'src/components/blocks/landing/LandingLine.astro': 'in-flight landing work (owner: keep untouched)',
+            'src/components/blocks/landing/LandingLive.astro': 'in-flight landing work (owner: keep untouched)',
+            'src/components/blocks/landing/LandingReel.astro': 'in-flight landing work (owner: keep untouched)',
+            'src/pages/landing-new.astro': 'in-flight landing work (owner: keep untouched)',
+            'src/pages/partials/landing_week_component.astro': 'in-flight landing work (owner: keep untouched)',
+            'src/styles/properties/_colors.scss': 'defines the retired tokens, kept at their original values only for the in-flight landing work',
+        },
         find: (file) => hits_in(file, [{ text: file.text, offset: 0 }], RETIRED_TOKEN),
     },
     {

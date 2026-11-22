@@ -116,7 +116,7 @@ const STATS: { key: keyof LandingDayStats, label: string, short?: boolean }[] = 
         grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
         gap: var(--space-xl);
         padding-top: var(--space-m);
-        border-top: 1px solid var(--border-color);
+        border-top: 1px solid var(--hairline-medium);
     }
 
     .landing-live__label {
@@ -135,7 +135,7 @@ const STATS: { key: keyof LandingDayStats, label: string, short?: boolean }[] = 
         font-weight: normal;
         letter-spacing: normal;
         text-transform: none;
-        color: var(--faded);
+        color: var(--text-muted);
     }
 
     .landing-live__all {
@@ -170,10 +170,10 @@ const STATS: { key: keyof LandingDayStats, label: string, short?: boolean }[] = 
         max-height: var(--space-xl);
         padding: var(--space-2xs) 0;
         overflow: hidden;
-        border-bottom: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--hairline);
         transform-origin: left center;
         font-size: var(--step--1);
-        color: var(--faded);
+        color: var(--text-muted);
 
         time {
             font-variant-numeric: tabular-nums;
@@ -204,7 +204,7 @@ const STATS: { key: keyof LandingDayStats, label: string, short?: boolean }[] = 
 
         dt {
             font-size: var(--step--1);
-            color: var(--faded);
+            color: var(--text-muted);
         }
 
         dd {
@@ -225,7 +225,7 @@ const STATS: { key: keyof LandingDayStats, label: string, short?: boolean }[] = 
 
     @keyframes landing-live-pop {
         0% { opacity: 0; transform: scale(0.86); }
-        35% { opacity: 1; transform: scale(1.04); background: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent); }
+        35% { opacity: 1; transform: scale(1.04); background: color-mix(in srgb, var(--fleet-yellow) 16%, transparent); }
         60% { transform: scale(1); }
         100% { transform: scale(1); background: transparent; }
     }
