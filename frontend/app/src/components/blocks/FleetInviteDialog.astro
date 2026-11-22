@@ -72,6 +72,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import FluidFixed from '@components/compositions/FluidFixed.astro'
 
 import Button from '@components/blocks/Button.astro'
+import Dropdown from '@components/blocks/Dropdown.astro'
 import DialogButton from '@components/blocks/DialogButton.astro'
 import Input from '@components/blocks/Input.astro'
 import Textarea from '@components/blocks/Textarea.astro'
@@ -91,7 +92,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         hx-post={`${PARTIAL_URL}&action=wave`}
         hx-target="#fleet-invites"
         hx-swap="outerHTML"
-        x-data={`{ picks: [], onboarding: [], add_mode: '${start_mode}', query: '', paste_text: '', note: '', reach: null, timezones: ${JSON.stringify(fleet_timezones)}, any_timezone: false, timezones_open: false, pick_counts: {}, bucket_counts: ${JSON.stringify(bucket_counts)}, refresh() { $nextTick(() => htmx.trigger($refs.preview, 'refresh')) }, plays_now(pick) { return this.any_timezone || !pick.tz || pick.tz.length === 0 || pick.tz.some(code => this.timezones.includes(code)) } }`}
+        x-data={`{ picks: [], onboarding: [], add_mode: '${start_mode}', query: '', paste_text: '', note: '', reach: null, timezones: ${JSON.stringify(fleet_timezones)}, any_timezone: false, pick_counts: {}, bucket_counts: ${JSON.stringify(bucket_counts)}, refresh() { $nextTick(() => htmx.trigger($refs.preview, 'refresh')) }, plays_now(pick) { return this.any_timezone || !pick.tz || pick.tz.length === 0 || pick.tz.some(code => this.timezones.includes(code)) } }`}
         x-on:invite-reach="reach = $event.detail.new; pick_counts = $event.detail.picks || {}; if ($event.detail.onboarding) bucket_counts = $event.detail.onboarding"
         x-on:pick-candidate="query = ''; if (!picks.some(p => p.kind === $event.detail.kind && p.id === $event.detail.id)) { picks.push($event.detail); $nextTick(() => htmx.trigger($refs.preview, 'refresh')) }"
     >
@@ -111,17 +112,9 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                 <template x-for="code in timezones" x-bind:key="code">
                                     <span class="[ invite-dialog__tz is-fixed ]" x-show="!any_timezone" x-text="code"></span>
                                 </template>
-                                <div class="[ invite-dialog__tz-menu ]">
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        color="transparent"
-                                        x-on:click="timezones_open = !timezones_open"
-                                        x-bind:aria-expanded="timezones_open"
-                                    >
-                                        {t('fleets.invites.timezone_change')}
-                                    </Button>
-                                    <div class="[ invite-dialog__tz-options ]" x-show="timezones_open" x-cloak x-on:click.outside="timezones_open = false">
+                                <Dropdown variant="button" color="transparent" size="sm">
+                                    <Fragment slot="button">{t('fleets.invites.timezone_change')}</Fragment>
+                                    <div class="[ invite-dialog__tz-options ]">
                                         <label>
                                             <input type="checkbox" x-model="any_timezone" x-on:change="refresh()" />
                                             <span>{t('fleets.invites.timezone_any')}</span>
@@ -140,7 +133,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                             </label>
                                         )}
                                     </div>
-                                </div>
+                                </Dropdown>
                             </Fragment> :
                             fleet_timezones.length > 1 ?
                                 <div class="[ invite-dialog__tzs ]" role="group" aria-label={t('fleets.invites.timezone')}>
@@ -425,21 +418,10 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         }
     }
 
-    .invite-dialog__tz-menu {
-        position: relative;
-    }
-
     .invite-dialog__tz-options {
-        position: absolute;
-        top: calc(100% + var(--space-3xs));
-        left: 0;
-        z-index: var(--tooltips-z-index);
         display: flex;
         flex-direction: column;
         min-width: 16rem;
-        padding: var(--space-2xs);
-        background-color: var(--background);
-        border: 1px solid var(--border-color);
 
         label {
             display: flex;
