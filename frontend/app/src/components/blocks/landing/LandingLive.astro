@@ -1,0 +1,267 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { LandingEvent, LandingPulse } from '@dtypes/api.minmatar.org'
+import { eve_clock, short_number, stat_steps, format_number } from '@helpers/landing'
+import type { LandingDayStats } from '@helpers/landing'
+
+import EmptyState from '@components/blocks/EmptyState.astro'
+import LandingLine from '@components/blocks/landing/LandingLine.astro'
+
+/**
+ * The hero's Live band: the newest pilot lines pop in at the top one at a
+ * time and the oldest fades out, three on show; the 24-hour numbers beside
+ * them step up as each line lands. Every step is rendered here; Alpine only
+ * moves `head` along them.
+ */
+interface Props {
+    events:         LandingEvent[];
+    day:            LandingPulse['day'];
+    view_all_href:  string;
+    [propName: string]: any;
+}
+
+const { events, day, view_all_href, ...attributes } = Astro.props
+
+delete attributes.class
+
+const VISIBLE = 3
+// Oldest first, so playback runs forward to the newest line and stops there.
+const played = events.slice(0, 12).reverse()
+const start = Math.min(VISIBLE - 1, Math.max(played.length - 1, 0))
+const last = Math.max(played.length - 1, 0)
+
+const totals: LandingDayStats = {
+    ships_destroyed: day.ships_destroyed,
+    warzone_sites: day.warzone_sites,
+    complexes: day.complexes,
+    mined_volume: day.mined_volume ?? 0,
+}
+const steps = stat_steps(totals, played, start)
+const STATS: { key: keyof LandingDayStats, label: string, short?: boolean }[] = [
+    { key: 'ships_destroyed', label: t('landing_new.ships_destroyed') },
+    { key: 'warzone_sites', label: t('landing_new.warzone_sites') },
+    { key: 'complexes', label: t('landing_new.complexes') },
+    { key: 'mined_volume', label: t('landing_new.mined_volume'), short: true },
+]
+---
+
+<div
+    class:list={['[ landing-live ]', Astro.props.class]}
+    x-data={`{
+        head: ${start},
+        start: ${start},
+        last: ${last},
+        init() {
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { this.head = this.last; return }
+            const timer = setInterval(() => {
+                if (this.head >= this.last) { clearInterval(timer); return }
+                this.head += 1
+            }, 3000)
+        },
+    }`}
+    {...attributes}
+>
+    <div class="[ landing-live__feed ]">
+        <p class="[ landing-live__label ]">
+            <span class="[ landing-live__dot ]" aria-hidden="true"></span>
+            <span>{t('landing_new.ticker_label')}</span>
+            <span class="[ landing-live__hint ]">{t('landing_new.live_hint')}</span>
+            <a class="[ landing-live__all ]" href={view_all_href}>{t('landing_new.view_all')}</a>
+        </p>
+        {played.length === 0 && <EmptyState title={t('landing_new.feed_empty')} />}
+        <ol class="[ landing-live__list ]" aria-live="off">
+            {played.map((event, index) => ({ event, index })).reverse().map(({ event, index }) =>
+                <li
+                    class="[ landing-live__row ]"
+                    x-show={`${index} <= head && ${index} >= head - ${VISIBLE}`}
+                    x-bind:class={`{ 'is-new': ${index} === head && head > start, 'is-older': ${index} === head - 1, 'is-oldest': ${index} === head - 2, 'is-out': ${index} === head - ${VISIBLE} }`}
+                    style={index <= start && index > start - VISIBLE ? undefined : 'display: none;'}
+                >
+                    <LandingLine event={event} size="md" />
+                    <span class="[ landing-live__region ]">{event.region}</span>
+                    <time datetime={event.occurred_at}>{eve_clock(event.occurred_at)}</time>
+                </li>
+            )}
+        </ol>
+    </div>
+
+    <div class="[ landing-live__stats ]">
+        <p class="[ landing-live__label ]">{t('landing_new.last_24_hours')}</p>
+        <dl>
+            {STATS.map((stat) =>
+                <div>
+                    <dt>{stat.label}</dt>
+                    <dd>
+                        {steps.map((step, k) =>
+                            <span
+                                class:list={['[ landing-live__value ]', { 'is-bumped': k > 0 && step[stat.key] !== steps[k - 1][stat.key] }]}
+                                x-show={`head - start === ${k}`}
+                                style={k === 0 ? undefined : 'display: none;'}
+                            >
+                                {stat.short ? short_number(step[stat.key]) : format_number(step[stat.key])}
+                            </span>
+                        )}
+                    </dd>
+                </div>
+            )}
+        </dl>
+    </div>
+</div>
+
+<style lang="scss">
+    .landing-live {
+        display: grid;
+        grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+        gap: var(--space-xl);
+        padding-top: var(--space-m);
+        border-top: 1px solid var(--hairline-medium);
+    }
+
+    .landing-live__label {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        margin: 0 0 var(--space-s);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--highlight);
+    }
+
+    .landing-live__hint {
+        font-weight: normal;
+        letter-spacing: normal;
+        text-transform: none;
+        color: var(--text-muted);
+    }
+
+    .landing-live__all {
+        margin-inline-start: auto;
+        font-size: var(--step--1);
+        letter-spacing: normal;
+        text-transform: none;
+        color: var(--fleet-yellow);
+    }
+
+    .landing-live__dot {
+        width: var(--space-2xs);
+        height: var(--space-2xs);
+        border-radius: 50%;
+        background: var(--green);
+        animation: landing-live-beat 1.6s ease-in-out infinite;
+    }
+
+    .landing-live__list {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .landing-live__row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        gap: var(--space-s);
+        align-items: center;
+        max-height: var(--space-xl);
+        padding: var(--space-2xs) 0;
+        overflow: hidden;
+        border-bottom: 1px solid var(--hairline);
+        transform-origin: left center;
+        font-size: var(--step--1);
+        color: var(--text-muted);
+
+        time {
+            font-variant-numeric: tabular-nums;
+        }
+
+        &.is-older { opacity: 0.8; }
+        &.is-oldest { opacity: 0.6; }
+
+        &.is-new { animation: landing-live-pop 900ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both; }
+        &.is-out { animation: landing-live-out 800ms ease-in both; }
+    }
+
+    .landing-live__region {
+        white-space: nowrap;
+    }
+
+    .landing-live__stats dl {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-m) var(--space-l);
+        margin: 0;
+
+        div {
+            display: flex;
+            flex-direction: column-reverse;
+            gap: var(--space-3xs);
+        }
+
+        dt {
+            font-size: var(--step--1);
+            color: var(--text-muted);
+        }
+
+        dd {
+            margin: 0;
+            font-family: var(--heading-font);
+            font-size: var(--step-4);
+            line-height: 1;
+            color: var(--highlight);
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    .landing-live__value {
+        display: inline-block;
+
+        &.is-bumped { animation: landing-live-bump 900ms ease-out both; }
+    }
+
+    @keyframes landing-live-pop {
+        0% { opacity: 0; transform: scale(0.86); }
+        35% { opacity: 1; transform: scale(1.04); background: color-mix(in srgb, var(--fleet-yellow) 16%, transparent); }
+        60% { transform: scale(1); }
+        100% { transform: scale(1); background: transparent; }
+    }
+
+    @keyframes landing-live-out {
+        0% { opacity: 0.6; }
+        60% { opacity: 0; max-height: var(--space-xl); }
+        100% { opacity: 0; max-height: 0; padding-block: 0; border-bottom-width: 0; }
+    }
+
+    @keyframes landing-live-bump {
+        0% { color: var(--fleet-yellow); transform: translateY(-0.1em); }
+        100% { color: var(--highlight); transform: none; }
+    }
+
+    @keyframes landing-live-beat {
+        50% { opacity: 0.35; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .landing-live__row,
+        .landing-live__value,
+        .landing-live__dot {
+            animation: none !important;
+        }
+    }
+
+    @media (max-width: 64rem) {
+        .landing-live {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    @media (max-width: 48rem) {
+        .landing-live__region {
+            display: none;
+        }
+    }
+</style>

@@ -1,0 +1,147 @@
+---
+import { i18n, t_key } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { LandingWeek } from '@dtypes/api.minmatar.org'
+import { get_landing_week } from '@helpers/api.minmatar.org/landing'
+import { eve_clock, eve_day, format_number } from '@helpers/landing'
+import { query_string } from '@helpers/string'
+
+// "The week in the alliance": one tab's rows, 12 to a page, padded so every
+// page is the same height. Public, like the page.
+const TABS = ['fights', 'kills', 'warzone', 'mining']
+const requested = Astro.url.searchParams.get('tab') ?? 'fights'
+const tab = TABS.includes(requested) ? requested : 'fights'
+const page = Math.max(1, parseInt(Astro.url.searchParams.get('page') ?? '1') || 1)
+
+let week: LandingWeek | null = null
+let error: Error | null = null
+try {
+    week = await get_landing_week(tab, page)
+} catch (e) {
+    error = e instanceof Error ? e : new Error(String(e))
+}
+
+const root_id = `landing-week-${tab}`
+const partial_url = (to:number) => translatePath(`/partials/landing_week_component/?${query_string({ tab, page: String(to) })}`)
+const rows = week?.rows ?? []
+const padding = Math.max(0, (week?.per_page ?? 12) - rows.length)
+const first = week ? (week.page - 1) * week.per_page + 1 : 0
+const range = week && week.total
+    ? t('landing_new.week_range')
+        .replace('{from}', format_number(first))
+        .replace('{to}', format_number(first + rows.length - 1))
+        .replace('{total}', format_number(week.total))
+    : ''
+
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import HtmxPager from '@components/blocks/HtmxPager.astro'
+import LandingLine from '@components/blocks/landing/LandingLine.astro'
+---
+
+<div id={root_id} class="[ landing-week ]">
+    {error && <ErrorRefetch args={{ partial: partial_url(page), error, delay: 0, target: `#${root_id}` }} />}
+    {week && week.total === 0 && <EmptyState title={t('landing_new.week_empty')} />}
+    {week && week.total > 0 &&
+        <>
+            <div class="[ landing-week__table ]" role="table" aria-label={t(t_key('landing_new.tab.', tab)) ?? tab}>
+                <div class="[ landing-week__row landing-week__head ]" role="row">
+                    <span role="columnheader">{t('landing_new.week_time')}</span>
+                    <span role="columnheader">{t('landing_new.week_what')}</span>
+                    <span role="columnheader" class="[ landing-week__region ]">{t('landing_new.week_region')}</span>
+                </div>
+                {rows.map((event) =>
+                    <div class="[ landing-week__row ]" role="row">
+                        <span role="cell" class="[ landing-week__time ]">
+                            <time datetime={event.occurred_at}>{eve_day(event.occurred_at)} · {eve_clock(event.occurred_at)}</time>
+                        </span>
+                        <span role="cell" class="[ landing-week__what ]"><LandingLine event={event} /></span>
+                        <span role="cell" class="[ landing-week__region ]">{event.region}</span>
+                    </div>
+                )}
+                {Array.from({ length: padding }).map(() =>
+                    <div class="[ landing-week__row landing-week__row--empty ]" aria-hidden="true"></div>
+                )}
+            </div>
+            <HtmxPager
+                class="[ landing-week__pager ]"
+                page={week.page}
+                total_pages={week.pages}
+                url_for={partial_url}
+                target={`#${root_id}`}
+            >
+                <small slot="status" class="[ landing-week__range ]">{range}</small>
+            </HtmxPager>
+        </>
+    }
+</div>
+
+<style lang="scss">
+    .landing-week__table {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .landing-week__row {
+        display: grid;
+        grid-template-columns: 9rem minmax(0, 1fr) 9rem;
+        gap: var(--space-s);
+        align-items: center;
+        min-height: var(--space-xl);
+        padding: 0 var(--space-m);
+        border-bottom: 1px solid var(--hairline);
+        box-sizing: border-box;
+    }
+
+    .landing-week__head {
+        min-height: auto;
+        padding-block: var(--space-xs);
+        border-bottom-color: var(--hairline-strong);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+
+    .landing-week__time {
+        font-size: var(--step--1);
+        color: var(--text-muted);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .landing-week__what {
+        min-width: 0;
+    }
+
+    .landing-week__region {
+        overflow: hidden;
+        text-align: right;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: var(--step--1);
+        color: var(--text-muted);
+    }
+
+    .landing-week__pager {
+        padding: var(--space-xs) var(--space-m);
+    }
+
+    .landing-week__range {
+        color: var(--text-muted);
+        font-variant-numeric: tabular-nums;
+    }
+
+    @media (max-width: 48rem) {
+        .landing-week__row {
+            grid-template-columns: 5rem minmax(0, 1fr);
+            padding: 0 var(--space-s);
+        }
+
+        .landing-week__region {
+            display: none;
+        }
+    }
+</style>

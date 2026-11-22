@@ -164,8 +164,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Alliance activity for the new landing page, 60 minutes behind */
+        /** Alliance activity for the new landing page (public) */
         get: operations["alliance_endpoints_landing_get_landing_pulse_get_landing_pulse"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/alliance/landing/week": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The last 7 days for the new landing page, 12 rows a page */
+        get: operations["alliance_endpoints_landing_get_landing_week_get_landing_week"];
         put?: never;
         post?: never;
         delete?: never;
@@ -22438,6 +22455,11 @@ export interface components {
             freight_volume: number;
             /** Industry Jobs */
             industry_jobs: number;
+            /**
+             * Mined Volume
+             * @default 0
+             */
+            mined_volume?: number;
             /** Ships Destroyed */
             ships_destroyed: number;
             /** Ships Lost */
@@ -22445,10 +22467,19 @@ export interface components {
             /** Warzone Sites */
             warzone_sites: number;
         };
-        /** LandingEvent */
+        /**
+         * LandingEvent
+         * @description One feed line: "<pilot> <verb> <subject> <tail>". ``action`` is the
+         *     whole line; the parts let the page put an icon before the subject.
+         */
         LandingEvent: {
             /** Action */
             action: string;
+            /**
+             * Amount
+             * @default 0
+             */
+            amount?: number;
             /** Character Id */
             character_id: number;
             /** Character Name */
@@ -22464,6 +22495,31 @@ export interface components {
             others: number;
             /** Region */
             region: string;
+            /**
+             * Subject
+             * @default
+             */
+            subject?: string;
+            /**
+             * Subject Id
+             * @default 0
+             */
+            subject_id?: number;
+            /**
+             * Subject Type
+             * @default
+             */
+            subject_type?: string;
+            /**
+             * Tail
+             * @default
+             */
+            tail?: string;
+            /**
+             * Verb
+             * @default
+             */
+            verb?: string;
         };
         /** LandingHourlyKills */
         LandingHourlyKills: {
@@ -22514,6 +22570,38 @@ export interface components {
             average_kills: number;
             /** Hour */
             hour: number;
+        };
+        /** LandingWeekCounts */
+        LandingWeekCounts: {
+            /** Fights */
+            fights: number;
+            /** Kills */
+            kills: number;
+            /** Mining */
+            mining: number;
+            /** Warzone */
+            warzone: number;
+        };
+        /** LandingWeekResponse */
+        LandingWeekResponse: {
+            counts: components["schemas"]["LandingWeekCounts"];
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /** Page */
+            page: number;
+            /** Pages */
+            pages: number;
+            /** Per Page */
+            per_page: number;
+            /** Rows */
+            rows: components["schemas"]["LandingEvent"][];
+            /** Tab */
+            tab: string;
+            /** Total */
+            total: number;
         };
         /** LandingWeekTotals */
         LandingWeekTotals: {
@@ -34091,13 +34179,27 @@ export interface operations {
                     "application/json": components["schemas"]["LandingPulseResponse"];
                 };
             };
-            /** @description Forbidden */
-            403: {
+        };
+    };
+    alliance_endpoints_landing_get_landing_week_get_landing_week: {
+        parameters: {
+            query?: {
+                tab?: string;
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
+                    "application/json": components["schemas"]["LandingWeekResponse"];
                 };
             };
         };

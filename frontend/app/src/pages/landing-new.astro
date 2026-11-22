@@ -2,22 +2,11 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { get_request_user } from '@helpers/request_user'
-const { auth_token } = get_request_user(Astro)
-
-import { get_gates, can } from '@helpers/gates'
-const gates = await get_gates(Astro)
-
-import { HTTP_404_Not_Found } from '@helpers/http_responses'
-
-// Preview of the new landing page. Superusers only until the pilot
-// opt-out for the named feed exists.
-if (!can(gates, 'site.debug_pages') || !auth_token)
-    return HTTP_404_Not_Found()
-
-import type { LandingPulse, LandingMoment } from '@dtypes/api.minmatar.org'
+// The new landing page, open to everyone at this hidden URL (noindex) while
+// it is tried out; the homepage is unchanged.
+import type { LandingPulse, LandingMoment, LandingWeek } from '@dtypes/api.minmatar.org'
 import type { PostListUI } from '@dtypes/layout_components'
-import { get_landing_pulse } from '@helpers/api.minmatar.org/landing'
+import { get_landing_pulse, get_landing_week } from '@helpers/api.minmatar.org/landing'
 import { fetch_latest_published_posts } from '@helpers/fetching/posts'
 import { dedupe_posts, format_number } from '@helpers/landing'
 import { t_key } from '@helpers/i18n'
@@ -25,10 +14,25 @@ import { t_key } from '@helpers/i18n'
 let pulse: LandingPulse | null = null
 let pulse_error: string | null = null
 try {
-    pulse = await get_landing_pulse(auth_token)
+    pulse = await get_landing_pulse()
 } catch (error) {
     pulse_error = error instanceof Error ? error.message : String(error)
 }
+
+// Tab counts for "The week in the alliance"; the rows load through the partial.
+let week: LandingWeek | null = null
+try {
+    week = await get_landing_week('fights', 1)
+} catch {
+    week = null
+}
+const WEEK_TABS = ['fights', 'kills', 'warzone', 'mining'] as const
+const week_tabs = WEEK_TABS.map((id) => ({
+    id,
+    label: t(t_key('landing_new.tab.', id)) ?? id,
+    meta: week ? format_number(week.counts[id]) : undefined,
+}))
+const week_url = (tab:string) => translatePath(`/partials/landing_week_component/?tab=${tab}&page=1`)
 
 let posts: PostListUI[] = []
 try {
@@ -73,13 +77,6 @@ const reel_items = [
 ].sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime())
  .slice(0, 8)
 
-const strip = pulse ? [
-    { value: pulse.day.ships_destroyed, label: t('landing_new.ships_destroyed') },
-    { value: pulse.day.warzone_sites, label: t('landing_new.warzone_sites') },
-    { value: pulse.day.industry_jobs, label: t('landing_new.industry_jobs') },
-    { value: pulse.day.freight_contracts, label: t('landing_new.freight_contracts') },
-] : []
-
 const PUBLICATIONS = [
     { name: 'Metropolis', image: '/images/icons/Metropolis.webp' },
     { name: 'Frontlines', image: '/images/icons/Frontlines.webp' },
@@ -92,11 +89,12 @@ const PUBLICATIONS = [
 import Viewport from '@layouts/Viewport.astro'
 
 import EmptyState from '@components/blocks/EmptyState.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
+import SectionTabs from '@components/blocks/SectionTabs.astro'
 import LandingBars from '@components/blocks/landing/LandingBars.astro'
-import LandingFeed from '@components/blocks/landing/LandingFeed.astro'
+import LandingLive from '@components/blocks/landing/LandingLive.astro'
 import LandingReel from '@components/blocks/landing/LandingReel.astro'
-import LandingTicker from '@components/blocks/landing/LandingTicker.astro'
-import LandingWeek from '@components/blocks/landing/LandingWeek.astro'
 ---
 
 <Viewport
@@ -110,13 +108,12 @@ import LandingWeek from '@components/blocks/landing/LandingWeek.astro'
 
             <div class="landing-hero__main">
                 <div class="landing-hero__pitch">
-                    {pulse && <LandingTicker class="landing-hero__ticker" events={pulse.events} />}
                     <p class="landing-eyebrow">{t('landing_new.eyebrow')}</p>
                     <h1>{t('landing_new.title_1')}<br />{t('landing_new.title_2')}</h1>
                     <p class="landing-hero__lead">{t('landing_new.lead')}</p>
                     <div class="landing-actions">
-                        <a class="landing-button landing-button--primary" href={translatePath('/alliance/corporations/')}>{t('landing_new.find_corporation')}</a>
-                        <a class="landing-button" href="https://discord.gg/minmatar" rel="noopener" target="_blank">{t('landing_new.join_discord')}</a>
+                        <a class="landing-button landing-button--primary landing-button--large" href={translatePath('/alliance/corporations/')}>{t('landing_new.find_corporation')}</a>
+                        <a class="landing-button landing-button--large" href="https://discord.gg/minmatar" rel="noopener" target="_blank">{t('landing_new.join_discord')}</a>
                     </div>
                 </div>
 
@@ -146,36 +143,7 @@ import LandingWeek from '@components/blocks/landing/LandingWeek.astro'
                 }
             </div>
 
-            {pulse &&
-                <div class="landing-hero__activity">
-                    <div class="landing-strip">
-                        <p class="landing-strip__label">
-                            <span class="landing-dot" aria-hidden="true"></span>
-                            <span>{t('landing_new.last_24_hours')}</span>
-                        </p>
-                        <div class="landing-strip__stats">
-                            {strip.map((stat) =>
-                                <div>
-                                    <span class="landing-strip__value">{format_number(stat.value)}</span>
-                                    <span class="landing-muted">{stat.label}</span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                    <div class="landing-hourly">
-                        <p class="landing-strip__label">
-                            <span>{t('landing_new.kills_by_hour')}</span>
-                        </p>
-                        <LandingBars
-                            values={pulse.hourly_kills.map((h) => h.kills)}
-                            hours={pulse.hourly_kills.map((h) => h.hour)}
-                            label={t('landing_new.kills_by_hour')}
-                            label_every={6}
-                            height="var(--space-2xl)"
-                        />
-                    </div>
-                </div>
-            }
+            {pulse && <LandingLive events={pulse.events} day={pulse.day} view_all_href="#week" />}
 
             {pulse_error && <EmptyState title={t('landing_new.error')} hint={pulse_error} />}
         </section>
@@ -186,16 +154,21 @@ import LandingWeek from '@components/blocks/landing/LandingWeek.astro'
             </div>
         }
 
-        {pulse &&
-            <section class="landing-section">
-                <p class="landing-eyebrow">{t('landing_new.feed_eyebrow')}</p>
-                <h2 class="landing-title">{t('landing_new.feed_title')}</h2>
-                <div class="landing-feed-grid">
-                    <LandingFeed events={pulse.events} />
-                    <LandingWeek week={pulse.week} />
-                </div>
-            </section>
-        }
+        <section id="week" class="landing-section">
+            <p class="landing-eyebrow">{t('landing_new.week_eyebrow')}</p>
+            <h2 class="landing-title">{t('landing_new.week_title')}</h2>
+            <SectionTabs tabs={week_tabs} aria_label={t('landing_new.week_title')} id_prefix="landing-week" default_tab="fights">
+                {WEEK_TABS.map((id) =>
+                    <SectionTabPanel id={id} id_prefix="landing-week" is_default={id === 'fights'}>
+                        <div class="landing-week-panel">
+                            <LazyPartial url={week_url(id)} swap="outerHTML" trigger={id === 'fights' ? 'load' : 'reveal'}>
+                                <p class="landing-muted">{t('loading')}</p>
+                            </LazyPartial>
+                        </div>
+                    </SectionTabPanel>
+                )}
+            </SectionTabs>
+        </section>
 
         <section class="landing-section">
             <div class="landing-section__header">
@@ -293,13 +266,6 @@ import LandingWeek from '@components/blocks/landing/LandingWeek.astro'
         color: var(--text-muted);
     }
 
-    .landing-dot {
-        width: var(--space-2xs);
-        height: var(--space-2xs);
-        border-radius: 50%;
-        background: var(--green);
-    }
-
     .landing-actions {
         display: flex;
         flex-wrap: wrap;
@@ -323,6 +289,18 @@ import LandingWeek from '@components/blocks/landing/LandingWeek.astro'
         &:focus-visible {
             background: var(--hairline-medium);
         }
+    }
+
+    .landing-button--large {
+        min-height: calc(var(--space-xl) + var(--space-2xs));
+        padding: 0 var(--space-l);
+        font-size: var(--step-1);
+    }
+
+    .landing-week-panel {
+        margin-top: var(--space-m);
+        background: var(--component-background);
+        border: 1px solid var(--border-color);
     }
 
     .landing-button--primary {
@@ -376,10 +354,6 @@ import LandingWeek from '@components/blocks/landing/LandingWeek.astro'
             line-height: 0.95;
             color: var(--highlight);
         }
-    }
-
-    .landing-hero__ticker {
-        margin-bottom: var(--space-l);
     }
 
     .landing-hero__lead {
@@ -494,52 +468,6 @@ import LandingWeek from '@components/blocks/landing/LandingWeek.astro'
         color: var(--highlight);
     }
 
-    .landing-hero__activity {
-        display: grid;
-        grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-        gap: var(--space-xl);
-    }
-
-    .landing-strip__label {
-        display: flex;
-        align-items: center;
-        gap: var(--space-xs);
-        margin: 0 0 var(--space-s);
-        padding-bottom: var(--space-s);
-        border-bottom: 1px solid var(--hairline-strong);
-        font-size: var(--step--2);
-        font-weight: 600;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--highlight);
-
-        .landing-muted {
-            font-weight: normal;
-            letter-spacing: normal;
-            text-transform: none;
-        }
-    }
-
-    .landing-strip__stats {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: var(--space-s);
-
-        > div {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-3xs);
-            font-size: var(--step--1);
-        }
-    }
-
-    .landing-strip__value {
-        font-family: var(--heading-font);
-        font-size: var(--step-4);
-        line-height: 1;
-        color: var(--highlight);
-    }
-
     /* Sections below the fold */
     .landing-section {
         padding: var(--space-2xl) var(--space-xl);
@@ -556,13 +484,6 @@ import LandingWeek from '@components/blocks/landing/LandingWeek.astro'
         .landing-title {
             margin: 0;
         }
-    }
-
-    .landing-feed-grid {
-        display: grid;
-        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-        gap: var(--space-l);
-        align-items: stretch;
     }
 
     .landing-news {
@@ -681,14 +602,8 @@ import LandingWeek from '@components/blocks/landing/LandingWeek.astro'
 
     @media (max-width: 64rem) {
         .landing-hero__main,
-        .landing-hero__activity,
-        .landing-feed-grid,
         .landing-join {
             grid-template-columns: minmax(0, 1fr);
-        }
-
-        .landing-strip__stats {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
     }
 

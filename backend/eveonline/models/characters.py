@@ -465,6 +465,32 @@ class EveCharacterMiningEntry(models.Model):
         )
 
 
+class EveCharacterMiningDelta(models.Model):
+    """
+    What a ledger sync saw a pilot mine since the last sync.
+
+    ESI's ledger is one running total per character, ore, day and system,
+    with no time. Each sync stores the increase here with the sync time, so
+    the landing page can show "mined 42,000 m³ of Veldspar" at a real time.
+    """
+
+    character = models.ForeignKey(
+        "EveCharacter",
+        on_delete=models.CASCADE,
+        related_name="mining_deltas",
+    )
+    eve_type = models.ForeignKey(
+        "eveuniverse.EveType",
+        on_delete=models.CASCADE,
+    )
+    solar_system_id = models.IntegerField()
+    quantity = models.BigIntegerField()
+    observed_at = models.DateTimeField(db_index=True)
+
+    def __str__(self):
+        return f"{self.character_id} +{self.quantity} {self.eve_type_id} @ {self.observed_at:%Y-%m-%d %H:%M}"
+
+
 class EveCharacterSkillset(models.Model):
     progress = models.FloatField()
     missing_skills = models.TextField(blank=True)
