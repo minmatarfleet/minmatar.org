@@ -124,7 +124,9 @@ const nested_x_data = external_link ? external_link.x_data : (wants_alpine_scope
         }
 
         &:focus-visible {
-            outline: none;
+            /* Keyboard focus ring, as on links (_global.scss). */
+            outline-color: var(--highlight);
+            outline-style: double;
         }
         
         /* Desktop */

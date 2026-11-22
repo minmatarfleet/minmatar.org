@@ -68,7 +68,9 @@ const {
         }
 
         &:focus-visible {
-            outline: none;
+            /* Keyboard focus ring, as on links (_global.scss). */
+            outline-color: var(--highlight);
+            outline-style: double;
             background-color: var(--component-background);
         }
     }

@@ -115,7 +115,7 @@ The primary call to action.
 - Import: `import Button from '@components/blocks/Button.astro'`
 - Props: `color?: ButtonColors = 'fleet-red'`, `new_tab?: boolean = false`, `external?: boolean = false`, `href?: string`, `size?: ButtonSizes = 'lg'`, `narrow?: boolean = false`, `centered?: boolean = true`, `off_disable?: boolean = false`, `disabled?: boolean = false`
 - Slots: `icon`, `default`
-- Stories (11): `frontend/app/rust/stories/components/forms/Button.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-button--docs: Default, Colors, Transparent, Small, Narrow, With Icon, Link, New Tab, External, Disabled, Enabled without Alpine (off_disable)
+- Stories (12): `frontend/app/rust/stories/components/forms/Button.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-button--docs: Default, Colors, Transparent, Small, Narrow, With Icon, Link, New Tab, External, Disabled, Enabled without Alpine (off_disable), Keyboard focus ring
 
 ### StylessButton
 
@@ -159,7 +159,7 @@ The site text field: a bordered, blurred-glass `<input>` inside an `.input-group
 - Import: `import Input from '@components/blocks/Input.astro'`
 - Props: `width?: string = '100%'`, `size?: 'lg' | 'sm' = 'lg'`
 - Slots: `icon`
-- Stories (10): `frontend/app/rust/stories/components/forms/Input.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-input--docs: Default, Accepts Text, Named, Required, Disabled, Read Only, Small, With Icon, Number type, Narrow Width
+- Stories (11): `frontend/app/rust/stories/components/forms/Input.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-input--docs: Default, Accepts Text, Named, Required, Disabled, Read Only, Small, With Icon, Number type, Narrow Width, Keyboard focus ring
 
 ### InputError
 
@@ -177,7 +177,7 @@ The site dropdown: a native `<select>` styled like `Input`, with a caret icon.
 - Import: `import Select from '@components/blocks/Select.astro'`
 - Props: `width?: string = '100%'`, `size?: 'lg' | 'sm' = 'lg'`
 - Slots: `default`
-- Stories (8): `frontend/app/rust/stories/components/forms/Select.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-select--docs: Default, Selected Value, Change Selection, Small, Required, Disabled, Grouped, Narrow Width
+- Stories (9): `frontend/app/rust/stories/components/forms/Select.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-select--docs: Default, Selected Value, Change Selection, Small, Required, Disabled, Grouped, Narrow Width, Keyboard focus ring
 
 ### Textarea
 
@@ -186,7 +186,7 @@ The site multi-line field, styled like `Input`: bordered glass, vertical resize 
 - Import: `import Textarea from '@components/blocks/Textarea.astro'`
 - Props: `width?: string = '100%'`
 - Slots: `default`
-- Stories (7): `frontend/app/rust/stories/components/forms/Textarea.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-textarea--docs: Default, Accepts Text, With Content, Required, Limited, Disabled, Read Only
+- Stories (8): `frontend/app/rust/stories/components/forms/Textarea.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-textarea--docs: Default, Accepts Text, With Content, Required, Limited, Disabled, Read Only, Keyboard focus ring
 
 ### StylessTextArea
 
@@ -195,7 +195,7 @@ A borderless, transparent `<textarea>` that grows with its content (`field-sizin
 - Import: `import StylessTextArea from '@components/blocks/StylessTextArea.astro'`
 - Props: `width?: string = '100%'`
 - Slots: `default`
-- Stories (6): `frontend/app/rust/stories/components/forms/StylessTextArea.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-stylesstextarea--docs: Default, Accepts Text, With Content, Multi Line, Limited, Disabled
+- Stories (7): `frontend/app/rust/stories/components/forms/StylessTextArea.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-stylesstextarea--docs: Default, Accepts Text, With Content, Multi Line, Limited, Disabled, Keyboard focus ring
 
 ### RadioCheckInput
 
@@ -429,7 +429,7 @@ The header button behind CollapsibleBlock: a label with a caret that rotates wit
 - Import: `import CollapsableButton from '@components/blocks/CollapsableButton.astro'`
 - Props: `pre_chevron?: boolean = false`, `appearance?: 'plain' | 'button' = 'plain'`, `color?: ButtonColors = 'fleet-red'`, `size?: ButtonSizes = 'sm'`
 - Slots: `default`
-- Stories (5): `frontend/app/rust/stories/components/data-display/CollapsableButton.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-collapsablebutton--docs: Default, As button, Transparent button, Pre-chevron, Click toggles the caret (Alpine)
+- Stories (6): `frontend/app/rust/stories/components/data-display/CollapsableButton.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-collapsablebutton--docs: Default, As button, Transparent button, Pre-chevron, Click toggles the caret (Alpine), Keyboard focus ring
 
 ### StatCard
 
