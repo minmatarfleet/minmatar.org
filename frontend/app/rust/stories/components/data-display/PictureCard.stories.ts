@@ -15,7 +15,7 @@ export default {
         docs: {
             description: {
                 component: [
-                    'A `Card` whose cover is a masked `Picture` at 256px: portraits, ship renders, screenshots. It forwards the `header`, `actions` and default slots to the card, so overlays work as they do there (actions fade in on hover).',
+                    'A picture card (the internal `Card` on `ComponentBlock`, not a library component of its own) whose cover is a masked `Picture` at 256px: portraits, ship renders, screenshots. It forwards the `header`, `actions` and default slots to the card, so overlays work as they do there (actions fade in on hover).',
                     '`narrow` makes the picture tall (412px) for portrait art, `thumbnail` crops to the shared thumbnail aspect ratio so reels line up, and `zoomable` opens the full image in a lightbox on click.',
                     'Passing `astro_image` renders through `astro:assets` instead of a plain `<img>`; it needs a bundler-known source, so it is not demoed here. Other attributes pass to the underlying `Card`.',
                 ].join('\n\n'),

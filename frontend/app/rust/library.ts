@@ -27,11 +27,11 @@ export const RUST_LIBRARY = {
         'blocks/SkipToContent',
     ],
     'Components/Data display': [
-        'blocks/Badge', 'blocks/Tag', 'blocks/TextBadge', 'blocks/NotificationBadge', 'blocks/VisibilityTag',
+        'blocks/Badge', 'blocks/Tag', 'blocks/NotificationBadge', 'blocks/VisibilityTag',
         'blocks/DebugTag', 'blocks/ComponentBlock', 'blocks/ComponentBlockHeader', 'blocks/CollapsibleBlock',
         'blocks/CollapsableButton', 'blocks/StatCard', 'blocks/Table', 'blocks/DataGrid', 'blocks/TextGroup',
         'blocks/Square', 'blocks/Markdown', 'blocks/Marquee', 'blocks/SettingRow', 'blocks/NumberNameTooltip',
-        'blocks/Tile', 'blocks/OptionCard', 'blocks/Card', 'blocks/PictureCard',
+        'blocks/Tile', 'blocks/OptionCard', 'blocks/PictureCard',
     ],
     'Components/Navigation': [
         'blocks/ActionMenu', 'blocks/ActionMenuItem', 'blocks/Dropdown', 'blocks/SectionTabs', 'blocks/SectionTabPanel',

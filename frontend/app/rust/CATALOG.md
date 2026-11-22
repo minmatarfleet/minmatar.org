@@ -334,15 +334,6 @@ A small label for a category or state: a doctrine role, a fleet type, a security
 - Slots: `icon`
 - Stories (22): `frontend/app/rust/stories/components/data-display/Tag.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-tag--docs: Default, Alliance Blue, Militia Purple, Green, Fleet yellow (dark text), Security status 1.0, Security status 0.4, Security status null, Security status 0.9, Security status 0.8, Security status 0.7, Security status 0.6, Security status 0.5, Security status 0.3, Security status 0.2, Security status 0.1, Custom Text Color, Narrow, With Title, Outline, Outline Colored, Outline With Icon
 
-### TextBadge
-
-A heading with a short block of text under it, in a tight `Flexblock`.
-
-- Import: `import TextBadge from '@components/blocks/TextBadge.astro'`
-- Props: `title: string`
-- Slots: `default`
-- Stories (5): `frontend/app/rust/stories/components/data-display/TextBadge.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-textbadge--docs: Default, Surplus, Rich Body, Long Text, Title Only
-
 ### NotificationBadge
 
 A small square count bubble for a menu item or tab: unread alerts, open orders, pending applications.
@@ -437,9 +428,9 @@ A grid-based table with a real header row (`role="table"`, `columnheader`, `row`
 A heading plus a paragraph stacked with a tight gap.
 
 - Import: `import TextGroup from '@components/blocks/TextGroup.astro'`
-- Props: `title?: false | string = false`, `gap?: spaces = 'var(--space-3xs)'`, `full?: boolean = false`
+- Props: `title?: false | string = false`, `gap?: spaces = 'var(--space-3xs)'`, `full?: boolean = false`, `root_class?: string = undefined`
 - Slots: `outside`, `default`
-- Stories (5): `frontend/app/rust/stories/components/data-display/TextGroup.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-textgroup--docs: Default, Without title, Full, Outside slot (custom body), Passthrough attributes on the paragraph
+- Stories (6): `frontend/app/rust/stories/components/data-display/TextGroup.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-textgroup--docs: Default, Without title, Full, Outside slot (custom body), Passthrough attributes on the paragraph, Root Class
 
 ### Square
 
@@ -500,17 +491,9 @@ One choice of a radio group (or a pick-many group with `type="checkbox"`), drawn
 - Slots: `default`
 - Stories (7): `frontend/app/rust/stories/components/data-display/OptionCard.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-optioncard--docs: Default, Checked, Checkbox (pick many), Rich content with hint, Disabled, Alpine x-model, Attributes and class on the label
 
-### Card
-
-A picture card built on `ComponentBlock`: a cover fills the card, the body text sits over its bottom edge, a header badge over the top-left, and `actions` fade in at the top-right on hover or keyboard focus (always shown on touch devices).
-
-- Import: `import Card from '@components/blocks/Card.astro'`
-- Slots: `cover`, `default`, `header`, `actions`, `visible-actions`
-- Stories (8): `frontend/app/rust/stories/components/data-display/Card.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-card--docs: Default, With Header, Hover actions, Always-visible actions, All slots, No cover (text only), Attributes pass through, Keyboard focus reveals actions
-
 ### PictureCard
 
-A `Card` whose cover is a masked `Picture` at 256px: portraits, ship renders, screenshots.
+A picture card (the internal `Card` on `ComponentBlock`, not a library component of its own) whose cover is a masked `Picture` at 256px: portraits, ship renders, screenshots.
 
 - Import: `import PictureCard from '@components/blocks/PictureCard.astro'`
 - Props: `src: string`, `alt?: string`, `narrow?: boolean = false`, `zoomable?: boolean = false`, `thumbnail?: boolean = false`, `astro_image?: AstroImageOptions`
