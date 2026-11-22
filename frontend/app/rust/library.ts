@@ -19,7 +19,7 @@ export const RUST_LIBRARY = {
         'blocks/Button', 'blocks/StylessButton', 'blocks/ButtonStack', 'blocks/ButtonConfirm', 'blocks/ClipboardButton',
         'blocks/Input', 'blocks/InputError', 'blocks/Select', 'blocks/Textarea', 'blocks/StylessTextArea',
         'blocks/RadioCheckInput', 'blocks/UnstyledRadioCheckButton', 'blocks/Switch', 'blocks/SwitchSquare',
-        'blocks/FlatPicker', 'blocks/Kbd',
+        'blocks/FlatPicker', 'blocks/Kbd', 'blocks/Combobox',
     ],
     'Components/Feedback': [
         'blocks/EmptyState', 'blocks/ErrorRefetch', 'blocks/ShowAlert', 'blocks/Progress', 'blocks/PageProgress',

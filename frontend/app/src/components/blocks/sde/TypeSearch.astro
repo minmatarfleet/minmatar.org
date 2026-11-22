@@ -1,15 +1,13 @@
 ---
 /**
- * Search inventory types by name. The input asks the server
- * (`/partials/sde_type_search_component`) as the pilot types, 300 ms after the
- * last keystroke or on Enter/clear, and htmx swaps the TypeResults it renders
- * into an aria-live region. Filters (`category_ids`, `group_ids`, `published`,
- * `limit`) travel in the request URL.
+ * Search inventory types by name: a Combobox preset. The field asks the
+ * server (`/partials/sde_type_search_component`) as the pilot types and the
+ * partial answers with `<li role="option" data-value data-label>` rows (a
+ * TypeRow inside each). Filters (`category_ids`, `group_ids`, `published`,
+ * `limit`, `slots`) travel in the request URL.
  *
- * With `name`, results are buttons: picking one fills a hidden input `name`
- * with the type id (for the surrounding form), shows the pick, and clears the
- * list; that part is local Alpine state. With `href_template`, results link to
- * a page instead. Without either, results are read-only.
+ * Picking a type fills the hidden input `name` with the type id and dispatches
+ * `combobox:select` with `{ name, value, label }`.
  */
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
@@ -17,9 +15,8 @@ const { t, translatePath } = i18n(Astro.url)
 import type { SdeType } from '@dtypes/sde'
 
 interface Props {
-    id:                 string;
-    /** Hidden input name for the picked type id; makes results selectable. */
-    name?:              string;
+    /** Hidden input name for the picked type id. */
+    name:               string;
     label?:             string;
     placeholder?:       string;
     /** Only these categories (6 ships, 7 modules, 8 charges...). */
@@ -28,17 +25,15 @@ interface Props {
     group_ids?:         number[];
     published?:         boolean;
     limit?:             number;
-    /** Same-site link per result, with `{type_id}` / `{type_name}`. */
-    href_template?:     string;
     /** Slot layout under each ship result. */
     show_slots?:        boolean;
     /** Already picked (an edit form). */
     selected?:          Pick<SdeType, 'type_id' | 'type_name'> | null;
+    allow_clear?:       boolean;
     [propName: string]: any;
 }
 
 const {
-    id,
     name,
     label = t('sde.type_search.label'),
     placeholder = t('sde.type_search.placeholder'),
@@ -46,120 +41,32 @@ const {
     group_ids = [],
     published = true,
     limit,
-    href_template,
     show_slots = false,
     selected = null,
+    allow_clear = true,
     ...attributes
 } = Astro.props
-
-delete attributes.class
-
 
 const params: Record<string, string> = {}
 if (category_ids.length > 0) params.category_ids = category_ids.join(',')
 if (group_ids.length > 0) params.group_ids = group_ids.join(',')
 if (!published) params.published = '0'
 if (limit) params.limit = String(limit)
-if (name) params.selectable = '1'
-else if (href_template) params.href = href_template
 if (show_slots) params.slots = '1'
 
 const base = translatePath('/partials/sde_type_search_component')
-const partial_url = Object.keys(params).length > 0 ? `${base}?${new URLSearchParams(params)}` : base
+const search_url = Object.keys(params).length > 0 ? `${base}?${new URLSearchParams(params)}` : base
 
-const input_id = `${id}-input`
-const results_id = `${id}-results`
-const indicator_id = `${id}-indicator`
-const hint_id = `${id}-hint`
-
-import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
-import Input from '@components/blocks/Input.astro'
-import StylessButton from '@components/blocks/StylessButton.astro'
-import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
+import Combobox from '@components/blocks/Combobox.astro'
 ---
 
-<div
-    id={id}
-    class:list={['[ sde-search ]', Astro.props.class]}
-    x-data={`{
-        selected_id: ${selected ? Number(selected.type_id) : 'null'},
-        selected_name: ${JSON.stringify(selected?.type_name ?? '')},
-        pick(detail) {
-            this.selected_id = detail.type_id
-            this.selected_name = detail.type_name
-            $refs.input.value = detail.type_name
-            $refs.results.replaceChildren()
-        },
-        clear() {
-            this.selected_id = null
-            this.selected_name = ''
-            $refs.input.value = ''
-            $refs.input.focus()
-        },
-    }`}
-    x-on:sde-type-select="pick($event.detail)"
+<Combobox
+    name={name}
+    label={label}
+    placeholder={placeholder}
+    search_url={search_url}
+    value={selected ? String(selected.type_id) : ''}
+    value_label={selected?.type_name ?? ''}
+    allow_clear={allow_clear}
     {...attributes}
->
-    <Flexblock gap="var(--space-2xs)">
-        <label for={input_id}>{label}</label>
-        <Input
-            id={input_id}
-            type="search"
-            name="q"
-            autocomplete="off"
-            spellcheck="false"
-            placeholder={placeholder}
-            x-ref="input"
-            aria-controls={results_id}
-            aria-describedby={hint_id}
-            hx-get={partial_url}
-            hx-trigger="input changed delay:300ms, search"
-            hx-target={`#${results_id}`}
-            hx-swap="innerHTML"
-            hx-sync="this:replace"
-            hx-indicator={`#${indicator_id}`}
-        >
-            <MagnifierIcon slot="icon" />
-        </Input>
-        <FlexInline gap="var(--space-2xs)" justification="space-between">
-            <small id={hint_id} class="[ sde-search__hint ]">{t('sde.search.hint')}</small>
-            <small id={indicator_id} class="[ sde-search__indicator ][ htmx-indicator ]" aria-hidden="true">{t('sde.search.searching')}</small>
-        </FlexInline>
-        <div
-            id={results_id}
-            class="[ sde-search__results ]"
-            x-ref="results"
-            role="region"
-            aria-live="polite"
-            aria-label={t('sde.search.results')}
-        ></div>
-        {name && <>
-            <div class="[ sde-search__selected ]" x-show="selected_id" style={selected ? undefined : "display: none"}>
-                <FlexInline gap="var(--space-2xs)">
-                    <small>{t('sde.search.selected')}</small>
-                    <strong x-text="selected_name">{selected?.type_name}</strong>
-                    <StylessButton type="button" class="[ sde-search__clear ]" x-on:click="clear()">{t('sde.search.clear')}</StylessButton>
-                </FlexInline>
-            </div>
-            <input type="hidden" name={name} value={selected?.type_id ?? ''} x-effect="$el.value = selected_id ?? ''" />
-        </>}
-    </Flexblock>
-</div>
-
-<style lang="scss">
-    .sde-search__hint,
-    .sde-search__indicator {
-        color: var(--text-muted);
-    }
-
-    .sde-search__results {
-        max-height: 50vh;
-        overflow-y: auto;
-    }
-
-    .sde-search__clear {
-        color: var(--fleet-red);
-        text-decoration: underline;
-    }
-</style>
+/>

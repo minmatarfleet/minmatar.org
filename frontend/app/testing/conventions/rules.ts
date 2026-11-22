@@ -307,7 +307,7 @@ export const RULES: ConventionRule[] = [
             if (!is_astro(file)) return []
             const exempt = COMPONENT_FILES(
                 'blocks/Dropdown', 'blocks/ActionMenu', 'blocks/Dialog', 'blocks/DialogButton', 'blocks/Modal',
-                'page/PageBreadcrumbs', 'page/BreadcrumbHub',
+                'page/PageBreadcrumbs', 'page/BreadcrumbHub', 'blocks/Combobox',
             )
             if (exempt.includes(file.path)) return []
             return hits_in(file, [astro_template(file.text)], CLICK_OUTSIDE)
