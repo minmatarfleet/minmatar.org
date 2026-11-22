@@ -1,7 +1,7 @@
 ---
 import type { BrandAssetColumn, BrandAssetRow } from '@/data/brand/assets'
 import { logoAssetColumns } from '@/data/brand/assets'
-import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import DataTable from '@components/blocks/DataTable.astro'
 
 interface Props {
     title: string
@@ -10,6 +10,8 @@ interface Props {
 }
 
 const { title, rows, columns = logoAssetColumns } = Astro.props
+
+const table_columns = [...columns, { key: 'description', label: 'Description' }]
 ---
 
 <section class="[ brand-section ]">
@@ -17,34 +19,24 @@ const { title, rows, columns = logoAssetColumns } = Astro.props
     <slot name="note" />
     <p class="[ brand-hint ]">Right-click an image and choose “Save image as…” to download it.</p>
 
-    <XFadeScroll>
-        <table>
-            <thead>
-                <tr>
-                    {columns.map(({ label }) => <th>{label}</th>)}
-                    <th>Description</th>
-                </tr>
-            </thead>
-            <tbody>
-                {rows.map((row) => (
-                    <tr>
-                        {columns.map(({ key }) => (
-                            <td>
-                                {row[key] ? (
-                                    <a href={row[key] as string} download>
-                                        <img src={row[key] as string} alt={row.name} width="64" loading="lazy" />
-                                    </a>
-                                ) : (
-                                    <span class="[ na ]">N/A</span>
-                                )}
-                            </td>
-                        ))}
-                        <td>{row.description}</td>
-                    </tr>
+    <DataTable columns={table_columns}>
+        {rows.map((row) => (
+            <tr>
+                {columns.map(({ key }) => (
+                    <td>
+                        {row[key] ? (
+                            <a href={row[key] as string} download>
+                                <img src={row[key] as string} alt={row.name} width="64" loading="lazy" />
+                            </a>
+                        ) : (
+                            <span class="[ na ]">N/A</span>
+                        )}
+                    </td>
                 ))}
-            </tbody>
-        </table>
-    </XFadeScroll>
+                <td>{row.description}</td>
+            </tr>
+        ))}
+    </DataTable>
 </section>
 
 <style lang="scss">
@@ -57,28 +49,6 @@ const { title, rows, columns = logoAssetColumns } = Astro.props
     .brand-hint {
         color: inherit;
         margin: 0;
-    }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    th,
-    td {
-        border: 1px solid var(--border-color);
-        padding: var(--space-s);
-        text-align: center;
-        vertical-align: middle;
-    }
-
-    th {
-        background: var(--solid-transparency-background);
-        font-weight: 600;
-    }
-
-    td:last-child {
-        text-align: left;
     }
 
     img {

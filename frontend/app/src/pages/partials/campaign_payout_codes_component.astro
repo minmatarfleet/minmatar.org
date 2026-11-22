@@ -146,6 +146,7 @@ import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
 import ViewChips from '@components/blocks/manage/ViewChips.astro'
 import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import RowSwapFrame from '@components/blocks/manage/RowSwapFrame.astro'
 import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
 import ManageField from '@components/blocks/manage/ManageField.astro'
 import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
@@ -241,9 +242,9 @@ import CodeRowView from '@components/blocks/CampaignPayoutCodeRow.astro'
             </div>
         </form>
     :
-        // A saved row goes back inside a <table> and the request picks it with
+        // A saved row goes back inside a RowSwapFrame and the request picks it with
         // hx-select: htmx drops a bare <tbody> after Astro's leading <style>.
-        <table>
+        <RowSwapFrame>
             <CodeRowView
                 row={the_row}
                 colspan={COLSPAN}
@@ -254,5 +255,5 @@ import CodeRowView from '@components/blocks/CampaignPayoutCodeRow.astro'
                 saved={saved}
                 error={error_message}
             />
-        </table>
+        </RowSwapFrame>
 }

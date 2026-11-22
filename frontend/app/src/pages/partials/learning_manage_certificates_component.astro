@@ -37,6 +37,7 @@ import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
 import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import RowSwapFrame from '@components/blocks/manage/RowSwapFrame.astro'
 import ManageField from '@components/blocks/manage/ManageField.astro'
 import SettingsSection from '@components/blocks/manage/SettingsSection.astro'
 import LearningCertificateRow from '@components/blocks/learning_manage/LearningCertificateRow.astro'
@@ -224,8 +225,7 @@ const award_count = certificates.reduce((sum, certificate) => sum + certificate.
 )}
 
 {part === 'save' && posted &&
-    // Inside a <table>: htmx drops a bare <tbody> after Astro's leading styles.
-    <table>
+    <RowSwapFrame>
         <LearningCertificateRow certificate={row_certificate} row_id={posted_row_id} open={true}>
             <LearningCertificateForm
                 slot="detail"
@@ -238,7 +238,7 @@ const award_count = certificates.reduce((sum, certificate) => sum + certificate.
                 error={save_error}
             />
         </LearningCertificateRow>
-    </table>
+    </RowSwapFrame>
 }
 
 {part === 'award' && (
