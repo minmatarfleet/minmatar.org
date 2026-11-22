@@ -1,0 +1,142 @@
+---
+/**
+ * Where a moon's net a month comes from: the Metenox drill output, then a
+ * month of fuel, then net. Prices are Jita guide prices from the last price
+ * run. Shows an empty state until the moon has been priced.
+ *
+ *   <MoonProfitTable profit={moon.profit} net={moon.monthly_net} />
+ */
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { MoonProfit } from '@dtypes/api.minmatar.org'
+import { format_isk } from '@helpers/numbers'
+
+interface Props {
+    /** Output and fuel lines a month; null until the moon is priced. */
+    profit:     MoonProfit | null | undefined;
+    /** Output value minus fuel a month. */
+    net:        number | null | undefined;
+    [propName: string]: any;
+}
+
+const {
+    profit,
+    net,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const units = (value: number) => value.toLocaleString('en-US')
+const price = (value: number) => value.toLocaleString('en-US', { maximumFractionDigits: 2 })
+const sum = (lines: { isk: number }[]) => lines.reduce((total, line) => total + line.isk, 0)
+const [priced_before, priced_after] = t('universe.moons.priced_at').split('~TIME')
+
+const columns = [
+    { key: 'line', label: t('universe.moons.col.line'), width: '40%' },
+    { key: 'units', label: t('universe.moons.col.line_month'), numeric: true },
+    { key: 'price', label: t('universe.moons.col.price'), numeric: true },
+    { key: 'isk', label: t('universe.moons.col.isk_month'), numeric: true },
+]
+
+import DataTable from '@components/blocks/DataTable.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import LocalTime from '@components/blocks/LocalTime.astro'
+---
+
+{profit
+    ? (
+        <DataTable
+            {...attributes}
+            class:list={['[ moon-profit ]', Astro.props.class]}
+            columns={columns}
+            caption={t('universe.moons.tab.profit')}
+            variant="report"
+            density="dense"
+            bodies
+        >
+            <tbody>
+                <tr><th scope="rowgroup" colspan="4" class="[ moon-profit__group ]">{t('universe.moons.output')}</th></tr>
+                {profit.output.map((line) => (
+                    <tr>
+                        <td>{line.name}</td>
+                        <td class="[ data-table__numeric ]">{units(line.units)}</td>
+                        <td class="[ data-table__numeric ]">{price(line.price)}</td>
+                        <td class="[ data-table__numeric ]">{format_isk(line.isk)}</td>
+                    </tr>
+                ))}
+                <tr class="[ moon-profit__total ]">
+                    <td>{t('universe.moons.output_value')}</td>
+                    <td></td>
+                    <td></td>
+                    <td class="[ data-table__numeric ]">{format_isk(sum(profit.output))}</td>
+                </tr>
+            </tbody>
+            <tbody>
+                <tr><th scope="rowgroup" colspan="4" class="[ moon-profit__group ]">{t('universe.moons.fuel')}</th></tr>
+                {profit.fuel.map((line, index) => (
+                    <tr>
+                        <td>
+                            {line.name}
+                            {index > 0 && <>{' '}<small class="[ moon-profit__note ]">{t('universe.moons.cheapest_block')}</small></>}
+                        </td>
+                        <td class="[ data-table__numeric ]">{units(line.units)}</td>
+                        <td class="[ data-table__numeric ]">{price(line.price)}</td>
+                        <td class="[ data-table__numeric moon-profit__loss ]">{format_isk(-line.isk)}</td>
+                    </tr>
+                ))}
+                <tr class="[ moon-profit__total ]">
+                    <td>{t('universe.moons.fuel_cost')}</td>
+                    <td></td>
+                    <td></td>
+                    <td class="[ data-table__numeric moon-profit__loss ]">{format_isk(-sum(profit.fuel))}</td>
+                </tr>
+            </tbody>
+            <Fragment slot="footer">
+                <tr class="[ moon-profit__net ]">
+                    <th scope="row">{t('universe.moons.net')}</th>
+                    <td></td>
+                    <td class="[ data-table__numeric moon-profit__note ]">
+                        {profit.priced_at &&
+                            <small>{priced_before}<LocalTime eve_time={new Date(profit.priced_at)} format="datetime" />{priced_after}</small>
+                        }
+                    </td>
+                    <td class:list={['[ data-table__numeric ]', { 'moon-profit__loss': (net ?? 0) < 0 }]}>{format_isk(net)}</td>
+                </tr>
+            </Fragment>
+        </DataTable>
+    )
+    : <EmptyState title={t('universe.moons.not_priced')} hint={t('universe.moons.not_priced_hint')} />
+}
+
+<style lang="scss">
+    :global(.moon-profit) {
+        :global(.moon-profit__group) {
+            padding-top: var(--space-s);
+            font-family: var(--heading-font);
+            font-size: var(--step-0);
+            color: var(--highlight);
+            text-transform: uppercase;
+        }
+
+        :global(.moon-profit__total) :is(th, td) {
+            font-weight: 600;
+        }
+
+        :global(.moon-profit__net) :is(th, td) {
+            border-top: 1px solid var(--border-color-hover);
+            font-size: var(--step-0);
+            font-weight: 700;
+        }
+
+        :global(.moon-profit__note) {
+            color: var(--faded);
+            font-weight: normal;
+        }
+
+        :global(td.moon-profit__loss) {
+            color: var(--fleet-red-text);
+        }
+    }
+</style>

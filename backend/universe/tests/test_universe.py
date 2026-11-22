@@ -15,7 +15,12 @@ from app.testing import make_token
 from eveonline.constants import MINMATAR_FLEET_ALLIANCE_ID
 from eveonline.models import EveAlliance, EveCharacter, EveCorporation
 from groups.models import AffiliationType, UserAffiliation
-from moons.models import EveMoon, EveMoonDistribution, EveMoonScan
+from moons.models import (
+    EveMoon,
+    EveMoonDistribution,
+    EveMoonScan,
+    MetenoxKill,
+)
 from structures.models import EveStructure, EveStructureTimer
 from structures.reported import (
     ReportDetails,
@@ -562,6 +567,76 @@ class MoonApiTests(UniverseFixture):
         body = self.get(member, "/api/universe/moons?rarity=64").json()
         self.assertEqual(body["total"], 2)
         self.assertEqual(body["rarity_counts"], [])
+
+    def test_net_orders_and_hides_unprofitable_moons(self, _):
+        self.moon.monthly_net = 2_600_000_000
+        self.moon.save()
+        losing = self._moon("Teonusude", 1, "Bitumens", 300_000_000)
+        losing.monthly_net = -65_000_000
+        losing.save()
+        unpriced = self._moon("Teonusude", 2, "Cinnabar", 900_000_000)
+        director = self.pilots["director"]
+
+        body = self.get(director, "/api/universe/moons").json()
+        self.assertEqual(
+            [m["monthly_net"] for m in body["moons"]],
+            [2_600_000_000, -65_000_000, None],
+        )
+        self.assertEqual(body["unprofitable_hidden"], 0)
+
+        url = "/api/universe/moons?hide_unprofitable=true"
+        body = self.get(director, url).json()
+        # A moon not priced yet stays: nobody knows it loses ISK.
+        self.assertEqual(
+            [m["id"] for m in body["moons"]], [self.moon.id, unpriced.id]
+        )
+        self.assertEqual(body["unprofitable_hidden"], 1)
+        counts = {c["rarity"]: c["count"] for c in body["rarity_counts"]}
+        self.assertEqual(counts[0], 2)
+
+        body = self.get(director, url + "&rarity=64").json()
+        self.assertEqual(body["unprofitable_hidden"], 0)
+
+    def test_pilot_cannot_hide_by_profit(self, _):
+        self.moon.monthly_net = -1
+        self.moon.save()
+        url = "/api/universe/moons?hide_unprofitable=true"
+        body = self.get(self.pilots["member"], url).json()
+        self.assertEqual(body["total"], 1)
+        self.assertIsNone(body["moons"][0]["monthly_net"])
+        self.assertIsNone(body["moons"][0]["metenox_kills"])
+
+    def test_profit_lines_and_metenox_kills(self, _):
+        self.moon.monthly_net = 1
+        self.moon.profit = {
+            "output": [
+                {"name": "Thulium", "units": 10, "price": 2.5, "isk": 25}
+            ],
+            "fuel": [
+                {"name": "Magmatic Gas", "units": 4, "price": 6.0, "isk": 24}
+            ],
+            "priced_at": "2026-11-22T10:00:00+00:00",
+        }
+        self.moon.save()
+        now = timezone.now()
+        for killmail_id, days in ((1, 90), (2, 12)):
+            MetenoxKill.objects.create(
+                moon=self.moon,
+                killmail_id=killmail_id,
+                killmail_hash="h",
+                killed_at=now - timedelta(days=days),
+                owner_corporation_name=f"Owner {killmail_id}",
+                killer_name="Killer",
+                attacker_count=34,
+            )
+        body = self.get(self.pilots["director"], "/api/universe/moons").json()
+        moon = body["moons"][0]
+        self.assertEqual(moon["profit"]["output"][0]["isk"], 25)
+        self.assertEqual(moon["profit"]["fuel"][0]["name"], "Magmatic Gas")
+        self.assertEqual(
+            [k["killmail_id"] for k in moon["metenox_kills"]], [2, 1]
+        )
+        self.assertEqual(moon["metenox_kills"][0]["attacker_count"], 34)
 
     def test_moon_contents_rule(self, _):
         self.assertTrue(can_see_moon_contents(self.pilots["superuser"]))

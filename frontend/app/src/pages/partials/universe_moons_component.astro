@@ -1,8 +1,10 @@
 ---
 /**
  * Universe > Moons. Everyone who sees moons sees which ones exist and who
- * reported them; rarity, ores, scans and ISK a month come back from the API
- * only for those allowed (Strategic FCs, structure managers).
+ * reported them; rarity, ores, scans, net a month and Metenox kills come
+ * back from the API only for those allowed (Strategic FCs, structure
+ * managers). Those can hide moons whose fuel costs more than they earn
+ * (on by default) and open a row on Profit / Metenox / Scans tabs.
  */
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
@@ -13,6 +15,7 @@ import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import { get_gates, can } from '@helpers/gates'
 import { get_item_icon } from '@helpers/eve_image'
 import { get_universe_moons } from '@helpers/api.minmatar.org/universe'
+import { format_isk } from '@helpers/numbers'
 
 const { auth_token } = get_request_user(Astro)
 if (!auth_token) return HTTP_403_Forbidden()
@@ -28,24 +31,30 @@ const params = Astro.url.searchParams
 const query = (params.get('q') ?? '').trim()
 const rarity_param = params.get('rarity') ?? 'all'
 const page = Math.max(1, parseInt(params.get('page') ?? '1') || 1)
+// The filter form always sends `filtered`; a first load has none, so the
+// "Hide unprofitable" box starts ticked.
+const hide_unprofitable = params.has('filtered') ? params.get('hide_unprofitable') === '1' : true
 
 let moons: UniverseMoon[] = []
 let contents = false
 let total = 0
 let page_size = 0
 let rarity_counts: { rarity: number, count: number }[] = []
+let unprofitable_hidden = 0
 let fetch_error: Error | false = false
 try {
     const list = await get_universe_moons(auth_token, {
         page,
         q: query,
         rarity: rarity_param === 'all' ? 0 : parseInt(rarity_param) || 0,
+        hide_unprofitable,
     })
     moons = list?.moons ?? []
     contents = list?.can_view_contents ?? false
     total = list?.total ?? moons.length
     page_size = list?.page_size || moons.length || 1
     rarity_counts = list?.rarity_counts ?? []
+    unprofitable_hidden = list?.unprofitable_hidden ?? 0
 } catch (failure) {
     fetch_error = failure as Error
 }
@@ -66,11 +75,27 @@ const quality = (moon: UniverseMoon) => {
     if (moon.rarity >= 16) return t('universe.moons.quality_medium')
     return t('universe.moons.quality_low')
 }
-const isk = (value: number | null | undefined) => value ? `${(value / 1e9).toFixed(2)} b` : '—'
+const isk = (value: number | null | undefined) => format_isk(value)
+const DAY = 24 * 60 * 60 * 1000
+const holder = (moon: UniverseMoon) => {
+    const kill = moon.metenox_kills?.[0]
+    if (!kill) return null
+    const days = Math.floor((Date.now() - new Date(kill.killed_at).getTime()) / DAY)
+    return {
+        name: kill.owner_alliance_name || kill.owner_corporation_name || '—',
+        note: days < 1 ? t('universe.moons.lost_one_today') : t('universe.moons.lost_one').replace('~DAYS', String(days)),
+    }
+}
+const moon_tabs = [
+    { id: 'profit', label: t('universe.moons.tab.profit') },
+    { id: 'metenox', label: t('universe.moons.tab.metenox') },
+    { id: 'scans', label: t('universe.moons.tab.scans') },
+]
 const columns = contents
     ? [
         { label: t('universe.moons.col.moon') },
         { label: t('universe.moons.col.rarity') },
+        { label: t('universe.moons.col.metenox'), phone: false },
         { label: t('universe.moons.col.last_scan'), phone: false },
         { label: t('universe.moons.col.isk'), align: 'num' as const, sort: 'descending' as const },
     ]
@@ -94,6 +119,11 @@ import ManageTable from '@components/blocks/manage/ManageTable.astro'
 import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
 import UniverseMoonReport from '@components/blocks/universe/UniverseMoonReport.astro'
 import StylessButton from '@components/blocks/StylessButton.astro'
+import SectionTabs from '@components/blocks/SectionTabs.astro'
+import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
+import Switch from '@components/blocks/Switch.astro'
+import MoonProfitTable from '@components/blocks/universe/MoonProfitTable.astro'
+import MoonMetenoxKills from '@components/blocks/universe/MoonMetenoxKills.astro'
 ---
 
 <div id="universe-moons">
@@ -113,6 +143,14 @@ import StylessButton from '@components/blocks/StylessButton.astro'
             >
                 <FlexInline gap="var(--space-s)" class="[ universe-toolbar ]">
                     <ManageSearch id="universe-moons-search" value={query} label={t('universe.moons.search')} placeholder={t('universe.moons.search')} />
+                    {contents &&
+                        <span class="[ universe-hide ]">
+                            <input type="hidden" name="filtered" value="1" />
+                            <Switch id="universe-moons-unprofitable" name="hide_unprofitable" value="1" checked={hide_unprofitable}>
+                                {t('universe.moons.hide_unprofitable')}
+                            </Switch>
+                        </span>
+                    }
                     <DialogButton size="sm" color="fleet-red" max_width="48rem">
                         {t('universe.moons.report')}
                         <form slot="dialog" id="universe-moon-report" hx-post={REPORT_URL} hx-target="this" hx-swap="innerHTML">
@@ -148,6 +186,12 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                                 <small class="[ universe-small ]">{quality(moon)}</small>
                                             </td>
                                             <td class="[ is-wide ]">
+                                                {holder(moon)
+                                                    ? <span>{holder(moon)?.name}<small class="[ universe-small ]">{holder(moon)?.note}</small></span>
+                                                    : <span class="[ universe-muted ]">{t('universe.moons.none_seen')}</span>
+                                                }
+                                            </td>
+                                            <td class="[ is-wide ]">
                                                 <span class="[ universe-who ]">
                                                     {who}
                                                     <span>
@@ -156,8 +200,17 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                                     </span>
                                                 </span>
                                             </td>
-                                            <td class="[ num ]">{isk(moon.monthly_revenue)}</td>
-                                            <div slot="detail" class="[ universe-moon-detail ]">
+                                            <td class:list={['[ num ]', { 'universe-loss': (moon.monthly_net ?? 0) < 0 }]}>{isk(moon.monthly_net)}</td>
+                                            <div slot="detail">
+                                            <SectionTabs tabs={moon_tabs} aria_label={t('universe.moons.details').replace('~NAME', name_of(moon))} id_prefix={`moon-${moon.id}`} sync_hash={false} variant="pills">
+                                            <SectionTabPanel id="profit" id_prefix={`moon-${moon.id}`} is_default>
+                                                <MoonProfitTable profit={moon.profit} net={moon.monthly_net} />
+                                            </SectionTabPanel>
+                                            <SectionTabPanel id="metenox" id_prefix={`moon-${moon.id}`}>
+                                                <MoonMetenoxKills kills={moon.metenox_kills ?? []} />
+                                            </SectionTabPanel>
+                                            <SectionTabPanel id="scans" id_prefix={`moon-${moon.id}`}>
+                                            <div class="[ universe-moon-detail ]">
                                                 <Flexblock gap="var(--space-2xs)">
                                                     <h4>{t('universe.moons.latest_scan')}</h4>
                                                     <dl class="[ universe-ores ]">
@@ -182,6 +235,9 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                                     </ul>
                                                 </Flexblock>
                                             </div>
+                                            </SectionTabPanel>
+                                            </SectionTabs>
+                                            </div>
                                         </ExpandRow>
                                     )
                                     : (
@@ -204,6 +260,17 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                             })}
                         </ManageTable>
                     )
+                }
+                {contents && unprofitable_hidden > 0 &&
+                    <p class="[ universe-hidden-note ]">
+                        {unprofitable_hidden === 1 ? t('universe.moons.hidden_unprofitable_one') : t('universe.moons.hidden_unprofitable').replace('~COUNT', String(unprofitable_hidden))}
+                        <StylessButton
+                            type="button"
+                            class="[ universe-link ]"
+                            x-data
+                            x-on:click="const box = document.getElementById('universe-moons-unprofitable'); box.checked = false; box.dispatchEvent(new Event('change', { bubbles: true }))"
+                        >{unprofitable_hidden === 1 ? t('universe.moons.show_hidden_one') : t('universe.moons.show_hidden')}</StylessButton>
+                    </p>
                 }
                 <HtmxPager
                     page={page}
@@ -237,6 +304,31 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         display: block;
         font-size: var(--step--2);
         color: var(--foreground);
+    }
+
+    .universe-muted {
+        color: var(--faded);
+    }
+
+    .universe-loss {
+        color: var(--fleet-red-text);
+    }
+
+    .universe-hide {
+        white-space: nowrap;
+        font-size: var(--step--1);
+    }
+
+    .universe-hidden-note {
+        margin: 0;
+        text-align: center;
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    .universe-link {
+        color: var(--highlight);
+        text-decoration: underline;
     }
 
     .universe-who {

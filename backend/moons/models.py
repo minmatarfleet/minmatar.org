@@ -105,7 +105,15 @@ class EveMoon(models.Model):
     system = models.CharField(max_length=100)
     planet = models.CharField(max_length=10)
     moon = models.IntegerField()
+    # What the Metenox output sells for in Jita a month, before fuel.
     monthly_revenue = models.BigIntegerField(default=0)
+    # Output value minus Metenox fuel a month. Null until prices are known.
+    monthly_net = models.BigIntegerField(null=True, blank=True, db_index=True)
+    # The lines behind monthly_net, as moons.profit.profit_breakdown writes
+    # them: {"output": [...], "fuel": [...], "priced_at": "..."}.
+    profit = models.JSONField(default=dict, blank=True)
+    # The EVE moon id, from a scan paste or a Metenox killmail.
+    eve_moon_id = models.BigIntegerField(null=True, blank=True, unique=True)
     reported_by = models.ForeignKey(
         "auth.User", on_delete=models.SET_NULL, null=True, blank=True
     )
@@ -173,3 +181,35 @@ class EveMoonScan(models.Model):
 
     def __str__(self):
         return f"{self.moon} scan {self.reported_at:%Y-%m-%d}"
+
+
+class MetenoxKill(models.Model):
+    """
+    A Metenox Moon Drill killed at one of our moons, from zKillboard. The
+    newest one says who last held the moon.
+    """
+
+    moon = models.ForeignKey(
+        EveMoon, on_delete=models.CASCADE, related_name="metenox_kills"
+    )
+    killmail_id = models.BigIntegerField(unique=True)
+    killmail_hash = models.CharField(max_length=64)
+    killed_at = models.DateTimeField(db_index=True)
+    owner_corporation_id = models.BigIntegerField(null=True, blank=True)
+    owner_corporation_name = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    owner_alliance_id = models.BigIntegerField(null=True, blank=True)
+    owner_alliance_name = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    # The alliance (else corporation) that did the most damage.
+    killer_id = models.BigIntegerField(null=True, blank=True)
+    killer_name = models.CharField(max_length=255, blank=True, default="")
+    attacker_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ("-killed_at", "-killmail_id")
+
+    def __str__(self):
+        return f"Metenox {self.killmail_id} at {self.moon}"

@@ -35254,6 +35254,78 @@
         "title": "MoonDetailResponse",
         "type": "object"
       },
+      "MoonMetenoxKill": {
+        "properties": {
+          "attacker_count": {
+            "default": 0,
+            "title": "Attacker Count",
+            "type": "integer"
+          },
+          "killed_at": {
+            "format": "date-time",
+            "title": "Killed At",
+            "type": "string"
+          },
+          "killer_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Killer Id"
+          },
+          "killer_name": {
+            "default": "",
+            "title": "Killer Name",
+            "type": "string"
+          },
+          "killmail_id": {
+            "title": "Killmail Id",
+            "type": "integer"
+          },
+          "owner_alliance_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Alliance Id"
+          },
+          "owner_alliance_name": {
+            "default": "",
+            "title": "Owner Alliance Name",
+            "type": "string"
+          },
+          "owner_corporation_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Corporation Id"
+          },
+          "owner_corporation_name": {
+            "default": "",
+            "title": "Owner Corporation Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "killmail_id",
+          "killed_at"
+        ],
+        "title": "MoonMetenoxKill",
+        "type": "object"
+      },
       "MoonOre": {
         "properties": {
           "ore": {
@@ -35312,6 +35384,71 @@
           }
         },
         "title": "MoonParsingResult",
+        "type": "object"
+      },
+      "MoonProfit": {
+        "description": "Drill output and Metenox fuel a month, priced in Jita.",
+        "properties": {
+          "fuel": {
+            "items": {
+              "$ref": "#/components/schemas/MoonProfitLine"
+            },
+            "title": "Fuel",
+            "type": "array"
+          },
+          "output": {
+            "items": {
+              "$ref": "#/components/schemas/MoonProfitLine"
+            },
+            "title": "Output",
+            "type": "array"
+          },
+          "priced_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Priced At"
+          }
+        },
+        "required": [
+          "output",
+          "fuel"
+        ],
+        "title": "MoonProfit",
+        "type": "object"
+      },
+      "MoonProfitLine": {
+        "properties": {
+          "isk": {
+            "title": "Isk",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "price": {
+            "title": "Price",
+            "type": "number"
+          },
+          "units": {
+            "title": "Units",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "units",
+          "price",
+          "isk"
+        ],
+        "title": "MoonProfitLine",
         "type": "object"
       },
       "MoonRarityCount": {
@@ -53182,6 +53319,31 @@
             ],
             "title": "Last Scanned At"
           },
+          "metenox_kills": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MoonMetenoxKill"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metenox Kills"
+          },
+          "monthly_net": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Monthly Net"
+          },
           "monthly_revenue": {
             "anyOf": [
               {
@@ -53214,6 +53376,16 @@
           "planet": {
             "title": "Planet",
             "type": "string"
+          },
+          "profit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MoonProfit"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "rarity": {
             "anyOf": [
@@ -53302,6 +53474,11 @@
           "total": {
             "default": 0,
             "title": "Total",
+            "type": "integer"
+          },
+          "unprofitable_hidden": {
+            "default": 0,
+            "title": "Unprofitable Hidden",
             "type": "integer"
           }
         },
@@ -96992,7 +97169,7 @@
     },
     "/api/universe/moons": {
       "get": {
-        "description": "One page of the moons we know about, searched by system, planet,\nmoon number and (for those who see contents) ore. Contents (ores,\nscans, ISK a month) are null unless the caller may see them, so the\nshape never changes; only they can filter by rarity.",
+        "description": "One page of the moons we know about, searched by system, planet,\nmoon number and (for those who see contents) ore. Contents (ores,\nscans, ISK a month, Metenox kills) are null unless the caller may see\nthem, so the shape never changes; only they can filter by rarity and\nhide moons whose fuel costs more than they earn.",
         "operationId": "universe_router_list_moons",
         "parameters": [
           {
@@ -97033,6 +97210,16 @@
               "default": 0,
               "title": "Rarity",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "hide_unprofitable",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Hide Unprofitable",
+              "type": "boolean"
             }
           }
         ],

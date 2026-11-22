@@ -11,7 +11,9 @@ from market.helpers.pricing import (
     get_history_averages_by_type_id,
 )
 from moons.helpers import calc_metanox_yield
+from moons.metenox import sync_metenox_kills as run_metenox_sync
 from moons.models import EveMoon, EveMoonDistribution, ore_yield_map
+from moons.profit import FUEL_TYPE_NAMES, profit_breakdown
 
 logger = logging.getLogger(__name__)
 
@@ -21,14 +23,16 @@ HISTORY_MAX_AGE_DAYS = 2
 
 def get_prices() -> dict[str, Decimal]:
     """
-    Jita guide price per moon product name: the latest daily average from
-    stored Forge (price_baseline region) history, then CCP's average price.
+    Jita guide price per moon product and Metenox fuel name: the latest
+    daily average from stored Forge (price_baseline region) history, then
+    CCP's average price.
 
     Products without any price are left out. Products whose history is
     missing or stale get a history fetch queued for the next run.
     """
     names = sorted(
         {product for yields in ore_yield_map.values() for product in yields}
+        | set(FUEL_TYPE_NAMES)
     )
     name_to_id = dict(
         EveType.objects.filter(name__in=names).values_list("name", "id")
@@ -91,6 +95,7 @@ def update_moon_revenues():
 
     prices = get_prices()
 
+    priced_at = timezone.now().isoformat()
     moons = EveMoon.objects.all()
     for moon in moons:
         distributions = EveMoonDistribution.objects.filter(moon=moon)
@@ -99,6 +104,20 @@ def update_moon_revenues():
             continue
         logger.debug("Monthly revenue = %.2f", moon_revenue)
         moon.monthly_revenue = moon_revenue
+        breakdown = profit_breakdown(distributions, prices)
+        if breakdown is not None and breakdown["net"] is not None:
+            moon.monthly_net = breakdown["net"]
+            moon.profit = {
+                "output": breakdown["output"],
+                "fuel": breakdown["fuel"],
+                "priced_at": priced_at,
+            }
         moon.save()
 
     logger.info("Moon revenue estimates updated.")
+
+
+@app.task(exclusive=55 * 60)
+def sync_metenox_kills():
+    """Metenox Moon Drills killed at our moons, from zKillboard."""
+    return run_metenox_sync()

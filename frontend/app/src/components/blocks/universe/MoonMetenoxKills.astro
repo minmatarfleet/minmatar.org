@@ -1,0 +1,78 @@
+---
+/**
+ * Metenox Moon Drills killed at one moon, newest first: when (EVE time),
+ * the owner's corporation and alliance, the alliance (else corporation)
+ * that did the most damage with its pilot count, and a zKillboard link.
+ * The newest owner is the best guess at who holds the moon.
+ *
+ *   <MoonMetenoxKills kills={moon.metenox_kills ?? []} />
+ */
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { MoonMetenoxKill } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    kills:      MoonMetenoxKill[];
+    [propName: string]: any;
+}
+
+const {
+    kills,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const zkill_url = (killmail_id: number) => `https://zkillboard.com/kill/${killmail_id}/`
+
+const columns = [
+    { key: 'when', label: t('universe.moons.col.when'), width: '30%' },
+    { key: 'owner', label: t('universe.moons.col.owner') },
+    { key: 'killed_by', label: t('universe.moons.col.killed_by') },
+    { key: 'link', label: 'zKillboard', hidden_label: true, width: 'var(--space-3xl)' },
+]
+
+import DataTable from '@components/blocks/DataTable.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import LocalTime from '@components/blocks/LocalTime.astro'
+---
+
+{kills.length > 0
+    ? (
+        <DataTable
+            {...attributes}
+            class:list={['[ moon-kills ]', Astro.props.class]}
+            columns={columns}
+            caption={t('universe.moons.tab.metenox')}
+            variant="report"
+            density="dense"
+        >
+            {kills.map((kill) => (
+                <tr>
+                    <td><LocalTime eve_time={new Date(kill.killed_at)} format="datetime" /></td>
+                    <td>
+                        {kill.owner_corporation_name || '—'}
+                        <small class="[ moon-kills__sub ]">{kill.owner_alliance_name || t('universe.moons.no_alliance')}</small>
+                    </td>
+                    <td>
+                        {kill.killer_name || '—'}
+                        <small class="[ moon-kills__sub ]">{t('universe.moons.pilots').replace('~COUNT', String(kill.attacker_count))}</small>
+                    </td>
+                    <td class="[ data-table__actions ]">
+                        <a href={zkill_url(kill.killmail_id)} target="_blank" rel="noopener noreferrer">zKill</a>
+                    </td>
+                </tr>
+            ))}
+        </DataTable>
+    )
+    : <EmptyState title={t('universe.moons.no_kills')} hint={t('universe.moons.no_kills_hint')} />
+}
+
+<style lang="scss">
+    :global(.moon-kills) :global(.moon-kills__sub) {
+        display: block;
+        font-size: var(--step--2);
+        color: var(--faded);
+    }
+</style>

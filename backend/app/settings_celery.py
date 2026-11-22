@@ -68,6 +68,13 @@ CELERYBEAT_MARKET = [
             "schedule": schedule(timedelta(hours=8)),
         },
     ),
+    (
+        "[Market] Sync Metenox Kills",
+        {
+            "task": "moons.tasks.sync_metenox_kills",
+            "schedule": crontab(minute=40),
+        },
+    ),
 ]
 
 # Characters

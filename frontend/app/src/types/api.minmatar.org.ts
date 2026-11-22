@@ -3404,5 +3404,7 @@ export type UniverseStructureReport = ApiRequest<'StructureReportRequest'>
 export type UniverseTimer = ApiResponse<'UniverseTimer'>
 export type UniverseTimerList = ApiResponse<'UniverseTimerList'>
 export type UniverseMoon = ApiResponse<'UniverseMoon'>
+export type MoonProfit = ApiResponse<'MoonProfit'>
+export type MoonMetenoxKill = ApiResponse<'MoonMetenoxKill'>
 export type UniverseMoonList = ApiResponse<'UniverseMoonList'>
 export type UniverseMoonReport = ApiResponse<'MoonParsingResult'>

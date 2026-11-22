@@ -168,6 +168,8 @@ ROUTES: dict[str, str] = {
     "eveuniverse.tasks._update_market_prices_from_data": "market",
     "market.": "market",
     "moons.": "market",
+    # zKill and ESI killmail reads, like the feed.
+    "moons.tasks.sync_metenox_kills": "feed",
     "industry.": "industry",
     "buyback.": "industry",
     "discord.": "community",
