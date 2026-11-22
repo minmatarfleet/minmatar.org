@@ -3791,6 +3791,17 @@
             "title": "Guild Name",
             "type": "string"
           },
+          "intel_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intel Channel Id"
+          },
           "invite_url": {
             "default": "",
             "title": "Invite Url",
@@ -3813,6 +3824,17 @@
             },
             "title": "Links",
             "type": "array"
+          },
+          "schedule_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schedule Channel Id"
           },
           "servers": {
             "default": [],
@@ -3860,6 +3882,28 @@
               }
             ],
             "title": "Guild Id"
+          },
+          "intel_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intel Channel Id"
+          },
+          "schedule_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schedule Channel Id"
           },
           "timers_channel_id": {
             "anyOf": [
@@ -4393,10 +4437,32 @@
             "title": "Id",
             "type": "integer"
           },
+          "intel_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intel Channel Id"
+          },
           "linked_by": {
             "default": "",
             "title": "Linked By",
             "type": "string"
+          },
+          "schedule_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schedule Channel Id"
           },
           "timers_channel_id": {
             "anyOf": [
@@ -4429,6 +4495,28 @@
               }
             ],
             "title": "Fleets Channel Id"
+          },
+          "intel_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intel Channel Id"
+          },
+          "schedule_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schedule Channel Id"
           },
           "timers_channel_id": {
             "anyOf": [
@@ -59681,7 +59769,7 @@
         ]
       },
       "put": {
-        "description": "Link the campaign to a server the bot is in, and pick its timers and\nfleet pings channels there. Admins only.",
+        "description": "Link the campaign to a server the bot is in, and pick its intel,\ntimerboard, fleet schedule and fleet pings channels there. Admins\nonly.",
         "operationId": "campaigns_endpoints_put_coordination_put_coordination",
         "parameters": [
           {
@@ -60058,7 +60146,7 @@
         ]
       },
       "patch": {
-        "description": "Pick the timers and fleet pings channels on a linked server.",
+        "description": "Pick the intel, timerboard, fleet schedule and fleet pings channels\non a linked server.",
         "operationId": "campaigns_endpoints_patch_discord_link_update_link",
         "parameters": [
           {

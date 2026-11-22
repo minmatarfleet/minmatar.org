@@ -752,6 +752,14 @@ CELERYBEAT_SURVEYS = [
 
 CELERYBEAT_CAMPAIGNS = [
     (
+        "[Campaigns] Refresh Discord timerboards and fleet schedules",
+        {
+            "task": "campaigns.tasks.refresh_campaign_boards",
+            "schedule": schedule(timedelta(minutes=15)),
+            "options": {"expire_seconds": 15 * 60},
+        },
+    ),
+    (
         "[Campaigns] Sweep killmails",
         {
             "task": "campaigns.tasks.sweep_campaign_killmails",

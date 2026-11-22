@@ -256,6 +256,14 @@ class Campaign(models.Model):
     coordination_fleets_channel_id = models.BigIntegerField(
         null=True, blank=True
     )
+    # New structures and timers, one unpinged line each.
+    coordination_intel_channel_id = models.BigIntegerField(
+        null=True, blank=True
+    )
+    # One message listing every fleet form-up, edited in place.
+    coordination_schedule_channel_id = models.BigIntegerField(
+        null=True, blank=True
+    )
     voice_channel_ids = models.JSONField(default=list, blank=True)
     default_fleet_audience = models.ForeignKey(
         "fleets.EveFleetAudience",
@@ -968,6 +976,9 @@ class CampaignCoordinator(models.Model):
     invited_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True
     )
+    # When the owner was sent the "you're a coordinator" DM. Empty until
+    # someone owns the character on the site.
+    invite_notified_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -990,6 +1001,8 @@ class CampaignDiscordLink(models.Model):
     guild_name = models.CharField(max_length=255, blank=True, default="")
     timers_channel_id = models.BigIntegerField(null=True, blank=True)
     fleets_channel_id = models.BigIntegerField(null=True, blank=True)
+    intel_channel_id = models.BigIntegerField(null=True, blank=True)
+    schedule_channel_id = models.BigIntegerField(null=True, blank=True)
     linked_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True
     )
@@ -1001,6 +1014,33 @@ class CampaignDiscordLink(models.Model):
             models.UniqueConstraint(
                 fields=["campaign", "guild_id"],
                 name="campaign_discord_link_unique",
+            )
+        ]
+
+
+class CampaignDiscordBoard(models.Model):
+    """A message the bot keeps edited in a channel: the timerboard or the
+    fleet schedule. One per campaign, channel and kind."""
+
+    class Kind(models.TextChoices):
+        TIMERS = "timers", "Timerboard"
+        SCHEDULE = "schedule", "Fleet schedule"
+
+    campaign = models.ForeignKey(
+        Campaign, on_delete=models.CASCADE, related_name="discord_boards"
+    )
+    channel_id = models.BigIntegerField()
+    kind = models.CharField(max_length=16, choices=Kind.choices)
+    message_id = models.BigIntegerField(null=True, blank=True)
+    # Hash of the last content sent, so an unchanged board is not edited.
+    content_hash = models.CharField(max_length=64, blank=True, default="")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["campaign", "channel_id", "kind"],
+                name="campaign_discord_board_unique",
             )
         ]
 

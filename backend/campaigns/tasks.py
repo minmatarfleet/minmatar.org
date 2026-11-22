@@ -475,3 +475,32 @@ def campaign_health() -> dict:
 
     logger.info("Campaign health: %s", report)
     return report
+
+
+@app.task(expires=10 * 60)
+def refresh_campaign_board(campaign_id: int, kind: str) -> int:
+    """Edit one campaign's timerboard or fleet schedule messages in Discord
+    (``services.discord_posts``). Unchanged boards are left alone."""
+    # pylint: disable-next=import-outside-toplevel
+    from campaigns.services import discord_posts
+
+    campaign = Campaign.objects.filter(id=campaign_id).first()
+    if campaign is None or kind not in discord_posts.BUILDERS:
+        return 0
+    return discord_posts.refresh_board(campaign, kind)
+
+
+@app.task(expires=15 * 60)
+def refresh_campaign_boards() -> int:
+    """Keep every campaign board current as timers and fleets pass."""
+    # pylint: disable-next=import-outside-toplevel
+    from campaigns.services import discord_posts
+
+    changed = 0
+    for campaign in Campaign.objects.filter(
+        status__in=discord_posts.POSTING_STATUSES
+    ):
+        for kind in discord_posts.BUILDERS:
+            if discord_posts.has_board(campaign, kind):
+                changed += discord_posts.refresh_board(campaign, kind)
+    return changed

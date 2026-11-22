@@ -259,6 +259,7 @@ class Command(BaseCommand):
                 status=status,
                 timer=timer_row,
                 created_by=operator,
+                announce=False,
             )
             written += 1
 
@@ -287,6 +288,7 @@ class Command(BaseCommand):
                 status=row["status"],
                 timer=timer_row,
                 created_by=operator,
+                announce=False,
             )
             written += 1
 
