@@ -13,6 +13,7 @@ Other entry points: the [root README](../README.md) (local setup, quickstart), [
 | [developer_discord_setup.md](developer_discord_setup.md) | current | Discord application and test server for local development |
 | [developer_data_seeding.md](developer_data_seeding.md) | current | Seeding a dev database: users, roles, pilot features, reference data |
 | [runtime-profiles.md](runtime-profiles.md) | current | How the app runs locally vs in production |
+| [agent-ci-hooks.md](agent-ci-hooks.md) | current | `scripts/ci_local.py` (the CI checks a diff needs, run locally) and the Claude/Cursor hooks that run it before a push or pull request |
 
 ## Architecture and conventions
 

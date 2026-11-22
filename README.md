@@ -62,7 +62,7 @@ Further setup: [Discord](docs/developer_discord_setup.md), [data seeding](docs/d
 | Mobile (Expo proof of concept) | `mobile/` | [mobile/README.md](mobile/README.md) |
 | MCP servers for agents (Discord, Reddit, ...) | `mcps/` | [mcps/README.md](mcps/README.md) |
 
-Agent rules and skills live in `.claude/`; `.cursor/` is generated from it (`python3 scripts/sync_agent_config.py`).
+Agent rules, skills and hooks live in `.claude/`; `.cursor/` is generated from it (`python3 scripts/sync_agent_config.py`). Run the CI checks your changes need with `python3 scripts/ci_local.py` ([docs/agent-ci-hooks.md](docs/agent-ci-hooks.md)); the agent hooks run it before every push and pull request.
 
 # Prerequisites
 

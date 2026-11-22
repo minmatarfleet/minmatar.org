@@ -13,6 +13,11 @@
   the rule's first heading for a new one.
 - `.claude/skills/**` -> `.cursor/skills/**`, byte for byte. Paths inside the
   skills point at `.claude/skills/...`, which exists in every checkout.
+- `.claude/settings.json` hooks -> `.cursor/hooks.json`. Each Claude hook maps
+  to a Cursor event (`HOOK_EVENTS`); its command's `claude` client argument
+  becomes `cursor` and its script path is made relative to the project root,
+  where Cursor runs project hooks. A Claude hook with no mapping is an error,
+  so the two never drift apart silently.
 
 Edit `.claude/`, never `.cursor/rules` or `.cursor/skills`, then run:
 
@@ -24,6 +29,8 @@ Edit `.claude/`, never `.cursor/rules` or `.cursor/skills`, then run:
 
 from __future__ import annotations
 
+import json
+import re
 import sys
 from pathlib import Path
 
@@ -32,6 +39,13 @@ CLAUDE_RULES = Path(".claude/rules")
 CLAUDE_SKILLS = Path(".claude/skills")
 CURSOR_RULES = Path(".cursor/rules")
 CURSOR_SKILLS = Path(".cursor/skills")
+CLAUDE_SETTINGS = Path(".claude/settings.json")
+CURSOR_HOOKS = Path(".cursor/hooks.json")
+# (Claude event, Claude matcher) -> (Cursor event, Cursor matcher or None).
+HOOK_EVENTS = {
+    ("PreToolUse", "Bash"): ("beforeShellExecution", None),
+    ("PostToolUse", "Edit|MultiEdit|Write"): ("postToolUse", "Write"),
+}
 
 
 def _read(path: Path) -> str:
@@ -95,6 +109,33 @@ def render_rule(claude_text: str, existing_mdc: str | None) -> str:
     return "---\n" + "\n".join(lines) + "\n---\n\n" + body.lstrip("\n")
 
 
+def render_hooks(settings_text: str) -> str:
+    """Return .cursor/hooks.json for the hooks in .claude/settings.json."""
+    cursor: dict[str, list] = {}
+    for event, groups in json.loads(settings_text).get("hooks", {}).items():
+        for group in groups:
+            key = (event, group.get("matcher", ""))
+            if key not in HOOK_EVENTS:
+                raise ValueError(
+                    f"no Cursor event for Claude hook {key}: add it to "
+                    "HOOK_EVENTS in scripts/sync_agent_config.py"
+                )
+            cursor_event, matcher = HOOK_EVENTS[key]
+            for hook in group["hooks"]:
+                # Cursor runs project hooks from the project root, in any
+                # shell (PowerShell on Windows), so the path is relative.
+                command = re.sub(
+                    r'"\$CLAUDE_PROJECT_DIR/([^"]+)"', r"\1", hook["command"]
+                )
+                entry = {"command": command.replace(" claude ", " cursor ")}
+                if matcher:
+                    entry["matcher"] = matcher
+                if "timeout" in hook:
+                    entry["timeout"] = hook["timeout"]
+                cursor.setdefault(cursor_event, []).append(entry)
+    return json.dumps({"version": 1, "hooks": cursor}, indent=2) + "\n"
+
+
 def expected_files(root: Path = ROOT) -> dict[Path, bytes]:
     """Map each generated .cursor path (relative to root) to its content."""
     expected: dict[Path, bytes] = {}
@@ -108,11 +149,16 @@ def expected_files(root: Path = ROOT) -> dict[Path, bytes]:
         if source.is_file() and "__pycache__" not in source.parts:
             rel = source.relative_to(skills)
             expected[CURSOR_SKILLS / rel] = source.read_bytes()
+    settings = root / CLAUDE_SETTINGS
+    if settings.exists():
+        expected[CURSOR_HOOKS] = render_hooks(_read(settings)).encode()
     return expected
 
 
 def _generated_now(root: Path) -> set[Path]:
     found = {p.relative_to(root) for p in (root / CURSOR_RULES).glob("*.mdc")}
+    if (root / CURSOR_HOOKS).exists():
+        found.add(CURSOR_HOOKS)
     skills = root / CURSOR_SKILLS
     if skills.exists():
         found |= {

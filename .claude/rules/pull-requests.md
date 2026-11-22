@@ -17,6 +17,11 @@ Every pull request description follows `.github/pull_request_template.md`, inclu
   update that doc in the same pull request. The check lists docs that name the files you changed.
 - Re-run the reviews after the last change, not before it: the results describe the final diff.
 
+A hook (`scripts/agent_hooks.py`, see `docs/agent-ci-hooks.md`) runs `scripts/ci_local.py` before `git push`, `gh pr create`
+and `gh pr ready`, and checks the description on `gh pr create`, `gh pr ready` and `gh pr edit --body`. When it
+blocks a command, fix what it reports; never bypass it with `CI_LOCAL_SKIP=1` unless the person asks. Pass the
+description with `--body-file` so the hook can read it.
+
 Check the description locally before opening the pull request:
 
 ```bash
