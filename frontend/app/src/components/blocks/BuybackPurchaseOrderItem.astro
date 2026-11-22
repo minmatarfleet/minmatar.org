@@ -63,6 +63,7 @@ const show_actions = order.status === 'pending'
 const copy_label = t('buyback.purchase.orders.copy_isk').replace(/'/g, "\\'")
 const copied_label = t('copied').replace(/'/g, "\\'")
 const janice_label = t('buyback.purchase.copy_janice').replace(/'/g, "\\'")
+import Textarea from '@components/blocks/Textarea.astro'
 ---
 
 <div
@@ -190,18 +191,18 @@ const janice_label = t('buyback.purchase.copy_janice').replace(/'/g, "\\'")
                     </form>
                 }
             </ActionMenu>
-            <textarea
+            <Textarea
                 class="[ hidden ]"
                 id={`buyback-order-isk-${order.id}`}
                 readonly
-            >{String(order.contract_total)}</textarea>
+            >{String(order.contract_total)}</Textarea>
         }
         {show_actions && order.janice_tsv &&
-            <textarea
+            <Textarea
                 class="[ hidden ]"
                 id={`buyback-order-janice-${order.id}`}
                 readonly
-            >{order.janice_tsv}</textarea>
+            >{order.janice_tsv}</Textarea>
         }
     </div>
 </div>

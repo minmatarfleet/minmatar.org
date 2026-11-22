@@ -56,6 +56,7 @@ import Button from '@components/blocks/Button.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ManageField from '@components/blocks/manage/ManageField.astro'
+import Textarea from '@components/blocks/Textarea.astro'
 ---
 
 <section id="reddit-review-queue" class="[ reddit-review ]" aria-live="polite">
@@ -157,7 +158,7 @@ import ManageField from '@components/blocks/manage/ManageField.astro'
                         <input type="hidden" name="id" value={item.change_id} />
                         <input type="hidden" name="index" value={index} />
                         <ManageField label={t('reddit_review.queue.reason')} for={`reddit-reason-${item.change_id}`} hint={t('admin_content.reddit.reason_hint')}>
-                            <textarea
+                            <Textarea
                                 id={`reddit-reason-${item.change_id}`}
                                 name="note"
                                 rows="3"
@@ -165,7 +166,7 @@ import ManageField from '@components/blocks/manage/ManageField.astro'
                                 required
                                 x-ref="reason"
                                 class="[ reddit-review__reason ]"
-                            ></textarea>
+                            ></Textarea>
                         </ManageField>
                         <div class="[ manage-actions ]">
                             <Button type="submit" size="sm">{t('admin_content.reddit.send_rejection')}</Button>

@@ -137,6 +137,7 @@ const cpu_pg_label = (
         .replace('{pg}', fmt_fit(pg))
 }
 import StylessButton from '@components/blocks/StylessButton.astro'
+import Textarea from '@components/blocks/Textarea.astro'
 ---
 
 <ComponentBlock class="[ fitting-buy-section fitting-buy-shopping w-full ]" heavier={true}>
@@ -203,7 +204,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                             x-on:submit={`copyFitToClipboard('${multibuy_id}')`}
                         >
                             <input type="hidden" name="action" value="mark_pending_fitting" />
-                            <textarea class="[ hidden ]" id={multibuy_id} readonly>{order.multibuy}</textarea>
+                            <Textarea class="[ hidden ]" id={multibuy_id} readonly>{order.multibuy}</Textarea>
                             <Button
                                 type="submit"
                                 size="sm"

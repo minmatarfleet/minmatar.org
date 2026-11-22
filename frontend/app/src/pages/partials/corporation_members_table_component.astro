@@ -233,6 +233,7 @@ const can_next = pagination.page < pagination.total_pages
 const range_start = pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.page_size + 1
 const range_end = Math.min(pagination.total, pagination.page * pagination.page_size)
 const selected_template = t('corporations.members.selected')
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <div class="cm">
@@ -349,7 +350,7 @@ const selected_template = t('corporations.members.selected')
                             </th>
                             {sort_headers.map((header) => (
                                 <th scope="col" class={header.css} aria-sort={aria_sort(header.key)}>
-                                    <button
+                                    <StylessButton
                                         type="button"
                                         class="cm-sort"
                                         hx-get={partial_url()}
@@ -361,7 +362,7 @@ const selected_template = t('corporations.members.selected')
                                             ? <><span class="cm-label-full">{header.label}</span><span class="cm-label-short">{header.short_label}</span></>
                                             : header.label}
                                         {params.sort === header.key && <span aria-hidden="true">{params.direction === 'asc' ? '▴' : '▾'}</span>}
-                                    </button>
+                                    </StylessButton>
                                 </th>
                             ))}
                             <th scope="col" class="col-chevron"></th>
@@ -418,7 +419,7 @@ const selected_template = t('corporations.members.selected')
                                         />
                                     </td>
                                     <td class="col-pilot">
-                                        <button type="button" class="cm-pilot" x-on:click="open = !open" x-bind:aria-expanded="open" aria-label={details_label}>
+                                        <StylessButton type="button" class="cm-pilot" x-on:click="open = !open" x-bind:aria-expanded="open" aria-label={details_label}>
                                             <img class="cm-portrait" src={get_player_icon(primary.character_id, 64)} alt="" width="36" height="36" loading="lazy" />
                                             <span class="cm-pilot__text">
                                                 <span class="cm-pilot__name">{primary.character_name}</span>
@@ -432,7 +433,7 @@ const selected_template = t('corporations.members.selected')
                                                     }
                                                 </span>
                                             </span>
-                                        </button>
+                                        </StylessButton>
                                     </td>
                                     <td class="col-status">
                                         <span class="cm-status" data-status={member.community_status ?? 'none'}>{status_label(member.community_status)}</span>
@@ -461,9 +462,9 @@ const selected_template = t('corporations.members.selected')
                                         }
                                     </td>
                                     <td class="col-chevron">
-                                        <button type="button" class="cm-chevron" x-on:click="open = !open" x-bind:aria-expanded="open" aria-label={details_label}>
+                                        <StylessButton type="button" class="cm-chevron" x-on:click="open = !open" x-bind:aria-expanded="open" aria-label={details_label}>
                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
-                                        </button>
+                                        </StylessButton>
                                     </td>
                                 </tr>
                                 <tr class="cm-detail" x-show="open" x-cloak>

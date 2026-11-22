@@ -37,6 +37,7 @@ const ready = cell ? cell.seats.filter(seat => seat.ready).length : 0
 import Button from '@components/blocks/Button.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {fetch_error ?
@@ -82,7 +83,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                             <span class="[ training-doctrine__closest ]">
                                 <strong>{time_label(t, seat.days)}</strong>
                                 {seat.fitting_id !== null &&
-                                    <button
+                                    <StylessButton
                                         type="button"
                                         class="[ training-doctrine__train ]"
                                         modal-action="accept"
@@ -91,7 +92,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                                         hx-swap="outerHTML"
                                     >
                                         {t('training.train')}
-                                    </button>
+                                    </StylessButton>
                                 }
                             </span>
                         }
