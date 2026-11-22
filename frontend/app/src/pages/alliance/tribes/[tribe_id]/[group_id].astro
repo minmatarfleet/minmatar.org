@@ -292,7 +292,7 @@ import Wrapper from '@components/compositions/Wrapper.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import CharacterPicture from '@components/blocks/CharacterPicture.astro'
 import TribalGroupRequirements from '@components/blocks/TribalGroupRequirements.astro'
-import RequirementSwiper from '@components/blocks/RequirementSwiper.astro'
+import Carousel from '@components/blocks/Carousel.astro'
 import NotificationBadge from '@components/blocks/NotificationBadge.astro'
 import TribeGroupActivity from '@components/blocks/TribeGroupActivity.astro'
 import TribeGroupAbout from '@components/blocks/tribe_about/TribeGroupAbout.astro'
@@ -469,11 +469,13 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
                                             max_width="100%"
                                         >
                                             <div id="tribe-group-requirements-reel" class="[ swiper ][ w-full ]">
-                                                <RequirementSwiper
-                                                    swiper_selector="#tribe-group-requirements-reel"
-                                                    pagination={false}
-                                                    gap={60}
-                                                    slides_per_view={1}
+                                                <Carousel
+                                                    selector="#tribe-group-requirements-reel"
+                                                    space_between={60}
+                                                    rewind={true}
+                                                    navigation={false}
+                                                    prev_el="#tribe-group-requirements-reel-button-prev"
+                                                    next_el="#tribe-group-requirements-reel-button-next"
                                                 >
                                                     {tribe_group.requirements.map((req, index) =>
                                                         <div class="[ swiper-slide ]">
@@ -490,7 +492,7 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
                                                             />
                                                         </div>
                                                     )}
-                                                </RequirementSwiper>
+                                                </Carousel>
                                             </div>
                                             {tribe_group.requirements.length > 1 &&
                                                 <>

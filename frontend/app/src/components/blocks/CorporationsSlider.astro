@@ -64,7 +64,7 @@ import { slugify } from '@helpers/string'
 
 import Wrapper from '@components/compositions/Wrapper.astro';
 
-import CorporationsSwiper from '@components/blocks/CorporationsSwiper.astro';
+import Carousel from '@components/blocks/Carousel.astro';
 import RattiniSlide from '@components/blocks/RattiniSlide.astro';
 import L34RnSlide from '@components/blocks/L34rnSlide.astro';
 import SoltechArmadaSlide from '@components/blocks/SoltechArmadaSlide.astro';
@@ -86,7 +86,15 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
     id="corporations-list"
 >
     {corporations_sorted.length > 0 &&
-        <CorporationsSwiper>
+        <Carousel
+            selector='#corporations-list'
+            effect='fade'
+            hash_navigation={true}
+            align='center'
+            navigation={false}
+            prev_el='#corporations-list-swiper-button-prev'
+            next_el='#corporations-list-swiper-button-next'
+        >
             {corporations_sorted.map((corporation, index) =>
                 <div class="swiper-slide" data-hash={slugify(corporation.corporation_name)}>
                     {corporation.corporation_name == 'Rattini Tribe' &&
@@ -173,7 +181,7 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
                     picture_placement={(corporations.length + (corporations_with_no_slide.length > 0 ? 1 : 0))%2 == 0 ? 'right' : 'left'}
                 />
             </div>
-        </CorporationsSwiper>
+        </Carousel>
     }
     {corporations.length == 0 &&
         <Wrapper padding_inline='0'>
@@ -190,6 +198,10 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
 <style lang="scss">
     .swiper {
         overflow: visible !important;
+    }
+
+    :global(.swiper-slide .tag) {
+        pointer-events: none;
     }
 
     :global(#corporations-list .swiper-slide) {

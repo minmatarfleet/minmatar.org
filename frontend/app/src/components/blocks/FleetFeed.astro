@@ -32,7 +32,7 @@ if (can_view_fleets) {
 
 import FlexInline from '@components/compositions/FlexInline.astro'
 
-import FeedSwiper from '@components/blocks/FeedSwiper.astro';
+import Carousel from '@components/blocks/Carousel.astro';
 import Button from '@components/blocks/Button.astro';
 import FleetFeedItem from '@components/blocks/FleetFeedItem.astro';
 ---
@@ -40,13 +40,24 @@ import FleetFeedItem from '@components/blocks/FleetFeedItem.astro';
 {can_view_fleets &&
     <>
         <div class="[ fleet-feed swiper ]">
-            <FeedSwiper autoplay={active_fleet_index === -1} initial_slide={active_fleet_index >= 0 ? active_fleet_index : 0}>
+            <Carousel
+                selector='.fleet-feed'
+                class='[ w-full ]'
+                direction='vertical'
+                space_between={4}
+                mousewheel={{ forceToAxis: true }}
+                pagination={true}
+                pagination_class='feed-swiper-pagination'
+                navigation={false}
+                autoplay_ms={active_fleet_index === -1 ? 5000 : 0}
+                initial_slide={active_fleet_index >= 0 ? active_fleet_index : 0}
+            >
                 {fleets.map( (fleet) =>
                     <div class="swiper-slide">
                         <FleetFeedItem fleet={fleet} />
                     </div>
                 )}
-            </FeedSwiper>
+            </Carousel>
         </div>
 
         {fleets.length > 0 &&
@@ -66,6 +77,11 @@ import FleetFeedItem from '@components/blocks/FleetFeedItem.astro';
 <style lang="scss">
     .fleet-feed {
         max-height: calc(2 * 64px);
+    }
+
+    :global(.fleet-feed .swiper-wrapper),
+    :global(.fleet-feed .feed-swiper-pagination) {
+        max-height: 64px;
     }
 
     .swiper-slider {
