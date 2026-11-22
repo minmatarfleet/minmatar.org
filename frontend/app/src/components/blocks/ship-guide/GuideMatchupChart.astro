@@ -1,5 +1,6 @@
 ---
 import type { MatchupChart, MatchupRating } from '@/data/ship-guide/types'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 
 interface Props {
     chart: MatchupChart
@@ -46,7 +47,7 @@ function ratingClassName(rating: MatchupRating): string {
         <span>{chart.columnLabel}</span>
     </p>
 
-    <div class="guide-chart__scroll" tabindex="0" role="region" aria-label={`${chart.title} interactive table`}>
+    <XFadeScroll class="guide-chart__scroll" tabindex="0" role="region" aria-label={`${chart.title} interactive table`}>
         <table class="guide-chart__table">
             <thead>
                 <tr>
@@ -85,7 +86,7 @@ function ratingClassName(rating: MatchupRating): string {
                 }
             </tbody>
         </table>
-    </div>
+    </XFadeScroll>
 </div>
 
 <style lang="scss">
@@ -134,10 +135,6 @@ function ratingClassName(rating: MatchupRating): string {
     }
 
     @media (max-width: 40rem) {
-        .guide-chart__scroll {
-            overflow-x: auto;
-        }
-
         .guide-chart__table {
             min-width: 28rem;
             table-layout: auto;

@@ -19,6 +19,7 @@ import AmamakeMarketVolumeSkeleton from '@components/blocks/amamake-market/Amama
 import ButtonAuth from '@components/blocks/ButtonAuth.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Input from '@components/blocks/Input.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 import XFadeScroll from '@components/compositions/XFadeScroll.astro'
@@ -185,11 +186,7 @@ const hx_body = {
                 )}
 
                 {show_table && rows.length === 0 && (
-                    <p class="[ mk-volume__empty ]">
-                        {q
-                            ? `No types match “${q}”.`
-                            : 'No types in this filter.'}
-                    </p>
+                    <EmptyState title={q ? `No types match “${q}”.` : 'No types in this filter.'} />
                 )}
 
                 {show_table && rows.length > 0 && (
@@ -372,11 +369,7 @@ const hx_body = {
                         )}
 
                         {show_table && rows.length === 0 && (
-                            <p class="[ mk-volume__empty ]">
-                                {q
-                                    ? `No types match “${q}”.`
-                                    : 'No types in this filter.'}
-                            </p>
+                            <EmptyState title={q ? `No types match “${q}”.` : 'No types in this filter.'} />
                         )}
 
                         {show_table && rows.length > 0 && (
@@ -486,8 +479,7 @@ const hx_body = {
 
     .mk-volume__error,
     .mk-volume__gate p,
-    .mk-volume__meta,
-    .mk-volume__empty {
+    .mk-volume__meta {
         margin: 0;
         color: var(--faded);
         font-size: var(--step--1);

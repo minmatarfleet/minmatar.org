@@ -7,6 +7,7 @@ import { format_number, number_thousand_separator } from '@helpers/numbers'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Button from '@components/blocks/Button.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
@@ -266,7 +267,7 @@ const cpu_pg_label = (
         ) : order.items.length === 0 ? (
             <p class="[ text-[var(--highlight)] ]">{t('fitting_buy.no_items')}</p>
         ) : (
-            <div class="[ fitting-buy-table-wrap ]">
+            <XFadeScroll class="[ fitting-buy-table-wrap ]">
                 <table class="[ fitting-buy-table ]">
                     <thead>
                         <tr>
@@ -376,7 +377,7 @@ const cpu_pg_label = (
                                                                     hx-post={partial_base}
                                                                     hx-target="#fitting-buy-order"
                                                                     hx-swap="outerHTML"
-                                                                    x-on:htmx:after-request="if ($event.detail.successful) close_dialog()"
+                                                                    {...{ 'x-on:htmx:after-request': 'if ($event.detail.successful) close_dialog()' }}
                                                                     novalidate
                                                                     class="[ fitting-buy-alloc-form ]"
                                                                 >
@@ -550,7 +551,7 @@ const cpu_pg_label = (
                         })}
                     </tbody>
                 </table>
-            </div>
+            </XFadeScroll>
         )}
         </div>
     </Flexblock>
@@ -621,7 +622,6 @@ const cpu_pg_label = (
     }
 
     .fitting-buy-table-wrap {
-        overflow-x: auto;
         width: 100%;
         max-width: 100%;
         -webkit-overflow-scrolling: touch;
