@@ -1,0 +1,187 @@
+---
+/**
+ * A Swiper carousel: the reel markup the site's Swiper blocks repeat. A
+ * relatively positioned wrapper holds the `.swiper` with its `.swiper-wrapper`
+ * track (the default slot: callers wrap each slide in `<div class="swiper-slide">`),
+ * optional pagination bullets, and the prev/next arrows as siblings of the
+ * `.swiper`, so the arrows appear once Swiper has initialised and hide when
+ * there is nothing further to scroll to.
+ *
+ * Uses the global `Swiper` from HeadScripts, started after the 100 ms the
+ * reels have always waited for hidden or swapped-in markup, and destroyed when
+ * the carousel is removed. `nav_tone` picks the arrow colour: `highlight`
+ * (white) or `fleet-yellow`. Arrows are labelled `Previous slide` and
+ * `Next slide`, and reachable by keyboard.
+ */
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+interface Breakpoint {
+    slides_per_view:    number | 'auto';
+    space_between?:     number;
+}
+
+interface Props {
+    slides_per_view?:   number | 'auto';
+    /** Min viewport widths in px, each with the slide count from there up. */
+    breakpoints?:       Record<number, Breakpoint>;
+    space_between?:     number;
+    loop?:              boolean;
+    /** Advance on its own every this many ms; 0 is off. */
+    autoplay_ms?:       number;
+    navigation?:        boolean;
+    pagination?:        boolean;
+    /** Arrow colour: today's reels split between the two. */
+    nav_tone?:          'highlight' | 'fleet-yellow';
+    /** Distance of the arrows from the edge, a CSS length (negative sits outside the reel). */
+    nav_offset?:        string;
+    /** Hide the arrows below the `lg` breakpoint, as touch has swipe. */
+    hide_nav_on_mobile?: boolean;
+    /** Vertical alignment of slides in the track. */
+    align?:             'start' | 'center' | 'end' | 'stretch';
+    initial_slide?:     number;
+    [propName: string]: any;
+}
+
+const {
+    slides_per_view = 1,
+    breakpoints,
+    space_between = 0,
+    loop = false,
+    autoplay_ms = 0,
+    navigation = true,
+    pagination = false,
+    nav_tone = 'highlight',
+    nav_offset = '-46px',
+    hide_nav_on_mobile = true,
+    align = 'start',
+    initial_slide = 0,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const swiper_breakpoints = breakpoints
+    ? Object.fromEntries(Object.entries(breakpoints).map(([width, point]) => [width, {
+        slidesPerView: point.slides_per_view,
+        ...(point.space_between !== undefined && { spaceBetween: point.space_between }),
+    }]))
+    : undefined
+
+const swiper_options = {
+    initialSlide: initial_slide,
+    slidesPerView: slides_per_view,
+    spaceBetween: space_between,
+    loop,
+    ...(swiper_breakpoints && { breakpoints: swiper_breakpoints }),
+    ...(autoplay_ms > 0 && { autoplay: { delay: autoplay_ms } }),
+    pagination: pagination ? { clickable: true, dynamicBullets: true } : false,
+    a11y: { prevSlideMessage: t('carousel.previous'), nextSlideMessage: t('carousel.next') },
+}
+
+import Wrapper from '@components/compositions/Wrapper.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+---
+
+<Wrapper
+    class:list={['[ carousel ]', `carousel--${nav_tone}`, Astro.props.class]}
+    padding_block='0'
+    padding_inline='0'
+    max_width='100%'
+    style={`--carousel-nav-offset: ${nav_offset}`}
+    {...attributes}
+>
+    <div
+        class="[ swiper ][ w-full ]"
+        x-ref="swiper"
+        x-data={`{
+            swiper: null,
+            init() {
+                const INIT_WORKAROUND_TIMER_MS = 100
+                setTimeout(() => {
+                    if (!window.Swiper || !this.$el.isConnected) return
+                    this.swiper = new Swiper(this.$el, {
+                        ...${JSON.stringify(swiper_options)},
+                        ${pagination ? 'pagination: { clickable: true, dynamicBullets: true, el: this.$refs.pagination },' : ''}
+                        ${navigation ? "navigation: { nextEl: this.$el.parentElement.querySelector('.swiper-button-next'), prevEl: this.$el.parentElement.querySelector('.swiper-button-prev') }," : ''}
+                    })
+                }, INIT_WORKAROUND_TIMER_MS)
+            },
+            destroy() {
+                if (this.swiper) this.swiper.destroy(true, true)
+                this.swiper = null
+            },
+        }`}
+    >
+        <FlexInline class:list={['swiper-wrapper select-none', `!items-${align}`]} gap='0'>
+            <slot />
+        </FlexInline>
+        {pagination && <div class="swiper-pagination" x-ref="pagination"></div>}
+    </div>
+
+    {navigation && <>
+        <div
+            class:list={['swiper-button-prev', { 'hidden! lg:block!': hide_nav_on_mobile }]}
+            role="button"
+            tabindex="0"
+            aria-label={t('carousel.previous')}
+        ></div>
+        <div
+            class:list={['swiper-button-next', { 'hidden! lg:block!': hide_nav_on_mobile }]}
+            role="button"
+            tabindex="0"
+            aria-label={t('carousel.next')}
+        ></div>
+    </>}
+</Wrapper>
+
+<style lang="scss">
+    .carousel {
+        position: relative;
+    }
+
+    .swiper-button-prev,
+    .swiper-button-next {
+        --swiper-navigation-color: var(--highlight);
+        --swiper-navigation-sides-offset: var(--carousel-nav-offset);
+
+        opacity: 0;
+        transform: translateY(-1.25rem);
+    }
+
+    .carousel--fleet-yellow .swiper-button-prev,
+    .carousel--fleet-yellow .swiper-button-next {
+        --swiper-navigation-color: var(--fleet-yellow);
+    }
+
+    .swiper-initialized ~ .swiper-button-prev,
+    .swiper-initialized ~ .swiper-button-next {
+        opacity: 1;
+    }
+
+    .swiper-initialized ~ .swiper-button-next.swiper-button-disabled,
+    .swiper-initialized ~ .swiper-button-prev.swiper-button-disabled {
+        opacity: 0;
+    }
+
+    .swiper-button-next.swiper-button-disabled,
+    .swiper-button-prev.swiper-button-disabled {
+        --swiper-navigation-color: var(--fleet-yellow);
+        opacity: 1;
+    }
+
+    .swiper-wrapper {
+        flex-wrap: nowrap;
+        align-items: flex-start;
+    }
+
+    :global(.swiper-pagination-bullet) {
+        --swiper-pagination-bullet-border-radius: 0;
+    }
+
+    .swiper-pagination {
+        --swiper-pagination-color: var(--fleet-yellow);
+        --swiper-pagination-bullet-inactive-color: var(--highlight);
+        --swiper-pagination-bullet-inactive-opacity: 1;
+    }
+</style>
