@@ -47,5 +47,12 @@
     "path": "variant",
     "pattern": "guide-panel",
     "note": "Was .fwc-panel (flat bordered translucent panel); now ComponentBlock variant=\"guide\" inside the <section>. The h3 summary-card titles keep their own styling through a doubled selector."
+  },
+  {
+    "file": "src/components/blocks/LoyaltyQuote.astro",
+    "selector": ".loyalty-quote",
+    "path": "converge",
+    "pattern": "component-block",
+    "note": "Flat component-background panel became the glass ComponentBlock (padding kept at --space-m via props). ComponentBlock's .component class sets p/li to --step--1, so .loyalty-quote__paused is now --step--1."
   }
 ]
