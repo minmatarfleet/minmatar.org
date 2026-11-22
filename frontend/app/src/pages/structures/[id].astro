@@ -66,6 +66,7 @@ import StructureFlags from '@components/blocks/structures/StructureFlags.astro'
 import StructureRigChip from '@components/blocks/structures/StructureRigChip.astro'
 import LazyPartial from '@components/blocks/LazyPartial.astro'
 import StructureSettingsForm from '@components/blocks/structures/StructureSettingsForm.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <Viewport title={page_title} meta_description={t('structures.description')}>
@@ -86,7 +87,7 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
                     <span>{detail.solar_system_name}</span>
                     <span class="[ structure-hero__type ]">{detail.type_name}</span>
                 </p>
-                <button type="button" class="[ structure-copyname ]"
+                <StylessButton type="button" class="[ structure-copyname ]"
                     data-name={detail.name}
                     x-data="{ copied: false }"
                     x-on:click="navigator.clipboard.writeText($el.dataset.name).then(() => { copied = true; setTimeout(() => copied = false, 1500) })"
@@ -96,7 +97,7 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
                         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" /><path d="M5 15V3h12" /></svg>
                         <span x-text={`copied ? '${t('structures.card.copied')}' : '${t('structures.card.copy_button')}'`}>{t('structures.card.copy_button')}</span>
                     </kbd>
-                </button>
+                </StylessButton>
             </div>
             {detail.rigs.length > 0 &&
                 <ul class="[ structure-hero__rigs ]" aria-label={t('structures.card.rigs')}>

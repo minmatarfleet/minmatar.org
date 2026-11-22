@@ -42,6 +42,7 @@ const add_url = (fitting_id:number) =>
 
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {fetch_error ?
@@ -74,7 +75,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                         {ship.added ?
                             <span class="[ training-muted training-ships__action ]">{t('training.added')}</span>
                             :
-                            <button
+                            <StylessButton
                                 type="button"
                                 class="[ training-ships__action ]"
                                 modal-action="accept"
@@ -83,16 +84,16 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                                 hx-swap="outerHTML"
                             >
                                 {t('training.add')}
-                            </button>
+                            </StylessButton>
                         }
                     </li>
                 )}
             </ul>
         }
         {ships.length > SHOWN &&
-            <button type="button" class="[ training-ships__more ]" x-show="!all" x-on:click="all = true">
+            <StylessButton type="button" class="[ training-ships__more ]" x-show="!all" x-on:click="all = true">
                 {t('training.show_more').replace('{count}', (ships.length - SHOWN).toString())}
-            </button>
+            </StylessButton>
         }
     </div>
 }

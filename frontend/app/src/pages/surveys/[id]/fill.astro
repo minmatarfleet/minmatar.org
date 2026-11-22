@@ -161,6 +161,7 @@ const OPEN_NUDGE = {
 }
 const STEP_OF = t('surveys.fill.step_of')
 const MINUTES_LEFT = t('surveys.fill.minutes_left')
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <Viewport title={page_title} components={{ alert_dialog: true }}>
@@ -329,7 +330,7 @@ const MINUTES_LEFT = t('surveys.fill.minutes_left')
                                 </Flexblock>
                             </ComponentBlock>
                             <FlexInline justification="flex-end">
-                                <button type="button" class="[ wizard-btn wizard-btn--submit ]" x-bind:disabled="!step_valid" x-on:click="next()">{t('surveys.fill.get_started')}</button>
+                                <StylessButton type="button" class="[ wizard-btn wizard-btn--submit ]" x-bind:disabled="!step_valid" x-on:click="next()">{t('surveys.fill.get_started')}</StylessButton>
                             </FlexInline>
                         </Flexblock>
                     </div>
@@ -397,11 +398,11 @@ const MINUTES_LEFT = t('surveys.fill.minutes_left')
                                 </ComponentBlock>
 
                                 <FlexInline justification="space-between">
-                                    <button type="button" class="[ wizard-btn wizard-btn--ghost ]" x-on:click="back()">{t('surveys.fill.back')}</button>
+                                    <StylessButton type="button" class="[ wizard-btn wizard-btn--ghost ]" x-on:click="back()">{t('surveys.fill.back')}</StylessButton>
                                     {bi + 1 < total_steps - 1 ? (
-                                        <button type="button" class="[ wizard-btn ]" x-bind:disabled="!step_valid" x-on:click="next()">{t('surveys.fill.next')}</button>
+                                        <StylessButton type="button" class="[ wizard-btn ]" x-bind:disabled="!step_valid" x-on:click="next()">{t('surveys.fill.next')}</StylessButton>
                                     ) : (
-                                        <button type="submit" class="[ wizard-btn wizard-btn--submit ]" x-bind:disabled="!step_valid">{t('surveys.fill.submit')}</button>
+                                        <StylessButton type="submit" class="[ wizard-btn wizard-btn--submit ]" x-bind:disabled="!step_valid">{t('surveys.fill.submit')}</StylessButton>
                                     )}
                                 </FlexInline>
                             </Flexblock>
