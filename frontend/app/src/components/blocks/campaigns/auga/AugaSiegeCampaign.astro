@@ -53,7 +53,7 @@ import PilotsEvEIcon from '@components/icons/PilotsEvEIcon.astro'
 
 import { get_alliance_logo, get_corporation_logo } from '@helpers/eve_image'
 import { number_name } from '@helpers/numbers'
-import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import DataTable from '@components/blocks/DataTable.astro'
 
 const engagementRows: CampaignTableRow[] = ENGAGEMENT_MIX.map((row) => ({
     cells: [row.label, row.value.toLocaleString()],
@@ -304,15 +304,14 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
     <h2>Top Minmatar militia pilots</h2>
 
     <TextBox>
-        <XFadeScroll class="er-table-wrap" tabindex="0" role="region" aria-label="Top 5 militia pilots">
-            <table class="er-table auga-pilot-table">
-                <thead>
-                    <tr>
-                        <th scope="col">Pilot</th>
-                        <th scope="col" class="er-table__numeric">Killmails</th>
-                    </tr>
-                </thead>
-                <tbody>
+        <DataTable
+            columns={[
+                { key: '0', label: 'Pilot' },
+                { key: '1', label: 'Killmails', numeric: true },
+            ]}
+            caption="Top 5 militia pilots"
+            class="auga-pilot-table"
+        >
                     {
                         MILITIA_TOP_5.map((pilot) => (
                             <tr>
@@ -327,13 +326,11 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                                         <span>{pilot.name}</span>
                                     </FlexInline>
                                 </td>
-                                <td class="er-table__numeric">{pilot.killmails.toLocaleString()}</td>
+                                <td class="data-table__numeric">{pilot.killmails.toLocaleString()}</td>
                             </tr>
                         ))
                     }
-                </tbody>
-            </table>
-        </XFadeScroll>
+        </DataTable>
     </TextBox>
 
     {
@@ -374,18 +371,17 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
             ISK lost is when they were the victim.
         </small>
     </Flexblock>
-    <XFadeScroll class="er-table-wrap" tabindex="0" role="region" aria-label="Top alliances">
-        <table class="er-table auga-alliance-table">
-            <thead>
-                <tr>
-                    <th scope="col">Alliance</th>
-                    <th scope="col" class="er-table__numeric">Killmails</th>
-                    <th scope="col" class="er-table__numeric">Ships lost</th>
-                    <th scope="col" class="er-table__numeric">ISK destroyed</th>
-                    <th scope="col" class="er-table__numeric">ISK lost</th>
-                </tr>
-            </thead>
-            <tbody>
+    <DataTable
+        columns={[
+            { key: '0', label: 'Alliance' },
+            { key: '1', label: 'Killmails', numeric: true },
+            { key: '2', label: 'Ships lost', numeric: true },
+            { key: '3', label: 'ISK destroyed', numeric: true },
+            { key: '4', label: 'ISK lost', numeric: true },
+        ]}
+        caption="Top alliances"
+        class="auga-alliance-table"
+    >
                 {
                     TOP_ALLIANCES.map((alliance) => (
                         <tr>
@@ -401,16 +397,14 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                                     <span>{alliance.name}</span>
                                 </FlexInline>
                             </td>
-                            <td class="er-table__numeric">{alliance.killmails.toLocaleString()}</td>
-                            <td class="er-table__numeric">{alliance.shipsLost.toLocaleString()}</td>
-                            <td class="er-table__numeric">{formatIsk(alliance.iskDestroyed)}</td>
-                            <td class="er-table__numeric">{formatIsk(alliance.iskLost)}</td>
+                            <td class="data-table__numeric">{alliance.killmails.toLocaleString()}</td>
+                            <td class="data-table__numeric">{alliance.shipsLost.toLocaleString()}</td>
+                            <td class="data-table__numeric">{formatIsk(alliance.iskDestroyed)}</td>
+                            <td class="data-table__numeric">{formatIsk(alliance.iskLost)}</td>
                         </tr>
                     ))
                 }
-            </tbody>
-        </table>
-    </XFadeScroll>
+    </DataTable>
 </Flexblock>
 
 <Flexblock gap="var(--space-l)">
@@ -421,15 +415,13 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
     <div class="auga-ship-split">
         <Flexblock>
             <h4>Most destroyed hulls</h4>
-            <XFadeScroll class="er-table-wrap" tabindex="0" role="region">
-                <table class="er-table auga-ship-table">
-                    <thead>
-                        <tr>
-                            <th scope="col">Hull</th>
-                            <th scope="col" class="er-table__numeric">Destroyed</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <DataTable
+                columns={[
+                    { key: '0', label: 'Hull' },
+                    { key: '1', label: 'Destroyed', numeric: true },
+                ]}
+                class="auga-ship-table"
+            >
                         {
                             SHIPS_DESTROYED_HULLS.map((ship) => (
                                 <tr>
@@ -444,25 +436,21 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                                             <span>{ship.name}</span>
                                         </FlexInline>
                                     </td>
-                                    <td class="er-table__numeric">{ship.count.toLocaleString()}</td>
+                                    <td class="data-table__numeric">{ship.count.toLocaleString()}</td>
                                 </tr>
                             ))
                         }
-                    </tbody>
-                </table>
-            </XFadeScroll>
+            </DataTable>
         </Flexblock>
         <Flexblock>
             <h4>Most common militia hulls</h4>
-            <XFadeScroll class="er-table-wrap" tabindex="0" role="region">
-                <table class="er-table auga-ship-table">
-                    <thead>
-                        <tr>
-                            <th scope="col">Hull</th>
-                            <th scope="col" class="er-table__numeric">Appearances</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <DataTable
+                columns={[
+                    { key: '0', label: 'Hull' },
+                    { key: '1', label: 'Appearances', numeric: true },
+                ]}
+                class="auga-ship-table"
+            >
                         {
                             MILITIA_SHIPS_FLOWN_HULLS.map((ship) => (
                                 <tr>
@@ -477,13 +465,11 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                                             <span>{ship.name}</span>
                                         </FlexInline>
                                     </td>
-                                    <td class="er-table__numeric">{ship.count.toLocaleString()}</td>
+                                    <td class="data-table__numeric">{ship.count.toLocaleString()}</td>
                                 </tr>
                             ))
                         }
-                    </tbody>
-                </table>
-            </XFadeScroll>
+            </DataTable>
         </Flexblock>
     </div>
 </Flexblock>
@@ -493,30 +479,29 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
         <h2>Notable events</h2>
         <small>High ISK clusters and key campaign moments</small>
     </Flexblock>
-    <XFadeScroll class="er-table-wrap" tabindex="0" role="region" aria-label="Notable events">
-        <table class="er-table auga-event-table">
-            <thead>
-                <tr>
-                    <th scope="col">When</th>
-                    <th scope="col" class="er-table__numeric">Ships</th>
-                    <th scope="col" class="er-table__numeric">ISK</th>
-                    <th scope="col" class="er-table__numeric">Pilots</th>
-                    <th scope="col">What happened</th>
-                    <th scope="col">Report</th>
-                </tr>
-            </thead>
-            <tbody>
+    <DataTable
+        columns={[
+            { key: '0', label: 'When' },
+            { key: '1', label: 'Ships', numeric: true },
+            { key: '2', label: 'ISK', numeric: true },
+            { key: '3', label: 'Pilots', numeric: true },
+            { key: '4', label: 'What happened' },
+            { key: '5', label: 'Report' },
+        ]}
+        caption="Notable events"
+        class="auga-event-table"
+    >
                 {
                     NOTABLE_EVENTS.map((e) => (
                         <tr>
                             <td>{e.when}</td>
-                            <td class="er-table__numeric">
+                            <td class="data-table__numeric">
                                 {e.kills != null ? e.kills.toLocaleString() : '—'}
                             </td>
-                            <td class="er-table__numeric">
+                            <td class="data-table__numeric">
                                 {e.isk != null ? formatIsk(e.isk) : '—'}
                             </td>
-                            <td class="er-table__numeric">
+                            <td class="data-table__numeric">
                                 {e.pilots != null ? e.pilots.toLocaleString() : '—'}
                             </td>
                             <td>{e.note}</td>
@@ -533,9 +518,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                         </tr>
                     ))
                 }
-            </tbody>
-        </table>
-    </XFadeScroll>
+    </DataTable>
 </Flexblock>
 
 <Flexblock>
@@ -724,51 +707,6 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
 
     .auga-faction-stat__logo--amarr :global(svg path) {
         fill: var(--fleet-yellow);
-    }
-
-    .er-table-wrap {
-        min-width: 0;
-    }
-
-    .er-table {
-        width: 100%;
-        border-spacing: var(--space-3xs);
-        font-size: var(--step--1);
-
-        th,
-        td {
-            padding: var(--space-s);
-            border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
-            text-align: left;
-            vertical-align: middle;
-        }
-
-        th {
-            background: color-mix(in srgb, var(--component-background) var(--tint-dense), transparent);
-            font-weight: 600;
-            color: var(--highlight);
-            background-color: var(--light-transparency-background-mobile);
-        
-            @media screen and (min-width: 980px) {
-                background-color: var(--light-transparency-background);
-                backdrop-filter: blur(var(--transparency-backdrop-blur-heavier));
-            }
-        }
-
-        td {
-            color: var(--foreground);
-            background-color: var(--light-transparency-background-mobile);
-
-            @media screen and (min-width: 980px) {
-                background-color: var(--light-transparency-background);
-                backdrop-filter: blur(var(--transparency-backdrop-blur));
-            }
-        }
-    }
-
-    .er-table__numeric {
-        text-align: right;
-        font-variant-numeric: tabular-nums;
     }
 
     .auga-siege__footer {

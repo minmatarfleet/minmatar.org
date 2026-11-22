@@ -69,7 +69,7 @@ import ItemPicture from '@components/blocks/ItemPicture.astro';
 import Tag from '@components/blocks/Tag.astro';
 import BuybackRateBadge from '@components/blocks/BuybackRateBadge.astro';
 import { buyback_rate_badge } from '@helpers/buyback_rate'
-import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import DataTable from '@components/blocks/DataTable.astro'
 
 const location_short = settings.location.short_name
 const page_title = t('buyback.appraisal.page_title')
@@ -179,20 +179,19 @@ const format_isk = (value: number | null) => format_isk_full(value)
                 <Flexblock class="[ w-full ]" gap='var(--space-l)'>
                     <Flexblock class="[ w-full ]" gap='var(--space-2xs)'>
                         <h2>{t('buyback.appraisal.accepted')} ({accepted.length})</h2>
-                        <XFadeScroll class="[ buyback-appraisal-table-wrap ]">
-                            <table class="[ buyback-appraisal-table ]">
-                                <thead>
-                                    <tr>
-                                        <th>{t('buyback.appraisal.item')}</th>
-                                        <th class="[ buyback-appraisal-table__num ]">{t('buyback.appraisal.qty')}</th>
-                                        <th>{t('buyback.appraisal.category')}</th>
-                                        <th class="[ buyback-appraisal-table__num ]">{t('buyback.appraisal.jita_buy')}</th>
-                                        <th>{t('buyback.appraisal.rate')}</th>
-                                        <th class="[ buyback-appraisal-table__num ]">{t('buyback.appraisal.unit_price')}</th>
-                                        <th class="[ buyback-appraisal-table__num ]">{t('buyback.appraisal.line_total')}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                        <DataTable
+                            columns={[
+                                { key: '0', label: t('buyback.appraisal.item') },
+                                { key: '1', label: t('buyback.appraisal.qty'), numeric: true },
+                                { key: '2', label: t('buyback.appraisal.category') },
+                                { key: '3', label: t('buyback.appraisal.jita_buy'), numeric: true },
+                                { key: '4', label: t('buyback.appraisal.rate') },
+                                { key: '5', label: t('buyback.appraisal.unit_price'), numeric: true },
+                                { key: '6', label: t('buyback.appraisal.line_total'), numeric: true },
+                            ]}
+                            density="dense"
+                            class="[ buyback-appraisal-table ]"
+                        >
                                     {accepted.map((line) => {
                                         const badge = buyback_rate_badge(line.rate_reason)
                                         return (
@@ -239,25 +238,22 @@ const format_isk = (value: number | null) => format_isk_full(value)
                                             </tr>
                                         )
                                     })}
-                                </tbody>
-                            </table>
-                        </XFadeScroll>
+                        </DataTable>
                         <p class="[ buyback-appraisal-note ]">{t('buyback.appraisal.jita_note')}</p>
                     </Flexblock>
 
                     {rejected.length > 0 &&
                         <Flexblock class="[ w-full ]" gap='var(--space-2xs)'>
                             <h2>{t('buyback.appraisal.rejected')} ({rejected.length})</h2>
-                            <XFadeScroll class="[ buyback-appraisal-table-wrap ]">
-                                <table class="[ buyback-appraisal-table ]">
-                                    <thead>
-                                        <tr>
-                                            <th>{t('buyback.appraisal.item')}</th>
-                                            <th class="[ buyback-appraisal-table__num ]">{t('buyback.appraisal.qty')}</th>
-                                            <th>{t('buyback.appraisal.reason')}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
+                            <DataTable
+                                columns={[
+                                    { key: '0', label: t('buyback.appraisal.item') },
+                                    { key: '1', label: t('buyback.appraisal.qty'), numeric: true },
+                                    { key: '2', label: t('buyback.appraisal.reason') },
+                                ]}
+                                density="dense"
+                                class="[ buyback-appraisal-table ]"
+                            >
                                         {rejected.map((line) =>
                                             <tr class="[ buyback-appraisal-table__rejected ]">
                                                 <td>
@@ -280,9 +276,7 @@ const format_isk = (value: number | null) => format_isk_full(value)
                                                 <td>{line.reject_reason || '—'}</td>
                                             </tr>
                                         )}
-                                    </tbody>
-                                </table>
-                            </XFadeScroll>
+                            </DataTable>
                         </Flexblock>
                     }
                 </Flexblock>
@@ -326,33 +320,9 @@ const format_isk = (value: number | null) => format_isk_full(value)
         opacity: 0.75;
     }
 
-    .buyback-appraisal-table-wrap {
-        width: 100%;
-    }
-
     .buyback-appraisal-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: var(--step--1);
-
-        th,
-        td {
-            text-align: left;
-            padding: var(--space-2xs) var(--space-2xs);
-            border-bottom: 1px solid var(--border-color);
-            vertical-align: middle;
-        }
-
-        th {
-            color: var(--fleet-yellow);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-            font-size: var(--step--2);
-        }
-
         @media (hover: hover) {
-            tbody tr:hover {
+            :global(tbody) tr:hover {
                 background-color: var(--border-color-hover);
             }
         }

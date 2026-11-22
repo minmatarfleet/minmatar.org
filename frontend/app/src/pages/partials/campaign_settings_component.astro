@@ -438,7 +438,7 @@ import Select from '@components/blocks/Select.astro'
 import Tag from '@components/blocks/Tag.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import ManageTable from '@components/blocks/manage/ManageTable.astro'
 import ManageField from '@components/blocks/manage/ManageField.astro'
 import EntityPicker from '@components/blocks/manage/EntityPicker.astro'
 import EveTimeInput from '@components/blocks/manage/EveTimeInput.astro'
@@ -521,18 +521,18 @@ import Switch from '@components/blocks/Switch.astro'
                 {rows.length === 0 ?
                     <EmptyState title={t('campaigns.manage.no_systems')} />
                     :
-                    <XFadeScroll>
-                        <table class="[ manage-table campaign-systems ]" style="--manage_table_min_width: 40rem">
-                            <caption class="[ visually-hidden ]">{t('campaigns.manage.systems_caption')}</caption>
-                            <thead>
-                                <tr>
-                                    <th scope="col">{t('campaigns.manage.system')}</th>
-                                    <th scope="col">{t('campaigns.manage.goal')}</th>
-                                    <th scope="col">{t('campaigns.manage.role')}</th>
-                                    <th scope="col">{t('campaigns.manage.priority')}</th>
-                                    <th scope="col" class="act"><span class="[ visually-hidden ]">{t('campaigns.manage.retire')}</span></th>
-                                </tr>
-                            </thead>
+                    <ManageTable
+                        caption={t('campaigns.manage.systems_caption')}
+                        columns={[
+                            { label: t('campaigns.manage.system') },
+                            { label: t('campaigns.manage.goal') },
+                            { label: t('campaigns.manage.role') },
+                            { label: t('campaigns.manage.priority') },
+                            { label: t('campaigns.manage.retire'), align: 'act', hidden: true },
+                        ]}
+                        expandable={false}
+                        min_width="40rem"
+                    >
                             <tbody>
                                 {rows.map((row) => (
                                     <tr class:list={['[ campaign-systems__row ]', { 'is-new': row.is_new }]}>
@@ -584,8 +584,7 @@ import Switch from '@components/blocks/Switch.astro'
                                     </tr>
                                 ))}
                             </tbody>
-                        </table>
-                    </XFadeScroll>
+                    </ManageTable>
                 }
                 {retired.length > 0 &&
                     <p class="[ manage-muted ]">{t('campaigns.manage.retired_systems').replace('~NAMES', retired.map((system) => system.name).join(', '))}</p>
@@ -804,18 +803,18 @@ import Switch from '@components/blocks/Switch.astro'
                 {settings.week_targets.length === 0 ?
                     <p class="[ manage-muted ]">{t('campaigns.manage.targets_empty')}</p>
                     :
-                    <XFadeScroll>
-                        <table class="[ manage-table ]" style="--manage_table_min_width: 36rem">
-                            <caption class="[ visually-hidden ]">{t('campaigns.manage.targets_caption')}</caption>
-                            <thead>
-                                <tr>
-                                    <th scope="col">{t('campaigns.manage.system')}</th>
-                                    <th scope="col">{t('campaigns.manage.metric')}</th>
-                                    <th scope="col" class="num">{t('campaigns.manage.progress')}</th>
-                                    <th scope="col">{t('campaigns.manage.target')}</th>
-                                    <th scope="col">{t('campaigns.manage.target_state')}</th>
-                                </tr>
-                            </thead>
+                    <ManageTable
+                        caption={t('campaigns.manage.targets_caption')}
+                        columns={[
+                            { label: t('campaigns.manage.system') },
+                            { label: t('campaigns.manage.metric') },
+                            { label: t('campaigns.manage.progress'), align: 'num' },
+                            { label: t('campaigns.manage.target') },
+                            { label: t('campaigns.manage.target_state') },
+                        ]}
+                        expandable={false}
+                        min_width="36rem"
+                    >
                             <tbody>
                                 {settings.week_targets.map((row) => (
                                     <tr>
@@ -840,8 +839,7 @@ import Switch from '@components/blocks/Switch.astro'
                                     </tr>
                                 ))}
                             </tbody>
-                        </table>
-                    </XFadeScroll>
+                    </ManageTable>
                 }
                 <div class="[ manage-actions ]">
                     {settings.week_targets.length > 0 &&
