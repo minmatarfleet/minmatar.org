@@ -12,7 +12,7 @@ export default {
                 component: [
                     'The dialog surface: panel, padding, close button and header/body/footer slots. It has no open/close logic of its own. `DialogButton`, `AlertDialog`, `ConfirmDialog` and `Modal` wrap it and add `open` classes, `aria-hidden`, focus trap and backdrop.',
                     'Use it directly only to build a new overlay. The close button calls `close_dialog()` on the enclosing Alpine scope, so the wrapper must define that function. Stories render it in its static state.',
-                    '`thin` drops the header/footer layout for edge-to-edge content, `transparent` renders a darkened backdrop layer behind a see-through panel, and `full_screen` stretches the panel to the viewport height.',
+                    '`thin` drops the padding and the spaced body layout for edge-to-edge content but still renders the `header` and `footer` slots, `transparent` renders a darkened backdrop layer behind a see-through panel, and `full_screen` stretches the panel to the viewport height.',
                 ].join('\n\n'),
             },
         },
@@ -22,7 +22,7 @@ export default {
     argTypes: {
         breakout: { control: 'boolean', description: 'Breakout stacking used by the site\'s overlay wrappers (positions the dialog above the page chrome).' },
         fixed: { control: 'boolean', description: 'Pin the dialog to the viewport (`position: fixed`).' },
-        thin: { control: 'boolean', description: 'Minimal padding and no header/footer layout.' },
+        thin: { control: 'boolean', description: 'Minimal padding and no spaced body layout; header and footer slots still render.' },
         non_centered: { control: 'boolean', description: 'Do not center the content block vertically.' },
         body_full_h: { control: 'boolean', description: 'Make the body area fill the dialog height.' },
         full_screen: { control: 'boolean', description: 'Stretch the dialog to the full viewport height.' },
@@ -79,7 +79,7 @@ export const Thin = {
     play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
         const dialog = within(canvasElement).getByRole('dialog')
         await waitFor(() => expect(within(dialog).getByText(/24 pilots/)).toBeVisible())
-        // Thin dialogs skip the header/footer layout.
+        // Thin dialogs skip the spaced body layout.
         await expect(dialog.querySelector('.cover-body')).toBeNull()
         await expect(within(dialog).queryByRole('heading')).toBeNull()
     },
@@ -118,5 +118,31 @@ export const Centered = {
     args: { non_centered: false },
     play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
         await expect(within(canvasElement).getByRole('dialog')).not.toHaveClass('non-centered')
+    },
+}
+
+export const AriaModal = {
+    name: 'Announced as a modal',
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        await expect(within(canvasElement).getByRole('dialog')).toHaveAttribute('aria-modal', 'true')
+    },
+}
+
+export const ThinKeepsHeaderAndFooter = {
+    name: 'Thin keeps header and footer',
+    args: {
+        thin: true,
+        slots: {
+            header: '<h3>Fleet history</h3>',
+            default: '<p>Compact content with minimal padding.</p>',
+            footer: { component: Button, props: { size: 'sm' }, slots: { default: 'Close' } },
+        },
+    },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const dialog = within(canvasElement).getByRole('dialog')
+        await waitFor(() => expect(within(dialog).getByRole('heading', { name: 'Fleet history' })).toBeVisible())
+        await expect(within(dialog).getByText(/Compact content/)).toBeVisible()
+        await expect(within(dialog).getByRole('button', { name: 'Close' })).toBeVisible()
+        await expect(dialog.querySelector('.cover-body')).toBeNull()
     },
 }

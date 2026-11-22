@@ -642,8 +642,8 @@ The dialog surface: panel, padding, close button and header/body/footer slots.
 
 - Import: `import Dialog from '@components/blocks/Dialog.astro'`
 - Props: `breakout?: boolean = false`, `fixed?: boolean = true`, `thin?: boolean = false`, `non_centered?: boolean = true`, `body_full_h?: boolean = false`, `full_screen?: boolean = false`, `close_button?: boolean = true`, `transparent?: boolean = false`
-- Slots: `default`, `header`, `footer`
-- Stories (7): `frontend/app/rust/stories/components/overlays/Dialog.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-dialog--docs: Default, Without Close Button, Thin, Fixed, Transparent, Full Screen, Centered
+- Slots: `header`, `default`, `footer`
+- Stories (9): `frontend/app/rust/stories/components/overlays/Dialog.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-dialog--docs: Default, Without Close Button, Thin, Fixed, Transparent, Full Screen, Centered, Announced as a modal, Thin keeps header and footer
 
 ### DialogButton
 
