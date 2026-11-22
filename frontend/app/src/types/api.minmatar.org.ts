@@ -3284,6 +3284,7 @@ export type CampaignCoordinator = ApiResponse<'CampaignCoordinatorOut'>
 export type CampaignRoles = ApiResponse<'CampaignRolesOut'>
 export type CampaignRole = ApiResponse<'CampaignRoleOut'>
 export type CampaignRoleMember = ApiResponse<'CampaignRoleMemberOut'>
+export type DiscordRoleOption = ApiResponse<'DiscordRoleOption'>
 export type CampaignDoctrine = ApiResponse<'CampaignDoctrineOut'>
 export type CampaignDoctrines = ApiResponse<'CampaignDoctrinesOut'>
 export type CampaignFeatures = ApiResponse<'CampaignFeatures'>

@@ -24,6 +24,7 @@ from eveonline.models import (
 
 LIMIT = 8
 MIN_QUERY = 2
+KINDS = ("corporation", "alliance", "character")
 _SKIP_TOKEN = {
     NO_VALID_ESI_TOKEN,
     NO_CLIENT_CHAR,
@@ -33,13 +34,23 @@ _SKIP_TOKEN = {
 
 
 def search_entities(user, kind: str, query: str) -> list[dict]:
-    """Return up to LIMIT matches for ``corporation`` or ``alliance``."""
+    """Return up to LIMIT matches for ``corporation``, ``alliance`` or
+    ``character`` (pilots on the site, then any EVE character through ESI,
+    for campaign roles)."""
     needle = (query or "").strip()
-    if kind not in ("corporation", "alliance") or len(needle) < MIN_QUERY:
+    if kind not in KINDS or len(needle) < MIN_QUERY:
         return []
 
     found: dict[int, dict] = {}
     for row in _local_rows(kind, needle):
+        if kind == "character":
+            found[row.character_id] = {
+                "id": row.character_id,
+                "name": row.character_name,
+                "ticker": "",
+                "kind": kind,
+            }
+            continue
         entity_id = (
             row.corporation_id if kind == "corporation" else row.alliance_id
         )
@@ -65,6 +76,10 @@ def search_entities(user, kind: str, query: str) -> list[dict]:
 
 
 def _local_rows(kind: str, needle: str):
+    if kind == "character":
+        return EveCharacter.objects.filter(
+            character_name__icontains=needle
+        ).order_by("character_name")[:LIMIT]
     query = Q(name__icontains=needle) | Q(ticker__icontains=needle)
     if kind == "corporation":
         return EveCorporation.objects.filter(query).order_by("name")[:LIMIT]

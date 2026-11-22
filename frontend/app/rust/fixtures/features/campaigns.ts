@@ -7,6 +7,8 @@ import type {
     CampaignCorporationLeaderboardRow,
     CampaignListItem,
     CampaignParty,
+    CampaignRole,
+    CampaignRoleMember,
     CampaignRosterCorporation,
     CampaignSite,
     CampaignStructure,
@@ -445,4 +447,77 @@ export const stat_bar_stats: CampaignStat[] = [
     { label: 'ISK destroyed', value: '128.4b', title: '128,400,000,000 ISK' },
     { label: 'Complexes', value: '288' },
     { label: 'Active today', value: '96' },
+]
+
+// Campaign roles (Roles tab, CampaignRolesPanel): Coordinator, FC, Diplomat and Recon from the coordination Discord.
+const role_member = (id: number, fields: Partial<CampaignRoleMember>): CampaignRoleMember => ({
+    id,
+    source: 'discord',
+    discord_user_id: String(1_000 + id),
+    discord_name: '',
+    character_id: null,
+    character_name: '',
+    corporation_name: '',
+    alliance_name: '',
+    signed_in: true,
+    ...fields,
+})
+const READS: Record<string, string[]> = {
+    coordinator: ['fittings', 'fleets', 'sides', 'structures', 'timers'],
+    fc: ['fittings', 'fleets', 'structures', 'timers'],
+    diplomat: ['sides'],
+    recon: ['structures', 'timers'],
+}
+const EDITS: Record<string, string[]> = {
+    coordinator: ['roles', 'sides', 'structures', 'timers'],
+    fc: ['fleets'],
+    diplomat: ['sides'],
+    recon: ['structures', 'timers'],
+}
+const campaign_role = (kind: string, label: string, members: CampaignRoleMember[], fields: Partial<CampaignRole> = {}): CampaignRole => ({
+    kind,
+    label,
+    discord_role_id: String(7_000 + label.length),
+    discord_role_name: label,
+    synced_at: iso(-12 * 60_000),
+    sync_error: '',
+    reads: READS[kind],
+    edits: EDITS[kind],
+    members,
+    ...fields,
+})
+
+export const campaign_roles_typical: CampaignRole[] = [
+    campaign_role('coordinator', 'Coordinator', [
+        role_member(1, { character_id: 2112625428, character_name: 'BearThatCares', corporation_name: 'Minmatar Fleet Associates', alliance_name: 'Minmatar Fleet Alliance', discord_name: 'bearthatcares' }),
+        role_member(2, { character_id: 95465499, character_name: 'Ivan Kurchatov', corporation_name: 'Sebiestor Field Sappers', alliance_name: 'Minmatar Fleet Alliance' }),
+    ]),
+    campaign_role('fc', 'FC', [
+        role_member(3, { character_id: 1338057886, character_name: 'Henri Gray', corporation_name: 'Minmatar Fleet Associates', alliance_name: 'Minmatar Fleet Alliance' }),
+        role_member(4, { discord_name: 'allied-fc', signed_in: false }),
+        role_member(5, { source: 'site', discord_user_id: null, character_id: 93475128, character_name: 'Arvid Holm', corporation_name: 'Tribal Liberation Force', signed_in: false }),
+    ]),
+    campaign_role('diplomat', 'Diplomat', [
+        role_member(6, { character_id: 90000001, character_name: 'Sanna Rek', corporation_name: 'Republic Diplomatic Corps' }),
+    ]),
+    campaign_role('recon', 'Recon', [
+        role_member(7, { character_id: 90000002, character_name: 'Quiet Kestrel', corporation_name: 'Sebiestor Field Sappers' }),
+    ]),
+]
+
+export const campaign_roles_unsynced: CampaignRole[] = campaign_roles_typical.map((role) => ({
+    ...role,
+    discord_role_id: null,
+    discord_role_name: '',
+    synced_at: null,
+    sync_error: 'No Discord role picked',
+    members: [],
+}))
+
+export const campaign_discord_roles = [
+    { id: '7011', name: 'Coordinator' },
+    { id: '7002', name: 'FC' },
+    { id: '7008', name: 'Diplomat' },
+    { id: '7005', name: 'Recon' },
+    { id: '7100', name: 'Line member' },
 ]

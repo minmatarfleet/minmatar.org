@@ -217,7 +217,7 @@ export async function report_campaign_advantage(
 
 export async function search_campaign_entities(
     access_token:string,
-    kind:'corporation' | 'alliance',
+    kind:'corporation' | 'alliance' | 'character',
     query:string,
 ) {
     const params = new URLSearchParams({ kind, q: query })

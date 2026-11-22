@@ -1,0 +1,44 @@
+---
+/**
+ * The campaign roles character picker's result list: pilots on the site,
+ * then any EVE character ESI finds, as Combobox options (`data-value` and
+ * `data-label` are the character name, which the roles API looks up).
+ */
+// no-error-refetch: a typeahead; a failed search shows "No matches" and the next keystroke retries.
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { UniverseEntityMatch } from '@dtypes/api.minmatar.org'
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { search_campaign_entities } from '@helpers/api.minmatar.org/campaigns'
+import { get_player_icon } from '@helpers/eve_image'
+
+const MIN_QUERY = 2
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const query = (Astro.url.searchParams.get('q') ?? '').trim()
+
+let matches: UniverseEntityMatch[] = []
+if (query.length >= MIN_QUERY) {
+    try {
+        matches = await search_campaign_entities(auth_token, 'character', query)
+    } catch (error) {
+        console.log(error)
+    }
+}
+---
+
+{query.length < MIN_QUERY
+    ? (query.length > 0 && <li role="presentation"><p class="[ manage-picker__note ]">{t('manage.kit.picker_min_chars')}</p></li>)
+    : matches.length === 0
+        ? <li role="presentation"><p class="[ manage-picker__note ]">{t('manage.kit.picker_no_matches')}</p></li>
+        : matches.map((match) => (
+            <li class="[ manage-picker__option ]" role="option" data-value={match.name} data-label={match.name} data-icon={get_player_icon(match.id, 64)}>
+                <img src={get_player_icon(match.id, 64)} alt="" width="32" height="32" loading="lazy" />
+                <span>{match.name}</span>
+            </li>
+        ))
+}

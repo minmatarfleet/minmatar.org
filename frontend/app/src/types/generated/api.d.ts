@@ -944,7 +944,8 @@ export interface paths {
         };
         /**
          * Search Entities
-         * @description Autocomplete corporations and alliances for structure scouting.
+         * @description Autocomplete corporations and alliances for structure scouting, and
+         *     characters for campaign roles.
          */
         get: operations["campaigns_endpoints_public_search_entities"];
         put?: never;

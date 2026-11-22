@@ -59342,7 +59342,7 @@
     },
     "/api/campaigns/entities": {
       "get": {
-        "description": "Autocomplete corporations and alliances for structure scouting.",
+        "description": "Autocomplete corporations and alliances for structure scouting, and\ncharacters for campaign roles.",
         "operationId": "campaigns_endpoints_public_search_entities",
         "parameters": [
           {

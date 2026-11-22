@@ -164,9 +164,12 @@ def list_campaigns(request, status: str = ""):
     auth=AuthBearer(),
 )
 def search_entities(request, kind: str, q: str = ""):
-    """Autocomplete corporations and alliances for structure scouting."""
-    if kind not in ("corporation", "alliance"):
-        return 400, {"detail": "kind must be corporation or alliance"}
+    """Autocomplete corporations and alliances for structure scouting, and
+    characters for campaign roles."""
+    if kind not in entity_service.KINDS:
+        return 400, {
+            "detail": "kind must be corporation, alliance or character"
+        }
     return entity_service.search_entities(request.user, kind, q)
 
 
