@@ -678,7 +678,7 @@ The site-wide content modal: one instance in the page layout, opened with `show_
 A tooltip trigger.
 
 - Import: `import Tippy from '@components/blocks/Tippy.astro'`
-- Props: `element?: string = 'span'`, `partial?: string`, `height?: string = 'auto'`, `width?: string = 'auto'`, `show_delay?: number = '1000'`, `hide_delay?: number = '200'`
+- Props: `element?: string = 'span'`, `partial?: string`, `show_delay?: number = '1000'`, `hide_delay?: number = '200'`
 - Slots: `default`
 - Stories (7): `frontend/app/rust/stories/components/overlays/Tippy.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-tippy--docs: Default, Hover shows the tooltip, Custom wrapper element, Lazy partial tooltip, Default delays, Partial loads on hover, Inline in a row of triggers
 
