@@ -78,6 +78,14 @@ Unless noted, features deny community status `on_leave` on the scope path. The o
 | `campaigns.create` | `auth_group` | `campaigns.add_campaign` | — (no groups seeded; the legacy permission decides) |
 | `campaigns.manage` | `staff` | `campaigns.change_campaign` | staff permission |
 
+## Fleet voice
+
+| Code | Scope | Legacy permission | Default wiring |
+|------|-------|-------------------|----------------|
+| `voice.join` | `affiliation` | — | Alliance, Associate (Lobby, Open channels and their Mumble fleets; see [mumble-architecture.md](../mumble-architecture.md)) |
+| `voice.commander` | `tribe_membership` | — | Fleet Commanders (`pulse.fleet-commanders`): Commanders in every Mumble fleet branch |
+| `voice.admin` | `auth_group` | — | — (superusers; Strategic FCs are voice admins through `fleets.manage_any`) (no `on_leave` deny) |
+
 ## Intel
 
 | Code | Scope | Legacy permission | Default wiring |

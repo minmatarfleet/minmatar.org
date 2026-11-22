@@ -1,6 +1,6 @@
-# Mumble / Murmur architecture (removed)
+# Mumble / Murmur architecture (removed 2025 stack)
 
-Alliance voice is Discord. This document describes the Mumble stack that used to run in production so the underlying pieces (Murmur, ZeroC Ice, credential store) are understandable if we ever need them again.
+This describes the old Mumble stack that was removed before the current fleet voice was built (current design: [mumble-architecture.md](../mumble-architecture.md)). Kept for history; none of its code or tables are used.
 
 Code lived under `backend/mumble/`, `backend/mumble.py`, and `backend/Dockerfile.mumble` before hard deletion; recover from git history on the parent of the removal commit if needed. Frontend connect UI was removed earlier (#2535).
 
