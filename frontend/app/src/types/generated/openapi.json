@@ -27915,6 +27915,10 @@
             "title": "Fights",
             "type": "integer"
           },
+          "industry": {
+            "title": "Industry",
+            "type": "integer"
+          },
           "kills": {
             "title": "Kills",
             "type": "integer"
@@ -27932,7 +27936,8 @@
           "fights",
           "kills",
           "warzone",
-          "mining"
+          "mining",
+          "industry"
         ],
         "title": "LandingWeekCounts",
         "type": "object"

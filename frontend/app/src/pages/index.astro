@@ -35,7 +35,7 @@ const pulse_error: string | null = pulse_result.status === 'rejected'
     ? (pulse_result.reason instanceof Error ? pulse_result.reason.message : String(pulse_result.reason))
     : null
 const week: LandingWeek | null = week_result.status === 'fulfilled' ? week_result.value : null
-const WEEK_TABS = ['fights', 'kills', 'warzone', 'mining'] as const
+const WEEK_TABS = ['fights', 'kills', 'warzone', 'mining', 'industry'] as const
 const week_tabs = WEEK_TABS.map((id) => ({
     id,
     label: t(t_key('landing_new.tab.', id)) ?? id,

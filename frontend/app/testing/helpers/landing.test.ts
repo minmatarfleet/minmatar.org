@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 
 import type { LandingEvent } from '@dtypes/api.minmatar.org'
-import { amount_grade, bar_heights, dedupe_posts, eve_clock, eve_day, event_who, format_number, pick_premium_posts, subject_icon } from '@helpers/landing'
+import { amount_grade, bar_heights, dedupe_posts, eve_clock, eve_day, event_who, format_number, pick_premium_posts, subject_icon, week_last_column } from '@helpers/landing'
 
 const event = (others: number): LandingEvent => ({
     occurred_at: '2026-11-21T17:58:00Z',
@@ -41,6 +41,13 @@ describe('landing helpers', () => {
         expect(amount_grade('isk', 9_200_000_000)).toBe(3)
         expect(amount_grade('lp', 10_000)).toBe(1)
         expect(amount_grade('lp', 52_500)).toBe(3)
+    })
+
+    test('industry shows the value made, mining where it happened', () => {
+        expect(week_last_column('industry')).toBe('value')
+        expect(week_last_column('mining')).toBe('region')
+        expect(amount_grade('value', 5_000_000)).toBe(0)
+        expect(amount_grade('value', 250_000_000)).toBe(2)
     })
 
     test('times are EVE time', () => {

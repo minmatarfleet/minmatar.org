@@ -1,7 +1,7 @@
 """
 "The week in the alliance" on the homepage (/).
 
-Four tabs, every row of the last 7 days, 12 to a page:
+Five tabs, every row of the last 7 days, 12 to a page:
 
 - fights: Fleet activity. Our members' killmails grouped into engagements
   (same constellation, no gap over 20 minutes) with two or more of our pilots,
@@ -9,6 +9,8 @@ Four tabs, every row of the last 7 days, 12 to a page:
 - kills: every kill and loss line.
 - warzone: every warzone site.
 - mining: every mining line the ledger syncs saw.
+- industry: every industry job that finished, at the time it finished
+  (alliance.helpers.landing_industry); running jobs never show.
 
 Built from the same event rules as the pulse (alliance.helpers.landing_pulse)
 and cached for ten minutes, so paging never recomputes the week.
@@ -36,6 +38,7 @@ from alliance.helpers.landing_pulse import (
     _victim_entity,
     event_rows,
 )
+from alliance.helpers.landing_industry import industry_events
 from app.cache import CachedRollup
 from eveonline.helpers.killmail_text import parse_killmail_list
 from eveonline.models import EveCharacterKillmail
@@ -44,13 +47,13 @@ from feed.models import FeedKillmail
 from market.helpers.pricing import get_prices_by_type_id
 
 WEEK = CachedRollup(
-    key="alliance:landing_week:v2",
+    key="alliance:landing_week:v3",
     ttl=600,
     lock_key="alliance:landing_week:lock",
     lock_ttl=180,
 )
 
-TABS = ("fights", "kills", "warzone", "mining")
+TABS = ("fights", "kills", "warzone", "mining", "industry")
 PER_PAGE = 12
 ENGAGEMENT_GAP = timedelta(minutes=20)
 
@@ -234,6 +237,7 @@ def build_week(now=None) -> dict:
         "kills": _combat_events(start, now),
         "warzone": _site_events(start, now),
         "mining": _mining_events(start, now),
+        "industry": industry_events(start, now),
     }
     tabs = {}
     for tab, events in sources.items():

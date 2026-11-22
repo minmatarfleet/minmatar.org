@@ -22820,6 +22820,8 @@ export interface components {
         LandingWeekCounts: {
             /** Fights */
             fights: number;
+            /** Industry */
+            industry: number;
             /** Kills */
             kills: number;
             /** Mining */
