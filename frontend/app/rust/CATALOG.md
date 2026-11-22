@@ -218,17 +218,9 @@ A bare label wrapping a native radio or checkbox plus a `<small>` label, with no
 A toggle switch around a native `<input type="checkbox">`: the default slot is the label, to the left of the slider.
 
 - Import: `import Switch from '@components/blocks/Switch.astro'`
-- Props: `checked?: boolean`
+- Props: `checked?: boolean = false`, `shape?: 'round' | 'square' = 'round'`, `label?: false | string = false`, `description?: false | string = false`
 - Slots: `default`
-- Stories (6): `frontend/app/rust/stories/components/forms/Switch.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-switch--docs: Default, Checked, Toggling, Clicking the label text, Disabled, Bound with x-model
-
-### SwitchSquare
-
-A square-knob toggle with a highlighted title and a small description beside it, for settings that need explaining (account preferences, dialog opt-outs).
-
-- Import: `import SwitchSquare from '@components/blocks/SwitchSquare.astro'`
-- Props: `checked?: boolean = false`, `label?: false | string = false`, `description?: false | string = false`
-- Stories (7): `frontend/app/rust/stories/components/forms/SwitchSquare.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-switchsquare--docs: Default, Checked, Toggling, Label Only, Description Only, Disabled, Attributes On Input Only
+- Stories (13): `frontend/app/rust/stories/components/forms/Switch.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-switch--docs: Default, Checked, Toggling, Clicking the label text, Disabled, Bound with x-model, Square, Square Checked, Square Toggling, Square Label Only, Square Description Only, Square Disabled, Square Attributes On Input Only
 
 ### FlatPicker
 

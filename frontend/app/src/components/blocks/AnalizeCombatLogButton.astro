@@ -45,7 +45,7 @@ import Input from '@components/blocks/Input.astro';
 import Button from '@components/blocks/Button.astro';
 import SelectFinder from '@components/blocks/SelectFinder.astro';
 import CollapsableButton from '@components/blocks/CollapsableButton.astro';
-import SwitchSquare from '@components/blocks/SwitchSquare.astro';
+import Switch from '@components/blocks/Switch.astro';
 import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro';
 
 import TutorialIcon from '@components/icons/TutorialIcon.astro';
@@ -225,7 +225,7 @@ import Markdown from './Markdown.astro'
                         </Flexblock>
 
                         {!fleet_id && user &&
-                            <SwitchSquare
+                            <Switch shape="square"
                                 class="[ w-full ]"
                                 name="store"
                                 label={t('save_log_for_future')}

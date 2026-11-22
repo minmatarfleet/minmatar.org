@@ -1,24 +1,44 @@
 ---
+import Flexblock from '@components/compositions/Flexblock.astro';
 import FluidFixed from '@components/compositions/FluidFixed.astro';
 
 interface Props {
     checked?: boolean;
+    shape?: 'round' | 'square';
+    label?: false | string;
+    description?: false | string;
     [propName: string]: any;
 }
 
 const {
+    checked = false,
+    shape = 'round',
+    label = false,
+    description = false,
     ...attributes
 } = Astro.props
+
+const square = shape === 'square'
 ---
 
-<label class="[ switch ]">
-    <FluidFixed width='46px' class="[ items-center ]">
+<label class:list={['[ switch ]', square && '[ switch--square ][ w-full ]']}>
+    <FluidFixed width='46px' breakpoint={square ? '80%' : undefined} class="[ items-center ]">
         <div class="[ w-full ]">
+            {(square || label || description) &&
+                <Flexblock gap='var(--space-3xs)'>
+                    {label &&
+                        <span class="[ text-[var(--highlight)] ]">{label}</span>
+                    }
+                    {description &&
+                        <small>{description}</small>
+                    }
+                </Flexblock>
+            }
             <slot />
         </div>
 
         <div>
-            <input type="checkbox" {...attributes}>
+            <input type="checkbox" {...attributes} checked={checked ? 'checked' : undefined}>
             <div class="slider">
                 <div class="circle">
                     <svg class="cross" xml:space="preserve" style="enable-background:new 0 0 512 512" viewBox="0 0 365.696 365.696" y="0" x="0" height="6" width="6" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" xmlns="http://www.w3.org/2000/svg">
@@ -199,5 +219,33 @@ const {
         left: calc(100% - var(--circle-diameter) - var(--switch-offset));
         -webkit-box-shadow: var(--circle-checked-shadow);
         box-shadow: var(--circle-checked-shadow);
+    }
+
+    /* shape="square": no rounding, a coloured title and a shifted knob on keyboard focus. */
+    .switch--square {
+        --effect-border-radius: 0;
+        line-height: 1.4;
+        color: var(--fleet-yellow);
+
+        small {
+            font-weight: 400;
+        }
+
+        .slider,
+        .circle {
+            border-radius: 0;
+        }
+
+        input:focus-visible + .slider {
+            outline: none;
+        }
+
+        input:focus-visible + .slider .circle {
+            left: calc(var(--switch-offset) + 4px);
+        }
+
+        input:checked:focus-visible + .slider .circle {
+            left: calc(100% - var(--circle-diameter) - var(--switch-offset) - 4px);
+        }
     }
 </style>

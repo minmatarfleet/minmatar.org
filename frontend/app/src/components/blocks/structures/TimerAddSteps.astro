@@ -70,7 +70,7 @@ import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
 import Textarea from '@components/blocks/Textarea.astro'
-import SwitchSquare from '@components/blocks/SwitchSquare.astro'
+import Switch from '@components/blocks/Switch.astro'
 import EveTimeInput from '@components/blocks/manage/EveTimeInput.astro'
 import ManageField from '@components/blocks/manage/ManageField.astro'
 import StructureSteps from '@components/blocks/structures/StructureSteps.astro'
@@ -167,7 +167,7 @@ import StructureHowTo from '@components/blocks/structures/StructureHowTo.astro'
                 </Select>
             </ManageField>
             {can_verify &&
-                <SwitchSquare name="verify_timer" label={t('verify_timer')} description={t('verify_timer_description')} />
+                <Switch shape="square" name="verify_timer" label={t('verify_timer')} description={t('verify_timer_description')} />
             }
             <div class="[ manage-actions ]">
                 <Button type="button" size="sm" color="fleet-red" hx-post={URL} hx-vals={go('send')} hx-target="closest form" hx-swap="innerHTML" hx-disabled-elt="this">{t('timers.add.send')}</Button>

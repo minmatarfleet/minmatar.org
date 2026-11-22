@@ -134,7 +134,7 @@ import SettingRow from '@components/blocks/SettingRow.astro';
 import DisableBlock from '@components/blocks/DisableBlock.astro';
 import Button from '@components/blocks/Button.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
-import SwitchSquare from '@components/blocks/SwitchSquare.astro';
+import Switch from '@components/blocks/Switch.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import CharacterErrors from '@components/blocks/CharacterErrors.astro'
 import EsiReaddBlock from '@components/blocks/EsiReaddBlock.astro'
@@ -412,7 +412,7 @@ const page_title = t('account.page_title');
                                 <h2 class="[ account-page__heading ]">{t('danger_zone')}</h2>
 
                                 <div class="[ account-page__switch ]">
-                                    <SwitchSquare
+                                    <Switch shape="square"
                                         class="[ w-full ]"
                                         x-model="danger_zone_enable"
                                         label={t('enable_danger_zone_switch_title')}

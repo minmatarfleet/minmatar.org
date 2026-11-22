@@ -13,7 +13,7 @@ const {
 import Flexblock from "@components/compositions/Flexblock.astro";
 import FlexInlineSiblings from "@components/compositions/FlexInlineSiblings.astro";
 
-import SwitchSquare from '@components/blocks/SwitchSquare.astro';
+import Switch from '@components/blocks/Switch.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
 import Select from '@components/blocks/Select.astro';
 ---
@@ -21,7 +21,7 @@ import Select from '@components/blocks/Select.astro';
 <Flexblock gap='var(--space-l)'>
     <h2>{t('accessibility_options')}</h2>
 
-    <SwitchSquare
+    <Switch shape="square"
         class="[ w-full ]"
         x-model="color_blind_mode"
         label={t('color_blind_mode')}

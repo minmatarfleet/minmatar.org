@@ -70,7 +70,7 @@ const PARTIAL_URL = translatePath(`/partials/tribe_group_settings_component?sect
 import Button from '@components/blocks/Button.astro'
 import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 import Select from '@components/blocks/Select.astro'
-import SwitchSquare from '@components/blocks/SwitchSquare.astro'
+import Switch from '@components/blocks/Switch.astro'
 ---
 
 <form
@@ -161,25 +161,25 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
     </div>
 
     <div class="[ tribe-publishing-settings__switches ]">
-        <SwitchSquare
+        <Switch shape="square"
             name="fleets_enabled"
             checked={settings.fleets_enabled}
             label={t('tribes.settings.fleets_enabled')}
             description={t('tribes.settings.fleets_enabled_help')}
         />
-        <SwitchSquare
+        <Switch shape="square"
             name="events_enabled"
             checked={settings.events_enabled}
             label={t('tribes.settings.events_enabled')}
             description={t('tribes.settings.events_enabled_help')}
         />
-        <SwitchSquare
+        <Switch shape="square"
             name="allow_alliance_posts"
             checked={settings.allow_alliance_posts}
             label={t('tribes.settings.allow_posts')}
             description={fill(t('tribes.settings.allow_posts_help'))}
         />
-        <SwitchSquare
+        <Switch shape="square"
             name="allow_open_fleets"
             checked={settings.allow_open_fleets}
             label={t('tribes.settings.allow_fleets')}

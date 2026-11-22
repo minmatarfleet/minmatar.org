@@ -52,7 +52,7 @@ import Select from '@components/blocks/Select.astro';
 import Textarea from '@components/blocks/Textarea.astro';
 import Button from '@components/blocks/Button.astro';
 import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
-import SwitchSquare from '@components/blocks/SwitchSquare.astro';
+import Switch from '@components/blocks/Switch.astro';
 import DialogButton from "@components/blocks/DialogButton.astro";
 import TutorialBadge from "@components/blocks/TutorialBadge.astro";
 import Markdown from "@components/blocks/Markdown.astro";
@@ -200,7 +200,7 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
                     <input type="hidden" name="gziped_combatlog" x-model="gziped_combatlog" />
                 }
                 
-                <SwitchSquare
+                <Switch shape="square"
                     class="[ w-full ]"
                     name="is_corp_ship"
                     label={t('corp_ship')}

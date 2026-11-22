@@ -443,7 +443,7 @@ import ManageField from '@components/blocks/manage/ManageField.astro'
 import EntityPicker from '@components/blocks/manage/EntityPicker.astro'
 import EveTimeInput from '@components/blocks/manage/EveTimeInput.astro'
 import SectionSummary from '@components/blocks/manage/SectionSummary.astro'
-import SwitchSquare from '@components/blocks/SwitchSquare.astro'
+import Switch from '@components/blocks/Switch.astro'
 ---
 
 {fetch_error || !settings || !choices ?
@@ -469,7 +469,7 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
             <Fragment>
                 <div class="[ campaign-features ]">
                     {CAMPAIGN_FEATURES.map((feature) =>
-                        <SwitchSquare
+                        <Switch shape="square"
                             name={`${feature}_enabled`}
                             label={t(`campaigns.features.${feature}`)}
                             description={t(`campaigns.features.${feature}_help`)}
@@ -502,7 +502,7 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
                     <EveTimeInput id="campaign-basics-start" name="start_at" label={t('campaigns.manage.starts')} value={settings.start_at} required />
                     <EveTimeInput id="campaign-basics-end" name="end_at" label={t('campaigns.manage.ends')} value={settings.end_at} required />
                 </div>
-                <SwitchSquare
+                <Switch shape="square"
                     name="undisclosed"
                     label={t('campaigns.manage.undisclosed')}
                     description={t('campaigns.manage.undisclosed_hint')}

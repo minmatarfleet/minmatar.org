@@ -18,7 +18,7 @@ export const RUST_LIBRARY = {
     'Components/Forms': [
         'blocks/Button', 'blocks/StylessButton', 'blocks/ButtonStack', 'blocks/ButtonConfirm', 'blocks/ClipboardButton',
         'blocks/Input', 'blocks/InputError', 'blocks/Select', 'blocks/Textarea', 'blocks/StylessTextArea',
-        'blocks/RadioCheckInput', 'blocks/UnstyledRadioCheckButton', 'blocks/Switch', 'blocks/SwitchSquare',
+        'blocks/RadioCheckInput', 'blocks/UnstyledRadioCheckButton', 'blocks/Switch',
         'blocks/FlatPicker', 'blocks/Kbd',
     ],
     'Components/Feedback': [

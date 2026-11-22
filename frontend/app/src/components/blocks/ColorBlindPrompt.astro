@@ -7,7 +7,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import Wrapper from '@components/compositions/Wrapper.astro'
 
 import TextBackgroundContrast from '@components/blocks/TextBackgroundContrast.astro';
-import SwitchSquare from '@components/blocks/SwitchSquare.astro';
+import Switch from '@components/blocks/Switch.astro';
 import Button from '@components/blocks/Button.astro';
 ---
 
@@ -22,7 +22,7 @@ import Button from '@components/blocks/Button.astro';
             <h3>{t('color_blind_greetings')}</h3>
             <p>{t('color_blind_prompt_text')}</p>
             
-            <SwitchSquare
+            <Switch shape="square"
                 class="[ w-full ]"
                 x-model="color_blind_mode"
                 label={t('color_blind_mode')}
