@@ -1484,6 +1484,7 @@ export const ui = {
         'add_ships_from_catalog': 'From the catalog',
         'add_ships_paste_eft': 'Paste EFT',
         'add_ships_role': 'Add as',
+        'add_ships_source': 'Add ships from',
         'add_ships_search_placeholder': 'Search fits or hulls',
         'add_ships_search_hint': 'Start typing to search the fitting catalog.',
         'add_ships_eft_hint': 'Ship and fit name come from the [Ship, Name] header.',

@@ -140,7 +140,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
             }
 
             <FlexInline justification='space-between' gap='var(--space-s)' class="[ items-center ]">
-                <FlexInline gap='var(--space-s)' role="tablist">
+                <FlexInline gap='var(--space-s)' role="radiogroup" aria-label={t('add_ships_source')}>
                     <RadioCheckInput bare type="radio" name="add_ships_mode" value="catalog" label={t('add_ships_from_catalog')} x-model="mode" />
                     <RadioCheckInput bare type="radio" name="add_ships_mode" value="eft" label={t('add_ships_paste_eft')} x-model="mode" />
                 </FlexInline>
