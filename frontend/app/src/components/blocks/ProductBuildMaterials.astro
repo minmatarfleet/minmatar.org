@@ -28,6 +28,7 @@ const strategy_color = (strategy: string) =>
     strategy === 'imported' ? 'fleet-red' : strategy === 'harvested' ? 'fleet-yellow' : 'alliance-blue'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
@@ -49,7 +50,7 @@ import Tag from '@components/blocks/Tag.astro'
             {build.materials.length === 0 ?
                 <p class="[ empty ]">{t('industry.product.no_materials')}</p>
                 :
-                <div class="[ table-scroll ]">
+                <XFadeScroll>
                 <table class="[ bom ]">
                     <thead>
                         <tr>
@@ -99,7 +100,7 @@ import Tag from '@components/blocks/Tag.astro'
                         </tr>
                     </tfoot>
                 </table>
-                </div>
+                </XFadeScroll>
             }
         </Flexblock>
     </ComponentBlock>
@@ -123,10 +124,6 @@ import Tag from '@components/blocks/Tag.astro'
     .muted,
     .empty {
         color: var(--foreground);
-    }
-
-    .table-scroll {
-        overflow-x: auto;
     }
 
     .bom {
