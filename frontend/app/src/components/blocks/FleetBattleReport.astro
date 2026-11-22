@@ -342,6 +342,7 @@ import Input from '@components/blocks/Input.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 import StylessButton from '@components/blocks/StylessButton.astro'
+import SectionTabs from '@components/blocks/SectionTabs.astro'
 ---
 
 <div
@@ -455,18 +456,15 @@ import StylessButton from '@components/blocks/StylessButton.astro'
     </section>
 
     <div class="[ br__tabs ]">
-        <div class="[ br__tab-list ]" role="tablist" aria-label={t('fleets.report.views')}>
-            {views.map(view =>
-                <button
-                    type="button"
-                    role="tab"
-                    class="[ br__tab ]"
-                    aria-selected={view.id === 'involved' ? 'true' : 'false'}
-                    x-bind:aria-selected={`String(view === '${view.id}')`}
-                    x-on:click={`view = '${view.id}'`}
-                >{view.label}</button>
-            )}
-        </div>
+        <XFadeScroll class="[ br__tab-scroll ]">
+            <SectionTabs
+                sync_hash={false}
+                aria_label={t('fleets.report.views')}
+                id_prefix="br"
+                tabs={views}
+                x-effect="view = tab"
+            />
+        </XFadeScroll>
         {report.sides &&
             <a class="[ br__button ]" href={page_href(scope)} hx-get={partial_href(scope)} hx-target="#battle-report" hx-swap="outerHTML">{t('fleets.report.reset')}</a>
         }
@@ -1099,32 +1097,17 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         border-bottom: 1px solid var(--border-color);
     }
 
-    .br__tab-list {
-        display: flex;
+    // The view tabs scroll sideways with a fade instead of wrapping.
+    .br__tab-scroll {
         min-width: 0;
-        overflow-x: auto;
-    }
 
-    .br__tab {
-        min-height: 3rem;
-        padding: 0 var(--space-s);
-        background: transparent;
-        border: 0;
-        border-bottom: 3px solid transparent;
-        color: var(--foreground);
-        font-family: var(--heading-font);
-        font-size: var(--step-1);
-        text-transform: uppercase;
-        white-space: nowrap;
-        cursor: pointer;
-
-        &:hover {
-            color: var(--highlight);
+        :global(.section-tabs-list) {
+            flex-wrap: nowrap;
+            box-shadow: none;
         }
 
-        &[aria-selected='true'] {
-            color: var(--highlight);
-            border-bottom-color: var(--fleet-red);
+        :global(.section-tab) {
+            box-shadow: none;
         }
     }
 
@@ -1793,15 +1776,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         .br__save label {
             width: 100%;
             margin-left: 0;
-        }
-
-        .br__tab-list {
-            mask-image: linear-gradient(to right, black 85%, transparent);
-        }
-
-        .br__tab {
-            padding: 0 var(--space-xs);
-            font-size: var(--step-0);
         }
 
         .br__groups li {

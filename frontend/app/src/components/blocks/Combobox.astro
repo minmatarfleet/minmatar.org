@@ -12,7 +12,9 @@
  * closes the listbox only.
  *
  * Picking sets both inputs and dispatches a bubbling `combobox:select` with
- * `{ name, value, label }`; callers listen with `x-on:combobox:select`.
+ * `{ name, value, label, data }` (`data` is the option's `data-*` attributes,
+ * so a partial can carry an icon or detail along); callers listen with
+ * `x-on:combobox:select`.
  */
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
@@ -33,6 +35,12 @@ interface Props {
     debounce_ms?:       number;
     /** Show a Clear button while something is picked. */
     allow_clear?:       boolean;
+    /** Size of the visible field. */
+    size?:              'lg' | 'sm';
+    /** The visible field must hold text before a form submits. */
+    required?:          boolean;
+    /** Enter picks the first option when the list is open and nothing is highlighted, and never submits the form. */
+    pick_first?:        boolean;
     [propName: string]: any;
 }
 
@@ -47,6 +55,9 @@ const {
     min_chars = 2,
     debounce_ms = 300,
     allow_clear = false,
+    size = 'lg',
+    required = false,
+    pick_first = false,
     ...attributes
 } = Astro.props
 
@@ -102,7 +113,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
             $refs.input.value = picked_label
             $refs.hidden.dispatchEvent(new Event('change', { bubbles: true }))
             this.close()
-            $dispatch('combobox:select', { name: ${JSON.stringify(name)}, value: picked, label: picked_label })
+            $dispatch('combobox:select', { name: ${JSON.stringify(name)}, value: picked, label: picked_label, data: { ...option.dataset } })
         },
         clear() {
             this.value = ''
@@ -125,6 +136,9 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                 if (this.open && this.active >= 0) {
                     event.preventDefault()
                     this.pick(options[this.active])
+                } else if (${pick_first ? 'true' : 'false'}) {
+                    event.preventDefault()
+                    if (this.open && options.length > 0) this.pick(options[0])
                 }
             } else if (event.key === 'Escape' && this.open) {
                 event.preventDefault()
@@ -150,6 +164,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
 >
     <label for={input_id} class:list={[{ 'visually-hidden': hidden_label }]}>{label}</label>
     <div class="[ combobox__field ]">
+        <slot name="field_start" />
         <Input
             id={input_id}
             type="text"
@@ -157,6 +172,8 @@ import StylessButton from '@components/blocks/StylessButton.astro'
             autocomplete="off"
             spellcheck="false"
             placeholder={placeholder}
+            size={size}
+            required={required}
             value={value_label}
             aria-autocomplete="list"
             aria-controls={list_id}
@@ -172,6 +189,14 @@ import StylessButton from '@components/blocks/StylessButton.astro'
             hx-swap="innerHTML"
             hx-sync="this:replace"
             hx-vals={`js:{q: document.getElementById('${input_id}').value.trim()}`}
+            hx-select="unset"
+            hx-select-oob="unset"
+            hx-include="unset"
+            hx-indicator="unset"
+            hx-params="unset"
+            hx-confirm="unset"
+            hx-disabled-elt="unset"
+            hx-push-url="false"
         />
         {allow_clear &&
             <StylessButton

@@ -211,8 +211,9 @@ An inline keyboard-key chip for shortcut hints ("press Esc to close").
 A search-as-you-type picker for a value the browser cannot list up front (pilots, items, systems).
 
 - Import: `import Combobox from '@components/blocks/Combobox.astro'`
-- Props: `name: string`, `label: string`, `hidden_label?: boolean = false`, `search_url: string`, `value?: string = ''`, `value_label?: string = ''`, `placeholder?: string`, `min_chars?: number = 2`, `debounce_ms?: number = 300`, `allow_clear?: boolean = false`
-- Stories (10): `frontend/app/rust/stories/components/forms/Combobox.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-combobox--docs: Default, Keyboard Navigation, Select dispatches combobox:select, Escape inside a dialog keeps the dialog open, Click Outside Closes List, Empty Results, Already picked, with Clear, Hidden Label, Type, swap results, pick, Under min_chars asks nothing
+- Props: `name: string`, `label: string`, `hidden_label?: boolean = false`, `search_url: string`, `value?: string = ''`, `value_label?: string = ''`, `placeholder?: string`, `min_chars?: number = 2`, `debounce_ms?: number = 300`, `allow_clear?: boolean = false`, `size?: 'lg' | 'sm' = 'lg'`, `required?: boolean = false`, `pick_first?: boolean = false`
+- Slots: `field_start`
+- Stories (12): `frontend/app/rust/stories/components/forms/Combobox.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-combobox--docs: Default, Keyboard Navigation, Select dispatches combobox:select, pick_first: Enter picks the first option, Enter without a highlighted option picks nothing, Escape inside a dialog keeps the dialog open, Click Outside Closes List, Empty Results, Already picked, with Clear, Hidden Label, Type, swap results, pick, Under min_chars asks nothing
 
 ## Components/Feedback
 
@@ -520,16 +521,16 @@ The generic popover: a trigger (`button` slot) that toggles a panel (default slo
 - Import: `import Dropdown from '@components/blocks/Dropdown.astro'`
 - Props: `variant?: 'default' | 'button' = 'default'`, `color?: ButtonColors = 'fleet-red'`, `size?: ButtonSizes = 'sm'`, `trigger_label?: string`
 - Slots: `button`, `default`
-- Stories (6): `frontend/app/rust/stories/components/navigation/Dropdown.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-dropdown--docs: Default, Button Variant, Escape closes the panel, Outside click closes the panel, Labelled Trigger, Panel with controls
+- Stories (7): `frontend/app/rust/stories/components/navigation/Dropdown.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-dropdown--docs: Default, Button Variant, Escape closes the panel, Escape closes only the panel, not a surrounding dialog, Outside click closes the panel, Labelled Trigger, Panel with controls
 
 ### SectionTabs
 
 Page-section tabs: a `tablist` of buttons plus `SectionTabPanel` children (one per tab id).
 
 - Import: `import SectionTabs from '@components/blocks/SectionTabs.astro'`
-- Props: `tabs: SectionTab[]`, `aria_label: string`, `id_prefix: string`, `hash_aliases?: Record<string, string> = {}`, `default_tab?: string = requested_default && tab_ids.includes(requested_default) ? requested_default : (tab_ids[0] ?? '')`, `variant?: 'tabs' | 'pills' | 'compact' = 'tabs'`, `active_tab?: string`
+- Props: `tabs: SectionTab[]`, `aria_label: string`, `id_prefix: string`, `hash_aliases?: Record<string, string> = {}`, `default_tab?: string = requested_default && tab_ids.includes(requested_default) ? requested_default : (tab_ids[0] ?? '')`, `variant?: 'tabs' | 'pills' | 'compact' = 'tabs'`, `active_tab?: string`, `sync_hash?: boolean = true`
 - Slots: `default`
-- Stories (12): `frontend/app/rust/stories/components/navigation/SectionTabs.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-sectiontabs--docs: Default, Click through three tabs, Keyboard Navigation, aria-selected and roving tabindex follow the tab, Counts, flags and icon tab, Non-first default tab, Pills, Tab and panel ids are wired, Compact (in-card toggle), Link mode: active by path prefix, Link mode: active_tab wins, Link mode: compact
+- Stories (13): `frontend/app/rust/stories/components/navigation/SectionTabs.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-sectiontabs--docs: Default, Click through three tabs, Keyboard Navigation, aria-selected and roving tabindex follow the tab, Counts, flags and icon tab, Non-first default tab, Pills, Tab and panel ids are wired, Compact (in-card toggle), sync_hash off: the URL stays clean, Link mode: active by path prefix, Link mode: active_tab wins, Link mode: compact
 
 ### SectionTabPanel
 

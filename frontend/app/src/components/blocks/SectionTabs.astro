@@ -29,6 +29,12 @@ interface Props {
     variant?: 'tabs' | 'pills' | 'compact'
     /** Link mode: the id of the active tab. Otherwise the tab whose `href` is the longest prefix of the page path. */
     active_tab?: string
+    /**
+     * Hash mode: mirror the active tab to the URL hash and read it on load.
+     * Turn off for tabs inside a dialog or card, where a `#tab` in the
+     * address bar would be wrong.
+     */
+    sync_hash?: boolean
     [propName: string]: any
 }
 
@@ -40,6 +46,7 @@ const {
     default_tab: requested_default,
     variant = 'tabs',
     active_tab: requested_active,
+    sync_hash = true,
     ...attributes
 } = Astro.props
 
@@ -104,11 +111,17 @@ const current_tab = requested_active && tab_ids.includes(requested_active) ? req
         x-data={`{
             tabs: ${JSON.stringify(tab_ids)},
             tab: ${JSON.stringify(default_tab)},
+            sync: ${JSON.stringify(sync_hash)},
             aliases: ${JSON.stringify(hash_aliases)},
             init() {
-                const next = this.tab_for(window.location.hash.replace('#', ''))
-                if (next) this.tab = next
-                this.$watch('tab', () => this.$nextTick(() => this.refresh_panel()))
+                if (this.sync) {
+                    const next = this.tab_for(window.location.hash.replace('#', ''))
+                    if (next) this.tab = next
+                }
+                this.$watch('tab', (tab) => {
+                    this.$dispatch('section-tabs:change', { tab })
+                    this.$nextTick(() => this.refresh_panel())
+                })
             },
             // A tab id, or the tab an aliased hash (a prefix) belongs to.
             tab_for(hash) {
@@ -147,7 +160,7 @@ const current_tab = requested_active && tab_ids.includes(requested_active) ? req
             select(next) {
                 if (!this.tabs.includes(next)) return
                 this.tab = next
-                history.replaceState(null, '', '#' + next)
+                if (this.sync) history.replaceState(null, '', '#' + next)
                 this.$nextTick(() => this.$refs['tab-' + next]?.focus())
             },
             step(offset) {
@@ -155,8 +168,8 @@ const current_tab = requested_active && tab_ids.includes(requested_active) ? req
                 this.select(this.tabs[(index + offset + this.tabs.length) % this.tabs.length])
             },
         }`}
-        x-on:hashchange.window="follow_hash()"
-        x-on:click.window="follow_link($event)"
+        x-on:hashchange.window={sync_hash ? 'follow_hash()' : undefined}
+        x-on:click.window={sync_hash ? 'follow_link($event)' : undefined}
     >
         <div class="[ section-tabs-list ]" role="tablist" aria-label={aria_label}>
             {tabs.map((tab) =>

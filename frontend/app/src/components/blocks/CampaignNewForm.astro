@@ -99,7 +99,9 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                 this.systems.push({ id: picked.id, name: picked.name })
             this.$nextTick(() => {
                 const data = picker && window.Alpine ? window.Alpine.$data(picker) : null
-                if (data) { data.query = ''; data.picked_id = ''; data.picked_name = ''; data.icon = '' }
+                if (data) { data.picked_name = ''; data.icon = '' }
+                const combobox = picker?.querySelector('.combobox')
+                if (combobox && window.Alpine) window.Alpine.$data(combobox).clear()
             })
         },
         remove_system(id) { this.systems = this.systems.filter((system) => system.id !== id) },

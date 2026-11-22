@@ -18,7 +18,7 @@ export default {
             description: {
                 component: [
                     'The generic popover: a trigger (`button` slot) that toggles a panel (default slot) anchored under it. Use `ActionMenu` for a list of actions; reach for `Dropdown` directly when the panel holds arbitrary content such as filters or a small form.',
-                    'The panel is teleported to `<body>` with `x-teleport` and positioned with `x-anchor`, so it is not inside the component\'s DOM and is not clipped by `overflow: hidden` parents. Escape and a mousedown outside close it; the trigger carries `aria-haspopup` and `aria-expanded`.',
+                    'The panel is teleported to `<body>` with `x-teleport` and positioned with `x-anchor`, so it is not inside the component\'s DOM and is not clipped by `overflow: hidden` parents. Escape (which returns focus to the trigger and holds back the keyup so a surrounding dialog stays open) and a mousedown outside close it; the trigger carries `aria-haspopup` and `aria-expanded`.',
                     'The root also gets the `is-open` class while open. Htmx content inside the panel is processed when it opens.',
                 ].join('\n\n'),
             },
@@ -78,6 +78,32 @@ export const EscapeCloses = {
         await userEvent.keyboard('{Escape}')
         await waitFor(() => expect(trigger).toHaveAttribute('aria-expanded', 'false'))
         await waitFor(() => expect(screen.getByText('Fleet history')).not.toBeVisible())
+    },
+}
+
+export const EscapeKeepsDialogOpen = {
+    name: 'Escape closes only the panel, not a surrounding dialog',
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        // Dialogs close on the Escape keyup at window level; the dropdown must stop that keyup.
+        const reached_window: string[] = []
+        const on_keyup = (event: KeyboardEvent) => { if (event.key === 'Escape') reached_window.push(event.type) }
+        window.addEventListener('keyup', on_keyup)
+        try {
+            const trigger = within(canvasElement).getByRole('button', { name: 'Fleets' })
+            await userEvent.click(trigger)
+            await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+            await userEvent.keyboard('{Escape}')
+            await waitFor(() => expect(trigger).toHaveAttribute('aria-expanded', 'false'))
+            await expect(reached_window).toHaveLength(0)
+            // Focus returns to the trigger and the marker is cleared after the keyup.
+            await expect(trigger).toHaveFocus()
+            await expect(trigger).not.toHaveAttribute('data-combobox-escape')
+            // With the panel closed, the next Escape is not swallowed.
+            await userEvent.keyboard('{Escape}')
+            await expect(reached_window).toHaveLength(1)
+        } finally {
+            window.removeEventListener('keyup', on_keyup)
+        }
     },
 }
 
