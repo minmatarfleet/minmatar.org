@@ -4,7 +4,7 @@ Every document under `docs/`, with its status. **Current** describes the code on
 
 When a plan ships, change its status here to historical and give it a header saying what shipped and what changed (see `docs/archive/plans/` for examples).
 
-Other entry points: the [root README](../README.md) (local setup, quickstart), [backend/README.md](../backend/README.md), [frontend/app/README.md](../frontend/app/README.md), [desktop/README.md](../desktop/README.md), [mobile/README.md](../mobile/README.md), [mcps/README.md](../mcps/README.md), [backend/campaigns/README.md](../backend/campaigns/README.md). Agent rules live in `.claude/rules/` (the source of truth; `.cursor/` is generated from it by `scripts/sync_agent_config.py`).
+Other entry points: the [root README](../README.md) (local setup, quickstart), [backend/README.md](../backend/README.md), [frontend/app/README.md](../frontend/app/README.md), [desktop/README.md](../desktop/README.md), [mobile/README.md](../mobile/README.md), [mcps/README.md](../mcps/README.md), [backend/campaigns/README.md](../backend/campaigns/README.md). Agent rules live in `.claude/rules/` (the source of truth; `.cursor/` is generated from it by `scripts/sync_agent_config.py`). Pull requests follow `.github/pull_request_template.md` (frontend and backend reviews, Rust justifications, docs), checked by `scripts/check_pull_request.py`; see `.claude/rules/pull-requests.md`.
 
 ## Development setup
 

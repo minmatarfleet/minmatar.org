@@ -49,6 +49,9 @@ only then write a new component.
 - **Changed a shared component's props or states:** update its stories (a new prop gets a control and a story).
 - **New or changed feature block that renders from props:** add or update its Features story with scenario
   stories (empty, typical, busy, edge cases) and typed fixtures.
+- **Justify it in the pull request.** A new `library.ts` entry, a change to a listed component or a
+  composition, or a token change needs a person's justification in the pull request's "Rust component library"
+  section (`.claude/rules/pull-requests.md`). Ask the person for it and record their words; never write it.
 - **Regenerate generated files:** `UPDATE_CATALOG=1 npx vitest run testing/rust/catalog.test.ts` (and
   `UPDATE_TOKENS=1 npx vitest run testing/rust/foundations.test.ts` after changing tokens).
 

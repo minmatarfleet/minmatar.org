@@ -192,6 +192,7 @@ Every shared component is in **Rust**, the Storybook at [my.minmatar.org/rust](h
 
 - **Start from `frontend/app/rust/CATALOG.md`**: every shared component with its import, props, slots and stories, generated from the library (`testing/rust/catalog.test.ts`, `UPDATE_CATALOG=1` rewrites it). AI agents use it through the `rust-components` skill.
 - A component that two features use belongs in `rust/library.ts` with a stories file in the same pull request. `testing/rust/library.test.ts` requires at least three stories, `play()` tests and a docs description for each.
+- Adding a component to `rust/library.ts`, changing a component listed there or a composition, or changing a design token needs a person's justification in the pull request (the "Rust component library" section of `.github/pull_request_template.md`): why the existing library could not be used as is. `scripts/check_pull_request.py` fails the pull request without it, and an agent never writes it.
 - Feature blocks that render from props are under **Features** with typed fixture data (`rust/fixtures/features/`), one story per scenario, so a feature can be built and reviewed without the backend.
 - Tokens as data: `/rust/tokens.json` (Design Tokens Community Group format), generated from `src/styles/` and kept current by `testing/rust/foundations.test.ts`.
 - Stories are tests: `npm run test` renders every story and runs its `play()` (`testing/rust/stories.test.ts`), and CI runs them in Chromium against the production build.
