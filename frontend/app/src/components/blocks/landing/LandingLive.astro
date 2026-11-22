@@ -74,7 +74,7 @@ const last = Math.max(played.length - 1, 0)
 <style lang="scss">
     .landing-live {
         padding-top: var(--space-m);
-        border-top: 1px solid var(--hairline-medium);
+        border-top: 1px solid var(--border-color);
     }
 
     .landing-live__label {
@@ -93,7 +93,7 @@ const last = Math.max(played.length - 1, 0)
         font-weight: normal;
         letter-spacing: normal;
         text-transform: none;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .landing-live__all {
@@ -136,10 +136,10 @@ const last = Math.max(played.length - 1, 0)
         box-sizing: border-box;
         padding: var(--space-2xs) 0;
         overflow: hidden;
-        border-bottom: 1px solid var(--hairline);
+        border-bottom: 1px solid var(--border-color);
         transform-origin: left center;
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
 
         time {
             font-variant-numeric: tabular-nums;
@@ -158,7 +158,7 @@ const last = Math.max(played.length - 1, 0)
 
     @keyframes landing-live-pop {
         0% { opacity: 0; transform: scale(0.86); }
-        35% { opacity: 1; transform: scale(1.04); background: color-mix(in srgb, var(--fleet-yellow) 16%, transparent); }
+        35% { opacity: 1; transform: scale(1.04); background: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent); }
         60% { transform: scale(1); }
         100% { transform: scale(1); background: transparent; }
     }

@@ -81,6 +81,7 @@ const source = post ? post_source_url(post.content ?? '') : null
 const caption = view && 'text' in view && view.text ? await marked.parse(view.text, { renderer }) : ''
 const self_url = `${translatePath('/partials/content_viewer_component/')}${Astro.url.search}`
 
+import Carousel from '@components/blocks/Carousel.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import GuideMarkdown from '@components/blocks/GuideMarkdown.astro'
@@ -126,38 +127,21 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
     }
 
     {view?.kind === 'gallery' &&
-        <div
+        <Carousel
             class="[ content-viewer-content__gallery ]"
-            x-data={`{
-                at: 0,
-                count: ${view.images.length},
-                go(to) {
-                    const track = this.$refs.track
-                    this.at = Math.max(0, Math.min(this.count - 1, to))
-                    track.scrollTo({ left: this.at * track.clientWidth, behavior: 'smooth' })
-                },
-                seen() { this.at = Math.round(this.$refs.track.scrollLeft / this.$refs.track.clientWidth) },
-            }`}
-            x-on:keydown.left.prevent="go(at - 1)"
-            x-on:keydown.right.prevent="go(at + 1)"
-            tabindex="0"
-            role="region"
+            pagination={true}
+            align="center"
             aria-roledescription="carousel"
             aria-label={title}
         >
-            <div class="[ content-viewer-content__track ]" x-ref="track" x-on:scroll.debounce.100ms="seen()">
-                {view.images.map((image, index) =>
+            {view.images.map((image, index) =>
+                <div class="swiper-slide">
                     <figure>
                         <img src={image} alt={`${title} (${index + 1}/${view.images.length})`} loading={index === 0 ? 'eager' : 'lazy'} />
                     </figure>
-                )}
-            </div>
-            <div class="[ content-viewer-content__gallery-bar ]">
-                <button type="button" x-on:click="go(at - 1)" x-bind:disabled="at === 0" aria-label={t('content_viewer.previous')}>‹</button>
-                <span class="[ content-viewer-content__count ]"><strong x-text="at + 1">1</strong> / {view.images.length}</span>
-                <button type="button" x-on:click="go(at + 1)" x-bind:disabled="at === count - 1" aria-label={t('content_viewer.next')}>›</button>
-            </div>
-        </div>
+                </div>
+            )}
+        </Carousel>
     }
 
     {(view?.kind === 'video' || view?.kind === 'image' || view?.kind === 'gallery') && view.text &&
@@ -237,70 +221,18 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
         aspect-ratio: 4 / 3;
     }
 
-    // Swipe on a phone, arrows or keys on desktop; one image per screen.
-    .content-viewer-content__gallery {
+    // A Carousel: swipe on a phone, arrows on desktop, one image per slide.
+    .content-viewer-content__gallery :global(figure) {
         display: flex;
-        flex-direction: column;
-        gap: var(--space-xs);
-        outline-offset: var(--space-3xs);
-    }
-
-    .content-viewer-content__track {
-        display: grid;
-        grid-auto-flow: column;
-        grid-auto-columns: 100%;
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-        scrollbar-width: none;
-
-        &::-webkit-scrollbar {
-            display: none;
-        }
-
-        figure {
-            display: flex;
-            justify-content: center;
-            margin: 0;
-            scroll-snap-align: center;
-        }
-
-        img {
-            display: block;
-            max-width: 100%;
-            max-height: calc(100dvh - var(--space-3xl) * 3);
-            object-fit: contain;
-        }
-    }
-
-    .content-viewer-content__gallery-bar {
-        display: flex;
-        align-items: center;
         justify-content: center;
-        gap: var(--space-s);
-
-        button {
-            padding: var(--space-3xs) var(--space-s);
-            border: 1px solid var(--hairline-strong);
-            background: transparent;
-            color: var(--highlight);
-            font-size: var(--step-1);
-            line-height: 1;
-            cursor: pointer;
-
-            &:disabled {
-                opacity: 0.35;
-                cursor: default;
-            }
-        }
+        margin: 0;
     }
 
-    .content-viewer-content__count {
-        font-variant-numeric: tabular-nums;
-        color: var(--text-muted);
-
-        strong {
-            color: var(--highlight);
-        }
+    .content-viewer-content__gallery :global(img) {
+        display: block;
+        max-width: 100%;
+        max-height: calc(100dvh - var(--space-3xl) * 3);
+        object-fit: contain;
     }
 
     .content-viewer-content__caption {
@@ -330,6 +262,6 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
         gap: var(--space-xs);
         margin: 0;
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 </style>

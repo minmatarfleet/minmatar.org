@@ -11,9 +11,9 @@ const { t } = i18n(Astro.url)
  * - A native <dialog> (top layer, focus trap, Escape) that fills the screen on
  *   phones and is a panel sized to the content on desktop: wide for a video,
  *   fitted for a poster, a reading column for articles and guides.
- * - Opening adds a #viewer history entry through the page router's own
- *   navigate(), so Back (or a swipe back on a phone) closes the viewer, and
- *   the router treats it as a same-page hash move: no page swap, no reload.
+ * - Opening follows a hidden #viewer link, which the page router handles as a
+ *   same-page hash move: Back (or a swipe back on a phone) closes the viewer,
+ *   with no page swap and no reload. Without a router it is a plain hash link.
  * - Closing empties the body, which stops a playing video.
  */
 interface Props {
@@ -30,6 +30,8 @@ const HASH = '#viewer'
 const ZOOM_MAX = 6
 const ZOOM_DOUBLE = 2.5
 
+import Button from '@components/blocks/Button.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 import TrashIcon from '@components/icons/buttons/TrashIcon.astro'
 ---
 
@@ -44,6 +46,7 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro'
         title: '',
         href: '',
         open(detail) {
+            if (!this.dialog?.isConnected) return
             this.title = detail.title ?? ''
             this.href = detail.href ?? ''
             this.loading = true
@@ -54,13 +57,10 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro'
             // A #viewer entry, added through the page router so it knows the
             // hash: Back is then a same-page hash move (no page swap) and
             // the popstate below closes the viewer.
-            // Without the router on the page (Storybook, a plain page), a
-            // plain hash entry: navigate() would fall back to a full load.
-            if (location.hash !== '${HASH}') {
-                const routed = window.content_viewer_navigate && document.querySelector('[name="astro-view-transitions-enabled"]')
-                if (routed) window.content_viewer_navigate(location.pathname + location.search + '${HASH}')
-                else history.pushState(null, '', '${HASH}')
-            }
+            // Through a #viewer link, clicked: the page router turns it into
+            // its own same-page hash move (so Back closes the viewer without a
+            // page swap); without a router it is a plain hash link.
+            if (location.hash !== '${HASH}') this.$refs.hash_link.click()
         },
         loaded(event) {
             if (event.target !== this.$refs.body) return
@@ -155,7 +155,12 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro'
                 const img = event.target.closest?.('img')
                 if (img && !img.closest('a')) { event.preventDefault(); this.zoom_open(img) }
             })
-            const popped = () => { if (this.is_open && location.hash !== '${HASH}') this.finish() }
+            // A viewer removed from the page (a story switch, a swap) drops
+            // its listener instead of acting on a dialog that is gone.
+            const popped = () => {
+                if (!this.dialog.isConnected) return window.removeEventListener('popstate', popped)
+                if (this.is_open && location.hash !== '${HASH}') this.finish()
+            }
             window.addEventListener('popstate', popped)
             document.addEventListener('astro:before-swap', () => {
                 window.removeEventListener('popstate', popped)
@@ -169,13 +174,14 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro'
     x-bind:data-loading="loading"
     {...attributes}
 >
+    <a href={HASH} x-ref="hash_link" hidden tabindex="-1" aria-hidden="true"></a>
     <div class="[ content-viewer__panel ]">
         <header class="[ content-viewer__header ]">
             <h2 id="content-viewer-title" x-text="title"></h2>
             <a class="[ content-viewer__open ]" x-bind:href="href" x-show="href">{t('content_viewer.open_page')}</a>
-            <button type="button" class="[ content-viewer__close ]" x-on:click="close()" aria-label={t('content_viewer.close')}>
+            <StylessButton type="button" class="[ content-viewer__close ]" x-on:click="close()" aria-label={t('content_viewer.close')}>
                 <TrashIcon />
-            </button>
+            </StylessButton>
         </header>
         <div class="[ content-viewer__skeleton ]" x-show="loading" aria-hidden="true">
             <span class="[ skel skel-media ]"></span>
@@ -211,22 +217,14 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro'
             />
         </div>
         <div class="[ content-viewer__zoom-bar ]">
-            <button type="button" x-on:click="zoom_to(zoom.scale / 1.5)" x-bind:disabled="zoom.scale <= 1" aria-label={t('content_viewer.zoom_out')}>−</button>
+            <Button size="sm" color="transparent" narrow={true} type="button" x-on:click="zoom_to(zoom.scale / 1.5)" x-bind:disabled="zoom.scale <= 1" aria-label={t('content_viewer.zoom_out')}>−</Button>
             <span x-text="Math.round(zoom.scale * 100) + '%'">100%</span>
-            <button type="button" x-on:click="zoom_to(zoom.scale * 1.5)" x-bind:disabled={`zoom.scale >= ${ZOOM_MAX}`} aria-label={t('content_viewer.zoom_in')}>+</button>
-            <button type="button" x-on:click="zoom_to(1)" x-bind:disabled="zoom.scale === 1">{t('content_viewer.zoom_fit')}</button>
-            <button type="button" x-ref="zoom_close" x-on:click="zoom_close()" aria-label={t('content_viewer.zoom_close')}><TrashIcon /></button>
+            <Button size="sm" color="transparent" narrow={true} type="button" x-on:click="zoom_to(zoom.scale * 1.5)" x-bind:disabled={`zoom.scale >= ${ZOOM_MAX}`} aria-label={t('content_viewer.zoom_in')}>+</Button>
+            <Button size="sm" color="transparent" narrow={true} type="button" x-on:click="zoom_to(1)" x-bind:disabled="zoom.scale === 1">{t('content_viewer.zoom_fit')}</Button>
+            <StylessButton type="button" class="[ content-viewer__close ]" x-ref="zoom_close" x-on:click="zoom_close()" aria-label={t('content_viewer.zoom_close')}><TrashIcon /></StylessButton>
         </div>
     </div>
 </dialog>
-
-<script>
-    // The page router's navigate, for the viewer's #viewer history entry.
-    // Loaded on first use: importing the router module installs its popstate
-    // handler, which reloads a page that has no router (Storybook) on Back.
-    ;(window as any).content_viewer_navigate = (href: string) =>
-        import('astro:transitions/client').then(({ navigate }) => navigate(href))
-</script>
 
 <style lang="scss" is:global>
     @use '../../styles/mixins/skeleton';
@@ -250,7 +248,7 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro'
         overscroll-behavior: contain;
 
         &::backdrop {
-            background: color-mix(in srgb, var(--background) 85%, transparent);
+            background: color-mix(in srgb, var(--background) var(--tint-dense), transparent);
             backdrop-filter: blur(4px);
         }
 
@@ -262,7 +260,10 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro'
         &:has([data-kind="missing"]) { --content-viewer-width: min(36rem, calc(100vw - var(--space-xl) * 2)); }
     }
 
+    // Its own stacking context: a Carousel's slides (z-index 1) stay inside
+    // it, under the zoom layer that follows it.
     .content-viewer__panel {
+        isolation: isolate;
         display: flex;
         flex-direction: column;
         max-height: calc(100dvh - var(--space-xl) * 2);
@@ -303,10 +304,7 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro'
         flex: none;
         display: flex;
         padding: var(--space-2xs);
-        border: none;
-        background: transparent;
         color: var(--highlight);
-        cursor: pointer;
 
         svg {
             width: var(--space-s);
@@ -391,31 +389,7 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro'
             min-width: var(--space-2xl);
             text-align: center;
             font-variant-numeric: tabular-nums;
-            color: var(--text-muted);
-        }
-
-        button {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-width: var(--space-l);
-            padding: var(--space-3xs) var(--space-xs);
-            border: 1px solid var(--hairline-strong);
-            background: transparent;
-            color: var(--highlight);
-            font-size: var(--step-0);
-            line-height: 1;
-            cursor: pointer;
-
-            &:disabled {
-                opacity: 0.35;
-                cursor: default;
-            }
-
-            svg {
-                width: var(--space-s);
-                height: var(--space-s);
-            }
+            color: var(--faded);
         }
     }
 

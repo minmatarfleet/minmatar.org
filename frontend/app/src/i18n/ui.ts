@@ -727,8 +727,6 @@ export const ui = {
         'content_viewer.zoom_out': 'Zoom out',
         'content_viewer.zoom_fit': 'Fit',
         'content_viewer.zoom_close': 'Close zoom',
-        'content_viewer.previous': 'Previous image',
-        'content_viewer.next': 'Next image',
         'content_viewer.source': 'Posted on Reddit',
         'content_viewer.not_found': 'This could not be opened here',
         'content_viewer.not_found_hint': 'Open the full page instead.',

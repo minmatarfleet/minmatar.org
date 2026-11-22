@@ -79,17 +79,6 @@
     --discord-link:         #00a8fc;
     --discord-mention:      #dee0fc;
     --discord-mention-bg:   rgba(88, 101, 242, 0.3);
-
-    // Retired tokens, kept at their original values only for the in-flight
-    // landing work (index, landing-new, landing blocks). New code uses
-    // --faded, --border-color, --border-color-hover, --highlight and
-    // --fleet-yellow; the retired_token convention rule enforces it.
-    --text-muted:           rgba(255, 255, 255, 0.55);
-    --hairline:             rgba(255, 255, 255, 0.06);
-    --hairline-medium:      rgba(255, 255, 255, 0.08);
-    --hairline-strong:      rgba(255, 255, 255, 0.12);
-    --glow:                 rgba(255, 255, 255, 0.75);
-    --attention:            #f08c4a;
 }
 
 // Grades 50-950 of every brand colour. 500 is the base. Lighter steps mix the base
