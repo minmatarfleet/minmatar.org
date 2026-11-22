@@ -65,6 +65,7 @@ const UNUSED_ALLOWLIST: Record<string, string> = {
     'blocks/sde/SolarSystemSearch': 'retired or given a caller in this PR (W5/W6)',
     'blocks/sde/TypeResults': 'the search partials emit Combobox options now; read-only and linking result lists wait for a caller (W9)',
     'blocks/sde/SolarSystemResults': 'the search partials emit Combobox options now; read-only and linking result lists wait for a caller (W9)',
+    'blocks/Chart': 'new in W6b; the hand-rolled Chart.js blocks migrate to it in a later wave',
     'compositions/Center': 'retired or given a caller in this PR (W5/W6)',
     'compositions/Cover': 'retired or given a caller in this PR (W5/W6)',
     // Not in the W2 brief's list: no src/ file references it on this branch. Confirm with the owner before W5/W6 land.
