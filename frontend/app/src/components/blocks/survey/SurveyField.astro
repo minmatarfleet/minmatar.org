@@ -5,6 +5,7 @@ import FixedFluid from '@components/compositions/FixedFluid.astro'
 import Select from '@components/blocks/Select.astro'
 import Textarea from '@components/blocks/Textarea.astro'
 import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import SurveyContextPanel from '@components/blocks/survey/SurveyContextPanel.astro'
 import { get_player_icon } from '@helpers/eve_image'
 
@@ -59,6 +60,9 @@ const matrix_option_color = (kind: string, choices: string[], choice: string, in
     }
     return NEUTRAL
 }
+
+// A scale option is drawn in its own colour: outline and text, and the fill when picked.
+const scale_color = (color: string) => `--chip_color: ${color}; --chip_text: ${color}`
 ---
 
 <Flexblock gap="var(--space-xs)" class="[ question ]">
@@ -80,10 +84,14 @@ const matrix_option_color = (kind: string, choices: string[], choice: string, in
         <div class="[ scale-group ]">
             <div class:list={['[ scale ]', { 'scale--enps': q.type === 'enps' }]}>
                 {scale_options(q).map((opt) => (
-                    <label class="[ scale-chip ]" style={`--c: ${opt.color}`}>
-                        <input type="radio" name={`q__${q.key}`} value={opt.value} required={q.required} checked={scalar_value === String(opt.value)} />
-                        <span class="[ chip ]">{opt.label}</span>
-                    </label>
+                    <FilterChip
+                        type="radio"
+                        name={`q__${q.key}`}
+                        value={opt.value}
+                        checked={scalar_value === String(opt.value)}
+                        input_attributes={{ required: q.required }}
+                        style={scale_color(opt.color)}
+                    >{opt.label}</FilterChip>
                 ))}
             </div>
             {q.type !== 'agree' && (
@@ -99,10 +107,14 @@ const matrix_option_color = (kind: string, choices: string[], choice: string, in
         <div class="[ scale-group ]">
             <div class="[ scale ]">
                 {q.choices.map((choice, ci) => (
-                    <label class="[ scale-chip ]" style={`--c: ${matrix_option_color(q.scale_kind, q.choices, choice, ci)}`}>
-                        <input type="radio" name={`q__${q.key}`} value={choice} required={q.required} checked={scalar_value === choice} />
-                        <span class="[ chip ]">{choice}</span>
-                    </label>
+                    <FilterChip
+                        type="radio"
+                        name={`q__${q.key}`}
+                        value={choice}
+                        checked={scalar_value === choice}
+                        input_attributes={{ required: q.required }}
+                        style={scale_color(matrix_option_color(q.scale_kind, q.choices, choice, ci))}
+                    >{choice}</FilterChip>
                 ))}
             </div>
             {q.scale_labels && (
@@ -168,10 +180,13 @@ const matrix_option_color = (kind: string, choices: string[], choice: string, in
                     </div>
                     <div class="[ scale ]">
                         {q.choices.map((choice, ci) => (
-                            <label class="[ scale-chip ]" style={`--c: ${matrix_option_color(q.scale_kind, q.choices, choice, ci)}`}>
-                                <input type="radio" name={`m__${q.key}__${row.key}`} value={choice} checked={matrix_value[row.key] === choice} />
-                                <span class="[ chip ]">{choice}</span>
-                            </label>
+                            <FilterChip
+                                type="radio"
+                                name={`m__${q.key}__${row.key}`}
+                                value={choice}
+                                checked={matrix_value[row.key] === choice}
+                                style={scale_color(matrix_option_color(q.scale_kind, q.choices, choice, ci))}
+                            >{choice}</FilterChip>
                         ))}
                     </div>
                 </div>
@@ -216,25 +231,6 @@ const matrix_option_color = (kind: string, choices: string[], choice: string, in
     /* Scales */
     .scale-group { display: inline-flex; flex-direction: column; gap: var(--space-2xs); width: fit-content; max-width: 100%; }
     .scale { display: flex; flex-wrap: wrap; gap: var(--space-2xs); }
-    .scale-chip { cursor: pointer; }
-    .scale-chip input { position: absolute; width: 1px; height: 1px; opacity: 0; }
-    .chip {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 2.2rem;
-        padding: var(--space-3xs) var(--space-xs);
-        border: 1px solid var(--c);
-        color: var(--c);
-        border-radius: 4px;
-        font-size: 0.9em;
-        font-weight: 500;
-        transition: var(--fast-transition);
-        user-select: none;
-    }
-    .scale-chip:hover .chip { background: color-mix(in srgb, var(--c) var(--tint-soft), transparent); }
-    .scale-chip input:checked + .chip { background: var(--c); color: #0d0d0d; font-weight: 600; }
-    .scale-chip input:focus-visible + .chip { outline: 2px solid var(--highlight); outline-offset: 2px; }
     .scale-legend { display: flex; justify-content: space-between; width: 100%; color: var(--foreground); opacity: 0.6; }
 
     .multi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: var(--space-2xs) var(--space-l); }
