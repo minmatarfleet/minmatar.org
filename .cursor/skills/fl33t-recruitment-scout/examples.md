@@ -10,6 +10,16 @@ jargon ("hook", "beat", "fear-kill", "weave").
 
 ---
 
+## 2026-11-22 FOSFO disbanded
+
+Recruiter correction. FOSFO is gone. Do not name it, and do not link the August nanogang ad, even when that post is still on `u/MinmatarFleet`.
+
+EUTZ veterans who want small gang go to Soltech Armada. That is the veteran faction-warfare corp with EUTZ hours. Banshee Squadron stays the EUTZ seat for new and early-intermediate pilots. The Dark Tribe stays USTZ veteran small gang. Rattini stays capitals and many characters.
+
+This overturns the 5 Oct note that says to keep linking the FOSFO ad, and the 24 Sep layout row that puts FOSFO on the map. Older FOSFO sends below are history.
+
+---
+
 ## 2026-11-14 a video picked for the post, and second replies
 
 Recruiter correction, two parts.
@@ -109,7 +119,7 @@ Older entries below that name that handle are historical sends. Do not copy thos
 - u/420skateman's Academy or alliance paste is still Responded, including when the seat should have been Extraction, a wormhole redirect, or MFA for an Alpha. No second draft.
 - [LF corp with 02:00 activity](https://www.reddit.com/r/evejobs/comments/1wui226/lf_corp_with_0200_activity/) — they answered that they want anything that is not highsec. Same rule as miner alts who refused highsec: do not send a bulwark pitch after that.
 - [Looking for highsec l3 mission running corp](https://www.reddit.com/r/evejobs/comments/1wwd4l7/looking_for_highsec_l3_mission_running_corp/) — Alpha, and they said they do not have Omega. Already replied. Academy stays Omega-only. The note belongs in section 2, not a follow-up.
-- FOSFO's newest ad is older than the 30-day `u/MinmatarFleet` window. Keep linking [FOSFO EUTZ FW nanogang](https://www.reddit.com/r/evejobs/comments/1w2gxzm/fosfo_eutz_fw_nanogang_tight_crew_thick_skin/) until a newer one posts.
+- FOSFO ad note overturned 22 Nov 2026. The corp disbanded. Do not link the nanogang ad. See the 22 Nov entry.
 - No kit change. 625B down in Amamake stays the default extra AAR. The September frontline report and the Amamake economic report are not fight AARs.
 
 ---

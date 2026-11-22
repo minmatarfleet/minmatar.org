@@ -155,10 +155,10 @@ OpenAPI docs: https://api.minmatar.org/api/docs
 Fetch posts from **`u/MinmatarFleet`** for the **past 30 days** (default
 `--pre-scout-days 30`). This is the alliance recruitment Reddit account; it posts
 corp ads on `r/evejobs` (Rattini, Soltech, Dark Tribe, Academy,
-Banshee, Solaris, FOSFO, Extraction, etc.). **Only route to corps on the
-recruiter layout below.** Corps leave the alliance (e.g. Straylight is gone).
-FOSFO is on that layout. Name it and link the live `u/MinmatarFleet` ad even
-when the corporations API has not listed it yet.
+Banshee, Solaris, Extraction, etc.). **Only route to corps on the
+recruiter layout below.** Corps leave the alliance (Straylight is gone,
+FOSFO disbanded). Do not route to FOSFO and do not link its old ads, even
+if a `u/MinmatarFleet` post is still up.
 
 ```
 https://www.reddit.com/user/MinmatarFleet/submitted/
@@ -255,14 +255,14 @@ Replace AAR rows when a new mega-fight AAR posts, and video rows when a newer
 video does the same job. URLs also live in `config.json` (`proof_videos`,
 `proof_aars`, `proof_pages`).
 
-**Video shelf** (one per r/evejobs and forum reply; last refreshed 2026-11-14):
+**Video shelf** (one per r/evejobs and forum reply; last refreshed 2026-11-22):
 
 | Video | Published | URL | Pick it when the post… |
 |-------|-----------|-----|------------------------|
+| The Cope: The Imperium Retreats (Faye Vaelent) | 2026-11-15 | `https://youtu.be/6rqoUHCj5P0` | comes from nullsec or a bloc and doubts lowsec has fights at their scale. Newer than the 1 Nov "declares war" episode, which it replaces. |
 | Minmatar Fleet Alliance YC128 In Review (Faye Vaelent, 5 min) | 2026-11-14 | `https://youtu.be/Vu7IXZd80bQ` | is thin or general, or asks what we actually do. The year in one video. |
 | The Cope: The Battle of Amamake II (Faye Vaelent, 1.5 min) | 2026-11-07 | `https://youtu.be/ORIlXO7iw-8` | asks where the action is, or is a veteran coming back to shoot. The newest big fight. Part I is `https://youtu.be/8EPWdoXpu5s`. |
 | Minmatar Fleet Town Hall #38 highlights (official, 16 min) | 2026-11-07 | `https://youtu.be/qZwMM5xm7c0` | asks how the alliance is run or whether it is active, wants a job (FC, capitals, industry, PI, freight, black ops), or is a corp looking for an alliance. It has census, tribes and the war plan. |
-| The Cope: The Imperium declares war on LOWSEC (Faye Vaelent, 2 min) | 2026-11-01 | `https://youtu.be/FQf0IybswYU` | comes from nullsec or a bloc and doubts lowsec has fights at their scale. |
 | Short: Minmatar tackles a DREADNOUGHT. Lasts two seconds. (official) | 2026-09-09 | `https://youtu.be/AUL2zM8Igrc` | is from a brand-new pilot afraid of being useless or of dying. |
 | AT XXII Super Feeders (official, 4 min) | 2026-09-02 | `https://youtu.be/09-PtM6K3Xs` | wants laid-back people, jokes about their own killboard, or is done with sweaty groups. A skit, not footage. |
 | Rock Hoppin' (official, Minmatar Extraction Company, 1 min) | 2026-07-31 | `https://youtu.be/XCApG7Pt6m4` | is about mining or industry: Extraction, MFA rock fleets, highsec bulwark miners, a corp-merge industry crew. |
@@ -423,7 +423,7 @@ Two axes, then timezone only where the layout has one:
 
 | Axis | Seats |
 |------|--------|
-| Small gang, veterans | **TDT** (USTZ), **FOSFO** (EUTZ) |
+| Small gang, veterans | **TDT** (USTZ). EUTZ veterans go to **SLTAR** |
 | New / early intermediate | **SOEXD** (USTZ, wormhole on the side), **BNSQ** (EUTZ) |
 | Institutional | **L3ARN** (new), **SLTAR** (intermediate / veteran) |
 | Capitals / many characters | **ARAT** (veterans) |
@@ -431,19 +431,18 @@ Two axes, then timezone only where the layout has one:
 | Ticker | API / ad name | Route when… |
 |--------|---------------|-------------|
 | **TDT** | The Dark Tribe | **USTZ** veterans who want **small gang**. Not the new-player door. API SP / killboard lines do not turn this into a newbro corp. |
-| **FOSFO** | FOSFO (live `u/MinmatarFleet` ad) | **EUTZ** veterans who want **small gang**. Route it from this layout and link the live ad even if the corporations API has not listed the corp yet. |
 | **SOEXD** | Solaris Expeditionary Corps | **USTZ** **new or early-intermediate** pilots, with **wormhole use on the side** of faction warfare. Not the seat for veteran hole-only seekers, and not “any USTZ player.” |
-| **BNSQ** | Banshee Squadron | **EUTZ** **new or early-intermediate** pilots. The small EUTZ learning seat. Academy is the institutional new-player door when they want the school, not this crew. |
+| **BNSQ** | Banshee Squadron | **EUTZ** **new or early-intermediate** pilots. The small EUTZ learning seat. Academy is the institutional new-player door when they want the school, not this crew. Not the seat for an EUTZ veteran. |
 | **L3ARN** | Minmatar Fleet Academy | **New players, institutional.** The structured learn-by-undocking corp. All timezones. Omega required. A returning pilot who has barely fought is still this seat. Alphas go MFA, not here. |
-| **SLTAR** | Soltech Armada | **Intermediate or veteran, institutional.** The organized faction-warfare corp for people past brand-new who are not asking for a small-gang specialty or for capitals. Timezone does not decide this seat. Do not use it as the filler when the post is thin. |
-| **ARAT** | Rattini Tribe | **Veterans** flying **multiple characters and/or capitals**. Not the default veteran corp. One character and no capital ask stays SLTAR, TDT, or FOSFO. |
+| **SLTAR** | Soltech Armada | **Intermediate or veteran, institutional**, including **EUTZ veterans who want small gang**. FOSFO disbanded and this is the veteran faction-warfare corp with EUTZ hours. Timezone does not decide this seat. Do not use it as the filler when the post is thin. |
+| **ARAT** | Rattini Tribe | **Veterans** flying **multiple characters and/or capitals**. Not the default veteran corp. One character and no capital ask stays SLTAR or TDT. |
 
 Additional principles:
 
 - Pick the seat from experience first (new / early intermediate / intermediate / veteran), then style (small gang, institutional, capitals), then timezone where the layout has one.
 - **New, no timezone, wants teaching:** L3ARN. Missing timezone is not a SLTAR signal.
 - **EUTZ new or early intermediate:** BNSQ. **USTZ new or early intermediate,** especially with wormhole play beside faction warfare: SOEXD.
-- **EUTZ veteran small gang:** FOSFO. **USTZ veteran small gang:** TDT.
+- **EUTZ veteran, including small gang:** SLTAR. **USTZ veteran small gang:** TDT. **FOSFO disbanded.** Never route or link there.
 - **Intermediate or veteran, wants the organized corp, no small-gang specialty, no capital ask:** SLTAR.
 - **Industry-primary:** MFA associate corps primary. Base in highsec bulwark systems, lowsec excursions when people want out. PvP corp is a side note only. Name **Minmatar Extraction Company** (and its Amo mining ad) when they want organized mining fleets; the MFA network on `discord.gg/minmatar` for general industry/PvE. Do not name a Discord person. Dual accounts (mining main + PvP alt) can split Extraction + the FW seat that matches the combat character. On forums, linking `my.minmatar.org/alliance/corporations/` works when dual-routing. Small industry **corps** seeking a null alliance home still get Extraction (fleet density / ore volume). The video is **Rock Hoppin'**.
 - **Ex-FL33T returning:** if they already left Rattini and are not asking for dreads or a pile of characters, route **SLTAR** rather than sending them back to ARAT.
