@@ -60,7 +60,8 @@ export const Default = {
         await expect(img).toHaveAttribute('height', '64')
         // Clickable: a real button, and Alpine opens the character modal from it.
         const button = within(canvasElement).getByRole('button', { name: `Profile picture of ${EVE.character_name}` })
-        await expect(button).toHaveAttribute('type', 'button')
+        await expect(button.tagName).toBe('SPAN')
+        await expect(button).toHaveAttribute('tabindex', '0')
         await expect(button).toContainElement(img)
         await expect(button.getAttribute('x-on:click.stop.prevent')).toBe('show_character_modal()')
         await expect(button.getAttribute('x-data')).toContain(`'${EVE.character_id}'`)
