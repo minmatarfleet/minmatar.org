@@ -6,6 +6,7 @@ import { number_thousand_separator } from '@helpers/numbers'
 import MinmatarLogo from '@components/logos/MinmatarLogo.astro'
 import AmarrLogo from '@components/logos/AmarrLogo.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 
 interface Props {
     issue: AmamakeMarketIssue
@@ -32,7 +33,7 @@ const max_catchment = Math.max(...issue.catchment.rows.map((row) => row.ships), 
             <h3>Sold vs lost</h3>
             <p class="[ mk-dek ]">{issue.hulls.dek}</p>
         </header>
-        <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Hulls sold in Amamake versus lost in the warzone">
+        <XFadeScroll class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Hulls sold in Amamake versus lost in the warzone">
         <table class="[ mk-table mk-table--hulls ]">
             <thead>
                 <tr>
@@ -88,7 +89,7 @@ const max_catchment = Math.max(...issue.catchment.rows.map((row) => row.ships), 
                 ))}
             </tbody>
         </table>
-        </div>
+        </XFadeScroll>
     </div>
 
     <div class="[ mk-demand-block ]">
@@ -96,7 +97,7 @@ const max_catchment = Math.max(...issue.catchment.rows.map((row) => row.ships), 
             <h3>Ships destroyed by system</h3>
             <p class="[ mk-dek ]">{issue.catchment.dek}</p>
         </header>
-        <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Ships destroyed by system">
+        <XFadeScroll class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Ships destroyed by system">
             <table class="[ mk-table mk-table--traffic ]">
             <thead>
                 <tr>
@@ -139,7 +140,7 @@ const max_catchment = Math.max(...issue.catchment.rows.map((row) => row.ships), 
                 ))}
             </tbody>
         </table>
-        </div>
+        </XFadeScroll>
     </div>
 </section>
 
@@ -272,7 +273,6 @@ const max_catchment = Math.max(...issue.catchment.rows.map((row) => row.ships), 
         display: flex;
         flex-direction: column;
         gap: var(--space-s);
-        overflow-x: auto;
         min-width: 0;
         width: 100%;
     }

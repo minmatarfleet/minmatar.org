@@ -1,0 +1,9 @@
+[
+  {
+    "file": "src/components/blocks/FleetKills.astro",
+    "selector": ".fleet-kills__chart",
+    "path": "converge",
+    "pattern": "scroll-fade",
+    "note": "The scroller is a bordered panel; XFadeScroll's edge mask now fades the border and background at the scrolling edges too."
+  }
+]
