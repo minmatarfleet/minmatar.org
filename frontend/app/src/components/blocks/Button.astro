@@ -2,6 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
+import { external_link_attributes } from '@helpers/external_link'
 import FlexInline from '@components/compositions/FlexInline.astro';
 import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
 
@@ -57,21 +58,13 @@ const button_color = (color !== 'transparent' ? 'var(--button-color)' : 'var(--h
 
 const Element = href ? 'a' : 'button';
 
-const leaving_website_title = t('leaving_website').replace(/'/g, "\\'")
-const external_disclaimer_partial = translatePath('/partials/external_link_disclaimer_dialog/')
-const nested_x_data = external ? `{
-        hide_external_link_disclaimer: $persist(false),
-        show_external_link_disclaimer() {
-            const root_data = Alpine.$data(document.body)
-            if (!root_data || !root_data.show_alert_dialog) return Promise.resolve(false)
-            return root_data.show_alert_dialog({
-                title: '${leaving_website_title}',
-                partial: '${external_disclaimer_partial}',
-                accept_href: '${href}',
-            })
-        },
-        ${x_data_elements}
-    }` : (wants_alpine_scope ? (x_data_elements.trim() ? `{
+const external_link = external ? external_link_attributes({
+    href: href ?? '',
+    title: t('leaving_website'),
+    partial: translatePath('/partials/external_link_disclaimer_dialog/'),
+    x_data_elements,
+}) : undefined
+const nested_x_data = external_link ? external_link.x_data : (wants_alpine_scope ? (x_data_elements.trim() ? `{
         ${x_data_elements.trim()}
     }` : '{}') : undefined)
 ---
@@ -89,10 +82,7 @@ const nested_x_data = external ? `{
     target={external || new_tab ? '_blank' : undefined }
     rel={external ? 'nofollow noopener noreferrer' : (new_tab ? 'noopener noreferrer' : undefined) }
     x-data={nested_x_data}
-    x-on:click.prevent={external ?
-        `hide_external_link_disclaimer ? window.open('${href}', '_blank') : show_external_link_disclaimer()` :
-        x_on
-    }
+    x-on:click.prevent={external_link ? external_link.x_on_click_prevent : x_on}
 >
     <FlexInline gap={narrow ? 'var(--space-2xs)' : 'var(--space-xs)'} justification={centered ? 'center' : 'flex-start'}>
         <slot name="icon" />

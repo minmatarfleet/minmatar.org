@@ -81,3 +81,22 @@ export const WrappingContent = {
         await expect(button.querySelectorAll('span')).toHaveLength(2)
     },
 }
+
+export const BareXData = {
+    args: { 'x-data': true, 'x-on:click': 'opened = true', slots: { default: 'Open details' } },
+    play: async ({ canvasElement }: Ctx) => {
+        // A bare `x-data` used to throw while rendering (`true.slice`).
+        const button = within(canvasElement).getByRole('button', { name: 'Open details' })
+        await expect(button).toHaveAttribute('x-data', '{}')
+    },
+}
+
+export const ExternalHrefWithQuote = {
+    args: { href: "https://example.com/it's?a=1", external: true, slots: { default: 'Quoted link' } },
+    play: async ({ canvasElement }: Ctx) => {
+        const link = within(canvasElement).getByRole('link', { name: 'Quoted link' })
+        // The href is JSON-encoded in the expressions, so the quote cannot end the string early.
+        await expect(link.getAttribute('x-on:click.prevent')).toContain(`window.open("https://example.com/it's?a=1", '_blank')`)
+        await expect(link.getAttribute('x-data')).toContain(`accept_href: "https://example.com/it's?a=1"`)
+    },
+}
