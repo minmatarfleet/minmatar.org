@@ -223,9 +223,6 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                 }
             })
             this.metrics_ready = true
-            if (typeof tippy === 'function') {
-                tippy('.ops-contracts-list [data-tippy-content]', tippy_options)
-            }
         },
         syncHelpersEpoch() {
             if (
