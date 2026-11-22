@@ -347,8 +347,16 @@ const RULE_DEFINITIONS: ConventionRule[] = [
     },
     {
         id: 'hand_rolled_popover',
-        kind: 'ratchet',
+        kind: 'absolute',
         why: 'Click-away popups are <Dropdown>, <ActionMenu>, <Dialog>/<DialogButton> or <Modal> (focus, Escape and stacking handled); a bare @click.outside re-implements them.',
+        exempt: {
+            'src/components/blocks/ActionMenuItem.astro': 'two-step confirm inside an action menu: cancels the confirm state on click-away, it is not a popover',
+            'src/components/blocks/FleetInvites.astro': 'closes the typeahead result list of a search input; not a click-away popup',
+            'src/components/blocks/Neocom.astro': 'mobile navigation drawer: slides in from the edge and closes on click-away, not an anchored popover',
+            'src/components/page/partials/PageHeader.astro': 'collapsible subheader action bar on small screens (in-flow, not a floating popup)',
+            'src/pages/partials/fleet_pick_ships_modal_component.astro': 'ship picker listbox inside a modal row with a rich trigger; Dropdown cannot host the trigger',
+            'src/pages/ships/doctrines/edit/[doctrine_id].astro': 'closes the typeahead result list of the fitting search; not a click-away popup',
+        },
         find: (file) => {
             if (!is_astro(file)) return []
             const exempt = COMPONENT_FILES(

@@ -94,14 +94,6 @@
     },
     "overflow_x_scroll": {},
     "direct_tippy": {},
-    "hand_rolled_popover": {
-        "src/components/blocks/ActionMenuItem.astro": 1,
-        "src/components/blocks/FleetInvites.astro": 1,
-        "src/components/blocks/Neocom.astro": 1,
-        "src/components/page/partials/PageHeader.astro": 1,
-        "src/pages/partials/fleet_pick_ships_modal_component.astro": 1,
-        "src/pages/ships/doctrines/edit/[doctrine_id].astro": 1
-    },
     "hand_rolled_pager": {},
     "component_font": {
         "src/components/blocks/ChangeDiff.astro": 1,
