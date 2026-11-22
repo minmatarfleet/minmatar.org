@@ -12,6 +12,10 @@ interface DataTableColumn {
     width?: string
     /** Hide the label visually; it stays the column's accessible name (action columns). */
     hidden_label?: boolean
+    /** Hide the whole column below this width (`48rem`): header and cells (cells need no class). */
+    hide_below?: string
+    /** Extra class on the header cell (a `bar` column gets `data-table__bar`). */
+    class?: string
 }
 
 /**
@@ -19,6 +23,21 @@ interface DataTableColumn {
  * caller writes the `<tr><td>` rows in the default slot; cells use
  * `data-table__numeric` (right-aligned, tabular figures) and
  * `data-table__actions` (right-aligned, shrink-wrapped).
+ *
+ * Row headers: a row may start with `<th scope="row">`; it is styled like a
+ * first cell. `bodies` is for callers that write their own `<tbody>` elements
+ * (several row groups): the slot is then not wrapped in a tbody (no sorting,
+ * no empty row). The `footer` slot becomes a `<tfoot>`.
+ *
+ * `variant="report"` is the editorial report look (collapsed hairline rows,
+ * small uppercase muted headers, hover wash; the rule colour comes from
+ * `--data-table-rule`). Bar cells take `data-table__bar` and a `--bar` custom
+ * property for the fill width. `variant="cards"` turns rows into stacked
+ * cards below 48rem: cells carry `data-label`, the header hides, and
+ * `data-table__card-title` spans the card.
+ *
+ * `visually_hidden` renders the table for screen readers only (chart data
+ * tables); `caption_visible` shows the caption.
  *
  * Sortable columns sort the rows already on the page (Alpine, by the cell's
  * `data-sort-<key>` attribute, else its text). Server-side paging and
@@ -37,6 +56,14 @@ interface Props {
     /** Shown in one full-width row when `is_empty` is set. */
     empty_title?: string
     is_empty?: boolean
+    /** `report`: editorial report look; `cards`: stacked cards below 48rem. */
+    variant?: 'default' | 'report' | 'cards'
+    /** The caller writes its own `<tbody>` elements; the slot is not wrapped. */
+    bodies?: boolean
+    /** Show the caption instead of hiding it visually. */
+    caption_visible?: boolean
+    /** Screen-reader-only table (no scroller, nothing painted). */
+    visually_hidden?: boolean
     [propName: string]: any
 }
 
@@ -49,13 +76,29 @@ const {
     sticky_header = false,
     empty_title,
     is_empty = false,
+    variant = 'default',
+    bodies = false,
+    caption_visible = false,
+    visually_hidden = false,
     ...attributes
 } = Astro.props
 
 delete attributes.class
 
 const sortable = columns.some((column) => column.sortable)
-const show_empty = is_empty && Boolean(empty_title)
+const show_empty = is_empty && Boolean(empty_title) && !bodies
+const has_footer = Astro.slots.has('footer')
+const hide_id = `data-table-h${[...JSON.stringify(columns)].reduce((hash, ch) => (hash * 31 + ch.charCodeAt(0)) >>> 0, 7)}`
+const hide_below = [...new Set(columns.map((column) => column.hide_below).filter(Boolean))]
+const hide_css = hide_below
+    .map((width) => {
+        const indexes = columns.map((column, index) => (column.hide_below === width ? index + 1 : 0)).filter(Boolean)
+        const selectors = indexes
+            .flatMap((n) => [`.${hide_id} :is(th, td):nth-child(${n})`])
+            .join(', ')
+        return `@media (max-width: ${width}) { ${selectors} { display: none; } }`
+    })
+    .join('\n')
 
 // Alpine over the already-rendered rows; the server owns the data.
 const sort_state = `{
@@ -97,8 +140,23 @@ const sort_state = `{
 }`
 ---
 
+{hide_css && <style is:inline set:html={hide_css} />}
+
+{visually_hidden ?
+    <table
+        {...attributes}
+        class:list={['[ visually-hidden ]', Astro.props.class]}
+    >
+        {caption && <caption>{caption}</caption>}
+        <thead>
+            <tr>{columns.map((column) => <th scope="col">{column.label}</th>)}</tr>
+        </thead>
+        {bodies ? <slot /> : <tbody><slot /></tbody>}
+        {has_footer && <tfoot><slot name="footer" /></tfoot>}
+    </table>
+    :
 <XFadeScroll
-    class:list={['[ data-table-wrap ]', { 'data-table-wrap--sticky': sticky_header }]}
+    class:list={['[ data-table-wrap ]', `data-table-wrap--${variant}`, { 'data-table-wrap--sticky': sticky_header }]}
     tabindex="0"
     role="region"
     aria-label={caption}
@@ -109,12 +167,14 @@ const sort_state = `{
             '[ data-table ]',
             `data-table--${density}`,
             `data-table--${borders}`,
+            `data-table--${variant}`,
+            hide_below.length ? hide_id : undefined,
             { 'data-table--striped': striped },
             Astro.props.class,
         ]}
-        x-data={sortable ? sort_state : undefined}
+        x-data={sortable && !bodies ? sort_state : undefined}
     >
-        {caption && <caption class="[ visually-hidden ]">{caption}</caption>}
+        {caption && <caption class:list={[{ 'visually-hidden': !caption_visible, 'data-table__caption': caption_visible }]}>{caption}</caption>}
         <thead>
             <tr>
                 {columns.map((column, index) => {
@@ -124,7 +184,7 @@ const sort_state = `{
                     return (
                         <th
                             scope="col"
-                            class:list={[{ 'data-table__numeric': column.numeric }]}
+                            class:list={[column.class, { 'data-table__numeric': column.numeric }]}
                             style={column.width ? `width: ${column.width}` : undefined}
                             aria-sort={column.sortable ? 'none' : undefined}
                             x-bind:aria-sort={column.sortable ? `aria(${JSON.stringify(column.key)})` : undefined}
@@ -142,17 +202,23 @@ const sort_state = `{
                 })}
             </tr>
         </thead>
-        <tbody x-ref={sortable ? 'body' : undefined}>
-            {show_empty ?
-                <tr data-table-static>
-                    <td colspan={columns.length}><EmptyState title={empty_title} /></td>
-                </tr>
-                :
-                <slot />
-            }
-        </tbody>
+        {bodies ?
+            <slot />
+            :
+            <tbody x-ref={sortable ? 'body' : undefined}>
+                {show_empty ?
+                    <tr data-table-static>
+                        <td colspan={columns.length}><EmptyState title={empty_title} /></td>
+                    </tr>
+                    :
+                    <slot />
+                }
+            </tbody>
+        }
+        {has_footer && <tfoot><slot name="footer" /></tfoot>}
     </table>
 </XFadeScroll>
+}
 
 <style lang="scss">
     :global(.data-table-wrap) {
@@ -199,6 +265,18 @@ const sort_state = `{
         :global(.data-table__numeric) {
             text-align: right;
             font-variant-numeric: tabular-nums;
+        }
+
+        :global(tbody th[scope='row']) {
+            color: var(--foreground);
+            font-weight: inherit;
+            background-color: var(--light-transparency-background);
+            backdrop-filter: blur(var(--transparency-backdrop-blur));
+        }
+
+        :global(tfoot td),
+        :global(tfoot th) {
+            font-weight: 600;
         }
 
         :global(.data-table__actions) {
@@ -265,5 +343,145 @@ const sort_state = `{
     th[aria-sort='descending'] :global(.data-table__sort)::after {
         content: '▼';
         opacity: 1;
+    }
+
+    :global(.data-table__caption) {
+        caption-side: top;
+        text-align: left;
+        padding: var(--space-xs) var(--space-s);
+        color: var(--faded);
+    }
+
+    // Report look: the editorial board tables (Amamake market, warzone).
+    .data-table--report {
+        border-spacing: 0;
+        border-collapse: collapse;
+
+        :global(th),
+        :global(td) {
+            padding: var(--space-xs) var(--space-s);
+            vertical-align: middle;
+            border: none;
+            border-bottom: solid 1px var(--data-table-rule, var(--mk-rule, var(--wz-rule, var(--border-color))));
+            background: none;
+            backdrop-filter: none;
+
+            @media screen and (max-width: 720px) {
+                padding: var(--space-xs) var(--space-2xs);
+            }
+        }
+
+        :global(th) {
+            font-weight: 600;
+            color: var(--faded);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: var(--step--2);
+            white-space: nowrap;
+        }
+
+        :global(tbody th[scope='row']) {
+            color: inherit;
+            font-weight: inherit;
+            text-transform: none;
+            letter-spacing: normal;
+            font-size: inherit;
+            white-space: nowrap;
+        }
+
+        :global(tbody tr:hover td) {
+            background: color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent);
+        }
+
+        :global(td:first-child) {
+            white-space: nowrap;
+        }
+
+        :global(.data-table__numeric) {
+            white-space: nowrap;
+        }
+
+        :global(.data-table__bar) {
+            width: 34%;
+            min-width: 12rem;
+
+            @media screen and (max-width: 720px) {
+                min-width: 8rem;
+            }
+
+            > :global(b) {
+                display: block;
+                margin-top: 0.3em;
+                font-size: var(--step-0);
+                color: var(--highlight);
+            }
+        }
+
+        :global(th.data-table__bar) {
+            width: auto;
+            min-width: 12rem;
+
+            @media screen and (max-width: 720px) {
+                min-width: 8rem;
+            }
+        }
+    }
+
+    // Cards: below 48rem each row stacks as a card; cells label themselves with data-label.
+    @media (max-width: 48rem) {
+        .data-table--cards {
+            display: block;
+            border-spacing: 0;
+
+            :global(thead) {
+                display: none;
+            }
+
+            :global(tbody),
+            :global(tfoot) {
+                display: block;
+            }
+
+            :global(tr) {
+                display: grid;
+                grid-template-columns: repeat(var(--data-table-card-columns, 2), minmax(0, 1fr));
+                gap: var(--space-2xs) var(--space-s);
+                padding-block: var(--space-s);
+                border-bottom: solid 1px var(--data-table-rule, var(--mk-rule, var(--wz-rule, var(--border-color))));
+            }
+
+            :global(tbody tr:hover td) {
+                background: none;
+            }
+
+            :global(th),
+            :global(td) {
+                padding: 0;
+                border: none;
+                background: none;
+                backdrop-filter: none;
+                white-space: normal;
+                min-width: 0;
+                width: auto;
+            }
+
+            :global(.data-table__numeric) {
+                text-align: left;
+            }
+
+            :global(.data-table__card-title) {
+                grid-column: 1 / -1;
+            }
+
+            :global(td[data-label]::before) {
+                content: attr(data-label);
+                display: block;
+                font-size: var(--step--2);
+                color: var(--faded);
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                margin-bottom: 0.15em;
+            }
+        }
     }
 </style>

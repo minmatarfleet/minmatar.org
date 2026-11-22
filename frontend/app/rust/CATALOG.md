@@ -395,9 +395,9 @@ A grid-based table with a real header row (`role="table"`, `columnheader`, `row`
 Semantic tabular data: a real `<table>` with a `<thead>` built from `columns`, in an edge-fading horizontal scroller.
 
 - Import: `import DataTable from '@components/blocks/DataTable.astro'`
-- Props: `columns: DataTableColumn[]`, `caption?: string`, `density?: 'default' | 'dense' = 'default'`, `borders?: 'rows' | 'grid' | 'none' = 'rows'`, `striped?: boolean = false`, `sticky_header?: boolean = false`, `empty_title?: string`, `is_empty?: boolean = false`
-- Slots: `default`
-- Stories (8): `frontend/app/rust/stories/components/data-display/DataTable.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-datatable--docs: Default, Sorting (text, numeric and data-sort), aria-sort follows the sorted column, Only sortable columns are buttons, Empty, Dense, Sticky header (many rows), No borders, no sorting
+- Props: `columns: DataTableColumn[]`, `caption?: string`, `density?: 'default' | 'dense' = 'default'`, `borders?: 'rows' | 'grid' | 'none' = 'rows'`, `striped?: boolean = false`, `sticky_header?: boolean = false`, `empty_title?: string`, `is_empty?: boolean = false`, `variant?: 'default' | 'report' | 'cards' = "report"` is the editorial report look (collapsed hairline rows`, `bodies?: boolean = false`, `caption_visible?: boolean = false`, `visually_hidden?: boolean = false`
+- Slots: `default`, `footer`
+- Stories (15): `frontend/app/rust/stories/components/data-display/DataTable.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-datatable--docs: Default, Sorting (text, numeric and data-sort), aria-sort follows the sorted column, Only sortable columns are buttons, Empty, Dense, Sticky header (many rows), No borders, no sorting, Row headers and a footer, Own row groups (bodies), Narrow-hidden column, Report variant with a bar column, Cards below 48rem, Screen-reader-only table, Visible Caption
 
 ### Chart
 
