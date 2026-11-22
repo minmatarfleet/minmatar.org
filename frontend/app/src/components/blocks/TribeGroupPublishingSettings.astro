@@ -71,6 +71,8 @@ import Button from '@components/blocks/Button.astro'
 import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 import Select from '@components/blocks/Select.astro'
 import Switch from '@components/blocks/Switch.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
 ---
 
 <form
@@ -82,120 +84,124 @@ import Switch from '@components/blocks/Switch.astro'
     aria-labelledby="tribe-settings-publishing-title"
     {...attributes}
 >
-    <div class="[ tribe-settings-section__head ]">
-        <h2 id="tribe-settings-publishing-title">{t('tribes.settings.publishing.title')}</h2>
-        <p>{fill(t('tribes.settings.publishing.lead'))}</p>
-    </div>
+    <ComponentBlock padding_block="var(--space-m)" padding_inline="var(--space-m)">
+        <Flexblock gap="var(--space-s)">
+            <div class="[ tribe-settings-section__head ]">
+                <h2 id="tribe-settings-publishing-title">{t('tribes.settings.publishing.title')}</h2>
+                <p>{fill(t('tribes.settings.publishing.lead'))}</p>
+            </div>
 
-    <div class="[ tribe-publishing-settings__who ]">
-        {fieldsets.map((fieldset) =>
-            <fieldset
-                class="[ tribe-publishing-settings__fieldset ]"
-                x-data={`{ policy: ${JSON.stringify(fieldset.policy)}, chosen: ${JSON.stringify(fieldset.chosen)} }`}
-            >
-                <legend>{kind_title[fieldset.kind]}</legend>
-                {PUBLISHING_POLICIES.map((policy) =>
-                    <RadioCheckInput
-                        type="radio"
-                        name={`${fieldset.kind}_policy`}
-                        value={policy}
-                        checked={policy === fieldset.policy}
-                        label={policy_label[policy]}
-                        x-model="policy"
-                    />
-                )}
-
-                <div
-                    class="[ tribe-publishing-settings__pilots ]"
-                    x-show="policy === 'chosen'"
-                    style={fieldset.policy === 'chosen' ? undefined : 'display: none'}
-                >
-                    <ul role="list">
-                        {fieldset.pilots.map((pilot) =>
-                            <li
-                                x-show={`chosen.includes(${pilot.character_id})`}
-                                style={fieldset.chosen.includes(pilot.character_id) ? undefined : 'display: none'}
-                            >
-                                <img src={get_player_icon(pilot.character_id, 32)} alt="" width="22" height="22" loading="lazy" />
-                                <span>{pilot.character_name}</span>
-                                <input
-                                    type="hidden"
-                                    name={`${fieldset.kind}_publishers`}
-                                    value={pilot.character_id}
-                                    disabled={!fieldset.chosen.includes(pilot.character_id)}
-                                    x-bind:disabled={`!chosen.includes(${pilot.character_id})`}
-                                />
-                                <button
-                                    type="button"
-                                    aria-label={t('tribes.settings.publishers.remove').replace('{name}', pilot.character_name)}
-                                    x-on:click={`chosen = chosen.filter((id) => id !== ${pilot.character_id})`}
-                                >×</button>
-                            </li>
-                        )}
-                    </ul>
-                    <small x-show="chosen.length === 0" style={fieldset.chosen.length === 0 ? undefined : 'display: none'}>
-                        {t('tribes.settings.publishers.none')}
-                    </small>
-                    <Select
-                        size="sm"
-                        aria-label={t('tribes.settings.publishers.add')}
-                        x-on:change="if ($el.value) { chosen = [...chosen, parseInt($el.value)] } $el.value = ''"
+            <div class="[ tribe-publishing-settings__who ]">
+                {fieldsets.map((fieldset) =>
+                    <fieldset
+                        class="[ tribe-publishing-settings__fieldset ]"
+                        x-data={`{ policy: ${JSON.stringify(fieldset.policy)}, chosen: ${JSON.stringify(fieldset.chosen)} }`}
                     >
-                        <option value="" selected>{t('tribes.settings.publishers.add')}</option>
-                        {fieldset.pilots.map((pilot) =>
-                            <option
-                                value={pilot.character_id}
-                                disabled={fieldset.chosen.includes(pilot.character_id)}
-                                x-bind:disabled={`chosen.includes(${pilot.character_id})`}
-                                x-bind:hidden={`chosen.includes(${pilot.character_id})`}
-                            >{pilot.character_name}</option>
+                        <legend>{kind_title[fieldset.kind]}</legend>
+                        {PUBLISHING_POLICIES.map((policy) =>
+                            <RadioCheckInput
+                                type="radio"
+                                name={`${fieldset.kind}_policy`}
+                                value={policy}
+                                checked={policy === fieldset.policy}
+                                label={policy_label[policy]}
+                                x-model="policy"
+                            />
                         )}
-                    </Select>
-                </div>
 
-                {fieldset.kind === 'event' &&
-                    <small class="[ tribe-publishing-settings__hint ]">{t('tribes.settings.publishing.event_hint')}</small>
+                        <div
+                            class="[ tribe-publishing-settings__pilots ]"
+                            x-show="policy === 'chosen'"
+                            style={fieldset.policy === 'chosen' ? undefined : 'display: none'}
+                        >
+                            <ul role="list">
+                                {fieldset.pilots.map((pilot) =>
+                                    <li
+                                        x-show={`chosen.includes(${pilot.character_id})`}
+                                        style={fieldset.chosen.includes(pilot.character_id) ? undefined : 'display: none'}
+                                    >
+                                        <img src={get_player_icon(pilot.character_id, 32)} alt="" width="22" height="22" loading="lazy" />
+                                        <span>{pilot.character_name}</span>
+                                        <input
+                                            type="hidden"
+                                            name={`${fieldset.kind}_publishers`}
+                                            value={pilot.character_id}
+                                            disabled={!fieldset.chosen.includes(pilot.character_id)}
+                                            x-bind:disabled={`!chosen.includes(${pilot.character_id})`}
+                                        />
+                                        <button
+                                            type="button"
+                                            aria-label={t('tribes.settings.publishers.remove').replace('{name}', pilot.character_name)}
+                                            x-on:click={`chosen = chosen.filter((id) => id !== ${pilot.character_id})`}
+                                        >×</button>
+                                    </li>
+                                )}
+                            </ul>
+                            <small x-show="chosen.length === 0" style={fieldset.chosen.length === 0 ? undefined : 'display: none'}>
+                                {t('tribes.settings.publishers.none')}
+                            </small>
+                            <Select
+                                size="sm"
+                                aria-label={t('tribes.settings.publishers.add')}
+                                x-on:change="if ($el.value) { chosen = [...chosen, parseInt($el.value)] } $el.value = ''"
+                            >
+                                <option value="" selected>{t('tribes.settings.publishers.add')}</option>
+                                {fieldset.pilots.map((pilot) =>
+                                    <option
+                                        value={pilot.character_id}
+                                        disabled={fieldset.chosen.includes(pilot.character_id)}
+                                        x-bind:disabled={`chosen.includes(${pilot.character_id})`}
+                                        x-bind:hidden={`chosen.includes(${pilot.character_id})`}
+                                    >{pilot.character_name}</option>
+                                )}
+                            </Select>
+                        </div>
+
+                        {fieldset.kind === 'event' &&
+                            <small class="[ tribe-publishing-settings__hint ]">{t('tribes.settings.publishing.event_hint')}</small>
+                        }
+                    </fieldset>
+                )}
+            </div>
+
+            <div class="[ tribe-publishing-settings__switches ]">
+                <Switch shape="square"
+                    name="fleets_enabled"
+                    checked={settings.fleets_enabled}
+                    label={t('tribes.settings.fleets_enabled')}
+                    description={t('tribes.settings.fleets_enabled_help')}
+                />
+                <Switch shape="square"
+                    name="events_enabled"
+                    checked={settings.events_enabled}
+                    label={t('tribes.settings.events_enabled')}
+                    description={t('tribes.settings.events_enabled_help')}
+                />
+                <Switch shape="square"
+                    name="allow_alliance_posts"
+                    checked={settings.allow_alliance_posts}
+                    label={t('tribes.settings.allow_posts')}
+                    description={fill(t('tribes.settings.allow_posts_help'))}
+                />
+                <Switch shape="square"
+                    name="allow_open_fleets"
+                    checked={settings.allow_open_fleets}
+                    label={t('tribes.settings.allow_fleets')}
+                    description={t('tribes.settings.allow_fleets_help')}
+                />
+            </div>
+
+            <div class="[ tribe-settings-section__foot ]">
+                {status &&
+                    <p
+                        class:list={['[ tribe-settings-section__status ]', { 'is-error': status.kind === 'error' }]}
+                        role={status.kind === 'error' ? 'alert' : 'status'}
+                    >{status.message}</p>
                 }
-            </fieldset>
-        )}
-    </div>
-
-    <div class="[ tribe-publishing-settings__switches ]">
-        <Switch shape="square"
-            name="fleets_enabled"
-            checked={settings.fleets_enabled}
-            label={t('tribes.settings.fleets_enabled')}
-            description={t('tribes.settings.fleets_enabled_help')}
-        />
-        <Switch shape="square"
-            name="events_enabled"
-            checked={settings.events_enabled}
-            label={t('tribes.settings.events_enabled')}
-            description={t('tribes.settings.events_enabled_help')}
-        />
-        <Switch shape="square"
-            name="allow_alliance_posts"
-            checked={settings.allow_alliance_posts}
-            label={t('tribes.settings.allow_posts')}
-            description={fill(t('tribes.settings.allow_posts_help'))}
-        />
-        <Switch shape="square"
-            name="allow_open_fleets"
-            checked={settings.allow_open_fleets}
-            label={t('tribes.settings.allow_fleets')}
-            description={t('tribes.settings.allow_fleets_help')}
-        />
-    </div>
-
-    <div class="[ tribe-settings-section__foot ]">
-        {status &&
-            <p
-                class:list={['[ tribe-settings-section__status ]', { 'is-error': status.kind === 'error' }]}
-                role={status.kind === 'error' ? 'alert' : 'status'}
-            >{status.message}</p>
-        }
-        <Button type="submit" size="sm">{t('tribes.settings.publishing.save')}</Button>
-    </div>
+                <Button type="submit" size="sm">{t('tribes.settings.publishing.save')}</Button>
+            </div>
+        </Flexblock>
+    </ComponentBlock>
 </form>
 
 <style lang="scss" is:global>
