@@ -24,6 +24,27 @@ interface AlpineLike {
 
 type TippyDelegate = (root: Element, props: Record<string, unknown>) => unknown
 
+interface TooltipInstance {
+    reference: Element;
+    props:     { content?: unknown };
+    setContent: (content: string) => void;
+}
+
+/**
+ * Read the tooltip text at show time. tippy reads `data-tippy-content` once,
+ * when the tooltip is created, so an Alpine `x-bind:data-tippy-content` that
+ * changes afterwards would keep showing the first text. An emptied attribute
+ * means "no tooltip" and cancels the show. Everything else (placement, delay,
+ * maxWidth, allowHTML) comes from the element's `data-tippy-*` attributes.
+ */
+export function refresh_tooltip_content(instance: TooltipInstance): false | undefined {
+    const content = instance.reference.getAttribute('data-tippy-content')
+    if (!content)
+        return false
+    if (content !== instance.props.content)
+        instance.setContent(content)
+}
+
 export interface SwapInitWindow {
     document:                    Document;
     Alpine?:                     AlpineLike;
@@ -55,9 +76,16 @@ export function bind_tooltip_delegate(win: SwapInitWindow): boolean {
         return false
 
     win.__minmatar_tooltip_delegate = true
+    const options = win.tippy_options ?? {}
+    const base_on_show = options.onShow as ((instance: TooltipInstance) => unknown) | undefined
     delegate(win.document.documentElement, {
-        ...(win.tippy_options ?? {}),
+        ...options,
         target: TOOLTIP_TARGET,
+        onShow(instance: TooltipInstance) {
+            if (refresh_tooltip_content(instance) === false)
+                return false
+            return base_on_show?.(instance)
+        },
     })
     return true
 }

@@ -90,7 +90,6 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
         window.__footer_scripts_bound = true
 
         document.addEventListener('astro:page-load', () => {
-            tippy('[data-tippy-content]', window.tippy_options)
             document.querySelectorAll('.loader').forEach(e => e.classList.remove('active'))
         }, { once: true })
 
@@ -135,7 +134,6 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
 
         document.addEventListener('astro:after-swap', () => {
             clear_pending_navigation()
-            tippy('[data-tippy-content]', window.tippy_options)
             document.querySelectorAll('.loader').forEach(e => e.classList.remove('active'))
             // Process the layout root, not only #content. Pages like account
             // tags wrap <main id="content"> in a form with hx-post; processing

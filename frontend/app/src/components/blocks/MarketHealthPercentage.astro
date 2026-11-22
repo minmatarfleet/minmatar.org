@@ -42,7 +42,6 @@ import CountUpAnimationFloat from './CountUpAnimationFloat.astro';
                 }
                 <span
                     data-tippy-content={t('last_day_delta')}
-                    x-init='tippy($el, tippy_options)'
                 >{Math.abs(delta).toFixed(1)}%</span>
             </FlexInline>
         }

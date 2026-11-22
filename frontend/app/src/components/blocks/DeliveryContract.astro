@@ -51,7 +51,6 @@ import DeliveryButton from '@components/blocks/DeliveryButton.astro';
         quantity: ${assignment.quantity},
         target_unit_price: ${target_unit_price},
         invoice_url: '${invoice_url}',
-        tippy_instance: null,
         number_thousand_separator(val) {
             return val.toLocaleString('${lang}', {
                 minimumFractionDigits: 0,
@@ -62,19 +61,12 @@ import DeliveryButton from '@components/blocks/DeliveryButton.astro';
             const receive = this.target_unit_price * this.quantity
             const receive_number_name = number_name(receive.toString(), '${lang}')
             
-            if (this.tippy_instance) this.tippy_instance.destroy()
-            $el.querySelector('[data-tooltip="receive"]').classList.remove('dotted')
-
-            if (receive_number_name) {
-                $nextTick(() => {
-                    $el.querySelector('[data-tooltip="receive"]').classList.add('dotted')
-                    this.tippy_instance = tippy($el.querySelector('[data-tooltip="receive"]'), {
-                        content: receive_number_name,
-                        delay: [ 100, 200 ],
-                        arrow: true,
-                    })
-                })
-            }
+            const target = $el.querySelector('[data-tooltip="receive"]')
+            target.classList.toggle('dotted', !!receive_number_name)
+            if (receive_number_name)
+                target.setAttribute('data-tippy-content', receive_number_name)
+            else
+                target.removeAttribute('data-tippy-content')
         }
     }`}
     x-init="update_tooltip()"

@@ -55,6 +55,7 @@ describe("bind_tooltip_delegate", () => {
     expect(delegate).toHaveBeenCalledWith(document.documentElement, {
       arrow: true,
       target: TOOLTIP_TARGET,
+      onShow: expect.any(Function),
     });
 
     document.body.innerHTML =
@@ -62,6 +63,33 @@ describe("bind_tooltip_delegate", () => {
     expect(
       Array.from(document.querySelectorAll(TOOLTIP_TARGET), (el) => el.id),
     ).toEqual(["a"]);
+  });
+
+  test("reads the attribute at show time, cancels when emptied, and chains the shared onShow", () => {
+    const delegate = vi.fn();
+    const shared = vi.fn();
+    bind_tooltip_delegate(
+      fake_window({ tippy: { delegate }, tippy_options: { onShow: shared } }),
+    );
+    const on_show = delegate.mock.calls[0][1].onShow;
+
+    const reference = document.createElement("span");
+    reference.setAttribute("data-tippy-content", "Second");
+    const instance = { reference, props: { content: "First" }, setContent: vi.fn() };
+
+    on_show(instance);
+    expect(instance.setContent).toHaveBeenCalledWith("Second");
+    expect(shared).toHaveBeenCalledWith(instance);
+
+    instance.setContent.mockClear();
+    instance.props.content = "Second";
+    on_show(instance);
+    expect(instance.setContent).not.toHaveBeenCalled();
+
+    reference.setAttribute("data-tippy-content", "");
+    shared.mockClear();
+    expect(on_show(instance)).toBe(false);
+    expect(shared).not.toHaveBeenCalled();
   });
 
   test("waits for tippy to load", () => {

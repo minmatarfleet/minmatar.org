@@ -102,28 +102,8 @@ const acknowledgments = [
             class="[ onboarding-form ]"
             method="post"
             x-data={`{
-                onboarding_ack: [],
-                tippy_instance: null,
-                tippy_options: {
-                    content: '${t('accept_terms_tooltip')}',
-                    delay: [ 100, 200 ],
-                    arrow: true,
-                },
-                update_submit_tooltip() {
-                    $nextTick(() => {
-                        if (this.onboarding_ack.length < 3) {
-                            if (!this.tippy_instance)
-                                this.tippy_instance = tippy($el.querySelector('.accept-terms-tooltip'), this.tippy_options)
-                        } else {
-                            if (this.tippy_instance) {
-                                this.tippy_instance.destroy()
-                                this.tippy_instance = null
-                            }
-                        }
-                    })
-                }
+                onboarding_ack: []
             }`}
-            x-init="update_submit_tooltip()"
         >
             <BlockList gap='var(--space-2xl)' class="[ pb-[90px] ]">
                 <FlexInline class="[ !items-start ]" justification='space-between'>
@@ -162,7 +142,6 @@ const acknowledgments = [
                                         type="checkbox"
                                         name={`onboarding_ack_${i + 1}`}
                                         x-model="onboarding_ack"
-                                        x-on:change="update_submit_tooltip()"
                                         value={`onboarding_ack_${i + 1}`}
                                         required
                                     >
@@ -185,7 +164,10 @@ const acknowledgments = [
                     padding_block='var(--space-2xs)'
                 >
                     <FlexInline>
-                        <div class="[ accept-terms-tooltip ]">
+                        <div
+                            class="[ accept-terms-tooltip ]"
+                            x-bind:data-tippy-content={`onboarding_ack.length < 3 ? ${JSON.stringify(t('accept_terms_tooltip'))} : ''`}
+                        >
                             <Button
                                 type="submit"
                                 off_disable={true}

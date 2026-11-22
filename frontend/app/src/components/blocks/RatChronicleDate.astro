@@ -13,7 +13,6 @@ const { months, yc, realYear, class: className } = Astro.props
     class:list={['chronicle-date', className]}
     datetime={realYear}
     data-tippy-content={realYear}
-    x-init="tippy($el, tippy_options)"
 >
     {months} {yc}
 </time>

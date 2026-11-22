@@ -34,12 +34,7 @@
     if (!window.__guests_footer_scripts_bound) {
         window.__guests_footer_scripts_bound = true
 
-        document.addEventListener('astro:page-load', () => {
-            tippy('[data-tippy-content]', window.tippy_options)
-        }, { once: true })
-
         document.addEventListener('astro:after-swap', () => {
-            tippy('[data-tippy-content]', window.tippy_options)
             const root = document.querySelector('.viewport-layout-inner')
                 || document.getElementById('content')
             if (root)

@@ -63,7 +63,7 @@ export const BoundExpressions = {
         const marker = canvasElement.querySelector('span[x-show]') as HTMLElement
         await expect(marker).toHaveAttribute('x-show', 'true')
         await expect(marker).toHaveAttribute('x-bind:data-tippy-content', "'That is not a zKillboard link.'")
-        await expect(marker.getAttribute('x-effect')).toContain("'That is not a zKillboard link.' && init_tippy()")
+        await expect(marker).not.toHaveAttribute('x-effect')
     },
 }
 

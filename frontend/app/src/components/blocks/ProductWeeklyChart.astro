@@ -87,7 +87,7 @@ const columns = weekly.map((week, index) => {
                 <div
                     class="[ week ]"
                     data-tippy-content={column.tooltip}
-                    x-init="tippy($el, { ...tippy_options, allowHTML: true })"
+                    data-tippy-allowHTML="true"
                 >
                     <div class="[ up ]">
                         {column.week.built > 0 && <small class="[ count ]">{number_thousand_separator(column.week.built)}</small>}

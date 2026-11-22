@@ -21,7 +21,6 @@ const { types, size = 32 } = Astro.props
             {types.map((et) => (
                 <div
                     data-tippy-content={et.eve_type_name}
-                    x-init="tippy($el, tippy_options)"
                 >
                     <ItemPicture
                         item_id={et.eve_type_id}
