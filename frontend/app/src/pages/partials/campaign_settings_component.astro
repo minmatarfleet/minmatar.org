@@ -444,6 +444,7 @@ import EntityPicker from '@components/blocks/manage/EntityPicker.astro'
 import EveTimeInput from '@components/blocks/manage/EveTimeInput.astro'
 import SectionSummary from '@components/blocks/manage/SectionSummary.astro'
 import Switch from '@components/blocks/Switch.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {fetch_error || !settings || !choices ?
@@ -564,7 +565,7 @@ import Switch from '@components/blocks/Switch.astro'
                                         </td>
                                         <td class="act">
                                             {row.is_new ?
-                                                <button
+                                                <StylessButton
                                                     type="button"
                                                     class="[ campaign-systems__action ]"
                                                     aria-label={t('campaigns.manage.remove_system').replace('~NAME', row.name)}
@@ -572,7 +573,7 @@ import Switch from '@components/blocks/Switch.astro'
                                                     x-on:click="$el.closest('tr').remove()"
                                                 >
                                                     {t('campaigns.manage.remove')}
-                                                </button>
+                                                </StylessButton>
                                                 :
                                                 <label class="[ campaign-systems__action campaign-systems__retire ]">
                                                     <input type="checkbox" name={`retire_${row.key}`} checked={row.retire} class="[ visually-hidden ]" />
@@ -628,13 +629,13 @@ import Switch from '@components/blocks/Switch.astro'
                                             <span class="[ manage-who__name ]">{party.name}{party.ticker && ` [${party.ticker}]`}</span>
                                             <span class="[ manage-who__sub ]">{party_kind_label(party.kind)}</span>
                                         </span>
-                                        <button
+                                        <StylessButton
                                             type="button"
                                             class="[ campaign-icon-button ]"
                                             aria-label={`${t('campaigns.manage.remove')} ${party.name}`}
                                             hx-post={PART_URL}
                                             hx-vals={JSON.stringify({ op: 'remove', party_id: String(party.id) })}
-                                        ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                                        ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></StylessButton>
                                     </li>
                                 ))}
                             </ul>
@@ -689,13 +690,13 @@ import Switch from '@components/blocks/Switch.astro'
                                         ? t('campaigns.coordinators.discord').replace('{servers}', row.discord_servers.join(', '))
                                         : t('campaigns.coordinators.no_discord')}
                                 </span>
-                                <button
+                                <StylessButton
                                     type="button"
                                     class="[ campaign-icon-button ]"
                                     aria-label={t('campaigns.coordinators.remove').replace('{name}', row.character_name)}
                                     hx-post={PART_URL}
                                     hx-vals={JSON.stringify({ op: 'remove', coordinator_id: String(row.id) })}
-                                ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                                ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></StylessButton>
                             </li>
                         ))}
                     </ul>
@@ -730,13 +731,13 @@ import Switch from '@components/blocks/Switch.astro'
                     {settings.doctrines.map((row) =>
                         <span class="[ campaign-doctrine-chip ]">
                             {row.name}
-                            <button
+                            <StylessButton
                                 type="button"
                                 class="[ campaign-icon-button ]"
                                 aria-label={t('campaigns.doctrines.remove').replace('{name}', row.name)}
                                 hx-post={PART_URL}
                                 hx-vals={JSON.stringify({ op: 'remove_doctrine', campaign_doctrine_id: String(row.id) })}
-                            ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                            ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></StylessButton>
                         </span>
                     )}
                     <label for="campaign-doctrine" class="[ visually-hidden ]">{t('campaigns.doctrines.add')}</label>
@@ -765,13 +766,13 @@ import Switch from '@components/blocks/Switch.astro'
                                     hx-vals={JSON.stringify({ op: 'toggle', row_id: String(fitting.id), enabled: String(!fitting.enabled) })}
                                 >{fitting.enabled ? t('campaigns.doctrines.on') : t('campaigns.doctrines.off')}</button>
                                 {!fitting.doctrine_id ?
-                                    <button
+                                    <StylessButton
                                         type="button"
                                         class="[ campaign-icon-button ]"
                                         aria-label={`${t('campaigns.manage.remove')} ${fitting.name}`}
                                         hx-post={PART_URL}
                                         hx-vals={JSON.stringify({ op: 'remove', row_id: String(fitting.id) })}
-                                    ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                                    ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></StylessButton>
                                     :
                                     <span class="[ campaign-icon-spacer ]" aria-hidden="true"></span>
                                 }
@@ -960,13 +961,13 @@ import Switch from '@components/blocks/Switch.astro'
                                     {link.channels.map((channel) => <option value={channel.id} selected={channel.id === link.fleets_channel_id}>#{channel.name}</option>)}
                                 </Select>
                             </ManageField>
-                            <button
+                            <StylessButton
                                 type="button"
                                 class="[ campaign-icon-button ]"
                                 aria-label={t('campaigns.discord.remove').replace('{name}', link.guild_name || link.guild_id)}
                                 hx-post={PART_URL}
                                 hx-vals={JSON.stringify({ op: 'remove_link', link_id: String(link.id) })}
-                            ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                            ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></StylessButton>
                         </li>
                     )}
                 </ul>
