@@ -123,6 +123,26 @@ linked server (`CampaignDiscordLink.<slot>_channel_id`). The code is
   `refresh_campaign_boards` beat.
 - Dev seed commands attach structures with `announce=False`.
 
+### Reporting from Discord
+
+`/campaign-timer` and `/campaign-structure` (bot `app/campaign_reports`)
+open a modal for the selected item window paste and post it to
+`POST /api/campaigns/discord/report` (`services/discord_reports.py`). They
+are global commands, so they work on the coordination server and every
+linked server; elsewhere the API answers that the server runs no campaign.
+
+- The server picks the campaign: scheduled, active and paused campaigns
+  whose coordination server or a linked server it is (ours stands in for
+  a campaign that names none). With more than one, the reporter picks it
+  in the command's `campaign` option (autocomplete from
+  `GET /api/campaigns/discord/report-campaigns`).
+- Who may report: a Recon or Coordinator role holder, matched on the
+  Discord id (allies without a site account can report; their rows have
+  no `created_by`), or a linked site account with the recon form's rights.
+- A timer becomes an `EveStructureTimer` linked through `attach_timer`, a
+  structure goes through `attach_structure`, so both post to the intel
+  channels and refresh the timerboard like a report from the website.
+
 Doctrines attach with `CampaignDoctrine` and bring their fittings in as
 `CampaignFitting` rows; `CampaignFitting.enabled` hides one from the page.
 

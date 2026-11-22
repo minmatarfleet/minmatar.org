@@ -20,6 +20,7 @@ from .fleet_invites.views import register_fleet_invite_buttons
 from .fleet_invites.feedback import register_fleet_invite_feedback
 from .fleet_invites.feedback_form import register_fleet_invite_feedback_form
 from .mentors.views import register_mentor_buttons
+from .campaign_reports.views import register_campaign_report_commands
 from .voicetracking_api import (
     ACTIVITY_RECORDS_URL,
     GUILDS_SYNC_URL,
@@ -82,9 +83,13 @@ class MyClient(discord.Client):
         register_fleet_invite_feedback_form(self)
         register_mentor_buttons(self)
         register_fleet_invite_feedback(self.tree, GUILDS)
+        register_campaign_report_commands(self.tree)
         for guild in GUILDS:
             print(f"Syncing commands for {guild.id}")
             await self.tree.sync(guild=guild)
+        # Global commands reach campaign coordination and linked servers.
+        print("Syncing global commands")
+        await self.tree.sync()
 
 
 client = MyClient()

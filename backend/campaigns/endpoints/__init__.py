@@ -35,6 +35,8 @@ from campaigns.endpoints import delete_doctrine  # noqa: F401
 from campaigns.endpoints import patch_fitting  # noqa: F401
 from campaigns.endpoints import get_discord_bot_connect  # noqa: F401
 from campaigns.endpoints import get_discord_bot_callback  # noqa: F401
+from campaigns.endpoints import get_discord_report_campaigns  # noqa: F401
+from campaigns.endpoints import post_discord_report  # noqa: F401
 from campaigns.endpoints import get_discord_links  # noqa: F401
 from campaigns.endpoints import patch_discord_link  # noqa: F401
 from campaigns.endpoints import delete_discord_link  # noqa: F401
