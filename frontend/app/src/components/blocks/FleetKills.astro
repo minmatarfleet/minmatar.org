@@ -80,13 +80,15 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 import FleetSrpLosses from '@components/blocks/FleetSrpLosses.astro'
 import StylessButton from '@components/blocks/StylessButton.astro'
+import SectionTabs from '@components/blocks/SectionTabs.astro'
+import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
 ---
 
 <Flexblock
     id='fleet-kills'
     gap='var(--space-l)'
     class:list={['[ fleet-kills ]', Astro.props.class]}
-    x-data="{ side: 'kills', show_all: false }"
+    x-data="{ show_all: false }"
     {...attributes}
 >
     {!fleet_kills.tracked ?
@@ -162,22 +164,18 @@ import StylessButton from '@components/blocks/StylessButton.astro'
             <section class="[ fleet-kills__hulls ]" aria-labelledby="fleet-hulls-title">
                 <header>
                     <h3 id="fleet-hulls-title">{t('fleets.kills.killmails')}</h3>
-                    <div role="tablist" aria-label={t('fleets.kills.killmails')}>
-                        {sides.map(s =>
-                            <button
-                                type="button"
-                                role="tab"
-                                x-bind:aria-selected={`side === '${s.key}'`}
-                                x-on:click={`side = '${s.key}'; show_all = false`}
-                            >
-                                {s.label}
-                            </button>
-                        )}
-                    </div>
                 </header>
 
+                <SectionTabs
+                    variant="compact"
+                    sync_hash={false}
+                    aria_label={t('fleets.kills.killmails')}
+                    id_prefix="fleet-kills"
+                    tabs={sides.map(s => ({ id: s.key, label: s.label }))}
+                    x-effect="tab; show_all = false"
+                >
                 {sides.map(s =>
-                    <div role="tabpanel" x-show={`side === '${s.key}'`} x-cloak={s.key !== 'kills' ? '' : undefined}>
+                    <SectionTabPanel id={s.key} id_prefix="fleet-kills" is_default={s.key === 'kills'}>
                         {s.hulls.length === 0 ?
                             <small>{s.key === 'kills' ? t('fleets.kills.none') : t('fleets.kills.no_losses')}</small>
                             :
@@ -224,8 +222,9 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                 </StylessButton>
                             </>
                         }
-                    </div>
+                    </SectionTabPanel>
                 )}
+                </SectionTabs>
             </section>
 
                 </>
@@ -377,26 +376,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         opacity: 0.7;
     }
 
-    [role="tablist"] {
-        display: flex;
-        gap: var(--space-2xs);
-
-        button {
-            min-height: 2.5rem;
-            padding: 0 var(--space-s);
-            background: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--foreground);
-            font: inherit;
-            font-weight: 600;
-            cursor: pointer;
-
-            &[aria-selected="true"] {
-                background-color: var(--foreground);
-                color: var(--background);
-            }
-        }
-    }
 
     .fleet-kills__hull-list,
     .fleet-kills__mail-list {
