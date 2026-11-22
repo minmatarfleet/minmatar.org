@@ -1,11 +1,11 @@
 import { expect, within } from 'storybook/test'
-import StatusText from '@components/blocks/StatusText.astro'
+import StatusText from '@components/blocks/fleets/StatusText.astro'
 import { radio_control } from '../../_controls'
 
 type Play = { canvasElement: HTMLElement }
 
 export default {
-    title: 'Components/Feedback/StatusText',
+    title: 'Features/Fleets/StatusText',
     component: StatusText,
     parameters: {
         docs: {

@@ -39,7 +39,7 @@ const MOON_TRACKING_SYSTEM_PARTIAL_URL = `${translatePath('/partials/moon_tracki
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Grid from '@components/compositions/Grid.astro';

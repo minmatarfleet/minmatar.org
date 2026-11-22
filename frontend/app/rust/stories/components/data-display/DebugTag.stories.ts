@@ -73,3 +73,13 @@ export const MultipleChildren = {
         await expect(strip(canvasElement).children).toHaveLength(2)
     },
 }
+
+export const PassesAttributesThrough = {
+    name: 'Extra attributes and classes reach the root',
+    args: { class: 'ml-auto', 'data-testid': 'debug-root', slots: { default: '<span>trace 8f2c</span>' } },
+    play: async ({ canvasElement }: Play) => {
+        const root = within(canvasElement).getByTestId('debug-root')
+        await expect(root).toHaveClass('debug-tag')
+        await expect(root).toHaveClass('ml-auto')
+    },
+}

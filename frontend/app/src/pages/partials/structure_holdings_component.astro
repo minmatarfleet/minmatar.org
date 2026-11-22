@@ -11,7 +11,7 @@ import type { StructureLocationHoldings } from '@dtypes/api.minmatar.org'
 import { get_request_user } from '@helpers/request_user'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import { get_structure_holdings } from '@helpers/api.minmatar.org/structure_locations'
-import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
+import { get_item_icon, get_player_icon } from '@helpers/eve_image'
 
 const { auth_token } = get_request_user(Astro)
 // The API answers superusers only; the Assets tab shows for them alone.

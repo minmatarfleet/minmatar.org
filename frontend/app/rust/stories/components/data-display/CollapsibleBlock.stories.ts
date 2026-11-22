@@ -98,3 +98,13 @@ export const WithId = {
         await expect(canvasElement.querySelector('#srp-rules')).toBeTruthy()
     },
 }
+
+export const PassesAttributesThrough = {
+    name: 'Extra attributes and classes reach the root',
+    args: { class: 'ml-auto', 'data-testid': 'collapsible-root', expanded: true },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const root = within(canvasElement).getByTestId('collapsible-root')
+        await expect(root).toHaveClass('ml-auto')
+        await expect(root).toHaveAttribute('x-data')
+    },
+}

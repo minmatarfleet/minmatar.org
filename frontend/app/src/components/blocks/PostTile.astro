@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, lang } = i18n(Astro.url)
 
 import type { PostTileUI } from '@dtypes/layout_components'
-import { get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image'
 import { format_date_short } from '@helpers/date'
 
 /**
@@ -29,7 +29,7 @@ delete attributes.class
 const image = post.image_url ? post.image_url.replaceAll('amp;', '') : null
 
 import Tag from '@components/blocks/Tag.astro'
-import VisibilityTag from '@components/blocks/VisibilityTag.astro'
+import VisibilityTag from '@components/blocks/tribes/VisibilityTag.astro'
 ---
 
 <article class:list={['[ post-tile ]', Astro.props.class]} {...attributes}>

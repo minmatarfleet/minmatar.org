@@ -29,7 +29,7 @@ import {
   pageProgressFromMarkdown,
   pageProgressFromSections,
 } from '@helpers/pageProgress'
-import PageProgress from '@components/blocks/PageProgress.astro'
+import PageProgress from '@components/blocks/guides/PageProgress.astro'
 ```
 
 Mark each section in the DOM with `id` and `data-section-id` set to the same value.
@@ -45,7 +45,7 @@ Best for long-form docs that already use `##` as section breaks (guides, values,
 ```astro
 ---
 import { pageProgressFromMarkdown } from '@helpers/pageProgress'
-import PageProgress from '@components/blocks/PageProgress.astro'
+import PageProgress from '@components/blocks/guides/PageProgress.astro'
 
 const page_title = 'Alliance Values'
 const { html, ...progress } = pageProgressFromMarkdown({
@@ -81,7 +81,7 @@ Best for bespoke layouts (ship guides, multi-component pages).
 ```astro
 ---
 import { pageProgressFromSections } from '@helpers/pageProgress'
-import PageProgress from '@components/blocks/PageProgress.astro'
+import PageProgress from '@components/blocks/guides/PageProgress.astro'
 
 const page_title = 'Example Page'
 const progress = pageProgressFromSections({
@@ -131,7 +131,7 @@ Use one shared `page_key` and the **full** section list on every route. Only sec
 ```astro
 ---
 import { pageProgressFromSections } from '@helpers/pageProgress'
-import PageProgress from '@components/blocks/PageProgress.astro'
+import PageProgress from '@components/blocks/guides/PageProgress.astro'
 
 // All story sections across every chapter
 const allSections = getChronicleProgressSections()
@@ -205,6 +205,6 @@ Django admin → **User page progress**
 |------|------|
 | Public helpers | `frontend/app/src/helpers/pageProgress/` |
 | Local stash | `frontend/app/src/helpers/pageProgress/localStore.ts` |
-| UI drop-in | `frontend/app/src/components/blocks/PageProgress.astro` |
-| Tracker (internal) | `frontend/app/src/components/blocks/PageProgressTracker.astro` |
+| UI drop-in | `frontend/app/src/components/blocks/guides/PageProgress.astro` |
+| Tracker (internal) | `frontend/app/src/components/blocks/guides/PageProgressTracker.astro` |
 | Backend API | `backend/page_progress/` (`/api/page-progress/...`, including `/import`) |

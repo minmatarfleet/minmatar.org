@@ -253,7 +253,7 @@ export function read_font_families(): FontFamily[] {
     const source_of = (family: string): FontFamily['source'] => {
         if (font_face_families.has(family)) return 'self-hosted'
         if (google.has(family)) return 'google-fonts'
-        if (/Montserrat|Qahiri/.test(family)) return 'fontsource'
+        if (/Montserrat|Qahiri|Orbitron|Source Sans|Lora/.test(family)) return 'fontsource'
         return 'system'
     }
 

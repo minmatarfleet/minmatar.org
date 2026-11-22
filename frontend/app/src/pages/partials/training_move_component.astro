@@ -12,7 +12,7 @@ if (!user)
 
 import type { TrainingAccountOptions, TrainingCharacterSummary } from '@dtypes/api.minmatar.org'
 import { get_training_accounts, get_training_overview } from '@helpers/api.minmatar.org/training'
-import { get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image'
 import { TRAINING_MOVE_PARTIAL, TRAINING_PARTIAL, training_url } from '@helpers/training'
 
 const character_id = parseInt(Astro.url.searchParams.get('character_id') ?? '0') || 0

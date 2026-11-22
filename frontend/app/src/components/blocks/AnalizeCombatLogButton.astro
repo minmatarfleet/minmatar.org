@@ -45,8 +45,8 @@ import Input from '@components/blocks/Input.astro';
 import Button from '@components/blocks/Button.astro';
 import SelectFinder from '@components/blocks/SelectFinder.astro';
 import CollapsableButton from '@components/blocks/CollapsableButton.astro';
-import SwitchSquare from '@components/blocks/SwitchSquare.astro';
-import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro';
+import Switch from '@components/blocks/Switch.astro';
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro';
 
 import TutorialIcon from '@components/icons/TutorialIcon.astro';
 import Markdown from './Markdown.astro'
@@ -145,14 +145,14 @@ import Markdown from './Markdown.astro'
                             <p>{t('analize_combatlog_dialog_text')}</p>
 
                             <FlexInline>
-                                <UnstyledRadioCheckButton
+                                <RadioCheckInput bare
                                     type='radio'
                                     label={t('paste_combat_log')}
                                     value="paste"
                                     x-model="method"
                                     checked
                                 />
-                                <UnstyledRadioCheckButton
+                                <RadioCheckInput bare
                                     type='radio'
                                     label={t('combat_log_file')}
                                     value="file"
@@ -225,7 +225,7 @@ import Markdown from './Markdown.astro'
                         </Flexblock>
 
                         {!fleet_id && user &&
-                            <SwitchSquare
+                            <Switch shape="square"
                                 class="[ w-full ]"
                                 name="store"
                                 label={t('save_log_for_future')}

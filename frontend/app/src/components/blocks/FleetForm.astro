@@ -5,7 +5,7 @@ const { t, translatePath } = i18n(Astro.url)
 import type { Audience, Location, CampaignListItem, PublishableGroup } from '@dtypes/api.minmatar.org'
 import type { DoctrineType, SelectOptions, FleetUI, CharacterBasic, HostOptionUI } from '@dtypes/layout_components'
 import { fleet_types } from '@dtypes/api.minmatar.org'
-import { get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image'
 import { staging_location } from '@helpers/fleet_form_up'
 import { ALLIANCE_HOST } from '@helpers/fleet_hosts'
 import { tribe_group_cover } from '@helpers/tribe_covers'
@@ -245,7 +245,7 @@ import TextGroup from '@components/blocks/TextGroup.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import Select from '@components/blocks/Select.astro';
 import FlatPicker from '@components/blocks/FlatPicker.astro';
-import SwitchSquare from '@components/blocks/SwitchSquare.astro';
+import Switch from '@components/blocks/Switch.astro';
 import StylessButton from '@components/blocks/StylessButton.astro';
 import CountdownConverter from '@components/blocks/CountdownConverter.astro';
 import Input from '@components/blocks/Input.astro'
@@ -349,7 +349,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                 x-data="{ invite_only: false }"
                                 {...(show_host_row ? { 'x-show': '!is_group', style: initial_is_group ? 'display: none' : undefined } : {})}
                             >
-                                <SwitchSquare
+                                <Switch shape="square"
                                     class="[ w-full ]"
                                     name="invite_only"
                                     label={t('fleets.private.form_private')}
@@ -568,7 +568,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                     style={initial_is_group ? undefined : 'display: none'}
                                 >
                                     <Flexblock gap="var(--space-s)" x-show="group?.allow_open" style={initial_group?.allow_open_fleets ? undefined : 'display: none'}>
-                                        <SwitchSquare
+                                        <Switch shape="square"
                                             class="[ w-full ]"
                                             name="open_to_alliance"
                                             label={t('fleets.host.open_label')}
@@ -577,7 +577,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                             x-bind:checked="open"
                                             x-on:change="open = $event.target.checked; if (open) sched = true"
                                         />
-                                        <SwitchSquare
+                                        <Switch shape="square"
                                             class="[ w-full ]"
                                             name="on_schedule"
                                             label={t('fleets.host.schedule_label')}
@@ -724,7 +724,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                             style="display: none"
                         >
                             <p>{t('fleet_starting_soon')}</p>
-                            <SwitchSquare
+                            <Switch shape="square"
                                 class="[ w-full ]"
                                 name="start_tracking"
                                 label={t('ping_fleet')}
@@ -734,7 +734,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
 
                         {/*!fleet?.id &&
                             <div x-show="!show">
-                                <SwitchSquare
+                                <Switch shape="square"
                                     class="[ w-full ]"
                                     name="immediate_ping"
                                     label={t('preping')}
@@ -745,7 +745,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                             </div>
                         */}
 
-                        <SwitchSquare
+                        <Switch shape="square"
                             class="[ w-full ]"
                             name="disable_motd"
                             label={t('disable_motd')}
@@ -753,7 +753,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                             checked={disable_motd}
                         />
 
-                        <SwitchSquare
+                        <Switch shape="square"
                             class="[ w-full ]"
                             name="hide_volunteers"
                             label={t('hide_volunteers')}

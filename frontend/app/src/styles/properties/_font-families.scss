@@ -3,6 +3,12 @@
     --montserrat: 'Montserrat Variable', sans-serif;
     --qahiri: 'Qahiri', sans-serif;
 
+    /* Feature fonts, self-hosted with @fontsource where they are used:
+       the guides (GuideShell, GuideMarkdown, CapitalClassGuide) and the long-read chronicle. */
+    --guide-display-font: 'Orbitron', var(--heading-font);
+    --guide-body-font: 'Source Sans 3', var(--default-font);
+    --long-read-font: 'Lora', 'Georgia', 'Times New Roman', serif;
+
     --heading-font: var(--minmatar);
     --button-font: var(--montserrat);
     --badge-font: var(--minmatar);

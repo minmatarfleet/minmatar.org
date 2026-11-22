@@ -16,7 +16,6 @@ const {
     ...attributes
 } = Astro.props;
 
-import StylessTextArea from '@components/blocks/StylessTextArea.astro';
 import Textarea from '@components/blocks/Textarea.astro';
 
 import MarkdownIcon from '@components/icons/buttons/MarkdownIcon.astro';
@@ -24,7 +23,7 @@ import MarkdownIcon from '@components/icons/buttons/MarkdownIcon.astro';
 
 <div class:list={[ 'markdown-textarea', { is_transparent: is_transparent } ]}>
     {is_transparent ?
-        <StylessTextArea {...attributes}><slot /></StylessTextArea> :
+        <Textarea variant="bare" {...attributes}><slot /></Textarea> :
         <Textarea {...attributes}><slot /></Textarea>
     }
     <a

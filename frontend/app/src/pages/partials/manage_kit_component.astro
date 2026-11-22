@@ -1,4 +1,5 @@
 ---
+import { get_corporation_logo } from '@helpers/eve_image'
 /**
  * The working examples on /manage/kit/: every manage kit component wired to
  * a real htmx round trip. Nothing is stored; saves echo what was posted.
@@ -208,7 +209,7 @@ const COLUMNS = [
                 name="corporation_id"
                 name_field="corporation_name"
                 label={t('manage.kit.demo_corporation')}
-                value={picked_corporation.id ? { id: picked_corporation.id, name: picked_corporation.name, icon_url: `https://images.evetech.net/corporations/${picked_corporation.id}/logo?size=64` } : null}
+                value={picked_corporation.id ? { id: picked_corporation.id, name: picked_corporation.name, icon_url: get_corporation_logo(Number(picked_corporation.id), 64) } : null}
             />
             <EntityPicker
                 id="kit-system"

@@ -105,7 +105,7 @@ import FlatPicker from '@components/blocks/FlatPicker.astro'
 import Input from '@components/blocks/Input.astro'
 import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 import Select from '@components/blocks/Select.astro'
-import SwitchSquare from '@components/blocks/SwitchSquare.astro'
+import Switch from '@components/blocks/Switch.astro'
 import Textarea from '@components/blocks/Textarea.astro'
 ---
 
@@ -247,7 +247,7 @@ import Textarea from '@components/blocks/Textarea.astro'
         {mode === 'create' &&
             <div class="[ tribe-event-form__announce ]">
                 <span class="[ tribe-event-form__label ]">{t('tribes.event_form.announce')}</span>
-                <SwitchSquare
+                <Switch shape="square"
                     name="announce"
                     checked={values.announce && Boolean(channel_name)}
                     disabled={!channel_name}

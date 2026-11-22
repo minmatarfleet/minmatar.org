@@ -17,6 +17,7 @@ interface Props {
     mask?:          boolean;
     quantity?:      number;
     blueprint?:     BlueprintParam;
+    [propName: string]: any;
 }
 
 const {
@@ -28,45 +29,24 @@ const {
     mask = false,
     quantity,
     blueprint,
+    ...attributes
 } = Astro.props
 
-import { get_item_icon, get_bpc_icon } from '@helpers/eve_image_server';
+import { get_item_icon, get_bpc_icon } from '@helpers/eve_image';
 
-import NotificationBadge from '@components/blocks/NotificationBadge.astro';
+import Picture from '@components/blocks/Picture.astro';
+
+const extra_class = attributes.class
+delete attributes.class
 ---
 
-<picture class="animated">
-    <img
-        class:list={{ mask }}
-        loading="lazy"
-        height={narrow ? 412 : size}
-        width={size}
-        src={blueprint ? get_bpc_icon(item_id, blueprint.is_copy, icon_quality ?? size) : get_item_icon(item_id, icon_quality ?? size)}
-        alt={item_name ?? t('item_picture')}
-    />
-    {quantity != null && quantity > 0 &&
-        <NotificationBadge class="[ quantity-badge ]" number={quantity} />
-    }
-</picture>
-
-<style lang="scss">
-    picture {
-        position: relative;
-
-        .quantity-badge {
-            position: absolute;
-            bottom: -5px;
-            right: -5px;
-        }
-    }
-
-    img {
-        object-fit: cover;
-        width: 100%;
-    }
-
-    .mask {
-        -webkit-mask-image: linear-gradient(to bottom,rgb(0,0,0) 0%,rgba(0,0,0,.7) 50%,transparent 100%);
-        mask-image: linear-gradient(to bottom,rgb(0,0,0) 0%,rgba(0,0,0,.7) 50%,transparent 100%);
-    }
-</style>
+<Picture
+    src={blueprint ? get_bpc_icon(item_id, blueprint.is_copy, icon_quality ?? size) : get_item_icon(item_id, icon_quality ?? size)}
+    alt={item_name ?? t('item_picture')}
+    size={size}
+    narrow={narrow}
+    mask={mask}
+    quantity={quantity}
+    class={extra_class}
+    {...attributes}
+/>

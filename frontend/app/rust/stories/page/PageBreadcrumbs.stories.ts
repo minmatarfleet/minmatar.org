@@ -16,6 +16,7 @@ export default {
                 component: [
                     'The breadcrumb bar under the site header: a quick-navigation button (opens the page finder) and one arrow per path segment. By default the trail is generated from the URL and sitemap; pass `breadcrumbs` to set it by hand.',
                     'Segments with child pages become a `BreadcrumbHub` dropdown unless `links_only` is set. Stories pass `breadcrumbs` because the generated trail depends on the current URL and the signed-in pilot (gates, sitemap permissions).',
+                    'The trail is `<nav aria-label="Breadcrumb">` around an `<ol>`; the last crumb carries `aria-current="page"`. Each step is an arrow-shaped link drawn with a `clip-path`.',
                     'Use `breadcrumb_page_title` to rename the last generated segment (a fleet name instead of its id).',
                 ].join('\n\n'),
             },
@@ -96,5 +97,19 @@ export const DeepTrail = {
     play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
         await expect(within(canvasElement).getAllByRole('link')).toHaveLength(4)
         await expect(within(canvasElement).getByRole('link', { name: 'Rattini Tribe' })).toHaveAttribute('href', '/alliance/corporations/rattini-tribe/')
+    },
+}
+
+export const Semantics = {
+    name: 'Nav landmark, ordered list, current page',
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const nav = within(canvasElement).getByRole('navigation', { name: 'Breadcrumb' })
+        const list = nav.querySelector('ol') as HTMLElement
+        await expect(list).not.toBeNull()
+        await expect(list.querySelectorAll(':scope > li')).toHaveLength(3)
+        const links = within(nav).getAllByRole('link')
+        await expect(links[0]).not.toHaveAttribute('aria-current')
+        await expect(links[1]).not.toHaveAttribute('aria-current')
+        await expect(links[2]).toHaveAttribute('aria-current', 'page')
     },
 }

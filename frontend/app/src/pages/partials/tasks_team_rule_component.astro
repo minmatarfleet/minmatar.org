@@ -10,7 +10,7 @@ import type { TaskTeamRulePilot } from '@dtypes/api.minmatar.org'
 import { get_request_user } from '@helpers/request_user'
 import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
 import { get_task_team_rule, remind_task_pilot } from '@helpers/api.minmatar.org/tasks'
-import { get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image'
 import { task_date, waiting_label } from '@helpers/tasks'
 
 const { auth_token } = get_request_user(Astro)

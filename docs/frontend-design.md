@@ -56,7 +56,7 @@ If data must change the DOM, use an **htmx partial + OOB swap** instead.
 Existing Alpine `fetch()` callers predate this rule and must be migrated to htmx partials opportunistically:
 
 - `src/components/blocks/LoyaltyOrderBook.astro`
-- `src/components/blocks/PageProgressTracker.astro`
+- `src/components/blocks/guides/PageProgressTracker.astro`
 - `src/components/blocks/PushNotifications.astro`
 - `src/components/partials/LearningAlpine.astro` (with `src/helpers/learning/localStore.ts`)
 - `src/components/partials/NotificationPreferencesAlpine.astro`
@@ -158,8 +158,6 @@ Compose layout from the primitives in `src/components/compositions/` instead of 
 | `FlexInlineSiblings` | Two-child row that wraps: `shrinkable-sibbling` (`first` or `second`) shrinks down to `min-shink-width`, the other keeps its width; `gap` |
 | `BlockList` | Vertical stack of full-width children with a uniform `gap` |
 | `XFadeScroll` | Horizontal scroll region whose edges fade while there is more to scroll (`fade_size`, `flex`). Use it for wide tables and chip rows instead of a hand-rolled `overflow-x: auto` |
-| `Cover` | Full-height column (min-block-size 100vh) that vertically centers the body between `header`/`footer` slots. No page uses it today |
-| `Center` | Centering wrapper (flex, justify + align center). No page uses it today |
 
 Rules:
 

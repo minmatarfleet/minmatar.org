@@ -8,6 +8,7 @@ interface Props {
     narrow?:            boolean;
     centered?:          boolean;
     off_disable?:       boolean;
+    [propName: string]: any;
 }
 
 const {
@@ -17,13 +18,17 @@ const {
     narrow = false,
     centered = true,
     off_disable = false,
+    ...attributes
 } = Astro.props;
+
+delete attributes.class
 
 import Button from '@components/blocks/Button.astro';
 ---
 
 <div
-    class="[ confirm-button ]"
+    {...attributes}
+    class:list={['[ confirm-button ]', Astro.props.class]}
     x-data={`{
         TIMEOUT: 5000,
         timer: null,

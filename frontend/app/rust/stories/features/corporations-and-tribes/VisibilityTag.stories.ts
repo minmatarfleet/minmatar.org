@@ -1,11 +1,11 @@
 import { expect, within } from 'storybook/test'
-import VisibilityTag from '@components/blocks/VisibilityTag.astro'
+import VisibilityTag from '@components/blocks/tribes/VisibilityTag.astro'
 import { radio_control } from '../../_controls'
 
 type Play = { canvasElement: HTMLElement }
 
 export default {
-    title: 'Components/Data display/VisibilityTag',
+    title: 'Features/Corporations and tribes/VisibilityTag',
     component: VisibilityTag,
     parameters: {
         docs: {

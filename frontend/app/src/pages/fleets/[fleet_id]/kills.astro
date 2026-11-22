@@ -1,4 +1,5 @@
 ---
+import { get_type_render } from '@helpers/eve_image'
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
@@ -17,7 +18,7 @@ const { user } = get_request_user(Astro)
 
 import { get_fleet_public_kills, type FleetPublicKills, type FleetKills } from '@helpers/api.minmatar.org/fleets'
 import { format_isk } from '@helpers/numbers'
-import { get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image'
 import { eve_clock } from '@helpers/fleet_fights'
 
 let report:FleetPublicKills | null = null
@@ -76,7 +77,7 @@ const meta_description = [
         .replace('{lost}', format_isk(report.isk_lost))
         + (report.efficiency !== null && report.efficiency !== undefined ? ` ${t('fleets.public.efficiency').replace('{pct}', report.efficiency.toString())}` : ''),
 ].join('. ')
-const meta_image = biggest?.victim_ship_type_id ? `https://images.evetech.net/types/${biggest.victim_ship_type_id}/render?size=512` : undefined
+const meta_image = biggest?.victim_ship_type_id ? get_type_render(biggest.victim_ship_type_id, 512) : undefined
 
 import Viewport from '@layouts/Viewport.astro'
 import PageWide from '@components/page/PageWide.astro'

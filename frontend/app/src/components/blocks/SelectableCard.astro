@@ -12,14 +12,14 @@ const {
 } = Astro.props
 
 import PictureCard from '@components/blocks/PictureCard.astro'
-import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro'
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 ---
 
-<UnstyledRadioCheckButton {...attributes} class="[ selectable-card ]" type="checkbox" label={label}>
+<RadioCheckInput bare {...attributes} class="[ selectable-card ]" type="checkbox" label={label}>
     <PictureCard src={image} narrow={true}>
         <slot />
     </PictureCard>
-</UnstyledRadioCheckButton>
+</RadioCheckInput>
 
 <style lang="scss" is:global>
     .selectable-card + *:before {

@@ -1,21 +1,45 @@
 ---
-import type { ImageSize } from '@dtypes/layout_components'
+import type { ImageSize, BadgeColors } from '@dtypes/layout_components'
 import type { ComponentProps } from "astro/types";
 type AstroImageOptions = ComponentProps<typeof Image>;
 
 import { Image } from 'astro:assets';
+
+/**
+ * The element that wraps the image when it is clickable (a button, a link),
+ * or a plain span when it is not. `attrs` land on it, so Alpine and href
+ * attributes work.
+ */
+interface PictureTarget {
+    tag:    'a' | 'button' | 'span';
+    attrs?: Record<string, any>;
+}
 
 interface Props {
     src:            string;
     alt?:           string;
     size?:          ImageSize;
     narrow?:        boolean;
+    /** Image height when `narrow`; the width is still `size`. */
+    height?:        number;
     mask?:          boolean;
     zoomable?:      boolean;
     placeholder?:   string;
     /** Crop to a shared aspect ratio so reel/card thumbnails align. */
     thumbnail?:     boolean;
     astro_image?:   AstroImageOptions;
+    /** Number shown in a badge on the picture's bottom-right corner. */
+    quantity?:      number;
+    tag_color?:     BadgeColors;
+    /** The `animated` class lets a hovered card zoom the picture. */
+    animated?:      boolean;
+    /** Brighten the image on hover, for pictures that open something. */
+    brighten?:      boolean;
+    /** Wrap the image in a link, button or span. */
+    target?:        PictureTarget;
+    /** Extra attributes for the <img> (Alpine `x-bind:src`, ...). */
+    img_attrs?:     Record<string, any>;
+    [propName: string]: any;
 }
 
 const {
@@ -23,17 +47,47 @@ const {
     alt,
     size = 64,
     narrow = false,
+    height = 412,
     mask = false,
     zoomable = false,
     placeholder,
     thumbnail = false,
     astro_image,
+    quantity,
+    tag_color,
+    animated = true,
+    brighten = false,
+    target,
+    img_attrs = {},
+    ...attributes
 } = Astro.props
 
+delete attributes.class
+
 import ZoomableImage from "@components/blocks/ZoomableImage.astro";
+import NotificationBadge from '@components/blocks/NotificationBadge.astro';
+
+const Target = target?.tag
+const img_props = {
+    loading: 'lazy' as const,
+    height: narrow ? height : size,
+    width: size,
+    src,
+    alt: alt ? alt : undefined,
+    onerror: placeholder ? `
+        this.onerror=null;
+        this.src='${placeholder}';
+        this.height = ${size}
+        this.width = ${size}
+    ` : undefined,
+    ...img_attrs,
+}
 ---
 
-<picture class:list={['animated', { 'fixed-thumbnail': thumbnail }]}>
+<picture
+    class:list={[{ animated, brighten, 'fixed-thumbnail': thumbnail }, Astro.props.class]}
+    {...attributes}
+>
     {zoomable ?
         <ZoomableImage
             class:list={[{ mask }, thumbnail ? 'thumbnail-fill' : 'h-auto']}
@@ -42,24 +96,27 @@ import ZoomableImage from "@components/blocks/ZoomableImage.astro";
             loading="lazy"
             astro_image={astro_image ? astro_image : undefined}
         /> :
-        <img
-            class:list={{ mask, 'thumbnail-fill': thumbnail }}
-            loading="lazy"
-            height={narrow ? 412 : size}
-            width={size}
-            src={src}
-            alt={alt ? alt : undefined}
-            onerror={placeholder ? `
-                this.onerror=null;
-                this.src='${placeholder}';
-                this.height = ${size}
-                this.width = ${size}
-            ` : undefined}
+        Target ?
+            <Target class="[ picture-target ]" {...target.attrs}>
+                <img class:list={{ mask, 'thumbnail-fill': thumbnail }} {...img_props} />
+            </Target> :
+            <img class:list={{ mask, 'thumbnail-fill': thumbnail }} {...img_props} />
+    }
+
+    {quantity != null && quantity > 0 &&
+        <NotificationBadge
+            class="[ quantity-badge ]"
+            color={tag_color ?? 'fleet-red'}
+            number={quantity}
         />
     }
 </picture>
 
 <style lang="scss">
+    picture {
+        position: relative;
+    }
+
     img {
         object-fit: cover;
         width: 100%;
@@ -90,8 +147,46 @@ import ZoomableImage from "@components/blocks/ZoomableImage.astro";
         }
     }
 
+    /* The fade-out mask, defined once for every picture. */
     .mask:not(.medium-zoom-image--opened) {
         -webkit-mask-image: linear-gradient(to bottom,rgb(0,0,0) 0%,rgba(0,0,0,.9) 35%,rgba(0,0,0,.7) 50%,transparent 100%);
         mask-image: linear-gradient(to bottom,rgb(0,0,0) 0%,rgba(0,0,0,.9) 35%,rgba(0,0,0,.7) 50%,transparent 100%);
+    }
+
+    .quantity-badge {
+        position: absolute;
+        bottom: calc(var(--space-3xs) * -1);
+        right: calc(var(--space-3xs) * -1);
+        z-index: 1;
+    }
+
+    .picture-target {
+        display: flex;
+        width: 100%;
+        padding: 0;
+        border: 0;
+        background: none;
+        font: inherit;
+        color: inherit;
+        text-align: inherit;
+
+        &:focus-visible {
+            outline-color: var(--highlight);
+            outline-style: double;
+        }
+    }
+
+    button.picture-target {
+        cursor: pointer;
+    }
+
+    .brighten img {
+        transition: var(--slowest-transition);
+        filter: brightness(1);
+        cursor: pointer;
+
+        &:hover {
+            filter: brightness(1.3);
+        }
     }
 </style>

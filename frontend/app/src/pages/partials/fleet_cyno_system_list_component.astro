@@ -10,7 +10,7 @@ if (!user) return new Response(null, { status: 403 })
 
 import { filter_systems_by_name } from '@helpers/sde/map'
 import type { sde_filtered_system } from '@helpers/sde/map'
-import { get_item_icon } from '@helpers/eve_image_server';
+import { get_item_icon } from '@helpers/eve_image';
 import { sec_status_class } from '@helpers/eve'
 import { query_string } from '@helpers/string';
 

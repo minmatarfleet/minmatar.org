@@ -5,7 +5,7 @@ const { t } = i18n(Astro.url)
 import type { CorporationInfo } from '@dtypes/api.minmatar.org'
 import type { MixRow } from '@helpers/corporations/about'
 import { mix_rows, percent_of, ranked_mix_rows, tenure_parts } from '@helpers/corporations/about'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 
 interface Props {
     corporation: CorporationInfo

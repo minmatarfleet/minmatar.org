@@ -1,5 +1,5 @@
 .guide-contents {
-    --guide-contents-display-font: 'Orbitron', var(--heading-font);
+    --guide-contents-display-font: var(--guide-display-font);
     display: flex;
     flex-direction: column;
     gap: var(--space-l);
