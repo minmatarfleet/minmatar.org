@@ -1,12 +1,12 @@
 import { expect, within } from 'storybook/test'
-import PageProgress from '@components/blocks/PageProgress.astro'
+import PageProgress from '@components/blocks/guides/PageProgress.astro'
 
 type Play = { canvasElement: HTMLElement }
 
 const sections = ['overview', 'positioning', 'comms', 'after-action']
 
 export default {
-    title: 'Components/Feedback/PageProgress',
+    title: 'Features/Content/PageProgress',
     component: PageProgress,
     parameters: {
         docs: {

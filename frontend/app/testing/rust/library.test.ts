@@ -63,8 +63,6 @@ for (const [category, components] of Object.entries(RUST_LIBRARY)) {
 const UNUSED_ALLOWLIST: Record<string, string> = {
     'blocks/sde/TypeSearch': 'retired or given a caller in this PR (W5/W6)',
     'blocks/sde/SolarSystemSearch': 'retired or given a caller in this PR (W5/W6)',
-    'compositions/Center': 'retired or given a caller in this PR (W5/W6)',
-    'compositions/Cover': 'retired or given a caller in this PR (W5/W6)',
     // Not in the W2 brief's list: no src/ file references it on this branch. Confirm with the owner before W5/W6 land.
     'blocks/InputError': 'no caller under src/ on feat/rust-library-alignment; confirm with the owner',
 }

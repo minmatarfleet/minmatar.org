@@ -13,7 +13,7 @@ export const RUST_LIBRARY = {
     'Layout': [
         'compositions/Wrapper', 'compositions/Grid', 'compositions/FlexInline', 'compositions/FlexInlineSiblings',
         'compositions/Flexblock', 'compositions/FixedFluid', 'compositions/FluidFixed', 'compositions/BlockList',
-        'compositions/XFadeScroll', 'compositions/Cover', 'compositions/Center',
+        'compositions/XFadeScroll',
     ],
     'Components/Forms': [
         'blocks/Button', 'blocks/StylessButton', 'blocks/ButtonStack', 'blocks/ButtonConfirm', 'blocks/ClipboardButton',
@@ -22,12 +22,12 @@ export const RUST_LIBRARY = {
         'blocks/FlatPicker', 'blocks/Kbd',
     ],
     'Components/Feedback': [
-        'blocks/EmptyState', 'blocks/ErrorRefetch', 'blocks/ShowAlert', 'blocks/Progress', 'blocks/PageProgress',
-        'blocks/Countdown', 'blocks/LocalTime', 'blocks/CountUpAnimation', 'blocks/StatusText', 'blocks/LazyPartial',
+        'blocks/EmptyState', 'blocks/ErrorRefetch', 'blocks/ShowAlert', 'blocks/Progress',
+        'blocks/Countdown', 'blocks/LocalTime', 'blocks/CountUpAnimation', 'blocks/LazyPartial',
         'blocks/SkipToContent',
     ],
     'Components/Data display': [
-        'blocks/Badge', 'blocks/Tag', 'blocks/NotificationBadge', 'blocks/VisibilityTag',
+        'blocks/Badge', 'blocks/Tag', 'blocks/NotificationBadge',
         'blocks/DebugTag', 'blocks/ComponentBlock', 'blocks/ComponentBlockHeader', 'blocks/CollapsibleBlock',
         'blocks/CollapsableButton', 'blocks/StatCard', 'blocks/Table', 'blocks/DataGrid', 'blocks/TextGroup',
         'blocks/Square', 'blocks/Markdown', 'blocks/Marquee', 'blocks/SettingRow', 'blocks/NumberNameTooltip',

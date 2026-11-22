@@ -34,7 +34,7 @@ const {
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import PageProgressTracker from '@components/blocks/PageProgressTracker.astro'
+import PageProgressTracker from '@components/blocks/guides/PageProgressTracker.astro'
 
 import { get_request_user } from '@helpers/request_user'
 const auth_token = get_request_user(Astro).auth_token || ''

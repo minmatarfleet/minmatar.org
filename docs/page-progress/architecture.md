@@ -162,7 +162,7 @@ The merge is triggered lazily by the tracker rather than a login hook: the first
 | Helpers barrel | `frontend/app/src/helpers/pageProgress/index.ts` |
 | Anonymous stash | `frontend/app/src/helpers/pageProgress/localStore.ts` |
 | Dwell logic + tests | `frontend/app/src/helpers/pageProgress/dwellObserver.ts`, `frontend/app/testing/helpers/dwellObserver.test.ts` |
-| UI components | `frontend/app/src/components/blocks/PageProgress.astro`, `PageProgressTracker.astro` |
+| UI components | `frontend/app/src/components/blocks/guides/PageProgress.astro`, `PageProgressTracker.astro` |
 | Models / helpers | `backend/page_progress/models.py`, `backend/page_progress/helpers.py` |
 | Endpoints | `backend/page_progress/endpoints/` |
 | Admin | `backend/page_progress/admin.py` |

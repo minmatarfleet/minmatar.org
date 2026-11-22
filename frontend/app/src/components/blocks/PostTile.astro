@@ -29,7 +29,7 @@ delete attributes.class
 const image = post.image_url ? post.image_url.replaceAll('amp;', '') : null
 
 import Tag from '@components/blocks/Tag.astro'
-import VisibilityTag from '@components/blocks/VisibilityTag.astro'
+import VisibilityTag from '@components/blocks/tribes/VisibilityTag.astro'
 ---
 
 <article class:list={['[ post-tile ]', Astro.props.class]} {...attributes}>

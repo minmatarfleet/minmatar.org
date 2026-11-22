@@ -89,23 +89,6 @@ A horizontal scroll container that fades its left and right edges when there is 
 - Slots: `default`
 - Stories (7): `frontend/app/rust/stories/layout/XFadeScroll.stories.ts`, https://my.minmatar.org/rust/?path=/docs/layout-xfadescroll--docs: Default, Chip row fades at the end, Scrolled: fades both sides, Scrolled to the end: fades the start only, Wide table, Big Fade, Fits: no fade
 
-### Cover
-
-A full-height column with an optional `header` slot at the top, an optional `footer` slot at the bottom, and the default slot vertically centered between them.
-
-- Import: `import Cover from '@components/compositions/Cover.astro'`
-- Props: `space?: string = 'var(--space-2xl-3xl)'`, `minHeight?: string`, `noPad?: boolean`, `neocom?: boolean = true`
-- Slots: `header`, `default`, `footer`
-- Stories (6): `frontend/app/rust/stories/layout/Cover.stories.ts`, https://my.minmatar.org/rust/?path=/docs/layout-cover--docs: Default, Without Neocom, Body Only, Header And Body, Footer And Body, Fills the viewport height
-
-### Center
-
-Centers its content on both axes with flexbox.
-
-- Import: `import Center from '@components/compositions/Center.astro'`
-- Slots: `default`
-- Stories (5): `frontend/app/rust/stories/layout/Center.stories.ts`, https://my.minmatar.org/rust/?path=/docs/layout-center--docs: Default, Text, With Button, Passes attributes through, Centers on both axes
-
 ## Components/Forms
 
 ### Button
@@ -258,13 +241,6 @@ A thin glowing `<progress>` bar.
 - Slots: `default`
 - Stories (7): `frontend/app/rust/stories/components/feedback/Progress.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-feedback-progress--docs: Default, Complete, Warning, Danger, Disabled, Custom max (3 of 5 fleets), Empty
 
-### PageProgress
-
-Drop-in "how much of this page have you read" bar for long guides.
-
-- Import: `import PageProgress from '@components/blocks/PageProgress.astro'`
-- Stories (5): `frontend/app/rust/stories/components/feedback/PageProgress.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-feedback-pageprogress--docs: Default, Without Acknowledgement, With Acknowledgement, Single Section, No sections (renders nothing)
-
 ### Countdown
 
 A ticking `HH : MM : SS` timer to an EVE (UTC) time, such as fleet formup.
@@ -288,15 +264,6 @@ A number that counts up from 0 to `target` with an ease-out curve when it appear
 - Import: `import CountUpAnimation from '@components/blocks/CountUpAnimation.astro'`
 - Props: `target: number`, `duration?: number = 3000`, `element?: string = 'span'`
 - Stories (5): `frontend/app/rust/stories/components/feedback/CountUpAnimation.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-feedback-countupanimation--docs: Default, Fast, Heading, Strong, Large Number
-
-### StatusText
-
-A spaced-out heading label for the state of a fleet or timer: ACTIVE, COMPLETED, CANCELLED, EXPIRED.
-
-- Import: `import StatusText from '@components/blocks/StatusText.astro'`
-- Props: `tone?: 'highlight' | 'danger' = 'highlight'`, `blink?: boolean = false`
-- Slots: `default`
-- Stories (6): `frontend/app/rust/stories/components/feedback/StatusText.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-feedback-statustext--docs: Default, Danger, Expired, Blinking, Completed, Pass Through Attributes
 
 ### LazyPartial
 
@@ -342,14 +309,6 @@ A small square count bubble for a menu item or tab: unread alerts, open orders, 
 - Props: `number: number`, `color?: BadgeColors = 'fleet-red'`, `text_color?: string`
 - Slots: `default`
 - Stories (9): `frontend/app/rust/stories/components/data-display/NotificationBadge.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-notificationbadge--docs: Default, Alliance Blue, Militia Purple, Green, Yellow (red text), Custom Text Color, Large number (compact), Zero, Slot Override
-
-### VisibilityTag
-
-Who can see a tribe group item: a lock and "Members only" in yellow, or a globe and "Open to the alliance" in neutral.
-
-- Import: `import VisibilityTag from '@components/blocks/VisibilityTag.astro'`
-- Props: `visibility: TribeVisibility = == 'members_only'`, `size?: 'sm' | 'md' = 'md'`
-- Stories (5): `frontend/app/rust/stories/components/data-display/VisibilityTag.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-visibilitytag--docs: Default, Open, Small Members Only, Small Open, Pass Through Attributes
 
 ### DebugTag
 
@@ -876,6 +835,7 @@ Not reusable components: the site's feature blocks rendered from typed fixtures,
 - **Content/HelpPanelPreview**: `frontend/app/rust/stories/features/content/HelpPanelPreview.stories.ts`, fixtures `frontend/app/rust/fixtures/features/content`. Scenarios: Full Panel, No Active Options, No Channel, Unsynced Channel, Out Of Band
 - **Content/LearningSkillsets**: `frontend/app/rust/stories/features/content/LearningSkillsets.stories.ts`, fixtures `frontend/app/rust/fixtures/features/content`. Scenarios: With Progress, Filter By Category, No Skillsets, Signed Out, Manager With Admin Link
 - **Content/NewsReel**: `frontend/app/rust/stories/features/content/NewsReel.stories.ts`, fixtures `frontend/app/rust/fixtures/features/content`. Scenarios: Few Posts, Scrolling, Empty
+- **Content/PageProgress**: `frontend/app/rust/stories/features/content/PageProgress.stories.ts`. Scenarios: Default, Without Acknowledgement, With Acknowledgement, Single Section, No sections (renders nothing)
 - **Content/PostItem**: `frontend/app/rust/stories/features/content/PostItem.stories.ts`, fixtures `frontend/app/rust/fixtures/features/content`. Scenarios: Character Post, Alliance Post, Group Post, Long Title, No Tags
 - **Content/PostsList**: `frontend/app/rust/stories/features/content/PostsList.stories.ts`, fixtures `frontend/app/rust/fixtures/features/content`. Scenarios: Typical, Busy, Last Page, Empty
 - **Content/PostTile**: `frontend/app/rust/stories/features/content/PostTile.stories.ts`, fixtures `frontend/app/rust/fixtures/features/content`. Scenarios: Crest Fallback, With Cover, Members Only, Tagged By Group, Long Text
@@ -890,6 +850,7 @@ Not reusable components: the site's feature blocks rendered from typed fixtures,
 - **Corporations and tribes/TrialProgressBar**: `frontend/app/rust/stories/features/corporations-and-tribes/TrialProgressBar.stories.ts`, fixtures `frontend/app/rust/fixtures/features/corporations-and-tribes`. Scenarios: On Pace, Behind Pace, Past The Scale, Alliance Average, No Average Yet, Compact
 - **Corporations and tribes/TribeEventRow**: `frontend/app/rust/stories/features/corporations-and-tribes/TribeEventRow.stories.ts`, fixtures `frontend/app/rust/fixtures/features/corporations-and-tribes`. Scenarios: Scheduled, Editable By Leader, Cancelled, Completed, No Date Not On Discord
 - **Corporations and tribes/TribeGroupChip**: `frontend/app/rust/stories/features/corporations-and-tribes/TribeGroupChip.stories.ts`, fixtures `frontend/app/rust/fixtures/features/corporations-and-tribes`. Scenarios: Linked, With Tribe Name, Inside Linked Row, Long Name Truncated
+- **Corporations and tribes/VisibilityTag**: `frontend/app/rust/stories/features/corporations-and-tribes/VisibilityTag.stories.ts`. Scenarios: Default, Open, Small Members Only, Small Open, Pass Through Attributes
 - **Fleets/CandidateFleetCard**: `frontend/app/rust/stories/features/fleets/CandidateFleetCard.stories.ts`, fixtures `frontend/app/rust/fixtures/features/fleets`. Scenarios: Strategic With Objective, Training Fleet, No Objective, Long Fc Name, Opens Srp Form
 - **Fleets/FleetBattlePilotRow**: `frontend/app/rust/stories/features/fleets/FleetBattlePilotRow.stories.ts`, fixtures `frontend/app/rust/fixtures/features/fleets`. Scenarios: Survivor, Lost Hull, Multi Hull With Pod, No Hull Icon, Long Name
 - **Fleets/FleetCombatLogCard**: `frontend/app/rust/stories/features/fleets/FleetCombatLogCard.stories.ts`, fixtures `frontend/app/rust/fixtures/features/fleets`. Scenarios: Typical, Unattributed, Long Name
@@ -908,6 +869,7 @@ Not reusable components: the site's feature blocks rendered from typed fixtures,
 - **Fleets/FleetStatus**: `frontend/app/rust/stories/features/fleets/FleetStatus.stories.ts`, fixtures `frontend/app/rust/fixtures/features/fleets`. Scenarios: Upcoming As Pilot, Fc Within Thirty Minutes, Fc On Time, Fc Too Early, Active As Fc, Active As Pilot, Just Started On An Alt, Completed, Cancelled
 - **Fleets/FleetTypeFlag**: `frontend/app/rust/stories/features/fleets/FleetTypeFlag.stories.ts`, fixtures `frontend/app/rust/fixtures/features/fleets`. Scenarios: Strategic, Non Strategic, Training, Npsi, Small, No Type
 - **Fleets/SRPTable**: `frontend/app/rust/stories/features/fleets/SRPTable.stories.ts`, fixtures `frontend/app/rust/fixtures/features/fleets`. Scenarios: Reviewer Queue, Alts Show Their Main, Empty, One Request, Busy Queue, Opening The Review Dialog, My Own Requests, Under AFleet, Fleetless Requests, Corp Ship And Long Name
+- **Fleets/StatusText**: `frontend/app/rust/stories/features/fleets/StatusText.stories.ts`. Scenarios: Default, Danger, Expired, Blinking, Completed, Pass Through Attributes
 - **Industry/BuybackContractsTable**: `frontend/app/rust/stories/features/industry/BuybackContractsTable.stories.ts`, fixtures `frontend/app/rust/fixtures/features/industry`. Scenarios: Mixed Statuses, Description Link And Blank, Empty, History
 - **Industry/CargoHold**: `frontend/app/rust/stories/features/industry/CargoHold.stories.ts`, fixtures `frontend/app/rust/fixtures/features/industry`. Scenarios: Fleet Fit Cargo, Expands On Click, Single Stack, Without Amounts
 - **Industry/FreightContractsTable**: `frontend/app/rust/stories/features/industry/FreightContractsTable.stories.ts`, fixtures `frontend/app/rust/fixtures/features/industry`. Scenarios: Mixed Statuses, Not Taken Until Accepted, Empty, History
