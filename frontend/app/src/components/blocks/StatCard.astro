@@ -12,6 +12,14 @@ interface Props {
     value?: string | number
     hint?: string
     coming_soon?: boolean
+    /** `compact` is a smaller card for dense rows of stats; `bar` adds a progress bar under the value (see `bar_value`). */
+    variant?: 'default' | 'compact' | 'bar'
+    /** Fill of the bar for `variant="bar"`, from 0 to 1. */
+    bar_value?: number
+    /** Colours the value and the bar; the highlight colour when unset. */
+    tone?: 'fleet-red' | 'green' | 'alliance-blue' | 'fleet-yellow'
+    /** Text of the "coming soon" placeholder; defaults to the translated `tribes.activity.coming_soon`. */
+    coming_soon_label?: string
     [propName: string]: any
 }
 
@@ -20,23 +28,43 @@ const {
     value,
     hint,
     coming_soon = false,
+    variant = 'default',
+    bar_value = 0,
+    tone,
+    coming_soon_label,
     ...attributes
 } = Astro.props
 
 delete attributes.class
 
+const bar_percent = Math.round(Math.min(1, Math.max(0, Number(bar_value) || 0)) * 100)
+const style = [tone ? `--stat-tone: var(--${tone})` : '', attributes.style ?? ''].filter(Boolean).join('; ')
+delete attributes.style
+
 const has_hint = Boolean(hint) || Astro.slots.has('hint')
 ---
 
 <article
-    class:list={['[ stat-card ]', { 'stat-card--soon': coming_soon }, Astro.props.class]}
+    class:list={['[ stat-card ]', variant !== 'default' && `stat-card--${variant}`, { 'stat-card--soon': coming_soon }, Astro.props.class]}
+    style={style || undefined}
     {...attributes}
 >
     <p class="[ stat-card__label ]">{label}</p>
     {coming_soon ?
-        <p class="[ stat-card__soon ]">{t('tribes.activity.coming_soon')}</p>
+        <p class="[ stat-card__soon ]">{coming_soon_label ?? t('tribes.activity.coming_soon')}</p>
         :
         <p class="[ stat-card__value ]"><slot name="value">{value}</slot></p>
+    }
+    {variant === 'bar' && !coming_soon &&
+        <div
+            class="[ stat-card__bar ]"
+            role="meter"
+            aria-label={label}
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow={bar_percent}
+            style={`--stat-bar: ${bar_percent}%`}
+        ></div>
     }
     {has_hint && <p class="[ stat-card__hint ]"><slot name="hint">{hint}</slot></p>}
 </article>
@@ -76,7 +104,28 @@ const has_hint = Boolean(hint) || Astro.slots.has('hint')
         line-height: 0.95;
         letter-spacing: -0.02em;
         text-transform: uppercase;
-        color: var(--highlight);
+        color: var(--stat-tone, var(--highlight));
+    }
+
+    .stat-card--compact {
+        padding: var(--space-xs) var(--space-s);
+
+        .stat-card__value {
+            font-size: var(--step-2);
+        }
+    }
+
+    .stat-card__bar {
+        block-size: var(--space-3xs);
+        background: color-mix(in srgb, var(--foreground) 12%, transparent);
+
+        &::after {
+            content: '';
+            display: block;
+            block-size: 100%;
+            inline-size: var(--stat-bar, 0%);
+            background: var(--stat-tone, var(--highlight));
+        }
     }
 
     /* A tooltip on the big number reads as help, not as a dotted link. */
