@@ -135,6 +135,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 
 import Button from '@components/blocks/Button.astro';
 import Input from '@components/blocks/Input.astro';
+import Textarea from '@components/blocks/Textarea.astro';
 import Select from '@components/blocks/Select.astro';
 import Switch from '@components/blocks/Switch.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
@@ -1622,13 +1623,13 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                             {t('industry.orders.planner.stocks_tip')}
                                         </p>
                                     </Flexblock>
-                                    <textarea
+                                    <Textarea
                                         class="[ planner-tsv ]"
                                         rows="6"
                                         x-model="stock_paste"
                                         placeholder={t('industry.orders.planner.stocks_placeholder')}
                                         aria-label={t('industry.orders.planner.stocks')}
-                                    ></textarea>
+                                    ></Textarea>
                                     <p
                                         class="[ text-gray planner-section-hint ]"
                                         x-show="stockStatusText()"
@@ -1788,13 +1789,13 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                         </Fragment>
                                     }
 
-                                    <textarea
+                                    <Textarea
                                         class="[ planner-tsv ]"
                                         readonly
                                         rows="12"
                                         x-model="materials_tsv"
                                         x-show="materials_tsv"
-                                    ></textarea>
+                                    ></Textarea>
                                     </div>
                                 </Flexblock>
                             </ComponentBlock>
@@ -1882,16 +1883,9 @@ import StylessButton from '@components/blocks/StylessButton.astro'
     }
 
     .planner-tsv {
-        width: 100%;
-        box-sizing: border-box;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         font-size: var(--step--1);
         line-height: 1.45;
-        padding: var(--space-s) var(--space-m);
-        background: rgba(0, 0, 0, 0.35);
-        border: 1px solid var(--border-color);
-        color: var(--highlight);
-        resize: vertical;
     }
 
     .planner-results {
@@ -2236,7 +2230,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
     @media (max-width: 48rem) {
         .planner-tsv {
             font-size: var(--step-0);
-            padding: var(--space-xs);
         }
 
         .planner-bucket-action {

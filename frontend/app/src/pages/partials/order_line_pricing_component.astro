@@ -97,6 +97,7 @@ const saving_text = line && line.saving !== null
         .replace('{amount}', isk(Math.abs(line.saving)))
     : null
 
+import Input from '@components/blocks/Input.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 ---
 
@@ -145,11 +146,13 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         {line.basis === 'margin' &&
             <label class="[ order-line-pricing__margin ]">
                 <span>{t('industry.orders.create.margin_label')}</span>
-                <input
+                <Input
                     type="number"
                     name={`margin_${type_id}`}
                     min="0"
                     step="1"
+                    size="sm"
+                    width="6rem"
                     value={line.margin}
                 />
                 <span>%</span>
@@ -280,15 +283,6 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         align-items: center;
         gap: var(--space-2xs);
         color: var(--faded);
-
-        input {
-            width: 6rem;
-            padding: var(--space-3xs) var(--space-2xs);
-            background-color: var(--surface-sunken);
-            border: 1px solid var(--border-color-hover);
-            color: var(--highlight);
-            font: inherit;
-        }
     }
 
     .order-line-pricing__bar {
