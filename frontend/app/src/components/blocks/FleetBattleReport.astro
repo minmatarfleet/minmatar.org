@@ -339,6 +339,7 @@ const selected = (position: number) => `{ 'is-sel': team === ${position} }`
 
 import FleetBattlePilotRow from '@components/blocks/FleetBattlePilotRow.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 ---
 
 <div
@@ -372,7 +373,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
     </header>
 
     <section class="[ br__panel br__scope ]" aria-label={t('fleets.report.scope')} x-data={strip_data}>
-        <div class="[ br__chips ]" role="group" aria-label={t('fleets.report.segments')}>
+        <XFadeScroll class="[ br__chips ]" role="group" aria-label={t('fleets.report.segments')}>
             {chips.map(chip =>
                 <span class:list={['[ br__chip ]', { 'is-on': chip.on }]}>
                     <a
@@ -395,7 +396,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                     }
                 </span>
             )}
-        </div>
+        </XFadeScroll>
 
         <div
             class="[ br__strip ]"
@@ -925,7 +926,6 @@ import EmptyState from '@components/blocks/EmptyState.astro'
     .br__chips {
         display: flex;
         gap: var(--space-2xs);
-        overflow-x: auto;
     }
 
     .br__chip {

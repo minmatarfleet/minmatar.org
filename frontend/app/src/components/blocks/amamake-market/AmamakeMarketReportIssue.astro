@@ -7,6 +7,7 @@ import { number_thousand_separator } from '@helpers/numbers'
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 import AmamakeMarketDemand from '@components/blocks/amamake-market/AmamakeMarketDemand.astro'
 import AmamakeMarketFooter from '@components/blocks/amamake-market/AmamakeMarketFooter.astro'
 import AmamakeMarketGetInvolved from '@components/blocks/amamake-market/AmamakeMarketGetInvolved.astro'
@@ -127,7 +128,7 @@ const { auth_token } = get_request_user(Astro)
                     </ol>
                 </div>
 
-                <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Sell orders by class">
+                <XFadeScroll class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Sell orders by class">
                     <h4>Sell orders by class</h4>
                     <table class="[ mk-table mk-table--weeks ]">
                         <thead>
@@ -177,7 +178,7 @@ const { auth_token } = get_request_user(Astro)
                             ))}
                         </tbody>
                     </table>
-                </div>
+                </XFadeScroll>
             </Flexblock>
         </ComponentBlock>
     </section>
@@ -522,7 +523,6 @@ const { auth_token } = get_request_user(Astro)
         display: flex;
         flex-direction: column;
         gap: var(--space-s);
-        overflow-x: auto;
         min-width: 0;
         width: 100%;
     }
