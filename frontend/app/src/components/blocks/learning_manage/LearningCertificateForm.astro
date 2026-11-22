@@ -37,6 +37,7 @@ import { sort_item_attrs } from '@helpers/manage_reorder'
 
 import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 import Select from '@components/blocks/Select.astro'
 import Textarea from '@components/blocks/Textarea.astro'
 import ManageField from '@components/blocks/manage/ManageField.astro'
@@ -100,10 +101,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
             <fieldset class="[ cert-form__personas ]">
                 <legend>{t('learning_admin.personas')}</legend>
                 {PERSONAS.map((persona) => (
-                    <label>
-                        <input type="checkbox" name="personas" value={persona} checked={personas.includes(persona)} />
-                        {t(t_key('learning_manage.persona_', persona))}
-                    </label>
+                    <RadioCheckInput type="checkbox" name="personas" value={persona} checked={personas.includes(persona)} label={t(t_key('learning_manage.persona_', persona))} />
                 ))}
             </fieldset>
         </div>
@@ -213,13 +211,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         legend {
             margin-block-end: var(--space-2xs);
             font-size: var(--step--1);
-        }
-
-        label {
-            display: inline-flex;
-            align-items: center;
-            gap: var(--space-2xs);
-            color: var(--highlight);
         }
     }
 
