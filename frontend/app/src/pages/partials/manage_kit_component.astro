@@ -28,6 +28,7 @@ import HtmxPager from '@components/blocks/HtmxPager.astro'
 import ViewChips from '@components/blocks/manage/ViewChips.astro'
 import ManageSearch from '@components/blocks/manage/ManageSearch.astro'
 import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import RowSwapFrame from '@components/blocks/manage/RowSwapFrame.astro'
 import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
 import EntityPicker from '@components/blocks/manage/EntityPicker.astro'
 import EveTimeInput from '@components/blocks/manage/EveTimeInput.astro'
@@ -150,16 +151,16 @@ const COLUMNS = [
 {part === 'row' && row_screen && (
     removed
         ? (
-            // A row goes back inside a <table> and the request picks it with hx-select:
+            // A row goes back inside a RowSwapFrame and the request picks it with hx-select:
             // htmx would drop a bare <tbody> after Astro's leading <style>/<link>.
-            <table>
+            <RowSwapFrame>
                 <ExpandRow id={`kit-row-${row_screen.key}`} colspan={COLUMNS.length + 1} label={label_of(row_screen.key)} dim={true}>
                     <td><span class="[ manage-who__name ]">{label_of(row_screen.key)}</span></td>
                     <td class="[ is-wide ]">{t(t_key('manage.group_', row_screen.group))}</td>
                     <td class="num"><span class="[ manage-saved ]">{t('manage.kit.demo_removed')}</span></td>
                     <p slot="detail" class="[ manage-muted ]">{t('manage.kit.demo_removed')}</p>
                 </ExpandRow>
-            </table>
+            </RowSwapFrame>
         )
         : (
             <form

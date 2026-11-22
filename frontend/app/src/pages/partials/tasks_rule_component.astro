@@ -42,8 +42,9 @@ try {
 if (!rule) return HTTP_404_Not_Found()
 
 import TaskRuleRow from '@components/blocks/tasks/TaskRuleRow.astro'
+import RowSwapFrame from '@components/blocks/manage/RowSwapFrame.astro'
 ---
 
-<table>
+<RowSwapFrame>
     <TaskRuleRow rule={rule} open={!toggle} saved={!error && !toggle} error={error} />
-</table>
+</RowSwapFrame>

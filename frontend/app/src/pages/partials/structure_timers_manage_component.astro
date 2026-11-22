@@ -35,6 +35,7 @@ import StructurePingsPanel from '@components/blocks/StructurePingsPanel.astro'
 import StructureTimersManager from '@components/blocks/StructureTimersManager.astro'
 import StructureTimerForm from '@components/blocks/manage_intel/StructureTimerForm.astro'
 import StructureTimerRow from '@components/blocks/manage_intel/StructureTimerRow.astro'
+import RowSwapFrame from '@components/blocks/manage/RowSwapFrame.astro'
 
 const params = Astro.url.searchParams
 const part = params.get('part') ?? 'list'
@@ -132,9 +133,9 @@ const page = parseInt(params.get('page') ?? '1') || 1
         <p class="[ manage-muted ]">{t('manage.timers.not_found')}</p>
     )
 : row_timer ?
-    <table>
+    <RowSwapFrame>
         <StructureTimerRow timer={row_timer} colspan={COLSPAN} open={!deleted} deleted={deleted} saved={saved} error={row_error} />
-    </table>
+    </RowSwapFrame>
 :
     <p class="[ manage-muted ]">{t('manage.timers.not_found')}</p>
 }

@@ -35,6 +35,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import ViewChips from '@components/blocks/manage/ViewChips.astro'
 import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import RowSwapFrame from '@components/blocks/manage/RowSwapFrame.astro'
 import LpDeskRow from '@components/blocks/market_settings/LpDeskRow.astro'
 import LpDeskDetail from '@components/blocks/market_settings/LpDeskDetail.astro'
 import LpDeskAccounts from '@components/blocks/market_settings/LpDeskAccounts.astro'
@@ -206,8 +207,8 @@ const price = (value: number | null) => value === null ? t('manage.lp.off') : St
         )
     : part === 'row' && corp
         ? (is_post
-            // The row goes back inside a <table>; the request picks it with hx-select.
-            ? <Fragment><table><LpDeskRow corp={corp} open={true} detail={{ saved, error }} /></table><ViewChips {...chips} hx-swap-oob="true" /></Fragment>
+            // The row goes back inside a RowSwapFrame; the request picks it with hx-select.
+            ? <Fragment><RowSwapFrame><LpDeskRow corp={corp} open={true} detail={{ saved, error }} /></RowSwapFrame><ViewChips {...chips} hx-swap-oob="true" /></Fragment>
             : <LpDeskDetail corp={corp} />)
     : part === 'account_form' && corp
         ? <LpAccountForm corp_id={corp.id} account={account_form ? corp.accounts.find((a) => a.id === parseInt(account_form)) ?? null : null} />
