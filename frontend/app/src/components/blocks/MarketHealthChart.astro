@@ -56,7 +56,6 @@ const datasets = [
         tension: 0,
         pointRadius: 0,
         pointHitRadius: 8,
-        pointStyle: 'line',
     },
     ...(include_viability ? [{
         label: t('viability'),
@@ -68,7 +67,6 @@ const datasets = [
         tension: 0,
         pointRadius: 0,
         pointHitRadius: 8,
-        pointStyle: 'line',
     }] : []),
 ]
 
@@ -78,7 +76,7 @@ const options = {
         x: { display: false },
         y: { display: false, min: 0, max: 100, clip: false },
     },
-    plugins: { legend: { labels: { usePointStyle: true, padding: 40 } } },
+    plugins: { legend: { labels: { padding: 40 } } },
 }
 ---
 

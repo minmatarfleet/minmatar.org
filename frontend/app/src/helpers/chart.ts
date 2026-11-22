@@ -134,6 +134,39 @@ function style_dataset(dataset: ChartDataset, index: number, spec: ChartSpec, re
     }
 }
 
+/** Draws a short line, dashed like `dash`, for use as a legend point style. */
+function legend_line(doc: Document, color: string, width: number, dash: number[]) {
+    const canvas = doc.createElement('canvas')
+    // A 25px line and a 10px gap, so the label does not touch it.
+    canvas.width = 35
+    canvas.height = 10
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return undefined
+    ctx.strokeStyle = color
+    ctx.lineWidth = width
+    ctx.setLineDash(dash)
+    ctx.beginPath()
+    ctx.moveTo(0, 5)
+    ctx.lineTo(25, 5)
+    ctx.stroke()
+    return canvas
+}
+
+/**
+ * Legend entries that show a dashed series as dashed. Chart.js draws the
+ * legend marker of a line as a solid swatch; here each line dataset gets a
+ * short line in its own dash pattern.
+ */
+export const dashed_legend_labels = (doc: Document) => (chart: any) => {
+    const labels = chart.constructor.defaults.plugins.legend.labels.generateLabels(chart)
+    for (const label of labels) {
+        const dataset = chart.data.datasets[label.datasetIndex]
+        const marker = legend_line(doc, String(label.strokeStyle), label.lineWidth || 2, dataset?.borderDash ?? [])
+        if (marker) label.pointStyle = marker
+    }
+    return labels
+}
+
 const plot_bounds = (chart: any) => ({ x: chart.scales.x, y: chart.scales.y, area: chart.chartArea })
 
 /** A Chart.js plugin for one of the drawing specs. */
@@ -208,7 +241,7 @@ export function build_plugin(spec: ChartPluginSpec, read: TokenReader) {
 }
 
 /** The full Chart.js configuration for a spec. */
-export function build_config(spec: ChartSpec, read: TokenReader, reduce_motion = false) {
+export function build_config(spec: ChartSpec, read: TokenReader, reduce_motion = false, doc: Document | undefined = typeof document === 'undefined' ? undefined : document) {
     const faded = read('--faded')
     const border = read('--border-color')
     const surface = read('--component-background')
@@ -224,7 +257,14 @@ export function build_config(spec: ChartSpec, read: TokenReader, reduce_motion =
         plugins: {
             legend: {
                 display: spec.legend ?? (radial || spec.datasets.length > 1),
-                labels: { color: faded },
+                labels: {
+                    color: faded,
+                    // A dashed line in a line chart is dashed in the legend too.
+                    ...(doc && spec.type === 'line' && spec.datasets.some((dataset) => dataset.borderDash?.length) && {
+                        usePointStyle: true,
+                        generateLabels: dashed_legend_labels(doc),
+                    }),
+                },
             },
             tooltip: {
                 backgroundColor: surface,
