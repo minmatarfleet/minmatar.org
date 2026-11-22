@@ -4,11 +4,10 @@ import { chapter2 } from './chapter-2'
 import { chapter3 } from './chapter-3'
 import { chapter4 } from './chapter-4'
 import { chapter5 } from './chapter-5'
-import { chapter6 } from './chapter-6'
-import { chapter7 } from './chapter-7'
-import { chapter8 } from './chapter-8'
 import { dronelands } from './dronelands'
 import { lettingThemGo } from './letting-them-go'
+import { sosala } from './sosala'
+import { theSiegeOfAldodan } from './the-siege-of-aldodan'
 import { theWaifuWars } from './the-waifu-wars'
 import { ratChronicleEras } from './eras'
 import type { ChronicleChapter, ChronicleChapterSource, ChronicleEra, ChronicleEraId, ChronicleSection } from './types'
@@ -20,9 +19,8 @@ const chapters_in_order: ChronicleChapterSource[] = [
     chapter3,
     chapter4,
     chapter5,
-    chapter6,
-    chapter7,
-    chapter8,
+    sosala,
+    theSiegeOfAldodan,
     theWaifuWars,
     lettingThemGo,
     dronelands,
@@ -43,6 +41,9 @@ export function getChronicleChapterById(chapter_id: string): ChronicleChapter | 
  * redirects them.
  */
 export const legacyChronicleChapterIds: Record<string, string> = {
+    'chapter-6': 'sosala',
+    'chapter-7': 'sosala',
+    'chapter-8': 'the-siege-of-aldodan',
     'chapter-9': 'the-waifu-wars',
     'chapter-10': 'letting-them-go',
     'chapter-11': 'dronelands',

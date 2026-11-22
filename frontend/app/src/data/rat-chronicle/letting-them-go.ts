@@ -143,7 +143,7 @@ export const lettingThemGo: ChronicleChapterSource = {
                 },
                 {
                     type: 'paragraph',
-                    text: `The **Watermelon** died on the twenty-fifth. It was the green and pink Fortizar in **Sosala**, the home before Vard, and in July forty dreadnoughts had stood in front of it. This time the attackers had the field to themselves. The next night two hundred and sixty-five pilots came for the Fortizar in Vard. The summer's war ended there, with one side absent.`,
+                    text: `The **Watermelon** died on the twenty-fifth. It was the Fortizar in **Sosala**, the home before Vard, and in July forty dreadnoughts had stood in front of it. This time the attackers had the field to themselves. The next night two hundred and sixty-five pilots came for the Fortizar in Vard. The summer's war ended there, with one side absent.`,
                 },
                 {
                     type: 'pieces',

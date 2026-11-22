@@ -85,7 +85,7 @@ export const theWaifuWars: ChronicleChapterSource = {
             blocks: [
                 {
                     type: 'paragraph',
-                    text: `By then the war had a name, and nobody remembers who gave it one. The rats had left a Fortizar behind in **Sosala** when they moved: the **Watermelon**, green and pink, home for sixteen months, and still, in **Casper Sullivan**'s phrase, "FL33T’s ancestral home". Somebody called it the alliance's waifu, its cartoon wife. The other side found waifus of their own. Bear professed not to follow any of it: "Everyone is fighting over who has the best one."`,
+                    text: `By then the war had a name, and nobody remembers who gave it one. The rats had left a Fortizar behind in **Sosala** when they moved: the **Watermelon**, home for sixteen months, and still, in **Casper Sullivan**'s phrase, "FL33T’s ancestral home". Somebody called it the alliance's waifu, its cartoon wife. The other side found waifus of their own. Bear professed not to follow any of it: "Everyone is fighting over who has the best one."`,
                 },
                 {
                     type: 'paragraph',
