@@ -74,6 +74,7 @@ import ManageField from '@components/blocks/manage/ManageField.astro'
 import StructureFit from '@components/blocks/structures/StructureFit.astro'
 import StructureSteps from '@components/blocks/structures/StructureSteps.astro'
 import StructureHowTo from '@components/blocks/structures/StructureHowTo.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <StructureSteps title={t('structures.add.title')} steps_label={t('structures.add.steps')} steps={steps} current={current}>
@@ -100,9 +101,9 @@ import StructureHowTo from '@components/blocks/structures/StructureHowTo.astro'
             <ManageField label={t('structures.add.paste_label')} for="structure-add-text">
                 <Textarea id="structure-add-text" name="text_input" rows="5" placeholder={t('structures.add.paste_placeholder')} x-ref="paste">{state.text}</Textarea>
             </ManageField>
-            <button type="button" class="[ structure-add__link ]" hx-post={URL} hx-vals={go('docked')} hx-target="#structure-add" hx-swap="innerHTML">
+            <StylessButton type="button" class="[ structure-add__link ]" hx-post={URL} hx-vals={go('docked')} hx-target="#structure-add" hx-swap="innerHTML">
                 {t('structures.add.use_docked')}
-            </button>
+            </StylessButton>
             <div class="[ manage-actions ]">
                 <Button type="button" size="sm" color="fleet-red" hx-post={URL} hx-vals={go('match')} hx-target="#structure-add" hx-swap="innerHTML" hx-disabled-elt="this">{t('structures.add.next')}</Button>
                 <Button type="button" size="sm" color="transparent" x-on:click="close_dialog()">{t('cancel')}</Button>

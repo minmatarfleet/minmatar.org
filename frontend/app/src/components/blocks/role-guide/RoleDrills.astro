@@ -23,6 +23,7 @@ delete attributes.class
 const partial_url = translatePath(`/partials/role_drills_component/?role=${guide.slug}`)
 const tracking = Array.isArray(completed)
 const done = new Set(completed ?? [])
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <div class:list={['[ role-drills ]', Astro.props.class]} {...attributes}>
@@ -40,7 +41,7 @@ const done = new Set(completed ?? [])
                     </span>
                     <span class="[ role-drills__kind ]">{t(t_key('fleet_roles.drill.', drill.kind))}</span>
                     {tracking && counts && !is_done && (
-                        <button
+                        <StylessButton
                             type="button"
                             class="[ role-drills__button ]"
                             hx-post={partial_url}
@@ -49,7 +50,7 @@ const done = new Set(completed ?? [])
                             hx-swap="outerHTML"
                         >
                             {t('fleet_roles.mark_done')}
-                        </button>
+                        </StylessButton>
                     )}
                     {is_done && <span class="visually-hidden">{t('fleet_roles.done')}</span>}
                 </li>

@@ -35,6 +35,7 @@ import LpDeskDetail from '@components/blocks/market_settings/LpDeskDetail.astro'
 
 const partial_url = (values: Record<string, string>) => translatePath(`/partials/loyalty_settings_component/?${query_string(values)}`)
 const accounts = loyalty_active_accounts(corp)
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <ExpandRow
@@ -46,7 +47,7 @@ const accounts = loyalty_active_accounts(corp)
     dim={!corp.is_active}
 >
     <td>
-        <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+        <StylessButton type="button" class="[ manage-who ]" x-on:click="open = !open">
             <img src={get_corporation_logo(corp.corporation_id, 64)} alt="" width="40" height="40" loading="lazy" />
             <span class="[ manage-who__text ]">
                 <span class="[ manage-who__name ]">{corp.name}</span>
@@ -54,7 +55,7 @@ const accounts = loyalty_active_accounts(corp)
                     {t(t_key('manage.lp.orders_', loyalty_orders_key(corp)))}<span class="[ market-phone-only ]">{` · ${corp.default_isk_per_lp} ${t('manage.lp.isk_per_lp')}`}</span>
                 </span>
             </span>
-        </button>
+        </StylessButton>
     </td>
     <td class="num is-wide">{corp.default_isk_per_lp}</td>
     <td class:list={['num is-wide', { 'manage-muted': corp.express_isk_per_lp === null }]}>

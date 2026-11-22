@@ -28,11 +28,12 @@ import ManageField from '@components/blocks/manage/ManageField.astro'
 import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
 import Input from '@components/blocks/Input.astro'
 import Button from '@components/blocks/Button.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <ExpandRow id={ROW_ID} colspan={4} label={rule.label} open={open} dim={!rule.enabled}>
     <td>
-        <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+        <StylessButton type="button" class="[ manage-who ]" x-on:click="open = !open">
             <span class="[ manage-who__text ]">
                 <span class="[ manage-who__name ]">
                     {rule.label}
@@ -40,7 +41,7 @@ import Button from '@components/blocks/Button.astro'
                 </span>
                 <span class="[ manage-who__sub ]">{rule.description}</span>
             </span>
-        </button>
+        </StylessButton>
     </td>
     <td class="[ num ]">{rule.open_now}</td>
     <td class="[ num ]">

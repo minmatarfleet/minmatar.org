@@ -21,6 +21,7 @@ const TARGET = `project-${project.id}-tasks`
 
 import TaskGroup from '@components/blocks/tasks/TaskGroup.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <div
@@ -79,9 +80,9 @@ import EmptyState from '@components/blocks/EmptyState.astro'
 
     {project.stages.some((stage) => stage.done > 0) &&
         <div class="[ task-more ]">
-            <button type="button" class="[ task-quiet ]" x-on:click="show_done = !show_done" x-text={`show_done ? '${t('tasks.hide')}' : '${t('tasks.show')}'`}>
+            <StylessButton type="button" class="[ task-quiet ]" x-on:click="show_done = !show_done" x-text={`show_done ? '${t('tasks.hide')}' : '${t('tasks.show')}'`}>
                 {t('tasks.show')}
-            </button>
+            </StylessButton>
             <span>{t('tasks.group.closed')}</span>
         </div>
     }
