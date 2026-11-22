@@ -61,6 +61,7 @@ import Tag from '@components/blocks/Tag.astro'
 import Input from '@components/blocks/Input.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 import SellOrderGapsSkeleton from '@components/blocks/SellOrderGapsSkeleton.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 
 const FLAG_META: Record<string, { label: string; color: TagColors; tip?: string }> = {
     out_of_stock: {
@@ -490,11 +491,11 @@ const initial_showing_after = fill_showing_part(
             </div>
 
             <div x-show="!filtering">
-                <p
-                    class="[ ops-sell-gaps__empty ]"
+                <EmptyState
+                    title={rows.length === 0 ? '—' : empty_label}
                     x-show="visibleCount === 0"
                     style={initial_visible_count > 0 ? 'display: none' : undefined}
-                >{rows.length === 0 ? '—' : empty_label}</p>
+                />
 
                 <Flexblock gap="var(--space-2xs)" class="[ ops-sell-gaps__list ]">
                     {rows.map((row, index) =>
@@ -737,13 +738,6 @@ const initial_showing_after = fill_showing_part(
 
     .ops-sell-gaps__results {
         min-height: min(28rem, 55vh);
-    }
-
-    .ops-sell-gaps__empty {
-        margin: 0;
-        padding-block: var(--space-m);
-        color: var(--faded);
-        font-size: var(--step--1);
     }
 
     .ops-sell-gap-card {

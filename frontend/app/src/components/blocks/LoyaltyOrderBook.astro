@@ -14,6 +14,7 @@ import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
 import { EXPRESS_SLA_HOURS, format_close_time } from '@helpers/loyalty_order_stats'
 import { SEND_LP_HOURS, initially_expanded } from '@helpers/loyalty_desk'
+import EmptyState from '@components/blocks/EmptyState.astro'
 
 const { t, translatePath } = i18n(Astro.url)
 
@@ -496,7 +497,7 @@ const rows_expanded = initially_expanded(orders, VISIBLE_ROWS, (order) => String
             {show_title && <h2>{t('industry.loyalty.orders.title')}</h2>}
 
             {orders.length === 0 ? (
-                <p class="[ loyalty-orders__empty ]">{t('industry.loyalty.orders.empty')}</p>
+                <EmptyState title={t('industry.loyalty.orders.empty')} />
             ) : (
                 <LoyaltyOrderList variant="book">
                     {orders.map((order, index) => (
@@ -952,12 +953,6 @@ const rows_expanded = initially_expanded(orders, VISIBLE_ROWS, (order) => String
                 text-decoration: underline;
             }
         }
-    }
-
-    .loyalty-orders__empty {
-        margin: 0;
-        font-size: var(--step--1);
-        color: var(--highlight);
     }
 
     .loyalty-orders__review {

@@ -4,6 +4,7 @@ import type { BuybackPurchaseOrder } from '@dtypes/api.minmatar.org'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import BuybackPurchaseOrderItem from '@components/blocks/BuybackPurchaseOrderItem.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 
 interface Props {
     orders: BuybackPurchaseOrder[]
@@ -26,7 +27,7 @@ const {
         <h2>{section_title}</h2>
 
         {orders.length === 0 ? (
-            <p class="[ buyback-purchase-orders__empty ]">{t('buyback.purchase.orders.empty')}</p>
+            <EmptyState title={t('buyback.purchase.orders.empty')} />
         ) : (
             <div class="[ buyback-purchase-orders__scroll ]">
                 <div class="[ buyback-purchase-orders__grid ]" role="table" aria-label={section_title}>
@@ -86,12 +87,6 @@ const {
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.02em;
-    }
-
-    .buyback-purchase-orders__empty {
-        margin: 0;
-        font-size: var(--step--1);
-        color: var(--highlight);
     }
 
     @media (max-width: 48rem) {
