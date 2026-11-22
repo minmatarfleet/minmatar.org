@@ -110,6 +110,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import LoyaltyOrderBook from '@components/blocks/LoyaltyOrderBook.astro'
 import LoyaltyDeskActivity from '@components/blocks/LoyaltyDeskActivity.astro'
 import Button from '@components/blocks/Button.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 
 const page_title = t('industry.loyalty.desk.page_title')
 const breadcrumbs = [
@@ -251,7 +252,7 @@ const rates_label = currency
                                 {(stats.converters ?? []).length === 0 ? (
                                     <p>{t('industry.loyalty.desk.team.empty')}</p>
                                 ) : (
-                                    <div class="[ loyalty-desk__table-wrap ]">
+                                    <XFadeScroll class="[ loyalty-desk__table-wrap ]">
                                         <table class="[ tabular-nums ]">
                                             <thead>
                                                 <tr>
@@ -287,7 +288,7 @@ const rates_label = currency
                                                 ))}
                                             </tbody>
                                         </table>
-                                    </div>
+                                    </XFadeScroll>
                                 )}
                             </div>
                             <LoyaltyDeskActivity stats={stats} week_stats={week_stats} />
@@ -398,7 +399,6 @@ const rates_label = currency
     }
 
     .loyalty-desk__table-wrap {
-        overflow-x: auto;
         border: 1px solid var(--border-color);
         background-color: var(--component-background);
     }

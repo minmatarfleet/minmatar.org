@@ -21,6 +21,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import Input from '@components/blocks/Input.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 
 interface Props {
     issue: AmamakeMarketIssue
@@ -193,7 +194,7 @@ const hx_body = {
 
                 {show_table && rows.length > 0 && (
                     <>
-                        <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Monthly sales by type">
+                        <XFadeScroll class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Monthly sales by type">
                             <table class="[ mk-table mk-table--volume ]">
                                 <thead>
                                     <tr>
@@ -244,7 +245,7 @@ const hx_body = {
                                     ))}
                                 </tbody>
                             </table>
-                        </div>
+                        </XFadeScroll>
 
                         <div class="[ mk-volume__pager ]">
                             <p class="[ mk-volume__meta ]">
@@ -380,7 +381,7 @@ const hx_body = {
 
                         {show_table && rows.length > 0 && (
                             <>
-                                <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Monthly sales by type">
+                                <XFadeScroll class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Monthly sales by type">
                                     <table class="[ mk-table mk-table--volume ]">
                                         <thead>
                                             <tr>
@@ -431,7 +432,7 @@ const hx_body = {
                                             ))}
                                         </tbody>
                                     </table>
-                                </div>
+                                </XFadeScroll>
 
                                 <div class="[ mk-volume__pager ]">
                                     <p class="[ mk-volume__meta ]">
@@ -638,7 +639,6 @@ const hx_body = {
     }
 
     .mk-table-wrap {
-        overflow-x: auto;
         min-width: 0;
         width: 100%;
     }

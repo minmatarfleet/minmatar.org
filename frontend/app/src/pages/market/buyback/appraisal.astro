@@ -69,6 +69,7 @@ import ItemPicture from '@components/blocks/ItemPicture.astro';
 import Tag from '@components/blocks/Tag.astro';
 import BuybackRateBadge from '@components/blocks/BuybackRateBadge.astro';
 import { buyback_rate_badge } from '@helpers/buyback_rate'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 
 const location_short = settings.location.short_name
 const page_title = t('buyback.appraisal.page_title')
@@ -178,7 +179,7 @@ const format_isk = (value: number | null) => format_isk_full(value)
                 <Flexblock class="[ w-full ]" gap='var(--space-l)'>
                     <Flexblock class="[ w-full ]" gap='var(--space-2xs)'>
                         <h2>{t('buyback.appraisal.accepted')} ({accepted.length})</h2>
-                        <div class="[ buyback-appraisal-table-wrap ]">
+                        <XFadeScroll class="[ buyback-appraisal-table-wrap ]">
                             <table class="[ buyback-appraisal-table ]">
                                 <thead>
                                     <tr>
@@ -240,14 +241,14 @@ const format_isk = (value: number | null) => format_isk_full(value)
                                     })}
                                 </tbody>
                             </table>
-                        </div>
+                        </XFadeScroll>
                         <p class="[ buyback-appraisal-note ]">{t('buyback.appraisal.jita_note')}</p>
                     </Flexblock>
 
                     {rejected.length > 0 &&
                         <Flexblock class="[ w-full ]" gap='var(--space-2xs)'>
                             <h2>{t('buyback.appraisal.rejected')} ({rejected.length})</h2>
-                            <div class="[ buyback-appraisal-table-wrap ]">
+                            <XFadeScroll class="[ buyback-appraisal-table-wrap ]">
                                 <table class="[ buyback-appraisal-table ]">
                                     <thead>
                                         <tr>
@@ -281,7 +282,7 @@ const format_isk = (value: number | null) => format_isk_full(value)
                                         )}
                                     </tbody>
                                 </table>
-                            </div>
+                            </XFadeScroll>
                         </Flexblock>
                     }
                 </Flexblock>
@@ -326,7 +327,6 @@ const format_isk = (value: number | null) => format_isk_full(value)
     }
 
     .buyback-appraisal-table-wrap {
-        overflow-x: auto;
         width: 100%;
     }
 

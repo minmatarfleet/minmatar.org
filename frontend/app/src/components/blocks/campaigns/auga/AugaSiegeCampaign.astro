@@ -53,6 +53,7 @@ import PilotsEvEIcon from '@components/icons/PilotsEvEIcon.astro'
 
 import { get_alliance_logo, get_corporation_logo } from '@helpers/eve_image'
 import { number_name } from '@helpers/numbers'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 
 const engagementRows: CampaignTableRow[] = ENGAGEMENT_MIX.map((row) => ({
     cells: [row.label, row.value.toLocaleString()],
@@ -303,7 +304,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
     <h2>Top Minmatar militia pilots</h2>
 
     <TextBox>
-        <div class="er-table-wrap" tabindex="0" role="region" aria-label="Top 5 militia pilots">
+        <XFadeScroll class="er-table-wrap" tabindex="0" role="region" aria-label="Top 5 militia pilots">
             <table class="er-table auga-pilot-table">
                 <thead>
                     <tr>
@@ -332,7 +333,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                     }
                 </tbody>
             </table>
-        </div>
+        </XFadeScroll>
     </TextBox>
 
     {
@@ -373,7 +374,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
             ISK lost is when they were the victim.
         </small>
     </Flexblock>
-    <div class="er-table-wrap" tabindex="0" role="region" aria-label="Top alliances">
+    <XFadeScroll class="er-table-wrap" tabindex="0" role="region" aria-label="Top alliances">
         <table class="er-table auga-alliance-table">
             <thead>
                 <tr>
@@ -409,7 +410,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                 }
             </tbody>
         </table>
-    </div>
+    </XFadeScroll>
 </Flexblock>
 
 <Flexblock gap="var(--space-l)">
@@ -420,7 +421,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
     <div class="auga-ship-split">
         <Flexblock>
             <h4>Most destroyed hulls</h4>
-            <div class="er-table-wrap" tabindex="0" role="region">
+            <XFadeScroll class="er-table-wrap" tabindex="0" role="region">
                 <table class="er-table auga-ship-table">
                     <thead>
                         <tr>
@@ -449,11 +450,11 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                         }
                     </tbody>
                 </table>
-            </div>
+            </XFadeScroll>
         </Flexblock>
         <Flexblock>
             <h4>Most common militia hulls</h4>
-            <div class="er-table-wrap" tabindex="0" role="region">
+            <XFadeScroll class="er-table-wrap" tabindex="0" role="region">
                 <table class="er-table auga-ship-table">
                     <thead>
                         <tr>
@@ -482,7 +483,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                         }
                     </tbody>
                 </table>
-            </div>
+            </XFadeScroll>
         </Flexblock>
     </div>
 </Flexblock>
@@ -492,7 +493,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
         <h2>Notable events</h2>
         <small>High ISK clusters and key campaign moments</small>
     </Flexblock>
-    <div class="er-table-wrap" tabindex="0" role="region" aria-label="Notable events">
+    <XFadeScroll class="er-table-wrap" tabindex="0" role="region" aria-label="Notable events">
         <table class="er-table auga-event-table">
             <thead>
                 <tr>
@@ -534,7 +535,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                 }
             </tbody>
         </table>
-    </div>
+    </XFadeScroll>
 </Flexblock>
 
 <Flexblock>
@@ -726,7 +727,6 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
     }
 
     .er-table-wrap {
-        overflow-x: auto;
         min-width: 0;
     }
 

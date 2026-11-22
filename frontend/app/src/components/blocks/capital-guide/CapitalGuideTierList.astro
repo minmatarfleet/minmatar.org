@@ -3,6 +3,7 @@ import CapitalGuideShipChip from '@components/blocks/capital-guide/CapitalGuideS
 import { capitalTierLabels, fittingsForHull } from '@/data/capital-guide'
 import type { CapitalHull, CapitalTier, TierList, TierRow } from '@/data/capital-guide'
 import type { Fitting } from '@dtypes/api.minmatar.org'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 
 interface Props {
     list: TierList
@@ -45,7 +46,7 @@ function row_label(row: TierRow): string | null {
                         <span class="cap-tiers__badge-letter">{badge}</span>
                         {label && <span class="cap-tiers__badge-label">{label}</span>}
                     </div>
-                    <div class="cap-tiers__ships-wrap">
+                    <XFadeScroll class="cap-tiers__ships-wrap">
                         <div class="cap-tiers__ships">
                             {row.hullIds.map((hull_id) => {
                                 const hull = hulls[hull_id]
@@ -59,7 +60,7 @@ function row_label(row: TierRow): string | null {
                                 )
                             })}
                         </div>
-                    </div>
+                    </XFadeScroll>
                 </div>
             )
         })}
@@ -167,7 +168,6 @@ function row_label(row: TierRow): string | null {
     .cap-tiers__ships-wrap {
         min-width: 0;
         width: 100%;
-        overflow-x: auto;
     }
 
     .cap-tiers__ships {
