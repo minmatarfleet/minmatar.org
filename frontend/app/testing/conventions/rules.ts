@@ -468,8 +468,11 @@ const RULE_DEFINITIONS: ConventionRule[] = [
     },
     {
         id: 'palette_off_meaning',
-        kind: 'ratchet',
+        kind: 'absolute',
         why: 'Security-status and meta-group colours have one meaning each: draw them with <SecurityStatus> or <MetaGroupTag>, or the icons. Using these tokens anywhere else lends the colour a different meaning.',
+        exempt: {
+            'src/components/blocks/FittingSlot.astro': "draws a module's meta group (Tech I/II/III, Storyline, Faction, Officer, Deadspace, Abyssal) on a fitting slot: game data in the game's colours, not a UI meaning",
+        },
         find: (file) => {
             if (file.path.startsWith('src/components/icons/') || file.path.startsWith('src/styles/properties/')) return []
             if (COMPONENT_FILES('blocks/sde/SecurityStatus', 'blocks/sde/MetaGroupTag').includes(file.path)) return []

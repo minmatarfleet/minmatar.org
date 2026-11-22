@@ -96,13 +96,5 @@
         "src/pages/industry/orders/planner.astro": 1,
         "src/pages/list_data.astro": 1
     },
-    "palette_off_meaning": {
-        "src/components/blocks/FittingSlot.astro": 16,
-        "src/components/blocks/FleetOverview.astro": 1,
-        "src/components/blocks/newsletter/NewsletterIssue.astro": 1,
-        "src/components/blocks/OurzadInfo.astro": 1,
-        "src/components/blocks/PilotsList.astro": 1,
-        "src/helpers/structure_locations.ts": 3
-    },
     "local_semantic_colour": {}
 }
