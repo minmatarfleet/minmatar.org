@@ -70,14 +70,6 @@
         "src/styles/components/_tippy-theme.scss": 1,
         "src/styles/tailwind.css": 2
     },
-    "tint_off_ladder": {
-        "src/components/blocks/campaigns/auga/AugaSiegeCampaign.astro": 2,
-        "src/components/blocks/campaigns/etherium-reach/EtheriumReachCampaign.astro": 4,
-        "src/components/blocks/campaigns/hek/HekCampaign.astro": 3,
-        "src/components/blocks/campaigns/providence/ProvidenceCampaign.astro": 1,
-        "src/components/blocks/campaigns/scalding-pass/ScaldingPassCampaign.astro": 2,
-        "src/components/blocks/capital-guide/CapitalGuideTierList.astro": 1
-    },
     "bespoke_empty_state": {},
     "partial_error_state": {},
     "is_superuser_read": {
