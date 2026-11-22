@@ -40,7 +40,7 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 
 import Tile from '@components/blocks/Tile.astro';
 import ItemBadge from '@components/blocks/ItemBadge.astro';
-import BadgeSwiper from '@components/blocks/BadgeSwiper.astro';
+import Carousel from '@components/blocks/Carousel.astro';
 import ButtonAddKillmail from '@components/blocks/ButtonAddKillmail.astro';
 import ButtonAuth from '@components/blocks/ButtonAuth.astro';
 import SRPStat from '@components/blocks/SRPStat.astro';
@@ -86,10 +86,17 @@ import SRPStat from '@components/blocks/SRPStat.astro';
                             class="[ swiper ][ w-full ]"
                             style={`--swiper-height: ${Math.min(SLIDES_PER_VIEW, values_sorted.length) * 64 + (Math.min(SLIDES_PER_VIEW, values_sorted.length) - 1) * 20}px`}
                         >
-                            <BadgeSwiper
-                                swiper_selector={`#${id}-swiper`}
+                            <Carousel
+                                selector={`#${id}-swiper`}
+                                class='[ w-full ]'
+                                direction='vertical'
                                 slides_per_view={SLIDES_PER_VIEW}
+                                space_between={20}
+                                initial_slide={1}
+                                loop={true}
+                                autoplay_ms={3000}
                                 mousewheel={values_sorted.length > SLIDES_PER_VIEW}
+                                navigation={false}
                             >
                                 {values_sorted.map(value =>
                                     <div class="swiper-slide"  style="margin-bottom: 20px">
@@ -107,7 +114,7 @@ import SRPStat from '@components/blocks/SRPStat.astro';
                                         </ItemBadge>
                                     </div>
                                 )}
-                            </BadgeSwiper>
+                            </Carousel>
                         </div>
                         <slot name="values-footer" />
                     }

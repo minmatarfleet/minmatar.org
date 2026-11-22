@@ -9,7 +9,9 @@
  *
  * Uses the global `Swiper` from HeadScripts, started after the 100 ms the
  * reels have always waited for hidden or swapped-in markup, and destroyed when
- * the carousel is removed. `nav_tone` picks the arrow colour: `highlight`
+ * the carousel is removed. A carousel that does not own its reel (`selector`)
+ * renders only the track and bullets inside the caller's own `.swiper`, so the
+ * caller keeps its element, id and CSS. `nav_tone` picks the arrow colour: `highlight`
  * (white) or `fleet-yellow`. Arrows are labelled `Previous slide` and
  * `Next slide`, and reachable by keyboard.
  */
@@ -40,6 +42,34 @@ interface Props {
     /** Vertical alignment of slides in the track. */
     align?:             'start' | 'center' | 'end' | 'stretch';
     initial_slide?:     number;
+    /** Slides stack vertically; give the `.swiper` a height. */
+    direction?:         'horizontal' | 'vertical';
+    /** `fade` cross-fades between slides (one visible at a time). */
+    effect?:            'slide' | 'fade';
+    /** Scroll with the wheel; `{ forceToAxis: true }` only when it moves along the carousel. */
+    mousewheel?:        boolean | { forceToAxis?: boolean };
+    /** Jump back to the first slide after the last (and the reverse) without looping slides. */
+    rewind?:            boolean;
+    /** Nested in another Swiper: touches belong to the innermost. */
+    nested?:            boolean;
+    /** Off, the reel moves only by the arrows, bullets and `go_slide`. */
+    allow_touch_move?:  boolean;
+    /** Keep the slide in the URL hash (`data-hash` on each slide). */
+    hash_navigation?:   boolean;
+    /** Measure `breakpoints` against the carousel's own width, not the viewport's. */
+    breakpoints_base?:  'window' | 'container';
+    /**
+     * The caller's own `.swiper` (a selector for it or an ancestor of the
+     * carousel). The carousel then renders only its track and bullets.
+     */
+    selector?:          string;
+    /** Selectors of arrows the caller placed itself (with `selector`). */
+    prev_el?:           string;
+    next_el?:           string;
+    /** Class for the bullets container, for callers that style it. */
+    pagination_class?:  string;
+    /** Names this carousel for the `carousel:go` / `carousel:next` window events. */
+    control_id?:        string;
     [propName: string]: any;
 }
 
@@ -56,6 +86,19 @@ const {
     hide_nav_on_mobile = true,
     align = 'start',
     initial_slide = 0,
+    direction = 'horizontal',
+    effect = 'slide',
+    mousewheel = false,
+    rewind = false,
+    nested = false,
+    allow_touch_move = true,
+    hash_navigation = false,
+    breakpoints_base = 'window',
+    selector,
+    prev_el,
+    next_el,
+    pagination_class,
+    control_id,
     ...attributes
 } = Astro.props
 
@@ -76,112 +119,101 @@ const swiper_options = {
     ...(swiper_breakpoints && { breakpoints: swiper_breakpoints }),
     ...(autoplay_ms > 0 && { autoplay: { delay: autoplay_ms } }),
     pagination: pagination ? { clickable: true, dynamicBullets: true } : false,
+    ...(direction === 'vertical' && { direction }),
+    ...(effect === 'fade' && { effect, fadeEffect: { crossFade: true } }),
+    ...(mousewheel && { mousewheel }),
+    ...(rewind && { rewind }),
+    ...(nested && { nested }),
+    ...(!allow_touch_move && { allowTouchMove: false, simulateTouch: false }),
+    ...(hash_navigation && { hashNavigation: true }),
+    ...(breakpoints_base === 'container' && { breakpointsBase: 'container' }),
     a11y: { prevSlideMessage: t('carousel.previous'), nextSlideMessage: t('carousel.next') },
 }
+
+const own_arrows = navigation && !selector
+const arrow_els = selector && (prev_el || next_el)
+    ? `navigation: { nextEl: ${JSON.stringify(next_el ?? null)}, prevEl: ${JSON.stringify(prev_el ?? null)} },`
+    : own_arrows ? "navigation: { nextEl: host.parentElement.querySelector('.swiper-button-next'), prevEl: host.parentElement.querySelector('.swiper-button-prev') }," : ''
+
+// The Alpine scope: starts Swiper, and gives the slides `go_slide` / `next_slide` / `prev_slide`.
+const x_data = `{
+    swiper: null,
+    next_slide() { this.swiper?.slideNext() },
+    prev_slide() { this.swiper?.slidePrev() },
+    go_slide(index) { this.swiper?.slideTo(index) },
+    init() {
+        const INIT_WORKAROUND_TIMER_MS = 100
+        setTimeout(() => {
+            if (!window.Swiper || !this.$el.isConnected) return
+            const host = ${selector ? `this.$el.closest(${JSON.stringify(selector)}) || document.querySelector(${JSON.stringify(selector)})` : 'this.$el'}
+            if (!host) return
+            if (this.swiper) this.swiper.destroy(true, true)
+            this.swiper = new Swiper(host, {
+                ...${JSON.stringify(swiper_options)},
+                ${pagination ? "pagination: { clickable: true, dynamicBullets: true, el: host.querySelector('.swiper-pagination') }," : ''}
+                ${arrow_els}
+            })
+        }, INIT_WORKAROUND_TIMER_MS)
+    },
+    destroy() {
+        if (this.swiper) this.swiper.destroy(true, true)
+        this.swiper = null
+    },
+}`
 
 import Wrapper from '@components/compositions/Wrapper.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 ---
 
-<Wrapper
-    class:list={['[ carousel ]', `carousel--${nav_tone}`, Astro.props.class]}
-    padding_block='0'
-    padding_inline='0'
-    max_width='100%'
-    style={`--carousel-nav-offset: ${nav_offset}`}
-    {...attributes}
->
-    <div
-        class="[ swiper ][ w-full ]"
-        x-ref="swiper"
-        x-data={`{
-            swiper: null,
-            init() {
-                const INIT_WORKAROUND_TIMER_MS = 100
-                setTimeout(() => {
-                    if (!window.Swiper || !this.$el.isConnected) return
-                    this.swiper = new Swiper(this.$el, {
-                        ...${JSON.stringify(swiper_options)},
-                        ${pagination ? 'pagination: { clickable: true, dynamicBullets: true, el: this.$refs.pagination },' : ''}
-                        ${navigation ? "navigation: { nextEl: this.$el.parentElement.querySelector('.swiper-button-next'), prevEl: this.$el.parentElement.querySelector('.swiper-button-prev') }," : ''}
-                    })
-                }, INIT_WORKAROUND_TIMER_MS)
-            },
-            destroy() {
-                if (this.swiper) this.swiper.destroy(true, true)
-                this.swiper = null
-            },
-        }`}
-    >
-        <FlexInline class:list={['swiper-wrapper select-none', `!items-${align}`]} gap='0'>
+{selector ?
+    <>
+        <FlexInline
+            class:list={['swiper-wrapper select-none !flex-nowrap', `!items-${align}`, Astro.props.class]}
+            gap='0'
+            x-data={x_data}
+            x-on:carousel:go.window={`if (!$event.detail?.id || $event.detail.id === ${JSON.stringify(control_id ?? null)}) go_slide($event.detail?.index ?? 0)`}
+            x-on:carousel:next.window={`if (!$event.detail?.id || $event.detail.id === ${JSON.stringify(control_id ?? null)}) next_slide()`}
+            {...attributes}
+        >
             <slot />
         </FlexInline>
-        {pagination && <div class="swiper-pagination" x-ref="pagination"></div>}
-    </div>
-
-    {navigation && <>
+        {pagination && <div class:list={['swiper-pagination', pagination_class]}></div>}
+    </>
+    :
+    <Wrapper
+        class:list={['[ carousel ]', `carousel--${nav_tone}`, Astro.props.class]}
+        padding_block='0'
+        padding_inline='0'
+        max_width='100%'
+        style={`--carousel-nav-offset: ${nav_offset}`}
+        {...attributes}
+    >
         <div
-            class:list={['swiper-button-prev', { 'hidden! lg:block!': hide_nav_on_mobile }]}
-            role="button"
-            tabindex="0"
-            aria-label={t('carousel.previous')}
-        ></div>
-        <div
-            class:list={['swiper-button-next', { 'hidden! lg:block!': hide_nav_on_mobile }]}
-            role="button"
-            tabindex="0"
-            aria-label={t('carousel.next')}
-        ></div>
-    </>}
-</Wrapper>
+            class="[ swiper ][ w-full ]"
+            x-data={x_data}
+            x-on:carousel:go.window={`if (!$event.detail?.id || $event.detail.id === ${JSON.stringify(control_id ?? null)}) go_slide($event.detail?.index ?? 0)`}
+            x-on:carousel:next.window={`if (!$event.detail?.id || $event.detail.id === ${JSON.stringify(control_id ?? null)}) next_slide()`}
+        >
+            <FlexInline class:list={['swiper-wrapper select-none !flex-nowrap', `!items-${align}`]} gap='0'>
+                <slot />
+            </FlexInline>
+            {pagination && <div class="swiper-pagination"></div>}
+        </div>
 
-<style lang="scss">
-    .carousel {
-        position: relative;
-    }
+        {navigation && <>
+            <div
+                class:list={['swiper-button-prev', { 'hidden! lg:block!': hide_nav_on_mobile }]}
+                role="button"
+                tabindex="0"
+                aria-label={t('carousel.previous')}
+            ></div>
+            <div
+                class:list={['swiper-button-next', { 'hidden! lg:block!': hide_nav_on_mobile }]}
+                role="button"
+                tabindex="0"
+                aria-label={t('carousel.next')}
+            ></div>
+        </>}
+    </Wrapper>
+}
 
-    .swiper-button-prev,
-    .swiper-button-next {
-        --swiper-navigation-color: var(--highlight);
-        --swiper-navigation-sides-offset: var(--carousel-nav-offset);
-
-        opacity: 0;
-        transform: translateY(-1.25rem);
-    }
-
-    .carousel--fleet-yellow .swiper-button-prev,
-    .carousel--fleet-yellow .swiper-button-next {
-        --swiper-navigation-color: var(--fleet-yellow);
-    }
-
-    .swiper-initialized ~ .swiper-button-prev,
-    .swiper-initialized ~ .swiper-button-next {
-        opacity: 1;
-    }
-
-    .swiper-initialized ~ .swiper-button-next.swiper-button-disabled,
-    .swiper-initialized ~ .swiper-button-prev.swiper-button-disabled {
-        opacity: 0;
-    }
-
-    .swiper-button-next.swiper-button-disabled,
-    .swiper-button-prev.swiper-button-disabled {
-        --swiper-navigation-color: var(--fleet-yellow);
-        opacity: 1;
-    }
-
-    .swiper-wrapper {
-        flex-wrap: nowrap;
-        align-items: flex-start;
-    }
-
-    :global(.swiper-pagination-bullet) {
-        --swiper-pagination-bullet-border-radius: 0;
-    }
-
-    .swiper-pagination {
-        --swiper-pagination-color: var(--fleet-yellow);
-        --swiper-pagination-bullet-inactive-color: var(--highlight);
-        --swiper-pagination-bullet-inactive-opacity: 1;
-    }
-</style>

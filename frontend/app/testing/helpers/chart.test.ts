@@ -20,6 +20,47 @@ const spec = (patch: Partial<ChartSpec> = {}): ChartSpec => ({
     ...patch,
 })
 
+describe('dashed legend markers', () => {
+    const lines = [
+        { label: 'Coverage', data: [1, 2], tone: 'fleet-red' as const },
+        { label: 'Viability', data: [1, 2], tone: 'green' as const, borderDash: [6, 4] },
+    ]
+
+    function fake_doc() {
+        const drawn: { dash: number[] }[] = []
+        const doc = { createElement: () => ({ width: 0, height: 0, getContext: () => {
+            const entry = { dash: [] as number[] }
+            drawn.push(entry)
+            return { setLineDash: (dash: number[]) => { entry.dash = dash }, beginPath() {}, moveTo() {}, lineTo() {}, stroke() {} }
+        } }) } as unknown as Document
+        return { doc, drawn }
+    }
+
+    test('a line chart with a dashed series draws a marker per entry, dashed like its line', () => {
+        const { doc, drawn } = fake_doc()
+        const config = build_config(spec({ datasets: lines }), read, false, doc) as any
+        const legend = config.options.plugins.legend.labels
+        expect(legend.usePointStyle).toBe(true)
+        const chart = {
+            data: { datasets: lines },
+            constructor: { defaults: { plugins: { legend: { labels: { generateLabels: () => [
+                { datasetIndex: 0, strokeStyle: 'a', lineWidth: 2 },
+                { datasetIndex: 1, strokeStyle: 'b', lineWidth: 2 },
+            ] } } } } },
+        }
+        const labels = legend.generateLabels(chart)
+        expect(labels.every((label: { pointStyle: unknown }) => label.pointStyle)).toBe(true)
+        expect(drawn.map((entry) => entry.dash)).toEqual([[], [6, 4]])
+    })
+
+    test('solid-only charts keep the default legend', () => {
+        const { doc } = fake_doc()
+        const legend = (build_config(spec(), read, false, doc) as any).options.plugins.legend.labels
+        expect(legend.usePointStyle).toBeUndefined()
+        expect(legend.generateLabels).toBeUndefined()
+    })
+})
+
 describe('build_config extras', () => {
     const line = (dataset: Record<string, unknown>) => build_config(spec({ datasets: [{ label: 'Kills', data: [1, 2], tone: 'fleet-red', ...dataset }] }), read)
 
