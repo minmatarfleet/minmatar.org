@@ -28,6 +28,7 @@ from campaigns.models import (
     SiteKind,
 )
 from campaigns.services import disclosure
+from campaigns.services import roles as role_service
 from campaigns.services import entities as entity_service
 from campaigns.services import fleets as fleet_service
 from campaigns.services import objectives, plan, stats
@@ -78,7 +79,7 @@ def _may_read(request, campaign: Campaign, scope: str = ""):
     """
     viewer = disclosure.role(request.user, campaign)
     if viewer == disclosure.COORDINATOR:
-        if scope and disclosure.coordinator_may(campaign, scope):
+        if scope and disclosure.user_may(request.user, campaign, scope):
             return None
         if campaign.undisclosed:
             return 403, {"detail": "not_shared_with_coordinators"}
@@ -87,6 +88,19 @@ def _may_read(request, campaign: Campaign, scope: str = ""):
     if campaign.visibility == "public":
         return None
     return require_feature(request.user, VIEW_FEATURE)
+
+
+def _editable(user, campaign: Campaign, viewer: str) -> list[str]:
+    """What this viewer may change: everything for managers, else what
+    their campaign roles own."""
+    if viewer == disclosure.MANAGER:
+        return sorted(
+            {area for areas in role_service.EDITS.values() for area in areas}
+        )
+    found: set[str] = set()
+    for kind in role_service.kinds_for(user, campaign):
+        found |= role_service.EDITS.get(kind, set())
+    return sorted(found)
 
 
 def _clamp(limit: int) -> int:
@@ -150,9 +164,12 @@ def list_campaigns(request, status: str = ""):
     auth=AuthBearer(),
 )
 def search_entities(request, kind: str, q: str = ""):
-    """Autocomplete corporations and alliances for structure scouting."""
-    if kind not in ("corporation", "alliance"):
-        return 400, {"detail": "kind must be corporation or alliance"}
+    """Autocomplete corporations and alliances for structure scouting, and
+    characters for campaign roles."""
+    if kind not in entity_service.KINDS:
+        return 400, {
+            "detail": "kind must be corporation, alliance or character"
+        }
     return entity_service.search_entities(request.user, kind, q)
 
 
@@ -214,7 +231,7 @@ def get_campaign(request, slug: str):
         (owner_alliance(row)[0] for row in structures), campaign
     )
     shared = (
-        set(campaign.coordinator_scopes or [])
+        disclosure.scopes(user, campaign)
         if viewer == disclosure.COORDINATOR
         else {"sides", "structures", "fittings"}
     )
@@ -228,6 +245,8 @@ def get_campaign(request, slug: str):
         "coordinator_scopes": (
             sorted(shared) if viewer == disclosure.COORDINATOR else []
         ),
+        "viewer_roles": sorted(role_service.kinds_for(user, campaign)),
+        "can_edit": _editable(user, campaign, viewer),
         "coordination_ready": viewer == disclosure.MANAGER
         and bool(
             campaign.coordination_timers_channel_id

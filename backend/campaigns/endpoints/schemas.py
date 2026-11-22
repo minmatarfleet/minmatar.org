@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Literal
+from typing import Literal, Optional
 
 from ninja import Schema
 from pydantic import Field
@@ -183,6 +183,11 @@ class CampaignDetail(Schema):
     coordination_ready: bool = False
     # Coordinators only: the parts of the campaign shared with them.
     coordinator_scopes: list[str] = []
+    # The campaign roles this viewer holds: coordinator, fc, diplomat, recon.
+    viewer_roles: list[str] = []
+    # What this viewer may change: sides, structures, timers, roles (all of
+    # them for managers).
+    can_edit: list[str] = []
     short_code: str
     tagline: str = ""
     description_md: str = ""
@@ -325,6 +330,56 @@ class CampaignCoordinatorOut(Schema):
     # The character belongs to someone on the site.
     signed_in: bool = False
     discord_servers: list[str] = []
+
+
+class CampaignRoleMemberOut(Schema):
+    id: int
+    # discord: from the coordination server. site: added by character,
+    # waiting for its owner to link Discord.
+    source: str
+    discord_user_id: Optional[str] = None
+    discord_name: str = ""
+    character_id: Optional[int] = None
+    character_name: str = ""
+    corporation_name: str = ""
+    alliance_name: str = ""
+    # A Discord account linked to someone on the site.
+    signed_in: bool = False
+
+
+class CampaignRoleOut(Schema):
+    kind: str
+    label: str
+    discord_role_id: Optional[str] = None
+    discord_role_name: str = ""
+    synced_at: Optional[datetime] = None
+    sync_error: str = ""
+    reads: list[str] = []
+    edits: list[str] = []
+    members: list[CampaignRoleMemberOut] = []
+
+
+class DiscordRoleOption(Schema):
+    id: str
+    name: str
+
+
+class CampaignRolesOut(Schema):
+    roles: list[CampaignRoleOut]
+    # Managers and Coordinators: add and remove role holders, sync now.
+    can_change: bool = False
+    # Managers: point a role at another Discord role.
+    can_map: bool = False
+    # Managers only: the coordination server's roles, for the picker.
+    discord_roles: list[DiscordRoleOption] = []
+
+
+class CampaignRoleAdd(Schema):
+    character_name: str = Field(min_length=3, max_length=255)
+
+
+class CampaignRoleMap(Schema):
+    discord_role_id: Optional[str] = None
 
 
 class CampaignCoordinatorInvite(Schema):

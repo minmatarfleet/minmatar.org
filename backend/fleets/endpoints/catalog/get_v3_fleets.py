@@ -38,6 +38,15 @@ ROUTE_SPEC = {
 }
 
 
+def _sees_campaign(user, campaign_id: int) -> bool:
+    # pylint: disable=import-outside-toplevel
+    from campaigns.models import Campaign
+    from campaigns.services.disclosure import sees_details
+
+    campaign = Campaign.objects.filter(id=campaign_id).first()
+    return campaign is None or sees_details(user, campaign)
+
+
 def get_v3_fleets(
     request,
     fleet_filter: EveFleetFilter = EveFleetFilter.RECENT,
@@ -84,6 +93,9 @@ def get_v3_fleets(
 
     if campaign_id:
         fleets = fleets.filter(campaign_id=campaign_id)
+        if not _sees_campaign(request.user, campaign_id):
+            # An undisclosed campaign's fleets are for those who may see it.
+            fleets = fleets.none()
     if host_group_id:
         fleets = fleets.filter(host_group_id=host_group_id)
     if not is_strategic_fc(request.user):

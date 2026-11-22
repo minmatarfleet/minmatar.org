@@ -767,6 +767,14 @@ CELERYBEAT_SURVEYS = [
 
 CELERYBEAT_CAMPAIGNS = [
     (
+        "[Campaigns] Mirror campaign roles from coordination Discord",
+        {
+            "task": "campaigns.tasks.sync_all_campaign_roles",
+            "schedule": schedule(timedelta(minutes=15)),
+            "options": {"expire_seconds": 15 * 60},
+        },
+    ),
+    (
         "[Campaigns] Refresh Discord timerboards and fleet schedules",
         {
             "task": "campaigns.tasks.refresh_campaign_boards",

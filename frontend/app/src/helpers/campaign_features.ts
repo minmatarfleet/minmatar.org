@@ -26,6 +26,7 @@ export type CampaignTab =
     | 'projects'
     | 'you'
     | 'discord'
+    | 'roles'
     | 'settings'
 
 export interface CampaignTabsOptions {
@@ -38,6 +39,8 @@ export interface CampaignTabsOptions {
     before_start?:  boolean;
     /** A coordinator from outside the alliance: only the parts shared with them, and their Discord. */
     coordinator_scopes?: string[] | null;
+    /** A manager or a holder of a campaign role: the Roles tab. */
+    has_roles?:     boolean;
 }
 
 /**
@@ -45,12 +48,13 @@ export interface CampaignTabsOptions {
  * Activity (the kill feed) gives way to Destruction on a strategic campaign,
  * where the feed is all it holds.
  */
-export function campaign_tabs({ kind, features, has_systems, can_manage, before_start = false, coordinator_scopes = null }: CampaignTabsOptions): CampaignTab[] {
+export function campaign_tabs({ kind, features, has_systems, can_manage, before_start = false, coordinator_scopes = null, has_roles = false }: CampaignTabsOptions): CampaignTab[] {
     if (coordinator_scopes) {
         const shared: CampaignTab[] = []
         if (features.structures && coordinator_scopes.includes('structures')) shared.push('structures')
         if (features.timers && coordinator_scopes.includes('timers')) shared.push('timers')
         if (features.fleets && coordinator_scopes.includes('fleets')) shared.push('fleets')
+        if (has_roles) shared.push('roles')
         shared.push('discord')
         return shared
     }
@@ -67,6 +71,7 @@ export function campaign_tabs({ kind, features, has_systems, can_manage, before_
     }
     if (features.projects) tabs.push('projects')
     if (!before_start) tabs.push('you')
+    if (has_roles || can_manage) tabs.push('roles')
     if (can_manage) tabs.push('settings')
     return tabs
 }

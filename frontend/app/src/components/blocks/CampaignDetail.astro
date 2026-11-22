@@ -83,11 +83,14 @@ const TABS = campaign_tabs({
     can_manage,
     before_start,
     coordinator_scopes: is_coordinator ? campaign.coordinator_scopes : null,
+    has_roles: (campaign.viewer_roles ?? []).length > 0,
 })
 const tab_label = (tab:string) => tab === 'settings'
     ? t('campaigns.manage.tab')
     : tab === 'discord'
         ? t('campaigns.discord.your_servers')
+        : tab === 'roles'
+        ? t('campaigns.roles.tab')
         : t(`campaigns.tabs.${tab}` as 'campaigns.tabs.systems')
 const default_tab = TABS[0]
 const show_systems_tab = TABS.includes('systems')
@@ -96,6 +99,7 @@ const show_structures_tab = TABS.includes('structures')
 // Corporation projects directors put toward the campaign; loaded when the tab opens.
 const PROJECTS_PARTIAL_URL = translatePath(`/partials/campaign_projects_component?slug=${encodeURIComponent(campaign.slug)}`)
 const TIMERS_PARTIAL_URL = translatePath(`/partials/campaign_timers_component?slug=${encodeURIComponent(campaign.slug)}`)
+const ROLES_PARTIAL_URL = translatePath(`/partials/campaign_roles_component?slug=${encodeURIComponent(campaign.slug)}`)
 const DISCORD_PARTIAL_URL = translatePath(`/partials/campaign_discord_component?slug=${encodeURIComponent(campaign.slug)}`)
 const DESTRUCTION_PARTIAL_URL = translatePath(`/partials/campaign_destruction_component?slug=${encodeURIComponent(campaign.slug)}`)
 const FLEETS_PARTIAL_URL = translatePath(`/partials/campaign_fleets_component?campaign_id=${campaign.id}`)
@@ -352,6 +356,12 @@ const can_coordinate = can_manage && can(await get_gates(Astro), 'campaigns.coor
         {TABS.includes('discord') &&
         <SectionTabPanel id="discord" id_prefix="campaign" is_default={default_tab === 'discord'}>
             <LazyPartial url={DISCORD_PARTIAL_URL} />
+        </SectionTabPanel>
+        }
+
+        {TABS.includes('roles') &&
+        <SectionTabPanel id="roles" id_prefix="campaign" is_default={default_tab === 'roles'}>
+            <LazyPartial url={ROLES_PARTIAL_URL} trigger="reveal" />
         </SectionTabPanel>
         }
 

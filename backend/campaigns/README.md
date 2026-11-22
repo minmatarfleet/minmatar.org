@@ -63,6 +63,38 @@ Inviting a coordinator DMs the character's owner (notification type
 character nobody owns yet gets it when someone signs in with it
 (`CampaignCoordinator.invite_notified_at`).
 
+## Campaign roles
+
+Four roles, Coordinator, FC, Diplomat and Recon (`CampaignRole`), mirror
+roles on the campaign's coordination Discord server
+(`services/roles.py`). **Discord decides who holds them**: the 15-minute
+`sync_all_campaign_roles` beat (and Sync now on the Roles tab) reads the
+server's members and rewrites `CampaignRoleMember` rows to match. Role
+names are matched on the first sync, only on a coordination server of the
+campaign's own (on ours, "FC" is every alliance FC); managers can point a
+role at any Discord role.
+
+A role holder sees an undisclosed campaign (viewer role `coordinator`) and:
+
+| Role | Reads | Changes |
+| --- | --- | --- |
+| Coordinator | sides, structures, timers, fleets, fittings | sides, structures, timers, who holds roles |
+| FC | structures, timers, fleets, fittings | campaign fleets, private ones included |
+| Diplomat | sides | sides |
+| Recon | structures, timers | structures, timers |
+
+Settings, disclosure, the order, the theater and the Discord role mapping
+stay with managers. Adding someone by character makes a pending `site` row
+that already counts on the site; once its owner links Discord and is on the
+server, the sync gives them the Discord role. Removing someone takes the
+Discord role away too. Invited coordinators (`CampaignCoordinator`) keep
+working unchanged, with `coordinator_scopes`.
+
+A private fleet can count towards an undisclosed campaign only, and only
+someone who may see the campaign can attach a fleet to it. The fleet list's
+`campaign_id` filter returns nothing for an undisclosed campaign the caller
+cannot see.
+
 ## Campaign Discord
 
 The bot posts to four channels, picked on the coordination server

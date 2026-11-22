@@ -37,14 +37,19 @@ def coordinated_ids(user) -> set[int]:
     from eveonline.models import EveCharacter  # pylint: disable=C0415
     from campaigns.models import CampaignCoordinator  # pylint: disable=C0415
 
+    from campaigns.services import roles  # pylint: disable=C0415
+
     character_ids = EveCharacter.objects.filter(user=user).values_list(
         "character_id", flat=True
     )
-    return set(
+    by_invite = set(
         CampaignCoordinator.objects.filter(
             character_id__in=list(character_ids)
         ).values_list("campaign_id", flat=True)
     )
+    # Holders of a campaign role (Coordinator, FC, Diplomat, Recon) see it
+    # like an invited coordinator does.
+    return by_invite | roles.campaign_ids(user)
 
 
 def is_manager(user, campaign: Campaign) -> bool:
@@ -87,7 +92,42 @@ def display_name(campaign: Campaign, user) -> str:
 
 
 def coordinator_may(campaign: Campaign, scope: str) -> bool:
+    """What the managers shared with invited coordinators and their linked
+    Discord servers."""
     return scope in (campaign.coordinator_scopes or [])
+
+
+def invited(user, campaign: Campaign) -> bool:
+    """An invited coordinator (``CampaignCoordinator``), not a role holder."""
+    from eveonline.models import EveCharacter  # pylint: disable=C0415
+
+    user = _user(user)
+    if user is None:
+        return False
+    return campaign.coordinators.filter(
+        character_id__in=list(
+            EveCharacter.objects.filter(user=user).values_list(
+                "character_id", flat=True
+            )
+        )
+    ).exists()
+
+
+def scopes(user, campaign: Campaign) -> set[str]:
+    """What a coordinator-view viewer may read: the scopes shared with
+    invited coordinators, if they are one, plus what their roles read."""
+    from campaigns.services import roles  # pylint: disable=C0415
+
+    shared = (
+        set(campaign.coordinator_scopes or [])
+        if invited(user, campaign)
+        else set()
+    )
+    return shared | roles.reads(user, campaign)
+
+
+def user_may(user, campaign: Campaign, scope: str) -> bool:
+    return scope in scopes(user, campaign)
 
 
 def resolve(queryset, key: str, user) -> Campaign:

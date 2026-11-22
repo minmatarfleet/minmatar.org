@@ -97,13 +97,11 @@ def _apply_group_flags(fleet: EveFleet, payload):
 
 
 def _private_fleet_error(fleet, payload):
-    """A private fleet stays an alliance fleet on no campaign."""
-    if fleet.invite_only and (
-        payload.host_group_id
-        or ("campaign_id" in payload.model_fields_set and payload.campaign_id)
-    ):
+    """A private fleet stays an alliance fleet. Its campaign, if any, is
+    checked by ``resolve_campaign`` (undisclosed only)."""
+    if fleet.invite_only and payload.host_group_id:
         return 400, ErrorResponse(
-            detail="A private fleet can't be a group or campaign fleet"
+            detail="A private fleet can't be a group fleet"
         )
     return None
 
@@ -156,7 +154,9 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
         # Only a change is validated. A fleet attached to a campaign that has
         # since ended keeps it, and re-saving the fleet cannot detach it by
         # accident.
-        campaign = resolve_campaign(payload.campaign_id)
+        campaign = resolve_campaign(
+            payload.campaign_id, request.user, fleet.invite_only
+        )
         if isinstance(campaign, tuple):
             return 400, campaign[1]
         fleet.campaign = campaign

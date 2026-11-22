@@ -1,0 +1,80 @@
+---
+/**
+ * The campaign Roles tab: fetches the four roles (Coordinator, FC,
+ * Diplomat, Recon) and their holders, runs sync, add, remove and map
+ * actions, and renders CampaignRolesPanel. Discord decides who holds a
+ * role; the API checks every step.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { change_campaign, get_campaign_roles } from '@helpers/api.minmatar.org/campaigns'
+import type { CampaignRoles } from '@dtypes/api.minmatar.org'
+import { form_text } from '@helpers/manage_forms'
+import { query_string } from '@helpers/string'
+import { refusal_text } from '@helpers/campaign_manage'
+
+const { auth_token, user } = get_request_user(Astro)
+if (!user || !auth_token) return HTTP_403_Forbidden()
+
+const slug = Astro.url.searchParams.get('slug') ?? ''
+if (!/^[a-z0-9-]+$/.test(slug)) return HTTP_403_Forbidden()
+
+const PART_URL = translatePath(`/partials/campaign_roles_component?${query_string({ slug })}`)
+const SEARCH_URL = translatePath('/partials/campaign_character_search_component')
+const KIND = /^(coordinator|fc|diplomat|recon)$/
+
+let data: CampaignRoles | null = null
+let fetch_error: Error | false = false
+let error_message = ''
+let open_kind = ''
+
+if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    const field = (name: string) => form_text(form, name)
+    const kind = field('kind')
+    open_kind = KIND.test(kind) ? kind : ''
+    try {
+        const op = field('op')
+        if (op === 'sync') {
+            data = await change_campaign(slug, auth_token, 'POST', '/roles/sync') as CampaignRoles
+        } else if (op === 'add' && open_kind) {
+            data = await change_campaign(slug, auth_token, 'POST', `/roles/${open_kind}/members`, { character_name: field('character_name') }) as CampaignRoles
+        } else if (op === 'remove' && open_kind) {
+            data = await change_campaign(slug, auth_token, 'DELETE', `/roles/${open_kind}/members/${parseInt(field('member_id'))}`) as CampaignRoles
+        } else if (op === 'map' && open_kind) {
+            data = await change_campaign(slug, auth_token, 'PATCH', `/roles/${open_kind}`, { discord_role_id: field('discord_role_id') || null }) as CampaignRoles
+        }
+    } catch (error) {
+        error_message = refusal_text(error, t('campaigns.action_failed'))
+    }
+}
+
+if (!data) {
+    try {
+        data = await get_campaign_roles(slug, auth_token)
+    } catch (error) {
+        fetch_error = error
+    }
+}
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import CampaignRolesPanel from '@components/blocks/CampaignRolesPanel.astro'
+---
+
+{fetch_error || !data ?
+    <ErrorRefetch args={{ partial: PART_URL, error: fetch_error || new Error(t('campaigns.action_failed')), delay: 0 }} />
+    :
+    <CampaignRolesPanel
+        roles={data.roles}
+        can_change={data.can_change}
+        can_map={data.can_map}
+        discord_roles={data.discord_roles}
+        part_url={PART_URL}
+        search_url={SEARCH_URL}
+        error_message={error_message}
+        open_kind={open_kind}
+    />
+}

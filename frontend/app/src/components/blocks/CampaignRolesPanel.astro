@@ -1,0 +1,308 @@
+---
+/**
+ * A campaign's Roles tab: Coordinator, FC, Diplomat and Recon, held on the
+ * coordination Discord, with who holds each. A row opens to its holders
+ * (portrait, corporation, alliance, Discord name, whether they are signed
+ * in or still waiting for Discord). Managers and Coordinators add someone
+ * by character (a Combobox over pilots on the site and ESI) and remove
+ * them; managers point a role at a Discord role.
+ *
+ * Renders from props; `campaign_roles_component` fetches and posts. Every
+ * action posts to `part_url` and swaps the whole panel.
+ */
+import { i18n, t_key } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CampaignRole, DiscordRoleOption } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    roles:              CampaignRole[];
+    /** Managers and Coordinators: add, remove and sync. */
+    can_change?:        boolean;
+    /** Managers: point a role at a Discord role. */
+    can_map?:           boolean;
+    discord_roles?:     DiscordRoleOption[];
+    /** The partial every action posts to. */
+    part_url:           string;
+    /** Combobox search for characters (`?q=`). */
+    search_url:         string;
+    error_message?:     string;
+    /** The role to show open, after an action on it. */
+    open_kind?:         string;
+    [propName: string]: any;
+}
+
+const {
+    roles,
+    can_change = false,
+    can_map = false,
+    discord_roles = [],
+    part_url,
+    search_url,
+    error_message = '',
+    open_kind = '',
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const last_sync = roles.map((role) => role.synced_at).filter(Boolean).sort().at(-1) ?? null
+const COLORS: Record<string, string> = {
+    coordinator: 'var(--fleet-red)',
+    fc: 'var(--fleet-yellow)',
+    diplomat: 'var(--militia-purple)',
+    recon: 'var(--faded)',
+}
+const action = (extra: Record<string, string>) => ({
+    'hx-post': part_url,
+    'hx-vals': JSON.stringify(extra),
+    'hx-target': 'closest .campaign-roles',
+    'hx-swap': 'outerHTML',
+})
+const member_name = (member: CampaignRole['members'][number]) => member.character_name || member.discord_name
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import BlockList from '@components/compositions/BlockList.astro'
+
+import Button from '@components/blocks/Button.astro'
+import Select from '@components/blocks/Select.astro'
+import Combobox from '@components/blocks/Combobox.astro'
+import Badge from '@components/blocks/Badge.astro'
+import Tag from '@components/blocks/Tag.astro'
+import PilotBadge from '@components/blocks/PilotBadge.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro'
+import LocalTime from '@components/blocks/LocalTime.astro'
+---
+
+<ComponentBlock class:list={['[ campaign-roles ]', Astro.props.class]} padding_inline="var(--space-m)" padding_block="var(--space-m)" {...attributes}>
+    <Flexblock gap="var(--space-s)">
+        <FlexInline justification="space-between" gap="var(--space-s)">
+            <div>
+                <h3>{t('campaigns.roles.title').replace('{count}', String(roles.length))}</h3>
+                <p class="[ campaign-roles__muted ]">{t('campaigns.roles.discord_decides')}</p>
+            </div>
+            <FlexInline gap="var(--space-xs)">
+                <small class="[ campaign-roles__muted ]">
+                    {last_sync ? <>{t('campaigns.roles.synced')} <LocalTime eve_time={new Date(last_sync)} /></> : t('campaigns.roles.never_synced')}
+                </small>
+                {can_change &&
+                    <Button type="button" size="sm" color="transparent" {...action({ op: 'sync' })} hx-disabled-elt="this">{t('campaigns.roles.sync')}</Button>
+                }
+            </FlexInline>
+        </FlexInline>
+
+        {error_message && <p class="[ manage-field__error ]" role="alert">{error_message}</p>}
+
+        <div class="[ campaign-roles__columns ]" aria-hidden="true">
+            <span>{t('campaigns.roles.role')}</span>
+            <span>{t('campaigns.roles.members')}</span>
+        </div>
+
+        <ul class="[ campaign-roles__list ]" role="list">
+            {roles.map((role) => (
+                <li class="[ campaign-roles__role ]" style={`--role_color: ${COLORS[role.kind] ?? 'var(--faded)'}`} data-role={role.kind}>
+                    <CollapsibleBlock expanded={open_kind === role.kind} padding_inline="0" gap="var(--space-s)">
+                        <div slot="head" class="[ campaign-roles__row ]">
+                            <span class="[ campaign-roles__name ]">
+                                <svg class="[ campaign-roles__shield ]" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z" />
+                                    <circle cx="12" cy="10" r="2.6" class="cut" />
+                                    <path d="M7.6 16.4c.9-2 2.6-3 4.4-3s3.5 1 4.4 3" class="cut" />
+                                </svg>
+                                <b>{role.label}</b>
+                                {role.discord_role_name && <small class="[ campaign-roles__muted ]">@{role.discord_role_name}</small>}
+                            </span>
+                            <span class="[ campaign-roles__count ]" title={t('campaigns.roles.members')}>
+                                {role.members.length}
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7Z" /></svg>
+                            </span>
+                        </div>
+
+                        <Flexblock gap="var(--space-xs)" class="[ campaign-roles__body ]">
+                            <p class="[ campaign-roles__muted ]">
+                                {t('campaigns.roles.unlocks')} {role.reads.map((scope) => t(t_key('campaigns.roles.scope_', scope))).join(', ')}.
+                                {role.edits.length > 0 && <> {t('campaigns.roles.edits')} {role.edits.map((scope) => t(t_key('campaigns.roles.edit_', scope))).join(', ')}.</>}
+                            </p>
+                            {role.sync_error && <p class="[ campaign-roles__warn ]">{role.sync_error}</p>}
+
+                            {role.members.length === 0 ?
+                                <EmptyState title={t('campaigns.roles.empty')} />
+                                :
+                                <BlockList gap="var(--space-2xs)" role="list" class="[ campaign-roles__members ]">
+                                    {role.members.map((member) => (
+                                        <FlexInline justification="space-between" gap="var(--space-xs)" role="listitem" class="[ campaign-roles__member ]">
+                                            {member.character_id
+                                                ? <PilotBadge character_id={member.character_id} character_name={member.character_name} size={32} icon_quality={64}>
+                                                    <small class="[ campaign-roles__muted ]">{[member.corporation_name, member.alliance_name, member.discord_name && `@${member.discord_name}`].filter(Boolean).join(' · ')}</small>
+                                                  </PilotBadge>
+                                                : <Badge title={member.discord_name || member.character_name} subtitle={t('campaigns.roles.discord_only')} size={32} />
+                                            }
+                                            <FlexInline gap="var(--space-2xs)">
+                                                {member.source === 'site'
+                                                    ? <Tag text={t('campaigns.roles.waiting')} color="fleet-yellow" variant="outline" narrow />
+                                                    : !member.signed_in && <Tag text={t('campaigns.roles.not_signed_in')} color="var(--faded)" variant="outline" narrow />
+                                                }
+                                                {can_change &&
+                                                    <Button type="button" size="sm" color="transparent" narrow
+                                                        {...action({ op: 'remove', kind: role.kind, member_id: String(member.id) })}
+                                                        hx-confirm={t('campaigns.roles.remove_confirm').replace('{name}', member_name(member))}
+                                                        aria-label={t('campaigns.roles.remove').replace('{name}', member_name(member))}>
+                                                        {t('campaigns.roles.remove_short')}
+                                                    </Button>
+                                                }
+                                            </FlexInline>
+                                        </FlexInline>
+                                    ))}
+                                </BlockList>
+                            }
+
+                            {can_change &&
+                                <form class="[ campaign-roles__add ]" hx-post={part_url} hx-target="closest .campaign-roles" hx-swap="outerHTML">
+                                    <input type="hidden" name="op" value="add" />
+                                    <input type="hidden" name="kind" value={role.kind} />
+                                    <div class="[ manage-picker campaign-roles__picker ]">
+                                        <Combobox
+                                            id={`campaign-role-add-${role.kind}`}
+                                            name="character_name"
+                                            label={t('campaigns.roles.add_label').replace('{role}', role.label)}
+                                            hidden_label
+                                            search_url={search_url}
+                                            placeholder={t('campaigns.coordinators.invite_placeholder')}
+                                            size="sm"
+                                            required
+                                            pick_first
+                                        />
+                                    </div>
+                                    <Button type="submit" size="sm" color="fleet-red" hx-disabled-elt="this">{t('campaigns.roles.add')}</Button>
+                                </form>
+                            }
+
+                            {can_map &&
+                                <form class="[ campaign-roles__add ]" hx-post={part_url} hx-target="closest .campaign-roles" hx-swap="outerHTML" hx-trigger="change">
+                                    <input type="hidden" name="op" value="map" />
+                                    <input type="hidden" name="kind" value={role.kind} />
+                                    <label class="[ manage-field__label ]" for={`campaign-role-map-${role.kind}`}>{t('campaigns.roles.discord_role')}</label>
+                                    <Select id={`campaign-role-map-${role.kind}`} name="discord_role_id" size="sm">
+                                        <option value="">{t('campaigns.roles.no_discord_role')}</option>
+                                        {discord_roles.map((option) => <option value={option.id} selected={option.id === role.discord_role_id}>{option.name}</option>)}
+                                    </Select>
+                                </form>
+                            }
+                        </Flexblock>
+                    </CollapsibleBlock>
+                </li>
+            ))}
+        </ul>
+    </Flexblock>
+</ComponentBlock>
+
+<style lang="scss">
+    h3 {
+        margin: 0;
+    }
+
+    .campaign-roles__muted {
+        margin: 0;
+        color: var(--faded);
+    }
+
+    .campaign-roles__warn {
+        margin: 0;
+        color: var(--fleet-yellow);
+    }
+
+    .campaign-roles__columns,
+    .campaign-roles__row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 6rem;
+        align-items: center;
+        gap: var(--space-s);
+    }
+
+    .campaign-roles__columns {
+        padding-block-end: var(--space-2xs);
+        font-size: var(--step--1);
+        font-weight: 700;
+        border-block-end: 1px solid var(--border-color);
+
+        span:last-child {
+            text-align: right;
+        }
+    }
+
+    .campaign-roles__list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .campaign-roles__role {
+        padding-block: var(--space-xs);
+        border-block-end: 1px solid var(--border-color);
+    }
+
+    .campaign-roles__row {
+        width: 100%;
+    }
+
+    .campaign-roles__name {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-width: 0;
+
+        b {
+            color: var(--highlight);
+        }
+    }
+
+    .campaign-roles__shield {
+        flex: none;
+        width: var(--step-2);
+        height: var(--step-2);
+        fill: var(--role_color);
+
+        .cut {
+            fill: var(--background);
+            stroke: var(--background);
+            stroke-width: 0.5;
+        }
+    }
+
+    .campaign-roles__count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: var(--space-3xs);
+        color: var(--faded);
+
+        svg {
+            width: var(--step-1);
+            height: var(--step-1);
+            fill: currentColor;
+        }
+    }
+
+    :global(.campaign-roles__body) {
+        padding-inline-start: var(--space-l);
+    }
+
+    :global(.campaign-roles__member) {
+        padding: var(--space-2xs) var(--space-xs);
+        background-color: var(--surface-sunken);
+    }
+
+    .campaign-roles__add {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-xs);
+    }
+
+    .campaign-roles__picker {
+        flex: 1 1 16rem;
+    }
+</style>

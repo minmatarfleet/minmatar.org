@@ -2782,6 +2782,10 @@ export interface CampaignDetail {
     /** This viewer gets only the Upcoming Campaign view. */
     redacted:                   boolean;
     viewer_role:                'manager' | 'coordinator' | 'member';
+    /** Campaign roles this viewer holds: coordinator, fc, diplomat, recon. */
+    viewer_roles?:              string[];
+    /** What this viewer may change: sides, structures, timers, fleets, roles. */
+    can_edit?:                  string[];
     coordination_ready:         boolean;
     coordinator_scopes:         string[];
     short_code:                 string;
@@ -3277,6 +3281,10 @@ export type CampaignCoordinationPut = ApiRequest<'CampaignCoordinationRequest'>
 export type CampaignDiscordLink = ApiResponse<'CampaignDiscordLinkOut'>
 export type CampaignDiscordLinkPatch = ApiRequest<'CampaignDiscordLinkRequest'>
 export type CampaignCoordinator = ApiResponse<'CampaignCoordinatorOut'>
+export type CampaignRoles = ApiResponse<'CampaignRolesOut'>
+export type CampaignRole = ApiResponse<'CampaignRoleOut'>
+export type CampaignRoleMember = ApiResponse<'CampaignRoleMemberOut'>
+export type DiscordRoleOption = ApiResponse<'DiscordRoleOption'>
 export type CampaignDoctrine = ApiResponse<'CampaignDoctrineOut'>
 export type CampaignDoctrines = ApiResponse<'CampaignDoctrinesOut'>
 export type CampaignFeatures = ApiResponse<'CampaignFeatures'>

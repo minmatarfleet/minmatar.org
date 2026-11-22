@@ -9,7 +9,7 @@ from app.errors import ErrorResponse
 from authentication import AuthBearer
 
 from campaigns.endpoints.base import router
-from campaigns.endpoints.manage import _can_manage, _denied
+from campaigns.endpoints.manage import _can_edit, _denied
 from campaigns.models import (
     Campaign,
     CampaignStructure,
@@ -23,7 +23,7 @@ from campaigns.models import (
 )
 def delete_structure(request, slug: str, structure_id: int):
     campaign = get_object_or_404(Campaign, slug=slug)
-    if not _can_manage(request.user, campaign):
+    if not _can_edit(request.user, campaign, "structures"):
         return _denied()
     get_object_or_404(
         CampaignStructure, id=structure_id, campaign=campaign

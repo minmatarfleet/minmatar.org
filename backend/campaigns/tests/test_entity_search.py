@@ -1,4 +1,5 @@
-"""Corporation and alliance autocomplete for structure scouting."""
+"""Corporation and alliance autocomplete for structure scouting, and
+character autocomplete for campaign roles."""
 
 from unittest.mock import MagicMock, patch
 
@@ -8,7 +9,7 @@ from django.test import Client, TestCase
 from campaigns.services.entities import search_entities
 from campaigns.tests.helpers import auth_headers
 from eveonline.client import EsiResponse, NO_VALID_ESI_TOKEN
-from eveonline.models import EveAlliance, EveCorporation
+from eveonline.models import EveAlliance, EveCharacter, EveCorporation
 
 BASE = "/api/campaigns/entities"
 
@@ -42,6 +43,19 @@ class EntitySearchApiTests(TestCase):
         self.assertEqual(body[0]["id"], 99)
         self.assertEqual(body[0]["name"], "Hostile Mining")
         self.assertEqual(body[0]["kind"], "corporation")
+
+    def test_local_character_matches_by_name(self):
+        EveCharacter.objects.create(
+            character_id=4001, character_name="Harkon Vaal"
+        )
+        response = self.client.get(
+            BASE, {"kind": "character", "q": "hark"}, **auth_headers(self.user)
+        )
+        self.assertEqual(response.status_code, 200)
+        [row] = response.json()
+        self.assertEqual(row["id"], 4001)
+        self.assertEqual(row["name"], "Harkon Vaal")
+        self.assertEqual(row["kind"], "character")
 
     def test_short_query_returns_nothing(self):
         EveAlliance.objects.create(

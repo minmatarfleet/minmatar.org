@@ -160,6 +160,52 @@ class CreatePrivateFleetTests(PrivateFleetTestBase):
         )
         self.assertEqual(response.status_code, 400)
 
+    def _campaign(self, undisclosed):
+        # pylint: disable-next=import-outside-toplevel
+        from campaigns.tests.helpers import make_campaign
+
+        now = timezone.now()
+        return make_campaign(
+            slug=f"move-op-{int(undisclosed)}",
+            short_code=f"MV{int(undisclosed)}",
+            name="Move op",
+            kind="strategic",
+            status="scheduled",
+            start_at=now + timedelta(days=3),
+            end_at=now + timedelta(days=30),
+            undisclosed=undisclosed,
+        )
+
+    def test_private_fleet_counts_towards_an_undisclosed_campaign(self, queue):
+        campaign = self._campaign(undisclosed=True)
+        self.strat.is_superuser = True  # a campaign manager
+        self.strat.save()
+        response = self.call(
+            "post", "", self.strat, self.payload(campaign_id=campaign.id)
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        fleet = EveFleet.objects.get(id=response.json()["id"])
+        self.assertEqual(fleet.campaign_id, campaign.id)
+        self.assertTrue(fleet.invite_only)
+
+    def test_private_fleet_refuses_a_disclosed_campaign(self, queue):
+        campaign = self._campaign(undisclosed=False)
+        response = self.call(
+            "post", "", self.strat, self.payload(campaign_id=campaign.id)
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("undisclosed", response.json()["detail"])
+
+    def test_undisclosed_campaign_is_unknown_to_those_who_cannot_see_it(
+        self, queue
+    ):
+        campaign = self._campaign(undisclosed=True)
+        response = self.call(
+            "post", "", self.strat, self.payload(campaign_id=campaign.id)
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("No campaign", response.json()["detail"])
+
 
 class VisibilityTests(PrivateFleetTestBase):
     def test_outsider_gets_404(self):

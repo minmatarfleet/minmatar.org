@@ -1742,3 +1742,99 @@ class CampaignProject(models.Model):
 
     def __str__(self) -> str:
         return f"{self.project_id} in {self.campaign.slug}"
+
+
+class CampaignRoleKind(models.TextChoices):
+    COORDINATOR = "coordinator", "Coordinator"
+    FC = "fc", "FC"
+    DIPLOMAT = "diplomat", "Diplomat"
+    RECON = "recon", "Recon"
+
+
+class CampaignRole(models.Model):
+    """One of a campaign's four roles, mirrored from a role on its
+    coordination Discord server (``services.roles``). Discord decides who
+    holds it; the site follows on every sync."""
+
+    campaign = models.ForeignKey(
+        Campaign, on_delete=models.CASCADE, related_name="roles"
+    )
+    kind = models.CharField(max_length=16, choices=CampaignRoleKind.choices)
+    # The Discord role on the coordination server. Matched by name on the
+    # first sync; managers can point it elsewhere.
+    discord_role_id = models.BigIntegerField(null=True, blank=True)
+    discord_role_name = models.CharField(
+        max_length=100, blank=True, default=""
+    )
+    synced_at = models.DateTimeField(null=True, blank=True)
+    sync_error = models.CharField(max_length=255, blank=True, default="")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["campaign", "kind"], name="campaign_role_unique"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.kind} in {self.campaign.slug}"
+
+
+class CampaignRoleMember(models.Model):
+    """Someone who holds a campaign role.
+
+    ``discord`` rows come from the coordination server and are replaced on
+    every sync. ``site`` rows were added by character on the website and
+    wait for the owner to link Discord; the sync then gives them the
+    Discord role and the row becomes a ``discord`` one.
+    """
+
+    class Source(models.TextChoices):
+        DISCORD = "discord", "Discord"
+        SITE = "site", "Added on the site"
+
+    role = models.ForeignKey(
+        CampaignRole, on_delete=models.CASCADE, related_name="members"
+    )
+    source = models.CharField(
+        max_length=16, choices=Source.choices, default=Source.DISCORD
+    )
+    discord_user_id = models.BigIntegerField(null=True, blank=True)
+    discord_name = models.CharField(max_length=100, blank=True, default="")
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="campaign_roles",
+    )
+    character_id = models.BigIntegerField(null=True, blank=True)
+    character_name = models.CharField(max_length=255, blank=True, default="")
+    corporation_name = models.CharField(max_length=255, blank=True, default="")
+    alliance_name = models.CharField(max_length=255, blank=True, default="")
+    added_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["character_name", "discord_name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["role", "discord_user_id"],
+                condition=models.Q(discord_user_id__isnull=False),
+                name="campaign_role_member_discord_unique",
+            ),
+            models.UniqueConstraint(
+                fields=["role", "character_id"],
+                condition=models.Q(source="site"),
+                name="campaign_role_member_site_unique",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.character_name or self.discord_name} ({self.role})"

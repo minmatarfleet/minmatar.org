@@ -23,7 +23,7 @@ describe('campaign tabs', () => {
     it('keeps the tabs an existing strategic campaign shows today', () => {
         const features = { ...ALL_TODAY, structures: true }
         expect(campaign_tabs({ kind: 'strategic', features, has_systems: false, can_manage: true }))
-            .toEqual(['structures', 'fleets', 'activity', 'pilots', 'projects', 'you', 'settings'])
+            .toEqual(['structures', 'fleets', 'activity', 'pilots', 'projects', 'you', 'roles', 'settings'])
     })
 
     it('gives the strategic preset its structure campaign tabs', () => {
@@ -38,7 +38,7 @@ describe('campaign tabs', () => {
             projects: false,
         }
         expect(campaign_tabs({ kind: 'strategic', features, has_systems: true, can_manage: true }))
-            .toEqual(['structures', 'timers', 'fleets', 'destruction', 'you', 'settings'])
+            .toEqual(['structures', 'timers', 'fleets', 'destruction', 'you', 'roles', 'settings'])
         expect(features_on(features)).toBe(4)
     })
 
@@ -61,5 +61,18 @@ describe('campaign structure order', () => {
             row('Sooner', 'reinforced', '2026-01-04T00:00:00Z'),
         ])
         expect(sorted.map((structure) => structure.name)).toEqual(['Sooner', 'Later', 'Calm', 'Dead'])
+    })
+})
+
+describe('campaign roles tab', () => {
+    const features = { structures: true, timers: true, fleets: true, theater: false, destruction: true, pilots: false, projects: false }
+
+    it('gives a role holder in the coordinator view their shared tabs and Roles', () => {
+        expect(campaign_tabs({ kind: 'strategic', features: features as never, has_systems: false, can_manage: false, coordinator_scopes: ['fleets'], has_roles: true }))
+            .toEqual(['fleets', 'roles', 'discord'])
+    })
+
+    it('hides Roles from plain members', () => {
+        expect(campaign_tabs({ kind: 'strategic', features: features as never, has_systems: false, can_manage: false })).not.toContain('roles')
     })
 })

@@ -79,7 +79,9 @@ def create_scheduled_fleet(
         return location_result
     location = location_result
 
-    campaign = resolve_campaign(getattr(payload, "campaign_id", None))
+    campaign = resolve_campaign(
+        getattr(payload, "campaign_id", None), user, invite_only
+    )
     if isinstance(campaign, tuple):
         return campaign
 
@@ -132,7 +134,7 @@ def create_group_fleet(
     if isinstance(location_result, tuple):
         return location_result
 
-    campaign = resolve_campaign(getattr(payload, "campaign_id", None))
+    campaign = resolve_campaign(getattr(payload, "campaign_id", None), user)
     if isinstance(campaign, tuple):
         return campaign
 
@@ -160,8 +162,8 @@ def create_group_fleet(
 
 
 def private_fleet_error(user: User, payload) -> tuple[int, dict] | None:
-    """A private fleet is an alliance fleet a Strategic FC creates, with no
-    campaign (campaign pages are public)."""
+    """A private fleet is an alliance fleet a Strategic FC creates. Its
+    campaign, if any, must be undisclosed (``resolve_campaign``)."""
     # pylint: disable=import-outside-toplevel
     from fleets.endpoints.helpers import is_strategic_fc
 
@@ -173,15 +175,16 @@ def private_fleet_error(user: User, payload) -> tuple[int, dict] | None:
         return 400, ErrorResponse.new(
             "A tribe group fleet can't be invite only"
         )
-    if getattr(payload, "campaign_id", None):
-        return 400, ErrorResponse.new(
-            "A private fleet can't count towards a campaign"
-        )
     return None
 
 
-def resolve_campaign(campaign_id):
+def resolve_campaign(campaign_id, user=None, invite_only: bool = False):
     """A fleet can count towards a campaign that is running or about to.
+
+    An undisclosed campaign takes fleets only from people who may see it
+    (managers, coordinators, role holders); to anyone else it does not
+    exist. A private fleet can count only towards an undisclosed campaign:
+    a public campaign page would list it.
 
     Returns the campaign, None when no campaign was asked for, or a Ninja
     error tuple.
@@ -207,6 +210,16 @@ def resolve_campaign(campaign_id):
     ):
         return 400, ErrorResponse.new(
             f"Campaign {campaign.slug} is {campaign.status}"
+        )
+    if campaign.undisclosed and user is not None:
+        # pylint: disable-next=import-outside-toplevel
+        from campaigns.services.disclosure import sees_details
+
+        if not sees_details(user, campaign):
+            return 400, ErrorResponse.new(f"No campaign with id {campaign_id}")
+    if invite_only and not campaign.undisclosed:
+        return 400, ErrorResponse.new(
+            "A private fleet can only count towards an undisclosed campaign"
         )
     return campaign
 

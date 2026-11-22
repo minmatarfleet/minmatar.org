@@ -4195,6 +4195,14 @@
             "title": "Areas",
             "type": "array"
           },
+          "can_edit": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Can Edit",
+            "type": "array"
+          },
           "characters_included": {
             "default": 0,
             "title": "Characters Included",
@@ -4382,6 +4390,14 @@
             "default": "member",
             "title": "Viewer Role",
             "type": "string"
+          },
+          "viewer_roles": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Viewer Roles",
+            "type": "array"
           }
         },
         "required": [
@@ -5603,6 +5619,212 @@
           }
         },
         "title": "CampaignPatchRequest",
+        "type": "object"
+      },
+      "CampaignRoleAdd": {
+        "properties": {
+          "character_name": {
+            "maxLength": 255,
+            "minLength": 3,
+            "title": "Character Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_name"
+        ],
+        "title": "CampaignRoleAdd",
+        "type": "object"
+      },
+      "CampaignRoleMap": {
+        "properties": {
+          "discord_role_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discord Role Id"
+          }
+        },
+        "title": "CampaignRoleMap",
+        "type": "object"
+      },
+      "CampaignRoleMemberOut": {
+        "properties": {
+          "alliance_name": {
+            "default": "",
+            "title": "Alliance Name",
+            "type": "string"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "character_name": {
+            "default": "",
+            "title": "Character Name",
+            "type": "string"
+          },
+          "corporation_name": {
+            "default": "",
+            "title": "Corporation Name",
+            "type": "string"
+          },
+          "discord_name": {
+            "default": "",
+            "title": "Discord Name",
+            "type": "string"
+          },
+          "discord_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discord User Id"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "signed_in": {
+            "default": false,
+            "title": "Signed In",
+            "type": "boolean"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "source"
+        ],
+        "title": "CampaignRoleMemberOut",
+        "type": "object"
+      },
+      "CampaignRoleOut": {
+        "properties": {
+          "discord_role_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discord Role Id"
+          },
+          "discord_role_name": {
+            "default": "",
+            "title": "Discord Role Name",
+            "type": "string"
+          },
+          "edits": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Edits",
+            "type": "array"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "members": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CampaignRoleMemberOut"
+            },
+            "title": "Members",
+            "type": "array"
+          },
+          "reads": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Reads",
+            "type": "array"
+          },
+          "sync_error": {
+            "default": "",
+            "title": "Sync Error",
+            "type": "string"
+          },
+          "synced_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Synced At"
+          }
+        },
+        "required": [
+          "kind",
+          "label"
+        ],
+        "title": "CampaignRoleOut",
+        "type": "object"
+      },
+      "CampaignRolesOut": {
+        "properties": {
+          "can_change": {
+            "default": false,
+            "title": "Can Change",
+            "type": "boolean"
+          },
+          "can_map": {
+            "default": false,
+            "title": "Can Map",
+            "type": "boolean"
+          },
+          "discord_roles": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DiscordRoleOption"
+            },
+            "title": "Discord Roles",
+            "type": "array"
+          },
+          "roles": {
+            "items": {
+              "$ref": "#/components/schemas/CampaignRoleOut"
+            },
+            "title": "Roles",
+            "type": "array"
+          }
+        },
+        "required": [
+          "roles"
+        ],
+        "title": "CampaignRolesOut",
         "type": "object"
       },
       "CampaignSchema": {
@@ -13351,6 +13573,24 @@
           "mappings"
         ],
         "title": "DiscordRoleMappingUpdate",
+        "type": "object"
+      },
+      "DiscordRoleOption": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "DiscordRoleOption",
         "type": "object"
       },
       "DiscordRoleStripDone": {
@@ -59107,7 +59347,7 @@
     },
     "/api/campaigns/entities": {
       "get": {
-        "description": "Autocomplete corporations and alliances for structure scouting.",
+        "description": "Autocomplete corporations and alliances for structure scouting, and\ncharacters for campaign roles.",
         "operationId": "campaigns_endpoints_public_search_entities",
         "parameters": [
           {
@@ -61621,6 +61861,367 @@
           }
         ],
         "summary": "Detach Campaign Project",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/api/campaigns/{slug}/roles": {
+      "get": {
+        "description": "The four campaign roles and who holds each.",
+        "operationId": "campaigns_endpoints_get_roles_get_roles",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignRolesOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Roles",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/api/campaigns/{slug}/roles/sync": {
+      "post": {
+        "description": "Read the coordination server now instead of waiting for the beat.",
+        "operationId": "campaigns_endpoints_post_roles_sync_sync_roles",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignRolesOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Sync Roles",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/api/campaigns/{slug}/roles/{kind}": {
+      "patch": {
+        "description": "Point a campaign role at a role on the coordination server.",
+        "operationId": "campaigns_endpoints_patch_role_map_role",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CampaignRoleMap"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignRolesOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Map Role",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/api/campaigns/{slug}/roles/{kind}/members": {
+      "post": {
+        "description": "Add a role holder by exact character name. They get the Discord role\non the next sync once they have linked Discord.",
+        "operationId": "campaigns_endpoints_post_role_member_add_role_member",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CampaignRoleAdd"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignRolesOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Add Role Member",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/api/campaigns/{slug}/roles/{kind}/members/{member_id}": {
+      "delete": {
+        "description": "Take the role away, here and on the coordination server.",
+        "operationId": "campaigns_endpoints_delete_role_member_remove_role_member",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "member_id",
+            "required": true,
+            "schema": {
+              "title": "Member Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignRolesOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Remove Role Member",
         "tags": [
           "Campaigns"
         ]
