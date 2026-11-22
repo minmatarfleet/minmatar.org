@@ -82,12 +82,12 @@ a[href] {
 
     /* Handle */
     ::-webkit-scrollbar-thumb {
-        background: #444;
+        background: var(--neutral-700);
     }
 
     /* Handle on hover */
     ::-webkit-scrollbar-thumb:hover {
-        background: #555;
+        background: var(--neutral-600);
     }
 }
 
@@ -408,13 +408,13 @@ table {
     th,
     td {
         padding: var(--space-s);
-        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
         text-align: left;
         vertical-align: middle;
     }
 
     th {
-        background: color-mix(in srgb, var(--component-background) 90%, transparent);
+        background: color-mix(in srgb, var(--component-background) var(--tint-strong), transparent);
         font-weight: 600;
         color: var(--highlight);
         background-color: var(--light-transparency-background-mobile);
@@ -517,8 +517,8 @@ hr {
         to bottom,
         transparent 0px,
         transparent 2px,
-        color-mix(in srgb, var(--black) 22%, transparent) 3px,
-        color-mix(in srgb, var(--black) 22%, transparent) 4px
+        color-mix(in srgb, var(--black) var(--tint-soft), transparent) 3px,
+        color-mix(in srgb, var(--black) var(--tint-soft), transparent) 4px
     );
 }
 
@@ -536,7 +536,7 @@ hr {
         transparent 0%,
         rgba(120, 190, 255, 0.04) 42%,
         rgba(180, 210, 255, 0.16) 49%,
-        color-mix(in srgb, var(--highlight) 22%, transparent) 50%,
+        color-mix(in srgb, var(--highlight) var(--tint-soft), transparent) 50%,
         rgba(180, 210, 255, 0.08) 51%,
         transparent 58%,
         transparent 100%

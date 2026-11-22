@@ -95,8 +95,11 @@ Never hardcode colors, spacing, type sizes, or fonts. Use the tokens below, whic
 - EVE meta groups: `--tech-i`, `--tech-ii`, `--storyline`, `--faction`, `--officer`, `--deadspace`, `--tech-iii`, `--abyssal`.
 - Security status: `--security-status-1` … `--security-status-null`.
 - Semantic: `--foreground` (default `--fleet-yellow`), `--background` (black), `--component-background` (`rgb(25,25,25)`), `--highlight` (white), `--faded`, `--button-color`, `--form-color`, `--border-color`, `--border-color-hover`.
-- Alpha tints (white or black at a fixed alpha): `--hairline` (white 0.06: faint rules, skeleton base), `--hairline-medium` (0.08: panel borders), `--hairline-strong` (0.12: stronger rules, skeleton highlight), `--text-muted` (0.55: secondary text), `--glow` (0.75: logo drop-shadows), `--surface-sunken` (black 0.22: stat tiles). `--border-color` (0.05), `--border-color-hover` (0.1) and `--faded` (0.5) cover the rest.
-- Any other alpha: mix a token instead of writing `rgba()`, e.g. `color-mix(in srgb, var(--highlight) 20%, transparent)` or `color-mix(in srgb, var(--fleet-yellow) 12%, transparent)`. The `alpha_literal` conventions ratchet fails on new white/black `rgba()` literals.
+- Text colours: `--fleet-red-text`, `--green-text`, `--alliance-blue-text` (the colour mixed with white: red 75%, green 65%, blue 70%, at least 4.5:1 on the dark background in both modes). Use them for coloured text; use the plain token for fills, borders and badges.
+- Alpha tints: `--border-color` (white 0.05: rules, panel borders), `--border-color-hover` (0.1: stronger rules), `--faded` (0.5: secondary text), `--surface-sunken` (black 0.22: stat tiles).
+- Tint ladder: a token over transparent uses `var(--tint-subtle)` 8%, `var(--tint-soft)` 15% or `var(--tint-strong)` 45%, e.g. `color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent)`. The `tint_off_ladder` conventions rule fails on a literal percentage; `retired_token` fails on `--attention`, `--text-muted`, `--hairline*` and `--glow`.
+- Warnings are `--fleet-yellow` (a yellow Tag, Badge or border with dark text, never yellow body text); success is `--green-text`; danger is `--fleet-red-text`.
+- Any other alpha: mix a token instead of writing `rgba()`. The `alpha_literal` conventions ratchet fails on new white/black `rgba()` literals.
 
 ### Fonts (`_font-families.scss`, `_fonts.scss`)
 

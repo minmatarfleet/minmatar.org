@@ -6,9 +6,21 @@
     --militia-purple:   #7342B2;
     --green:            #198754;
     --green-blind:      #0d6efd;
-    // An open seat that needs someone (Help wanted). Not an error, not an action.
-    --attention:        #f08c4a;
     --black:            #0d0d0d;
+
+    // Neutral grade from --highlight (white) down to --black. 900 is
+    // --component-background (rgb 25, 25, 25).
+    --neutral-50: color-mix(in srgb, var(--highlight) 97%, var(--black));
+    --neutral-100: color-mix(in srgb, var(--highlight) 94%, var(--black));
+    --neutral-200: color-mix(in srgb, var(--highlight) 88%, var(--black));
+    --neutral-300: color-mix(in srgb, var(--highlight) 78%, var(--black));
+    --neutral-400: color-mix(in srgb, var(--highlight) 65%, var(--black));
+    --neutral-500: color-mix(in srgb, var(--highlight) 50%, var(--black));
+    --neutral-600: color-mix(in srgb, var(--highlight) 35%, var(--black));
+    --neutral-700: color-mix(in srgb, var(--highlight) 22%, var(--black));
+    --neutral-800: color-mix(in srgb, var(--highlight) 12%, var(--black));
+    --neutral-900: var(--component-background);
+    --neutral-950: var(--black);
 
     --tech-i:           #bbb;
     --tech-ii:          #9e6100;
@@ -44,13 +56,12 @@
     --border-color:         rgb(255, 255, 255, 0.05);
     --border-color-hover:   rgb(255, 255, 255, 0.1);
 
-    // White hairlines and dark tints at the alphas components kept writing by
-    // hand. For any other alpha, mix a token: color-mix(in srgb, var(--highlight) 20%, transparent).
-    --hairline:             rgba(255, 255, 255, 0.06);
-    --hairline-medium:      rgba(255, 255, 255, 0.08);
-    --hairline-strong:      rgba(255, 255, 255, 0.12);
-    --text-muted:           rgba(255, 255, 255, 0.55);
-    --glow:                 rgba(255, 255, 255, 0.75);
+    // Tint ladder: the only alphas for a token over transparent.
+    // color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent)
+    --tint-subtle:          8%;
+    --tint-soft:            15%;
+    --tint-strong:          45%;
+    // Dark tint for sunken surfaces; for other alphas mix a token.
     --surface-sunken:       rgba(0, 0, 0, 0.22);
 
     // Discord's own UI colours, for previews and Discord buttons
@@ -64,4 +75,77 @@
     --discord-link:         #00a8fc;
     --discord-mention:      #dee0fc;
     --discord-mention-bg:   rgba(88, 101, 242, 0.3);
+}
+
+// Grades 50-950 of every brand colour. 500 is the base. Lighter steps mix the base
+// with white, darker steps with black. They are declared again on
+// body.color-blind-mode, because a custom property resolves var() where it is
+// declared: that is how the colour-blind base carries through every grade.
+:root,
+body.color-blind-mode {
+    
+    --fleet-red-50: color-mix(in srgb, var(--fleet-red) 7%, white);
+    --fleet-red-100: color-mix(in srgb, var(--fleet-red) 15%, white);
+    --fleet-red-200: color-mix(in srgb, var(--fleet-red) 30%, white);
+    --fleet-red-300: color-mix(in srgb, var(--fleet-red) 50%, white);
+    --fleet-red-400: color-mix(in srgb, var(--fleet-red) 70%, white);
+    --fleet-red-500: var(--fleet-red);
+    --fleet-red-600: color-mix(in srgb, var(--fleet-red) 85%, var(--black));
+    --fleet-red-700: color-mix(in srgb, var(--fleet-red) 70%, var(--black));
+    --fleet-red-800: color-mix(in srgb, var(--fleet-red) 50%, var(--black));
+    --fleet-red-900: color-mix(in srgb, var(--fleet-red) 30%, var(--black));
+    --fleet-red-950: color-mix(in srgb, var(--fleet-red) 18%, var(--black));
+
+    --fleet-yellow-50: color-mix(in srgb, var(--fleet-yellow) 7%, white);
+    --fleet-yellow-100: color-mix(in srgb, var(--fleet-yellow) 15%, white);
+    --fleet-yellow-200: color-mix(in srgb, var(--fleet-yellow) 30%, white);
+    --fleet-yellow-300: color-mix(in srgb, var(--fleet-yellow) 50%, white);
+    --fleet-yellow-400: color-mix(in srgb, var(--fleet-yellow) 70%, white);
+    --fleet-yellow-500: var(--fleet-yellow);
+    --fleet-yellow-600: color-mix(in srgb, var(--fleet-yellow) 85%, var(--black));
+    --fleet-yellow-700: color-mix(in srgb, var(--fleet-yellow) 70%, var(--black));
+    --fleet-yellow-800: color-mix(in srgb, var(--fleet-yellow) 50%, var(--black));
+    --fleet-yellow-900: color-mix(in srgb, var(--fleet-yellow) 30%, var(--black));
+    --fleet-yellow-950: color-mix(in srgb, var(--fleet-yellow) 18%, var(--black));
+
+    --alliance-blue-50: color-mix(in srgb, var(--alliance-blue) 7%, white);
+    --alliance-blue-100: color-mix(in srgb, var(--alliance-blue) 15%, white);
+    --alliance-blue-200: color-mix(in srgb, var(--alliance-blue) 30%, white);
+    --alliance-blue-300: color-mix(in srgb, var(--alliance-blue) 50%, white);
+    --alliance-blue-400: color-mix(in srgb, var(--alliance-blue) 70%, white);
+    --alliance-blue-500: var(--alliance-blue);
+    --alliance-blue-600: color-mix(in srgb, var(--alliance-blue) 85%, var(--black));
+    --alliance-blue-700: color-mix(in srgb, var(--alliance-blue) 70%, var(--black));
+    --alliance-blue-800: color-mix(in srgb, var(--alliance-blue) 50%, var(--black));
+    --alliance-blue-900: color-mix(in srgb, var(--alliance-blue) 30%, var(--black));
+    --alliance-blue-950: color-mix(in srgb, var(--alliance-blue) 18%, var(--black));
+
+    --militia-purple-50: color-mix(in srgb, var(--militia-purple) 7%, white);
+    --militia-purple-100: color-mix(in srgb, var(--militia-purple) 15%, white);
+    --militia-purple-200: color-mix(in srgb, var(--militia-purple) 30%, white);
+    --militia-purple-300: color-mix(in srgb, var(--militia-purple) 50%, white);
+    --militia-purple-400: color-mix(in srgb, var(--militia-purple) 70%, white);
+    --militia-purple-500: var(--militia-purple);
+    --militia-purple-600: color-mix(in srgb, var(--militia-purple) 85%, var(--black));
+    --militia-purple-700: color-mix(in srgb, var(--militia-purple) 70%, var(--black));
+    --militia-purple-800: color-mix(in srgb, var(--militia-purple) 50%, var(--black));
+    --militia-purple-900: color-mix(in srgb, var(--militia-purple) 30%, var(--black));
+    --militia-purple-950: color-mix(in srgb, var(--militia-purple) 18%, var(--black));
+
+    --green-50: color-mix(in srgb, var(--green) 7%, white);
+    --green-100: color-mix(in srgb, var(--green) 15%, white);
+    --green-200: color-mix(in srgb, var(--green) 30%, white);
+    --green-300: color-mix(in srgb, var(--green) 50%, white);
+    --green-400: color-mix(in srgb, var(--green) 70%, white);
+    --green-500: var(--green);
+    --green-600: color-mix(in srgb, var(--green) 85%, var(--black));
+    --green-700: color-mix(in srgb, var(--green) 70%, var(--black));
+    --green-800: color-mix(in srgb, var(--green) 50%, var(--black));
+    --green-900: color-mix(in srgb, var(--green) 30%, var(--black));
+    --green-950: color-mix(in srgb, var(--green) 18%, var(--black));
+
+    // Readable text on the dark background: the 400 grade.
+    --fleet-red-text:       var(--fleet-red-400);
+    --green-text:           var(--green-400);
+    --alliance-blue-text:   var(--alliance-blue-400);
 }

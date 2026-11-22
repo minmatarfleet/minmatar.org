@@ -39,6 +39,11 @@ const ALPHA_LITERAL = /rgba?\(\s*(?:255[\s,]+255[\s,]+255|0[\s,]+0[\s,]+0)\s*[,/
 /** `var(--token, rgba(...))`: the fallback never renders while the token exists. */
 const is_var_fallback = (m: RegExpMatchArray) => /var\(\s*--[\w-]+\s*,\s*$/.test((m.input ?? '').slice(Math.max(0, m.index! - 60), m.index!))
 
+/** `color-mix(in srgb, <colour> 45%, transparent)`: a literal percentage over transparent. */
+const TINT_LITERAL = /color-mix\(\s*in srgb\s*,(?:[^()]|\([^()]*\))*?\s[\d.]+%\s*,\s*transparent\s*\)/g
+/** The retired colour tokens as custom properties; `--attention` inside a class name (`meta--attention`) is not one. */
+const RETIRED_TOKEN = /(?<![\w-])--(?:attention|text-muted|hairline(?:-medium|-strong)?|glow)(?![\w-])/g
+
 // `none` and the translate(-50%) centring idiom position an element; they are not a hover effect.
 const MOTION_DECLARATION = /^(?:transform|scale|translate|rotate)\s*:(?!\s*(?:none\b|translate[XY]?\(\s*-50%[^)]*\)\s*(?:!important\s*)?$))/
 const HOVER_GATE = /@media[^{]*\(\s*hover\s*:\s*hover\s*\)/
@@ -167,11 +172,23 @@ export const RULES: ConventionRule[] = [
     {
         id: 'alpha_literal',
         kind: 'ratchet',
-        why: 'Rule 3: white/black alpha tints use the tokens in src/styles/properties/_colors.scss (var(--hairline), var(--hairline-strong), var(--text-muted), var(--surface-sunken), ...) or color-mix(in srgb, var(--highlight) N%, transparent), not rgba() literals.',
+        why: 'Rule 3: white/black alpha tints use the tokens in src/styles/properties/_colors.scss (var(--border-color), var(--border-color-hover), var(--faded), var(--surface-sunken), ...) or color-mix(in srgb, var(--highlight) N%, transparent), not rgba() literals.',
         find: (file) => {
             if (file.path.startsWith('src/styles/properties/')) return []
             return hits_in(file, css_regions(file), ALPHA_LITERAL, (m) => !is_var_fallback(m))
         },
+    },
+    {
+        id: 'tint_off_ladder',
+        kind: 'ratchet',
+        why: 'Rule 3: a colour over transparent uses the tint ladder: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent) with --tint-subtle (8%), --tint-soft (15%) or --tint-strong (45%), not a literal percentage.',
+        find: (file) => hits_in(file, [{ text: file.text, offset: 0 }], TINT_LITERAL),
+    },
+    {
+        id: 'retired_token',
+        kind: 'absolute',
+        why: 'Rule 3: --attention, --text-muted, --hairline, --hairline-medium, --hairline-strong and --glow are retired. Use --fleet-yellow, --faded, --border-color and --border-color-hover (see docs/frontend-design.md).',
+        find: (file) => hits_in(file, [{ text: file.text, offset: 0 }], RETIRED_TOKEN),
     },
     {
         id: 'skeleton_keyframes',
