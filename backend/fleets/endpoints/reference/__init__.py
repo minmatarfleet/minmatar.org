@@ -6,6 +6,12 @@ from fleets.endpoints.reference.get_fleet_audiences import (
     get_fleet_audiences,
     METHOD as get_fleet_audiences_method,
 )
+from fleets.endpoints.reference.get_fleet_voice_options import (
+    PATH as get_fleet_voice_options_path,
+    ROUTE_SPEC as get_fleet_voice_options_spec,
+    get_fleet_voice_options,
+    METHOD as get_fleet_voice_options_method,
+)
 from fleets.endpoints.reference.get_fleet_types import (
     PATH as get_fleet_types_path,
     ROUTE_SPEC as get_fleet_types_spec,
@@ -43,6 +49,12 @@ _ROUTES = (
         get_v2_fleet_location_default_path,
         get_v2_fleet_location_default_spec,
         get_v2_fleet_location_default,
+    ),
+    (
+        get_fleet_voice_options_method,
+        get_fleet_voice_options_path,
+        get_fleet_voice_options_spec,
+        get_fleet_voice_options,
     ),
     (
         get_fleet_audiences_method,

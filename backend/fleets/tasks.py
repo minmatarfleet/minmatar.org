@@ -30,7 +30,9 @@ def get_fleet_emoji(fleet_type):
     """Get the emoji string in format <:name:id> for a fleet type"""
     logger.info("Getting fleet emoji for %s", fleet_type)
     if fleet_type in settings.DISCORD_FLEET_EMOJIS:
-        return f"<:{settings.DISCORD_FLEET_EMOJIS[fleet_type]['name']}:{settings.DISCORD_FLEET_EMOJIS[fleet_type]['id']}>"
+        emoji = settings.DISCORD_FLEET_EMOJIS[fleet_type]
+        name, emoji_id = emoji["name"], emoji["id"]
+        return f"<:{name}:{emoji_id}>"
     return ""
 
 
@@ -39,7 +41,9 @@ def update_fleet_instances():
     """
     Update fleet instances
     """
-    active_fleet_instances = EveFleetInstance.objects.filter(end_time=None)
+    active_fleet_instances = EveFleetInstance.objects.filter(
+        end_time=None
+    ).select_related("eve_fleet__voice_option")
     logger.debug(
         "Updating status of %s fleets", active_fleet_instances.count()
     )
@@ -47,6 +51,11 @@ def update_fleet_instances():
         logger.info("Updating fleet instance %s", fleet_instance.id)
         fleet_instance.update_is_registered_status()
         fleet_instance.update_fleet_members()
+        if fleet_instance.eve_fleet.uses_mumble:
+            # Voice work runs on its own queue, never in this 30 s task.
+            app.signature(
+                "voice.tasks.sync_fleet_grants", args=[fleet_instance.id]
+            ).delay()
 
 
 # Saves within a couple of seconds share one refresh; see

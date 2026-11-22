@@ -218,6 +218,7 @@ class FeatureCodesTestCase(TestCase):
             "site.debug_pages",
             "characters.lookup",
             "site.all_pages",
+            "voice.admin",
         ):
             with self.subTest(code=code):
                 staff = self._user(f"staff_{code}", "Alliance")

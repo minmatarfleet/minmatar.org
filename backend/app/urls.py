@@ -55,6 +55,8 @@ from structures.router import router as structures_router
 from universe.router import router as universe_router
 from users.router import router as users_router
 from users.eve_views import eve_mobile_sso_complete
+from voice.endpoints import router as voice_router
+from voice.views import voice_sso_complete
 from subscriptions.router import router as subscription_router
 from notifications.router import router as notifications_router
 from feed.router import router as feed_router
@@ -111,6 +113,7 @@ api.add_router("training", training_router)
 api.add_router("intel", intel_router)
 api.add_router("manage", manage_router)
 api.add_router("tasks", tasks_router)
+api.add_router("voice", voice_router)
 api.add_router("esi-health", esi_health_router)
 
 
@@ -125,6 +128,11 @@ urlpatterns = [
         "api/users/eve/complete/",
         eve_mobile_sso_complete,
         name="eve_mobile_sso_complete",
+    ),
+    path(
+        "api/voice/complete/",
+        voice_sso_complete,
+        name="voice_sso_complete",
     ),
     path("api/", api.urls),
     path("admin/login/", discord_login, name="discord_login_override"),

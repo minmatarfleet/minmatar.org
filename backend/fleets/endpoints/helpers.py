@@ -92,6 +92,13 @@ def fleet_commander_alt_fields(
     }
 
 
+def fleet_voice_fields(fleet: EveFleet) -> dict:
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.voice_options import fleet_voice_fields as fields
+
+    return fields(fleet)
+
+
 def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
     tracking = None
     instance = EveFleetInstance.objects.filter(eve_fleet=fleet).first()
@@ -130,6 +137,7 @@ def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
         "aar_link": fleet.aar_link,
         "roam_report_url": fleet.roam_report_url,
         **fleet_host_fields(fleet),
+        **fleet_voice_fields(fleet),
     }
 
 

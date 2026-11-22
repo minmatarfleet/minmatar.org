@@ -1,0 +1,23 @@
+{
+  "admitted": true,
+  "banned": false,
+  "branches": {
+    "1": {
+      "commander": false,
+      "fleet_id": 501,
+      "groups": [
+        "fleet"
+      ],
+      "lease_id": 601,
+      "part_of_fleet": true,
+      "placement": "Logistics"
+    }
+  },
+  "character_id": 90000001,
+  "display_name": "Contract Logi",
+  "identity_id": 1,
+  "preferred_branch": 1,
+  "reason": "ok",
+  "server_groups": [],
+  "version": 1
+}

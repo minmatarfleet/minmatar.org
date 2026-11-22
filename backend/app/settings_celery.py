@@ -528,6 +528,29 @@ CELERYBEAT_OTHER = [
         },
     ),
     (
+        "[Voice] Leases and grant expiry",
+        {
+            "task": "voice.tasks.expire_grants",
+            "schedule": schedule(timedelta(minutes=1)),
+            "options": {"expire_seconds": 60},
+        },
+    ),
+    (
+        "[Voice] Voice service heartbeat",
+        {
+            "task": "voice.tasks.heartbeat_check",
+            "schedule": schedule(timedelta(minutes=1)),
+            "options": {"expire_seconds": 60},
+        },
+    ),
+    (
+        "[Voice] Rebuild access records",
+        {
+            "task": "voice.tasks.rebuild_records",
+            "schedule": crontab(minute=17),
+        },
+    ),
+    (
         "[Misc] Rebuild fleet fight timelines",
         {
             "task": "fleets.tasks.rebuild_fight_timelines",

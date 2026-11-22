@@ -1,0 +1,37 @@
+{
+  "branch_names": [
+    "Fleet 1",
+    "Fleet 2",
+    "Fleet 3"
+  ],
+  "branch_subchannels": [
+    "Mainline",
+    "Logistics",
+    "Auxiliary A",
+    "Auxiliary B",
+    "Auxiliary C"
+  ],
+  "command": "Command",
+  "groups": {
+    "capitals": "capitals",
+    "commanders": "commanders",
+    "community": "community",
+    "fleet": "fleet",
+    "voiceadmin": "voiceadmin"
+  },
+  "lobby": "Lobby",
+  "open": [
+    "Open 1",
+    "Open 2"
+  ],
+  "redis_keys": {
+    "cert": "voice:cert:{}",
+    "changed": "voice:changed",
+    "char": "voice:char:{}",
+    "commands": "voice:commands",
+    "heartbeat": "voice:heartbeat",
+    "identity": "voice:identity:{}",
+    "leases": "voice:leases"
+  },
+  "root": "Minmatar Fleet"
+}

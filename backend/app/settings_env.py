@@ -93,6 +93,15 @@ CELERYBEAT_SCHEDULER = "django_celery_beat.schedulers.DatabaseScheduler"
 
 WEB_LINK_URL = os.environ.get("WEB_LINK_URL", "https://my.minmatar.org")
 
+# Fleet voice (Mumble). The voice service reads access records from Redis
+# (VOICE_REDIS_URL, by default database 3 on the cache's Redis; see
+# app/settings.py). "memory://" keeps them in-process (tests).
+VOICE_REDIS_URL = os.environ.get("VOICE_REDIS_URL", "memory://")
+# Shared with the voice service for /api/voice/internal/ (empty disables it).
+VOICE_INTERNAL_SECRET = os.environ.get("VOICE_INTERNAL_SECRET", "")
+VOICE_HOST = os.environ.get("VOICE_HOST", "voice.minmatar.org")
+VOICE_PORT = env_int("VOICE_PORT", 64738)
+
 # DISCORD channel IDs
 DISCORD_PEOPLE_TEAM_CHANNEL_ID = env_int(
     "DISCORD_PEOPLE_TEAM_CHANNEL_ID", 1098974756356771870

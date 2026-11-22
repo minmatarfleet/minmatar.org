@@ -146,6 +146,7 @@ def _copy_request(
         disable_motd=bool(fleet.disable_motd),
         hide_volunteers=fleet.hide_volunteers,
         campaign_id=campaign.id if campaign else None,
+        voice_option_id=fleet.voice_option_id,
         host_group_id=fleet.host_group_id,
         open_to_alliance=open_to_alliance,
         on_schedule=open_to_alliance and bool(fleet.on_schedule),
