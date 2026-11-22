@@ -349,7 +349,7 @@ A picture beside a title and optional subtitle: how pilots, corporations and all
 - Import: `import Badge from '@components/blocks/Badge.astro'`
 - Props: `title: string`, `subtitle?: string = false`, `image?: string`, `size?: number = 64`, `border?: boolean = false`, `highlight?: boolean = true`, `title_el?: string = 'span'`
 - Slots: `picture`, `title`, `default`
-- Stories (9): `frontend/app/rust/stories/components/data-display/Badge.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-badge--docs: Default, Small, Tiny, Large, Bordered, Without highlight, Heading Title, No Image, Title and subtitle slots
+- Stories (10): `frontend/app/rust/stories/components/data-display/Badge.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-badge--docs: Default, Small, Tiny, Large, Bordered, Without highlight, Heading Title, No Image, Title and subtitle slots, Image uses the title as alt text
 
 ### Tag
 
