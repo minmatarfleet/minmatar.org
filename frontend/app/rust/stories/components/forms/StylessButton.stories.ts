@@ -100,3 +100,25 @@ export const ExternalHrefWithQuote = {
         await expect(link.getAttribute('x-data')).toContain(`accept_href: "https://example.com/it's?a=1"`)
     },
 }
+
+export const CallerClassWins = {
+    args: { class: 'caller-chip', slots: { default: 'Caller styled' } },
+    parameters: {
+        docs: { description: { story: 'The reset has zero specificity, so a single global class sets colour and padding exactly as it would on a raw `<button>`.' } },
+    },
+    play: async ({ canvasElement }: Ctx) => {
+        const style = document.createElement('style')
+        style.textContent = '.caller-chip { color: rgb(1, 2, 3); padding: 7px; background-color: rgb(4, 5, 6); border: 1px solid rgb(7, 8, 9); }'
+        document.head.appendChild(style)
+        try {
+            const button = within(canvasElement).getByRole('button', { name: 'Caller styled' })
+            const computed = getComputedStyle(button)
+            await expect(computed.color).toBe('rgb(1, 2, 3)')
+            await expect(computed.paddingTop).toBe('7px')
+            await expect(computed.backgroundColor).toBe('rgb(4, 5, 6)')
+            await expect(computed.borderTopWidth).toBe('1px')
+        } finally {
+            style.remove()
+        }
+    },
+}

@@ -42,10 +42,13 @@ const {
 
 import { get_player_icon } from '@helpers/eve_image'
 
-// The click opens the character modal, so it belongs on a real button. A static
-// character 0 has nothing to open: the picture stays plain.
+// The click opens the character modal. It is a span with role="button", not a
+// <button>: pictures sit inside other buttons (CollapsableButton, the SRP card)
+// and the HTML parser closes the outer button at a nested <button>, which moves
+// the rest of the markup out of its Alpine x-data scope. A static character 0
+// has nothing to open: the picture stays plain.
 const clickable = !inert && (character_id != 0 || !!x_character_id)
-const Target = clickable ? 'button' : 'span'
+const Target = 'span'
 
 import Picture from '@components/blocks/Picture.astro';
 
@@ -70,7 +73,8 @@ delete attributes.class
     target={{
         tag: Target,
         attrs: clickable ? {
-            type: 'button',
+            role: 'button',
+            tabindex: '0',
             'x-data': `{
                 show_character_modal() {
                     if (!${x_character_id} && ${character_id} == 0)
@@ -82,6 +86,8 @@ delete attributes.class
                 }
             }`,
             'x-on:click.stop.prevent': 'show_character_modal()',
+            'x-on:keydown.enter.stop.prevent': 'show_character_modal()',
+            'x-on:keydown.space.stop.prevent': 'show_character_modal()',
         } : {},
     }}
     img_attrs={{

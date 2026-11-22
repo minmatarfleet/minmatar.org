@@ -107,7 +107,7 @@ A button or link with the browser chrome stripped: no border, padding or backgro
 - Import: `import StylessButton from '@components/blocks/StylessButton.astro'`
 - Props: `href?: string`, `external?: boolean = false`
 - Slots: `default`
-- Stories (7): `frontend/app/rust/stories/components/forms/StylessButton.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-stylessbutton--docs: Default, Link, External, With Click Handler, Wrapping Content, Bare XData, External Href With Quote
+- Stories (8): `frontend/app/rust/stories/components/forms/StylessButton.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-stylessbutton--docs: Default, Link, External, With Click Handler, Wrapping Content, Bare XData, External Href With Quote, Caller Class Wins
 
 ### ButtonStack
 
