@@ -520,7 +520,7 @@ The generic popover: a trigger (`button` slot) that toggles a panel (default slo
 - Import: `import Dropdown from '@components/blocks/Dropdown.astro'`
 - Props: `variant?: 'default' | 'button' = 'default'`, `color?: ButtonColors = 'fleet-red'`, `size?: ButtonSizes = 'sm'`, `trigger_label?: string`
 - Slots: `button`, `default`
-- Stories (6): `frontend/app/rust/stories/components/navigation/Dropdown.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-dropdown--docs: Default, Button Variant, Escape closes the panel, Outside click closes the panel, Labelled Trigger, Panel with controls
+- Stories (7): `frontend/app/rust/stories/components/navigation/Dropdown.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-dropdown--docs: Default, Button Variant, Escape closes the panel, Escape closes only the panel, not a surrounding dialog, Outside click closes the panel, Labelled Trigger, Panel with controls
 
 ### SectionTabs
 
