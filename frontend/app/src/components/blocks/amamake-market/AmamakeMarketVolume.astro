@@ -16,6 +16,8 @@ import { query_string } from '@helpers/string'
 import { number_thousand_separator } from '@helpers/numbers'
 
 import AmamakeMarketVolumeSkeleton from '@components/blocks/amamake-market/AmamakeMarketVolumeSkeleton.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import ButtonAuth from '@components/blocks/ButtonAuth.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Input from '@components/blocks/Input.astro'
@@ -153,24 +155,16 @@ const hx_body = {
 
         {!login_required && (
             <>
-                <nav class="[ mk-sold-chips ]" aria-label="Filter All Items Sold by class">
-                    <FlexInline gap="var(--space-2xs)">
-                        {chips.map((chip) => (
-                            <StylessButton
-                                type="button"
-                                class:list={['mk-sold-chip', chip.slug === sold_class && 'is-active']}
-                                hx-get={volume_partial({ page: 1, sold_class: chip.slug })}
-                                {...hx_body}
-                                aria-pressed={chip.slug === sold_class}
-                            >
-                                {chip.label}
-                                {chip.count != null && (
-                                    <span class="[ mk-sold-chip__count ]">{number_thousand_separator(chip.count)}</span>
-                                )}
-                            </StylessButton>
-                        ))}
-                    </FlexInline>
-                </nav>
+                <ChipGroup wrap={true} role="navigation" aria_label="Filter All Items Sold by class">
+                    {chips.map((chip) => (
+                        <FilterChip
+                            active={chip.slug === sold_class}
+                            count={chip.count != null ? number_thousand_separator(chip.count) : undefined}
+                            hx-get={volume_partial({ page: 1, sold_class: chip.slug })}
+                            {...hx_body}
+                        >{chip.label}</FilterChip>
+                    ))}
+                </ChipGroup>
 
                 {fetch_error && (
                     <p class="[ mk-volume__error ]">
@@ -336,24 +330,16 @@ const hx_body = {
                         <AmamakeMarketVolumeSkeleton />
                     </div>
                     <div id="mk-volume-body" class="[ mk-volume__body ]" aria-live="polite">
-                        <nav class="[ mk-sold-chips ]" aria-label="Filter All Items Sold by class">
-                            <FlexInline gap="var(--space-2xs)">
-                                {chips.map((chip) => (
-                                    <StylessButton
-                                        type="button"
-                                        class:list={['mk-sold-chip', chip.slug === sold_class && 'is-active']}
-                                        hx-get={volume_partial({ page: 1, sold_class: chip.slug })}
-                                        {...hx_body}
-                                        aria-pressed={chip.slug === sold_class}
-                                    >
-                                        {chip.label}
-                                        {chip.count != null && (
-                                            <span class="[ mk-sold-chip__count ]">{number_thousand_separator(chip.count)}</span>
-                                        )}
-                                    </StylessButton>
-                                ))}
-                            </FlexInline>
-                        </nav>
+                        <ChipGroup wrap={true} role="navigation" aria_label="Filter All Items Sold by class">
+                            {chips.map((chip) => (
+                                <FilterChip
+                                    active={chip.slug === sold_class}
+                                    count={chip.count != null ? number_thousand_separator(chip.count) : undefined}
+                                    hx-get={volume_partial({ page: 1, sold_class: chip.slug })}
+                                    {...hx_body}
+                                >{chip.label}</FilterChip>
+                            ))}
+                        </ChipGroup>
 
                         {fetch_error && (
                             <p class="[ mk-volume__error ]">
@@ -583,10 +569,6 @@ const hx_body = {
         gap: var(--space-s);
     }
 
-    .mk-sold-chips {
-        min-width: 0;
-    }
-
     .mk-sold-chip {
         padding: var(--space-3xs) var(--space-s);
         border: solid 1px var(--border-color);
@@ -606,12 +588,6 @@ const hx_body = {
             outline-offset: 2px;
         }
 
-        &.is-active {
-            border-color: var(--highlight);
-            color: var(--highlight);
-            background-color: var(--light-transparency-background-mobile);
-        }
-
         &.is-disabled {
             opacity: 0.4;
             cursor: default;
@@ -623,12 +599,6 @@ const hx_body = {
                 color: var(--highlight);
             }
         }
-    }
-
-    .mk-sold-chip__count {
-        margin-inline-start: var(--space-3xs);
-        color: var(--faded);
-        font-variant-numeric: tabular-nums;
     }
 
     .mk-table__num {

@@ -66,6 +66,9 @@ delete attributes.class
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
+
 const views_id = `${id}-views`
 const attention_id = `${id}-attention`
 const oob = [views_id, ...(attention.length > 0 ? [attention_id] : []), ...oob_ids]
@@ -93,26 +96,29 @@ const trigger = search_id
     {...attributes}
 >
     <div class="[ manage-filters__chips ]">
-        <fieldset id={views_id} class="[ manage-chips ]">
+        <fieldset id={views_id}>
             <legend class="[ visually-hidden ]">{legend}</legend>
-            {views.map((view) => (
-                <label class="[ manage-chip ]">
-                    <input type="radio" name={name} value={view.value} checked={selected === view.value} />
-                    <span>{view.label}</span>
-                    {view.count !== undefined && <span class="[ manage-chip__count ]">{view.count}</span>}
-                </label>
-            ))}
+            <ChipGroup wrap={true} role="none">
+                {views.map((view) => (
+                    <FilterChip type="radio" name={name} value={view.value} checked={selected === view.value} count={view.count}>{view.label}</FilterChip>
+                ))}
+            </ChipGroup>
         </fieldset>
         {attention.length > 0 &&
-            <fieldset id={attention_id} class="[ manage-chips is-attention ]">
+            <fieldset id={attention_id} class="[ manage-attention ]">
                 <legend class="[ manage-eyebrow ]">{t('manage.kit.needs_attention')}</legend>
-                {attention.map((view) => (
-                    <label class:list={['[ manage-chip ]', view.tone === 'good' ? 'is-good' : 'is-warn']}>
-                        <input type="radio" name={name} value={view.value} checked={selected === view.value} />
-                        <span>{view.label}</span>
-                        {view.count !== undefined && <span class="[ manage-chip__count ]">{view.count}</span>}
-                    </label>
-                ))}
+                <ChipGroup wrap={true} role="none">
+                    {attention.map((view) => (
+                        <FilterChip
+                            type="radio"
+                            name={name}
+                            value={view.value}
+                            checked={selected === view.value}
+                            count={view.count}
+                            tone={view.tone === 'good' ? 'green' : 'yellow'}
+                        >{view.label}</FilterChip>
+                    ))}
+                </ChipGroup>
             </fieldset>
         }
     </div>

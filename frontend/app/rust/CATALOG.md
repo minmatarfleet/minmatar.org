@@ -554,18 +554,18 @@ Pager for a list fed by an htmx partial: each button requests another page and s
 A pill-shaped toggle for filtering a list.
 
 - Import: `import FilterChip from '@components/blocks/FilterChip.astro'`
-- Props: `active?: boolean = false`, `href?: string`, `type?: 'radio' | 'checkbox' = "radio"` or `type="checkbox"` it is a real (visually hidden)`, `name?: string`, `value?: string`, `checked?: boolean = false`, `input_attributes?: Record<string, any> = {}`
+- Props: `active?: boolean = false`, `href?: string`, `type?: 'radio' | 'checkbox' = "radio"` or `type="checkbox"` it is a real (visually hidden)`, `name?: string`, `value?: string`, `checked?: boolean = false`, `input_attributes?: Record<string, any> = {}`, `tone?: 'yellow' | 'red' | 'green' | 'blue' | 'purple' = 'yellow'`, `count?: number | string`, `removable?: boolean = false`, `remove_label?: string`, `remove_attributes?: Record<string, any> = {}`, `as?: 'span' | 'li' = "li"` makes the`
 - Slots: `default`
-- Stories (9): `frontend/app/rust/stories/components/navigation/FilterChip.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-filterchip--docs: Default, Active, Alpine toggle, Link to a filtered view, Current link chip, Attributes pass through, Radio chip (form filter), Checkbox chip, Input attributes (x-model)
+- Stories (16): `frontend/app/rust/stories/components/navigation/FilterChip.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-filterchip--docs: Default, Active, Alpine toggle, Link to a filtered view, Current link chip, Attributes pass through, Radio chip (form filter), Checkbox chip, Input attributes (x-model), Tone: red, selected, Tone: purple, not selected, Tone: yellow adds no class, Tone on a radio chip, With a count, Removable tag, Removable tag as a list item, with tone
 
 ### ChipGroup
 
 A labelled row of `FilterChip`s (`role="group"`).
 
 - Import: `import ChipGroup from '@components/blocks/ChipGroup.astro'`
-- Props: `aria_label?: string`, `wrap?: boolean = false`
+- Props: `aria_label?: string`, `wrap?: boolean = false`, `scroll_below?: string = ''`
 - Slots: `default`
-- Stories (7): `frontend/app/rust/stories/components/navigation/ChipGroup.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-chipgroup--docs: Default, Wrapping, Few chips, Scrolls in a narrow container, Link chips, Without aria_label, Alpine filter
+- Stories (8): `frontend/app/rust/stories/components/navigation/ChipGroup.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-chipgroup--docs: Default, Wrapping, Few chips, Scrolls in a narrow container, Link chips, Without aria_label, Alpine filter, Wraps on desktop, scrolls on phone
 
 ### ExternalLink
 

@@ -60,3 +60,50 @@ test("chip group is a labelled group that scrolls unless it wraps", async () => 
   expect(wrapping).toContain("chip-group--wrap");
   expect(wrapping).not.toContain("xfade-scroll");
 });
+
+test("tone adds a colour class and yellow stays the default", async () => {
+  const container = await AstroContainer.create();
+  const red = await container.renderToString(FilterChip, { props: { tone: "red" }, slots: { default: "Hostile" } });
+  const yellow = await container.renderToString(FilterChip, { props: { tone: "yellow" }, slots: { default: "All" } });
+
+  expect(red).toContain("filter-chip--red");
+  expect(yellow).not.toContain("filter-chip--");
+});
+
+test("removable chip puts its handlers on the × button, not the chip", async () => {
+  const container = await AstroContainer.create();
+  const result = await container.renderToString(FilterChip, {
+    props: {
+      removable: true,
+      as: "li",
+      remove_label: "Remove Amamake",
+      remove_attributes: { "x-on:click": "remove_system(1)" },
+      "data-id": "1",
+    },
+    slots: { default: "Amamake" },
+  });
+
+  expect(result).toMatch(/<li[^>]*data-id="1"/);
+  expect(result).toMatch(/<button type="button"[^>]*aria-label="Remove Amamake"[^>]*x-on:click="remove_system\(1\)"/);
+  expect(result).not.toContain("aria-pressed");
+});
+
+test("count renders after the label", async () => {
+  const container = await AstroContainer.create();
+  const result = await container.renderToString(FilterChip, { props: { count: 3 }, slots: { default: "Open" } });
+
+  expect(result).toMatch(/Open<span[^>]*filter-chip__count[^>]*>3<\/span>/);
+});
+
+test("scroll_below wraps the chips on wide screens and scrolls them below the width", async () => {
+  const container = await AstroContainer.create();
+  const result = await container.renderToString(ChipGroup, {
+    props: { aria_label: "Type", scroll_below: "48rem" },
+    slots: { default: "<button>All</button>" },
+  });
+
+  expect(result).toContain('data-below="48rem"');
+  expect(result).toContain('data-scroll-below="48rem"');
+  expect(result).toContain("chip-group--wrap");
+  expect(result).toContain("flex-wrap: nowrap");
+});

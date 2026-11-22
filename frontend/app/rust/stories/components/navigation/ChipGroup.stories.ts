@@ -13,7 +13,7 @@ export default {
         docs: {
             description: {
                 component: [
-                    'A labelled row of `FilterChip`s (`role="group"`). By default it stays on one line and scrolls sideways with an edge fade (`XFadeScroll`), which suits filters on phones; `wrap` lets chips wrap onto several lines instead.',
+                    'A labelled row of `FilterChip`s (`role="group"`). By default it stays on one line and scrolls sideways with an edge fade (`XFadeScroll`), which suits filters on phones; `wrap` lets chips wrap onto several lines instead; `scroll_below="48rem"` wraps them on wide screens and scrolls them in one line below that width.',
                     'Always pass `aria_label` so screen readers announce what the chips filter. The group only lays chips out: the filtering state lives on the chips (Alpine or links).',
                 ].join('\n\n'),
             },
@@ -22,6 +22,7 @@ export default {
     argTypes: {
         aria_label: { control: 'text', description: 'Accessible name of the group (what the chips filter).' },
         wrap: { control: 'boolean', description: 'Wrap onto several lines instead of one scrolling line.' },
+        scroll_below: { control: 'text', description: 'A width such as `48rem`: chips wrap at and above it and scroll in one line below it.' },
         class: { control: 'text', description: 'Extra classes on the chip row.' },
     },
     args: {
@@ -144,5 +145,17 @@ export const AlpineFilter = {
         await userEvent.click(cruisers)
         await waitFor(() => expect(cruisers).toHaveAttribute('aria-pressed', 'true'))
         await expect(all).toHaveAttribute('aria-pressed', 'false')
+    },
+}
+
+export const WrapsOnDesktopScrollsOnPhone = {
+    name: 'Wraps on desktop, scrolls on phone',
+    args: { scroll_below: '48rem' },
+    play: async ({ canvasElement }: Ctx) => {
+        const group = within(canvasElement).getByRole('group', { name: 'Doctrine' })
+        await expect(group).toHaveClass('chip-group', 'chip-group--wrap')
+        await expect(group).toHaveAttribute('data-scroll-below', '48rem')
+        await expect(group.closest('.xfade-scroll')).toHaveAttribute('data-below', '48rem')
+        await expect(within(group).getAllByRole('button')).toHaveLength(DOCTRINES.length)
     },
 }

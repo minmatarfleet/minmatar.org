@@ -1,5 +1,4 @@
 ---
-import StylessButton from '@components/blocks/StylessButton.astro'
 import { i18n } from '@helpers/i18n'
 import { eve_day_short } from '@helpers/date'
 const { lang, t, translatePath } = i18n(Astro.url)
@@ -84,7 +83,8 @@ const type_label = (type:FleetTypes) =>
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
-import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import FleetSpotlight from '@components/blocks/FleetSpotlight.astro'
 import FleetScheduleRow from '@components/blocks/FleetScheduleRow.astro'
 import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro'
@@ -108,75 +108,56 @@ import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro'
     }
 
     {show_host_filter &&
-        <XFadeScroll below="48rem">
-            <FlexInline gap='var(--space-2xs)' role="group" aria-label={t('fleets.host.filter')} class="[ fleet-type-chips ]">
-                {FLEET_HOST_FILTERS.map(filter =>
-                    <StylessButton
-                        type="button"
-                        class="[ fleet-type-chip ]"
-                        aria-pressed={filter === host_filter ? 'true' : 'false'}
-                        hx-get={`${SCHEDULE_PARTIAL_URL}${host_query(filter)}`}
-                        hx-target="#upcoming-fleets"
-                        hx-swap="innerHTML transition:true"
-                        hx-push-url={`${HUB_URL}${host_query(filter)}`}
-                        hx-indicator=".loader"
-                    >
-                        {host_label(filter)}
-                    </StylessButton>
-                )}
-            </FlexInline>
-        </XFadeScroll>
+        <ChipGroup wrap={true} scroll_below="48rem" aria_label={t('fleets.host.filter')}>
+            {FLEET_HOST_FILTERS.map(filter =>
+                <FilterChip
+                    active={filter === host_filter}
+                    hx-get={`${SCHEDULE_PARTIAL_URL}${host_query(filter)}`}
+                    hx-target="#upcoming-fleets"
+                    hx-swap="innerHTML transition:true"
+                    hx-push-url={`${HUB_URL}${host_query(filter)}`}
+                    hx-indicator=".loader"
+                >{host_label(filter)}</FilterChip>
+            )}
+        </ChipGroup>
     }
 
     {rest.length > 0 &&
         <FlexInline justification='space-between' gap='var(--space-2xs)' class="[ w-full ]">
-            <XFadeScroll below="48rem">
-                <FlexInline gap='var(--space-2xs)' role="group" aria-label={t('fleets.schedule.filter')} class="[ fleet-type-chips ]">
-                    <StylessButton
-                        type="button"
-                        class="[ fleet-type-chip ]"
-                        x-bind:aria-pressed="fleet_type === 'all'"
-                        x-on:click="fleet_type = 'all'"
+            <ChipGroup wrap={true} scroll_below="48rem" aria_label={t('fleets.schedule.filter')}>
+                <FilterChip
+                    x-bind:aria-pressed="fleet_type === 'all'"
+                    x-bind:class="{ 'is-active': fleet_type === 'all' }"
+                    x-on:click="fleet_type = 'all'"
+                >{t('fleets.schedule.all').replace('{count}', fleets.length.toString())}</FilterChip>
+                {type_counts.map(({ type, count }) =>
+                    <FilterChip
+                        class:list={[{ 'fleet-schedule__type--empty': count === 0 }]}
+                        x-bind:aria-pressed={`fleet_type === '${type}'`}
+                        x-bind:class={`{ 'is-active': fleet_type === '${type}' }`}
+                        x-on:click={`fleet_type = '${type}'`}
                     >
-                        {t('fleets.schedule.all').replace('{count}', fleets.length.toString())}
-                    </StylessButton>
-                    {type_counts.map(({ type, count }) =>
-                        <StylessButton
-                            type="button"
-                            class:list={['[ fleet-type-chip ]', { 'fleet-type-chip--empty': count === 0 }]}
-                            x-bind:aria-pressed={`fleet_type === '${type}'`}
-                            x-on:click={`fleet_type = '${type}'`}
-                        >
-                            <FleetTypeFlag type={type} size={22} aria-hidden="true" />
-                            {type_label(type)} {count}
-                        </StylessButton>
-                    )}
-                </FlexInline>
-            </XFadeScroll>
+                        <FleetTypeFlag type={type} size={22} aria-hidden="true" />
+                        {type_label(type)} {count}
+                    </FilterChip>
+                )}
+            </ChipGroup>
             {show_location_filter &&
-                <XFadeScroll below="48rem">
-                    <FlexInline gap='var(--space-2xs)' role="group" aria-label={t('fleets.schedule.location_filter')} class="[ fleet-type-chips ]">
-                        <StylessButton
-                            type="button"
-                            class="[ fleet-type-chip ]"
-                            x-bind:aria-pressed="fleet_location === -1"
-                            x-on:click="fleet_location = -1"
-                        >
-                            {t('fleets.schedule.all_locations')}
-                        </StylessButton>
-                        {locations.map((location, index) =>
-                            <StylessButton
-                                type="button"
-                                class="[ fleet-type-chip ]"
-                                x-bind:aria-pressed={`fleet_location === ${index}`}
-                                x-on:click={`fleet_location = ${index}`}
-                                data-tippy-content={location.name}
-                            >
-                                {location.label}
-                            </StylessButton>
-                        )}
-                    </FlexInline>
-                </XFadeScroll>
+                <ChipGroup wrap={true} scroll_below="48rem" aria_label={t('fleets.schedule.location_filter')}>
+                    <FilterChip
+                        x-bind:aria-pressed="fleet_location === -1"
+                        x-bind:class="{ 'is-active': fleet_location === -1 }"
+                        x-on:click="fleet_location = -1"
+                    >{t('fleets.schedule.all_locations')}</FilterChip>
+                    {locations.map((location, index) =>
+                        <FilterChip
+                            x-bind:aria-pressed={`fleet_location === ${index}`}
+                            x-bind:class={`{ 'is-active': fleet_location === ${index} }`}
+                            x-on:click={`fleet_location = ${index}`}
+                            data-tippy-content={location.name}
+                        >{location.label}</FilterChip>
+                    )}
+                </ChipGroup>
             }
         </FlexInline>
     }
@@ -206,41 +187,8 @@ import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro'
 </Flexblock>
 
 <style lang="scss">
-    .fleet-type-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-2xs);
-        min-height: 2.5rem;
-        padding: 0 var(--space-s) 0 var(--space-2xs);
-        background: transparent;
-        border: 1px solid var(--border-color);
-        color: var(--foreground);
-        font: inherit;
-        cursor: pointer;
-
-        &:first-child {
-            padding-left: var(--space-s);
-        }
-
-        &[aria-pressed="true"] {
-            background-color: var(--foreground);
-            color: var(--background);
-        }
-
-        &.fleet-type-chip--empty {
-            opacity: 0.55;
-        }
-    }
-
-    @media (max-width: 48rem) {
-        :global(.fleet-type-chips) {
-            flex-wrap: nowrap !important;
-            padding-bottom: var(--space-3xs);
-        }
-
-        .fleet-type-chip {
-            flex: 0 0 auto;
-        }
+    .fleet-schedule__type--empty {
+        opacity: 0.55;
     }
 
     .fleet-schedule-day h3 {

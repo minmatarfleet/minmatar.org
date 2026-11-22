@@ -41,11 +41,11 @@ const corp_filters = !roster_redacted && roster && roster.length > 0
 const corp_filters_json = JSON.stringify(corp_filters)
 
 import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
 import Grid from '@components/compositions/Grid.astro'
 
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import PilotBadge from '@components/blocks/PilotBadge.astro'
-import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <section
@@ -93,23 +93,16 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         </Flexblock>
 
         {corp_filters.length > 0 &&
-            <FlexInline
-                gap="var(--space-3xs)"
-                class="[ tribe-group-members__chips ]"
-                role="group"
-                aria-label={t('corporation')}
-            >
+            <ChipGroup wrap={true} aria_label={t('corporation')}>
                 {corp_filters.map((filter) =>
-                    <StylessButton
-                        type="button"
-                        class="[ tribe-group-members__chip ]"
-                        x-bind:class={`corp === ${JSON.stringify(filter.id)} && 'is-active'`}
+                    <FilterChip
+                        count={filter.count}
+                        x-bind:class={`{ 'is-active': corp === ${JSON.stringify(filter.id)} }`}
                         x-on:click={`set_corp(${JSON.stringify(filter.id)})`}
                         x-bind:aria-pressed={`corp === ${JSON.stringify(filter.id)}`}
                     >
                         {filter.corporation_id != null &&
                             <img
-                                class="[ tribe-group-members__chip-logo ]"
                                 src={get_corporation_logo(filter.corporation_id, 32)}
                                 width="16"
                                 height="16"
@@ -117,11 +110,10 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                 loading="lazy"
                             />
                         }
-                        <span>{filter.label}</span>
-                        <span class="[ tribe-group-members__chip-count ]">{filter.count}</span>
-                    </StylessButton>
+                        {filter.label}
+                    </FilterChip>
                 )}
-            </FlexInline>
+            </ChipGroup>
         }
 
         {roster_redacted ?
@@ -270,58 +262,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                 opacity: 0.7;
             }
         }
-    }
-
-    .tribe-group-members__chips {
-        width: 100%;
-    }
-
-    .tribe-group-members__chip {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-3xs);
-        appearance: none;
-        margin: 0;
-        padding: var(--space-3xs) var(--space-2xs);
-        border: 1px solid color-mix(in srgb, var(--foreground) var(--tint-soft), transparent);
-        background: transparent;
-        color: var(--highlight);
-        font-family: var(--button-font);
-        font-size: var(--step--1);
-        letter-spacing: 0.02em;
-        white-space: nowrap;
-        cursor: pointer;
-        transition:
-            background var(--fast-transition),
-            color var(--fast-transition),
-            border-color var(--fast-transition);
-
-        &.is-active {
-            background: var(--fleet-yellow);
-            border-color: var(--fleet-yellow);
-            color: var(--background);
-        }
-
-        &:focus-visible {
-            outline: 2px solid var(--highlight);
-            outline-offset: 2px;
-        }
-
-        @media (hover: hover) {
-            &:hover:not(.is-active) {
-                background: color-mix(in srgb, var(--highlight) var(--tint-soft), transparent);
-            }
-        }
-    }
-
-    .tribe-group-members__chip-logo {
-        flex: 0 0 auto;
-        display: block;
-    }
-
-    .tribe-group-members__chip-count {
-        opacity: 0.75;
-        font-variant-numeric: tabular-nums;
     }
 
     .tribe-group-members__heading {

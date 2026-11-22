@@ -39,8 +39,9 @@ import Wrapper from '@components/compositions/Wrapper.astro'
 import Grid from '@components/compositions/Grid.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
-import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import Tile from '@components/blocks/Tile.astro'
 import Button from '@components/blocks/Button.astro'
 import Tag from '@components/blocks/Tag.astro'
@@ -49,7 +50,6 @@ import Input from '@components/blocks/Input.astro'
 
 import MemberIcon from '@components/icons/MemberIcon.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
-import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <section
@@ -84,22 +84,16 @@ import StylessButton from '@components/blocks/StylessButton.astro'
 >
     <Flexblock gap="var(--space-l)">
         <div class="[ tribes-groups-catalog__toolbar ]">
-            <XFadeScroll>
-                <FlexInline gap="var(--space-3xs)" class="[ tribes-groups-catalog__chips ]">
-                    {filters.map((filter) => (
-                        <StylessButton
-                            type="button"
-                            class="[ tribes-groups-catalog__chip ]"
-                            x-bind:class={`tribe === ${JSON.stringify(filter.id)} && 'is-active'`}
-                            x-on:click={`set_tribe(${JSON.stringify(filter.id)})`}
-                            x-bind:aria-pressed={`tribe === ${JSON.stringify(filter.id)}`}
-                        >
-                            {filter.label}
-                            <span class="[ tribes-groups-catalog__chip-count ]">{filter.count}</span>
-                        </StylessButton>
-                    ))}
-                </FlexInline>
-            </XFadeScroll>
+            <ChipGroup>
+                {filters.map((filter) => (
+                    <FilterChip
+                        count={filter.count}
+                        x-bind:class={`{ 'is-active': tribe === ${JSON.stringify(filter.id)} }`}
+                        x-on:click={`set_tribe(${JSON.stringify(filter.id)})`}
+                        x-bind:aria-pressed={`tribe === ${JSON.stringify(filter.id)}`}
+                    >{filter.label}</FilterChip>
+                ))}
+            </ChipGroup>
 
             <div class="[ tribes-groups-catalog__search ]">
                 <Input
@@ -227,49 +221,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         flex-wrap: wrap;
         align-items: center;
         gap: var(--space-s);
-    }
-
-    .tribes-groups-catalog__chips {
-        flex: 1 1 auto;
-        min-width: 0;
-    }
-
-    .tribes-groups-catalog__chip {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-3xs);
-        padding-block: var(--space-2xs);
-        padding-inline: var(--space-s);
-        border: 1px solid var(--fleet-yellow);
-        background: transparent;
-        color: var(--foreground);
-        font-family: var(--button-font);
-        font-size: var(--step--1);
-        letter-spacing: 0.02em;
-        white-space: nowrap;
-        cursor: pointer;
-        transition: background var(--fast-transition), color var(--fast-transition), border-color var(--fast-transition);
-
-        &.is-active {
-            background: var(--fleet-yellow);
-            color: var(--background);
-        }
-
-        &:focus-visible {
-            outline: 2px solid var(--highlight);
-            outline-offset: 2px;
-        }
-
-        @media (hover: hover) {
-            &:hover:not(.is-active) {
-                background: rgb(241 217 160 / 0.12);
-            }
-        }
-    }
-
-    .tribes-groups-catalog__chip-count {
-        opacity: 0.75;
-        font-variant-numeric: tabular-nums;
     }
 
     .tribes-groups-catalog__search {

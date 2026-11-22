@@ -67,6 +67,8 @@ const hour = (value: number | null) => value === null ? '' : String(value)
 const go = (value: string) => JSON.stringify({ go: value })
 
 import Button from '@components/blocks/Button.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
 import Textarea from '@components/blocks/Textarea.astro'
@@ -228,14 +230,15 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                     <option value="alliance">{t('structures.audience.alliance')}</option>
                 </Select>
             </ManageField>
-            <fieldset class="[ manage-chips ]">
+            <fieldset class="[ manage-fieldset ]">
                 <legend class="[ manage-field__label ]">{t('structures.add.good_for')}</legend>
-                {['industry', 'clones', 'logistics'].map((value) => (
-                    <label class="[ manage-chip ]">
-                        <input type="checkbox" name="good_for" value={value} checked={value === 'industry' && rigs.length > 0} />
-                        {t(t_key('structures.good_for.', value))}
-                    </label>
-                ))}
+                <ChipGroup wrap={true}>
+                    {['industry', 'clones', 'logistics'].map((value) => (
+                        <FilterChip type="checkbox" name="good_for" value={value} checked={value === 'industry' && rigs.length > 0}>
+                            {t(t_key('structures.good_for.', value))}
+                        </FilterChip>
+                    ))}
+                </ChipGroup>
             </fieldset>
             <ManageField label={t('structures.add.about')} for="structure-add-about">
                 <Textarea id="structure-add-about" name="description" rows="3" maxlength="4000" />

@@ -251,6 +251,13 @@
     gap: var(--space-2xs) var(--space-s);
 }
 
+.manage-fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
 .manage-chips {
     display: flex;
     flex-wrap: wrap;
@@ -258,7 +265,8 @@
     gap: var(--space-2xs);
 }
 
-.manage-chips.is-attention {
+.manage-chips.is-attention,
+.manage-attention {
     padding-inline-start: var(--space-s);
     border-inline-start: 1px solid var(--border-color-hover);
 

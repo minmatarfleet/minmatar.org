@@ -11,6 +11,16 @@
  * `change` (htmx): `name`, `value` and `checked` go to the input, any other
  * attribute to the label, and `input_attributes` carries `x-model`, `hx-*`
  * and the like for the input. The checked chip takes the active look.
+ *
+ * `tone` grades the chip in a brand colour (red, green, blue, purple; yellow
+ * is the default): the outline and text use the colour and the selected chip
+ * fills with it, white text on red, green, blue and purple, dark text on
+ * yellow. `count` adds a muted tabular number after the label.
+ *
+ * `removable` draws an applied tag instead of a toggle: the label plus a ×
+ * button. The button takes `remove_label` (its aria-label) and
+ * `remove_attributes` (`x-on:click`, `hx-delete`, ...); `as="li"` makes the
+ * chip a list item. Other attributes go to the chip itself.
  */
 interface Props {
     active?:            boolean;
@@ -20,6 +30,12 @@ interface Props {
     value?:             string;
     checked?:           boolean;
     input_attributes?:  Record<string, any>;
+    tone?:              'yellow' | 'red' | 'green' | 'blue' | 'purple';
+    count?:             number | string;
+    removable?:         boolean;
+    remove_label?:      string;
+    remove_attributes?: Record<string, any>;
+    as?:                'span' | 'li';
     [propName: string]: any;
 }
 
@@ -31,22 +47,50 @@ const {
     value,
     checked = false,
     input_attributes = {},
+    tone = 'yellow',
+    count,
+    removable = false,
+    remove_label,
+    remove_attributes = {},
+    as: tag = 'span',
     ...attributes
 } = Astro.props
 
 delete attributes.class
 
-const chip_class = ['[ filter-chip ]', { 'is-active': active }, Astro.props.class]
 import StylessButton from '@components/blocks/StylessButton.astro'
+
+const Wrapper = tag
+
+const chip_class = [
+    '[ filter-chip ]',
+    { 'is-active': active, [`filter-chip--${tone}`]: tone !== 'yellow' },
+    Astro.props.class,
+]
 ---
 
-{type ?
+{removable ?
+    <Wrapper
+        class:list={[...chip_class, 'filter-chip--removable']}
+        {...attributes}
+    >
+        <span class="[ filter-chip__label ]"><slot /></span>
+        {count !== undefined && <span class="[ filter-chip__count ]">{count}</span>}
+        <StylessButton
+            type="button"
+            class="[ filter-chip__remove ]"
+            aria-label={remove_label}
+            {...remove_attributes}
+        >×</StylessButton>
+    </Wrapper>
+    : type ?
     <label
         class:list={[...chip_class, 'filter-chip--input']}
         {...attributes}
     >
         <input type={type} name={name} value={value} checked={checked} {...input_attributes} />
         <slot />
+        {count !== undefined && <span class="[ filter-chip__count ]">{count}</span>}
     </label>
     : href ?
     <a
@@ -54,27 +98,32 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         class:list={chip_class}
         aria-current={active ? 'page' : undefined}
         {...attributes}
-    ><slot /></a>
+    ><slot />{count !== undefined && <span class="[ filter-chip__count ]">{count}</span>}</a>
     :
     <StylessButton
         type="button"
         class:list={chip_class}
         aria-pressed={active ? 'true' : 'false'}
         {...attributes}
-    ><slot /></StylessButton>
+    ><slot />{count !== undefined && <span class="[ filter-chip__count ]">{count}</span>}</StylessButton>
 }
 
 <style lang="scss">
     .filter-chip {
+        --chip_color: var(--fleet-yellow);
+        --chip_text: var(--fleet-yellow);
+        --chip_on: var(--background);
+
         appearance: none;
         display: inline-flex;
         align-items: center;
+        gap: var(--space-3xs);
         flex-shrink: 0;
         margin: 0;
         padding: var(--space-3xs) var(--space-xs);
-        border: 1px solid color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
+        border: 1px solid color-mix(in srgb, var(--chip_color) var(--tint-strong), transparent);
         background: transparent;
-        color: var(--fleet-yellow);
+        color: var(--chip_text);
         font-family: var(--button-font);
         font-size: var(--step--2);
         font-weight: 600;
@@ -90,15 +139,15 @@ import StylessButton from '@components/blocks/StylessButton.astro'
 
         @media (hover: hover) {
             &:hover {
-                border-color: var(--fleet-yellow);
-                background: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
-                color: var(--fleet-yellow);
+                border-color: var(--chip_color);
+                background: color-mix(in srgb, var(--chip_color) var(--tint-soft), transparent);
+                color: var(--chip_text);
             }
 
             &.is-active:hover,
             &:has(> input:checked):hover {
-                background: var(--fleet-yellow);
-                color: var(--background);
+                background: var(--chip_color);
+                color: var(--chip_on);
             }
         }
 
@@ -109,12 +158,68 @@ import StylessButton from '@components/blocks/StylessButton.astro'
 
         &.is-active,
         &:has(> input:checked) {
-            border-color: var(--fleet-yellow);
-            background: var(--fleet-yellow);
-            color: var(--background);
+            border-color: var(--chip_color);
+            background: var(--chip_color);
+            color: var(--chip_on);
         }
 
         &:has(> input:focus-visible) {
+            outline: 1px solid var(--highlight);
+            outline-offset: 2px;
+        }
+    }
+
+    /* Brand tones: the colour is the outline and the selected fill; the text
+       is the colour lifted towards white so it reads on the dark page. */
+    .filter-chip--red,
+    .filter-chip--green,
+    .filter-chip--blue,
+    .filter-chip--purple {
+        --chip_text: color-mix(in srgb, var(--chip_color) 55%, var(--highlight));
+        --chip_on: var(--highlight);
+    }
+
+    .filter-chip--red { --chip_color: var(--fleet-red); }
+    .filter-chip--green { --chip_color: var(--green); }
+    .filter-chip--blue { --chip_color: var(--alliance-blue); }
+    .filter-chip--purple { --chip_color: var(--militia-purple); }
+
+    .filter-chip__count {
+        font-variant-numeric: tabular-nums;
+        font-weight: 500;
+        opacity: 0.7;
+    }
+
+    /* An applied tag: label and × button, not a toggle. */
+    .filter-chip--removable {
+        cursor: default;
+
+        @media (hover: hover) {
+            &:hover {
+                border-color: color-mix(in srgb, var(--chip_color) var(--tint-strong), transparent);
+                background: transparent;
+            }
+        }
+    }
+
+    .filter-chip__remove {
+        appearance: none;
+        margin: 0;
+        padding: 0 var(--space-3xs);
+        border: 0;
+        background: none;
+        color: var(--faded);
+        font: inherit;
+        line-height: 1;
+        cursor: pointer;
+
+        @media (hover: hover) {
+            &:hover {
+                color: var(--highlight);
+            }
+        }
+
+        &:focus-visible {
             outline: 1px solid var(--highlight);
             outline-offset: 2px;
         }
