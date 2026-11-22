@@ -14,7 +14,8 @@ import type { EvEImageServiceSize } from '@dtypes/layout_components'
  * Each takes a size in px. Portraits and logos are square at any size; type
  * icons are for sizes up to 64, renders above.
  */
-const IMAGE_SERVER = 'https://images.evetech.net'
+/** The image server origin, for the Alpine helpers that build URLs in the browser. */
+export const IMAGE_SERVER = 'https://images.evetech.net'
 
 type ImageKind = 'characters/portrait' | 'corporations/logo' | 'alliances/logo' | 'types/icon' | 'types/render' | 'types/bp' | 'types/bpc'
 

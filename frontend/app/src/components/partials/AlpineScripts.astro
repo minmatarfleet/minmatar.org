@@ -1,5 +1,6 @@
 ---
 import { dialog_close_member, modal_x_data } from '@helpers/dialog_x_data'
+import { IMAGE_SERVER } from '@helpers/eve_image'
 
 export const AlertDialogXData = `
     alert_dialog_open: false,
@@ -297,19 +298,19 @@ export const AllianceFinderXData = `
 
 export const UtilitiesXData = `
     get_player_icon(id, size = 64) {
-        return 'https://images.evetech.net/characters/'+id+'/portrait?size='+size;
+        return '${IMAGE_SERVER}/characters/'+id+'/portrait?size='+size;
     },
     get_corporation_logo(id, size = 32) {
-        return 'https://images.evetech.net/corporations/'+id+'/logo?size='+size;
+        return '${IMAGE_SERVER}/corporations/'+id+'/logo?size='+size;
     },
     get_alliance_logo(id, size = 32) {
-        return 'https://images.evetech.net/alliances/'+id+'/logo?size='+size;
+        return '${IMAGE_SERVER}/alliances/'+id+'/logo?size='+size;
     },
     get_item_icon(id, size = 64) {
-        return 'https://images.evetech.net/types/'+id+'/'+(size <= 64 ? 'icon' : 'render')+'?size='+size;
+        return '${IMAGE_SERVER}/types/'+id+'/'+(size <= 64 ? 'icon' : 'render')+'?size='+size;
     },
     get_bpc_icon(id, is_copy = false, size = 64) {
-        return 'https://images.evetech.net/types/'+id+'/'+(is_copy ? 'bpc' : 'bp')+'?size='+size;
+        return '${IMAGE_SERVER}/types/'+id+'/'+(is_copy ? 'bpc' : 'bp')+'?size='+size;
     },`
 
 export const InitXData = `

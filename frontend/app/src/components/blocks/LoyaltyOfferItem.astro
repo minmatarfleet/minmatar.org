@@ -27,6 +27,7 @@ import { number_thousand_separator } from '@helpers/numbers'
 import { escape_html } from '@helpers/string'
 
 import Tag from '@components/blocks/Tag.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 
 interface Props {
     offer: LoyaltyOffer
@@ -343,7 +344,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                     ))}
                 </ol>
             ) : (
-                <p class="[ loyalty-offer-item__detail-empty ]">{t('industry.loyalty.offers.waterfall.no_price')}</p>
+                <EmptyState title={t('industry.loyalty.offers.waterfall.no_price')} />
             )}
             {buyback_verdict && (
                 <p class:list={[
@@ -617,7 +618,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         white-space: nowrap;
     }
 
-    .loyalty-offer-item__detail-empty,
     .loyalty-offer-item__verdict {
         margin: 0;
         font-size: var(--step--2);

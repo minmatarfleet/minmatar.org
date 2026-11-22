@@ -17,6 +17,7 @@ import {
     send_lp_deadline,
     type LoyaltyLaneKey,
 } from '@helpers/loyalty_desk'
+import EmptyState from '@components/blocks/EmptyState.astro'
 import LoyaltyOrderActions from '@components/blocks/LoyaltyOrderActions.astro'
 
 const { t, translatePath } = i18n(Astro.url)
@@ -78,7 +79,7 @@ const chip_for = (order: LoyaltyMarketOrder, lane: LoyaltyLaneKey): Chip => {
                 <span class="[ tabular-nums ]">{lanes[lane.key].length}</span>
             </div>
             {lanes[lane.key].length === 0 && (
-                <p class="[ loyalty-lanes__empty ]">{t('industry.loyalty.desk.lane.empty')}</p>
+                <EmptyState title={t('industry.loyalty.desk.lane.empty')} />
             )}
             {lanes[lane.key].map((order, index) => {
                 const chip = chip_for(order, lane.key)
@@ -181,19 +182,14 @@ const chip_for = (order: LoyaltyMarketOrder, lane: LoyaltyLaneKey): Chip => {
         }
     }
 
-    .loyalty-lanes__empty,
     .loyalty-lanes__note {
         margin: 0;
         padding: var(--space-xs);
-        border: 1px dashed var(--border-color-hover);
+        border: 0;
+        padding-block: 0;
         font-size: var(--step--1);
         line-height: 1.5;
         color: var(--faded);
-    }
-
-    .loyalty-lanes__note {
-        border: 0;
-        padding-block: 0;
     }
 
     .loyalty-lanes__more {
