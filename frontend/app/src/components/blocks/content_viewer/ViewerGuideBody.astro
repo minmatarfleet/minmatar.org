@@ -1,0 +1,40 @@
+---
+/**
+ * A guide in the ContentViewer: its markdown in the same section panels as
+ * the guide page, in a reading column.
+ */
+import { getGuideBySlug } from '@/data/guides'
+import { pageProgressFromMarkdown, wrapMarkdownSectionsInPanels } from '@helpers/pageProgress'
+
+import GuideMarkdown from '@components/blocks/GuideMarkdown.astro'
+
+interface Props {
+    slug: string
+}
+
+const guide = getGuideBySlug(Astro.props.slug)
+const html = guide
+    ? wrapMarkdownSectionsInPanels(pageProgressFromMarkdown({
+        page_key: `guides/${guide.slug}`,
+        page_title: guide.title,
+        markdown: guide.module.rawContent(),
+    }).html)
+    : ''
+---
+
+<article class="[ viewer-guide ]">
+    <GuideMarkdown html={html} />
+</article>
+
+<style lang="scss">
+    .viewer-guide {
+        max-width: var(--max-text-width);
+        margin-inline: auto;
+        width: 100%;
+
+        :global(img) {
+            max-width: 100%;
+            height: auto;
+        }
+    }
+</style>

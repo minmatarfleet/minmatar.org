@@ -33,6 +33,8 @@ Working dir for every command below: `frontend/app`.
 3. **The component is shared — reuse it, don't duplicate.** `WarzoneReportIssue.astro`
    renders every section from an issue object. A new month writes **data**, not markup.
    If a section needs a real change, change the one component (it affects all issues).
+   The homepage's ContentViewer renders the same component, so keep it free of `<script>`
+   tags and page chrome (those belong in the Landing component).
 4. **Generated vs hand-authored.** `<slug>-boards.ts` is machine-generated (never hand
    edit — re-run). `<slug>.ts` is the editorial layer: prose, the occupancy flip
    narrative, and the Focus story, wired to the generated numbers.

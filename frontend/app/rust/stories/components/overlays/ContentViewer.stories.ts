@@ -19,10 +19,11 @@ export default {
         docs: {
             description: {
                 component: [
-                    'Reads, plays or shows a post or guide without leaving the page. Put one `ContentViewer` on a page and wrap each card or link in a `ContentViewerLink`: a plain click opens the viewer and htmx loads `/partials/content_viewer_component` into it; a ctrl/cmd/middle click still opens the full page.',
-                    'The partial picks the body by kind: a video post plays inline (YouTube, privacy mode, autoplay since it was clicked), a propaganda poster is shown whole and zooms on click, an article or a guide reads like its page. A members-only or missing post shows a message and the "Open full page" link.',
+                    'Reads, plays or shows a page without leaving the one you are on: a post, a guide, a Warzone or Amamake Market report, a newsletter, Our values or a chapter of Our story. Put one `ContentViewer` on a page and wrap each card or link in a `ContentViewerLink`: a plain click opens the viewer and htmx loads `/partials/content_viewer_component` into it; a ctrl/cmd/middle click still opens the full page.',
+                    'Each viewable page is a source in `@helpers/content_viewer_sources`: its page route renders its frame around a body component, and the partial renders the same body here. A video post plays inline (YouTube, privacy mode, autoplay since it was clicked), a propaganda poster is shown whole and zooms on click, an article, a guide or a report reads like its page. A members-only or missing page shows a message and the "Open full page" link.',
+                    'Inside the viewer, a link to another viewable page (the next chapter, an older issue) opens in the viewer, and a section link (`#pilots`) scrolls the viewer to it; other links leave as usual.',
                     'Every image in the body zooms: a click opens it full screen inside the dialog, where it can be pinched, wheeled, dragged and double-tapped (up to 600%), with − / + / Fit buttons. Escape leaves the zoom before the viewer. Posters, gallery pages and comic panels are made to be read this way.',
-                    'It is a native `<dialog>`: top layer, focus trap, Escape. On desktop it is a panel sized to its kind (wide for video, a reading column for text); at 48rem and below it fills the screen. Opening adds a history entry, so Back closes it instead of leaving the page. Closing empties the body, which stops a video.',
+                    'It is a native `<dialog>`: top layer, focus trap, Escape. On desktop it is a panel sized by the width its source sets (wide for a video or a report, a reading column for text); at 48rem and below it fills the screen. Opening adds a history entry, so Back closes it instead of leaving the page. Closing empties the body, which stops a video.',
                 ].join('\n\n'),
             },
         },

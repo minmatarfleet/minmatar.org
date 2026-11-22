@@ -37,6 +37,8 @@ Working dir for every command below: `frontend/app`.
 3. **The component is shared — reuse it, don't duplicate.** `AmamakeMarketReportIssue.astro`
    renders every section from an `AmamakeMarketIssue` object. A new month writes
    **data**, not markup. If a section needs a real change, change the one component.
+   The homepage's ContentViewer renders the same component, so keep it free of `<script>`
+   tags and page chrome (those belong in the Landing component).
 4. **Generated vs hand-authored.** `<slug>-boards.ts` is machine-generated (never hand
    edit — re-run). `<slug>.ts` is the editorial layer: short section deks,
    How to get involved steps, and the footer Methodology entries.

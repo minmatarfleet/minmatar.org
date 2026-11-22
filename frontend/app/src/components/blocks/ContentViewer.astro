@@ -1,9 +1,11 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 /**
- * Reads, plays or shows a post or guide without leaving the page. Put one on
+ * Reads, plays or shows a page without leaving the one you're on: a post, a
+ * guide, a report, a newsletter, Our values or Our story (every source is in
+ * `@helpers/content_viewer_sources`). Put one on
  * a page and wrap each card or link in a ContentViewerLink: a plain click
  * opens the viewer and htmx loads the content into it; a ctrl/cmd/middle click
  * still opens the full page.
@@ -15,6 +17,9 @@ const { t } = i18n(Astro.url)
  *   same-page hash move: Back (or a swipe back on a phone) closes the viewer,
  *   with no page swap and no reload. Without a router it is a plain hash link.
  * - Closing empties the body, which stops a playing video.
+ * - Inside the viewer, a link to another viewable page opens in the viewer,
+ *   a link to a section (`#id`) scrolls the viewer to it, and any other link
+ *   leaves as usual.
  */
 interface Props {
     [propName: string]: any;
@@ -29,6 +34,16 @@ const HASH = '#viewer'
 // Zoom limits: how far in, and where a double-tap goes.
 const ZOOM_MAX = 6
 const ZOOM_DOUBLE = 2.5
+
+import { ui } from '@i18n/ui'
+import { viewer_client_routes } from '@helpers/content_viewer_sources'
+
+// What the viewer opens in place when a link inside it is clicked.
+const routes = {
+    ...viewer_client_routes(),
+    languages: Object.keys(ui),
+    partial: translatePath('/partials/content_viewer_component/'),
+}
 
 import Button from '@components/blocks/Button.astro'
 import StylessButton from '@components/blocks/StylessButton.astro'
@@ -127,6 +142,41 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro'
             delete this.pointers[event.pointerId]
             if (Object.keys(this.pointers).length < 2) this.pinch = null
         },
+        routes: ${JSON.stringify(routes)},
+        // A page path the viewer can show (without its language prefix), or null.
+        viewable(url) {
+            const [, first, ...rest] = url.pathname.split('/')
+            let path = this.routes.languages.includes(first) ? '/' + rest.join('/') : url.pathname
+            if (new RegExp(this.routes.post).test(path)) return path
+            if (!path.endsWith('/')) path += '/'
+            return this.routes.paths.includes(path) ? path : null
+        },
+        // A link clicked inside the viewer: a section link scrolls the viewer
+        // (the #viewer entry stays, so Back still closes it), a viewable page
+        // opens here, anything else leaves as a link does.
+        follow(link, event) {
+            if (event.defaultPrevented || event.button !== 0) return
+            if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return
+            if (link.target && link.target !== '_self') return
+            if (link.hasAttribute('hx-get') || link.hasAttribute('download')) return
+            const url = new URL(link.href, location.href)
+            if (url.origin !== location.origin) return
+            const hash = link.getAttribute('href').startsWith('#')
+            if (hash) {
+                event.preventDefault()
+                const id = decodeURIComponent(url.hash.slice(1))
+                const target = id && this.$refs.body.querySelector('#' + CSS.escape(id))
+                target?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+                return
+            }
+            const path = this.viewable(url)
+            if (!path) return
+            event.preventDefault()
+            this.title = link.textContent.trim()
+            this.href = link.href
+            this.loading = true
+            htmx.ajax('GET', this.routes.partial + '?path=' + encodeURIComponent(path), { target: this.$refs.body, swap: 'innerHTML' })
+        },
         escape() {
             if (this.zoom.src) this.zoom_close(); else this.close()
         },
@@ -150,10 +200,13 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro'
             this.dialog = this.$el
             this.$refs.body.addEventListener('htmx:afterSwap', (event) => this.loaded(event))
             this.$refs.body.addEventListener('htmx:responseError', (event) => this.loaded(event))
-            // Images in the body open the zoom (a click, not a swipe of a gallery).
+            // Images in the body open the zoom (a click, not a swipe of a
+            // gallery); links follow the rules in follow().
             this.$refs.body.addEventListener('click', (event) => {
                 const img = event.target.closest?.('img')
-                if (img && !img.closest('a')) { event.preventDefault(); this.zoom_open(img) }
+                if (img && !img.closest('a')) { event.preventDefault(); this.zoom_open(img); return }
+                const link = event.target.closest?.('a[href]')
+                if (link) this.follow(link, event)
             })
             // A viewer removed from the page (a story switch, a swap) drops
             // its listener instead of acting on a dialog that is gone.
@@ -252,12 +305,12 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro'
             backdrop-filter: blur(4px);
         }
 
-        // Sized to what's inside: wide for a video, a reading column for text.
-        &:has([data-kind="video"]) { --content-viewer-width: min(80rem, calc(100vw - var(--space-xl) * 2)); }
-        &:has(.content-viewer-content__video--reddit) { --content-viewer-width: min(48rem, calc(100vw - var(--space-xl) * 2)); }
-        &:has([data-kind="article"]),
-        &:has([data-kind="guide"]) { --content-viewer-width: min(56rem, calc(100vw - var(--space-xl) * 2)); }
-        &:has([data-kind="missing"]) { --content-viewer-width: min(36rem, calc(100vw - var(--space-xl) * 2)); }
+        // Sized to what's inside (the source says which): wide for a video
+        // or a report, a reading column for text, fitted for a poster.
+        &:has([data-width="wide"]) { --content-viewer-width: min(80rem, calc(100vw - var(--space-xl) * 2)); }
+        &:has([data-width="reading"]) { --content-viewer-width: min(56rem, calc(100vw - var(--space-xl) * 2)); }
+        &:has([data-width="narrow"]) { --content-viewer-width: min(36rem, calc(100vw - var(--space-xl) * 2)); }
+        &:has(.viewer-post__video--reddit) { --content-viewer-width: min(48rem, calc(100vw - var(--space-xl) * 2)); }
     }
 
     // Its own stacking context: a Carousel's slides (z-index 1) stay inside
@@ -334,6 +387,13 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro'
         .skel-line--short { width: 35%; }
     }
 
+    // A reading-width source is a centred column of text.
+    .content-viewer-content[data-width="reading"] > * {
+        width: 100%;
+        max-width: var(--max-text-width);
+        margin-inline: auto;
+    }
+
     // Images in the body zoom on a click.
     .content-viewer__body img {
         cursor: zoom-in;
@@ -396,7 +456,7 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro'
     // Phones: the whole screen, like an app sheet.
     @media (max-width: 48rem) {
         .content-viewer,
-        .content-viewer:has([data-kind]) {
+        .content-viewer:has([data-width]) {
             --content-viewer-width: 100vw;
 
             height: 100dvh;
