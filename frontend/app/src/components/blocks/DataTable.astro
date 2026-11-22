@@ -16,6 +16,12 @@ interface DataTableColumn {
     hide_below?: string
     /** Extra class on the header cell (a `bar` column gets `data-table__bar`). */
     class?: string
+    /** Trusted markup for the label (an inline icon next to the text); `label` is then its plain-text name. */
+    label_html?: string
+    /** `center` centres the header; cells take `data-table__center`. */
+    align?: 'center'
+    /** Tooltip on the header cell. */
+    title?: string
 }
 
 /**
@@ -58,6 +64,8 @@ interface Props {
     is_empty?: boolean
     /** `report`: editorial report look; `cards`: stacked cards below 48rem. */
     variant?: 'default' | 'report' | 'cards'
+    /** Cards below 48rem on top of any variant (`variant="cards"` is the plain look plus this). */
+    cards?: boolean
     /** The caller writes its own `<tbody>` elements; the slot is not wrapped. */
     bodies?: boolean
     /** Show the caption instead of hiding it visually. */
@@ -78,6 +86,7 @@ const {
     is_empty = false,
     variant = 'default',
     bodies = false,
+    cards = false,
     caption_visible = false,
     visually_hidden = false,
     ...attributes
@@ -143,10 +152,8 @@ const sort_state = `{
 {hide_css && <style is:inline set:html={hide_css} />}
 
 {visually_hidden ?
-    <table
-        {...attributes}
-        class:list={['[ visually-hidden ]', Astro.props.class]}
-    >
+    <div class="[ visually-hidden ]">
+    <table {...attributes} class:list={[Astro.props.class]}>
         {caption && <caption>{caption}</caption>}
         <thead>
             <tr>{columns.map((column) => <th scope="col">{column.label}</th>)}</tr>
@@ -154,6 +161,7 @@ const sort_state = `{
         {bodies ? <slot /> : <tbody><slot /></tbody>}
         {has_footer && <tfoot><slot name="footer" /></tfoot>}
     </table>
+    </div>
     :
 <XFadeScroll
     class:list={['[ data-table-wrap ]', `data-table-wrap--${variant}`, { 'data-table-wrap--sticky': sticky_header }]}
@@ -168,6 +176,7 @@ const sort_state = `{
             `data-table--${density}`,
             `data-table--${borders}`,
             `data-table--${variant}`,
+            { 'data-table--cards': cards && variant !== 'cards' },
             hide_below.length ? hide_id : undefined,
             { 'data-table--striped': striped },
             Astro.props.class,
@@ -180,11 +189,12 @@ const sort_state = `{
                 {columns.map((column, index) => {
                     const label = column.hidden_label
                         ? <span class="[ visually-hidden ]">{column.label}</span>
-                        : column.label
+                        : column.label_html ? <Fragment set:html={column.label_html} /> : column.label
                     return (
                         <th
                             scope="col"
-                            class:list={[column.class, { 'data-table__numeric': column.numeric }]}
+                            title={column.title}
+                            class:list={[column.class, { 'data-table__numeric': column.numeric, 'data-table__center': column.align === 'center' }]}
                             style={column.width ? `width: ${column.width}` : undefined}
                             aria-sort={column.sortable ? 'none' : undefined}
                             x-bind:aria-sort={column.sortable ? `aria(${JSON.stringify(column.key)})` : undefined}
@@ -265,6 +275,10 @@ const sort_state = `{
         :global(.data-table__numeric) {
             text-align: right;
             font-variant-numeric: tabular-nums;
+        }
+
+        :global(.data-table__center) {
+            text-align: center;
         }
 
         :global(tbody th[scope='row']) {
@@ -363,8 +377,6 @@ const sort_state = `{
             vertical-align: middle;
             border: none;
             border-bottom: solid 1px var(--data-table-rule, var(--mk-rule, var(--wz-rule, var(--border-color))));
-            background: none;
-            backdrop-filter: none;
 
             @media screen and (max-width: 720px) {
                 padding: var(--space-xs) var(--space-2xs);

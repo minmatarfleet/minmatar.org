@@ -69,6 +69,7 @@ export default {
         empty_title: { control: 'text', description: 'Message shown in one full-width row when `is_empty` is set.' },
         is_empty: { control: 'boolean', description: 'Replace the slotted rows with the empty row.' },
         variant: radio_control(['default', 'report', 'cards'] as const, '`report`: editorial hairline rows with muted uppercase headers; `cards`: rows stack as cards below 48rem (cells carry `data-label`).'),
+        cards: { control: 'boolean', description: 'Stacked cards below 48rem on top of any variant (the report look keeps its hairlines).' },
         bodies: { control: 'boolean', description: 'The caller writes its own `<tbody>` elements; the slot is not wrapped (no sorting, no empty row).' },
         caption_visible: { control: 'boolean', description: 'Show the caption instead of hiding it visually.' },
         visually_hidden: { control: 'boolean', description: 'Render a screen-reader-only table (chart data); no scroller, nothing painted.' },
@@ -309,7 +310,7 @@ export const ScreenReaderOnly = {
     args: { visually_hidden: true },
     play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
         const table = within(canvasElement).getByRole('table', { name: 'Recent fleets' })
-        await expect(table).toHaveClass('visually-hidden')
+        await expect(table.parentElement).toHaveClass('visually-hidden')
         await expect(canvasElement.querySelector('.xfade-scroll')).toBeNull()
         await expect(within(table).getAllByRole('row')).toHaveLength(5)
     },
