@@ -1,0 +1,9 @@
+[
+  {
+    "file": "src/components/blocks/ButtonViewHealthChartData.astro",
+    "selector": ".data-table-wrap",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Raw table inside RowList width 635px becomes DataTable: the dialog table now fills the dialog width, cells align to the top, and the header sits in a thead; fonts, borders and padding already matched the global table style."
+  }
+]
