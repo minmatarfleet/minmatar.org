@@ -55,56 +55,6 @@
     }
 }
 
-// ManageHero: CorporationDetailHero's masthead.
-.manage-hero {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-s) var(--space-m);
-    width: 100%;
-}
-
-.manage-hero__image {
-    height: var(--step-5);
-    width: auto;
-    object-fit: contain;
-    flex: 0 0 auto;
-}
-
-.manage-hero__copy {
-    flex: 1 1 24rem;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2xs);
-}
-
-.manage-hero__copy .page-title h1.is-landing {
-    line-height: 1;
-}
-
-.manage-hero__meta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-3xs) var(--space-xs);
-    font-size: var(--step--1);
-}
-
-.manage-hero__actions {
-    flex: 0 0 auto;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-xs);
-}
-
-@media (max-width: 48rem) {
-    .manage-hero__actions {
-        width: 100%;
-    }
-}
-
 // SettingsSection: corp Settings' collapsible section.
 .manage-section {
     position: relative;
