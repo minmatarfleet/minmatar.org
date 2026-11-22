@@ -513,7 +513,7 @@ A cover-image panel for landing pages and catalogues: the picture fills the tile
 - Import: `import Tile from '@components/blocks/Tile.astro'`
 - Props: `title: string`, `description?: string`, `cover: string`, `alt?: string`, `transparent?: boolean = false`, `soft?: boolean = true`, `optimize?: boolean`, `width?: number = '512'`, `height?: number = '512'`, `gap?: string = 'var(--space-s)'`, `min_height?: string = '420px'`
 - Slots: `cover`, `icon`, `subtitle`, `default`
-- Stories (7): `frontend/app/rust/stories/components/data-display/Tile.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-tile--docs: Default, Markdown Description, Transparent, Not soft, With icon, subtitle and several actions, No actions, Custom Alt
+- Stories (8): `frontend/app/rust/stories/components/data-display/Tile.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-tile--docs: Default, Markdown Description, Transparent, Not soft, With icon, subtitle and several actions, No actions, Custom Alt, Attributes reach the root
 
 ### OptionCard
 
