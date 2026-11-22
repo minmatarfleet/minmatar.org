@@ -18,11 +18,11 @@ export const amarrCollapses: ChronicleChapterSource = {
             blocks: [
                 {
                     type: 'paragraph',
-                    text: `By the autumn of YC125 the siege of **Auga** had been won so thoroughly that it had become a problem. The Amarr militia, the enemy Minmatar Fleet had been founded to fight, had mostly stopped turning up. "Where the fuck are Amarr at?" **BearThatCares** asked in public that November. "Y'all stopped logging in :(" An army of rats needs feeding, and the larder next door was empty.`,
+                    text: `By the autumn of YC125 the siege of **Auga** had been won so thoroughly that it had become a problem. The Amarr militia, the enemy Minmatar Fleet had been founded to fight, had mostly stopped turning up. "Where the fuck are Amarr at?" **BearThatCares** asked in public that November. "Y'all stopped logging in :("`,
                 },
                 {
                     type: 'paragraph',
-                    text: `So they went looking, and what they found in lowsec that autumn were capital ships. One morning in October Bear rolled out of bed, baited a few battleships with a cruiser fleet, and ended up holding a dreadnought he could not kill. The fleet's damage was so thin, he wrote, that "everyone went AFK to go make a pot of coffee" while it chewed. The ship he needed was a Devoter, the one cruiser that can pin a capital in place, and he did not have any.`,
+                    text: `The rats went looking for other people to fight, and the people they found flew capital ships. One morning in October Bear rolled out of bed, baited a few battleships with a cruiser fleet, and ended up holding a dreadnought he could not kill. The fleet's damage was so thin, he wrote, that "everyone went AFK to go make a pot of coffee" while it chewed. A capital ship that is losing simply jumps away unless something holds it, and the cruiser that holds it is the Devoter. He had brought none.`,
                 },
                 {
                     type: 'quote',
@@ -38,7 +38,7 @@ export const amarrCollapses: ChronicleChapterSource = {
                 },
                 {
                     type: 'paragraph',
-                    text: `Help came from an unexpected quarter. An Amarr commander named **Twan Molenaar** "reached out and joined us", more capitals arrived, and before long rats, militia and stray Amarr were holding fifteen capital ships hostage and, in Bear's phrase, "slowly papercutting them to death". He signed off with advice to everyone present. Buy a Devoter.`,
+                    text: `An Amarr commander named **Twan Molenaar** "reached out and joined us", more capitals arrived, and before long rats, militia and stray Amarr were holding fifteen capital ships hostage and, in Bear's phrase, "slowly papercutting them to death".`,
                 },
             ],
         },
@@ -56,7 +56,7 @@ export const amarrCollapses: ChronicleChapterSource = {
                 },
                 {
                     type: 'paragraph',
-                    text: `The same night BIGAB showed a few capitals in another system. Bear's order is the title of half the battle records that followed: "Fuck it, let 'er rip." Every dreadnought the rats had jumped in. They killed what was in front of them, and then, as he reported it, the last enemy ship "suddenly turned into 40 Revelation Navy Issues. Unsure on this mechanic, we're investigating."`,
+                    text: `The same night BIGAB showed a few capitals in another system. Bear's order was "Fuck it, let 'er rip." Every dreadnought the rats had jumped in. They killed what was in front of them, and then the pirates' real fleet arrived through a beacon. As Bear reported it, the last enemy ship "suddenly turned into 40 Revelation Navy Issues. Unsure on this mechanic, we're investigating."`,
                 },
                 {
                     type: 'paragraph',
@@ -74,7 +74,7 @@ export const amarrCollapses: ChronicleChapterSource = {
                 },
                 {
                     type: 'paragraph',
-                    text: `The method was not subtle. He declared war on every industrial group that paid, promised to burn their structures "with 50 armor battleships", and let it be known that the same would happen to anyone who kept paying. Within the week the mercenaries had told their tenants they could not protect them, and the rent stopped. Bear then told the miners what the rats wanted in return.`,
+                    text: `He declared war on every industrial group that paid, promised to burn their structures "with 50 armor battleships", and let it be known that the same would happen to anyone who kept paying. Within the week the mercenaries had told their tenants they could not protect them, and the rent stopped. Bear then told the miners what the rats wanted in return.`,
                 },
                 {
                     type: 'quote',
@@ -100,7 +100,7 @@ export const amarrCollapses: ChronicleChapterSource = {
             blocks: [
                 {
                     type: 'paragraph',
-                    text: `November was spent learning what dreadnoughts cost. On the eighteenth a ceremonial convoy of about a hundred militia pilots, escorting freed slaves for the storytellers among them, was jumped by a capital ship and turned into a brawl. Bear was on his couch when the text arrived. BIGAB had dreadnoughts pinned down. He pinged for capitals.`,
+                    text: `On the eighteenth of November about a hundred militia pilots were flying a ceremonial convoy, a piece of in-character theatre about freed slaves, when it was jumped by a capital ship and turned into a brawl. Bear was on his couch when the text arrived. BIGAB had dreadnoughts pinned down. He pinged for capitals.`,
                 },
                 {
                     type: 'paragraph',
@@ -112,7 +112,7 @@ export const amarrCollapses: ChronicleChapterSource = {
                 },
                 {
                     type: 'paragraph',
-                    text: `In among the pirates that month was Twan Molenaar, the helpful Amarr commander of October, now flying against the rats and killing their frigates from a battleship. They shot him when they could. By the end of December he had changed sides again. "we have Twan now," Bear told the public.`,
+                    text: `In among the pirates that month was Twan Molenaar, the helpful Amarr commander of October, now flying against the rats and killing their frigates from a battleship. By the end of December he had changed sides again. "we have Twan now," Bear told the public.`,
                 },
             ],
         },
@@ -122,7 +122,7 @@ export const amarrCollapses: ChronicleChapterSource = {
             blocks: [
                 {
                     type: 'paragraph',
-                    text: `Auga had been a home because it was the front. By December the front had moved so far into Amarr space that Auga was a long way behind it, and the militia was pushing on Sosala, which a year earlier had been the heart of the Amarr side.`,
+                    text: `By December the front had moved so far into Amarr space that Auga was a long way behind it. The militia was pushing on Sosala, which a year earlier had been the heart of the Amarr side.`,
                 },
                 {
                     type: 'paragraph',
@@ -130,7 +130,7 @@ export const amarrCollapses: ChronicleChapterSource = {
                 },
                 {
                     type: 'paragraph',
-                    text: `On the first of January Minmatar Fleet was one year old. Bear's birthday message admitted that he had only agreed to run another alliance "after a severe hangover", marvelled at the year, and announced a present. The rats were declaring "an *actual* war" on Providence, a region of nullsec, and on **CVA**, the alliance that ruled it. They would fight it from the new Fortizar, whose name appeared in the orders for the first time, misspelled, in capitals: WATERMELLON.`,
+                    text: `On the first of January Minmatar Fleet was one year old. Bear's birthday message admitted that he had only agreed to run another alliance "after a severe hangover". "it's unreal the amount of growth we've had in only a year," he wrote. Then he told two hundred and twenty people that they were declaring "an *actual* war" on Providence, a region of nullsec, and on **CVA**, the alliance that ruled it with a coalition several times their size. They would fight it from the new Fortizar, which the orders called the WATERMELLON.`,
                 },
             ],
         },
