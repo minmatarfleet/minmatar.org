@@ -643,6 +643,15 @@ The dialog surface: panel, padding, close button and header/body/footer slots.
 - Slots: `header`, `default`, `footer`
 - Stories (9): `frontend/app/rust/stories/components/overlays/Dialog.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-dialog--docs: Default, Without Close Button, Thin, Fixed, Transparent, Full Screen, Centered, Announced as a modal, Thin keeps header and footer
 
+### DialogBase
+
+The base under `AlertDialog`, `ConfirmDialog` and `Modal`: the backdrop, Escape, the focus trap (focus returns to the trigger), `role="dialog"` with `aria-modal`, the label and description wiring, the region a partial is swapped into and closing.
+
+- Import: `import DialogBase from '@components/blocks/DialogBase.astro'`
+- Props: `name: 'alert_dialog' | 'confirm_dialog' | 'modal' | 'persistent_modal'`, `titled?: boolean = false`, `persistent?: boolean = false`, `backdrop_action?: 'close' | 'cancel' = 'cancel'`, `partial_once?: boolean = false`, `partial_params?: boolean = false`, `close_button?: boolean = true`, `thin?: boolean = false`, `max_width?: string`
+- Slots: `default`
+- Stories (3): `frontend/app/rust/stories/components/overlays/DialogBase.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-dialogbase--docs: Untitled, Titled, Persistent
+
 ### DialogButton
 
 A button that opens its own dialog.
@@ -671,7 +680,8 @@ The site-wide yes/no question: one instance in the page layout, driven by `show_
 The site-wide content modal: one instance in the page layout, opened with `show_modal({ content })` for inline HTML or `show_modal({ partial, partial_params })` to load a server-rendered partial through htmx (`hx-trigger="intersect once"`, GET without params, POST with them).
 
 - Import: `import Modal from '@components/blocks/Modal.astro'`
-- Stories (5): `frontend/app/rust/stories/components/overlays/Modal.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-modal--docs: Default, Corner button closes, Backdrop click closes, Escape closes, Loads a partial through htmx
+- Props: `persistent?: boolean = false } = Astro.props`
+- Stories (8): `frontend/app/rust/stories/components/overlays/Modal.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-modal--docs: Default, Corner button closes, Backdrop click closes, Escape closes, Loads a partial through htmx, Persistent ignores backdrop clicks, Persistent closes from the corner button, Focus returns to the trigger
 
 ### Tippy
 

@@ -1,0 +1,22 @@
+---
+// Story-only wrapper: a DialogButton next to the site-wide dialogs, to show how
+// they behave when one is opened from inside another. A story renders one
+// component, so this puts the page's pieces side by side.
+import DialogButton from '@components/blocks/DialogButton.astro'
+import Modal from '@components/blocks/Modal.astro'
+import AlertDialog from '@components/blocks/AlertDialog.astro'
+import ConfirmDialog from '@components/blocks/ConfirmDialog.astro'
+import Button from '@components/blocks/Button.astro'
+---
+
+<DialogButton>
+    Edit fleet
+    <Fragment slot="dialog">
+        <h3>Edit fleet</h3>
+        <Button size="sm" type="button" x-on:click="show_modal({ content: '<p>Rifter Fleet Friday: form up in Amamake at 19:00 EVE.</p>' })">Preview fleet</Button>
+        <Button size="sm" type="button" x-on:click="show_confirm_dialog({ title: 'Cancel fleet?', content: 'Pilots will be told.' })">Cancel fleet</Button>
+    </Fragment>
+</DialogButton>
+<Modal />
+<AlertDialog />
+<ConfirmDialog />

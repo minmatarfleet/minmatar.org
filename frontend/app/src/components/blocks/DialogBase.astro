@@ -1,0 +1,211 @@
+---
+/**
+ * The one base the site-wide dialogs stand on (AlertDialog, ConfirmDialog, Modal).
+ *
+ * It owns what they all repeated: the backdrop, Escape, the focus trap (and its
+ * restore to the trigger), `role="dialog"` + `aria-modal`, the label/description
+ * wiring, the hx-* attributes of the partial region and closing. The caller
+ * supplies the buttons in the default slot.
+ *
+ * It is driven by the body-scope state `<name>_*` and `show_<name>()` from
+ * AlpineScripts, which return a promise that settles on the first click on an
+ * element carrying `<css-name>-action`.
+ */
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import Dialog from '@components/blocks/Dialog.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import TrashIcon from '@components/icons/buttons/TrashIcon.astro'
+
+interface Props {
+    /** State prefix on the body scope: `alert_dialog`, `confirm_dialog`, `modal` or `persistent_modal`. */
+    name:               'alert_dialog' | 'confirm_dialog' | 'modal' | 'persistent_modal';
+    /** A title above the content and the slot as a row of buttons below it (alert, confirm). */
+    titled?:            boolean;
+    /** Backdrop clicks do nothing; Escape and the corner button still close. */
+    persistent?:        boolean;
+    /** Value of the backdrop's action attribute. */
+    backdrop_action?:   'close' | 'cancel';
+    /** Load the partial once per opening (the modal) instead of every time it scrolls into view. */
+    partial_once?:      boolean;
+    /** The partial may be POSTed with `<name>_partial_params` (the modal). */
+    partial_params?:    boolean;
+    /** Corner close button of the Dialog. */
+    close_button?:      boolean;
+    thin?:              boolean;
+    /** `--dialog-max-width` of the dialog. */
+    max_width?:         string;
+    [propName: string]: any;
+}
+
+const {
+    name,
+    titled = false,
+    persistent = false,
+    backdrop_action = 'cancel',
+    partial_once = false,
+    partial_params = false,
+    close_button = true,
+    thin = false,
+    max_width,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const css = name.replaceAll('_', '-')
+const action = `${css}-action`
+const content_id = `${css}-description`
+const title_id = `${css}-title`
+
+// Escape and the Dialog's own corner button click the backdrop, or, when the
+// backdrop ignores clicks, the corner button of the dialog itself.
+const click_target = persistent ? `button[${action}="cancel"]` : `.${css}-backdrop`
+const dialog_x_data = `{
+    close_dialog() {
+        if (!${name}_open)
+            return
+
+        var clickEvent = new MouseEvent("click", {
+            "view": window,
+            "bubbles": true,
+            "cancelable": false
+        });
+
+        document.querySelector(${JSON.stringify(click_target)})?.dispatchEvent(clickEvent);
+    }
+}`
+
+// The region the partial is swapped into. Alpine only binds the attributes
+// htmx reads; the swap itself is htmx's, and swap_init.ts initialises what it
+// brings in.
+const content_attributes: Record<string, any> = {
+    'x-html': `${name}_content`,
+    'hx-target': `#${content_id}`,
+    'hx-indicator': '.loader',
+}
+if (partial_params) {
+    content_attributes['x-bind:hx-get'] = `${name}_partial && !${name}_partial_params ? ${name}_partial : false`
+    content_attributes['x-bind:hx-post'] = `${name}_partial && ${name}_partial_params ? ${name}_partial : false`
+    content_attributes['x-bind:hx-vals'] = `JSON.stringify({ data: JSON.stringify(${name}_partial_params) })`
+} else {
+    content_attributes['x-bind:hx-get'] = `${name}_partial ? ${name}_partial : false`
+}
+content_attributes['x-bind:hx-trigger'] = `${name}_partial ? '${partial_once ? 'intersect once' : 'intersect'}' : false`
+content_attributes['x-bind:hx-swap'] = `${name}_partial ? 'innerHTML transition:true' : false`
+if (partial_once) {
+    // The partial has arrived: drop it, so reopening with the same one loads it again.
+    content_attributes['x-on:htmx:after-swap'] = `if ($event.target === $el) { ${name}_partial = ''; ${name}_partial_params = '' }`
+}
+---
+
+<div class:list={[ `[ ${css} dialog-base ]` ]} data-dialog-base>
+    <Dialog
+        x-data={dialog_x_data}
+        @keyup.escape.window.capture={`if (${name}_open) { $event.stopImmediatePropagation(); close_dialog() }`}
+        x-effect={`${name}_shown && $nextTick(() => window.htmx?.process($el))`}
+        x-bind:class={`(${name}_open ? 'open' : '')`}
+        x-bind:aria-hidden={`${name}_open == false`}
+        x-bind:inert={`!${name}_open`}
+        x-trap={`${name}_open`}
+        aria-modal="true"
+        aria-labelledby={titled ? title_id : undefined}
+        aria-describedby={content_id}
+        close_button={close_button}
+        thin={thin}
+        breakout={true}
+        class={Astro.props.class}
+        style={max_width ? `--dialog-max-width: ${max_width}` : undefined}
+        {...attributes}
+    >
+        {titled ?
+            <Flexblock gap="var(--space-l)">
+                <Flexblock gap="var(--space-s)">
+                    <h3 id={title_id} x-text={`${name}_title`}></h3>
+                    <div id={content_id} class:list={[ `[ ${css}-content dialog-base-content ]` ]} {...content_attributes}></div>
+                </Flexblock>
+
+                <FlexInline justification='flex-end'>
+                    <slot />
+                </FlexInline>
+            </Flexblock>
+            :
+            <>
+                <div id={content_id} class:list={[ `[ ${css}-content dialog-base-content ]` ]} {...content_attributes} />
+                <button {...{ [action]: 'cancel' }} aria-label={t('close')}><TrashIcon /></button>
+                <slot />
+            </>
+        }
+    </Dialog>
+
+    <div
+        class:list={[ `${css}-backdrop dialog-base-backdrop` ]}
+        x-bind:class={`{ open: ${name}_open }`}
+        {...(persistent ? {} : { [action]: backdrop_action })}
+    />
+</div>
+
+<style lang="scss">
+    :global([alert-dialog-action] *, [confirm-dialog-action] *, [modal-action] *, [persistent-modal-action] *) {
+        pointer-events: none !important;
+    }
+
+    :global(.alert-dialog .dialog) {
+        z-index: var(--alert-z-index);
+    }
+
+    :global(.dialog-base .dialog-base-content p) {
+        font-size: var(--step--1);
+    }
+
+    .dialog-base-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: var(--backdrop-z-index);
+        display: none;
+
+        &.open {
+            display: block;
+        }
+    }
+
+    button {
+        border: none;
+        position: absolute;
+        right: 10px;
+        top: 3px;
+        display: flex;
+        background-color: transparent;
+        color: var(--highlight);
+        z-index: var(--dialog-close-z-index);
+        cursor: pointer;
+        padding: 6px 4px 20px 27px;
+
+        &:focus-visible {
+            outline: none;
+        }
+    }
+
+    :global([modal-action="cancel"] svg, [persistent-modal-action="cancel"] svg) {
+        transition: var(--fast-transition);
+        width: 12px;
+    }
+
+    :global([modal-action="cancel"]:focus-visible svg, [persistent-modal-action="cancel"]:focus-visible svg) {
+        transform: scale(1.5);
+    }
+</style>
+
+<script>
+    import { close_modal } from '@helpers/close_modal'
+
+    declare global {
+        interface Window {
+            close_modal?: typeof close_modal
+        }
+    }
+
+    window.close_modal = close_modal
+</script>

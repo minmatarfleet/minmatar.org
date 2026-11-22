@@ -32,7 +32,6 @@ import Posthog from '@components/partials/Posthog.astro';
 import FooterScripts from '@components/partials/FooterScripts.astro';
 import AlertDialog from '@components/blocks/AlertDialog.astro';
 import ConfirmDialog from '@components/blocks/ConfirmDialog.astro';
-import PersistentModal from '@components/blocks/PersistentModal.astro';
 import Modal from '@components/blocks/Modal.astro';
 import PersonaFinder from '@components/blocks/PersonasFinder.astro';
 import PageFinder from '@components/blocks/PageFinder.astro';
@@ -206,7 +205,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 			<Modal />
 		}
 		<div transition:persist>
-			<PersistentModal />
+			<Modal persistent={true} />
 		</div>
 		{components?.personas_finder &&
 			<PersonaFinder />
