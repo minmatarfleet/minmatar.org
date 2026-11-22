@@ -35,6 +35,8 @@ interface Props {
     candidates?:    UniverseStructure[];
     picked?:        UniverseStructure | null;
     error?:         string | null;
+    /** The Selected Item text as pasted, kept when it could not be read. */
+    selected_item?: string;
 }
 
 const { step, candidates = [], picked = null, error = null } = Astro.props
@@ -83,6 +85,10 @@ const VISIBLE: Record<UniverseReportStep, string[]> = {
     reinforce: ['reinforce_hour'],
     sent: [],
 }
+// Back on the first step, the paste box shows what was read, as the client copies it.
+const pasted = Astro.props.selected_item || (state.system_name && state.name
+    ? (state.name.toLowerCase().startsWith(state.system_name.toLowerCase()) ? state.name : `${state.system_name} - ${state.name}`)
+    : '')
 const carried = (Object.entries(state) as [string, string | number | null][])
     .filter(([key]) => !VISIBLE[step].includes(key))
 
@@ -101,21 +107,31 @@ import StructureHowTo from '@components/blocks/structures/StructureHowTo.astro'
     {error && <p class="[ manage-field__error ]" role="alert">{error}</p>}
 
     {step === 'find' &&
-        <div class="[ structure-add__body ]">
+        <div class="[ structure-add__body ]" x-data={`{ by_hand: ${pasted ? 'false' : String(Boolean(state.system_name))} }`}>
             <StructureHowTo topics={['name']} />
-            <div class="[ structure-add__two ]">
-                <ManageField label={t('universe.report.system')} for="universe-report-system">
-                    <Input id="universe-report-system" name="system_name" value={state.system_name} required />
-                </ManageField>
-                <ManageField label={t('universe.report.type')} for="universe-report-type">
-                    <Select id="universe-report-type" name="type_id" size="sm">
-                        {REPORTABLE_TYPES.map(([id, name]) => <option value={id} selected={state.type_id === id}>{name}</option>)}
-                    </Select>
-                </ManageField>
-            </div>
-            <ManageField label={t('universe.report.name')} for="universe-report-name">
-                <Input id="universe-report-name" name="name" value={state.name} />
+            <ManageField label={t('universe.report.type')} for="universe-report-type">
+                <Select id="universe-report-type" name="type_id" size="sm">
+                    {REPORTABLE_TYPES.map(([id, name]) => <option value={id} selected={state.type_id === id}>{name}</option>)}
+                </Select>
             </ManageField>
+            <template x-if="!by_hand">
+                <div class="[ structure-add__body ]">
+                    <ManageField label={t('universe.report.selected_item')} for="universe-report-paste">
+                        <Textarea id="universe-report-paste" name="selected_item" rows="3" placeholder={t('universe.report.selected_item_placeholder')}>{pasted}</Textarea>
+                    </ManageField>
+                    <button type="button" class="[ structure-add__link ]" x-on:click="by_hand = true">{t('universe.report.by_hand')}</button>
+                </div>
+            </template>
+            <template x-if="by_hand">
+                <div class="[ structure-add__two ]">
+                    <ManageField label={t('universe.report.system')} for="universe-report-system">
+                        <Input id="universe-report-system" name="system_name" value={state.system_name} required />
+                    </ManageField>
+                    <ManageField label={t('universe.report.name')} for="universe-report-name">
+                        <Input id="universe-report-name" name="name" value={state.name} />
+                    </ManageField>
+                </div>
+            </template>
             <div class="[ manage-actions ]">
                 <Button type="button" size="sm" color="fleet-red" {...move('match')} hx-disabled-elt="this">{t('universe.report.next')}</Button>
                 <Button type="button" size="sm" color="transparent" x-on:click="close_dialog()">{t('cancel')}</Button>

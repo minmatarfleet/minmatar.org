@@ -32,6 +32,17 @@ describe('parse_selected_item_timer', () => {
         })
     })
 
+    it('reads a jump gate as the system it stands in', () => {
+        const parsed = parse_selected_item_timer('Kamela » Amamake - Knock Knock Bridge\n3.1 AU')
+        expect(parsed.system_name).toBe('Kamela')
+        expect(parsed.name).toBe('Knock Knock Bridge')
+    })
+
+    it('reads a structure with no timer line', () => {
+        const parsed = parse_selected_item_timer('Kamela - Knock Knock\n3.1 AU')
+        expect(parsed).toMatchObject({ system_name: 'Kamela', name: 'Knock Knock', date: '' })
+    })
+
     it('returns blanks for text it cannot read', () => {
         expect(parse_selected_item_timer('')).toMatchObject({ name: '', date: '', time: '' })
         expect(parse_selected_item_timer('just words').date).toBe('')
