@@ -25,6 +25,16 @@ After appending, **fold any new durable rule into [SKILL.md](SKILL.md)**
 (Known failure classes or the workflow). If the rule already lives there,
 do not duplicate it — one clarifying clause at most.
 
+## 2026-11-22 — Tribe application notice, then nothing on the members page
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL in the thread
+**PR:** fix+skill
+**Symptom vs cause:** A pilot applied to two tribe groups. Chiefs got the request notification. About 45 minutes later both rows went inactive with reason `removed` and no actor, so the members page no longer listed them. The same second created the account's trial status, which is the Alliance affiliation save. Affiliation sync deletes the previous row before inserting the new one, and offboard ran while the account had no affiliation. There is no limit on how many groups a pilot can apply to. A group with no membership row was never submitted. One group was applied again and approved; the other is still inactive.
+**Durable rule:** Pending applications cleared with `reason=removed` and `changed_by` null, in the same second as an affiliation or trial-status write, are this gap. Offboard runs after the affiliation transaction commits. No membership row means that group was never submitted.
+**Skill update:** added the tribe-application-notice row.
+
 ## Template
 
 ```

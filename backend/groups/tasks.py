@@ -4,7 +4,7 @@ import logging
 from collections import defaultdict
 
 from django.contrib.auth.models import User
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 
 from app.celery import app
 from discord.client import DiscordClient
@@ -183,50 +183,55 @@ def _maybe_set_sole_primary_character(user):
 def _update_affiliation_for_user(user, affiliation_rules):
     logger.info("Checking affiliations for user %s", user)
 
-    primary_character = _maybe_set_sole_primary_character(user)
-    if not primary_character:
-        logger.info("No primary character found for user %s", user)
-        UserAffiliation.objects.filter(user=user).delete()
-        return
-
-    for rule in affiliation_rules:
-        affiliation = rule["affiliation"]
-        logger.info("Checking if qualified for affiliation %s", affiliation)
-        is_qualifying = _user_qualifies_for_affiliation(
-            primary_character, rule
-        )
-
-        if is_qualifying:
-            logger.info(
-                "User %s qualifies for affiliation %s",
-                user,
-                affiliation,
-            )
-            _ensure_user_affiliation(user, affiliation)
+    # One transaction so a delete-then-create swap commits together.
+    # Tribe offboarding waits for that commit and must not see the gap.
+    with transaction.atomic():
+        primary_character = _maybe_set_sole_primary_character(user)
+        if not primary_character:
+            logger.info("No primary character found for user %s", user)
+            UserAffiliation.objects.filter(user=user).delete()
             return
 
-        logger.info(
-            "User %s does not qualify for affiliation %s",
-            user,
-            affiliation,
-        )
-        if UserAffiliation.objects.filter(
-            user=user, affiliation=affiliation
-        ).exists():
+        for rule in affiliation_rules:
+            affiliation = rule["affiliation"]
             logger.info(
-                "User %s has affiliation %s, removing",
+                "Checking if qualified for affiliation %s", affiliation
+            )
+            is_qualifying = _user_qualifies_for_affiliation(
+                primary_character, rule
+            )
+
+            if is_qualifying:
+                logger.info(
+                    "User %s qualifies for affiliation %s",
+                    user,
+                    affiliation,
+                )
+                _ensure_user_affiliation(user, affiliation)
+                return
+
+            logger.info(
+                "User %s does not qualify for affiliation %s",
                 user,
                 affiliation,
             )
-            UserAffiliation.objects.filter(
+            if UserAffiliation.objects.filter(
                 user=user, affiliation=affiliation
-            ).delete()
-        else:
-            logger.info(
-                "User %s does not have affiliation %s",
-                user,
-                affiliation,
-            )
+            ).exists():
+                logger.info(
+                    "User %s has affiliation %s, removing",
+                    user,
+                    affiliation,
+                )
+                UserAffiliation.objects.filter(
+                    user=user, affiliation=affiliation
+                ).delete()
+            else:
+                logger.info(
+                    "User %s does not have affiliation %s",
+                    user,
+                    affiliation,
+                )
 
 
 @app.task
@@ -241,32 +246,36 @@ def update_affiliation(user_id: int):
 
 
 def _ensure_user_affiliation(user, affiliation):
-    UserAffiliation.objects.filter(user=user).exclude(
-        affiliation=affiliation
-    ).delete()
-    try:
-        _, created = UserAffiliation.objects.get_or_create(
-            user=user, affiliation=affiliation
-        )
-    except IntegrityError:
-        logger.info(
-            "User %s already has affiliation %s",
-            user,
-            affiliation,
-        )
-        return
-    if created:
-        logger.info(
-            "Creating affiliation for user %s with %s",
-            user,
-            affiliation,
-        )
-    else:
-        logger.info(
-            "User %s already has affiliation %s",
-            user,
-            affiliation,
-        )
+    # Delete and insert in one transaction. Offboarding is on_commit, so it
+    # sees the new affiliation rather than the moment with none.
+    with transaction.atomic():
+        UserAffiliation.objects.filter(user=user).exclude(
+            affiliation=affiliation
+        ).delete()
+        try:
+            with transaction.atomic():
+                _, created = UserAffiliation.objects.get_or_create(
+                    user=user, affiliation=affiliation
+                )
+        except IntegrityError:
+            logger.info(
+                "User %s already has affiliation %s",
+                user,
+                affiliation,
+            )
+            return
+        if created:
+            logger.info(
+                "Creating affiliation for user %s with %s",
+                user,
+                affiliation,
+            )
+        else:
+            logger.info(
+                "User %s already has affiliation %s",
+                user,
+                affiliation,
+            )
 
 
 def log_affiliation_update_error(user: User, e):
