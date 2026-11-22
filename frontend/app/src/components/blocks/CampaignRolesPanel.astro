@@ -165,6 +165,7 @@ import LocalTime from '@components/blocks/LocalTime.astro'
                                     <input type="hidden" name="kind" value={role.kind} />
                                     <div class="[ manage-picker campaign-roles__picker ]">
                                         <Combobox
+                                            id={`campaign-role-add-${role.kind}`}
                                             name="character_name"
                                             label={t('campaigns.roles.add_label').replace('{role}', role.label)}
                                             hidden_label

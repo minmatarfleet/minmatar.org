@@ -56,8 +56,8 @@ export const Coordinator = {
         await expect(canvas.getByRole('button', { name: 'Sync now' })).toBeVisible()
         await expect(canvas.getByRole('button', { name: 'Remove Henri Gray' })).toBeVisible()
         const fc = row(canvasElement, 'fc')
-        const input = fc.getAllByLabelText('Add a FC by character name').find((el) => el.getAttribute('role') === 'combobox')
-        await expect(input).toBeDefined()
+        // Each role's picker has its own id, so its label names it.
+        await expect(fc.getByRole('combobox', { name: 'Add a FC by character name' })).toHaveAttribute('id', 'campaign-role-add-fc-input')
         // Coordinators cannot point a role at another Discord role.
         await expect(canvas.queryAllByLabelText('Discord role')).toHaveLength(0)
     },
