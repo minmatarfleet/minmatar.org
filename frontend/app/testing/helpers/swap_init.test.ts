@@ -156,6 +156,8 @@ describe("one swap re-initialiser", () => {
       .sort();
 
     expect(listeners).toEqual([
+      // Ends its loading state and reads the loaded title; no re-init.
+      "components/blocks/ContentViewer.astro",
       "components/blocks/industry/guide-order-summary/OpenOrdersProfitSummary.astro",
       "pages/market/fitting_orders/[order_id].astro",
     ]);

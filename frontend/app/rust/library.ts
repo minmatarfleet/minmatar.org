@@ -29,7 +29,7 @@ export const RUST_LIBRARY = {
     'Components/Data display': [
         'blocks/Badge', 'blocks/Tag', 'blocks/NotificationBadge',
         'blocks/DebugTag', 'blocks/ComponentBlock', 'blocks/ComponentBlockHeader', 'blocks/CollapsibleBlock',
-        'blocks/CollapsableButton', 'blocks/StatCard', 'blocks/RowList', 'blocks/DataGrid', 'blocks/DataTable', 'blocks/Chart', 'blocks/Carousel', 'blocks/TextGroup',
+        'blocks/CollapsableButton', 'blocks/StatCard', 'blocks/RowList', 'blocks/DataGrid', 'blocks/DataGridSkeleton', 'blocks/DataTable', 'blocks/Chart', 'blocks/Carousel', 'blocks/TextGroup',
         'blocks/Square', 'blocks/Markdown', 'blocks/Marquee', 'blocks/SettingRow', 'blocks/NumberNameTooltip',
         'blocks/Tile', 'blocks/OptionCard', 'blocks/PictureCard',
     ],
@@ -38,7 +38,8 @@ export const RUST_LIBRARY = {
         'blocks/HtmxPager', 'blocks/FilterChip', 'blocks/ChipGroup', 'blocks/ExternalLink',
     ],
     'Components/Overlays': [
-        'blocks/Dialog', 'blocks/DialogBase', 'blocks/DialogButton', 'blocks/AlertDialog', 'blocks/ConfirmDialog', 'blocks/Modal', 'blocks/Tippy',
+        'blocks/Dialog', 'blocks/DialogBase', 'blocks/DialogButton', 'blocks/AlertDialog', 'blocks/ConfirmDialog', 'blocks/Modal',
+        'blocks/ContentViewer', 'blocks/ContentViewerLink', 'blocks/Tippy',
     ],
     'EVE': [
         'blocks/Picture', 'blocks/CharacterPicture', 'blocks/CorporationPicture', 'blocks/ItemPicture',

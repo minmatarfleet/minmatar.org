@@ -15,6 +15,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from typing import Dict, Iterable, List, NamedTuple, Optional, Sequence
 
+from django.db import connection
 from django.db.models import Max, Sum
 from django.utils import timezone
 
@@ -144,13 +145,25 @@ def get_history_averages_by_type_id(type_ids: list[int]) -> dict[int, Decimal]:
         .annotate(max_date=Max("date"))
         .values_list("item_id", "max_date")
     )
+    # Each item's latest row by (item, date) pairs, so MySQL reads them from
+    # the (region, item, date) index. `item IN (...) AND date IN (...)` makes
+    # it range-scan the (region, date) index instead: ~300k rows, seconds.
     if latest:
-        for type_id, hist_date, average in EveMarketItemHistory.objects.filter(
-            region_id=region_id,
-            item_id__in=list(latest),
-            date__in=set(latest.values()),
-        ).values_list("item_id", "date", "average"):
-            if latest.get(type_id) != hist_date or average is None:
+        pairs = list(latest.items())
+        columns = ", ".join(
+            connection.ops.quote_name(c) for c in ("item_id", "date")
+        )
+        for type_id, average in (
+            EveMarketItemHistory.objects.filter(region_id=region_id)
+            .extra(
+                where=[
+                    f"({columns}) IN ({', '.join(['(%s, %s)'] * len(pairs))})"
+                ],
+                params=[value for pair in pairs for value in pair],
+            )
+            .values_list("item_id", "average")
+        ):
+            if average is None:
                 continue
             prices[int(type_id)] = Decimal(str(average))
 

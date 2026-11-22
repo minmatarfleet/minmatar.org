@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone as dt_timezone
 from typing import Any, Iterable
-from urllib.parse import unquote
+from urllib.parse import unquote, urlparse
 
 import requests
 from django.contrib.auth.models import User
@@ -113,6 +113,9 @@ def candidate_from_reddit(
             permalink=permalink,
             image_url=image_url,
             selftext=selftext,
+            image_urls=item.get("image_urls"),
+            video_embed_url=item.get("video_embed_url") or "",
+            title=title,
         )
         url = permalink
     seo = (selftext or title).replace("\n", " ").strip()[:300]
@@ -171,11 +174,27 @@ def youtube_id_from_url(url: str) -> str | None:
 
 
 def reddit_post_content(
-    *, permalink: str, image_url: str, selftext: str
+    *,
+    permalink: str,
+    image_url: str,
+    selftext: str,
+    image_urls: list[str] | None = None,
+    video_embed_url: str = "",
+    title: str = "",
 ) -> str:
+    """A Reddit post as an EvePost body. A Reddit-hosted video becomes
+    Reddit's embedded player, with its still kept (hidden) as the card
+    image; a gallery keeps every image in order."""
     parts: list[str] = []
-    if image_url:
-        parts.append(f"![image]({image_url})")
+    if video_embed_url:
+        if image_url:
+            parts.append(
+                f'<div class="hidden">\n![image]({image_url})\n</div>'
+            )
+        parts.append(reddit_video_embed(video_embed_url, title))
+    else:
+        for url in image_urls or ([image_url] if image_url else []):
+            parts.append(f"![image]({url})")
     if selftext:
         parts.append(rewrite_reddit_inline_images(selftext))
     if permalink:
@@ -187,6 +206,15 @@ _REDDIT_IMAGE_URL = (
     r"https://(?:preview\.redd\.it|external-preview\.redd\.it|"
     r"i\.redd\.it|i\.imgur\.com)/[^\s)]+"
 )
+
+
+def reddit_video_embed(embed_url: str, title: str = "") -> str:
+    label = html.escape(title or "Reddit video", quote=True)
+    return (
+        f'<iframe class="reddit-embed" src="{embed_url}" title="{label}" '
+        'loading="lazy" allowfullscreen scrolling="no" '
+        'style="width:100%;aspect-ratio:4/3;border:0"></iframe>'
+    )
 
 
 def rewrite_reddit_inline_images(text: str) -> str:
@@ -300,6 +328,8 @@ def parse_reddit_child(
         "removed": bool(data.get("removed_by_category")),
         "selftext": data.get("selftext") or "",
         "image_url": reddit_image_url(data),
+        "image_urls": reddit_image_urls(data),
+        "video_embed_url": reddit_video_embed_url(data, permalink),
         "published_at": published,
     }
 
@@ -325,6 +355,35 @@ def reddit_image_url(data: dict[str, Any]) -> str:
         if source:
             return source
     return ""
+
+
+def reddit_image_urls(data: dict[str, Any]) -> list[str]:
+    """Every image of a gallery post in gallery order; otherwise the one
+    image (or none). A gallery used to import as its first image only."""
+    gallery = data.get("gallery_data") or {}
+    metadata = data.get("media_metadata") or {}
+    urls = []
+    for item in gallery.get("items") or []:
+        meta = metadata.get(item.get("media_id")) or {}
+        source = _clean_media_url((meta.get("s") or {}).get("u") or "")
+        if source:
+            urls.append(source)
+    if urls:
+        return urls
+    single = reddit_image_url(data)
+    return [single] if single else []
+
+
+def reddit_video_embed_url(data: dict[str, Any], permalink: str) -> str:
+    """Reddit's own player for a video hosted on Reddit (v.redd.it): it
+    plays the sound too, which the bare video file does not carry."""
+    media = data.get("secure_media") or data.get("media") or {}
+    if not (data.get("is_video") or media.get("reddit_video")):
+        return ""
+    path = urlparse(permalink).path if permalink else ""
+    if not path:
+        return ""
+    return f"https://embed.reddit.com{path}?embed=true&theme=dark"
 
 
 def _looks_like_image(url: str) -> bool:

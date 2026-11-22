@@ -1,4 +1,4 @@
-"""The /landing-new heartbeat and week table: totals, the Live band's pilot
+"""The homepage heartbeat and week table: totals, the Live band's pilot
 lines, Fleet activity engagements, mining from ledger deltas and the 60-minute
 delay on fleets and comms."""
 
@@ -15,6 +15,7 @@ from discord.models import DiscordChannelActivityRecord, DiscordUser
 from eveonline.constants import (
     AMARR_FACTION_ID,
     MINMATAR_FLEET_ALLIANCE_ID,
+    MINMATAR_FLEET_ASSOCIATES_ALLIANCE_ID,
 )
 from eveonline.helpers.characters import set_primary_character
 from eveonline.helpers.characters.mining import _record_delta
@@ -25,7 +26,8 @@ from eveonline.models import (
     EveCharacterKillmailAttacker,
     EveCharacterMiningDelta,
 )
-from eveuniverse.models import EveCategory, EveGroup, EveType
+from eveuniverse.models import EveCategory, EveGroup, EveMarketPrice, EveType
+from feed.models import FeedKillmail
 from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
 from fleets.tests import disconnect_fleet_signals
 
@@ -405,6 +407,159 @@ class LandingPulseTestCase(TestCase):
         )
         self.assertEqual(len(build_week(self.now)["tabs"]["mining"]), 1)
 
+    def test_one_sync_of_many_ores_is_one_line(self):
+        veldspar = self._ore()
+        group = veldspar.eve_group
+        grades = []
+        for type_id, name in (
+            (17470, "Veldspar II-Grade"),
+            (1228, "Scordite"),
+            (17463, "Scordite II-Grade"),
+            (20, "Kernite"),
+            (18, "Plagioclase"),
+            (1224, "Pyroxeres"),
+        ):
+            ore, _ = EveType.objects.get_or_create(
+                id=type_id,
+                defaults={
+                    "name": name,
+                    "published": True,
+                    "eve_group": group,
+                    "volume": 0.1,
+                },
+            )
+            grades.append(ore)
+        when = self.now - timedelta(minutes=30)
+        for ore, quantity in zip(
+            [veldspar, *grades], (100, 900, 400, 300, 200, 150, 50)
+        ):
+            EveCharacterMiningDelta.objects.create(
+                character=self.pilot,
+                eve_type=ore,
+                solar_system_id=30002537,
+                quantity=quantity,
+                observed_at=when,
+            )
+
+        rows = build_week(self.now)["tabs"]["mining"]
+
+        # Veldspar and Veldspar II-Grade are one ore; five ores in all, named
+        # biggest first on hover.
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["verb"], "mined 210 m³ of")
+        self.assertEqual(rows[0]["subject"], "5 ores")
+        self.assertEqual(rows[0]["subject_id"], 17470)
+        self.assertEqual(rows[0]["tail"], "")
+        self.assertEqual(
+            rows[0]["detail"],
+            "Veldspar, Scordite, Kernite, Plagioclase, Pyroxeres",
+        )
+
+    def _feed_mail(self, killmail_id, ago, attackers, victim):
+        return FeedKillmail.objects.create(
+            killmail_id=killmail_id,
+            hash=f"f{killmail_id}",
+            killmail_time=self.now - ago,
+            solar_system_id=30002537,
+            victim_character_id=victim.get("character_id"),
+            victim_ship_type_id=587,
+            attacker_summary=attackers,
+            raw_killmail={"victim": {**victim, "items": []}},
+        )
+
+    def test_fresh_kills_come_from_the_feed(self):
+        # The ESI sync hasn't caught up with these yet; the zKill feed has.
+        ours = {"alliance_id": MINMATAR_FLEET_ALLIANCE_ID}
+        self._feed_mail(
+            900,
+            timedelta(minutes=5),
+            [
+                {**ours, "character_id": self.pilot.character_id},
+                {**ours, "character_id": self.wingman.character_id},
+            ],
+            {"character_id": 9001, "alliance_id": ENEMY_ALLIANCE_ID},
+        )
+        # A mail with none of ours on it stays out.
+        self._feed_mail(
+            901,
+            timedelta(minutes=6),
+            [{"character_id": 9100, "alliance_id": OTHER_ENEMY_ALLIANCE_ID}],
+            {"character_id": 9002, "alliance_id": ENEMY_ALLIANCE_ID},
+        )
+
+        week = build_week(self.now)["tabs"]
+
+        self.assertEqual(
+            [(r["character_name"], r["verb"]) for r in week["kills"]],
+            [("Orion Sa-Solo", "killed a")],
+        )
+        self.assertEqual(week["kills"][0]["others"], 1)
+        self.assertEqual(len(week["fights"]), 1)
+        self.assertEqual(week["fights"][0]["subject"], "Snuffed Out")
+
+    def test_feed_and_esi_copies_of_a_mail_count_once(self):
+        self._killmail(
+            41,
+            950,
+            self.pilot,
+            timedelta(minutes=30),
+            victim_character_id=9001,
+            victim_alliance_id=ENEMY_ALLIANCE_ID,
+        )
+        self._feed_mail(
+            950,
+            timedelta(minutes=30),
+            [
+                {
+                    "character_id": self.pilot.character_id,
+                    "alliance_id": MINMATAR_FLEET_ALLIANCE_ID,
+                }
+            ],
+            {"character_id": 9001, "alliance_id": ENEMY_ALLIANCE_ID},
+        )
+
+        self.assertEqual(len(build_week(self.now)["tabs"]["kills"]), 1)
+
+    def test_associates_are_ours_not_the_enemy(self):
+        # Two BUILD pilots lose ships; BUILD wingmen whored on the mails
+        # alongside the hostiles. BUILD is the alt alliance: the losses are
+        # ours and the side we fought is the hostile one.
+        for row_id, killmail_id, character in (
+            (31, 620, self.pilot),
+            (32, 621, self.wingman),
+        ):
+            row = self._killmail(
+                row_id,
+                killmail_id,
+                character,
+                timedelta(hours=2),
+                victim_character_id=character.character_id,
+                victim_alliance_id=MINMATAR_FLEET_ASSOCIATES_ALLIANCE_ID,
+            )
+            for attacker_alliance, count in (
+                (MINMATAR_FLEET_ASSOCIATES_ALLIANCE_ID, 3),
+                (ENEMY_ALLIANCE_ID, 1),
+            ):
+                for _ in range(count):
+                    EveCharacterKillmailAttacker.objects.create(
+                        killmail=row, alliance_id=attacker_alliance
+                    )
+
+        rows = build_week(self.now)["tabs"]["fights"]
+
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["subject"], "Snuffed Out")
+        self.assertEqual(
+            {r["subject"] for r in build_week(self.now)["tabs"]["kills"]},
+            {"Rifter"},
+        )
+        self.assertTrue(
+            all(
+                r["verb"].startswith("lost")
+                for r in build_week(self.now)["tabs"]["kills"]
+            )
+        )
+
     def test_fleet_activity_groups_a_gang_and_skips_solo(self):
         # Two of ours on two kills in the same system within 20 minutes...
         for row_id, killmail_id, character, ago in (
@@ -435,7 +590,32 @@ class LandingPulseTestCase(TestCase):
         self.assertEqual(rows[0]["others"], 1)
         self.assertEqual(rows[0]["verb"], "fought")
         self.assertEqual(rows[0]["subject"], "Snuffed Out")
-        self.assertTrue(rows[0]["tail"].startswith("· Small gang · 2 kills"))
+        # No market prices in the test DB, so nothing to value yet.
+        self.assertEqual(rows[0]["amount"], 0)
+
+    def test_fleet_activity_tail_is_isk_destroyed(self):
+        EveMarketPrice.objects.create(
+            eve_type=EveType.objects.get(id=587), average_price=1_250_000.0
+        )
+        for row_id, killmail_id, character in (
+            (21, 610, self.pilot),
+            (22, 610, self.wingman),
+            (23, 611, self.wingman),
+        ):
+            self._killmail(
+                row_id,
+                killmail_id,
+                character,
+                timedelta(hours=2),
+                victim_character_id=9001,
+                victim_alliance_id=ENEMY_ALLIANCE_ID,
+            )
+
+        rows = build_week(self.now)["tabs"]["fights"]
+
+        # Two kills (one shared by both pilots), each hull 1.25M.
+        self.assertEqual(rows[0]["amount"], 2_500_000)
+        self.assertEqual(rows[0]["tail"], "")
 
     def test_week_pages_twelve_rows(self):
         for index in range(13):

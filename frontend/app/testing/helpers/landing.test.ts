@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 
 import type { LandingEvent } from '@dtypes/api.minmatar.org'
-import { bar_heights, dedupe_posts, eve_clock, eve_day, event_who, format_number, short_number, stat_steps, subject_icon } from '@helpers/landing'
+import { amount_grade, bar_heights, dedupe_posts, eve_clock, eve_day, event_who, format_number, subject_icon } from '@helpers/landing'
 
 const event = (others: number): LandingEvent => ({
     occurred_at: '2026-11-21T17:58:00Z',
@@ -16,6 +16,7 @@ const event = (others: number): LandingEvent => ({
     subject_type: 'alliance',
     subject_id: 99000001,
     tail: 'and won',
+    detail: '',
     amount: 0,
 })
 
@@ -33,21 +34,13 @@ describe('landing helpers', () => {
         expect(subject_icon({ subject_type: '', subject_id: 0 })).toBeNull()
     })
 
-    test('the 24-hour numbers step up to the totals as lines land', () => {
-        const kill = { ...event(0), kind: 'kill', subject_type: 'type' }
-        const complex = { ...event(0), kind: 'site', verb: 'captured a complex' }
-        const mining = { ...event(0), kind: 'mining', amount: 42000 }
-        const totals = { ships_destroyed: 10, warzone_sites: 5, complexes: 2, mined_volume: 100000 }
-        const steps = stat_steps(totals, [kill, kill, complex, mining], 1)
-        expect(steps[0]).toEqual({ ships_destroyed: 10, warzone_sites: 4, complexes: 1, mined_volume: 58000 })
-        expect(steps.at(-1)).toEqual(totals)
-        expect(steps).toHaveLength(3)
-    })
-
-    test('big numbers are short', () => {
-        expect(short_number(17664013)).toBe('17.7M')
-        expect(short_number(367680)).toBe('368K')
-        expect(short_number(950)).toBe('950')
+    test('amounts grade from muted to the biggest', () => {
+        expect(amount_grade('isk', 4_000_000)).toBe(0)
+        expect(amount_grade('isk', 352_000_000)).toBe(1)
+        expect(amount_grade('isk', 1_600_000_000)).toBe(2)
+        expect(amount_grade('isk', 9_200_000_000)).toBe(3)
+        expect(amount_grade('lp', 10_000)).toBe(1)
+        expect(amount_grade('lp', 52_500)).toBe(3)
     })
 
     test('times are EVE time', () => {

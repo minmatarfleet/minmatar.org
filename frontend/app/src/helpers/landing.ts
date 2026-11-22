@@ -49,49 +49,6 @@ export function subject_icon(event: Pick<LandingEvent, 'subject_type' | 'subject
     }
 }
 
-export interface LandingDayStats {
-    ships_destroyed: number;
-    warzone_sites: number;
-    complexes: number;
-    mined_volume: number;
-}
-
-/** What one Live line adds to the 24-hour numbers. */
-export function stat_adds(event: LandingEvent): Partial<LandingDayStats> {
-    if (event.kind === 'kill') return { ships_destroyed: 1 }
-    if (event.kind === 'site') return event.verb === 'captured a complex' ? { warzone_sites: 1, complexes: 1 } : { warzone_sites: 1 }
-    if (event.kind === 'mining') return { mined_volume: event.amount ?? 0 }
-    return {}
-}
-
-/**
- * The 24-hour numbers after each step of the Live band's playback. `played`
- * is oldest first; `totals` already include every line, so step 0 is the
- * totals minus whatever is still to play, and the last step is the totals.
- */
-export function stat_steps(totals: LandingDayStats, played: LandingEvent[], start: number): LandingDayStats[] {
-    const keys = Object.keys(totals) as (keyof LandingDayStats)[]
-    const current = { ...totals }
-    for (const event of played.slice(start + 1)) {
-        const adds = stat_adds(event)
-        for (const key of keys) current[key] -= adds[key] ?? 0
-    }
-    const steps = [{ ...current }]
-    for (const event of played.slice(start + 1)) {
-        const adds = stat_adds(event)
-        for (const key of keys) current[key] += adds[key] ?? 0
-        steps.push({ ...current })
-    }
-    return steps
-}
-
-/** 17.7M / 368K / 950 */
-export function short_number(value: number): string {
-    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`
-    if (value >= 10_000) return `${Math.round(value / 1000)}K`
-    return format_number(value)
-}
-
 export function character_portrait(character_id: number, size = 64): string {
     return `https://images.evetech.net/characters/${character_id}/portrait?size=${size}`
 }
@@ -130,3 +87,36 @@ export function dedupe_posts<T extends { title: string; image?: string }>(posts:
     }
     return kept
 }
+
+/** "A Week Of Minmatar Fleet": the last column. Fleet activity shows what
+ * each fight destroyed, Warzone the LP each site paid; the other tabs show
+ * where it happened. */
+export function week_last_column(tab: string): 'isk' | 'lp' | 'region' {
+    if (tab === 'fights') return 'isk'
+    if (tab === 'warzone') return 'lp'
+    return 'region'
+}
+
+/** Thresholds for the last column's colour grade: below the first is grade
+ * 0 (muted), past each next one a grade brighter, up to 3. */
+const AMOUNT_GRADES = {
+    isk: [100_000_000, 1_000_000_000, 5_000_000_000],
+    lp: [10_000, 25_000, 50_000],
+} as const
+
+/** 0 (small, muted) to 3 (biggest), so big fights and fat payouts stand out. */
+export function amount_grade(column: 'isk' | 'lp', value: number): 0 | 1 | 2 | 3 {
+    return AMOUNT_GRADES[column].filter((step) => value >= step).length as 0 | 1 | 2 | 3
+}
+
+export const WEEK_LAST_LABELS = {
+    isk: 'landing_new.week_isk',
+    lp: 'landing_new.week_lp',
+    region: 'landing_new.week_region',
+} as const
+
+/** "A Week Of Minmatar Fleet": the grid the partial and its skeleton share. */
+export const WEEK_GRID = {
+    template: '9rem minmax(0, 1fr) 8rem',
+    rows: 12,
+} as const

@@ -4,6 +4,10 @@ const { t } = i18n(Astro.url)
 
 import { eve_day } from '@helpers/landing'
 
+import Button from '@components/blocks/Button.astro'
+import ContentViewerLink from '@components/blocks/ContentViewerLink.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
+
 export interface LandingReelItem {
     kicker:         string;
     occurred_at:    string;
@@ -12,6 +16,8 @@ export interface LandingReelItem {
     value?:         string;
     unit?:          string;
     href?:          string;
+    /** A post opens in the page's ContentViewer instead of navigating. */
+    post_id?:       number;
 }
 
 interface Props {
@@ -55,19 +61,19 @@ const pad = (n: number) => String(n).padStart(2, '0')
                 <span class="landing-reel__count">
                     <strong x-text="String(index + 1).padStart(2, '0')">01</strong> / {pad(items.length)}
                 </span>
-                <button type="button" aria-label={t('landing_new.reel_newer')} x-on:click="go(index - 1)">‹</button>
-                <button type="button" aria-label={t('landing_new.reel_older')} x-on:click="go(index + 1)">›</button>
+                <Button size="sm" outline={true} narrow={true} type="button" off_disable={true} class="[ landing-reel__arrow ]" aria-label={t('landing_new.reel_newer')} x-on:click="go(index - 1)">‹</Button>
+                <Button size="sm" outline={true} narrow={true} type="button" off_disable={true} class="[ landing-reel__arrow ]" aria-label={t('landing_new.reel_older')} x-on:click="go(index + 1)">›</Button>
             </div>
         </div>
 
         <div class="landing-reel__stage" aria-live="polite">
-            {items.map((item, index) =>
-                <a
-                    class="landing-reel__slide"
-                    href={item.href}
-                    x-show={`index === ${index}`}
-                    style={index === 0 ? undefined : 'display: none;'}
-                >
+            {items.map((item, index) => {
+                const slide = {
+                    class: 'landing-reel__slide',
+                    'x-show': `index === ${index}`,
+                    style: index === 0 ? undefined : 'display: none;',
+                }
+                const body = <Fragment>
                     <img src={item.image} alt="" loading={index === 0 ? 'eager' : 'lazy'} />
                     <span class="landing-reel__copy">
                         <span class="landing-reel__meta">
@@ -80,24 +86,27 @@ const pad = (n: number) => String(n).padStart(2, '0')
                             : <span class="landing-reel__read">{t('landing_new.reel_read')}</span>
                         }
                     </span>
-                </a>
-            )}
+                </Fragment>
+                return item.post_id !== undefined && item.href
+                    ? <ContentViewerLink href={item.href} post={item.post_id} title={item.title} {...slide}>{body}</ContentViewerLink>
+                    : <a href={item.href} {...slide}>{body}</a>
+            })}
         </div>
 
         <ol class="landing-reel__strip">
             {items.map((item, index) =>
                 <li>
-                    <button
+                    <StylessButton
                         type="button"
+                        class:list={['[ landing-reel__thumb ]', { 'is-current': index === 0 }]}
                         x-on:click={`go(${index})`}
                         x-bind:aria-current={`index === ${index} ? 'true' : 'false'`}
                         x-bind:class={`{ 'is-current': index === ${index} }`}
-                        class:list={[{ 'is-current': index === 0 }]}
                     >
                         <img src={item.image} alt="" loading="lazy" />
                         <span class="landing-reel__strip-date">{eve_day(item.occurred_at)}</span>
                         <span class="landing-reel__strip-title">{item.title}</span>
-                    </button>
+                    </StylessButton>
                 </li>
             )}
         </ol>
@@ -142,20 +151,17 @@ const pad = (n: number) => String(n).padStart(2, '0')
         align-items: center;
         gap: var(--space-xs);
 
-        button {
-            width: var(--space-xl);
-            height: var(--space-xl);
-            background: transparent;
-            color: var(--fleet-yellow);
-            border: 1px solid var(--hairline-strong);
-            font-size: var(--step-2);
-            cursor: pointer;
-        }
+    }
+
+    // Square arrows: Button (outline), sized to the counter beside them.
+    .landing-reel__controls :global(.landing-reel__arrow) {
+        min-width: var(--space-xl);
+        font-size: var(--step-1);
     }
 
     .landing-reel__count {
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
         font-variant-numeric: tabular-nums;
 
         strong {
@@ -189,7 +195,7 @@ const pad = (n: number) => String(n).padStart(2, '0')
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(90deg, var(--background) 0%, color-mix(in srgb, var(--background) 70%, transparent) 40%, transparent 80%);
+            background: linear-gradient(90deg, var(--background) 0%, color-mix(in srgb, var(--background) var(--tint-heavy), transparent) 40%, transparent 80%);
         }
     }
 
@@ -215,7 +221,7 @@ const pad = (n: number) => String(n).padStart(2, '0')
         text-transform: uppercase;
 
         span:last-child {
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
@@ -227,7 +233,7 @@ const pad = (n: number) => String(n).padStart(2, '0')
     }
 
     .landing-reel__value {
-        color: var(--text-muted);
+        color: var(--faded);
 
         strong {
             font-family: var(--heading-font);
@@ -246,10 +252,10 @@ const pad = (n: number) => String(n).padStart(2, '0')
         padding: 0;
         list-style: none;
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
         gap: var(--space-xs);
 
-        button {
+        :global(.landing-reel__thumb) {
             width: 100%;
             display: flex;
             flex-direction: column;
@@ -257,7 +263,7 @@ const pad = (n: number) => String(n).padStart(2, '0')
             padding: 0;
             background: transparent;
             border: 0;
-            border-top: 3px solid var(--hairline-strong);
+            border-top: 3px solid var(--border-color-hover);
             color: inherit;
             text-align: start;
             cursor: pointer;
@@ -287,7 +293,7 @@ const pad = (n: number) => String(n).padStart(2, '0')
         font-weight: 600;
         letter-spacing: 0.1em;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .landing-reel__strip-title {

@@ -20,11 +20,14 @@ from creators.post_import import (
     import_recent_creator_posts,
     parse_youtube_playlist_item,
     partition_candidates,
+    parse_reddit_child,
     reddit_image_url,
+    reddit_image_urls,
     reddit_post_content,
     rewrite_reddit_inline_images,
     youtube_post_content,
 )
+from creators.reddit_media_backfill import backfill_reddit_media
 from posts.models import EvePost, EveTag
 
 
@@ -49,6 +52,68 @@ class CreatorPostImportTestCase(TestCase):
             }
         )
         self.assertEqual(url, "https://preview.redd.it/x.png?width=100&s=1")
+
+    def test_gallery_keeps_every_image_in_order(self):
+        data = {
+            "gallery_data": {"items": [{"media_id": "b"}, {"media_id": "a"}]},
+            "media_metadata": {
+                "a": {"s": {"u": "https://preview.redd.it/a.png?w=1&amp;s=2"}},
+                "b": {"s": {"u": "https://preview.redd.it/b.png"}},
+            },
+        }
+        self.assertEqual(
+            reddit_image_urls(data),
+            [
+                "https://preview.redd.it/b.png",
+                "https://preview.redd.it/a.png?w=1&s=2",
+            ],
+        )
+        content = reddit_post_content(
+            permalink="https://www.reddit.com/r/Eve/comments/g1/x/",
+            image_url="https://preview.redd.it/b.png",
+            selftext="",
+            image_urls=reddit_image_urls(data),
+        )
+        self.assertEqual(content.count("![image]("), 2)
+
+    def test_reddit_video_imports_as_reddit_player(self):
+        item = parse_reddit_child(
+            {
+                "id": "1xnjsr1",
+                "created_utc": _published().timestamp(),
+                "title": "Goons foolproof plan",
+                "permalink": "/r/Eve/comments/1xnjsr1/goons_foolproof_plan/",
+                "url": "https://v.redd.it/abc123",
+                "subreddit": "Eve",
+                "is_video": True,
+                "secure_media": {"reddit_video": {"hls_url": "x"}},
+                "preview": {
+                    "images": [
+                        {
+                            "source": {
+                                "url": "https://external-preview.redd.it/p.png"
+                            }
+                        }
+                    ]
+                },
+            },
+            datetime(2020, 1, 1, tzinfo=dt_timezone.utc),
+        )
+        self.assertEqual(
+            item["video_embed_url"],
+            "https://embed.reddit.com/r/Eve/comments/1xnjsr1/goons_foolproof_plan/"
+            "?embed=true&theme=dark",
+        )
+        content = candidate_from_reddit(
+            {**item, "subreddit": "eve"}, "creator"
+        ).content
+        # The still stays as the card image; the player plays it.
+        self.assertIn(
+            '<div class="hidden">\n![image](https://external-preview.redd.it/p.png)',
+            content,
+        )
+        self.assertIn('<iframe class="reddit-embed"', content)
+        self.assertIn("[Posted on Reddit](", content)
 
     def test_reddit_image_url_prefers_i_reddit(self):
         url = reddit_image_url({"url": "https://i.redd.it/poster.png"})
@@ -401,3 +466,70 @@ class CreatorPostImportTestCase(TestCase):
         self.assertEqual(
             list(post.tags.values_list("tag", flat=True)), ["Propaganda"]
         )
+
+
+class RedditMediaBackfillTestCase(TestCase):
+    def setUp(self):
+        self.user = User.objects.create(username="creator")
+
+    def _post(self, title, content):
+        return EvePost.objects.create(
+            title=title,
+            slug=title.lower().replace(" ", "-"),
+            content=content,
+            user=self.user,
+            state="published",
+        )
+
+    @patch("creators.reddit_media_backfill.org_reddit_token", return_value="t")
+    @patch("creators.reddit_media_backfill._fetch")
+    def test_rebuilds_galleries_and_videos_only(self, fetch, token):
+        gallery = self._post(
+            "Gallery",
+            "![image](https://preview.redd.it/1.png)\n\n"
+            "[Posted on Reddit](https://www.reddit.com/r/Eve/comments/g1/gallery/)\n",
+        )
+        single = self._post(
+            "Single",
+            "![image](https://i.redd.it/s.png)\n\n"
+            "[Posted on Reddit](https://www.reddit.com/r/Eve/comments/s1/single/)\n",
+        )
+        created = _published().timestamp()
+        fetch.return_value = {
+            "g1": {
+                "id": "g1",
+                "created_utc": created,
+                "title": "Gallery",
+                "permalink": "/r/Eve/comments/g1/gallery/",
+                "url": "https://www.reddit.com/gallery/g1",
+                "gallery_data": {
+                    "items": [{"media_id": "a"}, {"media_id": "b"}]
+                },
+                "media_metadata": {
+                    "a": {"s": {"u": "https://preview.redd.it/1.png"}},
+                    "b": {"s": {"u": "https://preview.redd.it/2.png"}},
+                },
+            },
+            "s1": {
+                "id": "s1",
+                "created_utc": created,
+                "title": "Single",
+                "permalink": "/r/Eve/comments/s1/single/",
+                "url": "https://i.redd.it/s.png",
+            },
+        }
+
+        dry = backfill_reddit_media()
+        token.assert_called_once()
+        self.assertEqual(
+            [(f.post_id, f.reason) for f in dry],
+            [(gallery.id, "gallery of 2")],
+        )
+        gallery.refresh_from_db()
+        self.assertEqual(gallery.content.count("![image]("), 1)
+
+        backfill_reddit_media(apply=True)
+        gallery.refresh_from_db()
+        single.refresh_from_db()
+        self.assertEqual(gallery.content.count("![image]("), 2)
+        self.assertEqual(single.content.count("![image]("), 1)

@@ -62,7 +62,10 @@ class LandingEvent(Schema):
     subject_type: str = ""
     subject_id: int = 0
     tail: str = ""
-    # m³ for a mining line; 0 otherwise.
+    # Shown on hover over the subject: the ores of a many-ore mining line.
+    detail: str = ""
+    # m³ for a mining line, ISK destroyed for a fight, LP for a warzone
+    # site; 0 otherwise.
     amount: int = 0
 
 

@@ -27480,6 +27480,11 @@
             "title": "Character Name",
             "type": "string"
           },
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          },
           "kind": {
             "title": "Kind",
             "type": "string"

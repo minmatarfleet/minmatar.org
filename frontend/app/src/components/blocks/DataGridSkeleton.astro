@@ -1,0 +1,152 @@
+---
+/**
+ * Loading state for a DataGrid: the real header and the same column template,
+ * with shimmering bars where the rows will be, so the table arrives without
+ * the page jumping. Put it in a LazyPartial (or any slot an htmx partial
+ * replaces) with the same `columns`, `template` and `rows` as the grid it
+ * stands in for.
+ *
+ * - `media`: column indexes that start with a portrait or icon square.
+ * - `numeric`: column indexes whose bar is short and right-aligned.
+ * - `stack`: like DataGrid's, phones drop the header and each row becomes a
+ *   card; its media bar there is a few lines tall, as wrapped text is.
+ * - `pager`: a bar under the grid where an HtmxPager will be.
+ */
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+interface Props {
+    columns:            string[];
+    template:           string;
+    rows?:              number;
+    media?:             number[];
+    numeric?:           number[];
+    min_width?:         string;
+    variant?:           'compact' | 'ledger';
+    stack?:             boolean;
+    pager?:             boolean;
+    [propName: string]: any;
+}
+
+const {
+    columns,
+    template,
+    rows = 8,
+    media = [],
+    numeric = [],
+    min_width = '38rem',
+    variant = 'compact',
+    stack = false,
+    pager = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+// Vary the bar lengths a little so the rows don't read as one block.
+const WIDTHS = ['70%', '55%', '82%', '62%', '48%', '76%']
+
+import DataGrid from '@components/blocks/DataGrid.astro'
+---
+
+<div
+    class:list={['[ data-grid-skeleton ]', Astro.props.class]}
+    aria-busy="true"
+    aria-label={t('loading')}
+    {...attributes}
+>
+    <DataGrid
+        columns={columns}
+        template={template}
+        numeric={numeric}
+        min_width={min_width}
+        variant={variant}
+        stack={stack}
+    >
+        {Array.from({ length: rows }, (_, row) =>
+            <div class="[ data-grid-row data-grid-skeleton__row ]" role="row" aria-hidden="true">
+                {columns.map((_, column) =>
+                    <span
+                        role="cell"
+                        class:list={[
+                            'data-grid-skeleton__cell',
+                            { 'data-grid-numeric': numeric.includes(column) },
+                        ]}
+                    >
+                        {media.includes(column) && <span class="[ skel skel-media ]"></span>}
+                        <span
+                            class="[ skel skel-bar ]"
+                            style={`width: ${numeric.includes(column) ? '40%' : WIDTHS[(row + column) % WIDTHS.length]}`}
+                        ></span>
+                    </span>
+                )}
+            </div>
+        )}
+    </DataGrid>
+    {pager &&
+        <div class="[ data-grid-skeleton__pager ]" aria-hidden="true">
+            <span class="[ skel skel-bar ]" style="width: var(--space-3xl)"></span>
+            <span class="[ skel skel-button ]"></span>
+        </div>
+    }
+</div>
+
+<style lang="scss" is:global>
+    @use '../../styles/mixins/skeleton';
+
+    .data-grid-skeleton .skel {
+        display: block;
+        border-radius: 2px;
+        @include skeleton.shimmer;
+    }
+
+    .data-grid-skeleton__cell {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-width: 0;
+    }
+
+    .data-grid-skeleton__cell.data-grid-numeric {
+        justify-content: flex-end;
+    }
+
+    .data-grid-skeleton .skel-media {
+        flex: none;
+        width: var(--space-m);
+        height: var(--space-m);
+    }
+
+    .data-grid-skeleton .skel-bar {
+        height: var(--step--1);
+    }
+
+    .data-grid-skeleton__pager {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-s);
+        padding: var(--space-s) var(--space-l);
+        border-top: 1px solid var(--border-color);
+    }
+
+    // A small Button's height, wide enough for Previous / pages / Next.
+    .data-grid-skeleton .skel-button {
+        width: calc(var(--space-3xl) * 2);
+        height: calc(var(--space-l) + var(--space-2xs));
+    }
+
+    @media (max-width: 48rem) {
+        .data-grid-skeleton .data-grid--stack .data-grid-skeleton__row {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .data-grid-skeleton .data-grid--stack .skel-media + .skel-bar {
+            height: calc(var(--space-m) * 2);
+        }
+
+        .data-grid-skeleton__pager {
+            padding-inline: var(--space-m);
+        }
+    }
+</style>

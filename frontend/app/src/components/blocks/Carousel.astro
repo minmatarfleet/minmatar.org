@@ -217,3 +217,15 @@ import FlexInline from '@components/compositions/FlexInline.astro'
     </Wrapper>
 }
 
+<style is:global>
+    /* nav_tone: the arrows' and bullets' colour, through Swiper's own
+       variable, so a caller that colours its arrows still wins. Without it
+       every carousel showed Swiper's default blue. */
+    .carousel--highlight { --swiper-theme-color: var(--highlight); }
+    .carousel--fleet-yellow { --swiper-theme-color: var(--fleet-yellow); }
+
+    .carousel {
+        --swiper-pagination-bullet-inactive-color: var(--faded);
+        --swiper-pagination-bullet-inactive-opacity: 1;
+    }
+</style>

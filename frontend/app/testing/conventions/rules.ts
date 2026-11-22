@@ -207,25 +207,12 @@ const RULE_DEFINITIONS: ConventionRule[] = [
         id: 'tint_off_ladder',
         kind: 'absolute',
         why: 'Rule 3: a colour over transparent uses the tint ladder: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent) with --tint-subtle (8%), --tint-soft (15%), --tint-medium (30%), --tint-strong (45%), --tint-bold (60%), --tint-heavy (75%) or --tint-dense (90%), not a literal percentage.',
-        exempt: {
-            'src/components/blocks/landing/LandingLive.astro': 'in-flight landing work (owner: keep untouched)',
-            'src/components/blocks/landing/LandingReel.astro': 'in-flight landing work (owner: keep untouched)',
-        },
         find: (file) => hits_in(file, [{ text: file.text, offset: 0 }], TINT_LITERAL),
     },
     {
         id: 'retired_token',
         kind: 'absolute',
         why: 'Rule 3: --attention, --text-muted, --hairline, --hairline-medium, --hairline-strong and --glow are retired. Use --fleet-yellow, --faded, --border-color and --border-color-hover (see docs/frontend-design.md).',
-        exempt: {
-            'src/components/blocks/landing/LandingBars.astro': 'in-flight landing work (owner: keep untouched)',
-            'src/components/blocks/landing/LandingLine.astro': 'in-flight landing work (owner: keep untouched)',
-            'src/components/blocks/landing/LandingLive.astro': 'in-flight landing work (owner: keep untouched)',
-            'src/components/blocks/landing/LandingReel.astro': 'in-flight landing work (owner: keep untouched)',
-            'src/pages/landing-new.astro': 'in-flight landing work (owner: keep untouched)',
-            'src/pages/partials/landing_week_component.astro': 'in-flight landing work (owner: keep untouched)',
-            'src/styles/properties/_colors.scss': 'defines the retired tokens, kept at their original values only for the in-flight landing work',
-        },
         find: (file) => hits_in(file, [{ text: file.text, offset: 0 }], RETIRED_TOKEN),
     },
     {
@@ -323,7 +310,6 @@ const RULE_DEFINITIONS: ConventionRule[] = [
             'src/components/blocks/ship-guide/GuideMatchupChart.astro': 'heatmap matrix: ship-by-ship cells coloured by value, rows and columns are the data',
             'src/components/blocks/structures/StructureRigChip.astro': 'tooltip table: a small key/value table inside a Tippy popover, styled by global popover rules',
             'src/pages/list_data.astro': 'in-flight landing work (owner: keep untouched)',
-            'src/pages/partials/landing_week_component.astro': 'in-flight landing work (owner: keep untouched)',
             'src/pages/partials/corporation_members_table_component.astro': 'bulk-select header is swapped by Alpine and column headers sort by htmx (hx-get on th); DataGrid owns neither',
             'src/pages/partials/corporation_requirements_settings_component.astro': 'inline editor with row groups that expand into forms; not a plain data grid',
         },
@@ -423,7 +409,6 @@ const RULE_DEFINITIONS: ConventionRule[] = [
         kind: 'absolute',
         why: 'Buttons are <Button> (variants, sizes, loading and focus states), <StylessButton> for a bare control, or <ButtonConfirm>/<ClipboardButton>/<CollapsableButton>; a raw <button> skips the styling.',
         exempt: {
-            'src/components/blocks/landing/LandingReel.astro': 'in-flight landing work (owner: keep untouched)',
             'src/components/blocks/SectionTabs.astro': 'the tab strip primitive itself: its tabs are the role=tab buttons that SectionTabs exists to render',
         },
         find: (file) => {
@@ -474,8 +459,6 @@ const RULE_DEFINITIONS: ConventionRule[] = [
         why: 'Fonts load once from src/styles/_fonts.scss and are used through the font tokens (var(--heading-font), var(--default-font), var(--button-font)); a Google Fonts link or a literal font-family bypasses them.',
         exempt: {
             'src/components/blocks/FleetList.astro': "swiper's own icon font (swiper-icons) for the carousel arrow glyph; it is an icon font, not a text face",
-            'src/pages/index.astro': 'in-flight landing work (owner: keep untouched)',
-            'src/pages/index2.astro': 'in-flight landing work (owner: keep untouched)',
             'src/pages/list_data.astro': 'in-flight landing work (owner: keep untouched)',
         },
         find: (file) => {

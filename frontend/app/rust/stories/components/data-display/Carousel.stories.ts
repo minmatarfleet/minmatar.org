@@ -200,3 +200,20 @@ export const External = {
         await expect(root.getAttribute('x-on:carousel:next.window')).toContain('next_slide()')
     },
 }
+
+export const ArrowColour = {
+    name: 'Arrows and bullets take the nav_tone colour',
+    tags: ['browser'], // reads the computed colour Swiper paints with
+    args: { nav_tone: 'fleet-yellow', pagination: true },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const root = canvasElement.firstElementChild as HTMLElement
+        await expect(getComputedStyle(root).getPropertyValue('--swiper-theme-color').trim()).not.toBe('')
+        const yellow = getComputedStyle(document.documentElement).getPropertyValue('--fleet-yellow').trim()
+        const next = root.querySelector('.swiper-button-next') as HTMLElement
+        const probe = document.createElement('span')
+        probe.style.color = yellow
+        document.body.append(probe)
+        await expect(getComputedStyle(next).color).toBe(getComputedStyle(probe).color)
+        probe.remove()
+    },
+}

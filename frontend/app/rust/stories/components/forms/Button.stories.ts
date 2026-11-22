@@ -22,6 +22,7 @@ export default {
         size: radio_control(BUTTON_SIZES, '`sm` for dense rows and tables, `lg` everywhere else.'),
         href: { control: 'text', description: 'Renders an anchor instead of a button.' },
         narrow: { control: 'boolean', description: 'Less inline padding.' },
+        outline: { control: 'boolean', description: 'The secondary button beside a filled one: no fill, a hairline border, `--highlight` text.' },
         centered: { control: 'boolean', description: 'Center the label and icon.' },
         disabled: { control: 'boolean', description: 'Unavailable: dimmed, `aria-disabled`, never enabled by Alpine.' },
         off_disable: { control: 'boolean', description: 'Render enabled from the server (no Alpine gate).' },
@@ -32,6 +33,7 @@ export default {
         color: 'fleet-red',
         size: 'lg',
         narrow: false,
+        outline: false,
         centered: true,
         disabled: false,
         off_disable: false,
@@ -154,5 +156,14 @@ export const FocusRing = {
         // Same double highlight outline as links (`a:focus-visible` in _global.scss).
         await expect(getComputedStyle(field).outlineStyle).toBe('double')
         await expect(getComputedStyle(field).outlineColor).not.toBe('rgba(0, 0, 0, 0)')
+    },
+}
+
+export const Outline = {
+    name: 'Outline (secondary)',
+    args: { outline: true, slots: { default: 'Join our Discord' } },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const button = within(canvasElement).getByRole('button', { name: 'Join our Discord' })
+        await expect(button).toHaveClass('outline')
     },
 }

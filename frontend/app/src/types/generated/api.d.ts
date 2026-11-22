@@ -22503,6 +22503,11 @@ export interface components {
             character_id: number;
             /** Character Name */
             character_name: string;
+            /**
+             * Detail
+             * @default
+             */
+            detail?: string;
             /** Kind */
             kind: string;
             /**
