@@ -1,6 +1,7 @@
 ---
 import type { BrandAssetColumn, BrandAssetRow } from '@/data/brand/assets'
 import { logoAssetColumns } from '@/data/brand/assets'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 
 interface Props {
     title: string
@@ -16,7 +17,7 @@ const { title, rows, columns = logoAssetColumns } = Astro.props
     <slot name="note" />
     <p class="[ brand-hint ]">Right-click an image and choose “Save image as…” to download it.</p>
 
-    <div class="[ table-container ]">
+    <XFadeScroll>
         <table>
             <thead>
                 <tr>
@@ -43,7 +44,7 @@ const { title, rows, columns = logoAssetColumns } = Astro.props
                 ))}
             </tbody>
         </table>
-    </div>
+    </XFadeScroll>
 </section>
 
 <style lang="scss">
@@ -56,10 +57,6 @@ const { title, rows, columns = logoAssetColumns } = Astro.props
     .brand-hint {
         color: inherit;
         margin: 0;
-    }
-
-    .table-container {
-        overflow-x: auto;
     }
 
     table {
