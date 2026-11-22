@@ -5,5 +5,12 @@
     "path": "converge",
     "pattern": "scroll-fade",
     "note": "The scroller is a bordered panel; XFadeScroll's edge mask now fades the border and background at the scrolling edges too."
+  },
+  {
+    "file": "src/pages/partials/character_finder_list_component.astro",
+    "selector": "(partial root)",
+    "path": "converge",
+    "pattern": "error-block",
+    "note": "A failed alliance-members fetch used to show 'no characters'; it now shows ErrorRefetch (message plus self-retry)."
   }
 ]
