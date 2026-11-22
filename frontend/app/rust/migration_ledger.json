@@ -12,5 +12,19 @@
     "path": "converge",
     "pattern": "button-primary",
     "note": "Hand-styled .mbtn--go submit and anchor become Button color=green size=sm: 4px radius, 0.85em type and the inline-flex row give way to the library's padding, scale-on-hover and focus ring. The create form is a native POST, so the button keeps off_disable."
+  },
+  {
+    "file": "src/components/blocks/FleetKillFeed.astro",
+    "selector": ".kill-feed__engagement .select-group",
+    "path": "converge",
+    "pattern": "select-library",
+    "note": "The engagement select was a transparent 2.75rem box styled to match the filter buttons (scoped .kill-feed__engagement select). It becomes Select size=sm: the library field chrome and caret, wrapped in .select-group. The scoped select rules are removed because they no longer reach the select inside the component."
+  },
+  {
+    "file": "src/pages/partials/mentors_home_component.astro",
+    "selector": ".mentors-apply textarea",
+    "path": "converge",
+    "pattern": "textarea-library",
+    "note": "Raw textarea (browser default chrome) becomes Textarea, so the application note takes the library field look; it was already width 100%."
   }
 ]
