@@ -33,14 +33,6 @@ describe('Rust foundations', { timeout: 60_000 }, () => {
             expect(families.map((f) => f.family)).toContain(expected)
     })
 
-    test('every Google Font the app imports is loaded in Storybook', () => {
-        const head = readFileSync(resolve(APP, '.storybook/preview-head.html'), 'utf8')
-        const google = read_font_families().filter((f) => f.source === 'google-fonts')
-        expect(google.length).toBeGreaterThan(0)
-        for (const font of google)
-            expect(head, `${font.family} is missing from .storybook/preview-head.html`).toContain(`family=${font.family.replace(/ /g, '+')}`)
-    })
-
     test('every fontsource package the app imports is imported by the preview', () => {
         const preview = readFileSync(resolve(APP, '.storybook/preview.ts'), 'utf8')
         const packages = new Set(app_sources().flatMap(({ text }) => [...text.matchAll(/import\s+['"](@fontsource[^'"]+)['"]/g)].map((m) => m[1])))

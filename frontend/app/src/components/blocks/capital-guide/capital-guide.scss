@@ -1,5 +1,5 @@
 .cap-guide {
-    --cap-display-font: 'Orbitron', var(--heading-font);
+    --cap-display-font: var(--guide-display-font);
     --cap-panel-padding-block: var(--component-padding-block);
     --cap-panel-padding-inline: var(--space-l-xl);
     font-family: inherit;
