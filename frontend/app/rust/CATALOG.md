@@ -124,7 +124,7 @@ A two-step button for destructive or irreversible actions.
 - Import: `import ButtonConfirm from '@components/blocks/ButtonConfirm.astro'`
 - Props: `label: string`, `color?: ButtonColors = 'fleet-red'`, `size?: ButtonSizes = 'lg'`, `narrow?: boolean = false`, `centered?: boolean = true`, `off_disable?: boolean = false`
 - Slots: `default`
-- Stories (5): `frontend/app/rust/stories/components/forms/ButtonConfirm.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-buttonconfirm--docs: Default, Two-step confirm flow, Small Narrow, Alliance Blue, Enabled without Alpine (off_disable)
+- Stories (6): `frontend/app/rust/stories/components/forms/ButtonConfirm.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-buttonconfirm--docs: Default, Two-step confirm flow, Small Narrow, Alliance Blue, Enabled without Alpine (off_disable), Extra attributes and classes reach the root
 
 ### ClipboardButton
 
@@ -317,7 +317,7 @@ A coloured strip that wraps an unexpected-error message in a partial, such as "n
 - Import: `import DebugTag from '@components/blocks/DebugTag.astro'`
 - Props: `color?: TagColors | string = 'fleet-red'`
 - Slots: `default`
-- Stories (6): `frontend/app/rust/stories/components/data-display/DebugTag.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-debugtag--docs: Default, Yellow, Blue, Green, Security Color, Multiple Children
+- Stories (7): `frontend/app/rust/stories/components/data-display/DebugTag.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-debugtag--docs: Default, Yellow, Blue, Green, Security Color, Multiple Children, Extra attributes and classes reach the root
 
 ### ComponentBlock
 
@@ -344,7 +344,7 @@ A section with a chevron header that shows or hides its body.
 - Import: `import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro'`
 - Props: `padding_inline?: string = 'var(--space-3xs)'`, `gap?: spaces = 'var(--space-3xs)'`, `expanded?: boolean = false`, `id?: string`, `pre_chevron?: boolean = false`
 - Slots: `head`, `default`
-- Stories (6): `frontend/app/rust/stories/components/data-display/CollapsibleBlock.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-collapsibleblock--docs: Collapsed, Expanded, Toggle with click, Click reveals the body (browser), Pre-chevron, With id (linkable)
+- Stories (7): `frontend/app/rust/stories/components/data-display/CollapsibleBlock.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-collapsibleblock--docs: Collapsed, Expanded, Toggle with click, Click reveals the body (browser), Pre-chevron, With id (linkable), Extra attributes and classes reach the root
 
 ### CollapsableButton
 

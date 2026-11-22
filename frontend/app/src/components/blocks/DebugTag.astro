@@ -3,16 +3,20 @@ import type { TagColors } from '@dtypes/layout_components';
 
 interface Props {
     color?: TagColors | string;
+    [propName: string]: any;
 }
 
 const {
     color = 'fleet-red',
+    ...attributes
 } = Astro.props;
+
+delete attributes.class
 
 const tag_color = `var(--${color})`;
 ---
 
-<div class="[ debug-tag ]">
+<div class:list={['[ debug-tag ]', Astro.props.class]} {...attributes}>
     <slot />
 </div>
 

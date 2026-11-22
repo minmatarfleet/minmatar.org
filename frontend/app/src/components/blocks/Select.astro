@@ -13,7 +13,7 @@ const {
 } = Astro.props
 ---
 
-<div class="max-h-[66px] relative">
+<div class="[ select-group ][ max-h-[66px] relative ]">
     <select {...attributes} data-size={size}>
         <slot />
     </select>
@@ -28,6 +28,10 @@ const {
 </style>
 
 <style lang="scss">
+    /* The caret and listbox z-index values stay inside the field. */
+    .select-group {
+        isolation: isolate;
+    }
     svg {
         color: var(--highlight);
         position: absolute;
