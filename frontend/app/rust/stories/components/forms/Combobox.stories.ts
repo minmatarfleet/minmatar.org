@@ -113,7 +113,7 @@ export const KeyboardNavigation = {
         await expect(hidden(canvasElement).value).toBe('2114350907')
         await expect(field.value).toBe('Orik Vael')
         await expect(field).toHaveAttribute('aria-expanded', 'false')
-        await expect(listbox(canvasElement)).not.toBeVisible()
+        await waitFor(() => expect(listbox(canvasElement)).not.toBeVisible())
     },
 }
 
@@ -182,7 +182,7 @@ export const EscapeKeepsDialogOpen = {
 
         await userEvent.keyboard('{Escape}')
         await expect(field).toHaveAttribute('aria-expanded', 'false')
-        await expect(listbox(canvasElement)).not.toBeVisible()
+        await waitFor(() => expect(listbox(canvasElement)).not.toBeVisible())
         await expect(dialog).toBeVisible()
 
         // A second Escape, with the listbox already closed, reaches the dialog.
@@ -270,6 +270,6 @@ export const TooShortAsksNothing = {
         await new Promise((resolve) => setTimeout(resolve, 500))
         const after = ((window as unknown as { __rust_htmx_requests?: unknown[] }).__rust_htmx_requests ?? []).length
         await expect(after).toBe(before)
-        await expect(listbox(canvasElement)).not.toBeVisible()
+        await waitFor(() => expect(listbox(canvasElement)).not.toBeVisible())
     },
 }

@@ -56,7 +56,8 @@ export const Untitled = {
         await expect(open).toHaveAttribute('aria-modal', 'true')
         await expect(open).toHaveAttribute('aria-describedby', 'modal-description')
         await expect(open.hasAttribute('aria-labelledby')).toBe(false)
-        await expect(within(open).getByText('Rifter Fleet Friday')).toBeVisible()
+        // The dialog fades in: wait for it to be opaque.
+        await waitFor(() => expect(within(open).getByText('Rifter Fleet Friday')).toBeVisible())
 
         await userEvent.click(canvasElement.querySelector('.modal-backdrop') as HTMLElement)
         await expect(await result).toBe(false)
@@ -98,6 +99,7 @@ export const Persistent = {
         const backdrop = canvasElement.querySelector('.persistent-modal-backdrop') as HTMLElement
         await expect(attr(backdrop, 'class')).toContain('open')
 
+        await waitFor(() => expect(open).toBeVisible())
         await userEvent.click(backdrop)
         await expect(canvas.getByRole('dialog')).toBeVisible()
 
