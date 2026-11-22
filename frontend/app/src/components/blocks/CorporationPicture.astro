@@ -28,23 +28,32 @@ const {
 
 import { get_corporation_logo } from '@helpers/eve_image_server'
 
+// The corporation page is a real link, not a click handler. A static corporation 0
+// has no page; with `x_corporation_id` the href follows the Alpine expression.
+const corporations_path = translatePath('/alliance/corporations/')
+const static_href = !x_corporation_id && corporation_id != 0 ? `${corporations_path}${corporation_id}/` : undefined
+const linked = !!static_href || !!x_corporation_id
+const Target = linked ? 'a' : 'span'
+
 import NotificationBadge from '@components/blocks/NotificationBadge.astro'
 ---
 <picture class="[ corporation-picture ]">
-    <img
-        loading="lazy"
-        height={size}
-        width={size}
-        src={get_corporation_logo(corporation_id, icon_quality ?? size)}
-        x-bind:src={`${x_corporation_id} ? get_corporation_logo(${x_corporation_id}) : '${get_corporation_logo(corporation_id, icon_quality ?? size)}'`}
-        alt={`${t('profile_picture_of')} ${corporation_name ?? t('unknown_corporation')}`}
-        x-bind:alt={`\`${t('profile_picture_of')} \${(${x_corporation_name} ? ${x_corporation_name} : "${corporation_name ?? t('unknown_corporation')}")}\``}
-        x-on:click.stop={`
-            const id = ${x_corporation_id ? x_corporation_id : `'${corporation_id}'`}
-            if (!id || String(id) === '0') return
-            window.location.assign('${translatePath('/alliance/corporations/')}' + id + '/')
-        `}
-    />
+    <Target
+        class="[ picture-target ]"
+        href={static_href}
+        x-bind:href={x_corporation_id ? `${x_corporation_id} && String(${x_corporation_id}) !== '0' ? '${corporations_path}' + ${x_corporation_id} + '/' : false` : undefined}
+        x-on:click.stop={linked ? '' : undefined}
+    >
+        <img
+            loading="lazy"
+            height={size}
+            width={size}
+            src={get_corporation_logo(corporation_id, icon_quality ?? size)}
+            x-bind:src={`${x_corporation_id} ? get_corporation_logo(${x_corporation_id}) : '${get_corporation_logo(corporation_id, icon_quality ?? size)}'`}
+            alt={`${t('profile_picture_of')} ${corporation_name ?? t('unknown_corporation')}`}
+            x-bind:alt={`\`${t('profile_picture_of')} \${(${x_corporation_name} ? ${x_corporation_name} : "${corporation_name ?? t('unknown_corporation')}")}\``}
+        />
+    </Target>
 
     {quantity != null && quantity > 0 &&
         <NotificationBadge
@@ -68,10 +77,22 @@ import NotificationBadge from '@components/blocks/NotificationBadge.astro'
         }
     }
 
+    .picture-target {
+        display: flex;
+
+        &:focus-visible {
+            outline-color: var(--highlight);
+            outline-style: double;
+        }
+    }
+
     img {
-        cursor: pointer;
         transition: var(--fast-transition);
         filter: brightness(1);
+    }
+
+    a.picture-target img {
+        cursor: pointer;
 
         &:hover {
             filter: brightness(1.3);
