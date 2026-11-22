@@ -89,11 +89,12 @@ export function dedupe_posts<T extends { title: string; image?: string }>(posts:
 }
 
 /** "A Week Of Minmatar Fleet": the last column. Fleet activity shows what
- * each fight destroyed, Warzone the LP each site paid; the other tabs show
- * where it happened. */
-export function week_last_column(tab: string): 'isk' | 'lp' | 'region' {
+ * each fight destroyed, Warzone the LP each site paid, Industry what a
+ * finished build is worth; the other tabs show where it happened. */
+export function week_last_column(tab: string): 'isk' | 'lp' | 'value' | 'region' {
     if (tab === 'fights') return 'isk'
     if (tab === 'warzone') return 'lp'
+    if (tab === 'industry') return 'value'
     return 'region'
 }
 
@@ -102,16 +103,18 @@ export function week_last_column(tab: string): 'isk' | 'lp' | 'region' {
 const AMOUNT_GRADES = {
     isk: [100_000_000, 1_000_000_000, 5_000_000_000],
     lp: [10_000, 25_000, 50_000],
+    value: [10_000_000, 100_000_000, 1_000_000_000],
 } as const
 
 /** 0 (small, muted) to 3 (biggest), so big fights and fat payouts stand out. */
-export function amount_grade(column: 'isk' | 'lp', value: number): 0 | 1 | 2 | 3 {
+export function amount_grade(column: 'isk' | 'lp' | 'value', value: number): 0 | 1 | 2 | 3 {
     return AMOUNT_GRADES[column].filter((step) => value >= step).length as 0 | 1 | 2 | 3
 }
 
 export const WEEK_LAST_LABELS = {
     isk: 'landing_new.week_isk',
     lp: 'landing_new.week_lp',
+    value: 'landing_new.week_value',
     region: 'landing_new.week_region',
 } as const
 

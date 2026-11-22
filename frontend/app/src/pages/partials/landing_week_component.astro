@@ -10,7 +10,7 @@ import { query_string } from '@helpers/string'
 
 // "The week in the alliance": one tab's rows, 12 to a page, padded so every
 // page is the same height. Public, like the page.
-const TABS = ['fights', 'kills', 'warzone', 'mining']
+const TABS = ['fights', 'kills', 'warzone', 'mining', 'industry']
 const requested = Astro.url.searchParams.get('tab') ?? 'fights'
 const tab = TABS.includes(requested) ? requested : 'fights'
 const page = Math.max(1, parseInt(Astro.url.searchParams.get('page') ?? '1') || 1)
@@ -68,7 +68,7 @@ import LandingLine from '@components/blocks/landing/LandingLine.astro'
                             ? <span role="cell" class="[ data-grid-numeric landing-week__region ]">{event.region}</span>
                             : <span role="cell" class:list={['[ data-grid-numeric landing-week__amount ]', `landing-week__amount--${event.amount ? amount_grade(last_column, event.amount) : 0}`]}>
                                 {!event.amount ? '—'
-                                    : last_column === 'isk' ? format_compact(event.amount, ISK_COMPACT)
+                                    : last_column === 'isk' || last_column === 'value' ? format_compact(event.amount, ISK_COMPACT)
                                     : `${format_number(event.amount)} LP`}
                             </span>
                         }

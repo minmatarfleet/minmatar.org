@@ -85,6 +85,7 @@ class LandingWeekCounts(Schema):
     kills: int
     warzone: int
     mining: int
+    industry: int
 
 
 class LandingWeekResponse(Schema):
