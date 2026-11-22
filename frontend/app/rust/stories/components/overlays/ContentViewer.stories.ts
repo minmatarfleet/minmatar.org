@@ -100,7 +100,7 @@ export const LoadsAPost = {
         await userEvent.click(link)
         await waitFor(() => expect(viewer.querySelector('[data-kind="image"]')).not.toBeNull(), { timeout: 4000 })
         await waitFor(() => expect(viewer.querySelector('#content-viewer-title')?.textContent).toBe('Stamped'))
-        await expect(attr(viewer, 'data-loading')).toBe('false')
+        await expect((window as any).Alpine.$data(viewer).loading).toBe(false)
     },
 }
 

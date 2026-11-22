@@ -54,8 +54,13 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro'
             // A #viewer entry, added through the page router so it knows the
             // hash: Back is then a same-page hash move (no page swap) and
             // the popstate below closes the viewer.
-            if (location.hash !== '${HASH}' && window.content_viewer_navigate)
-                window.content_viewer_navigate(location.pathname + location.search + '${HASH}')
+            // Without the router on the page (Storybook, a plain page), a
+            // plain hash entry: navigate() would fall back to a full load.
+            if (location.hash !== '${HASH}') {
+                const routed = window.content_viewer_navigate && document.querySelector('[name="astro-view-transitions-enabled"]')
+                if (routed) window.content_viewer_navigate(location.pathname + location.search + '${HASH}')
+                else history.pushState(null, '', '${HASH}')
+            }
         },
         loaded(event) {
             if (event.target !== this.$refs.body) return
@@ -217,8 +222,10 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro'
 
 <script>
     // The page router's navigate, for the viewer's #viewer history entry.
-    import { navigate } from 'astro:transitions/client'
-    ;(window as any).content_viewer_navigate = navigate
+    // Loaded on first use: importing the router module installs its popstate
+    // handler, which reloads a page that has no router (Storybook) on Back.
+    ;(window as any).content_viewer_navigate = (href: string) =>
+        import('astro:transitions/client').then(({ navigate }) => navigate(href))
 </script>
 
 <style lang="scss" is:global>
