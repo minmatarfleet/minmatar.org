@@ -101,8 +101,8 @@ CELERYBEAT_CHARACTERS = [
         "[Characters] Queue due character syncs",
         {
             "task": "eveonline.tasks.character_sync.queue_due_character_syncs",
-            "schedule": crontab(minute="*/5"),
-            "options": {"expire_seconds": 5 * 60},
+            "schedule": crontab(minute="*"),
+            "options": {"expire_seconds": 60},
         },
     ),
     (

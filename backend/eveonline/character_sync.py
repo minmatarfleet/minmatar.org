@@ -11,15 +11,17 @@ See docs/architecture/character-sync.md.
 from __future__ import annotations
 
 import logging
+import math
 import random
 from collections import Counter
 from dataclasses import dataclass, field
-from datetime import timedelta
+from datetime import datetime, timedelta
 from enum import Enum
 from typing import Callable, Iterable
 
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.db.models import Q
 from django.utils import timezone
 from esi.exceptions import ESIErrorLimitException
@@ -41,7 +43,13 @@ from eveonline.helpers.characters import (
     update_character_planets as refresh_character_planets,
     update_character_skills as refresh_character_skills,
 )
-from eveonline.models import EveCharacter, EveCharacterSyncState
+from eveonline.models import (
+    EveCharacter,
+    EveCharacterMiningDelta,
+    EveCharacterMiningEntry,
+    EveCharacterSkill,
+    EveCharacterSyncState,
+)
 from eveonline.utils import get_esi_downtime_countdown
 
 logger = logging.getLogger(__name__)
@@ -78,6 +86,23 @@ PI_TRIBE_GROUP_CODES = (
     "supply.planetary-interaction",
     "industry.planetary-interaction",
 )
+
+# Mining ledger tiers: how likely a pilot is to have new ledger rows soon.
+# A pull that finds new ore makes the pilot hot at once; a hot pilot cools
+# off once no pull has found any for MINING_HOT_WINDOW. ESI caches the ledger
+# for about ten minutes, so pulling a hot pilot faster gains nothing.
+MINING_HOT_INTERVAL = timedelta(minutes=10)
+MINING_HOT_WINDOW = timedelta(minutes=25)
+MINING_WARM_INTERVAL = timedelta(hours=1)
+MINING_WARM_DAYS = 1  # ledger rows today or yesterday (UTC)
+MINING_COOL_INTERVAL = timedelta(hours=6)
+MINING_COOL_DAYS = 30
+MINING_UNLIKELY_INTERVAL = timedelta(hours=72)
+# Mining Frigate, Expedition Frigates, Mining Barge, Exhumers, Ice Harvesting:
+# every pilot who mined in the last 30 days has one of these.
+MINING_SHIP_SKILL_IDS = (32918, 33856, 17940, 22551, 16281)
+MINING_SKILLS_CACHE_KEY = "character_sync:mining_skills:v1"
+MINING_SKILLS_CACHE_SECONDS = 60 * 60
 
 # Failure handling
 FAILURE_RETRY = timedelta(minutes=30)
@@ -254,6 +279,12 @@ class Audiences:
     job_assignees: set[int] = field(default_factory=set)
     on_leave: set[int] = field(default_factory=set)
     pi: set[int] = field(default_factory=set)
+    # Mining ledger tiers (see MINING_* above).
+    mining_hot: set[int] = field(default_factory=set)
+    mining_warm: set[int] = field(default_factory=set)
+    mining_cool: set[int] = field(default_factory=set)
+    # Skills synced but no mining-ship skill: unlikely to mine soon.
+    mining_unlikely: set[int] = field(default_factory=set)
 
     def eligible(self) -> set[int]:
         """Every character pk the scheduler keeps fresh."""
@@ -270,7 +301,9 @@ class Audiences:
 
     def interval(self, section: Section, pk: int) -> timedelta:
         name = section.name
-        if name in (KILLMAILS, MINING) and pk in self.fleet:
+        if name == MINING:
+            return self.mining_interval(pk)
+        if name == KILLMAILS and pk in self.fleet:
             return FLEET_INTERVAL
         if name == CONTRACTS and pk in self.contract_owners:
             return INDUSTRY_INTERVAL
@@ -282,6 +315,81 @@ class Audiences:
         if pk in self.on_leave:
             return max(base, ON_LEAVE_INTERVAL)
         return base
+
+    def mining_interval(self, pk: int) -> timedelta:
+        if pk in self.mining_hot:
+            return MINING_HOT_INTERVAL
+        if pk in self.fleet:
+            return FLEET_INTERVAL
+        if pk in self.mining_warm:
+            return MINING_WARM_INTERVAL
+        if pk in self.mining_cool:
+            return MINING_COOL_INTERVAL
+        base = SECTIONS_BY_NAME[MINING].interval
+        if pk in self.mining_unlikely:
+            base = MINING_UNLIKELY_INTERVAL
+        if pk in self.on_leave:
+            return max(base, ON_LEAVE_INTERVAL)
+        return base
+
+
+def mined_recently(character_pk: int, since: datetime) -> bool:
+    """Whether a ledger pull since ``since`` found new ore."""
+    return EveCharacterMiningDelta.objects.filter(
+        character_id=character_pk, observed_at__gte=since
+    ).exists()
+
+
+def _mining_tiers(now, pks: set[int] | None) -> dict[str, set[int]]:
+    today = now.date()
+    hot = EveCharacterMiningDelta.objects.filter(
+        observed_at__gte=now - MINING_HOT_WINDOW
+    ).values_list("character_id", flat=True)
+    warm = EveCharacterMiningEntry.objects.filter(
+        date__gte=today - timedelta(days=MINING_WARM_DAYS)
+    ).values_list("character_id", flat=True)
+    cool = EveCharacterMiningEntry.objects.filter(
+        date__gte=today - timedelta(days=MINING_COOL_DAYS)
+    ).values_list("character_id", flat=True)
+    if pks is not None:
+        hot, warm, cool = (
+            q.filter(character_id__in=pks) for q in (hot, warm, cool)
+        )
+    tiers = {
+        "mining_hot": set(hot),
+        "mining_warm": set(warm),
+        "mining_cool": set(cool),
+    }
+    with_skills, able = _mining_skill_sets()
+    unlikely = with_skills - able
+    tiers["mining_unlikely"] = unlikely if pks is None else unlikely & pks
+    return tiers
+
+
+def _mining_skill_sets() -> tuple[set[int], set[int]]:
+    """Character pks with any skills synced, and those with a mining-ship
+    skill. Skills change slowly and the table is large, so this is cached."""
+    cached = cache.get(MINING_SKILLS_CACHE_KEY)
+    if cached is not None:
+        return set(cached[0]), set(cached[1])
+    with_skills = set(
+        EveCharacterSkill.objects.values_list(
+            "character_id", flat=True
+        ).distinct()
+    )
+    able = set(
+        EveCharacterSkill.objects.filter(
+            skill_id__in=MINING_SHIP_SKILL_IDS, skill_level__gte=1
+        )
+        .values_list("character_id", flat=True)
+        .distinct()
+    )
+    cache.set(
+        MINING_SKILLS_CACHE_KEY,
+        (sorted(with_skills), sorted(able)),
+        MINING_SKILLS_CACHE_SECONDS,
+    )
+    return with_skills, able
 
 
 def _character_pks(queryset, pks: set[int] | None) -> set[int]:
@@ -371,6 +479,7 @@ def load_audiences(character_pks: Iterable[int] | None = None) -> Audiences:
         job_assignees=job_assignees,
         on_leave=on_leave,
         pi=pi,
+        **_mining_tiers(now, pks),
     )
 
 
@@ -419,6 +528,25 @@ def _jittered(interval: timedelta) -> timedelta:
     return interval * random.uniform(1 - JITTER, 1 + JITTER)
 
 
+# The golden ratio's fractional part spreads consecutive ids evenly over
+# [0, 1), so pilots' slots spread evenly over the interval.
+_GOLDEN = (math.sqrt(5) - 1) / 2
+
+
+def next_slot(now: datetime, interval: timedelta, key: int) -> datetime:
+    """The character's next fixed slot at least half an interval away.
+
+    Each character keeps the same offset within the interval, so pulls are
+    spread evenly over time instead of drifting into bunches, and one
+    pilot's pulls keep a steady rhythm.
+    """
+    seconds = interval.total_seconds()
+    phase = (key * _GOLDEN % 1) * seconds
+    earliest = now.timestamp() + seconds / 2
+    slot = phase + math.ceil((earliest - phase) / seconds) * seconds
+    return datetime.fromtimestamp(slot, tz=now.tzinfo)
+
+
 def stamp(
     row: EveCharacterSyncState,
     outcome: Outcome,
@@ -426,8 +554,11 @@ def stamp(
     *,
     now=None,
     detail: str = "",
+    slot_key: int | None = None,
 ) -> None:
-    """Record one section's outcome on its row (not saved)."""
+    """Record one section's outcome on its row (not saved). With
+    ``slot_key``, a success is next due at the character's fixed slot
+    (``next_slot``) instead of a jittered interval."""
     now = now or timezone.now()
     row.queued_at = None
     row.attempted_at = now
@@ -435,7 +566,10 @@ def stamp(
         row.synced_at = now
         row.consecutive_failures = 0
         row.last_error = ""
-        row.next_due_at = now + _jittered(interval)
+        if slot_key is None:
+            row.next_due_at = now + _jittered(interval)
+        else:
+            row.next_due_at = next_slot(now, interval, slot_key)
         return
     if outcome in (Outcome.NO_SCOPE, Outcome.SUSPENDED):
         row.last_error = outcome.value
@@ -523,7 +657,17 @@ def _run_character_sync(character, sections, force, audiences) -> dict:
             if outcome == Outcome.ERROR_LIMIT:
                 stopped = outcome
                 break
-            stamp(row, outcome, interval, now=timezone.now(), detail=detail)
+            interval, slot_key = _stamp_timing(
+                character, section, outcome, interval, now
+            )
+            stamp(
+                row,
+                outcome,
+                interval,
+                now=timezone.now(),
+                detail=detail,
+                slot_key=slot_key,
+            )
             row.save()
             summary[outcome.value] += 1
             if outcome == Outcome.TRANSIENT:
@@ -537,6 +681,16 @@ def _run_character_sync(character, sections, force, audiences) -> dict:
     if stopped:
         result["stopped"] = stopped.value
     return result
+
+
+def _stamp_timing(character, section, outcome, interval, started):
+    """The interval and slot to stamp with. Mining pulls keep the pilot's
+    fixed slot, and one that found new ore makes the pilot hot."""
+    if section.name != MINING:
+        return interval, None
+    if outcome == Outcome.OK and mined_recently(character.pk, started):
+        interval = MINING_HOT_INTERVAL
+    return interval, character.character_id
 
 
 def _run_section(

@@ -23,12 +23,25 @@ Until November 2026, `update_alliance_characters` queued `update_character` for 
 | Contracts | 4 h | **1 h** if the character owns an open industry order | Reconcile is queued only for owners of an open order |
 | Industry jobs | 4 h | **1 h** for characters with an undelivered assignment on an open order, and their user's other characters | Replaces `sync_industry_jobs_for_order_assignees` in scheduled mode |
 | Killmails | 24 h | **15 min** while on an active fleet, plus 30 min after it ends | Fleet fights use the zKill feed, not this |
-| Mining ledger | 24 h | **15 min** while on an active fleet, plus 30 min after it ends | |
+| Mining ledger | 24 h | Tiered by how likely new rows are (below) | Fixed per-pilot slot instead of jitter |
 | Skills (+ readiness re-rate) | 24 h | — | The tribes refresh button refreshes on demand |
 | Clones and implants | 24 h | — | Fleets poll implants live separately |
 | Blueprints | 24 h | — | |
 | Planets | weekly | **72 h** for active members of the PI tribe group (`supply.planetary-interaction`) | |
 
+- **Mining ledger tiers** (first match wins):
+
+  | Tier | Who | Interval |
+  | --- | --- | --- |
+  | Hot | a pull found new ore in the last 25 min (`EveCharacterMiningDelta`) | 10 min |
+  | In fleet | on an active fleet, plus 30 min after it ends | 15 min |
+  | Warm | ledger rows today or yesterday | 1 h |
+  | Cool | ledger rows in the last 30 days | 6 h |
+  | Default | everyone else, including characters with no skills synced | 24 h |
+  | Unlikely | skills synced, but none of Mining Frigate, Expedition Frigates, Mining Barge, Exhumers or Ice Harvesting | 72 h |
+
+  A pull that finds new ore stamps the pilot Hot straight away. A Hot pilot drops back after about three empty pulls. ESI caches the ledger for about 10 minutes, so pulling faster gains nothing. On leave slows only Default and Unlikely pilots. The skill sets are cached for an hour (`MINING_SKILLS_CACHE_KEY`).
+- **Mining slots:** a successful mining pull is next due at the pilot's fixed slot within the interval (`next_slot`: the golden-ratio fraction of the character ID), between half and one and a half intervals away. Pilots spread evenly over the interval, and the landing page's mining lines come in staggered rather than in bursts.
 - **On leave:** characters of users whose `UserCommunityStatus` is On Leave use 72 h for every section. A section that is already longer (planets, weekly) keeps its own interval.
 - **Priority:** active fleet, then industry, then on leave, then the default.
 - **Industry characters outside the members:** the 1 h audiences are kept fresh even when the character isn't a member, but only for that one section.
@@ -67,14 +80,14 @@ A section's outcome comes from the ESI responses it saw. `eveonline.client.recor
 A character with no attempted rows is always forced. `update_character`, which is used by fanout mode, new characters and the tech router, runs every section with `force=True`. The tribes refresh button runs assets and skills inline with `lock=False`, because its response is built from the fresh data.
 
 ### The scheduler
-`queue_due_character_syncs` runs every 5 minutes, in shadow and scheduled modes. Each tick:
+`queue_due_character_syncs` runs every minute, in shadow and scheduled modes. (It ran every 5 minutes until November 2026; in production every queued sync then started in the first seconds of the tick, so ESI calls came in bursts.) Each tick:
 1. Skips during downtime or a paused ESI budget.
 2. Loads the audiences once.
 3. Picks characters, never-synced first: members with no rows, and characters added in the last 7 days whose first fetch was never attempted (after a 10-minute grace period).
 4. Then picks due rows (`next_due_at <= now`, not queued in the last 15 minutes), oldest first.
 5. Pushes due rows of characters that left every audience a day out.
-6. Takes characters until the weighted budget `CHARACTER_SYNC_COST_PER_TICK` (default 300) is reached.
-7. Marks their rows queued, then queues `sync_character_sections(character_id)`, spread across the 5 minutes.
+6. Takes characters until its share of the weighted budget is reached: `CHARACTER_SYNC_COST_PER_TICK` (default 300) is a budget per 5 minutes, so each one-minute tick spends a fifth (`tick_budget()`).
+7. Marks their rows queued, then queues `sync_character_sections(character_id)`, spread across the minute.
 
 ### Triggers (`character_sync_signals.py`)
 Each trigger only moves `next_due_at` earlier:
