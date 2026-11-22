@@ -84,6 +84,7 @@ Context kwargs (`fleet=`, `tribe_group=`, `tribe=`) are consumed by the relevant
 
 - `tribe_group_target` requires a target; without it, access is denied
 - `resource_match` without a fleet falls back to an affiliation check
+- a fleet list filters with `fleet_audience_q(user)`, the queryset form of the `resource_match` audience check (lifted by the legacy permission, as on a single fleet, and a no-op while `fleets.view` has another scope), so a list never shows a fleet its detail endpoint refuses
 - `tribe_chief` without a target checks chief-ship of any wired tribe group
 
 Pass the resource whenever you have it.

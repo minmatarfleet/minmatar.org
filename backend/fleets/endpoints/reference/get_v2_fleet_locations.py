@@ -6,21 +6,25 @@ from django.db.models import Count
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
-from groups.helpers.feature_access import require_feature
 from eveonline.models import EveLocation
 
 from fleets.endpoints.schemas import EveFleetLocationResponse
+from fleets.helpers.fleet_form_access import fleet_form_denied
 
 PATH = "/v2/locations"
 METHOD = "get"
 ROUTE_SPEC = {
     "auth": AuthBearer(),
     "response": {200: List[EveFleetLocationResponse], 403: ErrorResponse},
+    "description": (
+        "Form-up locations for the fleet form. Needs fleets.create, or the "
+        "right to schedule fleets for a tribe group."
+    ),
 }
 
 
 def get_v2_fleet_locations(request):
-    denied = require_feature(request.user, "fleets.create")
+    denied = fleet_form_denied(request.user)
     if denied:
         return denied
     response = []

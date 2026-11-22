@@ -126,7 +126,18 @@ weekday as `starts_at` (e.g. 2nd Saturday).
   `host_group: HostGroupRef | None`, `open_to_alliance: bool`,
   `on_schedule: bool`.
 - `GET /api/fleets/v3` returns group fleets the viewer can see, and takes an
-  optional `host_group_id` to list one group's fleets.
+  optional `host_group_id` to list one group's fleets. It lists a fleet only
+  when `GET /api/fleets/{id}` would show it: alliance fleets also pass the
+  audience check (`groups.helpers.feature_access.fleet_audience_q`, the
+  queryset form of the `resource_match` scope, lifted for holders of
+  `fleets.view_evefleet` and skipped while `fleets.view` has another scope).
+  The viewer always sees the fleets they created, hidden audience or not.
+- `GET /api/fleets/types` and `GET /api/fleets/v2/locations` (the fleet
+  form's reference data): `fleets.create`, or `can_publish(..., "fleet")`
+  for at least one group (`fleets.helpers.fleet_form_access`). A pilot who
+  can only host group fleets gets the group fleet types (non-strategic,
+  training, NPSI). `GET /api/fleets/audiences` stays `fleets.create` only:
+  group fleets have no audience.
 - `GET /api/fleets/{id}` on a members-only group fleet the viewer can't see:
   `403 {detail: "members_only", host_group}` (`RestrictedResponse`). Other
   403s on this endpoint keep their `null` body.
