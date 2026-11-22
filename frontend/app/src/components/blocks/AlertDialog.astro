@@ -68,7 +68,7 @@ interface Props {
                         x-bind:href="alert_dialog_accept_href"
                         alert-dialog-action="accept"
                     >
-                        <span x-text="alert_dialog_accept_label || 'Open'"></span>
+                        <span x-text={`alert_dialog_accept_label || ${JSON.stringify(t('open'))}`}>{t('open')}</span>
                     </Button>
                 </span>
                 <span x-show="!alert_dialog_accept_href">
@@ -84,7 +84,7 @@ interface Props {
                         x-bind:hx-swap="alert_dialog_hx?.swap ?? 'none'"
                         hx-indicator=".loader"
                     >
-                        <span x-text="alert_dialog_accept_label || 'OK'">{t('ok')}</span>
+                        <span x-text={`alert_dialog_accept_label || ${JSON.stringify(t('ok'))}`}>{t('ok')}</span>
                     </Button>
                 </span>
                 <span x-show="alert_dialog_show_cancel" x-cloak>
@@ -93,7 +93,7 @@ interface Props {
                         type="button"
                         alert-dialog-action="close"
                     >
-                        <span x-text="alert_dialog_cancel_label || 'Cancel'">{t('cancel')}</span>
+                        <span x-text={`alert_dialog_cancel_label || ${JSON.stringify(t('cancel'))}`}>{t('cancel')}</span>
                     </Button>
                 </span>
             </FlexInline>

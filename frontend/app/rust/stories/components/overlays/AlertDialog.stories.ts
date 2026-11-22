@@ -118,3 +118,18 @@ export const EscapeCloses = {
         await waitFor(() => expect(canvas.queryByRole('dialog')).toBeNull())
     },
 }
+
+export const TranslatedFallbackLabels = {
+    name: 'Fallback labels are the translated strings',
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        // The `x-text` fallbacks were hard-coded English ('OK', 'Cancel', 'Open') that
+        // replaced the server-rendered `t()` labels as soon as Alpine started.
+        const labels = Array.from(canvasElement.querySelectorAll('[alert-dialog-action] span[x-text]'))
+            .map((el) => attr(el, 'x-text') ?? '')
+        await expect(labels).toHaveLength(3)
+        await expect(labels.some((x) => x.endsWith('|| "Open"'))).toBe(true)
+        await expect(labels.some((x) => x.endsWith('|| "OK"'))).toBe(true)
+        await expect(labels.some((x) => x.endsWith('|| "Cancel"'))).toBe(true)
+        await expect(labels.some((x) => x.includes("'"))).toBe(false)
+    },
+}

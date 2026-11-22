@@ -5574,6 +5574,7 @@ export const ui = {
         'unregister': 'Unregister',
         'unregister_account_description': 'Your profile and all your pilots data will be removed from our platform',
         'ok': 'OK',
+        'open': 'Open',
         'add_pilot_dialog_title': 'Add additional character',
         'add_pilot_dialog_text': 'You’ll sign in through EVE Online, then come straight back here. Basic and Faction Warfare are required. The other groups are optional, and your choices are remembered for the next character you add.',
         'add_primary_pilot_dialog_title': 'Add your main',

@@ -657,7 +657,7 @@ A button that opens its own dialog.
 The site-wide alert: one instance lives in the page layout and is driven from anywhere with `show_alert_dialog({ title, content, accept_label, cancel_label, show_cancel, accept_href, partial, hx })` on the body's Alpine scope.
 
 - Import: `import AlertDialog from '@components/blocks/AlertDialog.astro'`
-- Stories (6): `frontend/app/rust/stories/components/overlays/AlertDialog.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-alertdialog--docs: Default, OK closes the dialog and resolves true, Backdrop click dismisses (false), Accept and cancel labels, Accept as a new-tab link, Escape dismisses
+- Stories (7): `frontend/app/rust/stories/components/overlays/AlertDialog.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-alertdialog--docs: Default, OK closes the dialog and resolves true, Backdrop click dismisses (false), Accept and cancel labels, Accept as a new-tab link, Escape dismisses, Fallback labels are the translated strings
 
 ### ConfirmDialog
 
