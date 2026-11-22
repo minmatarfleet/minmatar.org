@@ -623,7 +623,7 @@ const breadcrumbs = [
                                                     width="32"
                                                     height="32"
                                                     loading="lazy"
-                                                    x-bind:src="`https://images.evetech.net/types/${product.type_id}/icon?size=32`"
+                                                    x-bind:src="get_item_icon(product.type_id, 32)"
                                                     x-bind:alt="product.name"
                                                 />
                                                 <span class="[ truncate ]" x-text="product.name"></span>
@@ -664,7 +664,7 @@ const breadcrumbs = [
                                                     width="32"
                                                     height="32"
                                                     loading="lazy"
-                                                    x-bind:src="`https://images.evetech.net/types/${line.eve_type_id}/icon?size=32`"
+                                                    x-bind:src="get_item_icon(line.eve_type_id, 32)"
                                                     x-bind:alt="line.name"
                                                 />
                                                 <span
