@@ -652,7 +652,7 @@ A button that opens its own dialog.
 - Import: `import DialogButton from '@components/blocks/DialogButton.astro'`
 - Props: `size?: ButtonSizes = 'lg'`, `color?: ButtonColors = 'green'`, `hidden?: boolean = false`, `narrow?: boolean = false`, `id?: string`, `max_width?: string = '700px'`, `inside_swiper?: boolean = false`, `thin_dialog?: boolean = false`, `disable_when_open?: boolean = false`, `non_centered?: boolean = true`, `close_button?: boolean = true`, `full_screen?: boolean = false`, `body_full_h?: boolean = false`, `styless?: boolean = false`, `transparent?: boolean = false`
 - Slots: `default`, `icon`, `header`, `dialog`, `footer`
-- Stories (11): `frontend/app/rust/stories/components/overlays/DialogButton.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-dialogbutton--docs: Default, Corner button closes, Escape closes, Without Close Button, Header And Footer, Thin Dialog, Disable When Open, Styless, Small Narrow Trigger, Missing dialog slot shows a debug message, Content loaded with htmx on open
+- Stories (12): `frontend/app/rust/stories/components/overlays/DialogButton.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-dialogbutton--docs: Default, Corner button closes, Escape closes, Without Close Button, Header And Footer, Thin Dialog, Disable When Open, Styless, Small Narrow Trigger, Missing dialog slot shows a debug message, Content loaded with htmx on open, non_centered is passed once and follows the prop
 
 ### AlertDialog
 
