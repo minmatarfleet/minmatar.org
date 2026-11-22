@@ -18,6 +18,7 @@ import { format_number, number_thousand_separator } from '@helpers/numbers'
 import DataTable from '@components/blocks/DataTable.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Button from '@components/blocks/Button.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
@@ -375,7 +376,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                                                     hx-post={partial_base}
                                                                     hx-target="#fitting-buy-order"
                                                                     hx-swap="outerHTML"
-                                                                    x-on:htmx:after-request="if ($event.detail.successful) close_dialog()"
+                                                                    {...{ 'x-on:htmx:after-request': 'if ($event.detail.successful) close_dialog()' }}
                                                                     novalidate
                                                                     class="[ fitting-buy-alloc-form ]"
                                                                 >

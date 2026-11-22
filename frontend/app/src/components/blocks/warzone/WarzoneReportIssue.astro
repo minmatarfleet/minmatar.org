@@ -11,6 +11,7 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Button from '@components/blocks/Button.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Grid from '@components/compositions/Grid.astro'
 import CharacterPicture from '@components/blocks/CharacterPicture.astro'
@@ -372,7 +373,7 @@ const featured_guides = issue.get_involved.featured_guides
                 <h3>Occupancy changes</h3>
             </div>
 
-            <div class="[ wz-table-wrap ]" tabindex="0" role="region" aria-label="Systems that changed hands">
+            <XFadeScroll class="[ wz-table-wrap ]" tabindex="0" role="region" aria-label="Systems that changed hands">
                 <table class="[ wz-table wz-table--flips ]">
                     <thead>
                         <tr>
@@ -434,7 +435,7 @@ const featured_guides = issue.get_involved.featured_guides
                         })}
                     </tbody>
                 </table>
-            </div>
+            </XFadeScroll>
         </Flexblock>
 
         <Flexblock gap="var(--space-m)">
@@ -442,7 +443,7 @@ const featured_guides = issue.get_involved.featured_guides
                 <h3>Where the ships died</h3>
                 <p>Ships destroyed per system this month.</p>
             </div>
-            <div class="[ wz-table-wrap ]" tabindex="0" role="region" aria-label="Ships destroyed by system">
+            <XFadeScroll class="[ wz-table-wrap ]" tabindex="0" role="region" aria-label="Ships destroyed by system">
                 <table class="[ wz-table wz-table--traffic ]">
                     <thead>
                         <tr>
@@ -502,7 +503,7 @@ const featured_guides = issue.get_involved.featured_guides
                         })}
                     </tbody>
                 </table>
-            </div>
+            </XFadeScroll>
         </Flexblock>
     </section>
 
@@ -803,7 +804,7 @@ const featured_guides = issue.get_involved.featured_guides
             <p class="[ wz-dek ]">The alliances and corporations that actually live in the warzone, ranked by killmails.</p>
         </header>
         {issue.groups.rows.length > 0 ? (
-            <div class="[ wz-table-wrap ]" tabindex="0" role="region" aria-label="Groups of the month">
+            <XFadeScroll class="[ wz-table-wrap ]" tabindex="0" role="region" aria-label="Groups of the month">
                 <table class="[ wz-table wz-table--groups ]">
                     <thead>
                         <tr>
@@ -901,7 +902,7 @@ const featured_guides = issue.get_involved.featured_guides
                         })}
                     </tbody>
                 </table>
-            </div>
+            </XFadeScroll>
         ) : (
             <EmptyState title="Not in this month’s extract." />
         )}
@@ -1653,7 +1654,6 @@ const featured_guides = issue.get_involved.featured_guides
     }
 
     .wz-table-wrap {
-        overflow-x: auto;
         min-width: 0;
         width: 100%;
     }
