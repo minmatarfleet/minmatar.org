@@ -1,0 +1,24 @@
+# Pull requests
+
+Every pull request description follows `.github/pull_request_template.md`, including ones opened with
+`gh pr create --body` (the template is only pre-filled in the browser). `.github/workflows/pull-request.yml` runs
+`scripts/check_pull_request.py` on it and fails when a control that applies is missing.
+
+- **Website changes** (`frontend/app/`): run the `frontend-review` skill (`.claude/skills/frontend-review/SKILL.md`)
+  on the final diff, fix what it finds, and paste its result under "Frontend review".
+- **Backend changes** (`backend/`, `bot/`): run the `backend-review` skill (`.claude/skills/backend-review/SKILL.md`)
+  the same way, under "Backend review".
+- **Shared Rust components and tokens**: adding to `frontend/app/rust/library.ts`, changing a component listed
+  there or a composition, or changing a token in `frontend/app/src/styles/properties/` needs a person's
+  justification in the "Rust component library" section. **Never write it yourself.** Ask the person why the
+  existing library could not be used as is (or why the shared component must change), and record their words and
+  GitHub handle. Without one, the pull request isn't ready: say so instead of filling the section.
+- **Documentation**: when the change alters anything a doc describes (`docs/`, READMEs, `.claude/rules`, skills),
+  update that doc in the same pull request. The check lists docs that name the files you changed.
+- Re-run the reviews after the last change, not before it: the results describe the final diff.
+
+Check the description locally before opening the pull request:
+
+```bash
+python3 scripts/check_pull_request.py --body-file body.md
+```

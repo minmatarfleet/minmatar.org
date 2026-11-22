@@ -1,0 +1,27 @@
+name: Pull request checklist
+# Checks the description against .github/pull_request_template.md
+# (scripts/check_pull_request.py): the frontend and backend reviews for the
+# areas the pull request changes, a human justification for shared Rust
+# components and tokens, and a documentation answer. Re-runs when the
+# description is edited. Drafts pass until they are marked ready.
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize, ready_for_review]
+    branches:
+      - main
+
+jobs:
+  checklist:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # base...HEAD needs the merge base.
+          fetch-depth: 0
+      - name: Check the pull request description
+        env:
+          # Passed through the environment, never interpolated into the script.
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+        run: python3 scripts/check_pull_request.py --base "origin/${{ github.base_ref }}"
