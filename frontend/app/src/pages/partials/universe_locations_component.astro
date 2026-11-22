@@ -46,6 +46,7 @@ function page_query(next_view: StructureView, rigs: string[]) {
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import Button from '@components/blocks/Button.astro'
+import Dropdown from '@components/blocks/Dropdown.astro'
 import Input from '@components/blocks/Input.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
@@ -60,11 +61,15 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
                 <label class="[ visually-hidden ]" for="structures-search">{t('structures.search')}</label>
                 <Input id="structures-search" type="search" placeholder={t('structures.search')} x-model="q"
                     x-on:input="document.querySelectorAll('[data-structure-name]').forEach((el) => el.hidden = q && !el.dataset.structureName.includes(q.toLowerCase()))" />
-                <details class="[ structures-rigs ]" x-data x-on:click.outside="$el.open = false" x-on:keydown.escape="$el.open = false">
-                    <summary class:list={['[ structures-rigs__toggle ]', { 'is-on': picked_rigs.length > 0 }]}>
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4" /></svg>
+                <Dropdown
+                    variant="button"
+                    color={picked_rigs.length > 0 ? 'alliance-blue' : 'transparent'}
+                    class="[ structures-rigs ]"
+                >
+                    <Fragment slot="button">
+                        <svg class="[ structures-rigs__icon ]" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4" /></svg>
                         {t('structures.rigs.button')}{picked_rigs.length > 0 && ` · ${picked_rigs.length}`}
-                    </summary>
+                    </Fragment>
                     <form class="[ structures-rigs__menu ]" method="get" aria-label={t('structures.rigs.label')}>
                         {view !== 'all' && <input type="hidden" name="view" value={view} />}
                         <div class="[ structures-rigs__sections ]">
@@ -86,7 +91,7 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
                             <Button type="submit" size="sm" color="transparent">{t('structures.rigs.apply')}</Button>
                         </div>
                     </form>
-                </details>
+                </Dropdown>
             </div>
             <div class="[ structures-controls__views ]">
                 <nav class="[ manage-chips ]" aria-label={t('structures.views')}>
@@ -221,55 +226,21 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
         flex: none;
     }
 
-    .structures-rigs__toggle {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-2xs);
-        block-size: 100%;
-        min-block-size: 2.75rem;
-        padding-inline: var(--space-s);
-        font-family: var(--button-font);
-        font-size: var(--step--1);
-        font-weight: 600;
-        color: var(--highlight);
-        list-style: none;
-        cursor: pointer;
-        background-color: var(--component-background);
-        border: 1px solid var(--border-color-hover);
-
-        &::-webkit-details-marker {
-            display: none;
-        }
-
-        svg {
-            width: 1.2em;
-            height: 1.2em;
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 2;
-            stroke-linecap: round;
-        }
-
-        &.is-on {
-            color: var(--background);
-            background-color: var(--fleet-yellow);
-            border-color: var(--fleet-yellow);
-        }
+    .structures-rigs__icon {
+        width: 1.2em;
+        height: 1.2em;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
     }
 
     .structures-rigs__menu {
-        position: absolute;
-        inset-inline-end: 0;
-        z-index: var(--sticky-z-index);
         display: flex;
         flex-direction: column;
         gap: var(--space-m);
-        inline-size: min(100%, 40rem);
-        margin-top: var(--space-2xs);
-        padding: var(--space-m);
-        background-color: var(--component-background);
-        border: 1px solid var(--border-color-hover);
-        box-shadow: 0 var(--space-m) var(--space-l) color-mix(in srgb, var(--background) var(--tint-bold), transparent);
+        inline-size: min(calc(100vw - var(--space-l)), 40rem);
+        padding: var(--space-xs);
     }
 
     .structures-rigs__sections {
