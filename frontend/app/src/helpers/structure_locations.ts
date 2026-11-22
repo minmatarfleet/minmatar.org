@@ -1,3 +1,4 @@
+import { security_token } from '@helpers/sde/display'
 import type { StructureLocationCard, StructureLocationModule } from '@dtypes/api.minmatar.org'
 import { get_item_icon } from '@helpers/eve_image'
 
@@ -162,10 +163,7 @@ export function in_view(card: StructureLocationCard, view: StructureView) {
 /** CSS colour token for a system's security status, as EVE colours it. */
 export function security_colour(security: number | null | undefined) {
     if (security === null || security === undefined) return 'var(--faded)'
-    if (security >= 0.95) return 'var(--security-status-1)'
-    if (security <= 0) return 'var(--security-status-null)'
-    const step = Math.max(1, Math.min(9, Math.round(security * 10)))
-    return `var(--security-status-point-${step})`
+    return `var(--${security_token(security)})`
 }
 
 export function security_label(security: number | null | undefined) {

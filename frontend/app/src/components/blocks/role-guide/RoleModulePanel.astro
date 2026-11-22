@@ -8,6 +8,7 @@
 import type { RoleModuleCard } from '@/data/fleet-roles'
 import { get_item_icon } from '@helpers/eve_image'
 import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 
 interface Props {
     modules: RoleModuleCard[]
@@ -66,7 +67,7 @@ const panel_id = (i: number) => `${id_prefix}-module-panel-${i}`
     <XFadeScroll class="[ role-modules__scroll ]">
     <div class="[ role-modules__tabs ]" role="tablist" aria-label="Utility modules" style={`--count: ${modules.length}`}>
         {modules.map((module, i) => (
-            <button
+            <StylessButton
                 type="button"
                 role="tab"
                 id={tab_id(i)}
@@ -83,7 +84,7 @@ const panel_id = (i: number) => `${id_prefix}-module-panel-${i}`
             >
                 <img src={get_item_icon(module.type_id, 64)} alt="" width="40" height="40" loading="lazy" />
                 <span>{module.short}</span>
-            </button>
+            </StylessButton>
         ))}
     </div>
     </XFadeScroll>

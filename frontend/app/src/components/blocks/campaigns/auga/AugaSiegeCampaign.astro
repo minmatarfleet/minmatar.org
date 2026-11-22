@@ -778,9 +778,9 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
             z-index: 0;
             background: linear-gradient(
                 90deg,
-                color-mix(in srgb, hsl(0 0% 4%) 94%, var(--er-headline-tint) 6%) 0%,
-                color-mix(in srgb, hsl(0 0% 4%) 82%, var(--er-headline-tint) 5%) 42%,
-                color-mix(in srgb, hsl(0 0% 4%) 58%, transparent) 100%
+                color-mix(in srgb, var(--black) 94%, var(--er-headline-tint) 6%) 0%,
+                color-mix(in srgb, var(--black) 82%, var(--er-headline-tint) 5%) 42%,
+                color-mix(in srgb, var(--black) var(--tint-bold), transparent) 100%
             );
             transition: opacity 0.15s ease;
         }
@@ -820,9 +820,9 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
         &:focus-visible::after {
             background: linear-gradient(
                 90deg,
-                color-mix(in srgb, hsl(0 0% 4%) 90%, var(--er-headline-tint) 10%) 0%,
-                color-mix(in srgb, hsl(0 0% 4%) 78%, var(--er-headline-tint) 8%) 42%,
-                color-mix(in srgb, hsl(0 0% 4%) 52%, transparent) 100%
+                color-mix(in srgb, var(--black) 90%, var(--er-headline-tint) 10%) 0%,
+                color-mix(in srgb, var(--black) 78%, var(--er-headline-tint) 8%) 42%,
+                color-mix(in srgb, var(--black) var(--tint-strong), transparent) 100%
             );
         }
 

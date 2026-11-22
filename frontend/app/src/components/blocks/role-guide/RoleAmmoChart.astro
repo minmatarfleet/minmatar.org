@@ -11,6 +11,7 @@ import { AMMO, AMMO_TARGETS } from '@helpers/fleet_role_ships'
 import { get_item_icon } from '@helpers/eve_image'
 import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 import DataTable from '@components/blocks/DataTable.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 import DamageTypeIcon from '@components/blocks/role-guide/DamageTypeIcon.astro'
 import { DAMAGE_GLYPHS } from '@helpers/damage_types'
 
@@ -144,14 +145,14 @@ const TYPE_CLASS = { em: 'rd-blue', thermal: 'rd-red', kinetic: 'rd-kinetic', ex
     })}
         <div class="[ role-ammo-chart__tabs ]" role="tablist" aria-label={t('fleet_roles.ammo_show_against')}>
             {views.map((view, i) => (
-                <button type="button" role="tab" aria-controls={`ammo-${uid}-${view.key}`}
+                <StylessButton type="button" role="tab" aria-controls={`ammo-${uid}-${view.key}`}
                     aria-selected={i === 0 ? 'true' : 'false'}
                     x-bind:aria-selected={`view === '${view.key}' ? 'true' : 'false'`}
                     x-on:click={`view = '${view.key}'`}
                     class="[ role-ammo-chart__tab ]">
                     {view.type_id ? <img src={get_item_icon(view.type_id, 64)} alt="" width="32" height="32" loading="lazy" /> : <span class="[ role-ammo-chart__paper ]" aria-hidden="true">≡</span>}
                     <span>{view.label}</span>
-                </button>
+                </StylessButton>
             ))}
         </div>
     </div>

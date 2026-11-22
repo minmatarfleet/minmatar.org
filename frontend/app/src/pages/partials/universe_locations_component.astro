@@ -47,6 +47,7 @@ function page_query(next_view: StructureView, rigs: string[]) {
 import Flexblock from '@components/compositions/Flexblock.astro'
 import Button from '@components/blocks/Button.astro'
 import Dropdown from '@components/blocks/Dropdown.astro'
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 import ChipGroup from '@components/blocks/ChipGroup.astro'
 import FilterChip from '@components/blocks/FilterChip.astro'
 import Input from '@components/blocks/Input.astro'
@@ -79,11 +80,10 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
                                 <fieldset>
                                     <legend>{t(t_key('structures.rigs.section_', section.section))}</legend>
                                     {section.groups.map((group) => (
-                                        <label>
-                                            <input type="checkbox" name="rigs" value={group} checked={picked_rigs.includes(group)} />
+                                        <RadioCheckInput type="checkbox" name="rigs" value={group} checked={picked_rigs.includes(group)}>
                                             <span>{t(t_key('structures.rigs.group_', group))}</span>
                                             <span class="[ manage-muted ]">{rig_counts[group] ?? 0}</span>
-                                        </label>
+                                        </RadioCheckInput>
                                     ))}
                                 </fieldset>
                             ))}
@@ -254,25 +254,18 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
             color: var(--fleet-yellow);
         }
 
-        label {
+        :global(label) {
             display: flex;
             align-items: center;
             gap: var(--space-xs);
+            inline-size: 100%;
             min-block-size: 2.25rem;
             font-size: var(--step--1);
             color: var(--highlight);
-            cursor: pointer;
-
-            :global(.manage-muted) {
-                margin-inline-start: auto;
-            }
         }
 
-        input {
-            inline-size: 1.1rem;
-            block-size: 1.1rem;
-            margin: 0;
-            accent-color: var(--fleet-yellow);
+        .manage-muted {
+            margin-inline-start: auto;
         }
     }
 

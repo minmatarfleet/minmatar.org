@@ -27,34 +27,22 @@ if (query.length >= 2) {
         error = (failure as Error).message
     }
 }
+import OptionCard from '@components/blocks/OptionCard.astro'
 ---
 
 {error && <small class="[ manage-field__error ]" role="alert">{error}</small>}
 {!error && query.length < 2 && <small class="[ manage-muted ]">{t('tasks.new.search_hint')}</small>}
 {!error && query.length >= 2 && people.length === 0 && <small class="[ manage-muted ]">{t('tasks.new.no_match')}</small>}
 {people.map((person) => (
-    <label class="[ task-person-option ]">
-        <input type="radio" name="assignee_id" value={person.user_id} />
+    <OptionCard class="[ task-person-option ]" name="assignee_id" value={String(person.user_id)}>
         {person.character_id && <img src={get_player_icon(person.character_id, 64)} alt="" width="32" height="32" loading="lazy" />}
         <span class="[ manage-who__name ]">{person.name}</span>
         <small class="[ manage-muted ]">{t('tasks.new.open_count').replace('~N', String(person.open_tasks))}</small>
-    </label>
+    </OptionCard>
 ))}
 
 <style lang="scss" is:global>
     .task-person-option {
-        display: flex;
-        align-items: center;
-        gap: var(--space-xs);
-        min-height: var(--space-xl);
-        padding-inline: var(--space-xs);
-        border: 1px solid var(--border-color);
-        cursor: pointer;
-
-        input {
-            accent-color: var(--fleet-red);
-        }
-
         img {
             width: var(--space-m);
             height: var(--space-m);
@@ -62,10 +50,6 @@ if (query.length >= 2) {
 
         small {
             margin-inline-start: auto;
-        }
-
-        &:has(input:checked) {
-            border-color: var(--fleet-yellow);
         }
     }
 </style>

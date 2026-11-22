@@ -70,99 +70,14 @@
         "src/styles/components/_tippy-theme.scss": 1,
         "src/styles/tailwind.css": 2
     },
-    "tint_off_ladder": {
-        "src/components/blocks/campaigns/auga/AugaSiegeCampaign.astro": 2,
-        "src/components/blocks/campaigns/etherium-reach/EtheriumReachCampaign.astro": 4,
-        "src/components/blocks/campaigns/hek/HekCampaign.astro": 3,
-        "src/components/blocks/campaigns/providence/ProvidenceCampaign.astro": 1,
-        "src/components/blocks/campaigns/scalding-pass/ScaldingPassCampaign.astro": 2,
-        "src/components/blocks/capital-guide/CapitalGuideTierList.astro": 1
-    },
     "bespoke_empty_state": {},
     "partial_error_state": {},
     "is_superuser_read": {
         "src/pages/account.astro": 1
     },
     "raw_eve_image": {},
-    "raw_table": {
-        "src/components/blocks/ship-guide/GuideMatchupChart.astro": 1,
-        "src/components/blocks/structures/StructureRigChip.astro": 1,
-        "src/pages/list_data.astro": 1,
-        "src/pages/partials/corporation_members_table_component.astro": 1,
-        "src/pages/partials/corporation_requirements_settings_component.astro": 1,
-        "src/pages/partials/landing_week_component.astro": 1
-    },
     "overflow_x_scroll": {},
     "direct_tippy": {},
-    "hand_rolled_tablist": {
-        "src/components/blocks/role-guide/RoleAmmoChart.astro": 1,
-        "src/components/blocks/role-guide/RoleModulePanel.astro": 1
-    },
-    "hand_rolled_popover": {
-        "src/components/blocks/ActionMenuItem.astro": 1,
-        "src/components/blocks/FleetInvites.astro": 1,
-        "src/components/blocks/Neocom.astro": 1,
-        "src/components/page/partials/PageHeader.astro": 1,
-        "src/pages/partials/fleet_pick_ships_modal_component.astro": 1,
-        "src/pages/ships/doctrines/edit/[doctrine_id].astro": 1
-    },
-    "raw_form_control": {
-        "src/components/blocks/DiscordServerAccess.astro": 1,
-        "src/components/blocks/FittingBuyOrderContractPrices.astro": 1,
-        "src/components/blocks/fleet_rsvp/FleetRsvpForm.astro": 1,
-        "src/components/blocks/FleetFightsEdit.astro": 1,
-        "src/components/blocks/FleetInviteDialog.astro": 3,
-        "src/components/blocks/FleetShipsSetup.astro": 1,
-        "src/components/blocks/FleetShipTargetOwners.astro": 1,
-        "src/components/blocks/manage/KitGrid.astro": 1,
-        "src/components/blocks/manage/ManageSwitch.astro": 1,
-        "src/components/blocks/SelectFinder.astro": 1,
-        "src/components/blocks/structures/StructureSettingsForm.astro": 1,
-        "src/pages/character/assets.astro": 2,
-        "src/pages/character/assets/user.astro": 2,
-        "src/pages/industry/orders/planner.astro": 1,
-        "src/pages/partials/campaign_settings_component.astro": 1,
-        "src/pages/partials/corporation_members_table_component.astro": 3,
-        "src/pages/partials/order_line_pricing_component.astro": 1,
-        "src/pages/partials/srp_programs_component.astro": 1,
-        "src/pages/partials/tasks_assignees_component.astro": 1,
-        "src/pages/partials/universe_locations_component.astro": 1
-    },
-    "raw_styled_button": {
-        "src/components/blocks/landing/LandingReel.astro": 3,
-        "src/components/blocks/LearningCenterHub.astro": 1,
-        "src/components/blocks/role-guide/RoleAmmoChart.astro": 1,
-        "src/components/blocks/role-guide/RoleModulePanel.astro": 1,
-        "src/components/blocks/SectionTabs.astro": 1,
-        "src/pages/partials/tribe_invitation_candidates_component.astro": 1
-    },
-    "raw_chip": {
-        "src/components/blocks/amamake-market/AmamakeMarketVolumeSkeleton.astro": 2,
-        "src/components/blocks/capital-guide/CapitalGuideShipChip.astro": 1,
-        "src/components/blocks/FleetBattleReport.astro": 2,
-        "src/components/blocks/FleetParticipantsPilots.astro": 2,
-        "src/components/blocks/FleetScheduleSkeleton.astro": 2,
-        "src/components/blocks/structures/StructureRigChip.astro": 1,
-        "src/components/blocks/TribeGroupChip.astro": 1,
-        "src/components/blocks/universe/UniverseSkeleton.astro": 2
-    },
     "hand_rolled_pager": {},
-    "component_font": {
-        "src/components/blocks/ChangeDiff.astro": 1,
-        "src/components/blocks/FleetList.astro": 1,
-        "src/pages/dscan/index.astro": 1,
-        "src/pages/index.astro": 1,
-        "src/pages/index2.astro": 1,
-        "src/pages/industry/orders/planner.astro": 1,
-        "src/pages/list_data.astro": 1
-    },
-    "palette_off_meaning": {
-        "src/components/blocks/FittingSlot.astro": 16,
-        "src/components/blocks/FleetOverview.astro": 1,
-        "src/components/blocks/newsletter/NewsletterIssue.astro": 1,
-        "src/components/blocks/OurzadInfo.astro": 1,
-        "src/components/blocks/PilotsList.astro": 1,
-        "src/helpers/structure_locations.ts": 3
-    },
     "local_semantic_colour": {}
 }

@@ -11,7 +11,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-import { RULES, Z_INDEX_LAYER_THRESHOLD, rule, type ConventionRule } from './rules'
+import { EXEMPTIONS, RULES, Z_INDEX_LAYER_THRESHOLD, rule, with_exemptions, type ConventionRule } from './rules'
 import { APP_ROOT, source_files, type Hit, type SourceFile } from './scan'
 
 type Baseline = Record<string, Record<string, number>>
@@ -49,6 +49,17 @@ describe('frontend conventions', () => {
         expect(Object.keys(baseline).sort()).toEqual(ratchet_ids)
     })
 
+    for (const { id, exempt, find } of EXEMPTIONS) {
+        it(`${id}: every exemption still applies`, () => {
+            const files = new Map(source_files().map((f) => [f.path, f]))
+            const reasons = Object.entries(exempt).map(([path, reason]) => `  ${path}: ${reason}`).join('\n')
+            console.info(`${id} exemptions:\n${reasons}`)
+            const stale = Object.keys(exempt).filter((path) => !files.has(path) || find(files.get(path)!).length === 0)
+            expect(stale, `${id}: remove exemptions for files that are gone or no longer hit the rule`).toEqual([])
+            expect(Object.entries(exempt).filter(([, reason]) => reason.trim().length < 12).map(([path]) => path), `${id}: give each exemption a reason`).toEqual([])
+        })
+    }
+
     for (const r of RULES) {
         if (r.kind === 'absolute') {
             it(`${r.id}: no violations`, () => {
@@ -76,6 +87,15 @@ const astro = (text: string, path = 'src/components/blocks/Fixture.astro'): Sour
 const count = (id: string, file: SourceFile) => rule(id).find(file).length
 
 describe('convention rule matchers', () => {
+    it('exempt: a listed file yields no hits and an unlisted look-alike still does', () => {
+        const table = `<table><tr><td>1</td></tr></table>`
+        const base = RULES.find((r) => r.id === 'raw_table')!
+        const exempted = with_exemptions({ ...base, exempt: { 'src/components/blocks/Matrix.astro': 'heatmap matrix: cells are positioned by value' } })
+        expect(base.find(astro(table, 'src/components/blocks/Matrix.astro')).length).toBe(1)
+        expect(exempted.find(astro(table, 'src/components/blocks/Matrix.astro')).length).toBe(0)
+        expect(exempted.find(astro(table, 'src/components/blocks/Other.astro')).length).toBe(1)
+    })
+
     it('client_fetch: client code only, not the server frontmatter', () => {
         expect(count('client_fetch', astro(`---\nconst r = await fetch(url)\n---\n<div />`))).toBe(0)
         expect(count('client_fetch', astro(`---\n---\n<div x-data="{ load() { fetch('/api/x') } }"></div>`))).toBe(1)
