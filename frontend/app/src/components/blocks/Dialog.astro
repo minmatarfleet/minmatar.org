@@ -29,6 +29,7 @@ const {
 delete attributes.class
 
 import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <div>
@@ -46,7 +47,7 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
         ]}
         {...attributes}
     >
-        {close_button && <button class="[ dialog-close ]" x-on:click="close_dialog()"><TrashIcon /></button>}
+        {close_button && <StylessButton class="[ dialog-close ]" x-on:click="close_dialog()"><TrashIcon /></StylessButton>}
         {thin ?
             <Wrapper
                 padding_block='var(--space-3xs)'

@@ -54,6 +54,7 @@ import TimerAddDialog from '@components/blocks/structures/TimerAddDialog.astro'
 import StructureReportDialog from '@components/blocks/structures/StructureReportDialog.astro'
 import Tag from '@components/blocks/Tag.astro'
 import Countdown from '@components/blocks/Countdown.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <Flexblock gap='var(--space-s)' class:list={['[ campaign-structures ]', Astro.props.class]} {...attributes}>
@@ -90,7 +91,7 @@ import Countdown from '@components/blocks/Countdown.astro'
                 return (
                 <div class:list={['[ campaign-structures-row ]', { 'is-destroyed': destroyed }]} role="row">
                     <span role="cell">
-                        <button
+                        <StylessButton
                             type="button"
                             class="[ campaign-structures-copy ]"
                             data-name={structure.name}
@@ -105,7 +106,7 @@ import Countdown from '@components/blocks/Countdown.astro'
                                 :
                                 <span>{structure.name}</span>
                             }
-                        </button>
+                        </StylessButton>
                     </span>
                     <span role="cell">{structure.system_name}</span>
                     <span role="cell">{structure.owner_alliance_ticker || '—'}</span>

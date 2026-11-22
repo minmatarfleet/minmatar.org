@@ -10,6 +10,7 @@ interface Props {
 }
 
 const { name = 'eve_type_ids' } = Astro.props
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <FlexInline
@@ -17,20 +18,20 @@ const { name = 'eve_type_ids' } = Astro.props
     class="[ coordinator-checkbox-select ]"
     justification="flex-end"
 >
-    <button
+    <StylessButton
         type="button"
         class="[ coordinator-checkbox-select__action ]"
         onclick={`this.closest('form').querySelectorAll('input[name="${name}"]').forEach(c => { c.checked = true })`}
     >
         {t('industry.orders.coordinators.select_all')}
-    </button>
-    <button
+    </StylessButton>
+    <StylessButton
         type="button"
         class="[ coordinator-checkbox-select__action ]"
         onclick={`this.closest('form').querySelectorAll('input[name="${name}"]').forEach(c => { c.checked = false })`}
     >
         {t('industry.orders.coordinators.select_none')}
-    </button>
+    </StylessButton>
 </FlexInline>
 
 <style lang="scss">
