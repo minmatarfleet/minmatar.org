@@ -255,7 +255,7 @@ import Markdown from './Markdown.astro'
                             </Flexblock>
                         }
                         {fleet_id && user &&
-                            <input type="checkbox" checked name="store" class="[ hidden ]" />
+                            <input type="hidden" name="store" value="on" />
                             <input type="hidden" value={fleet_id ? fleet_id : -1} name="fleet" />
                             <input type="hidden" value={fitting_id ? fitting_id : -1} name="fitting" />
                         }

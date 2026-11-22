@@ -42,6 +42,7 @@ const DECLASSIFY_URL = `${translatePath('/partials/fleet_declassify_component')}
 
 import Button from '@components/blocks/Button.astro'
 import FleetCopyButton from '@components/blocks/FleetCopyButton.astro'
+import Switch from '@components/blocks/Switch.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 ---
@@ -60,13 +61,12 @@ import Flexblock from '@components/compositions/Flexblock.astro'
                         hx-target="find .fleet-settings__saved"
                         hx-swap="innerHTML"
                     >
-                        <label>
-                            <input type="checkbox" name="hide_volunteers" checked={fleet.hide_volunteers} />
-                            <span>
-                                <span class="[ fleet-settings__toggle-label ]">{t('fleets.command.hide_names')}</span>
-                                <small>{t('fleets.command.hide_names_hint')}</small>
-                            </span>
-                        </label>
+                        <Switch
+                            name="hide_volunteers"
+                            checked={fleet.hide_volunteers}
+                            label={t('fleets.command.hide_names')}
+                            description={t('fleets.command.hide_names_hint')}
+                        />
                         <span class="[ fleet-settings__saved ]" role="status"></span>
                     </form>
                 }
@@ -168,28 +168,6 @@ import Flexblock from '@components/compositions/Flexblock.astro'
         align-items: center;
         justify-content: space-between;
 
-        label {
-            display: flex;
-            gap: var(--space-xs);
-            align-items: flex-start;
-            cursor: pointer;
-
-            > span {
-                display: flex;
-                flex-direction: column;
-            }
-        }
-
-        input {
-            width: 1.25rem;
-            height: 1.25rem;
-            margin-top: 2px;
-            accent-color: var(--fleet-red);
-        }
-    }
-
-    .fleet-settings__toggle-label {
-        color: var(--highlight);
     }
 
     .fleet-settings__actions {
