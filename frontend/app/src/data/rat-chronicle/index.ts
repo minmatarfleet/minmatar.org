@@ -7,7 +7,7 @@ import { chapter5 } from './chapter-5'
 import { chapter6 } from './chapter-6'
 import { chapter7 } from './chapter-7'
 import { chapter8 } from './chapter-8'
-import { chapter11 } from './chapter-11'
+import { dronelands } from './dronelands'
 import { lettingThemGo } from './letting-them-go'
 import { theWaifuWars } from './the-waifu-wars'
 import { ratChronicleEras } from './eras'
@@ -25,7 +25,7 @@ const chapters_in_order: ChronicleChapterSource[] = [
     chapter8,
     theWaifuWars,
     lettingThemGo,
-    chapter11,
+    dronelands,
 ]
 
 export const ratChronicleChapters: ChronicleChapter[] = chapters_in_order.map((chapter, index) => ({
@@ -45,6 +45,7 @@ export function getChronicleChapterById(chapter_id: string): ChronicleChapter | 
 export const legacyChronicleChapterIds: Record<string, string> = {
     'chapter-9': 'the-waifu-wars',
     'chapter-10': 'letting-them-go',
+    'chapter-11': 'dronelands',
 }
 
 /** The current chapter id for an address: itself, or where a retired one moved to. */

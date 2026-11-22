@@ -139,7 +139,7 @@ export const lettingThemGo: ChronicleChapterSource = {
                 },
                 {
                     type: 'paragraph',
-                    text: `The alliance's own satirical paper, **The Cope**, did not wait for the timer. It ran the story the next day under the headline its enemies would have chosen: "BIGAB/SEDIT/BUSA evict FL33T from Vard", three of the names from the summer's treaty.`,
+                    text: `The alliance's own satirical paper, **The Cope**, did not wait for the timer. It ran the story the next day under the headline its enemies would have chosen: "BIGAB/SEDIT/BUSA evict FL33T from Vard".`,
                 },
                 {
                     type: 'paragraph',
