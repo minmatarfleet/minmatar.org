@@ -23,7 +23,7 @@ from django.utils import timezone
 
 from app.cache import CachedRollup
 from campaigns.models import CampaignSiteCompletion
-from discord.models import DiscordChannelActivityRecord, DiscordUser
+from discord.models import DiscordChannelActivityRecord
 from eveonline.client import live_esi_allowed
 from eveonline.constants import (
     AMARR_FACTION_ID,
@@ -32,13 +32,13 @@ from eveonline.constants import (
     MINMATAR_FACTION_ID,
     MINMATAR_FLEET_ALLIANCE_ID,
 )
-from eveonline.helpers.characters.identity import primary_characters_for_users
 from eveonline.models import (
     EveAlliance,
     EveCharacter,
     EveCharacterIndustryJob,
     EveCharacterKillmail,
     EveCharacterKillmailAttacker,
+    EveCharacterMiningDelta,
     EveCorporation,
     EveCorporationContract,
 )
@@ -63,12 +63,9 @@ SLOW = CachedRollup(
 )
 
 MAX_EVENTS = 60
-# A voice gathering worth a line: at least this many pilots in one minute.
-VOICE_MIN_PILOTS = 3
 # A kill or loss reads as a fleet fight ("fought X and won") only when a fleet
 # this big was involved; smaller gangs and solo read "killed a Rifter".
 LARGE_FLEET_PILOTS = 10
-MANUFACTURING_ACTIVITY_ID = 1
 
 FACTION_MILITIA_NAMES = {
     CALDARI_FACTION_ID: "the Caldari Militia",
@@ -82,18 +79,36 @@ FACTION_MILITIA_NAMES = {
 SITE_ACTIONS = {
     "complex": "captured a complex",
     "supply_cache": "ran a supply cache site",
+    "advantage_site": "ran an advantage site",
 }
 DEFAULT_SITE_ACTION = "ran a warzone site"
 
 
 @dataclass
 class Event:
+    """One feed line: "<pilot> <verb> <subject> <tail>". The subject (a ship,
+    an ore or the side we fought) gets an icon from the EVE image server, so
+    it is kept apart from the words around it."""
+
     occurred_at: datetime
     kind: str
     character_id: int | None
-    action: str
+    verb: str
+    subject: str = ""
+    subject_type: str = ""
+    subject_id: int = 0
+    tail: str = ""
     others: int = 0
     region: str = ""
+    # A large-fleet line ("fought X and won"); the hero's Live band leaves
+    # these to the week table's Fleet activity tab.
+    group: bool = False
+    # m³ for a mining line, so the page can add it to the day's total.
+    amount: int = 0
+
+    @property
+    def action(self) -> str:
+        return " ".join(p for p in (self.verb, self.subject, self.tail) if p)
 
 
 # --------------------------------------------------------------------------
@@ -249,6 +264,16 @@ def _sites(start, end):
     return total, complexes
 
 
+def _mined_volume(start, end) -> float:
+    """m³ of ore the ledger syncs saw mined in the window."""
+    return sum(
+        (volume or 0) * quantity
+        for volume, quantity in EveCharacterMiningDelta.objects.filter(
+            observed_at__gte=start, observed_at__lt=end
+        ).values_list("eve_type__volume", "quantity")
+    )
+
+
 def _day_totals(start, end) -> dict:
     sites, complexes = _sites(start, end)
     freight_count, freight_volume = _freight(start, end)
@@ -260,6 +285,7 @@ def _day_totals(start, end) -> dict:
         "industry_jobs": _industry_jobs(start, end),
         "freight_contracts": freight_count,
         "freight_volume": round(freight_volume),
+        "mined_volume": round(_mined_volume(start, end)),
     }
 
 
@@ -441,8 +467,10 @@ def _attacker_sides(killmail_row_ids):
     ):
         if alliance_id == MINMATAR_FLEET_ALLIANCE_ID:
             continue
-        if alliance_id or corporation_id:
-            sides[row_id][alliance_id or corporation_id] += 1
+        if alliance_id:
+            sides[row_id][("alliance", alliance_id)] += 1
+        elif corporation_id:
+            sides[row_id][("corporation", corporation_id)] += 1
         if faction_id:
             factions[row_id][faction_id] += 1
     return sides, factions
@@ -493,12 +521,23 @@ def _biggest(counter: Counter | None):
     return counter.most_common(1)[0][0]
 
 
-def _victim_entity(first, names) -> str:
-    return (
-        names.get(first["victim_alliance_id"] or 0)
-        or names.get(first["victim_corporation_id"] or 0)
-        or FACTION_MILITIA_NAMES.get(first["victim_faction_id"], "")
-    )
+def _victim_entity(first) -> tuple[str, int]:
+    if first["victim_alliance_id"]:
+        return "alliance", first["victim_alliance_id"]
+    if first["victim_corporation_id"]:
+        return "corporation", first["victim_corporation_id"]
+    return "", 0
+
+
+def _entity_subject(key, names, faction_id) -> tuple[str, str, int]:
+    """The side we fought as (name, subject_type, subject_id); a militia when
+    no alliance or corporation name is known."""
+    if key and names.get(key[1]):
+        return names[key[1]], key[0], key[1]
+    militia = FACTION_MILITIA_NAMES.get(faction_id)
+    if militia:
+        return militia, "faction", faction_id
+    return "", "", 0
 
 
 def _combat_events(start, end) -> list[Event]:
@@ -509,12 +548,14 @@ def _combat_events(start, end) -> list[Event]:
     sides, factions = _attacker_sides(
         [first["id"] for first in firsts if _is_loss(first)]
     )
-    entity_ids = {
-        first["victim_alliance_id"] or first["victim_corporation_id"]
-        for first in firsts
-        if not _is_loss(first)
+    keys = {
+        _victim_entity(first) for first in firsts if not _is_loss(first)
     } | {_biggest(counter) for counter in sides.values()}
-    names = _entity_names(entity_ids, entity_ids)
+    keys = {k for k in keys if k and k[1]}
+    names = _entity_names(
+        (k[1] for k in keys if k[0] == "alliance"),
+        (k[1] for k in keys if k[0] == "corporation"),
+    )
     regions = _region_names_for_systems(f["solar_system_id"] for f in firsts)
     ships = _type_names(f["ship_type_id"] for f in firsts)
     fleets = _large_fleet_windows(start, end)
@@ -524,57 +565,59 @@ def _combat_events(start, end) -> list[Event]:
         first = group[0]
         ours = sorted({r["character__character_id"] for r in group})
         region = regions.get(first["solar_system_id"], "")
-        ship = ships.get(first["ship_type_id"], "")
-        pilots = [first["victim_character_id"]] if _is_loss(first) else ours
+        loss = _is_loss(first)
+        pilots = [first["victim_character_id"]] if loss else ours
+        pilot = (first["victim_character_id"] or ours[0]) if loss else ours[0]
         large = len(ours) >= LARGE_FLEET_PILOTS or _in_large_fleet(
             pilots, first["killmail_time"], fleets
         )
         if not large:
             # Small gang or solo: just the hull.
-            ship = ship or "ship"
-            loss = _is_loss(first)
+            ship = ships.get(first["ship_type_id"], "") or "ship"
             verb = "lost" if loss else "killed"
             events.append(
                 Event(
                     first["killmail_time"],
                     "loss" if loss else "kill",
-                    (
-                        (first["victim_character_id"] or ours[0])
-                        if loss
-                        else ours[0]
-                    ),
-                    f"{verb} {_article(ship)} {ship}",
-                    0 if loss else len(ours) - 1,
-                    region,
+                    pilot,
+                    f"{verb} {_article(ship)}",
+                    ship,
+                    "type",
+                    first["ship_type_id"],
+                    others=0 if loss else len(ours) - 1,
+                    region=region,
                 )
             )
             continue
-        if _is_loss(first):
-            entity = names.get(
-                _biggest(sides.get(first["id"])), ""
-            ) or FACTION_MILITIA_NAMES.get(
-                _biggest(factions.get(first["id"])), ""
+        if loss:
+            subject, subject_type, subject_id = _entity_subject(
+                _biggest(sides.get(first["id"])),
+                names,
+                _biggest(factions.get(first["id"])),
             )
-            action = (
-                f"fought {entity} and went down swinging"
-                if entity
-                else "went down swinging"
+            tail = "and went down swinging"
+        else:
+            subject, subject_type, subject_id = _entity_subject(
+                _victim_entity(first), names, first["victim_faction_id"]
             )
-            pilot = first["victim_character_id"] or ours[0]
-            events.append(
-                Event(first["killmail_time"], "loss", pilot, action, 0, region)
-            )
-            continue
-        entity = _victim_entity(first, names)
-        action = f"fought {entity} and won" if entity else "won a fight"
+            tail = "and won"
+        if subject:
+            verb = "fought"
+        else:
+            verb, tail = ("went down swinging" if loss else "won a fight"), ""
         events.append(
             Event(
                 first["killmail_time"],
-                "kill",
-                ours[0],
-                action,
-                len(ours) - 1,
-                region,
+                "loss" if loss else "kill",
+                pilot,
+                verb,
+                subject,
+                subject_type,
+                subject_id,
+                tail,
+                others=0 if loss else len(ours) - 1,
+                region=region,
+                group=True,
             )
         )
     return events
@@ -597,158 +640,51 @@ def _site_events(start, end) -> list[Event]:
             "site",
             character_id,
             SITE_ACTIONS.get(kind, DEFAULT_SITE_ACTION),
-            0,
-            regions.get(system_id, ""),
+            region=regions.get(system_id, ""),
         )
         for when, character_id, kind, system_id in rows
     ]
 
 
-def _industry_events(start, end) -> list[Event]:
+def _mining_events(start, end) -> list[Event]:
+    """What each ledger sync saw a pilot mine, one line per pilot and ore."""
     rows = list(
-        EveCharacterIndustryJob.objects.filter(
-            end_date__gte=start,
-            end_date__lt=end,
-            activity_id=MANUFACTURING_ACTIVITY_ID,
+        EveCharacterMiningDelta.objects.filter(
+            observed_at__gte=start, observed_at__lt=end
         ).values_list(
-            "end_date", "character__character_id", "runs", "blueprint_type_id"
+            "observed_at",
+            "character__character_id",
+            "eve_type_id",
+            "eve_type__name",
+            "eve_type__volume",
+            "quantity",
+            "solar_system_id",
         )
     )
-    types = _type_names(r[3] for r in rows)
-    # A pilot's parallel jobs of one product finish together: one line.
+    regions = _region_names_for_systems(r[6] for r in rows)
     batches: dict[tuple, list] = {}
-    for when, character_id, runs, blueprint_type_id in rows:
-        product = types.get(blueprint_type_id, "").removesuffix(" Blueprint")
-        if not product:
-            continue
-        key = (character_id, product, when.replace(second=0, microsecond=0))
-        batch = batches.setdefault(key, [when, 0])
-        batch[0] = max(batch[0], when)
-        batch[1] += runs or 0
+    for when, character_id, type_id, ore, volume, quantity, sid in rows:
+        key = (character_id, type_id, when.replace(second=0, microsecond=0))
+        batch = batches.setdefault(key, [when, ore, 0.0, sid])
+        batch[2] += (volume or 0) * quantity
     return [
         Event(
             when,
-            "industry",
+            "mining",
             character_id,
-            f"finished building {runs:,} {product}",
+            f"mined {round(m3):,} m³ of",
+            ore,
+            "type",
+            type_id,
+            region=regions.get(sid, ""),
+            amount=round(m3),
         )
-        for (character_id, product, _), (when, runs) in batches.items()
+        for (character_id, type_id, _), (when, ore, m3, sid) in batches.items()
+        if m3 >= 1
     ]
 
 
-def _freight_events(start, end) -> list[Event]:
-    rows = EveCorporationContract.objects.filter(
-        type="courier",
-        status="finished",
-        date_completed__gte=start,
-        date_completed__lt=end,
-        acceptor_id__isnull=False,
-    ).values_list("date_completed", "acceptor_id", "volume")
-    return [
-        Event(
-            when,
-            "freight",
-            acceptor_id,
-            f"delivered {round(volume or 0):,} m³ of freight",
-        )
-        for when, acceptor_id, volume in rows
-    ]
-
-
-def _fleet_events(start, end) -> list[Event]:
-    events = []
-    for instance in EveFleetInstance.objects.filter(
-        end_time__gte=start, end_time__lt=end, start_time__isnull=False
-    ).only("id", "start_time", "end_time", "boss_id"):
-        if not instance.boss_id:
-            continue
-        pilots = (
-            EveFleetInstanceMember.objects.filter(eve_fleet_instance=instance)
-            .values("character_id")
-            .distinct()
-            .count()
-        )
-        length = (instance.end_time - instance.start_time).total_seconds()
-        events.append(
-            Event(
-                instance.end_time,
-                "fleet",
-                instance.boss_id,
-                f"ran a fleet that lasted {_duration_words(length)}",
-                max(pilots - 1, 0),
-            )
-        )
-    return events
-
-
-def _voice_events(start, end) -> list[Event]:
-    """One line per hour: the busiest minute, if enough pilots were on."""
-    rows = (
-        DiscordChannelActivityRecord.objects.filter(
-            activity_type=DiscordChannelActivityRecord.VOICE_MINUTE,
-            created_on__gte=start,
-            created_on__lt=end,
-        )
-        .annotate(minute=TruncMinute("created_on"))
-        .values_list("minute", "username")
-    )
-    by_minute: dict[datetime, set[str]] = defaultdict(set)
-    for minute, username in rows:
-        by_minute[minute].add(username)
-
-    best_per_hour: dict[datetime, tuple[datetime, set[str]]] = {}
-    for minute, users in by_minute.items():
-        hour = minute.replace(minute=0)
-        current = best_per_hour.get(hour)
-        if current is None or len(users) > len(current[1]):
-            best_per_hour[hour] = (minute, users)
-
-    tags = {u for _, users in best_per_hour.values() for u in users}
-    user_ids = dict(
-        DiscordUser.objects.filter(discord_tag__in=tags).values_list(
-            "discord_tag", "user_id"
-        )
-    )
-    mains = primary_characters_for_users(user_ids.values())
-    events = []
-    for minute, users in best_per_hour.values():
-        if len(users) < VOICE_MIN_PILOTS:
-            continue
-        character_id = None
-        for tag in sorted(users):
-            primary = mains.get(user_ids.get(tag))
-            if primary:
-                character_id = primary.character_id
-                break
-        if character_id is None:
-            continue
-        events.append(
-            Event(
-                minute,
-                "comms",
-                character_id,
-                "were hanging out on comms",
-                len(users) - 1,
-            )
-        )
-    return events
-
-
-def _events(start, end) -> list[dict]:
-    events: list[Event] = []
-    for source in (
-        _combat_events,
-        _site_events,
-        _industry_events,
-        _freight_events,
-    ):
-        events.extend(source(start, end))
-    # Fleets and comms would say where the alliance is right now: an hour late.
-    for source in (_fleet_events, _voice_events):
-        events.extend(source(start - DELAY, end - DELAY))
-    events = [e for e in events if e.character_id]
-    events.sort(key=lambda e: e.occurred_at, reverse=True)
-    events = events[:MAX_EVENTS]
+def event_rows(events: list[Event]) -> list[dict]:
     names = _character_names(e.character_id for e in events)
     return [
         {
@@ -760,10 +696,26 @@ def _events(start, end) -> list[dict]:
             ),
             "others": e.others,
             "action": e.action,
+            "verb": e.verb,
+            "subject": e.subject,
+            "subject_type": e.subject_type,
+            "subject_id": e.subject_id,
+            "tail": e.tail,
             "region": e.region,
+            "amount": e.amount,
         }
         for e in events
     ]
+
+
+def _events(start, end) -> list[dict]:
+    """The hero's Live band: one pilot's own kill, loss, site or mining run.
+    Large-fleet fights are left to the week table's Fleet activity tab."""
+    events = [e for e in _combat_events(start, end) if not e.group]
+    events += _site_events(start, end) + _mining_events(start, end)
+    events = [e for e in events if e.character_id]
+    events.sort(key=lambda e: e.occurred_at, reverse=True)
+    return event_rows(events[:MAX_EVENTS])
 
 
 # --------------------------------------------------------------------------

@@ -1,0 +1,105 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { LandingEvent } from '@dtypes/api.minmatar.org'
+import { character_portrait, event_who, subject_icon } from '@helpers/landing'
+
+/**
+ * One feed line on one row: portrait, "<pilot> <verb> [icon] <subject> <tail>".
+ * The icon is the ship or ore, or the logo of the side we fought (round).
+ */
+interface Props {
+    event:          LandingEvent;
+    size?:          'sm' | 'md';
+    [propName: string]: any;
+}
+
+const { event, size = 'sm', ...attributes } = Astro.props
+
+delete attributes.class
+
+const icon = subject_icon(event, 32)
+const who = event_who(event, t('landing_new.and_others'), t('landing_new.and_other'))
+---
+
+<span class:list={['[ landing-line ]', `landing-line--${size}`, Astro.props.class]} {...attributes}>
+    <img class="[ landing-line__portrait ]" src={character_portrait(event.character_id, 64)} alt="" loading="lazy" />
+    <span class="[ landing-line__text ]">
+        <strong>{who}</strong>{' '}{event.verb || event.action}
+        {event.subject &&
+            <>
+                {' '}
+                {icon &&
+                    <img
+                        class:list={['[ landing-line__icon ]', { 'landing-line__icon--round': event.subject_type !== 'type' }]}
+                        src={icon}
+                        alt=""
+                        loading="lazy"
+                    />
+                }
+                <strong>{event.subject}</strong>
+            </>
+        }
+        {event.tail && <>{' '}{event.tail}</>}
+    </span>
+</span>
+
+<style lang="scss">
+    .landing-line {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        min-width: 0;
+        white-space: nowrap;
+        color: var(--text-muted);
+
+        strong {
+            font-weight: 600;
+            color: var(--highlight);
+        }
+    }
+
+    .landing-line--sm {
+        font-size: var(--step--1);
+
+        .landing-line__portrait {
+            width: var(--space-m);
+            height: var(--space-m);
+        }
+    }
+
+    .landing-line--md {
+        font-size: var(--step-0);
+
+        .landing-line__portrait {
+            width: var(--space-l);
+            height: var(--space-l);
+        }
+    }
+
+    .landing-line__portrait {
+        flex-shrink: 0;
+        object-fit: cover;
+        background: var(--surface-sunken);
+    }
+
+    .landing-line__text {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .landing-line__icon {
+        width: 1.15em;
+        height: 1.15em;
+        margin-inline-end: var(--space-3xs);
+        vertical-align: -0.2em;
+        object-fit: cover;
+        border-radius: 2px;
+    }
+
+    .landing-line__icon--round {
+        border-radius: 50%;
+    }
+</style>

@@ -1,5 +1,6 @@
-"""The /landing-new heartbeat: totals, pilot events, live kills and the
-60-minute delay on fleets and comms."""
+"""The /landing-new heartbeat and week table: totals, the Live band's pilot
+lines, Fleet activity engagements, mining from ledger deltas and the 60-minute
+delay on fleets and comms."""
 
 from datetime import timedelta
 
@@ -8,6 +9,7 @@ from django.core.cache import cache
 from django.utils import timezone
 
 from alliance.helpers.landing_pulse import build_fast, build_slow
+from alliance.helpers.landing_week import build_week, landing_week
 from app.test import TestCase
 from discord.models import DiscordChannelActivityRecord, DiscordUser
 from eveonline.constants import (
@@ -15,11 +17,13 @@ from eveonline.constants import (
     MINMATAR_FLEET_ALLIANCE_ID,
 )
 from eveonline.helpers.characters import set_primary_character
+from eveonline.helpers.characters.mining import _record_delta
 from eveonline.models import (
     EveAlliance,
     EveCharacter,
     EveCharacterKillmail,
     EveCharacterKillmailAttacker,
+    EveCharacterMiningDelta,
 )
 from eveuniverse.models import EveCategory, EveGroup, EveType
 from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
@@ -117,6 +121,12 @@ class LandingPulseTestCase(TestCase):
             for e in data["events"]
         ]
 
+    def _week_actions(self, tab):
+        return [
+            (e["character_name"], e["others"], e["action"])
+            for e in build_week(self.now)["tabs"][tab]
+        ]
+
     def test_small_gang_kill_names_the_hull_and_counts_our_pilots(self):
         for row_id, character in ((1, self.pilot), (2, self.wingman)):
             self._killmail(
@@ -138,6 +148,12 @@ class LandingPulseTestCase(TestCase):
         )
         self.assertEqual(sum(h["kills"] for h in data["hourly_kills"]), 1)
         self.assertEqual(len(data["hourly_kills"]), 24)
+        line = data["events"][0]
+        self.assertEqual(
+            (line["verb"], line["subject"], line["subject_type"]),
+            ("killed a", "Rifter", "type"),
+        )
+        self.assertEqual(line["subject_id"], 587)
 
     def test_large_fleet_kill_names_the_victims_alliance(self):
         self._large_fleet(
@@ -156,9 +172,16 @@ class LandingPulseTestCase(TestCase):
 
         data = build_fast(self.now)
 
+        # A fleet fight is Fleet activity, not a Live band line.
+        self.assertEqual(data["events"], [])
         self.assertIn(
             ("Orion Sa-Solo", 0, "fought Snuffed Out and won"),
-            self._event_actions(data),
+            self._week_actions("kills"),
+        )
+        row = build_week(self.now)["tabs"]["kills"][0]
+        self.assertEqual(
+            (row["subject_type"], row["subject_id"]),
+            ("alliance", ENEMY_ALLIANCE_ID),
         )
 
     def test_solo_loss_names_the_hull(self):
@@ -212,7 +235,7 @@ class LandingPulseTestCase(TestCase):
                 0,
                 "fought Templis CALSF and went down swinging",
             ),
-            self._event_actions(data),
+            self._week_actions("kills"),
         )
 
     def test_kills_are_live(self):
@@ -289,7 +312,7 @@ class LandingPulseTestCase(TestCase):
             [("Orion Sa-Solo", 0, "killed a Rifter")],
         )
 
-    def test_voice_gathering_names_one_pilot_and_counts_the_rest(self):
+    def test_voice_counts_toward_peak_comms_only(self):
         minute = (self.now - timedelta(hours=2)).replace(
             second=0, microsecond=0
         )
@@ -318,11 +341,121 @@ class LandingPulseTestCase(TestCase):
         data = build_fast(self.now)
 
         self.assertEqual(data["week"]["peak_comms"], 3)
+        self.assertEqual(data["events"], [])
+        self.assertNotIn("Ops 1", str(data))
+
+    def _ore(self):
+        category, _ = EveCategory.objects.get_or_create(
+            id=25, defaults={"name": "Asteroid", "published": True}
+        )
+        group, _ = EveGroup.objects.get_or_create(
+            id=462,
+            defaults={
+                "name": "Veldspar",
+                "published": True,
+                "eve_category": category,
+            },
+        )
+        ore, _ = EveType.objects.get_or_create(
+            id=1230,
+            defaults={
+                "name": "Veldspar",
+                "published": True,
+                "eve_group": group,
+                "volume": 0.1,
+            },
+        )
+        return ore
+
+    def test_ledger_sync_records_only_what_was_added(self):
+        ore = self._ore()
+        today = self.now.date()
+        _record_delta(self.pilot, ore, 30002537, today, 1000, None)
+        _record_delta(self.pilot, ore, 30002537, today, 1500, 1000)
+        _record_delta(self.pilot, ore, 30002537, today, 1500, 1500)
+        _record_delta(
+            self.pilot, ore, 30002537, today - timedelta(days=5), 900, None
+        )
+
+        self.assertEqual(
+            list(
+                EveCharacterMiningDelta.objects.values_list(
+                    "quantity", flat=True
+                ).order_by("quantity")
+            ),
+            [500, 1000],
+        )
+
+    def test_mining_lines_and_volume_come_from_deltas(self):
+        ore = self._ore()
+        EveCharacterMiningDelta.objects.create(
+            character=self.pilot,
+            eve_type=ore,
+            solar_system_id=30002537,
+            quantity=420000,
+            observed_at=self.now - timedelta(minutes=30),
+        )
+
+        data = build_fast(self.now)
+
+        self.assertEqual(data["day"]["mined_volume"], 42000)
         self.assertEqual(
             self._event_actions(data),
-            [("BearThatCares", 2, "were hanging out on comms")],
+            [("Orion Sa-Solo", 0, "mined 42,000 m³ of Veldspar")],
         )
-        self.assertNotIn("Ops 1", str(data["events"]))
+        self.assertEqual(len(build_week(self.now)["tabs"]["mining"]), 1)
+
+    def test_fleet_activity_groups_a_gang_and_skips_solo(self):
+        # Two of ours on two kills in the same system within 20 minutes...
+        for row_id, killmail_id, character, ago in (
+            (11, 600, self.pilot, timedelta(hours=3)),
+            (12, 601, self.wingman, timedelta(hours=3, minutes=-10)),
+        ):
+            self._killmail(
+                row_id,
+                killmail_id,
+                character,
+                ago,
+                victim_character_id=9001,
+                victim_alliance_id=ENEMY_ALLIANCE_ID,
+            )
+        # ...and a solo kill a day earlier, which stays out.
+        self._killmail(
+            13,
+            602,
+            self.pilot,
+            timedelta(days=1),
+            victim_character_id=9002,
+            victim_alliance_id=ENEMY_ALLIANCE_ID,
+        )
+
+        rows = build_week(self.now)["tabs"]["fights"]
+
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["others"], 1)
+        self.assertEqual(rows[0]["verb"], "fought")
+        self.assertEqual(rows[0]["subject"], "Snuffed Out")
+        self.assertTrue(rows[0]["tail"].startswith("· Small gang · 2 kills"))
+
+    def test_week_pages_twelve_rows(self):
+        for index in range(13):
+            self._killmail(
+                100 + index,
+                700 + index,
+                self.pilot,
+                timedelta(hours=2, minutes=index),
+                victim_character_id=9001,
+                victim_alliance_id=ENEMY_ALLIANCE_ID,
+            )
+
+        first = landing_week("kills", 1)
+        last = landing_week("kills", 9)
+
+        self.assertEqual((first["pages"], first["total"]), (2, 13))
+        self.assertEqual(len(first["rows"]), 12)
+        self.assertEqual((last["page"], len(last["rows"])), (2, 1))
+        self.assertEqual(first["counts"]["kills"], 13)
+        self.assertEqual(landing_week("nonsense", 1)["tab"], "fights")
 
     def test_month_moments_and_timezone_chart(self):
         self._killmail(
@@ -348,21 +481,20 @@ class LandingPulseEndpointTestCase(TestCase):
         super().setUp()
         cache.clear()
 
-    def test_superuser_only(self):
-        response = self.client.get(
-            "/api/alliance/landing/pulse",
-            HTTP_AUTHORIZATION=f"Bearer {self.token}",
-        )
-        self.assertEqual(response.status_code, 403)
-
-    def test_superuser_gets_the_pulse(self):
-        self.make_superuser()
-        response = self.client.get(
-            "/api/alliance/landing/pulse",
-            HTTP_AUTHORIZATION=f"Bearer {self.token}",
-        )
+    def test_pulse_is_public(self):
+        response = self.client.get("/api/alliance/landing/pulse")
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(data["delay_minutes"], 60)
         self.assertEqual(len(data["hourly_kills"]), 24)
         self.assertEqual(data["events"], [])
+
+    def test_week_is_public(self):
+        response = self.client.get("/api/alliance/landing/week?tab=mining")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(
+            (data["tab"], data["page"], data["pages"]), ("mining", 1, 1)
+        )
+        self.assertEqual(data["per_page"], 12)
+        self.assertEqual(data["rows"], [])

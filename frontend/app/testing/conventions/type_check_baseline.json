@@ -43,7 +43,6 @@
     "src/pages/industry/loyalty/desk.astro": 1,
     "src/pages/industry/loyalty/offers.astro": 1,
     "src/pages/industry/orders/[id].astro": 1,
-    "src/pages/intel/add_structure.astro": 1,
     "src/pages/market/buyback/order.astro": 1,
     "src/pages/market/buyback/orders.astro": 1,
     "src/pages/market/buyback/stocks.astro": 1,

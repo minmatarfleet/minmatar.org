@@ -12,6 +12,7 @@ class LandingDayTotals(Schema):
     industry_jobs: int
     freight_contracts: int
     freight_volume: int
+    mined_volume: int = 0
 
 
 class LandingWeekTotals(Schema):
@@ -45,6 +46,9 @@ class LandingMoment(Schema):
 
 
 class LandingEvent(Schema):
+    """One feed line: "<pilot> <verb> <subject> <tail>". ``action`` is the
+    whole line; the parts let the page put an icon before the subject."""
+
     occurred_at: datetime
     kind: str
     character_id: int
@@ -52,6 +56,14 @@ class LandingEvent(Schema):
     others: int
     action: str
     region: str
+    verb: str = ""
+    subject: str = ""
+    # type (a ship or ore), alliance, corporation or faction; empty for none.
+    subject_type: str = ""
+    subject_id: int = 0
+    tail: str = ""
+    # m³ for a mining line; 0 otherwise.
+    amount: int = 0
 
 
 class LandingPulseResponse(Schema):
@@ -63,3 +75,21 @@ class LandingPulseResponse(Schema):
     timezone_kills: List[LandingTimezoneKills]
     moments: List[LandingMoment]
     events: List[LandingEvent]
+
+
+class LandingWeekCounts(Schema):
+    fights: int
+    kills: int
+    warzone: int
+    mining: int
+
+
+class LandingWeekResponse(Schema):
+    generated_at: datetime
+    tab: str
+    page: int
+    pages: int
+    per_page: int
+    total: int
+    counts: LandingWeekCounts
+    rows: List[LandingEvent]

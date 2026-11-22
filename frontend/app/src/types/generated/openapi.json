@@ -27342,6 +27342,11 @@
             "title": "Industry Jobs",
             "type": "integer"
           },
+          "mined_volume": {
+            "default": 0,
+            "title": "Mined Volume",
+            "type": "integer"
+          },
           "ships_destroyed": {
             "title": "Ships Destroyed",
             "type": "integer"
@@ -27368,10 +27373,16 @@
         "type": "object"
       },
       "LandingEvent": {
+        "description": "One feed line: \"<pilot> <verb> <subject> <tail>\". ``action`` is the\nwhole line; the parts let the page put an icon before the subject.",
         "properties": {
           "action": {
             "title": "Action",
             "type": "string"
+          },
+          "amount": {
+            "default": 0,
+            "title": "Amount",
+            "type": "integer"
           },
           "character_id": {
             "title": "Character Id",
@@ -27396,6 +27407,31 @@
           },
           "region": {
             "title": "Region",
+            "type": "string"
+          },
+          "subject": {
+            "default": "",
+            "title": "Subject",
+            "type": "string"
+          },
+          "subject_id": {
+            "default": 0,
+            "title": "Subject Id",
+            "type": "integer"
+          },
+          "subject_type": {
+            "default": "",
+            "title": "Subject Type",
+            "type": "string"
+          },
+          "tail": {
+            "default": "",
+            "title": "Tail",
+            "type": "string"
+          },
+          "verb": {
+            "default": "",
+            "title": "Verb",
             "type": "string"
           }
         },
@@ -27538,6 +27574,85 @@
           "average_kills"
         ],
         "title": "LandingTimezoneKills",
+        "type": "object"
+      },
+      "LandingWeekCounts": {
+        "properties": {
+          "fights": {
+            "title": "Fights",
+            "type": "integer"
+          },
+          "kills": {
+            "title": "Kills",
+            "type": "integer"
+          },
+          "mining": {
+            "title": "Mining",
+            "type": "integer"
+          },
+          "warzone": {
+            "title": "Warzone",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "fights",
+          "kills",
+          "warzone",
+          "mining"
+        ],
+        "title": "LandingWeekCounts",
+        "type": "object"
+      },
+      "LandingWeekResponse": {
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/LandingWeekCounts"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "pages": {
+            "title": "Pages",
+            "type": "integer"
+          },
+          "per_page": {
+            "title": "Per Page",
+            "type": "integer"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/LandingEvent"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "tab": {
+            "title": "Tab",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "generated_at",
+          "tab",
+          "page",
+          "pages",
+          "per_page",
+          "total",
+          "counts",
+          "rows"
+        ],
+        "title": "LandingWeekResponse",
         "type": "object"
       },
       "LandingWeekTotals": {
@@ -55781,24 +55896,53 @@
               }
             },
             "description": "OK"
+          }
+        },
+        "summary": "Alliance activity for the new landing page (public)",
+        "tags": [
+          "Alliance",
+          "Alliance"
+        ]
+      }
+    },
+    "/api/alliance/landing/week": {
+      "get": {
+        "operationId": "alliance_endpoints_landing_get_landing_week_get_landing_week",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tab",
+            "required": false,
+            "schema": {
+              "default": "fights",
+              "title": "Tab",
+              "type": "string"
+            }
           },
-          "403": {
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "$ref": "#/components/schemas/LandingWeekResponse"
                 }
               }
             },
-            "description": "Forbidden"
+            "description": "OK"
           }
         },
-        "security": [
-          {
-            "AuthBearer": []
-          }
-        ],
-        "summary": "Alliance activity for the new landing page, 60 minutes behind",
+        "summary": "The last 7 days for the new landing page, 12 rows a page",
         "tags": [
           "Alliance",
           "Alliance"

@@ -1,13 +1,18 @@
 """Helpers to update a character's mining ledger from ESI."""
 
 import logging
-from datetime import date
+from datetime import date, timedelta
+
+from django.utils import timezone
 
 from eveuniverse.models import EveType, EveTypeMaterial
 
 from eveonline.client import EsiClient
 from eveonline.models import EveCharacter
-from eveonline.models.characters import EveCharacterMiningEntry
+from eveonline.models.characters import (
+    EveCharacterMiningDelta,
+    EveCharacterMiningEntry,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +29,25 @@ def _ensure_type_materials(eve_type: EveType) -> None:
                 eve_type.id,
                 exc_info=True,
             )
+
+
+def _record_delta(
+    character, eve_type, solar_system_id, entry_date, quantity, previous
+) -> None:
+    """Store what this sync added. Only today's and yesterday's rows count, so
+    a pilot's first sync doesn't replay their whole 30-day ledger as new."""
+    added = quantity - (previous or 0)
+    if added <= 0:
+        return
+    if entry_date < timezone.now().date() - timedelta(days=1):
+        return
+    EveCharacterMiningDelta.objects.create(
+        character=character,
+        eve_type=eve_type,
+        solar_system_id=solar_system_id,
+        quantity=added,
+        observed_at=timezone.now(),
+    )
 
 
 def update_character_mining(eve_character_id: int) -> int:
@@ -75,12 +99,30 @@ def update_character_mining(eve_character_id: int) -> int:
             seen_type_ids.add(type_id)
             _ensure_type_materials(eve_type)
 
+        previous = (
+            EveCharacterMiningEntry.objects.filter(
+                character=character,
+                eve_type=eve_type,
+                date=entry_date,
+                solar_system_id=solar_system_id,
+            )
+            .values_list("quantity", flat=True)
+            .first()
+        )
         EveCharacterMiningEntry.objects.update_or_create(
             character=character,
             eve_type=eve_type,
             date=entry_date,
             solar_system_id=solar_system_id,
             defaults={"quantity": quantity},
+        )
+        _record_delta(
+            character,
+            eve_type,
+            solar_system_id,
+            entry_date,
+            quantity,
+            previous,
         )
 
     logger.info(
