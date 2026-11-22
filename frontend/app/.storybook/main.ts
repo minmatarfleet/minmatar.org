@@ -89,6 +89,7 @@ const config: StorybookConfig = {
         // imports; the render server (SSR) keeps the real ones.
         const browser_shims: Record<string, string> = {
             'src/helpers/sde_db.ts': fileURLToPath(new URL('./shims/sde_db.ts', import.meta.url)),
+            'src/helpers/content_viewer_sources.ts': fileURLToPath(new URL('./shims/content_viewer_sources.ts', import.meta.url)),
         }
         vite_config.plugins = [
             {
