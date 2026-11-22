@@ -477,15 +477,16 @@ const icon = (ship_id:number) => get_type_icon(ship_id, 64)
                                                     <template x-if={`!removed('${role}', ${fitting.id})`}>
                                                         <span class="[ doctrine-row__actions ]">
                                                             <label class="[ visually-hidden ]" for={`role-${role}-${fitting.id}`}>{t('doctrine_changes.role_for').replace('{name}', fitting.name)}</label>
-                                                            <select
+                                                            <Select
                                                                 id={`role-${role}-${fitting.id}`}
-                                                                class="[ doctrine-role-select ]"
+                                                                size="sm"
+                                                                width="9rem"
                                                                 x-on:change={`set_role('${role}', ${fitting.id}, $event.target.value)`}
                                                             >
                                                                 {DOCTRINE_ROLES.map((option) =>
                                                                     <option value={option} selected={option === role}>{ROLE_LABELS[option]}</option>
                                                                 )}
-                                                            </select>
+                                                            </Select>
                                                             <button
                                                                 type="button"
                                                                 class="[ doctrine-icon-button ]"
@@ -760,10 +761,6 @@ const icon = (ship_id:number) => get_type_icon(ship_id, 64)
             justify-content: flex-end;
         }
 
-        .doctrine-role-select {
-            flex: 1 1 auto;
-        }
-
         .doctrine-search {
             flex: 1 1 100%;
         }
@@ -785,16 +782,6 @@ const icon = (ship_id:number) => get_type_icon(ship_id, 64)
 
     .doctrine-tag--moved {
         color: var(--fleet-yellow);
-    }
-
-    .doctrine-role-select {
-        width: 9rem;
-        min-height: 2.75rem;
-        padding: 0 var(--space-2xs);
-        background: var(--border-color);
-        border: 1px solid transparent;
-        color: var(--highlight);
-        font-size: var(--step--1);
     }
 
     .doctrine-icon-button {
