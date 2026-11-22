@@ -173,6 +173,8 @@ async function fleet_ui(access_token:string, fleet:FleetDetail):Promise<FleetUI>
         aar_forum_url: fleet.aar_forum_url ?? '',
         campaign_id: fleet.campaign_id ?? null,
         campaign_slug: fleet.campaign_slug ?? null,
+        voice_option_id: fleet.voice_option_id ?? null,
+        uses_mumble: fleet.uses_mumble ?? false,
         campaign_name: campaign_name,
         host_group: host_group_ref(fleet.host_group),
         open_to_alliance: fleet.open_to_alliance ?? false,

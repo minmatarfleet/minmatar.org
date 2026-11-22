@@ -1,0 +1,21 @@
+---
+// The EVE sign-in for /voice lands here with ?token=<voice session>.
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import { VOICE_SESSION_COOKIE, VOICE_SESSION_DAYS } from '@helpers/voice_session'
+
+const token = Astro.url.searchParams.get('token')
+if (!token || Astro.url.searchParams.get('error'))
+    return Astro.redirect(translatePath('/voice?error=login'))
+
+Astro.cookies.set(VOICE_SESSION_COOKIE, token, {
+    path: '/',
+    httpOnly: true,
+    secure: import.meta.env.PROD,
+    sameSite: 'lax',
+    maxAge: VOICE_SESSION_DAYS * 24 * 60 * 60,
+})
+
+return Astro.redirect(translatePath('/voice'))
+---

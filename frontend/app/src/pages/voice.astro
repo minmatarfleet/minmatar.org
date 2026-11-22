@@ -1,0 +1,118 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, lang, translatePath } = i18n(Astro.url)
+
+import { get_voice_session, parse_character_id } from '@helpers/voice_session'
+import { voice_login_url } from '@helpers/api.minmatar.org/voice'
+import { get_app_url } from '@helpers/env'
+
+// No gate: guests (NPSI pilots, campaign allies) use this page too.
+const session = get_voice_session(Astro)
+const character_id = parse_character_id(Astro.url.searchParams.get('character_id'))
+const login_failed = Astro.url.searchParams.get('error') !== null
+
+const LOGIN_URL = voice_login_url(`${get_app_url()}${translatePath('/voice/login')}`)
+const STATUS_PARTIAL_URL = translatePath(
+    `/partials/voice_status_component/${character_id ? `?character_id=${character_id}` : ''}`
+)
+const page_title = t('voice.page_title')
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Grid from '@components/compositions/Grid.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Button from '@components/blocks/Button.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+import Markdown from '@components/blocks/Markdown.astro'
+---
+
+<Viewport title={page_title} meta_description={t('voice.meta_description')}>
+<PageLanding lang={lang}>
+    <Flexblock gap="var(--space-xl)">
+        <Flexblock gap="var(--space-s)">
+            <h1>{page_title}</h1>
+            <p class="[ voice-lead ]">{t('voice.lead')}</p>
+        </Flexblock>
+
+        {login_failed &&
+            <p class="[ voice-error ]" role="alert">{t('voice.login.failed')}</p>
+        }
+
+        <Grid min_item_width="16rem" row_gap="var(--space-m)" column_gap="var(--space-m)">
+            <ComponentBlock>
+                <Flexblock gap="var(--space-s)">
+                    <h2>1. {t('voice.step.download')}</h2>
+                    <Flexblock>
+                        <p>{t('voice.step.download_text')}</p>
+                        <FlexInline>
+                            <Button href="https://www.mumble.info/downloads/" external={true} new_tab={true} size="sm">{t('voice.download_desktop')}</Button>
+                            <Button href="https://play.google.com/store/apps/details?id=se.lublin.mumla" external={true} new_tab={true} size="sm" color="transparent">{t('voice.download_android')}</Button>
+                        </FlexInline>
+                    </Flexblock>
+                </Flexblock>
+            </ComponentBlock>
+
+            <ComponentBlock>
+                <Flexblock gap="var(--space-s)">
+                    <h2>2. {t('voice.step.sign_in')}</h2>
+                    <Flexblock>
+                        {session?.kind === 'member'
+                            ? <p>{t('voice.signed_in_member')}</p>
+                            : <p>{t('voice.step.sign_in_text')}</p>
+                        }
+                        <FlexInline>
+                            {!session &&
+                                <Button href={LOGIN_URL} size="sm">{t('voice.sign_in_eve')}</Button>
+                            }
+                            {session?.kind === 'guest' &&
+                                <Button href={translatePath('/voice/logout')} size="sm" color="transparent">{t('voice.sign_out')}</Button>
+                            }
+                        </FlexInline>
+                    </Flexblock>
+                </Flexblock>
+            </ComponentBlock>
+
+            <ComponentBlock>
+                <Flexblock gap="var(--space-s)">
+                    <h2>3. {t('voice.step.connect')}</h2>
+                    <p>{t('voice.step.connect_text')}</p>
+                </Flexblock>
+            </ComponentBlock>
+        </Grid>
+
+        {session &&
+            <LazyPartial url={STATUS_PARTIAL_URL}>
+                <p>{t('loading')}</p>
+            </LazyPartial>
+        }
+
+        <ComponentBlock>
+            <Flexblock gap="var(--space-s)">
+                <h2>{t('voice.guide.title')}</h2>
+                <Flexblock>
+                    <Markdown markdown={t('voice.guide.ptt')} />
+                    <Markdown markdown={t('voice.guide.report')} />
+                    <Markdown markdown={t('voice.guide.broadcast')} />
+                    <Markdown markdown={t('voice.guide.capitals')} />
+                    <Markdown markdown={t('voice.guide.priority')} />
+                    <p>{t('voice.guide.text')}</p>
+                </Flexblock>
+            </Flexblock>
+        </ComponentBlock>
+    </Flexblock>
+</PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .voice-lead {
+        max-width: 60ch;
+        color: var(--faded);
+        font-size: var(--step-0);
+    }
+
+    .voice-error {
+        color: var(--fleet-red);
+    }
+</style>

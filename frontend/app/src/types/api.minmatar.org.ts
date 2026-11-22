@@ -916,6 +916,7 @@ export interface FleetRequest {
     host_group_id?:     number | null;
     open_to_alliance?:  boolean;
     on_schedule?:       boolean;
+    voice_option_id?:   number | null;
 }
 
 export type FleetPatchRequest = ApiRequest<'UpdateEveFleetRequest'>
@@ -3416,3 +3417,10 @@ export type MoonProfit = ApiResponse<'MoonProfit'>
 export type MoonMetenoxKill = ApiResponse<'MoonMetenoxKill'>
 export type UniverseMoonList = ApiResponse<'UniverseMoonList'>
 export type UniverseMoonReport = ApiResponse<'MoonParsingResult'>
+
+// Fleet voice (Mumble): /voice and the fleet Settings voice section
+export type VoiceStatus = ApiResponse<'VoiceStatusResponse'>
+export type VoiceConnect = ApiResponse<'VoiceConnectResponse'>
+export type VoiceCertificate = ApiResponse<'VoiceCertificateResponse'>
+export type VoiceFleet = ApiResponse<'VoiceFleetResponse'>
+export type FleetVoiceOption = ApiResponse<'FleetVoiceOptionResponse'>

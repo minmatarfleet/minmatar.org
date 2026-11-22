@@ -131,6 +131,7 @@ const my_character_ids = new Set(pilots.map(pilot => pilot.character_id))
 const has_my_ships = ship_volunteers.some(volunteer => my_character_ids.has(volunteer.character_id))
 const invites_tab = show_invites ? [{ id: 'invites', label: t('fleets.tabs.invites') }] : []
 const INVITES_URL = `${translatePath('/partials/fleet_invites_component')}?fleet_id=${fleet.id}`
+const VOICE_SETTINGS_URL = translatePath(`/partials/voice_fleet_settings_component/?fleet_id=${fleet.id}`)
 
 const tally = roles ? role_tally(roles, composition, {
     logi_fc: t('fleets.after.logi_fc'),
@@ -531,6 +532,9 @@ const PICK_SHIPS_URL = `${translatePath('/partials/fleet_pick_ships_modal_compon
             {show_command &&
                 <SectionTabPanel id="settings" id_prefix="fleet">
                     <FleetSettings fleet={fleet} />
+                    {fleet.uses_mumble &&
+                        <LazyPartial url={VOICE_SETTINGS_URL} trigger="reveal" />
+                    }
                 </SectionTabPanel>
             }
         </SectionTabs>

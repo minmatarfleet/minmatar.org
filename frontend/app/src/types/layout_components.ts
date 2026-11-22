@@ -598,6 +598,8 @@ export interface FleetUI {
     roam_report_url?:       string;
     /** The #aars forum, where the FC writes the AAR. */
     aar_forum_url?:         string;
+    voice_option_id?:       number | null;
+    uses_mumble?:           boolean;
     campaign_id?:           number | null;
     campaign_slug?:         string | null;
     campaign_name?:         string | null;

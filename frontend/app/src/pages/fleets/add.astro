@@ -39,6 +39,7 @@ import type { FleetRequest, FleetTypes, Audience, Location, CampaignListItem } f
 import { ALLIANCE_HOST, fleet_host_fields, parse_host_param, ping_preview_request, tribe_group_path } from '@helpers/fleet_hosts'
 import { fetch_fleet_ping_preview, type FleetPingPreviewUI } from '@helpers/fetching/fleet_ping_preview'
 import { staging_location } from '@helpers/fleet_form_up'
+import { posted_voice_option } from '@helpers/fetching/voice_options'
 import type { DoctrineType, CharacterBasic, Alert } from '@dtypes/layout_components'
 import { send_active_fleet_notification } from '@helpers/notifications'
 
@@ -73,6 +74,7 @@ if (Astro.request.method === "POST") {
         const fleet_data = {
             doctrine_id: doctrine_id,
             campaign_id: campaign_id,
+            voice_option_id: posted_voice_option(data) ?? null,
             description: data.get('description') as string,
             objective: data.get('objective') as string,
             start_time: start_time,
@@ -130,9 +132,12 @@ if (Astro.request.method === "POST") {
 import { get_user_character } from '@helpers/fetching/characters'
 import { fetch_doctrine_options } from '@helpers/fetching/doctrines'
 import { fetch_campaign_options } from '@helpers/fetching/campaigns'
+import { fetch_voice_options } from '@helpers/fetching/voice_options'
+import type { FleetVoiceOption } from '@dtypes/api.minmatar.org'
 
 let doctrines:DoctrineType[] = []
 let campaigns:CampaignListItem[] = []
+let voice_options:FleetVoiceOption[] = []
 let fleet_commander:CharacterBasic | null = null
 let fetch_doctrines_error: Error | false = false
 let audiences:Audience[] = []
@@ -156,6 +161,7 @@ try {
     locations = await get_locations(auth_token as string)
     // Never fatal: swallows its own errors and answers [] instead.
     campaigns = await fetch_campaign_options(auth_token as string)
+    voice_options = await fetch_voice_options(auth_token as string)
 } catch (error) {
     fetch_doctrines_error = error
 }
@@ -291,6 +297,7 @@ const eve_time = eve_clock(eve_datetime)
                     locations={locations}
                     doctrines={doctrines}
                     campaigns={campaigns}
+                    voice_options={voice_options}
                     default_campaign_id={default_campaign_id}
                     fleet_commander={fleet_commander as CharacterBasic}
                     eve_date={eve_date}

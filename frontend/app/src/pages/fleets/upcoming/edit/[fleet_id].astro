@@ -39,6 +39,8 @@ if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
 
 import { update_fleet, get_audiences, get_locations, start_fleet } from '@helpers/api.minmatar.org/fleets'
+import { fetch_voice_options, posted_voice_option } from '@helpers/fetching/voice_options'
+import type { FleetVoiceOption } from '@dtypes/api.minmatar.org'
 import type { FleetPatchRequest, FleetTypes, Audience, Location, CampaignListItem } from '@dtypes/api.minmatar.org'
 import type { DoctrineType, CharacterBasic, Alert } from '@dtypes/layout_components'
 import { send_active_fleet_notification } from '@helpers/notifications'
@@ -70,6 +72,7 @@ if (Astro.request.method === "POST") {
         const fleet_data = {
             doctrine_id: doctrine_id,
             ...(campaign_id !== undefined && { campaign_id: campaign_id }),
+            ...(posted_voice_option(data) !== undefined && { voice_option_id: posted_voice_option(data) }),
             description: data.get('description') as string,
             objective: data.get('objective') as string,
             start_time: new Date(`${data.get('eve_date')}T${data.get('eve_time')}Z`).toJSON(),
@@ -118,6 +121,7 @@ import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 
 let doctrines:DoctrineType[] = []
 let campaigns:CampaignListItem[] = []
+let voice_options:FleetVoiceOption[] = []
 let fleet:FleetUI | null = null
 let fleet_commander:CharacterBasic | null = null
 let fetch_doctrines_error: Error | false = false
@@ -135,6 +139,7 @@ try {
     locations = await get_locations(auth_token as string)
     // Never fatal: swallows its own errors and answers [] instead.
     campaigns = await fetch_campaign_options(auth_token as string)
+    voice_options = await fetch_voice_options(auth_token as string)
 } catch (error) {
     fetch_doctrines_error = error
 }
@@ -265,6 +270,7 @@ const eve_time = eve_clock(eve_datetime)
                         locations={locations}
                         doctrines={doctrines}
                         campaigns={campaigns}
+                        voice_options={voice_options}
                         fleet_commander={fleet_commander}
                         eve_date={eve_date}
                         eve_time={eve_time}
