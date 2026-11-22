@@ -28,9 +28,6 @@
         .guide-contents__nav,
         .guide-md-panel,
         .cap-panel,
-        .fwc-panel,
-        .nfg-panel,
-        .ndm-panel,
         .guide-ship
     ) {
         padding-inline: var(--space-xs);
@@ -42,9 +39,7 @@
 
     .guide-shell.card :is(
         .guide-ship__stats,
-        .fwc-summary-card,
-        .nfg-summary-card,
-        .ndm-summary-card
+        .ship-guide__summary-card
     ) {
         padding-inline: var(--space-s);
     }

@@ -133,6 +133,17 @@ export const Toned = {
     },
 }
 
+export const AsLink = {
+    name: 'Link (whole card)',
+    args: { href: '/alliance/reddit-review/', label: 'Reddit posts', value: 2, hint: 'Oldest 1 d · Rattini Tribe', tone: 'fleet-yellow' },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const card = within(canvasElement).getByRole('link')
+        await expect(card).toHaveClass('stat-card', 'stat-card--link')
+        await expect(card).toHaveAttribute('href', '/alliance/reddit-review/')
+        await expect(within(card).getByText('Reddit posts')).toBeVisible()
+    },
+}
+
 export const ComingSoonLabel = {
     name: 'Coming soon with a custom label',
     args: { label: 'Tournament wins', coming_soon: true, coming_soon_label: 'After the next tournament', hint: undefined },

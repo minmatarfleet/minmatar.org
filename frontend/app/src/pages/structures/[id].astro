@@ -58,7 +58,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import Button from '@components/blocks/Button.astro'
 import Textarea from '@components/blocks/Textarea.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
-import ManageStatCard from '@components/blocks/manage/ManageStatCard.astro'
+import StatCard from '@components/blocks/StatCard.astro'
 import ManageField from '@components/blocks/manage/ManageField.astro'
 import SectionTabs from '@components/blocks/SectionTabs.astro'
 import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
@@ -113,10 +113,10 @@ import StylessButton from '@components/blocks/StylessButton.astro'
             <SectionTabPanel id="overview" id_prefix="structure" is_default={true}>
                 <Flexblock gap="var(--space-l)">
                     <div class="[ structure-stats ]">
-                        <ManageStatCard label={t('structures.stat.build_index')} value={percent(detail.manufacturing_index) ?? '—'} detail={paid(detail.manufacturing_index) ?? t('structures.stat.system_index')} />
-                        <ManageStatCard label={t('structures.stat.reactions_index')} value={percent(detail.reaction_index) ?? '—'} detail={paid(detail.reaction_index) ?? t('structures.stat.system_index')} />
-                        <ManageStatCard label={t('structures.stat.tax')} value={percent(detail.facility_tax) ?? '—'} detail={detail.facility_tax === null ? t('structures.stat.tax_unknown_hint') : undefined} />
-                        <ManageStatCard label={t('structures.stat.office')} value={short_isk(detail.office_fee_isk)} detail={t('structures.stat.office_hint')} />
+                        <StatCard label={t('structures.stat.build_index')} value={percent(detail.manufacturing_index) ?? '—'} hint={paid(detail.manufacturing_index) ?? t('structures.stat.system_index')} />
+                        <StatCard label={t('structures.stat.reactions_index')} value={percent(detail.reaction_index) ?? '—'} hint={paid(detail.reaction_index) ?? t('structures.stat.system_index')} />
+                        <StatCard label={t('structures.stat.tax')} value={percent(detail.facility_tax) ?? '—'} hint={detail.facility_tax === null ? t('structures.stat.tax_unknown_hint') : undefined} />
+                        <StatCard label={t('structures.stat.office')} value={short_isk(detail.office_fee_isk)} hint={t('structures.stat.office_hint')} />
                     </div>
 
                     <section class="[ structure-section ]" aria-labelledby="structure-about">

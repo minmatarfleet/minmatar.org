@@ -28,25 +28,11 @@
     "note": "Was a --foreground <small>; now the library's faded --step--1 <p>. x-show/x-cloak pass through."
   },
   {
-    "file": "src/components/blocks/navy-frigate-guide/NavyFrigateGuide.astro",
-    "selector": ".nfg-section > .component-block--guide",
+    "file": "src/components/blocks/ship-guide/ShipGuide.astro",
+    "selector": ".ship-guide__section > .component-block--guide",
     "path": "variant",
     "pattern": "guide-panel",
-    "note": "Was .nfg-panel (flat bordered translucent panel); now ComponentBlock variant=\"guide\" inside the <section>. The h3 summary-card titles keep their own styling through a doubled selector."
-  },
-  {
-    "file": "src/components/blocks/navy-destroyer-metagame/NavyDestroyerMetagame.astro",
-    "selector": ".ndm-section > .component-block--guide",
-    "path": "variant",
-    "pattern": "guide-panel",
-    "note": "Was .ndm-panel (flat bordered translucent panel); now ComponentBlock variant=\"guide\" inside the <section>. The h3 summary-card titles keep their own styling through a doubled selector."
-  },
-  {
-    "file": "src/components/blocks/faction-warfare-cruiser-guide/FactionWarfareCruiserGuide.astro",
-    "selector": ".fwc-section > .component-block--guide",
-    "path": "variant",
-    "pattern": "guide-panel",
-    "note": "Was .fwc-panel (flat bordered translucent panel); now ComponentBlock variant=\"guide\" inside the <section>. The h3 summary-card titles keep their own styling through a doubled selector."
+    "note": "Was .nfg/.ndm/.fwc-panel (flat bordered translucent panel); now ComponentBlock variant=\"guide\" inside the <section>. One ShipGuide block renders all three guides, so the panel class prefixes are now ship-guide__. The h3 summary-card titles keep their own styling through a doubled selector."
   },
   {
     "file": "src/components/blocks/LoyaltyQuote.astro",

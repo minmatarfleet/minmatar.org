@@ -65,7 +65,6 @@ const UNUSED_ALLOWLIST: Record<string, string> = {
     'blocks/sde/SolarSystemSearch': 'retired or given a caller in this PR (W5/W6)',
     'blocks/sde/TypeResults': 'the search partials emit Combobox options now; read-only and linking result lists wait for a caller (W9)',
     'blocks/sde/SolarSystemResults': 'the search partials emit Combobox options now; read-only and linking result lists wait for a caller (W9)',
-    'blocks/Hero': 'new in W6b; CorporationDetailHero and ManageHero migrate to it in W10',
     // Not in the W2 brief's list: no src/ file references it on this branch. Confirm with the owner before W5/W6 land.
     'blocks/InputError': 'no caller under src/ on feat/rust-library-alignment; confirm with the owner',
 }
