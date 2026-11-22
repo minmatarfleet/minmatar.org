@@ -32,6 +32,8 @@ const id = project_id ? `task-new-${project_id}` : 'task-new'
 
 import DialogButton from '@components/blocks/DialogButton.astro'
 import Button from '@components/blocks/Button.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
 import Textarea from '@components/blocks/Textarea.astro'
@@ -89,14 +91,19 @@ import Flexblock from '@components/compositions/Flexblock.astro'
                 }
             </fieldset>
 
-            <fieldset class="[ manage-chips ]">
+            <fieldset class="[ manage-fieldset ]">
                 <legend class="[ manage-field__label ]">{t('tasks.new.when')}</legend>
-                {(['this_week', 'no_rush', 'date'] as const).map((value) => (
-                    <label class="[ manage-chip ]">
-                        <input type="radio" name="when" value={value} x-model="when" checked={value === 'this_week'} />
-                        {t(t_key('tasks.new.when_', value))}
-                    </label>
-                ))}
+                <ChipGroup wrap={true}>
+                    {(['this_week', 'no_rush', 'date'] as const).map((value) => (
+                        <FilterChip
+                            type="radio"
+                            name="when"
+                            value={value}
+                            checked={value === 'this_week'}
+                            input_attributes={{ 'x-model': 'when' }}
+                        >{t(t_key('tasks.new.when_', value))}</FilterChip>
+                    ))}
+                </ChipGroup>
             </fieldset>
 
             <div x-show="when === 'date'" x-cloak>

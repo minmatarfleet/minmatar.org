@@ -38,6 +38,8 @@ const dock_names = detail.dock_access.map((entry) => entry.name || entry.ticker)
 const dock_mode = detail.dock_access.length > 0 ? 'only' : 'anyone'
 
 import Button from '@components/blocks/Button.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
 import Textarea from '@components/blocks/Textarea.astro'
@@ -110,14 +112,13 @@ import Flexblock from '@components/compositions/Flexblock.astro'
                     />
                 </ManageField>
             </div>
-            <div class="[ manage-chips ]" role="group" aria-label={t('structures.add.good_for')}>
+            <ChipGroup wrap={true} aria_label={t('structures.add.good_for')}>
                 {['industry', 'clones', 'logistics'].map((value) => (
-                    <label class="[ manage-chip ]">
-                        <input type="checkbox" name="good_for" value={value} checked={detail.good_for.includes(value)} />
+                    <FilterChip type="checkbox" name="good_for" value={value} checked={detail.good_for.includes(value)}>
                         {t(t_key('structures.good_for.', value))}
-                    </label>
+                    </FilterChip>
                 ))}
-            </div>
+            </ChipGroup>
             <ManageField label={t('structures.add.about')} for="structure-about">
                 <Textarea id="structure-about" name="description" rows="4" maxlength="4000">{detail.description}</Textarea>
             </ManageField>
