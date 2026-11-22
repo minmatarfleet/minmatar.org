@@ -877,7 +877,7 @@ The breadcrumb bar under the site header: a quick-navigation button (opens the p
 
 - Import: `import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'`
 - Props: `breadcrumbs?: BreadcrumbLinkProps[]`, `breadcrumb_page_title?: string`, `path?: string`, `is_landing_page?: boolean = false`, `links_only?: boolean = false`
-- Stories (6): `frontend/app/rust/stories/page/PageBreadcrumbs.stories.ts`, https://my.minmatar.org/rust/?path=/docs/page-pagebreadcrumbs--docs: Default, Order Is Preserved, Quick Navigation Button, Single Level, Landing Page, Deep Trail
+- Stories (7): `frontend/app/rust/stories/page/PageBreadcrumbs.stories.ts`, https://my.minmatar.org/rust/?path=/docs/page-pagebreadcrumbs--docs: Default, Order Is Preserved, Quick Navigation Button, Quick navigation button has an accessible name, Single Level, Landing Page, Deep Trail
 
 ### BreadcrumbLink
 
