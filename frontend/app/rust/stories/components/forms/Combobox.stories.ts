@@ -37,7 +37,7 @@ export default {
             description: {
                 component: [
                     'A search-as-you-type picker for a value the browser cannot list up front (pilots, items, systems). The visible field asks the server (`search_url`, `GET ?q=`) 300 ms after the last keystroke, once it holds `min_chars` letters; htmx swaps the `<li role="option" data-value data-label>` items the partial returns into the listbox. The pick lives in a hidden `<input name>`, so the surrounding form submits it.',
-                    'Alpine handles only what is local: ArrowUp and ArrowDown move the active option (`aria-activedescendant`), Enter picks it, Escape closes the listbox and stops the key so a surrounding dialog stays open (the dialogs ignore that Escape while `[data-combobox-escape]` is set), and a click outside closes the listbox. Picking dispatches a bubbling `combobox:select` with `{ name, value, label }`; callers listen with `x-on:combobox:select`.',
+                    'Alpine handles only what is local: ArrowUp and ArrowDown move the active option (`aria-activedescendant`), Enter picks it, Escape closes the listbox and stops the key so a surrounding dialog stays open (the dialogs ignore that Escape while `[data-combobox-escape]` is set), and a click outside closes the listbox. Picking dispatches a bubbling `combobox:select` with `{ name, value, label, data }` (`data` holds the option\'s `data-*` attributes, so a partial can carry an icon or detail along); callers listen with `x-on:combobox:select`.',
                     'A partial renders no-result rows as `<li role="presentation">` with an `EmptyState`; only `role="option"` rows can be picked. The SDE searches (`TypeSearch`, `SolarSystemSearch`) are presets over this component. In Rust the partial is mocked (`parameters.htmx`); the typing stories are tagged `browser` because they need htmx.',
                 ].join('\n\n'),
             },
@@ -55,6 +55,9 @@ export default {
         min_chars: { control: 'number', description: 'Letters needed before the server is asked.' },
         debounce_ms: { control: 'number', description: 'Wait after the last keystroke before asking, in ms.' },
         allow_clear: { control: 'boolean', description: 'Show a Clear button while something is picked.' },
+        size: { control: 'radio', options: ['lg', 'sm'], description: 'Size of the visible field.' },
+        required: { control: 'boolean', description: 'The visible field must hold text before a form submits.' },
+        pick_first: { control: 'boolean', description: 'Enter picks the first option when the list is open and nothing is highlighted, and never submits the form.' },
     },
     args: {
         name: 'pilot_id',
@@ -124,10 +127,42 @@ export const SelectDispatchesEvent = {
         await waitFor(() => expect(listbox(canvasElement)).toBeVisible())
         await userEvent.click(within(canvasElement).getByRole('option', { name: 'Mira Tessen' }))
         await expect(seen).toHaveLength(1)
-        await expect(seen[0].detail).toEqual({ name: 'pilot_id', value: '2113024536', label: 'Mira Tessen' })
+        await expect(seen[0].detail).toEqual({ name: 'pilot_id', value: '2113024536', label: 'Mira Tessen', data: { value: '2113024536', label: 'Mira Tessen' } })
         await expect(seen[0].bubbles).toBe(true)
         await expect(hidden(canvasElement).value).toBe('2113024536')
         await expect(combobox(canvasElement).value).toBe('Mira Tessen')
+    },
+}
+
+export const PickFirstOnEnter = {
+    name: 'pick_first: Enter picks the first option',
+    args: { pick_first: true, size: 'sm' },
+    play: async ({ canvasElement }: Ctx) => {
+        const field = combobox(canvasElement)
+        await expect(field).toHaveAttribute('data-size', 'sm')
+        field.focus()
+        swap_in(canvasElement, OPTIONS)
+        await waitFor(() => expect(listbox(canvasElement)).toBeVisible())
+        // Nothing highlighted: Enter still picks the first match.
+        await userEvent.keyboard('{Enter}')
+        await expect(hidden(canvasElement).value).toBe('2112625428')
+        await expect(field.value).toBe("Kel'dar Atram")
+        // With nothing to pick, Enter still must not submit the surrounding form.
+        const keydown = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+        field.dispatchEvent(keydown)
+        await expect(keydown.defaultPrevented).toBe(true)
+    },
+}
+
+export const EnterDoesNothingByDefault = {
+    name: 'Enter without a highlighted option picks nothing',
+    play: async ({ canvasElement }: Ctx) => {
+        const field = combobox(canvasElement)
+        field.focus()
+        swap_in(canvasElement, OPTIONS)
+        await waitFor(() => expect(listbox(canvasElement)).toBeVisible())
+        await userEvent.keyboard('{Enter}')
+        await expect(hidden(canvasElement).value).toBe('')
     },
 }
 

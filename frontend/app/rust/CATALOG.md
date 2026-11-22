@@ -211,8 +211,9 @@ An inline keyboard-key chip for shortcut hints ("press Esc to close").
 A search-as-you-type picker for a value the browser cannot list up front (pilots, items, systems).
 
 - Import: `import Combobox from '@components/blocks/Combobox.astro'`
-- Props: `name: string`, `label: string`, `hidden_label?: boolean = false`, `search_url: string`, `value?: string = ''`, `value_label?: string = ''`, `placeholder?: string`, `min_chars?: number = 2`, `debounce_ms?: number = 300`, `allow_clear?: boolean = false`
-- Stories (10): `frontend/app/rust/stories/components/forms/Combobox.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-combobox--docs: Default, Keyboard Navigation, Select dispatches combobox:select, Escape inside a dialog keeps the dialog open, Click Outside Closes List, Empty Results, Already picked, with Clear, Hidden Label, Type, swap results, pick, Under min_chars asks nothing
+- Props: `name: string`, `label: string`, `hidden_label?: boolean = false`, `search_url: string`, `value?: string = ''`, `value_label?: string = ''`, `placeholder?: string`, `min_chars?: number = 2`, `debounce_ms?: number = 300`, `allow_clear?: boolean = false`, `size?: 'lg' | 'sm' = 'lg'`, `required?: boolean = false`, `pick_first?: boolean = false`
+- Slots: `field_start`
+- Stories (12): `frontend/app/rust/stories/components/forms/Combobox.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-combobox--docs: Default, Keyboard Navigation, Select dispatches combobox:select, pick_first: Enter picks the first option, Enter without a highlighted option picks nothing, Escape inside a dialog keeps the dialog open, Click Outside Closes List, Empty Results, Already picked, with Clear, Hidden Label, Type, swap results, pick, Under min_chars asks nothing
 
 ## Components/Feedback
 

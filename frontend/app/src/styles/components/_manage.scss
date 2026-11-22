@@ -668,41 +668,29 @@ button.manage-who {
     min-width: 0;
 }
 
-.manage-picker__field {
+.manage-picker__combobox .combobox__field {
     position: relative;
-    display: flex;
-    align-items: center;
 
     img {
         position: absolute;
         inset-inline-start: var(--space-2xs);
+        z-index: 1;
         width: var(--space-m);
         height: var(--space-m);
         pointer-events: none;
     }
-
-    img {
-        z-index: 1;
-    }
 }
 
 // Beats Input's scoped padding (one more class).
-.manage-picker .manage-picker__field.has-icon input {
+.manage-picker .manage-picker__combobox.has-icon .combobox__field input {
     padding-inline-start: calc(var(--space-m) + var(--space-xs));
 }
 
-// In flow, not floating: open rows sit inside XFadeScroll, whose overflow
-// would clip a floating menu.
-.manage-picker__menu {
-    margin-block-start: var(--space-3xs);
+// The Combobox's listbox sits in flow, not floating: open rows sit inside
+// XFadeScroll, whose overflow would clip a floating menu.
+.manage-picker .combobox__listbox {
     max-height: 20rem;
-    overflow-y: auto;
-    background: var(--component-background);
-    border: 1px solid var(--border-color-hover);
-
-    &:empty {
-        display: none;
-    }
+    border-color: var(--border-color-hover);
 }
 
 .manage-picker__option {
@@ -712,24 +700,14 @@ button.manage-who {
     width: 100%;
     margin: 0;
     padding: var(--space-2xs) var(--space-xs);
-    background: transparent;
-    border: 0;
     color: var(--highlight);
-    font: inherit;
     font-size: var(--step--1);
     text-align: start;
-    cursor: pointer;
 
     img {
         flex: 0 0 auto;
         width: var(--space-m);
         height: var(--space-m);
-    }
-
-    &:hover,
-    &:focus-visible {
-        background: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
-        outline: none;
     }
 }
 
