@@ -86,6 +86,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import FleetSpotlight from '@components/blocks/FleetSpotlight.astro'
 import FleetScheduleRow from '@components/blocks/FleetScheduleRow.astro'
 import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <Flexblock gap='var(--space-l)' x-data="{ fleet_type: 'all', fleet_location: -1 }">
@@ -108,7 +109,7 @@ import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro'
     {show_host_filter &&
         <FlexInline gap='var(--space-2xs)' role="group" aria-label={t('fleets.host.filter')} class="[ fleet-type-chips ]">
             {FLEET_HOST_FILTERS.map(filter =>
-                <button
+                <StylessButton
                     type="button"
                     class="[ fleet-type-chip ]"
                     aria-pressed={filter === host_filter ? 'true' : 'false'}
@@ -119,7 +120,7 @@ import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro'
                     hx-indicator=".loader"
                 >
                     {host_label(filter)}
-                </button>
+                </StylessButton>
             )}
         </FlexInline>
     }
@@ -127,16 +128,16 @@ import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro'
     {rest.length > 0 &&
         <FlexInline justification='space-between' gap='var(--space-2xs)' class="[ w-full ]">
             <FlexInline gap='var(--space-2xs)' role="group" aria-label={t('fleets.schedule.filter')} class="[ fleet-type-chips ]">
-                <button
+                <StylessButton
                     type="button"
                     class="[ fleet-type-chip ]"
                     x-bind:aria-pressed="fleet_type === 'all'"
                     x-on:click="fleet_type = 'all'"
                 >
                     {t('fleets.schedule.all').replace('{count}', fleets.length.toString())}
-                </button>
+                </StylessButton>
                 {type_counts.map(({ type, count }) =>
-                    <button
+                    <StylessButton
                         type="button"
                         class:list={['[ fleet-type-chip ]', { 'fleet-type-chip--empty': count === 0 }]}
                         x-bind:aria-pressed={`fleet_type === '${type}'`}
@@ -144,21 +145,21 @@ import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro'
                     >
                         <FleetTypeFlag type={type} size={22} aria-hidden="true" />
                         {type_label(type)} {count}
-                    </button>
+                    </StylessButton>
                 )}
             </FlexInline>
             {show_location_filter &&
                 <FlexInline gap='var(--space-2xs)' role="group" aria-label={t('fleets.schedule.location_filter')} class="[ fleet-type-chips ]">
-                    <button
+                    <StylessButton
                         type="button"
                         class="[ fleet-type-chip ]"
                         x-bind:aria-pressed="fleet_location === -1"
                         x-on:click="fleet_location = -1"
                     >
                         {t('fleets.schedule.all_locations')}
-                    </button>
+                    </StylessButton>
                     {locations.map((location, index) =>
-                        <button
+                        <StylessButton
                             type="button"
                             class="[ fleet-type-chip ]"
                             x-bind:aria-pressed={`fleet_location === ${index}`}
@@ -166,7 +167,7 @@ import FleetTypeFlag from '@components/blocks/FleetTypeFlag.astro'
                             data-tippy-content={location.name}
                         >
                             {location.label}
-                        </button>
+                        </StylessButton>
                     )}
                 </FlexInline>
             }

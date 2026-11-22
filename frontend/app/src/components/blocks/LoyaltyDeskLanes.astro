@@ -19,6 +19,7 @@ import {
 } from '@helpers/loyalty_desk'
 import LoyaltyOrderActions from '@components/blocks/LoyaltyOrderActions.astro'
 
+import StylessButton from '@components/blocks/StylessButton.astro'
 const { t, translatePath } = i18n(Astro.url)
 
 interface Props {
@@ -136,12 +137,12 @@ const chip_for = (order: LoyaltyMarketOrder, lane: LoyaltyLaneKey): Chip => {
                 )
             })}
             {lanes[lane.key].length > VISIBLE_CARDS && (
-                <button type="button" class="[ loyalty-lanes__more ]" x-on:click="more = !more">
+                <StylessButton type="button" class="[ loyalty-lanes__more ]" x-on:click="more = !more">
                     <span x-show="!more">
                         {t('industry.loyalty.desk.lane.show_more').replace('{count}', String(lanes[lane.key].length - VISIBLE_CARDS))}
                     </span>
                     <span x-show="more" style="display: none">{t('industry.loyalty.desk.lane.show_fewer')}</span>
-                </button>
+                </StylessButton>
             )}
             {lane.note && <p class="[ loyalty-lanes__note ]">{lane.note}</p>}
         </section>
@@ -197,6 +198,8 @@ const chip_for = (order: LoyaltyMarketOrder, lane: LoyaltyLaneKey): Chip => {
     }
 
     .loyalty-lanes__more {
+        padding: 1px 6px;
+        text-align: center;
         min-height: var(--space-l);
         border: 1px dashed var(--border-color-hover);
         background: transparent;
