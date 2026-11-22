@@ -151,6 +151,7 @@ interface ChartGlobal {
     getChart?: (canvas: HTMLCanvasElement) => ChartInstance | undefined;
 }
 export interface ChartWindow extends Window {
+    MutationObserver:           typeof MutationObserver;
     Chart?:                     ChartGlobal;
     __minmatar_charts_bound?:   boolean;
 }

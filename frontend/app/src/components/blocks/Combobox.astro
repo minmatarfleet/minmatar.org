@@ -196,7 +196,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         style="display: none"
         x-on:mousedown.prevent
         x-on:click="choose($event)"
-        x-on:htmx:after-swap="swapped()"
+        {...{ 'x-on:htmx:after-swap': 'swapped()' }}
     ></ul>
     <input type="hidden" name={name} value={value} x-ref="hidden" />
 </div>

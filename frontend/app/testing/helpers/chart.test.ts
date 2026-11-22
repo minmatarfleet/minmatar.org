@@ -24,7 +24,7 @@ describe('build_config', () => {
     test('resolves a tone from its token, never a literal', () => {
         const config = build_config(spec(), read)
         expect(config.data.datasets[0].borderColor).toBe('rgb(1, 2, 3)')
-        expect(config.data.datasets[0].fill).toBe(false)
+        expect((config.data.datasets[0] as { fill?: boolean }).fill).toBe(false)
     })
 
     test('theme comes from the tokens', () => {
