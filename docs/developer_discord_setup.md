@@ -235,7 +235,10 @@ For any other private channels that the bot may interact with follow these steps
 ## Step 8: Bot App Setup (local Bot Application)
 
 this application constantly listens to the discord server for live interaction.
-currently features are /timer to post a time.
+Its commands include /timer to post a timer, and /campaign-timer and
+/campaign-structure to report to a campaign from its Discord servers. The
+campaign commands are global: Discord can take up to an hour to show them
+after the first sync.
 
 
 1. **Configure Bot Environment**:

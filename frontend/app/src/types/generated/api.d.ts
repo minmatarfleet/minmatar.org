@@ -935,6 +935,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/campaigns/discord/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report
+         * @description Add a structure or a timer from a Discord command.
+         */
+        post: operations["campaigns_endpoints_post_discord_report_report"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/campaigns/discord/report-campaigns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Report Campaigns
+         * @description The campaigns this Discord user may report to from this server.
+         */
+        get: operations["campaigns_endpoints_get_discord_report_campaigns_report_campaigns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/campaigns/entities": {
         parameters: {
             query?: never;
@@ -17216,6 +17256,57 @@ export interface components {
             remove_after: string;
             /** Username */
             username?: string | null;
+        };
+        /** DiscordReportCampaign */
+        DiscordReportCampaign: {
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+        };
+        /** DiscordReportRequest */
+        DiscordReportRequest: {
+            /**
+             * Alliance Name
+             * @default
+             */
+            alliance_name?: string;
+            /**
+             * Campaign
+             * @default
+             */
+            campaign?: string;
+            /**
+             * Corporation Name
+             * @default
+             */
+            corporation_name?: string;
+            /** Discord User Id */
+            discord_user_id: number;
+            /** Guild Id */
+            guild_id: number;
+            /** Kind */
+            kind: string;
+            /** Reinforce Hour */
+            reinforce_hour?: number | null;
+            /** Selected Item Window */
+            selected_item_window: string;
+            /** Structure Type */
+            structure_type: string;
+            /**
+             * Timer State
+             * @default
+             */
+            timer_state?: string;
+        };
+        /** DiscordReportResponse */
+        DiscordReportResponse: {
+            /** Campaign */
+            campaign: string;
+            /** Message */
+            message: string;
+            /** Url */
+            url: string;
         };
         /** DiscordRoleChoice */
         DiscordRoleChoice: {
@@ -36451,6 +36542,80 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CampaignChoicesOut"];
+                };
+            };
+        };
+    };
+    campaigns_endpoints_post_discord_report_report: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscordReportRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscordReportResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    campaigns_endpoints_get_discord_report_campaigns_report_campaigns: {
+        parameters: {
+            query: {
+                guild_id: number;
+                discord_user_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiscordReportCampaign"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

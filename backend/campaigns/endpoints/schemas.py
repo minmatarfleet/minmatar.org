@@ -1013,3 +1013,27 @@ class CampaignChoicesOut(Schema):
     party_side: list[ChoiceOut]
     site_kind: list[ChoiceOut]
     metric: list[ChoiceOut]
+
+
+class DiscordReportCampaign(Schema):
+    slug: str
+    name: str
+
+
+class DiscordReportRequest(Schema):
+    guild_id: int
+    discord_user_id: int
+    campaign: str = Field(default="", max_length=64)
+    kind: str = Field(pattern="^(timer|structure)$")
+    structure_type: str = Field(max_length=64)
+    timer_state: str = Field(default="", max_length=32)
+    selected_item_window: str = Field(max_length=2000)
+    corporation_name: str = Field(default="", max_length=255)
+    alliance_name: str = Field(default="", max_length=255)
+    reinforce_hour: int | None = None
+
+
+class DiscordReportResponse(Schema):
+    message: str
+    campaign: str
+    url: str

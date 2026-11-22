@@ -13495,6 +13495,118 @@
         "title": "DiscordPendingRemoval",
         "type": "object"
       },
+      "DiscordReportCampaign": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "name"
+        ],
+        "title": "DiscordReportCampaign",
+        "type": "object"
+      },
+      "DiscordReportRequest": {
+        "properties": {
+          "alliance_name": {
+            "default": "",
+            "maxLength": 255,
+            "title": "Alliance Name",
+            "type": "string"
+          },
+          "campaign": {
+            "default": "",
+            "maxLength": 64,
+            "title": "Campaign",
+            "type": "string"
+          },
+          "corporation_name": {
+            "default": "",
+            "maxLength": 255,
+            "title": "Corporation Name",
+            "type": "string"
+          },
+          "discord_user_id": {
+            "title": "Discord User Id",
+            "type": "integer"
+          },
+          "guild_id": {
+            "title": "Guild Id",
+            "type": "integer"
+          },
+          "kind": {
+            "pattern": "^(timer|structure)$",
+            "title": "Kind",
+            "type": "string"
+          },
+          "reinforce_hour": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reinforce Hour"
+          },
+          "selected_item_window": {
+            "maxLength": 2000,
+            "title": "Selected Item Window",
+            "type": "string"
+          },
+          "structure_type": {
+            "maxLength": 64,
+            "title": "Structure Type",
+            "type": "string"
+          },
+          "timer_state": {
+            "default": "",
+            "maxLength": 32,
+            "title": "Timer State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "guild_id",
+          "discord_user_id",
+          "kind",
+          "structure_type",
+          "selected_item_window"
+        ],
+        "title": "DiscordReportRequest",
+        "type": "object"
+      },
+      "DiscordReportResponse": {
+        "properties": {
+          "campaign": {
+            "title": "Campaign",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "campaign",
+          "url"
+        ],
+        "title": "DiscordReportResponse",
+        "type": "object"
+      },
       "DiscordRoleChoice": {
         "properties": {
           "id": {
@@ -59360,6 +59472,125 @@
           }
         ],
         "summary": "List Choices",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/api/campaigns/discord/report": {
+      "post": {
+        "description": "Add a structure or a timer from a Discord command.",
+        "operationId": "campaigns_endpoints_post_discord_report_report",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscordReportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscordReportResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Report",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
+    "/api/campaigns/discord/report-campaigns": {
+      "get": {
+        "description": "The campaigns this Discord user may report to from this server.",
+        "operationId": "campaigns_endpoints_get_discord_report_campaigns_report_campaigns",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "guild_id",
+            "required": true,
+            "schema": {
+              "title": "Guild Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "discord_user_id",
+            "required": true,
+            "schema": {
+              "title": "Discord User Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DiscordReportCampaign"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Report Campaigns",
         "tags": [
           "Campaigns"
         ]
