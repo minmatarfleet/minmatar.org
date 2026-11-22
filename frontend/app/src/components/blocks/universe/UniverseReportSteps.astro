@@ -93,6 +93,7 @@ const carried = (Object.entries(state) as [string, string | number | null][])
     .filter(([key]) => !VISIBLE[step].includes(key))
 
 import Button from '@components/blocks/Button.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
 import Textarea from '@components/blocks/Textarea.astro'
@@ -120,7 +121,7 @@ import OptionCard from '@components/blocks/OptionCard.astro'
                     <ManageField label={t('universe.report.selected_item')} for="universe-report-paste">
                         <Textarea id="universe-report-paste" name="selected_item" rows="3" placeholder={t('universe.report.selected_item_placeholder')}>{pasted}</Textarea>
                     </ManageField>
-                    <button type="button" class="[ structure-add__link ]" x-on:click="by_hand = true">{t('universe.report.by_hand')}</button>
+                    <StylessButton type="button" class="[ structure-add__link ]" x-on:click="by_hand = true">{t('universe.report.by_hand')}</StylessButton>
                 </div>
             </template>
             <template x-if="by_hand">
