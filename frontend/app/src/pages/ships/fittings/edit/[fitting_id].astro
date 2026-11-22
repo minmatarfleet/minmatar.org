@@ -50,6 +50,7 @@ import Button from '@components/blocks/Button.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import Textarea from '@components/blocks/Textarea.astro'
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 
 const page_title = `${t('doctrine_changes.edit_fitting')}${fitting ? `: ${fitting.name}` : ''}`
 ---
@@ -105,10 +106,7 @@ const page_title = `${t('doctrine_changes.edit_fitting')}${fitting ? `: ${fittin
                             <legend>{t('doctrine_changes.tags')}</legend>
                             <FlexInline gap="var(--space-s)">
                                 {FITTING_TAG_SLUGS.map((slug) =>
-                                    <label>
-                                        <input type="checkbox" name="tags" value={slug} checked={fitting.tags.includes(slug)} />
-                                        {fitting_tag_label(slug, t)}
-                                    </label>
+                                    <RadioCheckInput type="checkbox" name="tags" value={slug} checked={fitting.tags.includes(slug)} label={fitting_tag_label(slug, t)} />
                                 )}
                             </FlexInline>
                         </fieldset>

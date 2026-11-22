@@ -2,18 +2,25 @@
 interface Props {
     width?: string;
     size?:  'lg' | 'sm';
+    /** Fixed text before the value (a URL path, a unit); the field draws one shell around both. */
+    prefix?: string;
+    /** Attributes for the prefix `<span>` (`x-show`, `id`). */
+    prefix_attributes?: Record<string, any>;
     [propName: string]: any;
 }
 
 const {
     width = '100%',
     size = 'lg',
+    prefix,
+    prefix_attributes = {},
     ...attributes
 } = Astro.props
 ---
 
-<div class="[ input-group ]">
+<div class:list={['[ input-group ]', prefix && '[ input-group--prefixed ]']}>
     <slot name="icon" />
+    {prefix && <span class="[ input-prefix ]" {...prefix_attributes}>{prefix}</span>}
     <input {...attributes} data-size={size}/>
 </div>
 
@@ -27,4 +34,33 @@ const {
 <style lang="scss">
     @use '../../styles/mixins/input_field';
     @include input_field.field;
+
+    /* prefix: one bordered shell around the fixed text and the input. */
+    .input-group--prefixed {
+        display: flex;
+        align-items: center;
+        border: solid 1px var(--border-color);
+        background-color: color-mix(in srgb, var(--neutral-600) var(--tint-subtle), transparent);
+        padding-inline: var(--space-s-m);
+
+        &:focus-within {
+            outline: 1px solid var(--highlight);
+        }
+
+        input,
+        input[data-size] {
+            flex: 1 1 auto;
+            min-width: 0;
+            padding-inline: 0;
+            border: 0;
+            background: none;
+            backdrop-filter: none;
+            outline: none;
+        }
+    }
+
+    .input-prefix {
+        flex: 0 0 auto;
+        color: var(--faded);
+    }
 </style>

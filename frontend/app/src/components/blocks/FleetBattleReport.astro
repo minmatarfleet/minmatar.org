@@ -338,6 +338,7 @@ const team_class = (index: number) => `br-team-${Math.min(index, 2)}`
 const selected = (position: number) => `{ 'is-sel': team === ${position} }`
 
 import FleetBattlePilotRow from '@components/blocks/FleetBattlePilotRow.astro'
+import Input from '@components/blocks/Input.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 import StylessButton from '@components/blocks/StylessButton.astro'
@@ -446,7 +447,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                 <span set:html={t('fleets.report.selected').replace('{window}', window_label(report.window_start, report.window_end)).replace('{count}', report.killmails.length.toString())} />
                 <label>
                     <span class="[ br__cap ]">{t('fleets.report.segment_name')}</span>
-                    <input type="text" name="name" maxlength="64" placeholder={window_label(report.window_start, report.window_end)} />
+                    <Input type="text" name="name" size="sm" width="14rem" maxlength="64" placeholder={window_label(report.window_start, report.window_end)} />
                 </label>
                 <StylessButton type="submit" class="[ br__button br__button--primary ]">{t('fleets.report.save_segment')}</StylessButton>
             </form>
@@ -1085,16 +1086,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
             align-items: center;
             gap: var(--space-2xs);
             margin-left: auto;
-        }
-
-        input {
-            width: 14rem;
-            min-height: 2.25rem;
-            padding: 0 var(--space-xs);
-            background-color: var(--background);
-            border: 1px solid var(--border-color-hover);
-            color: var(--highlight);
-            font: inherit;
         }
     }
 
@@ -1802,11 +1793,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         .br__save label {
             width: 100%;
             margin-left: 0;
-        }
-
-        .br__save input {
-            flex: 1;
-            width: auto;
         }
 
         .br__tab-list {

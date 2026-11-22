@@ -13,6 +13,8 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import ClipboardButton from '@components/blocks/ClipboardButton.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
+import Select from '@components/blocks/Select.astro'
+import Textarea from '@components/blocks/Textarea.astro'
 
 interface Props {
     rows: FittingBuyContractPrice[]
@@ -281,7 +283,9 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                                     <label class="[ visually-hidden ]" for={`hull-source-${row.line_id}-${row_index}`}>
                                                         {t('fitting_buy.hull_source_prompt')}
                                                     </label>
-                                                    <select
+                                                    <Select
+                                                        size="sm"
+                                                        width="16rem"
                                                         id={`hull-source-${row.line_id}-${row_index}`}
                                                         name="hull_industry_order_id"
                                                     >
@@ -305,7 +309,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                                         <option value="0" selected={!row.hull_source_needed && row.hull_cost_source === 'jita'}>
                                                             {t('fitting_buy.hull_source_jita')}
                                                         </option>
-                                                    </select>
+                                                    </Select>
                                                 </form>
                                             )}
                                         </dd>
@@ -373,7 +377,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                                 {t('fitting_buy.contract_click_to_copy')}
                                             </span>
                                         </StylessButton>
-                                        <textarea class="[ hidden ]" id={copy_id} readonly>{row.contract_price}</textarea>
+                                        <Textarea class="[ hidden ]" id={copy_id} readonly>{row.contract_price}</Textarea>
                                     </div>
                                 ) : (
                                     <span class="[ contract-price__value is-missing ]">—</span>
@@ -642,18 +646,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
 
     .contract-fit__variant {
         color: var(--fleet-yellow);
-    }
-
-    .hull-source select {
-        width: 100%;
-        max-width: 16rem;
-        margin-top: var(--space-3xs);
-        padding: var(--space-3xs) var(--space-2xs);
-        font-family: var(--default-font);
-        font-size: var(--step--1);
-        color: var(--foreground);
-        background: var(--background);
-        border: 1px solid var(--border-color-hover);
     }
 
     .contract-fit__copy-fit {
@@ -979,12 +971,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
 
         .contract-cost {
             padding-inline: var(--space-xs);
-        }
-
-        .hull-source select {
-            max-width: none;
-            min-height: var(--space-xl);
-            font-size: var(--step-0);
         }
     }
 </style>

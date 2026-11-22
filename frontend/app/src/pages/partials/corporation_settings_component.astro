@@ -29,6 +29,7 @@ import { query_string } from '@helpers/string'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
+import Switch from '@components/blocks/Switch.astro'
 import Input from '@components/blocks/Input.astro'
 import MarkdownTextArea from '@components/blocks/MarkdownTextArea.astro'
 import Tag from '@components/blocks/Tag.astro'
@@ -363,13 +364,12 @@ const status_text = (() => {
                     </div>
                 </Flexblock>
 
-                <label class="[ corp-settings__option ]">
-                    <input type="checkbox" name="paused" checked={paused} />
-                    <span class="[ corp-settings__option-body ]">
-                        <strong>{t('corporations.settings.pause_label')}</strong>
-                        <small>{t('corporations.settings.pause_help')}</small>
-                    </span>
-                </label>
+                <Switch
+                    name="paused"
+                    checked={paused}
+                    label={t('corporations.settings.pause_label')}
+                    description={t('corporations.settings.pause_help')}
+                />
 
                 <fieldset class="[ corp-settings__delivery ]">
                     <legend class="[ corp-settings__label ]">{t('corporations.settings.delivery_label')}</legend>

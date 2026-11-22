@@ -14,7 +14,7 @@ export default {
             description: {
                 component: [
                     'The site text field: a bordered, blurred-glass `<input>` inside an `.input-group`. Every other attribute (`type`, `name`, `placeholder`, `required`, `x-model`, `hx-*`) passes to the `<input>`. Pair it with a `<label for>`; the component does not render one.',
-                    'Put an icon in the `icon` slot and the input pads itself to clear it. Wrap it in `InputError` to show a validation marker. Use `Textarea` for multi-line text and `Select` for a fixed list.',
+                    'Put an icon in the `icon` slot and the input pads itself to clear it. Pass `prefix` for fixed text before the value (a page address, a unit). Wrap it in `InputError` to show a validation marker. Use `Textarea` for multi-line text and `Select` for a fixed list.',
                 ].join('\n\n'),
             },
         },
@@ -22,6 +22,8 @@ export default {
     argTypes: {
         width: { control: 'text', description: 'Max width of the field as a CSS length. Defaults to 100%.' },
         size: radio_control(['lg', 'sm'] as const, '`sm` for filter bars and table rows.'),
+        prefix: { control: 'text', description: 'Fixed text before the value, such as a URL path. One shell is drawn around the text and the input.' },
+        prefix_attributes: { control: 'object', description: 'Attributes for the prefix `<span>` (`x-show`, `id`).' },
         type: { control: 'select', options: ['text', 'search', 'number', 'date', 'time', 'password'], description: 'Passed to the `<input>`.' },
         name: { control: 'text', description: 'Passed to the `<input>`.' },
         id: { control: 'text', description: 'Passed to the `<input>`; match it with a label `for`.' },
@@ -109,6 +111,26 @@ export const WithIcon = {
         const group = canvasElement.querySelector('.input-group') as HTMLElement
         await expect(group.querySelector('svg')).not.toBeNull()
         await expect(within(group).getByPlaceholderText('Flag a pilot')).toBeVisible()
+    },
+}
+
+export const WithPrefix = {
+    args: { prefix: '/learning/', placeholder: 'page-address', id: 'page-address', name: 'slug' },
+    play: async ({ canvasElement }: Ctx) => {
+        const group = canvasElement.querySelector('.input-group') as HTMLElement
+        await expect(group.classList.contains('input-group--prefixed')).toBe(true)
+        await expect(group.querySelector('.input-prefix')).toHaveTextContent('/learning/')
+        await expect(within(group).getByPlaceholderText('page-address')).toHaveAttribute('name', 'slug')
+    },
+}
+
+export const PrefixKeepsTyping = {
+    name: 'Prefix is not part of the value',
+    args: { prefix: '/learning/', placeholder: 'page-address', id: 'page-address-2', name: 'slug' },
+    play: async ({ canvasElement }: Ctx) => {
+        const input = within(canvasElement).getByPlaceholderText('page-address') as HTMLInputElement
+        await userEvent.type(input, 'rifter-basics')
+        await expect(input).toHaveValue('rifter-basics')
     },
 }
 

@@ -336,7 +336,7 @@ const page_title = post?.title ?? t('new_post')
                 </TextBox>
 
                 <TuiEditor content={content} />
-                <textarea class="[ hidden ]" name="content" id="post-content" />
+                <Textarea class="[ hidden ]" name="content" id="post-content" />
 
                 {post_id > 0 &&
                     <input type="hidden" name="post_id" value={post_id} />

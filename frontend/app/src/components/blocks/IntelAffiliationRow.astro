@@ -65,6 +65,7 @@ const status_class = affiliation.ended && status !== 'rejected' ? 'ended' : stat
 const confirm_label = status === 'confirmed' ? t('intel.affiliations.save_relation') : t('intel.affiliations.confirm')
 const relation_id = `intel-affiliation-${affiliation.id}-relation`
 
+import Select from '@components/blocks/Select.astro'
 import Button from '@components/blocks/Button.astro'
 import IntelBlocTag from '@components/blocks/IntelBlocTag.astro'
 ---
@@ -115,11 +116,11 @@ import IntelBlocTag from '@components/blocks/IntelBlocTag.astro'
         hx-disabled-elt="find button"
     >
         <label class="[ visually-hidden ]" for={relation_id}>{t('intel.affiliations.relation_label')}</label>
-        <select id={relation_id} name="relation" class="[ intel-affiliation__select ]">
+        <Select id={relation_id} name="relation" size="sm" width="auto">
             {INTEL_RELATIONS.map(relation =>
                 <option value={relation} selected={relation === affiliation.relation}>{t(t_key('intel.affiliations.relation.', relation))}</option>
             )}
-        </select>
+        </Select>
         <Button size="sm" narrow={true} color="green" type="submit" name="status" value="confirmed">{confirm_label}</Button>
         {status !== 'rejected' &&
             <Button size="sm" narrow={true} color="transparent" type="submit" name="status" value="rejected">{t('intel.affiliations.reject')}</Button>
@@ -252,15 +253,6 @@ import IntelBlocTag from '@components/blocks/IntelBlocTag.astro'
         align-items: center;
         gap: var(--space-2xs);
         margin-block-start: var(--space-3xs);
-    }
-
-    .intel-affiliation__select {
-        padding: var(--space-3xs) var(--space-2xs);
-        font-size: var(--step--1);
-        color: var(--form-color);
-        color-scheme: dark;
-        background-color: var(--component-background);
-        border: 1px solid var(--border-color-hover);
     }
 
     .intel-affiliation__message {

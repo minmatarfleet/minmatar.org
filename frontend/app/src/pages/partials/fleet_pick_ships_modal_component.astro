@@ -428,8 +428,9 @@ import CaretIcon from '@components/icons/CaretIcon.astro'
                                 >
                                     <label class="[ pick-ships__search ]">
                                         <span class="[ visually-hidden ]">{t('pick_ships_search')}</span>
-                                        <input
+                                        <Input
                                             type="search"
+                                            size="sm"
                                             x-ref="search"
                                             x-model="search"
                                             placeholder={t('pick_ships_search')}
@@ -845,16 +846,6 @@ import CaretIcon from '@components/icons/CaretIcon.astro'
     .pick-ships__search {
         padding: var(--space-2xs);
         border-bottom: solid 1px var(--border-color);
-
-        input {
-            width: 100%;
-            min-height: 2.75rem;
-            padding: 0 var(--space-xs);
-            background-color: var(--surface-sunken);
-            border: solid 1px var(--border-color);
-            color: var(--highlight);
-            font: inherit;
-        }
     }
 
     .pick-ships__options {
