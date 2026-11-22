@@ -46,6 +46,7 @@ import Textarea from '@components/blocks/Textarea.astro'
 import ManageField from '@components/blocks/manage/ManageField.astro'
 import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
 ---
 
 <form
@@ -58,15 +59,16 @@ import Flexblock from '@components/compositions/Flexblock.astro'
     <Flexblock gap="var(--space-l)">
         <fieldset class="[ structure-settings__set ]">
             <legend><h2>{t('structures.settings.audience')}</h2></legend>
-            {(['public', 'alliance', 'groups'] as const).map((value) => (
-                <label class="[ structure-settings__radio ]">
-                    <input type="radio" name="audience" value={value} x-model="audience" checked={detail.audience === value} />
-                    <span>
-                        <b>{t(t_key('structures.audience.', value))}</b>
-                        <small>{t(t_key('structures.audience.hint_', value))}</small>
-                    </span>
-                </label>
-            ))}
+            <Flexblock gap="var(--space-2xs)">
+                {(['public', 'alliance', 'groups'] as const).map((value) => (
+                    <OptionCard name="audience" value={value} checked={detail.audience === value} input_attributes={{ 'x-model': 'audience' }}>
+                        <span class="[ structure-settings__text ]">
+                            <b>{t(t_key('structures.audience.', value))}</b>
+                            <small>{t(t_key('structures.audience.hint_', value))}</small>
+                        </span>
+                    </OptionCard>
+                ))}
+            </Flexblock>
             <div x-show="audience === 'groups'" x-cloak={detail.audience === 'groups' ? undefined : ''}>
                 <ManageField label={t('structures.settings.groups')} for="structure-groups">
                     <select id="structure-groups" name="audience_tribe_group_ids" multiple size="8" class="[ structure-settings__multi ]">
@@ -162,7 +164,19 @@ import Flexblock from '@components/compositions/Flexblock.astro'
         }
     }
 
-    .structure-settings__radio,
+    .structure-settings__text {
+        display: flex;
+        flex-direction: column;
+
+        b {
+            color: var(--highlight);
+        }
+
+        small {
+            color: var(--faded);
+        }
+    }
+
     .structure-settings__row {
         display: flex;
         align-items: flex-start;

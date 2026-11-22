@@ -76,6 +76,9 @@ import DialogButton from '@components/blocks/DialogButton.astro'
 import Input from '@components/blocks/Input.astro'
 import Textarea from '@components/blocks/Textarea.astro'
 import StylessButton from '@components/blocks/StylessButton.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
 ---
 
 <DialogButton
@@ -174,44 +177,42 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                     <Flexblock gap="var(--space-xs)">
                         <FlexInline gap="var(--space-s)">
                             <h3 class="[ invite-dialog__label ]">{t('fleets.private.wave_who')}</h3>
-                            <div class="[ invite-dialog__modes ]" role="group" aria-label={t('fleets.private.wave_search')}>
+                            <ChipGroup wrap={true} aria_label={t('fleets.private.wave_search')}>
                                 {new_pilots &&
-                                    <StylessButton
-                                        type="button"
+                                    <FilterChip
                                         x-on:click="add_mode = 'new'"
+                                        x-bind:class="{ 'is-active': add_mode === 'new' }"
                                         x-bind:aria-pressed="add_mode === 'new'"
-                                    >{t('fleets.invites.mode_new_pilots')}</StylessButton>
+                                    >{t('fleets.invites.mode_new_pilots')}</FilterChip>
                                 }
-                                <StylessButton
-                                    type="button"
+                                <FilterChip
                                     x-on:click="add_mode = 'search'"
+                                    x-bind:class="{ 'is-active': add_mode === 'search' }"
                                     x-bind:aria-pressed="add_mode === 'search'"
-                                >{t('fleets.invites.mode_select')}</StylessButton>
-                                <StylessButton
-                                    type="button"
+                                >{t('fleets.invites.mode_select')}</FilterChip>
+                                <FilterChip
                                     x-on:click="add_mode = 'paste'"
+                                    x-bind:class="{ 'is-active': add_mode === 'paste' }"
                                     x-bind:aria-pressed="add_mode === 'paste'"
-                                >{t('fleets.invites.mode_paste')}</StylessButton>
-                            </div>
+                                >{t('fleets.invites.mode_paste')}</FilterChip>
+                            </ChipGroup>
                         </FlexInline>
 
                         {new_pilots &&
                             <Flexblock gap="var(--space-2xs)" x-show="add_mode === 'new'" x-cloak={start_mode !== 'new' ? '' : undefined}>
                                 {BUCKETS.map(bucket =>
-                                    <label class="[ invite-dialog__bucket ]">
-                                        <input
-                                            type="checkbox"
-                                            name="onboarding"
-                                            value={bucket.key}
-                                            x-model="onboarding"
-                                            x-on:change="refresh()"
-                                        />
-                                        <span>
+                                    <OptionCard
+                                        type="checkbox"
+                                        name="onboarding"
+                                        value={bucket.key}
+                                        input_attributes={{ 'x-model': 'onboarding', 'x-on:change': 'refresh()' }}
+                                    >
+                                        <span class="[ invite-dialog__bucket-text ]">
                                             <b>{bucket.label}</b>
                                             <small class="[ text-muted ]">{bucket.hint}</small>
                                         </span>
                                         <span class="[ invite-dialog__bucket-count ]" x-text={`any_timezone || bucket_counts.${bucket.key}[0] === bucket_counts.${bucket.key}[1] ? bucket_counts.${bucket.key}[1] : ${of_label}.replace('{in}', bucket_counts.${bucket.key}[0]).replace('{total}', bucket_counts.${bucket.key}[1])`}>{bucket_counts[bucket.key as keyof typeof bucket_counts][0]}</span>
-                                    </label>
+                                    </OptionCard>
                                 )}
                             </Flexblock>
                         }
@@ -476,51 +477,10 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         font-variant-numeric: tabular-nums;
     }
 
-    .invite-dialog__modes {
-        display: inline-flex;
-        border: 1px solid var(--border-color-hover);
-
-        button {
-            padding: var(--space-3xs) var(--space-xs);
-            background: transparent;
-            border: 0;
-            color: var(--foreground);
-            font: inherit;
-            font-size: var(--step--1);
-            cursor: pointer;
-
-            &[aria-pressed="true"] {
-                background-color: var(--foreground);
-                color: var(--background);
-                font-weight: 600;
-            }
-        }
-    }
-
-    .invite-dialog__bucket {
+    .invite-dialog__bucket-text {
         display: flex;
-        align-items: center;
-        gap: var(--space-s);
-        padding: var(--space-xs) var(--space-s);
-        border: 1px solid var(--border-color-hover);
-        cursor: pointer;
-
-        &:has(input:checked) {
-            border-color: var(--foreground);
-        }
-
-        input {
-            width: var(--space-s);
-            height: var(--space-s);
-            margin: 0;
-            accent-color: var(--fleet-red);
-        }
-
-        > span:nth-child(2) {
-            display: flex;
-            flex: 1;
-            flex-direction: column;
-        }
+        flex: 1;
+        flex-direction: column;
 
         b {
             color: var(--highlight);

@@ -131,6 +131,8 @@ import LoyaltyMyOrders from '@components/blocks/LoyaltyMyOrders.astro'
 import LoyaltyOrderBook from '@components/blocks/LoyaltyOrderBook.astro'
 import LoyaltyOrderHistory from '@components/blocks/LoyaltyOrderHistory.astro'
 import Button from '@components/blocks/Button.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 
 const page_title = t('industry.loyalty.page_title')
 const breadcrumbs = [
@@ -225,22 +227,20 @@ const breadcrumbs = [
                         <Flexblock gap="var(--space-s)">
                             <FlexInline justification="space-between" class="[ w-full ]">
                                 <h2 id="loyalty-book-title">{t('industry.loyalty.book.title')}</h2>
-                                <div class="[ loyalty-book__tabs ]" role="group" aria-label={t('industry.loyalty.book.view')}>
-                                    <button
-                                        type="button"
+                                <ChipGroup wrap={true} aria_label={t('industry.loyalty.book.view')}>
+                                    <FilterChip
+                                        active={default_tab === 'open'}
+                                        x-bind:class="{ 'is-active': tab === 'open' }"
                                         x-bind:aria-pressed="tab === 'open'"
                                         x-on:click="tab = 'open'"
-                                    >
-                                        {t('industry.loyalty.book.open').replace('{count}', String(orders.length))}
-                                    </button>
-                                    <button
-                                        type="button"
+                                    >{t('industry.loyalty.book.open').replace('{count}', String(orders.length))}</FilterChip>
+                                    <FilterChip
+                                        active={default_tab === 'history'}
+                                        x-bind:class="{ 'is-active': tab === 'history' }"
                                         x-bind:aria-pressed="tab === 'history'"
                                         x-on:click="tab = 'history'"
-                                    >
-                                        {t('industry.loyalty.book.history')}
-                                    </button>
-                                </div>
+                                    >{t('industry.loyalty.book.history')}</FilterChip>
+                                </ChipGroup>
                             </FlexInline>
                             <div x-show="tab === 'open'" x-cloak={default_tab !== 'open' ? '' : undefined}>
                                 <LoyaltyOrderBook
@@ -327,31 +327,6 @@ const breadcrumbs = [
         h2 {
             margin: 0;
             font-size: var(--step-2);
-        }
-    }
-
-    .loyalty-book__tabs {
-        display: inline-flex;
-        gap: var(--space-3xs);
-        padding: var(--space-3xs);
-        border: 1px solid var(--border-color);
-        background-color: var(--component-background);
-
-        button {
-            min-height: var(--space-l);
-            padding-inline: var(--space-s);
-            border: 0;
-            background: transparent;
-            color: var(--faded);
-            font-family: var(--button-font);
-            font-size: var(--step--1);
-            font-weight: 700;
-            cursor: pointer;
-
-            &[aria-pressed='true'] {
-                background-color: var(--border-color-hover);
-                color: var(--highlight);
-            }
         }
     }
 
