@@ -68,6 +68,7 @@ import ShowAlert from '@components/blocks/ShowAlert.astro'
 import CharacterPicture from '@components/blocks/CharacterPicture.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {alert && <ShowAlert alert={alert} />}
@@ -88,7 +89,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
     <ul class="[ chief-candidates ]" role="list">
         {candidates.map((candidate) => (
             <li>
-                <button
+                <StylessButton
                     type="button"
                     class="[ chief-candidate ]"
                     hx-post={`${SWAP_PARTIAL_URL}&${query_string({ user_id: candidate.user_id })}`}
@@ -110,7 +111,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                             <small>{t('tribes.invite.matched_alt').replace('{name}', candidate.matched_character_name)}</small>
                         }
                     </span>
-                </button>
+                </StylessButton>
             </li>
         ))}
     </ul>

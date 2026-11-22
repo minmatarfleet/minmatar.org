@@ -44,6 +44,7 @@ const SELF_URL = translatePath(`/partials/tasks_team_rule_component/?kind=${enco
 const now = new Date()
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {error
@@ -69,7 +70,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                         <span>
                             {row.can_remind
                                 ? (
-                                    <button
+                                    <StylessButton
                                         type="button"
                                         class="[ task-quiet ]"
                                         hx-post={`${SELF_URL}&task_id=${row.task_id}`}
@@ -78,7 +79,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                                         hx-disabled-elt="this"
                                     >
                                         {t('tasks.team.remind_once')}
-                                    </button>
+                                    </StylessButton>
                                 )
                                 : row.reminders_off
                                     ? <span class="[ manage-muted ]">{t('tasks.team.reminders_off')}</span>
