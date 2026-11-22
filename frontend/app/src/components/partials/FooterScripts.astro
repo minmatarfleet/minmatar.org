@@ -93,6 +93,18 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
             document.querySelectorAll('.loader').forEach(e => e.classList.remove('active'))
         }, { once: true })
 
+        // Chrome starts <video> loads during a view transition, then aborts
+        // them and sticks on error 4 (no source). The controls stay at 0:00
+        // and play does nothing, which is how the EVE Academy clips fail
+        // after a client-side navigation. A full page load never hits this.
+        // The error is already set by page-load; load() starts them again.
+        document.addEventListener('astro:page-load', () => {
+            document.querySelectorAll('video').forEach((video) => {
+                if (video.error)
+                    video.load()
+            })
+        })
+
         // A slow page left the clicked link looking idle, so pilots clicked
         // again, and every click aborted and restarted the navigation. The
         // clicked link shows it is loading, and further clicks on a link to
