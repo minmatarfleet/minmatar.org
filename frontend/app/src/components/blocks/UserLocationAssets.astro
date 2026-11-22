@@ -87,6 +87,7 @@ import CollapsableButton from './CollapsableButton.astro';
         <PilotBadge
             character_id={character_assets.character_id}
             character_name={character_assets.character_name}
+            nested
         >
             <small x-text={`\`\${total_assets_count} \${total_assets_count != 1 ? '${t('assets').toLowerCase()}' : '${t('asset').toLowerCase()}'} ${t('in_inventory').toLowerCase()}\``}>
                 {total_assets_count} {total_assets_count != 1 ? t('assets').toLowerCase() : t('asset').toLowerCase()} {t('in_inventory').toLowerCase()}

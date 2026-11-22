@@ -166,7 +166,7 @@ const sort_state = `{
 <XFadeScroll
     class:list={['[ data-table-wrap ]', `data-table-wrap--${variant}`, { 'data-table-wrap--sticky': sticky_header }]}
     tabindex="0"
-    role="region"
+    role={caption ? 'region' : undefined}
     aria-label={caption}
 >
     <table

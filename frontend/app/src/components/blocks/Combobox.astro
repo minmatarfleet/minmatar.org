@@ -41,6 +41,8 @@ interface Props {
     required?:          boolean;
     /** Enter picks the first option when the list is open and nothing is highlighted, and never submits the form. */
     pick_first?:        boolean;
+    /** false detaches the visible field from the enclosing form (`form=""`), so `required` is not enforced client-side and the server validates. */
+    form_validation?:   boolean;
     [propName: string]: any;
 }
 
@@ -58,6 +60,7 @@ const {
     size = 'lg',
     required = false,
     pick_first = false,
+    form_validation = true,
     ...attributes
 } = Astro.props
 
@@ -174,6 +177,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
             placeholder={placeholder}
             size={size}
             required={required}
+            form={form_validation ? undefined : ''}
             value={value_label}
             aria-autocomplete="list"
             aria-controls={list_id}

@@ -5460,6 +5460,7 @@ export const ui = {
         'ideal_composition': 'Ideal Composition',
         'search': 'Search',
         'breadcrumb': 'Breadcrumb',
+        'breadcrumb.site': 'Site breadcrumb',
         'doctrine': 'Doctrine',
         'no_results': 'The capacitor is empty!',
         'back_to_safe': 'Back to the home station',
