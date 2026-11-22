@@ -20721,6 +20721,11 @@ export interface components {
         FleetPingPreviewResponse: {
             /** Channel Name */
             channel_name?: string | null;
+            /**
+             * Has Channel
+             * @default false
+             */
+            has_channel?: boolean;
             /** Payload */
             payload: {
                 [key: string]: unknown;

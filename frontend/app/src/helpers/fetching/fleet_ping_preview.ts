@@ -19,14 +19,17 @@ export type FleetPingWarning = 'no_channel' | 'no_role' | null
  * A group fleet pings the group's role in its channel (build_start_ping).
  * Without a channel nothing is sent; without a linked role the message
  * mentions nobody. Alliance fleets always ping their audience's channel.
+ * `has_channel` comes from the backend, not the channel's name: the name
+ * can be unknown (Discord unreachable, channel not cached) while the ping
+ * still goes out.
  */
 export function ping_preview_warning(
     host_group:boolean,
-    channel_name:string | null,
+    has_channel:boolean,
     content:string | null | undefined,
 ):FleetPingWarning {
     if (!host_group) return null
-    if (!channel_name) return 'no_channel'
+    if (!has_channel) return 'no_channel'
     if (!content?.includes('<@&')) return 'no_role'
     return null
 }
@@ -57,12 +60,14 @@ export async function fetch_fleet_ping_preview(
     }
 
     const channel_name = preview.value.channel_name ?? null
+    // A backend older than has_channel: fall back to the resolved name.
+    const has_channel = preview.value.has_channel ?? Boolean(channel_name)
     const payload = preview.value.payload as DiscordPreviewPayloadUI
     return {
         channel_name,
         payload,
         role_name: group.status === 'fulfilled' ? group.value?.discord_role_name ?? null : null,
         error: false,
-        warning: ping_preview_warning(Boolean(group_id), channel_name, payload?.content),
+        warning: ping_preview_warning(Boolean(group_id), has_channel, payload?.content),
     }
 }
