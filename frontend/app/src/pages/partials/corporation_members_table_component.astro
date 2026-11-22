@@ -37,6 +37,8 @@ import { query_string } from '@helpers/string'
 import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
 import Button from '@components/blocks/Button.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import HtmxPager from '@components/blocks/HtmxPager.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
@@ -270,25 +272,28 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         <input type="hidden" id="cm-sort" name="sort" value={params.sort} />
         <input type="hidden" id="cm-dir" name="dir" value={params.direction} />
         <div class="cm-filter-row">
-            <fieldset id="cm-views" class="cm-views">
+            <fieldset id="cm-views">
                 <legend class="visually-hidden">{t('corporations.members.views')}</legend>
-                {MEMBER_VIEWS.map((view) => (
-                    <label class:list={['cm-chip', { 'is-on': params.view === view }]}>
-                        <input class="visually-hidden" type="radio" name="view" value={view} checked={params.view === view} />
-                        <span>{view_label(view)}</span>
-                        <span class="cm-count">{count_with({ view })}</span>
-                    </label>
-                ))}
+                <ChipGroup wrap={true} role="none">
+                    {MEMBER_VIEWS.map((view) => (
+                        <FilterChip type="radio" name="view" value={view} checked={params.view === view} count={count_with({ view })}>{view_label(view)}</FilterChip>
+                    ))}
+                </ChipGroup>
             </fieldset>
             <fieldset id="cm-attention" class="cm-attention">
                 <legend class="cm-eyebrow">{t('corporations.members.needs_attention')}</legend>
-                {MEMBER_ATTENTION_VIEWS.map((view) => (
-                    <label class:list={['cm-chip', view === 'ready' ? 'is-good' : 'is-warn', { 'is-on': params.view === view }]}>
-                        <input class="visually-hidden" type="radio" name="view" value={view} checked={params.view === view} />
-                        <span>{view_label(view)}</span>
-                        <span class="cm-count">{count_with({ view })}</span>
-                    </label>
-                ))}
+                <ChipGroup wrap={true} role="none">
+                    {MEMBER_ATTENTION_VIEWS.map((view) => (
+                        <FilterChip
+                            type="radio"
+                            name="view"
+                            value={view}
+                            checked={params.view === view}
+                            count={count_with({ view })}
+                            tone={view === 'ready' ? 'green' : 'yellow'}
+                        >{view_label(view)}</FilterChip>
+                    ))}
+                </ChipGroup>
             </fieldset>
         </div>
         <div class="cm-toolbar">
@@ -646,14 +651,6 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         min-width: 0;
     }
 
-    .cm-views,
-    .cm-attention {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: var(--space-2xs);
-    }
-
     .cm-attention {
         padding-inline-start: var(--space-s);
         border-inline-start: 1px solid var(--border-color-hover);
@@ -672,61 +669,6 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         letter-spacing: 0.08em;
         text-transform: uppercase;
         color: var(--faded);
-    }
-
-    .cm-chip {
-        --chip_color: var(--fleet-yellow);
-
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-2xs);
-        min-height: var(--space-l);
-        padding-inline: var(--space-xs);
-        border: 1px solid var(--border-color-hover);
-        color: var(--chip_color);
-        font-family: var(--button-font);
-        font-size: var(--step--1);
-        font-weight: 600;
-        white-space: nowrap;
-        cursor: pointer;
-        transition:
-            border-color var(--fast-transition),
-            background-color var(--fast-transition),
-            color var(--fast-transition);
-
-        &.is-good {
-            --chip_color: var(--green-text);
-            border-color: color-mix(in srgb, var(--chip_color) var(--tint-strong), transparent);
-        }
-
-        &.is-warn {
-            --chip_color: var(--fleet-yellow);
-            border-color: color-mix(in srgb, var(--chip_color) var(--tint-strong), transparent);
-        }
-
-        &.is-on {
-            background: var(--chip_color);
-            border-color: var(--chip_color);
-            color: var(--background);
-        }
-
-        @media (hover: hover) {
-            &:not(.is-on):hover {
-                border-color: color-mix(in srgb, var(--chip_color) var(--tint-bold), transparent);
-                color: var(--highlight);
-            }
-        }
-
-        &:has(input:focus-visible) {
-            outline: 2px solid var(--highlight);
-            outline-offset: 2px;
-        }
-    }
-
-    .cm-count {
-        font-weight: 500;
-        font-variant-numeric: tabular-nums;
-        opacity: 0.7;
     }
 
     // Search and both dropdowns: one row of matching fields.

@@ -232,6 +232,8 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 
 import Button from '@components/blocks/Button.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import ChangeDiff from '@components/blocks/ChangeDiff.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Dialog from '@components/blocks/Dialog.astro'
@@ -409,12 +411,11 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                         </div>
                                         <div class="[ doctrine-popover__filters ]" role="group" aria-label={t('doctrine_changes.hull_filter')}>
                                             {['all', ...HULL_FILTERS].map((filter) =>
-                                                <button
-                                                    type="button"
-                                                    class="[ doctrine-chip ]"
+                                                <FilterChip
                                                     x-on:click={`filter = '${filter}'`}
+                                                    x-bind:class={`{ 'is-active': filter === '${filter}' }`}
                                                     x-bind:aria-pressed={`filter === '${filter}'`}
-                                                >{FILTER_LABELS[filter]}</button>
+                                                >{FILTER_LABELS[filter]}</FilterChip>
                                             )}
                                         </div>
                                         <ul id="doctrine-add-results" class="[ doctrine-results ]" x-ref="results" role="listbox">
@@ -616,19 +617,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         }
     }
 
-    .doctrine-chip {
-        min-height: 2rem;
-        padding: 0 var(--space-xs);
-        border-radius: var(--space-s);
-        background: transparent;
-        border: 1px solid var(--border-color);
-        color: var(--faded);
-        font-size: var(--step--1);
-        cursor: pointer;
-    }
-
-    .doctrine-segments button[aria-pressed="true"],
-    .doctrine-chip[aria-pressed="true"] {
+    .doctrine-segments button[aria-pressed="true"] {
         position: relative;
         border-color: var(--highlight);
         color: var(--foreground);

@@ -54,6 +54,8 @@ const teams: TaskTeamRow[] = overview ? [...overview.corporations, ...overview.t
 const team_url = (row: { kind: string, id: number }) => `${BASE_URL}?kind=${row.kind}&id=${row.id}`
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ManageTable from '@components/blocks/manage/ManageTable.astro'
 import TaskRollupRow from '@components/blocks/tasks/TaskRollupRow.astro'
@@ -75,32 +77,28 @@ import StylessButton from '@components/blocks/StylessButton.astro'
             ? <EmptyState title={t('tasks.team.empty_title')} hint={t('tasks.team.empty_hint')} />
             : (
                 <>
-                    <nav class="[ manage-chips ]" aria-label={t('tasks.tab.team')}>
-                        <button
-                            type="button"
-                            class:list={['[ manage-chip ]', { 'is-on': !detail }]}
-                            aria-current={!detail ? 'true' : undefined}
-                            hx-get={BASE_URL}
-                            hx-target={`#${TARGET}`}
-                            hx-swap="outerHTML"
-                        >
-                            {t('tasks.team.all_teams')}
-                        </button>
-                        {teams.map((row) => {
-                            const on = detail?.kind === row.kind && detail?.id === row.id
-                            return (
-                                <button
-                                    type="button"
-                                    class:list={['[ manage-chip ]', { 'is-on': on }]}
-                                    aria-current={on ? 'true' : undefined}
-                                    hx-get={team_url(row)}
-                                    hx-target={`#${TARGET}`}
-                                    hx-swap="outerHTML"
-                                >
-                                    {row.name}
-                                </button>
-                            )
-                        })}
+                    <nav aria-label={t('tasks.tab.team')}>
+                        <ChipGroup wrap={true}>
+                            <FilterChip
+                                active={!detail}
+                                aria-current={!detail ? 'true' : undefined}
+                                hx-get={BASE_URL}
+                                hx-target={`#${TARGET}`}
+                                hx-swap="outerHTML"
+                            >{t('tasks.team.all_teams')}</FilterChip>
+                            {teams.map((row) => {
+                                const on = detail?.kind === row.kind && detail?.id === row.id
+                                return (
+                                    <FilterChip
+                                        active={on}
+                                        aria-current={on ? 'true' : undefined}
+                                        hx-get={team_url(row)}
+                                        hx-target={`#${TARGET}`}
+                                        hx-swap="outerHTML"
+                                    >{row.name}</FilterChip>
+                                )
+                            })}
+                        </ChipGroup>
                     </nav>
 
                     {action_error && <p class="[ manage-field__error ]" role="alert">{action_error}</p>}

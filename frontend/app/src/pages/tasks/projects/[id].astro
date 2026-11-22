@@ -74,6 +74,8 @@ import PageLanding from '@components/page/PageLanding.astro'
 import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import SectionTabs from '@components/blocks/SectionTabs.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
@@ -226,14 +228,13 @@ import TaskNewDialog from '@components/blocks/tasks/TaskNewDialog.astro'
                                     <Textarea id="project-update-body" name="body" rows="4" maxlength="4000" required />
                                 </ManageField>
                                 <div class="[ manage-actions ]">
-                                    <fieldset class="[ manage-chips ]">
+                                    <fieldset class="[ manage-fieldset ]">
                                         <legend class="[ visually-hidden ]">{t('tasks.project.update_label')}</legend>
-                                        {(['on_track', 'at_risk', 'off_track'] as const).map((health) => (
-                                            <label class="[ manage-chip ]">
-                                                <input type="radio" name="health" value={health} checked={health === 'on_track'} />
-                                                {t(t_key('tasks.project.health_', health))}
-                                            </label>
-                                        ))}
+                                        <ChipGroup wrap={true} role="none">
+                                            {(['on_track', 'at_risk', 'off_track'] as const).map((health) => (
+                                                <FilterChip type="radio" name="health" value={health} checked={health === 'on_track'}>{t(t_key('tasks.project.health_', health))}</FilterChip>
+                                            ))}
+                                        </ChipGroup>
                                     </fieldset>
                                     <div class="[ manage-actions__end ]">
                                         <Button type="submit" size="sm" color="fleet-red" hx-disabled-elt="this">{t('tasks.project.post_update')}</Button>

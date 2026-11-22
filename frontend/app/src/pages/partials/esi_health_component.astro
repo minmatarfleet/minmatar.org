@@ -40,6 +40,8 @@ import { message_preview, message_ready, readd_label } from '@helpers/esi_health
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import ViewChips from '@components/blocks/manage/ViewChips.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import ManageSearch from '@components/blocks/manage/ManageSearch.astro'
 import ManageTable from '@components/blocks/manage/ManageTable.astro'
 import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
@@ -423,14 +425,19 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                     x-data={`{ mode: ${JSON.stringify(scope.mode)} }`}
                                 >
                                     <input type="hidden" name="id" value={String(scope.id)} />
-                                    <fieldset class="[ manage-chips ]">
+                                    <fieldset class="[ manage-fieldset ]">
                                         <legend class="[ manage-eyebrow ]">{t(scope.unit === 'corporations' ? 'esi_health.ask_directors' : 'esi_health.ask_pilots')}</legend>
-                                        {modes_for(scope.unit).map((mode) => (
-                                            <label class="[ manage-chip ]" x-bind:class={`mode === '${mode}' && 'is-on'`}>
-                                                <input class="[ visually-hidden ]" type="radio" name="mode" value={mode} x-model="mode" checked={scope.mode === mode} />
-                                                <span>{t(t_key('esi_health.mode_', mode))}</span>
-                                            </label>
-                                        ))}
+                                        <ChipGroup wrap={true} role="none">
+                                            {modes_for(scope.unit).map((mode) => (
+                                                <FilterChip
+                                                    type="radio"
+                                                    name="mode"
+                                                    value={mode}
+                                                    checked={scope.mode === mode}
+                                                    input_attributes={{ 'x-model': 'mode' }}
+                                                >{t(t_key('esi_health.mode_', mode))}</FilterChip>
+                                            ))}
+                                        </ChipGroup>
                                     </fieldset>
                                     {modes_for(scope.unit).map((mode) => (
                                         <small class="[ manage-muted ]" x-show={`mode === '${mode}'`} x-cloak={scope.mode !== mode || undefined}>

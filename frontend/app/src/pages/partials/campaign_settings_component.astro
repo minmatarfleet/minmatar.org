@@ -433,6 +433,7 @@ const party_kind_label = (kind: string) =>
 const format_number = (value: number) => value.toLocaleString(lang, { maximumFractionDigits: 1 })
 
 import Button from '@components/blocks/Button.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
 import Tag from '@components/blocks/Tag.astro'
@@ -704,13 +705,12 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                 <div class="[ campaign-scopes ]">
                     <span class="[ manage-muted ]">{t('campaigns.coordinators.can_see')}</span>
                     {COORDINATOR_SCOPES.map((scope) =>
-                        <button
-                            type="button"
-                            class="[ campaign-chip ]"
-                            aria-pressed={settings.coordinator_scopes.includes(scope) ? 'true' : 'false'}
+                        <FilterChip
+                            tone="green"
+                            active={settings.coordinator_scopes.includes(scope)}
                             hx-post={PART_URL}
                             hx-vals={JSON.stringify({ op: 'scope', scope })}
-                        >{t(`campaigns.coordinators.scope.${scope}`)}</button>
+                        >{t(`campaigns.coordinators.scope.${scope}`)}</FilterChip>
                     )}
                 </div>
                 <div class="[ campaign-invite ]">
@@ -729,16 +729,14 @@ import StylessButton from '@components/blocks/StylessButton.astro'
             <Fragment>
                 <div class="[ campaign-doctrines ]">
                     {settings.doctrines.map((row) =>
-                        <span class="[ campaign-doctrine-chip ]">
-                            {row.name}
-                            <StylessButton
-                                type="button"
-                                class="[ campaign-icon-button ]"
-                                aria-label={t('campaigns.doctrines.remove').replace('{name}', row.name)}
-                                hx-post={PART_URL}
-                                hx-vals={JSON.stringify({ op: 'remove_doctrine', campaign_doctrine_id: String(row.id) })}
-                            ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></StylessButton>
-                        </span>
+                        <FilterChip
+                            removable={true}
+                            remove_label={t('campaigns.doctrines.remove').replace('{name}', row.name)}
+                            remove_attributes={{
+                                'hx-post': PART_URL,
+                                'hx-vals': JSON.stringify({ op: 'remove_doctrine', campaign_doctrine_id: String(row.id) }),
+                            }}
+                        >{row.name}</FilterChip>
                     )}
                     <label for="campaign-doctrine" class="[ visually-hidden ]">{t('campaigns.doctrines.add')}</label>
                     <Select id="campaign-doctrine" size="sm" name="doctrine_id">
@@ -757,14 +755,13 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                     {fitting.doctrine_name && <span class="[ manage-who__sub ]">{fitting.doctrine_name}</span>}
                                 </span>
                                 <span class="[ campaign-fitting__role ]">{fitting.role_label}</span>
-                                <button
-                                    type="button"
-                                    class="[ campaign-chip ]"
-                                    aria-pressed={fitting.enabled ? 'true' : 'false'}
+                                <FilterChip
+                                    tone="green"
+                                    active={fitting.enabled}
                                     aria-label={t('campaigns.doctrines.toggle').replace('{name}', fitting.name)}
                                     hx-post={PART_URL}
                                     hx-vals={JSON.stringify({ op: 'toggle', row_id: String(fitting.id), enabled: String(!fitting.enabled) })}
-                                >{fitting.enabled ? t('campaigns.doctrines.on') : t('campaigns.doctrines.off')}</button>
+                                >{fitting.enabled ? t('campaigns.doctrines.on') : t('campaigns.doctrines.off')}</FilterChip>
                                 {!fitting.doctrine_id ?
                                     <StylessButton
                                         type="button"
@@ -1129,30 +1126,8 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         flex: none;
     }
 
-    .campaign-list__row.is-off > :not(.campaign-chip) {
+    .campaign-list__row.is-off > :not(.filter-chip) {
         opacity: 0.5;
-    }
-
-    .campaign-chip {
-        flex: none;
-        min-inline-size: 4.5rem;
-        min-block-size: 2.25rem;
-        padding-inline: var(--space-2xs);
-        font-family: var(--button-font);
-        font-size: var(--step--2);
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: var(--faded);
-        background: none;
-        border: 1px solid var(--border-color-hover);
-        cursor: pointer;
-
-        &[aria-pressed='true'] {
-            color: var(--fleet-yellow);
-            background: var(--green);
-            border-color: var(--green);
-        }
     }
 
     .campaign-fitting__role {
@@ -1170,16 +1145,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
 
     .campaign-invite :global(input) {
         flex: 1 1 18rem;
-    }
-
-    .campaign-doctrine-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-3xs);
-        padding-inline-start: var(--space-xs);
-        background: var(--border-color);
-        color: var(--highlight);
-        font-weight: 700;
     }
 
     .campaign-coordinator__state {

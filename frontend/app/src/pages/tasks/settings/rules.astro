@@ -39,6 +39,8 @@ import PageLanding from '@components/page/PageLanding.astro'
 import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import ManageHero from '@components/blocks/manage/ManageHero.astro'
 import ManageTable from '@components/blocks/manage/ManageTable.astro'
 import TaskRuleRow from '@components/blocks/tasks/TaskRuleRow.astro'
@@ -56,15 +58,20 @@ import TaskRuleRow from '@components/blocks/tasks/TaskRuleRow.astro'
             ? <ErrorRefetch args={{ partial: translatePath('/tasks/settings/rules/'), error, delay: 0 }} />
             : (
                 <div x-data="{ audience: 'pilot' }" class="[ task-stack ]">
-                    <fieldset class="[ manage-chips ]">
+                    <fieldset class="[ manage-fieldset ]">
                         <legend class="[ visually-hidden ]">{page_title}</legend>
-                        {AUDIENCES.map((audience: Audience) => (
-                            <label class="[ manage-chip ]">
-                                <input type="radio" name="audience" value={audience} x-model="audience" checked={audience === 'pilot'} />
-                                {t(t_key('tasks.settings.audience_', audience))}
-                                <span class="[ manage-chip__count ]">{rules.filter((rule) => rule.audience === audience).length}</span>
-                            </label>
-                        ))}
+                        <ChipGroup wrap={true} role="none">
+                            {AUDIENCES.map((audience: Audience) => (
+                                <FilterChip
+                                    type="radio"
+                                    name="audience"
+                                    value={audience}
+                                    checked={audience === 'pilot'}
+                                    count={rules.filter((rule) => rule.audience === audience).length}
+                                    input_attributes={{ 'x-model': 'audience' }}
+                                >{t(t_key('tasks.settings.audience_', audience))}</FilterChip>
+                            ))}
+                        </ChipGroup>
                     </fieldset>
 
                     {AUDIENCES.map((audience: Audience) => (
