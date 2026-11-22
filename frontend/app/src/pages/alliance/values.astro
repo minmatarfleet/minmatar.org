@@ -63,6 +63,7 @@ const { html: _html, sections: _sections, ...progress } = pageProgressFromMarkdo
                     <AllianceValues
                         x-data={`{
                             init_zoom() {
+                                if (!window.mediumZoom) return
                                 mediumZoom('img[data-zoomable]', {
                                     background: 'var(--solid-transparency-background)',
                                     scrollOffset: 0,

@@ -294,6 +294,13 @@ const RULE_DEFINITIONS: ConventionRule[] = [
             }),
     },
     {
+        id: 'cdn_script_processed',
+        kind: 'absolute',
+        why:
+            'A <script src="https://..."> with no other attribute is processed by Astro, which turns it into a module or drops it, so a global it defines (window.mediumZoom) is never there when Alpine runs x-init (MINMATAR-FRONTEND-HY). Add is:inline (or defer) so it stays a classic script.',
+        find: (file) => (is_astro(file) ? hits_in(file, [{ text: file.text, offset: 0 }], /<script\s+src\s*=\s*["']https?:\/\/[^"']*["']\s*>/g) : []),
+    },
+    {
         id: 'raw_eve_image',
         kind: 'ratchet',
         why: 'EVE image URLs come from @helpers/eve_image (get_item_icon, get_player_icon, get_corporation_logo, ...) or the Picture components (<ItemPicture>, <CharacterPicture>, <CorporationPicture>, <Picture>), which pick the size and the fallback. Do not write an images.evetech.net URL in markup or scripts.',

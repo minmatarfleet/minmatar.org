@@ -167,6 +167,7 @@ if (user) share_url.searchParams.set('ref', user.user_id.toString())
                             set:html={marked.parse(post.content as string, { renderer })}
                             x-data={`{
                                 init_zoom() {
+                                    if (!window.mediumZoom) return
                                     mediumZoom('img[data-zoomable]', {
                                         background: 'var(--solid-transparency-background)',
                                         scrollOffset: 0,

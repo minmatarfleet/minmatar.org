@@ -259,7 +259,8 @@ class StructureHelperTest(unittest.TestCase):
             corporation=corp,
         )
         ping = EveStructurePing.objects.create(
-            notification_id=10001,
+            # notification_id is unique and this class is never rolled back.
+            notification_id=10101,
             notification_type="StructureIsSad",
             structure_id=structure.id,
             summary="ABC",

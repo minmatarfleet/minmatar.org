@@ -216,8 +216,9 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
 
 <script is:inline src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-<script src="https://cdn.jsdelivr.net/npm/@justinribeiro/lite-youtube@1.9.0/lite-youtube.min.js"></script>
+<!-- ES modules that register custom elements: is:inline keeps them out of Astro's bundle. -->
+<script is:inline type="module" src="https://cdn.jsdelivr.net/npm/@justinribeiro/lite-youtube@1.9.0/lite-youtube.min.js"></script>
 
-<script src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+<script is:inline type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
 
 <script is:inline src="/js/toastui-editor-all.min.js"></script>

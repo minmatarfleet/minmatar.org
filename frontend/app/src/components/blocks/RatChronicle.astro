@@ -25,6 +25,7 @@ const next_chapter = chapters[active_index + 1]
     class="rat-chronicle"
     x-data={`{
         init_zoom() {
+            if (!window.mediumZoom) return
             mediumZoom('[data-zoomable]', {
                 background: 'var(--solid-transparency-background)',
                 scrollOffset: 0,

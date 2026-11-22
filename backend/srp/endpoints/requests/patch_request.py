@@ -10,7 +10,7 @@ from authentication import AuthBearer
 from onboarding.srp_gate import require_current_srp_onboarding
 from srp.endpoints.requests.helpers import can_update
 from srp.endpoints.requests.schemas import SrpPatchResult, UpdateSrpRequest
-from srp.helpers import send_decision_notification
+from srp.helpers import DecisionMailFailed, send_decision_notification
 from srp.models import EveFleetShipReimbursement
 
 logger = logging.getLogger(__name__)
@@ -62,6 +62,14 @@ def patch_srp_request(request, request_id: int, payload: UpdateSrpRequest):
         try:
             send_decision_notification(reimbursement)
             mail_result = "Success"
+        except DecisionMailFailed as err:
+            # The decision is saved; only the mail failed, and ESI said why.
+            logger.error(
+                "SRP decision mail failed for reimbursement %s: %s",
+                reimbursement.pk,
+                err,
+            )
+            mail_result = f"Error sending mail: {err}"
         except Exception as err:  # pylint: disable=broad-exception-caught
             logger.exception(
                 "SRP decision mail failed for reimbursement %s",

@@ -1,24 +1,38 @@
 """Shared ESI response parsing helpers."""
 
-from datetime import datetime
+import re
+from datetime import datetime, timezone as dt_timezone
 from decimal import Decimal
 
-import pytz
 from django.utils import timezone
 from esi.exceptions import ESIErrorLimitException
 
+# Seconds with a fraction of any length. ESI trims trailing zeros
+# ("16:01:03.54Z"), which Python 3.10's fromisoformat rejects: it only takes
+# 3 or 6 fractional digits.
+_FRACTION = re.compile(r"(T\d{2}:\d{2}:\d{2})\.(\d+)")
+
+
+def _pad_fraction(match) -> str:
+    return f"{match.group(1)}.{match.group(2)[:6].ljust(6, '0')}"
+
 
 def parse_esi_date(value):
-    """Parse ESI ISO date string (or datetime) to a timezone-aware datetime."""
+    """Parse ESI ISO date string (or datetime) to a timezone-aware datetime.
+
+    Accepts a "Z" suffix and fractional seconds of any length. A string that
+    is not an ISO date still raises ValueError.
+    """
     if not value:
         return None
     if isinstance(value, datetime):
         return (
             timezone.make_aware(value) if timezone.is_naive(value) else value
         )
-    dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    text = str(value).strip().replace("Z", "+00:00")
+    dt = datetime.fromisoformat(_FRACTION.sub(_pad_fraction, text, count=1))
     if timezone.is_naive(dt):
-        dt = pytz.UTC.localize(dt)
+        dt = dt.replace(tzinfo=dt_timezone.utc)
     return dt
 
 

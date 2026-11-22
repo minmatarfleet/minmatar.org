@@ -19,7 +19,8 @@ a code change:
 Errors are not sampled: every exception and every ``logger.error`` is sent.
 
 Cron monitors: beat check-ins go only to the schedules in
-``CRON_MONITORED_SCHEDULES``; each monitor counts against the plan.
+``CRON_MONITORED_SCHEDULES``, plus the character-sync schedule that does the
+work in this ``CHARACTER_SYNC_MODE``; each monitor counts against the plan.
 """
 
 from __future__ import annotations
@@ -44,11 +45,25 @@ CRON_MONITORED_SCHEDULES = (
     "[Queues] Monitor queue health",
     "[Campaigns] Close the week",
     "[Campaigns] Generate daily orders",
-    "[Characters] Queue due character syncs",
     "[Market] Fetch Market Item History",
     "[Capabilities] Load new SDE builds",
     "[Industry] Start provisional orders",
 )
+
+# Character sync runs from one of two schedules depending on
+# CHARACTER_SYNC_MODE, and the other returns at once. Monitor the one doing
+# the work: watching the scheduler in fanout mode only proved that a no-op
+# ran, while the 4-hourly fan-out went unwatched and Sentry kept opening
+# missed check-ins for its orphaned monitor (MINMATAR-CELERY-NZ).
+CHARACTER_FANOUT_SCHEDULE = (
+    "[Characters] Update Characters (assets, skills, killmails)"
+)
+CHARACTER_SCHEDULER_SCHEDULE = "[Characters] Queue due character syncs"
+CHARACTER_SYNC_MONITORS = {
+    "fanout": (CHARACTER_FANOUT_SCHEDULE,),
+    "shadow": (CHARACTER_FANOUT_SCHEDULE, CHARACTER_SCHEDULER_SCHEDULE),
+    "scheduled": (CHARACTER_SCHEDULER_SCHEDULE,),
+}
 
 # Error events carry the queue as a tag, so issues can be filtered by
 # queue. (Spans already get messaging.destination.name from the SDK.)
@@ -116,12 +131,27 @@ def init_sentry(
     sentry_sdk.get_global_scope().set_tag("component", component)
 
 
-def unmonitored_schedules_pattern() -> str:
+def monitored_schedules(mode: str | None = None) -> tuple[str, ...]:
+    """Every schedule with a cron monitor in this character-sync mode.
+
+    Read from the environment, as ``CHARACTER_SYNC_MODE`` is: Sentry starts
+    before Django settings load. An unknown mode counts as fanout, as it
+    does in ``eveonline.character_sync.sync_mode``.
+    """
+    if mode is None:
+        mode = os.environ.get("CHARACTER_SYNC_MODE", "fanout")
+    characters = CHARACTER_SYNC_MONITORS.get(
+        mode, CHARACTER_SYNC_MONITORS["fanout"]
+    )
+    return CRON_MONITORED_SCHEDULES + characters
+
+
+def unmonitored_schedules_pattern(mode: str | None = None) -> str:
     """One regex matching every schedule name not in the monitored list.
 
     The SDK treats ``exclude_beat_tasks`` as a block list; this inverts it.
     """
-    names = "|".join(re.escape(name) for name in CRON_MONITORED_SCHEDULES)
+    names = "|".join(re.escape(name) for name in monitored_schedules(mode))
     return f"^(?!(?:{names})$).*"
 
 

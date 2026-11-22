@@ -1107,3 +1107,54 @@ class PodReimbursementProgramTest(TestCase):
         )
         latest = program.amounts.order_by("-created_at", "-id").first()
         self.assertEqual(latest.srp_value, 25_000_000)
+
+
+class SrpEsiFailureTestCase(SrpWithdrawTestCase):
+    """ESI 906 on SRP endpoints is a handled answer (MINMATAR-REST-API-P5)."""
+
+    @patch("srp.helpers.EsiClient")
+    def test_failed_decision_mail_still_saves_and_reports_esi_error(
+        self, esi_mock
+    ):
+        self.make_superuser()
+        esi_mock.return_value.send_evemail.return_value = EsiResponse(
+            906, response="CSPA charge required"
+        )
+        reimbursement = self._reimbursement("pending")
+
+        with self.assertLogs("srp.endpoints.requests.patch_request") as logs:
+            response = self.client.patch(
+                f"{BASE_URL}/{reimbursement.id}",
+                {"status": "approved"},
+                content_type="application/json",
+                HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            )
+
+        self.assertEqual(200, response.status_code, response.content)
+        body = response.json()
+        self.assertEqual("Success", body["database_update_status"])
+        self.assertEqual(
+            "Error sending mail: Error calling ESI (906): CSPA charge required",
+            body["evemail_status"],
+        )
+        reimbursement.refresh_from_db()
+        self.assertEqual("approved", reimbursement.status)
+        self.assertNotIn("Cannot return data", "\n".join(logs.output))
+        self.assertTrue(all(r.exc_info is None for r in logs.records))
+
+    @patch("srp.helpers.EsiClient")
+    def test_failed_killmail_fetch_is_a_client_error(self, esi_mock):
+        self.make_superuser()
+        esi_mock.return_value.get_character_killmail.return_value = (
+            EsiResponse(906)
+        )
+        response = self.client.post(
+            f"{BASE_URL}",
+            {"external_killmail_link": KM_LINK, "is_corp_ship": False},
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(400, response.status_code, response.content)
+        self.assertEqual(
+            "Unexpected error processing killmail", response.json()["detail"]
+        )

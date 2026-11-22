@@ -6,6 +6,7 @@ from typing import List
 from ninja import Router
 from pydantic import BaseModel
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.shortcuts import redirect
 
 from app.client_ip import client_ip as client_ip_of
@@ -57,19 +58,13 @@ def referral_links() -> List[LinkInfo]:
 @router.get("", description="Redirect referral link to final destination")
 def referral_redirect(request, page: str, code: str):
 
-    # Very rudimentary masking of the user id.
-    # The prefix (currently "Q") specifies the algorithm to use.
-    # User ID to code algorithm: user_id * 83 + 7.
-    prefix = code[0:1]
-    suffix = int(code[1:])
-    user_id = (suffix - 7) / 83
-
+    user_id = user_id_from_code(code)
     client_ip = client_ip_of(request)
     client_id = hash_client_ip(client_ip)
 
     log.info(
-        "Referral prefix=%s, user=%d, page=%s, client=%s",
-        prefix,
+        "Referral code=%s, user=%s, page=%s, client=%s",
+        code,
         user_id,
         page,
         client_id,
@@ -83,11 +78,40 @@ def referral_redirect(request, page: str, code: str):
     if target == "":
         log.info("Could not find target for %s", page)
         return redirect(site_url("/badreferral"))
-    else:
-        ReferralClick.objects.get_or_create(
-            page=page, user_id=user_id, identifier=client_id
-        )
-        return redirect(target)
+    record_click(page, user_id, client_id)
+    return redirect(target)
+
+
+def user_id_from_code(code: str) -> int | None:
+    """The user a referral code names, or None when it names no one.
+
+    Very rudimentary masking of the user id. The prefix ("Q") names the
+    algorithm: code = user_id * 83 + 7.
+    """
+    if code[:1] != "Q":
+        return None
+    try:
+        user_id, remainder = divmod(int(code[1:]) - 7, 83)
+    except ValueError:
+        return None
+    if remainder or user_id <= 0:
+        return None
+    return user_id
+
+
+def record_click(page: str, user_id: int | None, identifier: str) -> bool:
+    """Count one click for the user the link belongs to, if they exist.
+
+    A link from a deleted account still takes the visitor to the page; it
+    just counts for no one (MINMATAR-REST-API-JS).
+    """
+    if user_id is None or not User.objects.filter(pk=user_id).exists():
+        log.info("Referral for unknown user %s not recorded", user_id)
+        return False
+    ReferralClick.objects.get_or_create(
+        page=page, user_id=user_id, identifier=identifier
+    )
+    return True
 
 
 def hash_client_ip(client_ip):
@@ -119,10 +143,8 @@ def is_frontend_server(request) -> bool:
 def record_referral(request, referral: ReferralRecord) -> str:
     if not is_frontend_server(request):
         return 403, ErrorResponse(detail="Not permitted")
-    ReferralClick.objects.get_or_create(
-        page=referral.page,
-        user_id=referral.user_id,
-        identifier=hash_client_ip(referral.client_ip),
+    record_click(
+        referral.page, referral.user_id, hash_client_ip(referral.client_ip)
     )
     return 201, "OK"
 
