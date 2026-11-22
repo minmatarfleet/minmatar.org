@@ -5,16 +5,32 @@
  * bind `x-bind:class` / `x-bind:aria-pressed` for an Alpine filter. With
  * `href` it is a link to a filtered view and marks the current one with
  * aria-current.
+ *
+ * With `type="radio"` or `type="checkbox"` it is a real (visually hidden)
+ * input in a label, for filters that submit with a form or reload a list on
+ * `change` (htmx): `name`, `value` and `checked` go to the input, any other
+ * attribute to the label, and `input_attributes` carries `x-model`, `hx-*`
+ * and the like for the input. The checked chip takes the active look.
  */
 interface Props {
     active?:            boolean;
     href?:              string;
+    type?:              'radio' | 'checkbox';
+    name?:              string;
+    value?:             string;
+    checked?:           boolean;
+    input_attributes?:  Record<string, any>;
     [propName: string]: any;
 }
 
 const {
     active = false,
     href,
+    type,
+    name,
+    value,
+    checked = false,
+    input_attributes = {},
     ...attributes
 } = Astro.props
 
@@ -23,7 +39,15 @@ delete attributes.class
 const chip_class = ['[ filter-chip ]', { 'is-active': active }, Astro.props.class]
 ---
 
-{href ?
+{type ?
+    <label
+        class:list={[...chip_class, 'filter-chip--input']}
+        {...attributes}
+    >
+        <input type={type} name={name} value={value} checked={checked} {...input_attributes} />
+        <slot />
+    </label>
+    : href ?
     <a
         href={href}
         class:list={chip_class}
@@ -70,7 +94,8 @@ const chip_class = ['[ filter-chip ]', { 'is-active': active }, Astro.props.clas
                 color: var(--fleet-yellow);
             }
 
-            &.is-active:hover {
+            &.is-active:hover,
+            &:has(> input:checked):hover {
                 background: var(--fleet-yellow);
                 color: var(--background);
             }
@@ -81,10 +106,29 @@ const chip_class = ['[ filter-chip ]', { 'is-active': active }, Astro.props.clas
             outline-offset: 2px;
         }
 
-        &.is-active {
+        &.is-active,
+        &:has(> input:checked) {
             border-color: var(--fleet-yellow);
             background: var(--fleet-yellow);
             color: var(--background);
+        }
+
+        &:has(> input:focus-visible) {
+            outline: 1px solid var(--highlight);
+            outline-offset: 2px;
+        }
+    }
+
+    /* The input is real but hidden; the label is the chip. */
+    .filter-chip--input {
+        position: relative;
+
+        input {
+            position: absolute;
+            opacity: 0;
+            width: 1px;
+            height: 1px;
+            margin: 0;
         }
     }
 </style>

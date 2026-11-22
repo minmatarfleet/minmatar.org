@@ -67,6 +67,8 @@ const DURATION = {
 
 import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import ManageField from '@components/blocks/manage/ManageField.astro'
 import EntityPicker from '@components/blocks/manage/EntityPicker.astro'
 import EveTimeInput from '@components/blocks/manage/EveTimeInput.astro'
@@ -149,14 +151,11 @@ import EveTimeInput from '@components/blocks/manage/EveTimeInput.astro'
 
     <fieldset class="[ campaign-new__kinds ]">
         <legend class="[ manage-field__label ]">{t('campaigns.manage.kind')}</legend>
-        <div class="[ manage-chips ]">
+        <ChipGroup wrap={true}>
             {kinds.map((kind) => (
-                <label class="[ manage-chip ]">
-                    <input type="radio" name="kind" value={kind.value} checked={kind.value === initial.kind} />
-                    <span>{kind.label}</span>
-                </label>
+                <FilterChip type="radio" name="kind" value={kind.value} checked={kind.value === initial.kind}>{kind.label}</FilterChip>
             ))}
-        </div>
+        </ChipGroup>
     </fieldset>
 
     <div class="[ manage-fields ]" x-ref="times" x-on:input="measure()" x-on:change="measure()">

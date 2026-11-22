@@ -554,9 +554,9 @@ Pager for a list fed by an htmx partial: each button requests another page and s
 A pill-shaped toggle for filtering a list.
 
 - Import: `import FilterChip from '@components/blocks/FilterChip.astro'`
-- Props: `active?: boolean = false`, `href?: string`
+- Props: `active?: boolean = false`, `href?: string`, `type?: 'radio' | 'checkbox' = "radio"` or `type="checkbox"` it is a real (visually hidden)`, `name?: string`, `value?: string`, `checked?: boolean = false`, `input_attributes?: Record<string, any> = {}`
 - Slots: `default`
-- Stories (6): `frontend/app/rust/stories/components/navigation/FilterChip.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-filterchip--docs: Default, Active, Alpine toggle, Link to a filtered view, Current link chip, Attributes pass through
+- Stories (9): `frontend/app/rust/stories/components/navigation/FilterChip.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-filterchip--docs: Default, Active, Alpine toggle, Link to a filtered view, Current link chip, Attributes pass through, Radio chip (form filter), Checkbox chip, Input attributes (x-model)
 
 ### ChipGroup
 

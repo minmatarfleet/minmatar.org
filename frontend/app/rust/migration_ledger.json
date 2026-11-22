@@ -26,5 +26,19 @@
     "path": "converge",
     "pattern": "textarea-library",
     "note": "Raw textarea (browser default chrome) becomes Textarea, so the application note takes the library field look; it was already width 100%."
+  },
+  {
+    "file": "src/components/blocks/market_settings/FreightPricingFields.astro",
+    "selector": ".market-mode .filter-chip--input",
+    "path": "converge",
+    "pattern": "radio-chip",
+    "note": "Hand-rolled global .manage-chip radio chips (sentence case, --step--1, 2.75rem-ish row height) become FilterChip type=radio: uppercase tracked --step--2 chips with the yellow fill when checked. Inputs keep name, value, checked and x-model; the manage-chips fieldset flex row becomes a wrapping ChipGroup."
+  },
+  {
+    "file": "src/components/blocks/CampaignNewForm.astro",
+    "selector": ".campaign-new__kinds .filter-chip--input",
+    "path": "converge",
+    "pattern": "radio-chip",
+    "note": "Hand-rolled global .manage-chip radio chips (sentence case, --step--1, 2.75rem-ish row height) become FilterChip type=radio: uppercase tracked --step--2 chips with the yellow fill when checked. Inputs keep name, value, checked and x-model; the manage-chips fieldset flex row becomes a wrapping ChipGroup."
   }
 ]
