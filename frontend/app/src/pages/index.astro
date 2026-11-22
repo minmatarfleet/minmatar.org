@@ -6,8 +6,10 @@ const { t, translatePath } = i18n(Astro.url)
 import type { LandingPulse, LandingMoment, LandingWeek } from '@dtypes/api.minmatar.org'
 import type { Alert, PostListUI } from '@dtypes/layout_components'
 import { get_landing_pulse, get_landing_week } from '@helpers/api.minmatar.org/landing'
-import { fetch_latest_published_posts } from '@helpers/fetching/posts'
-import { dedupe_posts, format_number, week_last_column, WEEK_GRID, WEEK_LAST_LABELS } from '@helpers/landing'
+import { fetch_latest_published_posts, fetch_published_posts_tagged } from '@helpers/fetching/posts'
+import { dedupe_posts, format_number, pick_premium_posts, week_last_column, WEEK_GRID, WEEK_LAST_LABELS } from '@helpers/landing'
+import { get_latest_issue as get_latest_market_issue } from '@/data/amamake-market'
+import { get_latest_issue as get_latest_warzone_issue } from '@/data/warzone'
 import { t_key } from '@helpers/i18n'
 import { post_page_path } from '@helpers/content_viewer'
 
@@ -18,10 +20,14 @@ const alert = auth_error ? { title: t('auth_error_dialog_title'), content: auth_
 
 // The pulse, the week's tab counts (the rows load through the partial) and
 // the news don't depend on each other, so fetch them together.
-const [pulse_result, week_result, posts_result] = await Promise.allSettled([
+const [pulse_result, week_result, posts_result, videos_result, cope_result] = await Promise.allSettled([
     get_landing_pulse(),
     get_landing_week('fights', 1),
     fetch_latest_published_posts(16),
+    // The premium series: the yearly review and The Cope are videos, older
+    // Cope episodes sit under their own tag.
+    fetch_published_posts_tagged('Videos', 50),
+    fetch_published_posts_tagged('The Cope', 10),
 ])
 
 const pulse: LandingPulse | null = pulse_result.status === 'fulfilled' ? pulse_result.value : null
@@ -60,10 +66,47 @@ const post_image = (post: PostListUI, fallback: string) => post.image || fallbac
 const post_thumb = (post: PostListUI, fallback: string) =>
     post_image(post, fallback).replace(/(\/\/i\.ytimg\.com\/vi\/[^/]+\/)maxresdefault\.jpg$/, '$1hqdefault.jpg')
 
-// Latest cycles through the five newest; the grid below starts after them.
-const latest = posts.slice(0, 5)
-const more_news = posts.slice(5, 9)
+// The hero cycles through our premium content: the year in review, the
+// newest Cope, and the monthly economic and frontline reports. The news
+// feed sits further down the page.
+const series_posts = [videos_result, cope_result].flatMap((result) => result.status === 'fulfilled' ? result.value.chunk : [])
+const premium_posts = pick_premium_posts(dedupe_posts(series_posts))
+const month_label = (date: Date) =>
+    `${date.toLocaleString('en-US', { month: 'long', timeZone: 'UTC' })} YC${date.getUTCFullYear() - 1898}`
+const market_issue = get_latest_market_issue()
+const warzone_issue = get_latest_warzone_issue()
+
+type PremiumItem = { kicker: string, title: string, href: string, image: string, thumb: string, post_id?: number }
+const premium_post_item = (kicker: string, post: PostListUI | undefined): PremiumItem[] => post ? [{
+    kicker,
+    title: post.title,
+    href: post_href(post),
+    image: post_image(post, '/images/videos-cover.jpg'),
+    thumb: post_thumb(post, '/images/videos-cover.jpg'),
+    post_id: post.post_id,
+}] : []
+const premium: PremiumItem[] = [
+    ...premium_post_item(t('landing_new.premium.review'), premium_posts.review),
+    ...premium_post_item(t('landing_new.premium.cope'), premium_posts.cope),
+    {
+        kicker: t('landing_new.premium.economic'),
+        title: `${t('landing_new.premium.economic_title')} · ${month_label(market_issue.published_at)}`,
+        href: translatePath('/amamake-market/'),
+        image: market_issue.cover_image,
+        thumb: market_issue.cover_image,
+    },
+    {
+        kicker: t('landing_new.premium.frontline'),
+        title: `${t('landing_new.premium.frontline_title')} · ${month_label(warzone_issue.published_at)}`,
+        href: translatePath('/warzone/'),
+        image: warzone_issue.cover_image,
+        thumb: warzone_issue.cover_image,
+    },
+]
 const LATEST_SECONDS = 7
+
+const premium_ids = new Set(premium.map((item) => item.post_id).filter((id) => id !== undefined))
+const more_news = posts.filter((post) => !premium_ids.has(post.post_id)).slice(0, 8)
 
 const MOMENT_IMAGES: Record<string, string> = {
     record: '/images/videos-cover.jpg',
@@ -207,63 +250,61 @@ import LandingReel from '@components/blocks/landing/LandingReel.astro'
                         </div>
                     </div>
     
-                    {latest.length > 0 &&
-                        <aside
-                            class="landing-latest"
-                            aria-label={t('landing_new.latest')}
-                            x-data={`landing_rotator(${latest.length}, ${LATEST_SECONDS * 1000})`}
-                            x-on:mouseenter="pause(true)"
-                            x-on:mouseleave="pause(false)"
-                            x-on:focusin="pause(true)"
-                            x-on:focusout="pause(false)"
-                        >
-                            <div class="landing-latest__header">
-                                <h2>{t('landing_new.latest')}</h2>
-                                <a href={translatePath('/alliance/content/')}>{t('landing_new.all_news')}</a>
-                            </div>
-                            {/* Every lead is rendered, stacked in one cell; the current one shows. */}
-                            <div class="landing-latest__leads">
-                                {latest.map((post, i) =>
-                                    <ContentViewerLink
-                                        class:list={['landing-latest__lead', { 'is-current': i === 0 }]}
-                                        href={post_href(post)}
-                                        post={post.post_id}
-                                        title={post.title}
-                                        x-bind:class={`{ 'is-current': index === ${i} }`}
-                                        x-bind:tabindex={`index === ${i} ? null : -1`}
-                                        x-bind:aria-hidden={`index === ${i} ? null : 'true'`}
-                                        tabindex={i === 0 ? undefined : -1}
-                                        aria-hidden={i === 0 ? undefined : 'true'}
-                                    >
-                                        <img src={post_image(post, '/images/posts-cover.jpg')} alt="" loading={i === 0 ? 'eager' : 'lazy'} />
-                                        <span class="landing-latest__lead-copy">
-                                            <span class="landing-latest__kicker">{post.tags[0] ?? ''}</span>
-                                            <span class="landing-latest__lead-title">{post.title}</span>
-                                        </span>
-                                    </ContentViewerLink>
-                                )}
-                            </div>
-                            <span class="[ landing-latest__bar ]" aria-hidden="true" x-show="!still && count > 1"><span x-ref="bar"></span></span>
-                            {/* Up next: the two after the current lead. */}
-                            {latest.map((post, i) =>
+                    <aside
+                        class="landing-latest"
+                        aria-label={t('landing_new.premium')}
+                        x-data={`landing_rotator(${premium.length}, ${LATEST_SECONDS * 1000})`}
+                        x-on:mouseenter="pause(true)"
+                        x-on:mouseleave="pause(false)"
+                        x-on:focusin="pause(true)"
+                        x-on:focusout="pause(false)"
+                    >
+                        <div class="landing-latest__header">
+                            <h2>{t('landing_new.premium')}</h2>
+                            <a href="#news">{t('landing_new.view_news')}</a>
+                        </div>
+                        {/* Every lead is rendered, stacked in one cell; the current one shows. */}
+                        <div class="landing-latest__leads">
+                            {premium.map((item, i) =>
                                 <ContentViewerLink
-                                    class="landing-latest__row"
-                                    href={post_href(post)}
-                                    post={post.post_id}
-                                    title={post.title}
-                                    x-show={`after(${i}) === 1 || after(${i}) === 2`}
-                                    x-bind:style={`{ order: after(${i}) }`}
-                                    style={i === 1 || i === 2 ? `order: ${i}` : 'display: none;'}
+                                    class:list={['landing-latest__lead', { 'is-current': i === 0 }]}
+                                    href={item.href}
+                                    post={item.post_id}
+                                    title={item.title}
+                                    x-bind:class={`{ 'is-current': index === ${i} }`}
+                                    x-bind:tabindex={`index === ${i} ? null : -1`}
+                                    x-bind:aria-hidden={`index === ${i} ? null : 'true'`}
+                                    tabindex={i === 0 ? undefined : -1}
+                                    aria-hidden={i === 0 ? undefined : 'true'}
                                 >
-                                    <img src={post_thumb(post, '/images/posts-cover.jpg')} alt="" loading="lazy" />
-                                    <span>
-                                        <span class="landing-latest__kicker">{post.tags[0] ?? ''}</span>
-                                        <span class="landing-latest__row-title">{post.title}</span>
+                                    <img src={item.image} alt="" loading={i === 0 ? 'eager' : 'lazy'} />
+                                    <span class="landing-latest__lead-copy">
+                                        <span class="landing-latest__kicker">{item.kicker}</span>
+                                        <span class="landing-latest__lead-title">{item.title}</span>
                                     </span>
                                 </ContentViewerLink>
                             )}
-                        </aside>
-                    }
+                        </div>
+                        <span class="[ landing-latest__bar ]" aria-hidden="true" x-show="!still && count > 1"><span x-ref="bar"></span></span>
+                        {/* Up next: the rest, in the order they come round. */}
+                        {premium.map((item, i) =>
+                            <ContentViewerLink
+                                class="landing-latest__row"
+                                href={item.href}
+                                post={item.post_id}
+                                title={item.title}
+                                x-show={`after(${i}) !== 0`}
+                                x-bind:style={`{ order: after(${i}) }`}
+                                style={i === 0 ? 'display: none;' : `order: ${i}`}
+                            >
+                                <img src={item.thumb} alt="" loading="lazy" />
+                                <span>
+                                    <span class="landing-latest__kicker">{item.kicker}</span>
+                                    <span class="landing-latest__row-title">{item.title}</span>
+                                </span>
+                            </ContentViewerLink>
+                        )}
+                    </aside>
                 </div>
     
                 {pulse && <LandingLive events={pulse.events} view_all_href="#week" />}
@@ -280,36 +321,7 @@ import LandingReel from '@components/blocks/landing/LandingReel.astro'
             </section>
         }
 
-        <section id="week" class="landing-section">
-            <Wrapper padding_inline="var(--landing-gutter)" padding_block="0" centered={true}>
-                <p class="landing-eyebrow">{t('landing_new.week_eyebrow')}</p>
-                <h2 class="landing-title">{t('landing_new.week_title')}</h2>
-                <SectionTabs tabs={week_tabs} aria_label={t('landing_new.week_title')} id_prefix="landing-week" default_tab="fights">
-                    {WEEK_TABS.map((id) =>
-                        <SectionTabPanel id={id} id_prefix="landing-week" is_default={id === 'fights'}>
-                            <ComponentBlock padding_block="0" padding_inline="0" class="[ landing-week-panel ]">
-                                <LazyPartial url={week_url(id)} swap="outerHTML" trigger={id === 'fights' ? 'load' : 'reveal'} indicator={false}>
-                                    <DataGridSkeleton
-                                        columns={[t('landing_new.week_time'), t('landing_new.week_what'), t(WEEK_LAST_LABELS[week_last_column(id)])]}
-                                        template={WEEK_GRID.template}
-                                        rows={WEEK_GRID.rows}
-                                        media={[1]}
-                                        numeric={[2]}
-                                        min_width="0"
-                                        variant="ledger"
-                                        stack={true}
-                                        pager={true}
-                                        class="[ landing-week-grid ]"
-                                    />
-                                </LazyPartial>
-                            </ComponentBlock>
-                        </SectionTabPanel>
-                    )}
-                </SectionTabs>
-            </Wrapper>
-        </section>
-
-        <section class="landing-section">
+        <section id="news" class="landing-section">
             <Wrapper padding_inline="var(--landing-gutter)" padding_block="0" centered={true}>
                 <div class="landing-section__header">
                     <div>
@@ -346,6 +358,36 @@ import LandingReel from '@components/blocks/landing/LandingReel.astro'
                 </nav>
             </Wrapper>
         </section>
+
+        <section id="week" class="landing-section">
+            <Wrapper padding_inline="var(--landing-gutter)" padding_block="0" centered={true}>
+                <p class="landing-eyebrow">{t('landing_new.week_eyebrow')}</p>
+                <h2 class="landing-title">{t('landing_new.week_title')}</h2>
+                <SectionTabs tabs={week_tabs} aria_label={t('landing_new.week_title')} id_prefix="landing-week" default_tab="fights">
+                    {WEEK_TABS.map((id) =>
+                        <SectionTabPanel id={id} id_prefix="landing-week" is_default={id === 'fights'}>
+                            <ComponentBlock padding_block="0" padding_inline="0" class="[ landing-week-panel ]">
+                                <LazyPartial url={week_url(id)} swap="outerHTML" trigger={id === 'fights' ? 'load' : 'reveal'} indicator={false}>
+                                    <DataGridSkeleton
+                                        columns={[t('landing_new.week_time'), t('landing_new.week_what'), t(WEEK_LAST_LABELS[week_last_column(id)])]}
+                                        template={WEEK_GRID.template}
+                                        rows={WEEK_GRID.rows}
+                                        media={[1]}
+                                        numeric={[2]}
+                                        min_width="0"
+                                        variant="ledger"
+                                        stack={true}
+                                        pager={true}
+                                        class="[ landing-week-grid ]"
+                                    />
+                                </LazyPartial>
+                            </ComponentBlock>
+                        </SectionTabPanel>
+                    )}
+                </SectionTabs>
+            </Wrapper>
+        </section>
+
 
         <section class="landing-section">
             <Wrapper padding_inline="var(--landing-gutter)" padding_block="0" centered={true} class="[ landing-join ]">

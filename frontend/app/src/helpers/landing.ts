@@ -120,3 +120,24 @@ export const WEEK_GRID = {
     template: '9rem minmax(0, 1fr) 8rem',
     rows: 12,
 } as const
+
+/** The two premium video series found by title: the yearly review and The Cope. */
+export const PREMIUM_POST_TITLES = {
+    review: /\bin review\b/i,
+    cope: /\bthe cope\b/i,
+} as const
+
+export type PremiumPostKind = keyof typeof PREMIUM_POST_TITLES
+
+/** The newest post of each premium series, from posts in any order. */
+export function pick_premium_posts<T extends { title: string; date_posted: string }>(
+    posts: T[],
+): Partial<Record<PremiumPostKind, T>> {
+    const newest_first = [...posts].sort((a, b) => new Date(b.date_posted).getTime() - new Date(a.date_posted).getTime())
+    const picked: Partial<Record<PremiumPostKind, T>> = {}
+    for (const kind of Object.keys(PREMIUM_POST_TITLES) as PremiumPostKind[]) {
+        const post = newest_first.find((candidate) => PREMIUM_POST_TITLES[kind].test(candidate.title))
+        if (post) picked[kind] = post
+    }
+    return picked
+}
