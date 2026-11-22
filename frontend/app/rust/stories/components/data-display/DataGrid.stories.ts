@@ -53,6 +53,7 @@ export default {
         },
     },
     argTypes: {
+        hidden_columns: { control: 'object', description: 'Indexes of columns whose header text is visually hidden (it stays the accessible name).' },
         columns: { control: 'object', description: 'Header labels, one per column.' },
         template: { control: 'text', description: 'The shared `grid-template-columns` value, e.g. `1fr 2fr repeat(2, 8rem)`.' },
         numeric: { control: 'object', description: 'Indexes of columns whose header is right-aligned (cells use `data-grid-numeric`).' },
@@ -109,6 +110,35 @@ export const StackedOnPhones = {
         // Storybook's browser renderer drops `data-label` from slotted HTML strings (real pages render it from Astro),
         // so the caption check only runs where the attribute survives.
         if (labels.some(Boolean)) await expect(labels).toEqual(['Fleet', 'FC', 'Hull', 'Pilots', 'SRP paid'])
+    },
+}
+
+export const HiddenColumnLabel = {
+    name: 'Icon column with a hidden label (hidden_columns)',
+    args: { hidden_columns: [1] },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const canvas = within(canvasElement)
+        const heads = canvas.getAllByRole('columnheader')
+        await expect(heads).toHaveLength(5)
+        await expect(within(heads[1]).getByText('FC')).toHaveClass('visually-hidden')
+        await expect(heads[0].querySelector('.visually-hidden')).toBeNull()
+    },
+}
+
+export const CustomHeader = {
+    name: 'Own header cells (header slot)',
+    args: {
+        columns: [],
+        template: '1fr auto',
+        slots: {
+            header: '<div role="columnheader"><button type="button">Fleet</button></div><div role="columnheader" class="data-grid-numeric">Pilots</div>',
+            default: '<div class="data-grid-row" role="row"><span role="cell">Fleet 94</span><span role="cell" class="data-grid-numeric">38</span></div>',
+        },
+    },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const canvas = within(canvasElement)
+        await expect(canvas.getAllByRole('columnheader')).toHaveLength(2)
+        await expect(canvas.getByRole('button', { name: 'Fleet' })).toBeInTheDocument()
     },
 }
 

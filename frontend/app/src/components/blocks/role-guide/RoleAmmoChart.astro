@@ -10,6 +10,7 @@ const { t } = i18n(Astro.url)
 import { AMMO, AMMO_TARGETS } from '@helpers/fleet_role_ships'
 import { get_item_icon } from '@helpers/eve_image'
 import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import DataTable from '@components/blocks/DataTable.astro'
 import DamageTypeIcon from '@components/blocks/role-guide/DamageTypeIcon.astro'
 import { DAMAGE_GLYPHS } from '@helpers/damage_types'
 
@@ -156,18 +157,16 @@ const TYPE_CLASS = { em: 'rd-blue', thermal: 'rd-red', kinetic: 'rd-kinetic', ex
     </div>
     <details class="[ role-ammo-chart__numbers ]">
         <summary>{t('fleet_roles.ammo_numbers')}</summary>
-        <XFadeScroll>
-            <table>
-                <thead>
-                    <tr>
-                        <th scope="col">{t('fleet_roles.ammo_charge')}</th>
-                        <th scope="col">{t('fleet_roles.ammo_damage')}</th>
-                        <th scope="col">{t('fleet_roles.ammo_range')}</th>
-                        <th scope="col">{missile ? t('fleet_roles.ammo_explosion') : t('fleet_roles.ammo_tracking')}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {charges.map((name) => {
+        <DataTable
+            density="dense"
+            columns={[
+                { key: 'charge', label: t('fleet_roles.ammo_charge') },
+                { key: 'damage', label: t('fleet_roles.ammo_damage') },
+                { key: 'range', label: t('fleet_roles.ammo_range') },
+                { key: 'tracking', label: missile ? t('fleet_roles.ammo_explosion') : t('fleet_roles.ammo_tracking') },
+            ]}
+        >
+            {charges.map((name) => {
                         const charge = AMMO[name]
                         return (
                             <tr>
@@ -182,9 +181,7 @@ const TYPE_CLASS = { em: 'rd-blue', thermal: 'rd-red', kinetic: 'rd-kinetic', ex
                             </tr>
                         )
                     })}
-                </tbody>
-            </table>
-        </XFadeScroll>
+        </DataTable>
     </details>
 </section>
 
@@ -309,31 +306,5 @@ const TYPE_CLASS = { em: 'rd-blue', thermal: 'rd-red', kinetic: 'rd-kinetic', ex
             color: var(--highlight);
         }
 
-        table {
-            width: 100%;
-            min-width: 32rem;
-            margin-top: var(--space-xs);
-            border-collapse: collapse;
-            font-size: var(--step--1);
-        }
-
-        th,
-        td {
-            padding: var(--space-2xs) var(--space-xs);
-            border-bottom: 1px solid var(--border-color);
-            text-align: left;
-            white-space: nowrap;
-        }
-
-        thead th {
-            font-size: var(--step--2);
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-            color: var(--faded);
-        }
-
-        tbody th {
-            color: var(--highlight);
-        }
     }
 </style>

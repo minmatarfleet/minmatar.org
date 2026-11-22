@@ -22,7 +22,7 @@ import Input from '@components/blocks/Input.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
-import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import DataTable from '@components/blocks/DataTable.astro'
 
 interface Props {
     issue: AmamakeMarketIssue
@@ -191,18 +191,20 @@ const hx_body = {
 
                 {show_table && rows.length > 0 && (
                     <>
-                        <XFadeScroll class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Monthly sales by type">
-                            <table class="[ mk-table mk-table--volume ]">
-                                <thead>
-                                    <tr>
-                                        <th scope="col">Type</th>
-                                        <th scope="col" class="[ mk-table__bar-head ]">ISK sold</th>
-                                        <th scope="col" class="[ mk-table__num ]">Units</th>
-                                        <th scope="col" class="[ mk-table__num ]">Orders</th>
-                                        <th scope="col" class="[ mk-table__num ]">Markup</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                        <DataTable
+                            variant="report"
+                            cards={true}
+                            class="[ mk-table--volume ]"
+                            style="--data-table-card-columns: 3"
+                            caption="Monthly sales by type"
+                            columns={[
+                                { key: 'type', label: 'Type' },
+                                { key: 'isk', label: 'ISK sold', class: 'data-table__bar' },
+                                { key: 'units', label: 'Units', numeric: true },
+                                { key: 'orders', label: 'Orders', numeric: true },
+                                { key: 'markup', label: 'Markup', numeric: true },
+                            ]}
+                        >
                                     {rows.map((row) => (
                                         <tr>
                                             <td class="[ mk-table__hull ]">
@@ -240,9 +242,7 @@ const hx_body = {
                                             </td>
                                         </tr>
                                     ))}
-                                </tbody>
-                            </table>
-                        </XFadeScroll>
+                        </DataTable>
 
                         <div class="[ mk-volume__pager ]">
                             <p class="[ mk-volume__meta ]">
@@ -374,18 +374,20 @@ const hx_body = {
 
                         {show_table && rows.length > 0 && (
                             <>
-                                <XFadeScroll class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Monthly sales by type">
-                                    <table class="[ mk-table mk-table--volume ]">
-                                        <thead>
-                                            <tr>
-                                                <th scope="col">Type</th>
-                                                <th scope="col" class="[ mk-table__bar-head ]">ISK sold</th>
-                                                <th scope="col" class="[ mk-table__num ]">Units</th>
-                                                <th scope="col" class="[ mk-table__num ]">Orders</th>
-                                                <th scope="col" class="[ mk-table__num ]">Markup</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
+                                <DataTable
+                                    variant="report"
+                                    cards={true}
+                                    class="[ mk-table--volume ]"
+                                    style="--data-table-card-columns: 3"
+                                    caption="Monthly sales by type"
+                                    columns={[
+                                        { key: 'type', label: 'Type' },
+                                        { key: 'isk', label: 'ISK sold', class: 'data-table__bar' },
+                                        { key: 'units', label: 'Units', numeric: true },
+                                        { key: 'orders', label: 'Orders', numeric: true },
+                                        { key: 'markup', label: 'Markup', numeric: true },
+                                    ]}
+                                >
                                             {rows.map((row) => (
                                                 <tr>
                                                     <td class="[ mk-table__hull ]">
@@ -423,9 +425,7 @@ const hx_body = {
                                                     </td>
                                                 </tr>
                                             ))}
-                                        </tbody>
-                                    </table>
-                                </XFadeScroll>
+                                </DataTable>
 
                                 <div class="[ mk-volume__pager ]">
                                     <p class="[ mk-volume__meta ]">
@@ -630,42 +630,10 @@ const hx_body = {
         font-variant-numeric: tabular-nums;
     }
 
-    .mk-table-wrap {
-        min-width: 0;
-        width: 100%;
-    }
-
-    .mk-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: var(--step--1);
-
-        th,
-        td {
-            padding: var(--space-xs) var(--space-s);
-            text-align: left;
-            vertical-align: middle;
-            border-bottom: solid 1px var(--mk-rule, var(--border-color));
-        }
-
-        th {
-            font-weight: 600;
-            color: var(--faded);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-size: var(--step--2);
-            white-space: nowrap;
-        }
-    }
-
     .mk-table__num {
         text-align: right !important;
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
-    }
-
-    .mk-table__bar-head {
-        min-width: 12rem;
     }
 
     .mk-table__bar {
@@ -742,67 +710,33 @@ const hx_body = {
 
     /* Phones: stack each row as a card — name, bar, then the numbers with their column labels. */
     @media (max-width: 48rem) {
-        .mk-table--volume {
-            thead {
-                display: none;
+        td,
+        td.mk-table__num {
+            white-space: normal !important;
+            text-align: left !important;
+        }
+
+        td:nth-child(1),
+        td:nth-child(2) {
+            grid-column: 1 / -1;
+        }
+
+        td.mk-table__bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0 var(--space-xs);
+
+            &::before {
+                flex-basis: 100%;
             }
 
-            tr {
-                display: grid;
-                grid-template-columns: repeat(3, minmax(0, 1fr));
-                gap: var(--space-2xs) var(--space-s);
-                padding-block: var(--space-s);
-                border-bottom: solid 1px var(--mk-rule);
+            > .mk-bar {
+                flex: 1;
             }
 
-            tbody tr:hover td {
-                background: none;
-            }
-
-            td {
-                padding: 0;
-                border: none;
-                background: none;
-                white-space: normal !important;
-                text-align: left !important;
-                min-width: 0;
-                width: auto;
-            }
-
-            td:nth-child(1),
-            td:nth-child(2) {
-                grid-column: 1 / -1;
-            }
-
-            td.mk-table__bar {
-                display: flex;
-                flex-wrap: wrap;
-                align-items: center;
-                gap: 0 var(--space-xs);
-                width: auto;
-                min-width: 0;
-
-                &::before {
-                    flex-basis: 100%;
-                }
-
-                > .mk-bar {
-                    flex: 1;
-                }
-
-                > b {
-                    margin-top: 0;
-                }
-            }
-
-            td[data-label]::before {
-                content: attr(data-label);
-                display: block;
-                font-size: var(--step--2);
-                color: var(--faded);
-                text-transform: uppercase;
-                letter-spacing: 0.06em;
-                margin-bottom: 0.15em;
+            > b {
+                margin-top: 0;
             }
         }
     }

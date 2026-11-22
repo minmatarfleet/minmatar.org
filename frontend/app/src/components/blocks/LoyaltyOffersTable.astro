@@ -121,7 +121,7 @@ const buyback_percent = buyback_isk_per_lp != null
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import LoyaltyOfferItem from '@components/blocks/LoyaltyOfferItem.astro'
-import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import DataGrid from '@components/blocks/DataGrid.astro'
 import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
@@ -135,63 +135,62 @@ import StylessButton from '@components/blocks/StylessButton.astro'
             )}
         </p>
     )}
-    <XFadeScroll
-        class="[ loyalty-offers-table__scroll ]"
-        tabindex="0"
-        role="region"
+    <DataGrid
+        class="[ loyalty-offers-table__grid ]"
         aria-label={t('industry.loyalty.offers.page_title')}
+        columns={[]}
+        template="var(--loyalty_offers_columns)"
+        min_width="var(--loyalty_offers_min_width)"
     >
-        <div class="[ loyalty-offers-table__grid ]" role="table">
-            <div class="[ loyalty-offers-table__header ]" role="row">
-                {columns.map((col) => (
-                    <div
-                        role="columnheader"
-                        aria-sort={col.sortable ? (sort_state(col.key) ?? 'none') : undefined}
-                        class:list={[
-                            { 'loyalty-offers-table__num': col.numeric },
-                        ]}
-                    >
-                        {col.sortable ? (
-                            <StylessButton
-                                type="button"
-                                class="[ loyalty-offers-table__sort ]"
-                                hx-get={sort_url(col.key)}
-                                hx-target={SLOT}
-                                hx-swap="innerHTML"
-                                hx-indicator=".loader"
-                                data-tippy-content={col.tip}
-                                data-tippy-maxWidth="320"
-                            >
-                                {col.label}{sort_indicator(col.key)}
-                            </StylessButton>
-                        ) : (
-                            <span
-                                class="[ loyalty-offers-table__label ]"
-                                tabindex="0"
-                                data-tippy-content={col.tip}
-                                data-tippy-maxWidth="320"
-                            >{col.label}</span>
-                        )}
-                    </div>
-                ))}
-            </div>
+        <Fragment slot="header">
+            {columns.map((col) => (
+                <div
+                    role="columnheader"
+                    aria-sort={col.sortable ? (sort_state(col.key) ?? 'none') : undefined}
+                    class:list={[
+                        { 'loyalty-offers-table__num': col.numeric },
+                    ]}
+                >
+                    {col.sortable ? (
+                        <StylessButton
+                            type="button"
+                            class="[ loyalty-offers-table__sort ]"
+                            hx-get={sort_url(col.key)}
+                            hx-target={SLOT}
+                            hx-swap="innerHTML"
+                            hx-indicator=".loader"
+                            data-tippy-content={col.tip}
+                            data-tippy-maxWidth="320"
+                        >
+                            {col.label}{sort_indicator(col.key)}
+                        </StylessButton>
+                    ) : (
+                        <span
+                            class="[ loyalty-offers-table__label ]"
+                            tabindex="0"
+                            data-tippy-content={col.tip}
+                            data-tippy-maxWidth="320"
+                        >{col.label}</span>
+                    )}
+                </div>
+            ))}
+        </Fragment>
 
-            <div id="loyalty-offers-tbody">
-                {rows.map((row) => (
-                    <LoyaltyOfferItem
-                        offer={row.offer}
-                        figures={row.figures}
-                        side={side}
-                        include_freight={include_freight}
-                        include_sales_tax={include_sales_tax}
-                        bar_scale={bar_scale}
-                        buyback_isk_per_lp={buyback_isk_per_lp}
-                        buyback_percent={buyback_percent}
-                    />
-                ))}
-            </div>
+        <div id="loyalty-offers-tbody">
+            {rows.map((row) => (
+                <LoyaltyOfferItem
+                    offer={row.offer}
+                    figures={row.figures}
+                    side={side}
+                    include_freight={include_freight}
+                    include_sales_tax={include_sales_tax}
+                    bar_scale={bar_scale}
+                    buyback_isk_per_lp={buyback_isk_per_lp}
+                    buyback_percent={buyback_percent}
+                />
+            ))}
         </div>
-    </XFadeScroll>
+    </DataGrid>
 </Flexblock>
 
 <style lang="scss">
@@ -211,23 +210,14 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         background-color: var(--highlight);
     }
 
-    .loyalty-offers-table__scroll {
-        overscroll-behavior-x: contain;
-
-        &:focus-visible {
-            outline: 1px solid var(--highlight);
-            outline-offset: 2px;
-        }
-    }
-
-    .loyalty-offers-table__grid {
+    :global(.loyalty-offers-table__grid) {
         --loyalty_offers_columns:
             minmax(16rem, 3fr)
             minmax(10rem, 1.4fr)
             minmax(5rem, 0.55fr)
             minmax(4.5rem, 0.55fr)
             minmax(4rem, 0.45fr);
-        min-width: 44rem;
+        --loyalty_offers_min_width: 44rem;
 
         // Phones: a narrower item column so the net bar shows before scrolling.
         @media (max-width: 30rem) {
@@ -237,23 +227,20 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                 minmax(4.5rem, 0.55fr)
                 minmax(4.5rem, 0.55fr)
                 minmax(4rem, 0.45fr);
-            min-width: 38rem;
+            --loyalty_offers_min_width: 38rem;
         }
-    }
 
-    .loyalty-offers-table__header {
-        display: grid;
-        grid-template-columns: var(--loyalty_offers_columns);
-        gap: var(--space-s);
-        align-items: end;
-        padding-block: var(--space-2xs);
-        padding-inline: var(--space-2xs);
-        border-bottom: solid 1px var(--border-color);
-        color: var(--highlight);
-        font-size: var(--step--2);
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
+        :global(.data-grid-head) {
+            gap: var(--space-s);
+            align-items: end;
+            padding-block: var(--space-2xs);
+            padding-inline: var(--space-2xs);
+            font-family: inherit;
+            font-size: var(--step--2);
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            color: var(--highlight);
+        }
     }
 
     .loyalty-offers-table__num {

@@ -87,7 +87,7 @@ const fleet_link = new URL(translatePath(`/fleets/upcoming/${fleet_id}`), Astro.
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
-import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import DataTable from '@components/blocks/DataTable.astro'
 
 import Button from '@components/blocks/Button.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
@@ -95,6 +95,20 @@ import EmptyState from '@components/blocks/EmptyState.astro'
 import FleetInviteDialog from '@components/blocks/FleetInviteDialog.astro'
 import Input from '@components/blocks/Input.astro'
 import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
+const invite_columns = [
+    { key: 'pilot', label: t('fleets.private.col_pilot') },
+    ...(show_invited_as ? [{ key: 'invited_as', label: t('fleets.invites.col_invited_as'), class: 'fleet-invites__source' }] : []),
+    { key: 'status', label: t('fleets.private.col_status') },
+    { key: 'bringing', label: t('fleets.private.col_bringing') },
+    { key: 'answered', label: t('fleets.private.col_answered'), numeric: true },
+    ...(data.can_see_leak_trace ? [{
+        key: 'opened',
+        label: t('fleets.private.col_opened'),
+        numeric: true,
+        title: t('fleets.private.leak_trace_hint'),
+        label_html: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true" style="margin-right: var(--space-3xs)"><rect x="4" y="11" width="16" height="10"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>${t('fleets.private.col_opened')}`,
+    }] : []),
+]
 ---
 
 <div
@@ -267,24 +281,7 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
                             </div>
                         </div>
 
-                        <XFadeScroll>
-                            <table class="[ fleet-invites__table ]">
-                                <thead>
-                                    <tr>
-                                        <th scope="col">{t('fleets.private.col_pilot')}</th>
-                                        {show_invited_as && <th scope="col">{t('fleets.invites.col_invited_as')}</th>}
-                                        <th scope="col">{t('fleets.private.col_status')}</th>
-                                        <th scope="col">{t('fleets.private.col_bringing')}</th>
-                                        <th scope="col" class="[ is-number ]">{t('fleets.private.col_answered')}</th>
-                                        {data.can_see_leak_trace &&
-                                            <th scope="col" class="[ is-number ]" title={t('fleets.private.leak_trace_hint')}>
-                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="4" y="11" width="16" height="10"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-                                                {t('fleets.private.col_opened')}
-                                            </th>
-                                        }
-                                    </tr>
-                                </thead>
-                                <tbody>
+                        <DataTable variant="cards" class="[ fleet-invites__table ]" columns={invite_columns}>
                                     {invites.map(invite =>
                                         <tr
                                             data-invite
@@ -306,9 +303,7 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
                                             }
                                         </tr>
                                     )}
-                                </tbody>
-                            </table>
-                        </XFadeScroll>
+                        </DataTable>
                         <EmptyState title={t('fleets.private.no_matches')} x-show="none" x-cloak />
                     </Fragment>
                 }
@@ -521,42 +516,7 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
         }
     }
 
-    .fleet-invites__table {
-        width: 100%;
-        border-collapse: collapse;
-
-        th,
-        td {
-            padding: var(--space-2xs) var(--space-xs);
-            border-bottom: 1px solid var(--border-color);
-            text-align: left;
-            white-space: nowrap;
-            vertical-align: middle;
-        }
-
-        thead th {
-            border-bottom-color: var(--border-color-hover);
-            color: var(--faded);
-            font-size: var(--step--1);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-
-            svg {
-                margin-right: var(--space-3xs);
-            }
-        }
-
-        tbody th {
-            color: var(--highlight);
-            font-weight: 600;
-        }
-
-        .is-number {
-            text-align: right;
-            font-variant-numeric: tabular-nums;
-        }
-
+    :global(.fleet-invites__table) {
         .is-empty {
             color: var(--faded);
         }
@@ -573,7 +533,7 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
         }
     }
 
-    .fleet-invites__table .fleet-invites__ships {
+    :global(.fleet-invites__table) .fleet-invites__ships {
         width: 100%;
         color: var(--highlight);
         white-space: normal;
@@ -588,22 +548,13 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
     }
 
     @media (max-width: 48rem) {
-        .fleet-invites__table {
-            thead {
-                display: none;
-            }
+        :global(.fleet-invites__table) {
+            --data-table-card-columns: 2;
 
             tr {
-                display: grid;
                 grid-template-columns: minmax(0, 1fr) auto;
+                gap: 0 var(--space-s);
                 padding: var(--space-2xs) 0;
-                border-bottom: 1px solid var(--border-color);
-            }
-
-            th,
-            td {
-                padding: 0;
-                border: 0;
             }
 
             .fleet-invites__ships {

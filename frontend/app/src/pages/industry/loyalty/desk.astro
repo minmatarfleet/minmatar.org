@@ -110,7 +110,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import LoyaltyOrderBook from '@components/blocks/LoyaltyOrderBook.astro'
 import LoyaltyDeskActivity from '@components/blocks/LoyaltyDeskActivity.astro'
 import Button from '@components/blocks/Button.astro'
-import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import DataTable from '@components/blocks/DataTable.astro'
 
 const page_title = t('industry.loyalty.desk.page_title')
 const breadcrumbs = [
@@ -252,19 +252,20 @@ const rates_label = currency
                                 {(stats.converters ?? []).length === 0 ? (
                                     <p>{t('industry.loyalty.desk.team.empty')}</p>
                                 ) : (
-                                    <XFadeScroll class="[ loyalty-desk__table-wrap ]">
-                                        <table class="[ tabular-nums ]">
-                                            <thead>
-                                                <tr>
-                                                    <th scope="col">{t('industry.loyalty.desk.team.col.converter')}</th>
-                                                    <th scope="col" class="[ is-end ]">{t('industry.loyalty.desk.team.col.orders')}</th>
-                                                    <th scope="col" class="[ is-end ]">{t('industry.loyalty.desk.team.col.lp')}</th>
-                                                    <th scope="col">{t('industry.loyalty.desk.team.col.share')}</th>
-                                                    <th scope="col" class="[ is-end ]">{t('industry.loyalty.desk.team.col.isk')}</th>
-                                                    <th scope="col" class="[ is-end ]">{t('industry.loyalty.desk.team.col.settle')}</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
+                                    <div class="[ loyalty-desk__table-wrap ]">
+                                        <DataTable
+                                            density="dense"
+                                            class="[ tabular-nums ]"
+                                            style="min-width: 44rem"
+                                            columns={[
+                                                { key: 'converter', label: t('industry.loyalty.desk.team.col.converter') },
+                                                { key: 'orders', label: t('industry.loyalty.desk.team.col.orders'), numeric: true },
+                                                { key: 'lp', label: t('industry.loyalty.desk.team.col.lp'), numeric: true },
+                                                { key: 'share', label: t('industry.loyalty.desk.team.col.share') },
+                                                { key: 'isk', label: t('industry.loyalty.desk.team.col.isk'), numeric: true },
+                                                { key: 'settle', label: t('industry.loyalty.desk.team.col.settle'), numeric: true },
+                                            ]}
+                                        >
                                                 {(stats.converters ?? []).map((member) => (
                                                     <tr>
                                                         <th scope="row">
@@ -275,20 +276,19 @@ const rates_label = currency
                                                                 {member.name}
                                                             </span>
                                                         </th>
-                                                        <td class="[ is-end ]">{member.orders}</td>
-                                                        <td class="[ is-end ]">{format_number(member.lp)}</td>
+                                                        <td class="data-table__numeric">{member.orders}</td>
+                                                        <td class="data-table__numeric">{format_number(member.lp)}</td>
                                                         <td>
                                                             <span class="[ loyalty-desk__share ]" aria-hidden="true">
                                                                 <span style={`width: ${Math.max(1, Math.round((member.lp / team_lp) * 100))}%`}></span>
                                                             </span>
                                                         </td>
-                                                        <td class="[ is-end loyalty-desk__isk ]">{format_number(member.isk)}</td>
-                                                        <td class="[ is-end ]">{format_close_time(member.median_settle_seconds)}</td>
+                                                        <td class="[ data-table__numeric loyalty-desk__isk ]">{format_number(member.isk)}</td>
+                                                        <td class="data-table__numeric">{format_close_time(member.median_settle_seconds)}</td>
                                                     </tr>
                                                 ))}
-                                            </tbody>
-                                        </table>
-                                    </XFadeScroll>
+                                        </DataTable>
+                                    </div>
                                 )}
                             </div>
                             <LoyaltyDeskActivity stats={stats} week_stats={week_stats} />
@@ -401,38 +401,6 @@ const rates_label = currency
     .loyalty-desk__table-wrap {
         border: 1px solid var(--border-color);
         background-color: var(--component-background);
-    }
-
-    table {
-        width: 100%;
-        min-width: 44rem;
-        border-collapse: collapse;
-        font-size: var(--step--1);
-
-        th,
-        td {
-            padding: var(--space-2xs) var(--space-s);
-            text-align: start;
-            border-block-end: 1px solid var(--border-color);
-        }
-
-        thead th {
-            font-family: var(--button-font);
-            font-size: var(--step--2);
-            font-weight: 600;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            color: var(--faded);
-        }
-
-        tbody th {
-            font-weight: 600;
-            color: var(--highlight);
-        }
-
-        .is-end {
-            text-align: end;
-        }
     }
 
     .loyalty-desk__member {

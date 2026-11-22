@@ -3,6 +3,8 @@
  * Screen-reader copy of a CSS chart: pair it with an `aria-hidden` plot so the values
  * are readable without hover tooltips (see ProductWeeklyChart, CampaignCoverageChart).
  */
+import DataTable from '@components/blocks/DataTable.astro'
+
 interface Props {
     caption:    string;
     /** Header for the row-label column first, then one per value column. */
@@ -17,19 +19,15 @@ const {
 } = Astro.props
 ---
 
-<table class="[ visually-hidden ]">
-    <caption>{caption}</caption>
-    <thead>
+<DataTable
+    visually_hidden={true}
+    caption={caption}
+    columns={columns.map((column, index) => ({ key: String(index), label: column }))}
+>
+    {rows.map(row =>
         <tr>
-            {columns.map(column => <th scope="col">{column}</th>)}
+            <th scope="row">{row.label}</th>
+            {row.values.map(value => <td>{value}</td>)}
         </tr>
-    </thead>
-    <tbody>
-        {rows.map(row =>
-            <tr>
-                <th scope="row">{row.label}</th>
-                {row.values.map(value => <td>{value}</td>)}
-            </tr>
-        )}
-    </tbody>
-</table>
+    )}
+</DataTable>

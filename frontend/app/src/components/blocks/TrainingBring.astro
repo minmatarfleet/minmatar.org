@@ -7,7 +7,7 @@ import { TRAINING_DOCTRINE_PARTIAL, time_label, training_url } from '@helpers/tr
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
-import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import DataTable from '@components/blocks/DataTable.astro'
 
 /**
  * "What you can bring": one row per doctrine, one cell per role. A pilot with
@@ -76,14 +76,17 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
         <EmptyState title={t('training.no_doctrines')} />
         :
         <>
-            <XFadeScroll class="[ training-bring__wide ]">
-                <table style={`--bring-columns: ${bring.columns.length}`}>
-                    <thead>
-                        <tr>
-                            <th scope="col">{t('training.col_doctrine')}</th>
-                            {bring.columns.map(column => <th scope="col">{column}</th>)}
-                        </tr>
-                    </thead>
+            <div class="[ training-bring__wide ]">
+                <DataTable
+                    bodies={true}
+                    density="dense"
+                    borders="none"
+                    style={`min-width: calc(16rem + ${bring.columns.length} * 7.5rem); table-layout: fixed`}
+                    columns={[
+                        { key: 'doctrine', label: t('training.col_doctrine'), width: '16rem' },
+                        ...bring.columns.map((column, index) => ({ key: `column_${index}`, label: column, align: 'center' as const })),
+                    ]}
+                >
                     {groups.map(group =>
                         <tbody>
                             <tr class="[ training-bring__group ]">
@@ -98,7 +101,7 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
                                         </span>
                                     </th>
                                     {doctrine.cells.map(cell =>
-                                        <td>
+                                        <td class="data-table__center">
                                             {cell.state === 'none' ?
                                                 <span class="[ training-bring__none ]" aria-label={t('training.cell_none')}>—</span>
                                                 :
@@ -118,8 +121,8 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
                             )}
                         </tbody>
                     )}
-                </table>
-            </XFadeScroll>
+                </DataTable>
+            </div>
 
             <div class="[ training-bring__narrow ]">
                 {groups.map(group =>
@@ -157,31 +160,6 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
 </ComponentBlock>
 
 <style lang="scss">
-    table {
-        width: 100%;
-        min-width: calc(16rem + var(--bring-columns) * 7.5rem);
-        border-collapse: collapse;
-        table-layout: fixed;
-    }
-
-    thead th:first-child {
-        width: 16rem;
-    }
-
-    thead th {
-        padding: var(--space-xs) var(--space-s);
-        font-size: var(--step--2);
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: var(--faded);
-        text-align: center;
-
-        &:first-child {
-            text-align: start;
-        }
-    }
-
     .training-bring__group th {
         padding: var(--space-s) var(--space-s) var(--space-2xs);
         border-top: 1px solid var(--border-color);
@@ -205,10 +183,6 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
     tbody th[scope="row"],
     td {
         padding: var(--space-2xs) var(--space-s);
-    }
-
-    td {
-        text-align: center;
     }
 
     .training-bring__doctrine {

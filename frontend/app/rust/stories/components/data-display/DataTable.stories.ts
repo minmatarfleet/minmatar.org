@@ -54,12 +54,13 @@ export default {
                     'Semantic tabular data: a real `<table>` with a `<thead>` built from `columns`, in an edge-fading horizontal scroller. The caller writes the `<tr><td>` rows in the default slot; cells take `data-table__numeric` (right-aligned, tabular figures) and `data-table__actions` (right-aligned, shrink-wrapped). Use it instead of a hand-written `<table>`; for rows made of free-form components use RowList, for a grid-layout board use DataGrid.',
                     'A column with `sortable` gets a header button and `aria-sort`; clicking sorts the rows already on the page (ascending, descending, then the original order). Cells sort by their `data-sort-<column key>` attribute, else their text; `numeric` columns compare as numbers. Server-side paging and sorting stay htmx (HtmxPager or `hx-get`): DataTable never fetches.',
                     '`borders`: `rows` (default) boxes each cell, `grid` joins the lines, `none` drops them. `density="dense"` tightens the padding, `striped` shades alternate rows, `sticky_header` keeps the header in view while the body scrolls. With `is_empty` and an `empty_title` the slot is replaced by one full-width EmptyState row.',
+                    'Rows may start with `<th scope="row">`; a `footer` slot becomes the `<tfoot>`; `bodies` is for callers that write several `<tbody>` groups themselves. `variant="report"` is the report-board look (bar cells take `data-table__bar` and a `--bar` fill width); `variant="cards"` stacks rows into labelled cards below 48rem; `visually_hidden` renders a screen-reader-only data table behind a chart.',
                 ].join('\n\n'),
             },
         },
     },
     argTypes: {
-        columns: { control: 'object', description: 'The header: `key`, `label`, and optional `numeric`, `sortable`, `width` (token or %) and `hidden_label`.' },
+        columns: { control: 'object', description: 'The header: `key`, `label`, and optional `numeric`, `sortable`, `width` (token or %), `hidden_label`, `hide_below` (a width such as `48rem`: the column hides below it) and `class` (on the header cell).' },
         caption: { control: 'text', description: 'Visually hidden `<caption>`; also names the scroll region.' },
         density: radio_control(['default', 'dense'] as const, 'Cell padding.'),
         borders: radio_control(['rows', 'grid', 'none'] as const, 'Cell lines: `rows` boxes each cell (default), `grid` joins them, `none` drops them.'),
@@ -67,6 +68,11 @@ export default {
         sticky_header: { control: 'boolean', description: 'Keep the header in view; the table scrolls inside a capped height (`--data-table-max-height`).' },
         empty_title: { control: 'text', description: 'Message shown in one full-width row when `is_empty` is set.' },
         is_empty: { control: 'boolean', description: 'Replace the slotted rows with the empty row.' },
+        variant: radio_control(['default', 'report', 'cards'] as const, '`report`: editorial hairline rows with muted uppercase headers; `cards`: rows stack as cards below 48rem (cells carry `data-label`).'),
+        cards: { control: 'boolean', description: 'Stacked cards below 48rem on top of any variant (the report look keeps its hairlines).' },
+        bodies: { control: 'boolean', description: 'The caller writes its own `<tbody>` elements; the slot is not wrapped (no sorting, no empty row).' },
+        caption_visible: { control: 'boolean', description: 'Show the caption instead of hiding it visually.' },
+        visually_hidden: { control: 'boolean', description: 'Render a screen-reader-only table (chart data); no scroller, nothing painted.' },
     },
     args: {
         columns,
@@ -196,5 +202,125 @@ export const NoBorders = {
         const canvas = within(canvasElement)
         await expect(canvas.getByRole('table')).toHaveClass('data-table--none')
         await expect(canvas.queryAllByRole('button')).toHaveLength(0)
+    },
+}
+
+const row_header_rows = fleets
+    .map(([fleet, hull, pilots]) => `<tr><th scope="row">${fleet}</th><td>${hull}</td><td class="data-table__numeric">${pilots}</td></tr>`)
+    .join('')
+
+export const RowHeaders = {
+    name: 'Row headers and a footer',
+    args: {
+        columns: [
+            { key: 'fleet', label: 'Fleet' },
+            { key: 'hull', label: 'Hull' },
+            { key: 'pilots', label: 'Pilots', numeric: true },
+        ],
+        slots: {
+            default: row_header_rows,
+            footer: '<tr><th scope="row">Total</th><td></td><td class="data-table__numeric">115</td></tr>',
+        },
+    },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const canvas = within(canvasElement)
+        await expect(canvas.getByRole('rowheader', { name: 'Fleet 94' })).toBeInTheDocument()
+        await expect(canvasElement.querySelector('tfoot')).toBeTruthy()
+        await expect(canvasElement.querySelectorAll('tbody tr')).toHaveLength(4)
+        await expect(canvas.getByRole('rowheader', { name: 'Total' })).toBeInTheDocument()
+    },
+}
+
+export const Bodies = {
+    name: 'Own row groups (bodies)',
+    args: {
+        bodies: true,
+        columns: columns.slice(0, 3).map((column) => ({ ...column, sortable: false })),
+        slots: {
+            default: `<tbody>${fleets.slice(0, 2).map(row).join('')}</tbody><tbody>${fleets.slice(2).map(row).join('')}</tbody>`,
+        },
+    },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        await expect(canvasElement.querySelectorAll('tbody')).toHaveLength(2)
+        await expect(canvasElement.querySelector('tbody tbody')).toBeNull()
+        await expect(within(canvasElement).queryAllByRole('button')).toHaveLength(0)
+    },
+}
+
+export const HideBelow = {
+    name: 'Narrow-hidden column',
+    args: {
+        columns: [
+            { key: 'fleet', label: 'Fleet' },
+            { key: 'hull', label: 'Hull', hide_below: '48rem' },
+            { key: 'pilots', label: 'Pilots', numeric: true },
+            { key: 'isk', label: 'ISK', numeric: true },
+            { key: 'actions', label: 'Open fleet', hidden_label: true },
+        ],
+    },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const style = canvasElement.querySelector('style') as HTMLStyleElement
+        await expect(style.textContent).toContain('max-width: 48rem')
+        await expect(style.textContent).toContain('nth-child(2)')
+        await expect(canvasElement.querySelector('table')?.className).toMatch(/data-table-h\d+/)
+    },
+}
+
+export const Report = {
+    name: 'Report variant with a bar column',
+    args: {
+        variant: 'report',
+        columns: [
+            { key: 'hull', label: 'Hull' },
+            { key: 'bar', label: 'Pilots', class: 'data-table__bar' },
+            { key: 'isk', label: 'ISK', numeric: true },
+        ],
+        slots: {
+            default: fleets
+                .map(([, hull, pilots, isk]) => `<tr><td>${hull}</td><td class="data-table__bar" style="--bar: ${pilots}%"><b>${pilots}</b></td><td class="data-table__numeric">${isk.toLocaleString('en-US')}</td></tr>`)
+                .join(''),
+        },
+    },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        await expect(within(canvasElement).getByRole('table')).toHaveClass('data-table--report')
+        await expect(canvasElement.querySelectorAll('td.data-table__bar')).toHaveLength(4)
+        await expect(canvasElement.querySelector('th.data-table__bar')).toBeTruthy()
+    },
+}
+
+export const Cards = {
+    name: 'Cards below 48rem',
+    args: {
+        variant: 'cards',
+        columns: columns.slice(0, 4),
+        slots: {
+            default: fleets
+                .map(([fleet, hull, pilots, isk]) => `<tr><td class="data-table__card-title">${fleet}</td><td data-label="Hull">${hull}</td><td data-label="Pilots" class="data-table__numeric">${pilots}</td><td data-label="ISK" class="data-table__numeric">${isk.toLocaleString('en-US')}</td></tr>`)
+                .join(''),
+        },
+    },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        await expect(within(canvasElement).getByRole('table')).toHaveClass('data-table--cards')
+        await expect(canvasElement.querySelectorAll('td[data-label]')).toHaveLength(12)
+    },
+}
+
+export const ScreenReaderOnly = {
+    name: 'Screen-reader-only table',
+    args: { visually_hidden: true },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const table = within(canvasElement).getByRole('table', { name: 'Recent fleets' })
+        await expect(table.parentElement).toHaveClass('visually-hidden')
+        await expect(canvasElement.querySelector('.xfade-scroll')).toBeNull()
+        await expect(within(table).getAllByRole('row')).toHaveLength(5)
+    },
+}
+
+export const VisibleCaption = {
+    args: { caption_visible: true },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const caption = canvasElement.querySelector('caption') as HTMLElement
+        await expect(caption).toHaveClass('data-table__caption')
+        await expect(caption).not.toHaveClass('visually-hidden')
     },
 }

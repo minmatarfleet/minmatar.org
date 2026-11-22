@@ -16,6 +16,7 @@ const {
 
 delete attributes.class
 
+import DataTable from '@components/blocks/DataTable.astro'
 import { format_isk, number_thousand_separator } from '@helpers/numbers'
 
 const n = (value: number) => number_thousand_separator(value)
@@ -28,7 +29,6 @@ const strategy_color = (strategy: string) =>
     strategy === 'imported' ? 'fleet-red' : strategy === 'harvested' ? 'fleet-yellow' : 'alliance-blue'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
-import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
@@ -50,18 +50,17 @@ import Tag from '@components/blocks/Tag.astro'
             {build.materials.length === 0 ?
                 <p class="[ empty ]">{t('industry.product.no_materials')}</p>
                 :
-                <XFadeScroll>
-                <table class="[ bom ]">
-                    <thead>
-                        <tr>
-                            <th scope="col">{t('industry.product.material')}</th>
-                            <th scope="col" class="[ num ]">{t('industry.product.per_run')}</th>
-                            <th scope="col" class="[ num hide-narrow ]">{t('industry.product.unit_price_col')}</th>
-                            <th scope="col" class="[ num ]">{t('industry.product.line_cost')}</th>
-                            <th scope="col" class="[ hide-narrow ]">{t('industry.product.source')}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                <DataTable
+                    density="dense"
+                    borders="none"
+                    columns={[
+                        { key: 'material', label: t('industry.product.material') },
+                        { key: 'per_run', label: t('industry.product.per_run'), numeric: true },
+                        { key: 'unit_price', label: t('industry.product.unit_price_col'), numeric: true, hide_below: '48rem' },
+                        { key: 'line_cost', label: t('industry.product.line_cost'), numeric: true },
+                        { key: 'source', label: t('industry.product.source'), hide_below: '48rem' },
+                    ]}
+                >
                         {build.materials.map(material =>
                             <tr>
                                 <th scope="row">
@@ -74,10 +73,10 @@ import Tag from '@components/blocks/Tag.astro'
                                         }
                                     </span>
                                 </th>
-                                <td class="[ num ]">{n(material.quantity)}</td>
-                                <td class="[ num hide-narrow ]">{unit_price(material.unit_price)}</td>
-                                <td class="[ num ]">{isk(material.line_cost)}</td>
-                                <td class="[ hide-narrow ]">
+                                <td class="[ num data-table__numeric ]">{n(material.quantity)}</td>
+                                <td class="[ num data-table__numeric ]">{unit_price(material.unit_price)}</td>
+                                <td class="[ num data-table__numeric ]">{isk(material.line_cost)}</td>
+                                <td>
                                     {material.strategy ?
                                         <Tag
                                             color={strategy_color(material.strategy)}
@@ -89,18 +88,16 @@ import Tag from '@components/blocks/Tag.astro'
                                 </td>
                             </tr>
                         )}
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <th scope="row">{t('industry.product.total_per_run')}</th>
-                            <td class="[ num ]"></td>
-                            <td class="[ num hide-narrow ]"></td>
-                            <td class="[ num ]">{isk(build.material_cost)}</td>
-                            <td class="[ hide-narrow ]"></td>
-                        </tr>
-                    </tfoot>
-                </table>
-                </XFadeScroll>
+                    <Fragment slot="footer">
+                    <tr>
+                        <th scope="row">{t('industry.product.total_per_run')}</th>
+                        <td class="[ num data-table__numeric ]"></td>
+                        <td class="[ num data-table__numeric ]"></td>
+                        <td class="[ num data-table__numeric ]">{isk(build.material_cost)}</td>
+                        <td></td>
+                    </tr>
+                    </Fragment>
+                </DataTable>
             }
         </Flexblock>
     </ComponentBlock>
@@ -126,41 +123,10 @@ import Tag from '@components/blocks/Tag.astro'
         color: var(--foreground);
     }
 
-    .bom {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: var(--step--1);
-
-        th,
-        td {
-            padding: var(--space-2xs) var(--space-xs);
-            text-align: start;
-            border-bottom: solid 1px var(--border-color);
-            font-weight: normal;
-            background: none;
-        }
-
-        thead th {
-            font-size: var(--step--2);
-            font-weight: 600;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--foreground);
-        }
-
-        tfoot th,
-        tfoot td {
-            font-weight: 600;
-            color: var(--highlight);
-            border-bottom: none;
-        }
-
-        .num {
-            text-align: end;
-            font-variant-numeric: tabular-nums;
-            white-space: nowrap;
-            color: var(--highlight);
-        }
+    .num {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        color: var(--highlight);
     }
 
     .material {
@@ -176,13 +142,6 @@ import Tag from '@components/blocks/Tag.astro'
         a,
         span {
             color: var(--highlight);
-        }
-    }
-
-    // On phones keep name, quantity and cost; price and source fit on desktop.
-    @media (max-width: 48rem) {
-        .bom .hide-narrow {
-            display: none;
         }
     }
 </style>
