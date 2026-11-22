@@ -63,6 +63,7 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import LazyPartial from '@components/blocks/LazyPartial.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <tbody
@@ -75,7 +76,7 @@ import LazyPartial from '@components/blocks/LazyPartial.astro'
     <tr class="[ manage-row ]">
         <slot />
         <td class="[ manage-row__chevron act ]">
-            <button
+            <StylessButton
                 type="button"
                 class="[ manage-chevron ]"
                 x-on:click="open = !open"
@@ -84,7 +85,7 @@ import LazyPartial from '@components/blocks/LazyPartial.astro'
                 aria-label={label}
             >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
-            </button>
+            </StylessButton>
         </td>
     </tr>
     <tr class="[ manage-detail ]" x-show="open" x-cloak={!open}>

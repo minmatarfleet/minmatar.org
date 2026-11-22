@@ -2,10 +2,8 @@
  * Cruiser/frigate-guide panel chrome for markdown guides.
  * Pair with {@link wrapMarkdownSectionsInPanels}.
  */
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap');
-
 .guide-md {
-    --guide-md-display-font: 'Orbitron', var(--heading-font);
+    --guide-md-display-font: var(--guide-display-font);
     --guide-md-panel-padding-block: var(--component-padding-block);
     --guide-md-panel-padding-inline: var(--space-l-xl);
     display: flex;
@@ -24,8 +22,8 @@
 
 .guide-md-panel {
     padding: var(--guide-md-panel-padding-block) var(--guide-md-panel-padding-inline);
-    background: color-mix(in srgb, var(--component-background) 72%, transparent);
-    border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+    background: color-mix(in srgb, var(--component-background) var(--tint-heavy), transparent);
+    border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
     min-width: 0;
 }
 
@@ -42,7 +40,7 @@
 .guide-md-section__title {
     margin: 0 0 var(--space-m);
     padding-bottom: var(--space-s);
-    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
     font-family: var(--guide-md-display-font);
     font-size: clamp(var(--step-1), 2.5vw, var(--step-2));
     letter-spacing: 0.08em;
@@ -82,7 +80,7 @@
 .guide-md-section :is(a) {
     color: var(--highlight);
     text-decoration: underline;
-    text-decoration-color: color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
+    text-decoration-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
     text-underline-offset: 0.15em;
 
     &:hover,
@@ -96,8 +94,8 @@
     margin: 0 0 var(--space-m);
     padding: var(--space-s) var(--space-m);
     overflow-x: auto;
-    background: color-mix(in srgb, var(--component-background) 88%, transparent);
-    border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
+    background: color-mix(in srgb, var(--component-background) var(--tint-dense), transparent);
+    border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
     font-size: var(--step--1);
     line-height: 1.5;
 }
@@ -120,7 +118,7 @@
 
 .guide-md-section :is(th, td) {
     padding: var(--space-2xs) var(--space-s);
-    border: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
     text-align: left;
     vertical-align: top;
 }
@@ -137,25 +135,25 @@
     font-size: var(--step--2);
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    background: color-mix(in srgb, var(--component-background) 88%, transparent);
+    background: color-mix(in srgb, var(--component-background) var(--tint-dense), transparent);
 }
 
 .guide-md-section :is(blockquote) {
     margin: 0 0 var(--space-m);
     padding-left: var(--space-m);
-    border-left: 3px solid color-mix(in srgb, var(--fleet-red) 70%, transparent);
+    border-left: 3px solid color-mix(in srgb, var(--fleet-red) var(--tint-heavy), transparent);
     color: var(--text-color-secondary, var(--faded));
 }
 
 .guide-md-section :is(hr) {
     margin: var(--space-l) 0;
     border: 0;
-    border-top: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+    border-top: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
 }
 
 .guide-md-section :is(img) {
     display: block;
     max-width: 100%;
     height: auto;
-    border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
 }

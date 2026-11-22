@@ -4,6 +4,7 @@ const { t } = i18n(Astro.url)
 
 import type { FleetFights } from '@helpers/api.minmatar.org/fleets'
 import { chart_bands, chart_bars, chart_position, chart_ticks, eve_clock } from '@helpers/fleet_fights'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 
 /**
  * The fleet minute by minute: ships killed above the line (blue), lost below
@@ -64,7 +65,7 @@ const events = fights.events.map(event => {
 ---
 
 <figure class:list={['[ fights-chart ]', Astro.props.class]} {...attributes}>
-    <div class="[ fights-chart__scroll ]">
+    <XFadeScroll class="[ fights-chart__scroll ]">
         <div class="[ fights-chart__body ]" role="img" aria-label={t('fleets.fights.chart_label')}>
             <div class="[ fights-chart__plot ]">
                 {bands.map(band =>
@@ -108,7 +109,7 @@ const events = fights.events.map(event => {
                 </ol>
             }
         </div>
-    </div>
+    </XFadeScroll>
     <figcaption>
         <span class="[ fights-chart__key fights-chart__key--kill ]" aria-hidden="true" />{t('fleets.fights.ships_killed')}
         <span class="[ fights-chart__key fights-chart__key--loss ]" aria-hidden="true" />{t('fleets.fights.ships_lost')}
@@ -128,7 +129,6 @@ const events = fights.events.map(event => {
     }
 
     .fights-chart__scroll {
-        overflow-x: auto;
         background-color: var(--component-background);
         border: 1px solid var(--border-color);
     }
@@ -145,7 +145,7 @@ const events = fights.events.map(event => {
     .fights-chart__band {
         position: absolute;
         inset-block: calc(var(--space-l) * -1) calc(var(--space-3xs) * -1);
-        background-color: color-mix(in srgb, var(--fleet-yellow) 7%, transparent);
+        background-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
         border-top: 2px solid var(--fleet-yellow);
         color: var(--highlight);
         text-decoration: none;
@@ -162,18 +162,18 @@ const events = fights.events.map(event => {
 
         &:hover,
         &:focus-visible {
-            background-color: color-mix(in srgb, var(--fleet-yellow) 14%, transparent);
+            background-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
         }
     }
 
     .fights-chart__band--skirmish {
-        background-color: color-mix(in srgb, var(--highlight) 3%, transparent);
-        border-top-color: var(--hairline-strong);
-        color: var(--text-muted);
+        background-color: color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent);
+        border-top-color: var(--border-color-hover);
+        color: var(--faded);
     }
 
     .fights-chart__band--live {
-        background-color: color-mix(in srgb, var(--fleet-red) 12%, transparent);
+        background-color: color-mix(in srgb, var(--fleet-red) var(--tint-soft), transparent);
         border-top-color: var(--fleet-red);
     }
 
@@ -201,7 +201,7 @@ const events = fights.events.map(event => {
 
     .fights-chart__up {
         align-items: flex-end;
-        border-bottom: 1px solid var(--hairline-strong);
+        border-bottom: 1px solid var(--border-color-hover);
 
         span {
             background-color: var(--alliance-blue);
@@ -241,7 +241,7 @@ const events = fights.events.map(event => {
         small {
             position: absolute;
             transform: translateX(-50%);
-            color: var(--text-muted);
+            color: var(--faded);
             font-variant-numeric: tabular-nums;
         }
     }
@@ -252,7 +252,7 @@ const events = fights.events.map(event => {
         margin: var(--space-2xs) 0 0;
         padding: 0;
         list-style: none;
-        border-top: 1px solid var(--hairline-medium);
+        border-top: 1px solid var(--border-color);
 
         li {
             position: absolute;
@@ -269,7 +269,7 @@ const events = fights.events.map(event => {
                 top: -5px;
                 width: 9px;
                 height: 9px;
-                background-color: var(--text-muted);
+                background-color: var(--faded);
                 transform: rotate(45deg);
             }
 

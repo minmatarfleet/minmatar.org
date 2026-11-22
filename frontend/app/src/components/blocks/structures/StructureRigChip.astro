@@ -103,8 +103,8 @@ const kind = t('structures.rig.kind')
         align-items: stretch;
         block-size: 2rem;
         color: var(--highlight);
-        background-color: color-mix(in srgb, var(--background) 60%, transparent);
-        border: 1px solid var(--hairline-strong);
+        background-color: color-mix(in srgb, var(--background) var(--tint-bold), transparent);
+        border: 1px solid var(--border-color-hover);
         cursor: default;
 
         &:focus-visible {
@@ -129,7 +129,7 @@ const kind = t('structures.rig.kind')
         white-space: nowrap;
 
         b {
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
@@ -139,14 +139,14 @@ const kind = t('structures.rig.kind')
         align-items: center;
         justify-content: center;
         inline-size: 1.4rem;
-        border-inline-start: 1px solid var(--hairline-strong);
+        border-inline-start: 1px solid var(--border-color-hover);
 
         svg {
             display: block;
             inline-size: 0.7rem;
             block-size: 0.35rem;
             fill: none;
-            stroke: var(--hairline-strong);
+            stroke: var(--border-color-hover);
             stroke-width: 1.9;
             stroke-linecap: round;
             stroke-linejoin: round;
@@ -172,8 +172,8 @@ const kind = t('structures.rig.kind')
         text-align: start;
         color: var(--highlight);
         background-color: var(--component-background);
-        border: 1px solid var(--hairline-strong);
-        box-shadow: 0 var(--space-s) var(--space-l) color-mix(in srgb, var(--background) 60%, transparent);
+        border: 1px solid var(--border-color-hover);
+        box-shadow: 0 var(--space-s) var(--space-l) color-mix(in srgb, var(--background) var(--tint-bold), transparent);
 
         table {
             inline-size: 100%;
@@ -187,7 +187,7 @@ const kind = t('structures.rig.kind')
             padding-inline-start: var(--space-xs);
             text-align: end;
             font-variant-numeric: tabular-nums;
-            border-top: 1px solid var(--hairline-strong);
+            border-top: 1px solid var(--border-color-hover);
         }
 
         thead th,
@@ -200,7 +200,7 @@ const kind = t('structures.rig.kind')
             font-weight: 700;
             letter-spacing: 0.06em;
             text-transform: uppercase;
-            color: var(--text-muted);
+            color: var(--faded);
             border-top: 0;
         }
 
@@ -234,7 +234,7 @@ const kind = t('structures.rig.kind')
     .structure-rig-chip__pop .structure-rig-chip__kind {
         margin-block-end: var(--space-3xs);
         font-size: var(--step--2);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .structure-rig-chip__pop .structure-rig-chip__foot {
@@ -253,7 +253,7 @@ const kind = t('structures.rig.kind')
             flex: none;
             inline-size: 0.5rem;
             block-size: 0.5rem;
-            background-color: var(--attention);
+            background-color: var(--fleet-yellow);
         }
 
         &.best::before {

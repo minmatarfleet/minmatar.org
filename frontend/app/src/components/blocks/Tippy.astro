@@ -5,8 +5,6 @@ const { t, translatePath } = i18n(Astro.url)
 interface Props {
     element?:           string;
     partial?:           string;
-    height?:            string;
-    width?:             string;
     show_delay?:        number;
     hide_delay?:        number;
     [propName: string]: any;
@@ -15,8 +13,6 @@ interface Props {
 const {
     element = 'span',
     partial,
-    height = 'auto',
-    width = 'auto',
     show_delay = '1000',
     hide_delay = '200',
     ...attributes

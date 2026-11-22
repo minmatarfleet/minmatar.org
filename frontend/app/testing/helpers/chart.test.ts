@@ -1,0 +1,201 @@
+import { describe, expect, test, vi } from 'vitest'
+import { bind_charts, build_config, deep_merge, has_plottable_data, mount_chart, type ChartSpec, type ChartWindow } from '@helpers/chart'
+
+const TOKENS: Record<string, string> = {
+    '--fleet-red': 'rgb(1, 2, 3)',
+    '--alliance-blue': 'rgb(4, 5, 6)',
+    '--green': 'rgb(7, 8, 9)',
+    '--faded': 'rgba(255, 255, 255, 0.5)',
+    '--border-color': 'rgba(255, 255, 255, 0.1)',
+    '--component-background': 'rgb(25, 25, 25)',
+    '--foreground': 'rgb(241, 217, 160)',
+    '--highlight': 'rgb(255, 255, 255)',
+}
+const read = (name: string) => TOKENS[name] ?? ''
+
+const spec = (patch: Partial<ChartSpec> = {}): ChartSpec => ({
+    type: 'line',
+    labels: ['a', 'b'],
+    datasets: [{ label: 'Kills', data: [1, 2], tone: 'fleet-red' }],
+    ...patch,
+})
+
+describe('dashed legend markers', () => {
+    const lines = [
+        { label: 'Coverage', data: [1, 2], tone: 'fleet-red' as const },
+        { label: 'Viability', data: [1, 2], tone: 'green' as const, borderDash: [6, 4] },
+    ]
+
+    function fake_doc() {
+        const drawn: { dash: number[] }[] = []
+        const doc = { createElement: () => ({ width: 0, height: 0, getContext: () => {
+            const entry = { dash: [] as number[] }
+            drawn.push(entry)
+            return { setLineDash: (dash: number[]) => { entry.dash = dash }, beginPath() {}, moveTo() {}, lineTo() {}, stroke() {} }
+        } }) } as unknown as Document
+        return { doc, drawn }
+    }
+
+    test('a line chart with a dashed series draws a marker per entry, dashed like its line', () => {
+        const { doc, drawn } = fake_doc()
+        const config = build_config(spec({ datasets: lines }), read, false, doc) as any
+        const legend = config.options.plugins.legend.labels
+        expect(legend.usePointStyle).toBe(true)
+        const chart = {
+            data: { datasets: lines },
+            constructor: { defaults: { plugins: { legend: { labels: { generateLabels: () => [
+                { datasetIndex: 0, strokeStyle: 'a', lineWidth: 2 },
+                { datasetIndex: 1, strokeStyle: 'b', lineWidth: 2 },
+            ] } } } } },
+        }
+        const labels = legend.generateLabels(chart)
+        expect(labels.every((label: { pointStyle: unknown }) => label.pointStyle)).toBe(true)
+        expect(drawn.map((entry) => entry.dash)).toEqual([[], [6, 4]])
+    })
+
+    test('solid-only charts keep the default legend', () => {
+        const { doc } = fake_doc()
+        const legend = (build_config(spec(), read, false, doc) as any).options.plugins.legend.labels
+        expect(legend.usePointStyle).toBeUndefined()
+        expect(legend.generateLabels).toBeUndefined()
+    })
+})
+
+describe('build_config extras', () => {
+    const line = (dataset: Record<string, unknown>) => build_config(spec({ datasets: [{ label: 'Kills', data: [1, 2], tone: 'fleet-red', ...dataset }] }), read)
+
+    test('a ringed line has panel-coloured points', () => {
+        expect((line({ ring: true }).data.datasets[0] as { pointBorderColor: string }).pointBorderColor).toBe('rgb(25, 25, 25)')
+        expect((line({}).data.datasets[0] as { pointBorderColor: string }).pointBorderColor).toBe('rgb(1, 2, 3)')
+    })
+
+    test('a gradient fills the line with a scriptable background', () => {
+        const dataset = line({ gradient: 40 }).data.datasets[0] as { fill: boolean; backgroundColor: unknown }
+        expect(dataset.fill).toBe(true)
+        expect(typeof dataset.backgroundColor).toBe('function')
+    })
+
+    test('suffixes reach the tooltip and the y ticks', () => {
+        const config = build_config(spec({ tick_suffix: ' B', datasets: [{ label: 'Ratting', data: [1, 2], tone: 'fleet-red', suffix: ' B ISK' }] }), read) as any
+        expect(config.options.scales.y.ticks.callback(4)).toBe('4 B')
+        expect(config.options.plugins.tooltip.callbacks.label({ dataset: { label: 'Ratting', suffix: ' B ISK' }, formattedValue: '4' })).toBe('Ratting: 4 B ISK')
+    })
+
+    test('an extra scale in the options is styled like the first', () => {
+        const config = build_config(spec({ options: { scales: { y1: { position: 'right' } } } }), read) as any
+        expect(config.options.scales.y1.ticks.color).toBe('rgba(255, 255, 255, 0.5)')
+        expect(config.options.scales.y1.position).toBe('right')
+    })
+
+    test('plugins are built from their specs', () => {
+        const config = build_config(spec({ plugins: [{ id: 'stems' }, { id: 'band', from: 0, to: 1 }, { id: 'beats', beats: [] }] }), read)
+        expect(config.plugins.map((plugin) => plugin.id)).toEqual(['stems', 'band', 'beats'])
+    })
+})
+
+describe('build_config', () => {
+    test('resolves a tone from its token, never a literal', () => {
+        const config = build_config(spec(), read)
+        expect(config.data.datasets[0].borderColor).toBe('rgb(1, 2, 3)')
+        expect((config.data.datasets[0] as { fill?: boolean }).fill).toBe(false)
+    })
+
+    test('theme comes from the tokens', () => {
+        const options = build_config(spec(), read).options
+        expect(options.scales.x.ticks.color).toBe(TOKENS['--faded'])
+        expect(options.scales.y.grid.color).toBe(TOKENS['--border-color'])
+        expect(options.plugins.tooltip.backgroundColor).toBe(TOKENS['--component-background'])
+    })
+
+    test('options are deep-merged over the defaults', () => {
+        const options = build_config(spec({ options: { scales: { y: { max: 50 } } } }), read).options
+        expect(options.scales.y.max).toBe(50)
+        expect(options.scales.y.beginAtZero).toBe(true)
+        expect(options.scales.x.ticks.color).toBe(TOKENS['--faded'])
+    })
+
+    test('the legend follows the dataset count unless set', () => {
+        expect(build_config(spec(), read).options.plugins.legend.display).toBe(false)
+        expect(build_config(spec({ datasets: [{ label: 'a', data: [1] }, { label: 'b', data: [2] }] }), read).options.plugins.legend.display).toBe(true)
+        expect(build_config(spec({ legend: true }), read).options.plugins.legend.display).toBe(true)
+    })
+
+    test('doughnut slices take per-point tones', () => {
+        const config = build_config(spec({ type: 'doughnut', datasets: [{ label: 's', data: [1, 2], tones: ['green', 'alliance-blue'] }] }), read)
+        expect(config.data.datasets[0].borderColor).toEqual(['rgb(7, 8, 9)', 'rgb(4, 5, 6)'])
+        expect(config.options.scales).toBeUndefined()
+    })
+
+    test('reduced motion turns animation off', () => {
+        expect(build_config(spec(), read, true).options.animation).toBe(false)
+    })
+})
+
+test('deep_merge replaces arrays and keeps siblings', () => {
+    expect(deep_merge({ a: { b: 1, c: [1] }, d: 1 }, { a: { c: [2] } })).toEqual({ a: { b: 1, c: [2] }, d: 1 })
+})
+
+test('has_plottable_data needs a number', () => {
+    expect(has_plottable_data(spec())).toBe(true)
+    expect(has_plottable_data(spec({ labels: [] }))).toBe(false)
+    expect(has_plottable_data(spec({ datasets: [{ label: 'a', data: [null, null] }] }))).toBe(false)
+})
+
+describe('lifecycle', () => {
+    function setup() {
+        const created: { canvas: HTMLCanvasElement; destroyed: boolean }[] = []
+        class FakeChart {
+            static owned = new Map<HTMLCanvasElement, FakeChart>()
+            static getChart = (canvas: HTMLCanvasElement) => FakeChart.owned.get(canvas)
+            record: { canvas: HTMLCanvasElement; destroyed: boolean }
+            constructor(canvas: HTMLCanvasElement) {
+                this.record = { canvas, destroyed: false }
+                created.push(this.record)
+                FakeChart.owned.set(canvas, this)
+            }
+            destroy() { this.record.destroyed = true; FakeChart.owned.delete(this.record.canvas) }
+        }
+        const win = window as unknown as ChartWindow
+        win.Chart = FakeChart as unknown as ChartWindow['Chart']
+        win.__minmatar_charts_bound = false
+        document.body.innerHTML = ''
+        return { win, created }
+    }
+
+    const add_canvas = (host: HTMLElement) => {
+        const canvas = document.createElement('canvas')
+        canvas.dataset.chart = JSON.stringify(spec())
+        host.append(canvas)
+        return canvas
+    }
+
+    test('mount_chart charts a canvas once', () => {
+        const { win, created } = setup()
+        const canvas = add_canvas(document.body)
+        expect(mount_chart(win, canvas)).toBe(true)
+        expect(mount_chart(win, canvas)).toBe(true)
+        expect(created).toHaveLength(1)
+    })
+
+    test('a canvas swapped in is charted and the replaced one is destroyed', async () => {
+        const { win, created } = setup()
+        const host = document.createElement('div')
+        document.body.append(host)
+        const first = add_canvas(host)
+        bind_charts(win)
+        expect(created.map((record) => record.canvas)).toEqual([first])
+
+        host.replaceChildren()
+        const second = add_canvas(host)
+        await vi.waitFor(() => expect(created).toHaveLength(2))
+        expect(created[0].destroyed).toBe(true)
+        expect(created[1].canvas).toBe(second)
+        expect(created[1].destroyed).toBe(false)
+    })
+
+    test('a missing global Chart charts nothing and does not throw', () => {
+        const { win } = setup()
+        win.Chart = undefined
+        expect(mount_chart(win, add_canvas(document.body))).toBe(false)
+    })
+})

@@ -5,6 +5,8 @@ import type { LoyaltyOrderStats } from '@dtypes/api.minmatar.org'
 import { format_number } from '@helpers/numbers'
 import { format_close_time } from '@helpers/loyalty_order_stats'
 import { weekly_bars } from '@helpers/loyalty_desk'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
 
 const { t, lang } = i18n(Astro.url)
 
@@ -34,75 +36,69 @@ const days_label = t('industry.loyalty.activity.window').replace('{days}', Strin
 ---
 
 <aside class:list={['[ loyalty-activity ]', Astro.props.class]} aria-labelledby="loyalty-activity-title" {...attributes}>
-    <div class="[ loyalty-activity__head ]">
-        <h3 id="loyalty-activity-title">{t('industry.loyalty.activity.title')}</h3>
-        <small>{days_label}</small>
-    </div>
-
-    <dl class="[ loyalty-activity__stats ]">
-        <div>
-            <dt>{t('industry.loyalty.activity.lp_bought')}</dt>
-            <dd class="[ tabular-nums ]">{format_number(stats.lp_completed ?? 0)}</dd>
-        </div>
-        <div>
-            <dt>{t('industry.loyalty.activity.isk_paid')}</dt>
-            <dd class="[ tabular-nums ]">{format_number(stats.isk_completed ?? 0)}</dd>
-        </div>
-        <div>
-            <dt>{t('industry.loyalty.activity.orders_paid')}</dt>
-            <dd class="[ tabular-nums ]">{stats.completed}</dd>
-        </div>
-        <div>
-            <dt>{t('industry.loyalty.activity.median_paid')}</dt>
-            <dd class="[ tabular-nums ]">
-                {format_close_time(median_value)}
-                {week_stats?.median_close_seconds != null && (
-                    <small>{t('industry.loyalty.activity.this_week')}</small>
-                )}
-            </dd>
-        </div>
-    </dl>
-
-    {bars.length > 0 && (
-        <figure class="[ loyalty-activity__weekly ]">
-            <figcaption>{t('industry.loyalty.activity.weekly')}</figcaption>
-            <div class="[ loyalty-activity__bars ]" role="list">
-                {bars.map((bar) => {
-                    const tip = t('industry.loyalty.activity.week_tip')
-                        .replace('{week}', week_label(bar.week_start))
-                        .replace('{lp}', format_number(bar.lp))
-                    return (
-                        <span
-                            role="listitem"
-                            class:list={['loyalty-activity__bar', { 'is-current': bar.is_current }]}
-                            style={`--bar-height: ${bar.percent}%`}
-                            title={tip}
-                            aria-label={tip}
-                        ></span>
-                    )
-                })}
+    <ComponentBlock padding_block="var(--space-m)" padding_inline="var(--space-m)">
+        <Flexblock gap="var(--space-m)">
+            <div class="[ loyalty-activity__head ]">
+                <h3 id="loyalty-activity-title">{t('industry.loyalty.activity.title')}</h3>
+                <small>{days_label}</small>
             </div>
-            <div class="[ loyalty-activity__axis ]" aria-hidden="true">
-                <span>{week_label(bars[0].week_start)}</span>
-                <span>{week_label(bars[bars.length - 1].week_start)}</span>
-            </div>
-        </figure>
-    )}
 
-    {footnote && <p class="[ loyalty-activity__note ]">{footnote}</p>}
+            <dl class="[ loyalty-activity__stats ]">
+                <div>
+                    <dt>{t('industry.loyalty.activity.lp_bought')}</dt>
+                    <dd class="[ tabular-nums ]">{format_number(stats.lp_completed ?? 0)}</dd>
+                </div>
+                <div>
+                    <dt>{t('industry.loyalty.activity.isk_paid')}</dt>
+                    <dd class="[ tabular-nums ]">{format_number(stats.isk_completed ?? 0)}</dd>
+                </div>
+                <div>
+                    <dt>{t('industry.loyalty.activity.orders_paid')}</dt>
+                    <dd class="[ tabular-nums ]">{stats.completed}</dd>
+                </div>
+                <div>
+                    <dt>{t('industry.loyalty.activity.median_paid')}</dt>
+                    <dd class="[ tabular-nums ]">
+                        {format_close_time(median_value)}
+                        {week_stats?.median_close_seconds != null && (
+                            <small>{t('industry.loyalty.activity.this_week')}</small>
+                        )}
+                    </dd>
+                </div>
+            </dl>
 
+            {bars.length > 0 && (
+                <figure class="[ loyalty-activity__weekly ]">
+                    <figcaption>{t('industry.loyalty.activity.weekly')}</figcaption>
+                    <div class="[ loyalty-activity__bars ]" role="list">
+                        {bars.map((bar) => {
+                            const tip = t('industry.loyalty.activity.week_tip')
+                                .replace('{week}', week_label(bar.week_start))
+                                .replace('{lp}', format_number(bar.lp))
+                            return (
+                                <span
+                                    role="listitem"
+                                    class:list={['loyalty-activity__bar', { 'is-current': bar.is_current }]}
+                                    style={`--bar-height: ${bar.percent}%`}
+                                    title={tip}
+                                    aria-label={tip}
+                                ></span>
+                            )
+                        })}
+                    </div>
+                    <div class="[ loyalty-activity__axis ]" aria-hidden="true">
+                        <span>{week_label(bars[0].week_start)}</span>
+                        <span>{week_label(bars[bars.length - 1].week_start)}</span>
+                    </div>
+                </figure>
+            )}
+
+            {footnote && <p class="[ loyalty-activity__note ]">{footnote}</p>}
+        </Flexblock>
+    </ComponentBlock>
 </aside>
 
 <style lang="scss">
-    .loyalty-activity {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-m);
-        padding: var(--space-m);
-        border: 1px solid var(--border-color);
-        background-color: var(--component-background);
-    }
-
     .loyalty-activity__head {
         display: flex;
         justify-content: space-between;
@@ -186,7 +182,7 @@ const days_label = t('industry.loyalty.activity.window').replace('{days}', Strin
             background: repeating-linear-gradient(
                 0deg,
                 var(--fleet-yellow) 0 4px,
-                color-mix(in srgb, var(--fleet-yellow) 35%, transparent) 4px 7px
+                color-mix(in srgb, var(--fleet-yellow) var(--tint-medium), transparent) 4px 7px
             );
         }
     }

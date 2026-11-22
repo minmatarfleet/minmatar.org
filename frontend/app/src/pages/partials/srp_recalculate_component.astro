@@ -28,7 +28,7 @@ import type { SRPRecalculationPreview } from '@dtypes/api.minmatar.org'
 import { get_srp_hull_recalculation_preview } from '@helpers/api.minmatar.org/srp'
 import { format_isk_shorthand } from '@helpers/isk_shorthand'
 import { number_thousand_separator } from '@helpers/numbers'
-import { get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image'
 import { query_string } from '@helpers/string'
 
 // character_id and created_at are new on the API; the generated types catch
@@ -67,6 +67,7 @@ const action = (part: 'pay' | 'keep') => ({
 })
 
 import Button from '@components/blocks/Button.astro'
+import ManageTable from '@components/blocks/manage/ManageTable.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 ---
@@ -78,16 +79,17 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         <EmptyState title={t('admin_srp.nothing_filed_old')} />
         :
         <>
-            <table class="[ manage-table srp-recalc__table ]" style="--manage_table_min_width: 0">
-                <caption class="[ visually-hidden ]">{t('admin_srp.filed_old')}</caption>
-                <thead>
-                    <tr>
-                        <th scope="col">{t('admin_srp.pilot')}</th>
-                        <th scope="col" class="[ is-wide ]">{t('admin_srp.filed')}</th>
-                        <th scope="col" class="num">{t('admin_srp.filed_at')}</th>
-                        <th scope="col" class="num">{t('admin_srp.at_amount').replace('~AMOUNT', format_isk_shorthand(new_amount, lang))}</th>
-                    </tr>
-                </thead>
+            <ManageTable
+                caption={t('admin_srp.filed_old')}
+                columns={[
+                    { label: t('admin_srp.pilot') },
+                    { label: t('admin_srp.filed'), phone: false },
+                    { label: t('admin_srp.filed_at'), align: 'num' },
+                    { label: t('admin_srp.at_amount').replace('~AMOUNT', format_isk_shorthand(new_amount, lang)), align: 'num' },
+                ]}
+                expandable={false}
+                min_width="0"
+            >
                 <tbody>
                     {changes.map((change) => (
                         <tr>
@@ -105,7 +107,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                         </tr>
                     ))}
                 </tbody>
-            </table>
+            </ManageTable>
             <div class="[ manage-actions ]">
                 <Button type="button" size="sm" {...action('pay')}>
                     {t('admin_srp.pay_count').replace('~COUNT', String(preview?.changed_count ?? changes.length)).replace('~AMOUNT', format_isk_shorthand(new_amount, lang))}
@@ -125,10 +127,6 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         display: flex;
         flex-direction: column;
         gap: var(--space-s);
-    }
-
-    .srp-recalc__table {
-        width: 100%;
     }
 
     .srp-recalc__short {

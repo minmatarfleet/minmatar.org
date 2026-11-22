@@ -29,8 +29,12 @@ import { query_string } from '@helpers/string'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
+import Switch from '@components/blocks/Switch.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
 import Input from '@components/blocks/Input.astro'
 import MarkdownTextArea from '@components/blocks/MarkdownTextArea.astro'
+import SectionTabs from '@components/blocks/SectionTabs.astro'
+import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
 import Tag from '@components/blocks/Tag.astro'
 
 const ROOT_ID = 'corporation-settings'
@@ -38,8 +42,6 @@ const PROBLEMS_ID = 'corp-settings-markdown-problems'
 const SCHEDULE_ID = 'corp-settings-schedule-panel'
 const AUTOMATIC_ID = 'corp-settings-automatic-panel'
 const STATUS_ID = 'corp-settings-save-status'
-const PREVIEW_ID = 'corp-settings-preview'
-const WRITE_ID = 'corp-settings-write'
 // Lives in the accordion header on the corporation page; refreshed out of band.
 const SUMMARY_ID = 'corporation-settings-reddit-summary'
 
@@ -154,6 +156,7 @@ const status_text = (() => {
     }
 })()
 ---
+{/* no-error-refetch: form partial: save and unlink failures render as flashes and the autosave status; a failed read is a 500 the accordion keeps its loader for. */}
 
 <span id={SUMMARY_ID} hx-swap-oob="true">{summary}</span>
 
@@ -287,7 +290,7 @@ const status_text = (() => {
                     />
                 </Flexblock>
 
-                <Flexblock gap="var(--space-3xs)" x-data="{ tab: 'write' }">
+                <Flexblock gap="var(--space-3xs)">
                     <FlexInline gap="var(--space-xs)" justification="space-between">
                         <label class="[ corp-settings__label ]" for="corp-settings-content">
                             {t('corporations.settings.content_label')}
@@ -296,51 +299,40 @@ const status_text = (() => {
                             <small>{t('corporations.settings.markdown_guide')}</small>
                         </a>
                     </FlexInline>
-                    <div class="[ corp-settings__tabs ]" role="tablist" aria-label={t('corporations.settings.content_label')}>
-                        <button
-                            type="button"
-                            role="tab"
-                            aria-controls={WRITE_ID}
-                            x-bind:aria-selected="tab === 'write'"
-                            x-on:click="tab = 'write'"
-                        >
-                            {t('corporations.settings.tab_write')}
-                        </button>
-                        <button
-                            type="button"
-                            role="tab"
-                            aria-controls={PREVIEW_ID}
-                            aria-selected="false"
-                            x-bind:aria-selected="tab === 'preview'"
-                            x-on:click="tab = 'preview'"
-                            hx-post={PREVIEW_URL}
-                            hx-target={`#${PREVIEW_ID}`}
-                            hx-swap="innerHTML"
-                            hx-select-oob="unset"
-                        >
-                            {t('corporations.settings.tab_preview')}
-                        </button>
-                    </div>
-                    <div id={WRITE_ID} role="tabpanel" x-show="tab === 'write'">
-                        <MarkdownTextArea
-                            id="corp-settings-content"
-                            name="content"
-                            rows="16"
-                            maxlength="40000"
-                            guide_url={REDDIT_FORMATTING_GUIDE_URL}
-                            guide_label={t('corporations.settings.markdown_guide')}
-                            aria-describedby={PROBLEMS_ID}
-                        >{content}</MarkdownTextArea>
-                    </div>
-                    <div
-                        id={PREVIEW_ID}
-                        class="[ corp-settings__preview ]"
-                        role="tabpanel"
-                        x-show="tab === 'preview'"
-                        style="display: none"
+                    <SectionTabs
+                        variant="compact"
+                        sync_hash={false}
+                        aria_label={t('corporations.settings.content_label')}
+                        id_prefix="corp-settings"
+                        tabs={[
+                            { id: 'write', label: t('corporations.settings.tab_write') },
+                            { id: 'preview', label: t('corporations.settings.tab_preview') },
+                        ]}
                     >
-                        <p class="[ corp-settings__muted ]">{t('corporations.settings.preview_loading')}</p>
-                    </div>
+                        <SectionTabPanel id="write" id_prefix="corp-settings" is_default>
+                            <MarkdownTextArea
+                                id="corp-settings-content"
+                                name="content"
+                                rows="16"
+                                maxlength="40000"
+                                guide_url={REDDIT_FORMATTING_GUIDE_URL}
+                                guide_label={t('corporations.settings.markdown_guide')}
+                                aria-describedby={PROBLEMS_ID}
+                            >{content}</MarkdownTextArea>
+                        </SectionTabPanel>
+                        <SectionTabPanel id="preview" id_prefix="corp-settings">
+                            <div
+                                class="[ corp-settings__preview ]"
+                                hx-post={PREVIEW_URL}
+                                hx-target="this"
+                                hx-trigger="section-tabs:change[detail.tab=='preview'] from:closest .section-tabs"
+                                hx-swap="innerHTML"
+                                hx-select-oob="unset"
+                            >
+                                <p class="[ corp-settings__muted ]">{t('corporations.settings.preview_loading')}</p>
+                            </div>
+                        </SectionTabPanel>
+                    </SectionTabs>
                     <div
                         id={PROBLEMS_ID}
                         class:list={['[ corp-settings__problems ]', { 'is-blocking': has_blocking_problems }]}
@@ -362,50 +354,31 @@ const status_text = (() => {
                     </div>
                 </Flexblock>
 
-                <label class="[ corp-settings__option ]">
-                    <input type="checkbox" name="paused" checked={paused} />
-                    <span class="[ corp-settings__option-body ]">
-                        <strong>{t('corporations.settings.pause_label')}</strong>
-                        <small>{t('corporations.settings.pause_help')}</small>
-                    </span>
-                </label>
+                <Switch
+                    name="paused"
+                    checked={paused}
+                    label={t('corporations.settings.pause_label')}
+                    description={t('corporations.settings.pause_help')}
+                />
 
                 <fieldset class="[ corp-settings__delivery ]">
                     <legend class="[ corp-settings__label ]">{t('corporations.settings.delivery_label')}</legend>
                     <Flexblock gap="var(--space-xs)">
-                        <label class="[ corp-settings__option ]">
-                            <input
-                                type="radio"
-                                name="delivery_method"
-                                value="alliance"
-                                checked={delivery_method === 'alliance'}
-                            />
+                        <OptionCard name="delivery_method" value="alliance" checked={delivery_method === 'alliance'}>
                             <span class="[ corp-settings__option-body ]">
                                 <strong>{t('corporations.settings.delivery_alliance')}</strong>
                                 <small>{t(settings.can_link_account ? 'corporations.settings.delivery_alliance_help' : 'corporations.settings.delivery_alliance_help_ceo')}</small>
                             </span>
-                        </label>
+                        </OptionCard>
 
-                        <label class="[ corp-settings__option ]">
-                            <input
-                                type="radio"
-                                name="delivery_method"
-                                value="automatic"
-                                checked={delivery_method === 'automatic'}
-                            />
+                        <OptionCard name="delivery_method" value="automatic" checked={delivery_method === 'automatic'}>
                             <span class="[ corp-settings__option-body ]">
                                 <strong>{t(settings.can_link_account ? 'corporations.settings.delivery_automatic' : 'corporations.settings.delivery_automatic_ceo')}</strong>
                                 <small>{t(settings.can_link_account ? 'corporations.settings.delivery_automatic_help' : 'corporations.settings.delivery_automatic_help_ceo')}</small>
                             </span>
-                        </label>
+                        </OptionCard>
 
-                        <label class="[ corp-settings__option ]">
-                            <input
-                                type="radio"
-                                name="delivery_method"
-                                value="discord_reminder"
-                                checked={delivery_method === 'discord_reminder'}
-                            />
+                        <OptionCard name="delivery_method" value="discord_reminder" checked={delivery_method === 'discord_reminder'}>
                             <span class="[ corp-settings__option-body ]">
                                 <strong>{t(settings.can_link_account ? 'corporations.settings.delivery_reminder' : 'corporations.settings.delivery_reminder_ceo')}</strong>
                                 <small>{t(settings.can_link_account ? 'corporations.settings.delivery_reminder_help' : 'corporations.settings.delivery_reminder_help_ceo')}</small>
@@ -417,7 +390,7 @@ const status_text = (() => {
                                     </small>
                                 }
                             </span>
-                        </label>
+                        </OptionCard>
                     </Flexblock>
                 </fieldset>
 
@@ -623,36 +596,6 @@ const status_text = (() => {
         }
     }
 
-    .corp-settings__tabs {
-        display: flex;
-        gap: var(--space-2xs);
-        border-bottom: solid 1px var(--border-color);
-
-        button {
-            padding: var(--space-3xs) var(--space-xs);
-            border: none;
-            border-bottom: solid var(--space-3xs) transparent;
-            margin-block-end: -1px;
-            background: none;
-            font-family: var(--button-font);
-            font-size: var(--step--1);
-            color: var(--faded);
-            cursor: pointer;
-            transition: color var(--fast-transition), border-color var(--fast-transition);
-
-            &[aria-selected="true"] {
-                border-bottom-color: var(--fleet-red);
-                color: var(--highlight);
-            }
-
-            @media (hover: hover) {
-                &:hover {
-                    color: var(--highlight);
-                }
-            }
-        }
-    }
-
     .corp-settings__preview {
         min-height: var(--space-3xl);
         padding: var(--space-s);
@@ -745,38 +688,6 @@ const status_text = (() => {
 
         legend {
             margin-bottom: var(--space-3xs);
-        }
-    }
-
-    .corp-settings__option {
-        display: flex;
-        gap: var(--space-xs);
-        align-items: flex-start;
-        padding: var(--space-s);
-        border: solid 1px var(--border-color);
-        cursor: pointer;
-        transition: border-color var(--fast-transition);
-
-        &:hover {
-            border-color: var(--border-color-hover);
-        }
-
-        &:has(input:checked) {
-            border-color: var(--fleet-yellow);
-        }
-
-        &:has(input:disabled) {
-            cursor: not-allowed;
-            opacity: 0.6;
-
-            &:hover {
-                border-color: var(--border-color);
-            }
-        }
-
-        input {
-            margin-top: var(--space-3xs);
-            accent-color: var(--fleet-red);
         }
     }
 

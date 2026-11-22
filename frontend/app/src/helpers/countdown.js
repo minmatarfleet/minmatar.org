@@ -1,3 +1,8 @@
+// Ids for the countdown elements on the page. A counter, so two countdowns
+// rendered in the same millisecond (or swapped in by htmx) never share an id.
+let countdown_serial = 0
+export const next_countdown_serial = () => ++countdown_serial
+
 export const countdown = (date, expired_text = '') => {
     // Set the date we're counting down to
     var countDownDate = new Date(date).getTime();

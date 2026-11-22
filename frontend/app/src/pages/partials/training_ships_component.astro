@@ -12,7 +12,7 @@ if (!user)
 
 import type { TrainingShipOption } from '@dtypes/api.minmatar.org'
 import { get_training_ships } from '@helpers/api.minmatar.org/training'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 import { TRAINING_PARTIAL, TRAINING_SHIPS_PARTIAL, time_label, training_url } from '@helpers/training'
 
 const character_id = parseInt(Astro.url.searchParams.get('character_id') ?? '0') || 0
@@ -42,6 +42,7 @@ const add_url = (fitting_id:number) =>
 
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {fetch_error ?
@@ -74,7 +75,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                         {ship.added ?
                             <span class="[ training-muted training-ships__action ]">{t('training.added')}</span>
                             :
-                            <button
+                            <StylessButton
                                 type="button"
                                 class="[ training-ships__action ]"
                                 modal-action="accept"
@@ -83,16 +84,16 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                                 hx-swap="outerHTML"
                             >
                                 {t('training.add')}
-                            </button>
+                            </StylessButton>
                         }
                     </li>
                 )}
             </ul>
         }
         {ships.length > SHOWN &&
-            <button type="button" class="[ training-ships__more ]" x-show="!all" x-on:click="all = true">
+            <StylessButton type="button" class="[ training-ships__more ]" x-show="!all" x-on:click="all = true">
                 {t('training.show_more').replace('{count}', (ships.length - SHOWN).toString())}
-            </button>
+            </StylessButton>
         }
     </div>
 }
@@ -128,7 +129,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
             padding-block: var(--space-2xs);
 
             & + li {
-                border-top: 1px solid var(--hairline);
+                border-top: 1px solid var(--border-color);
             }
 
             img {
@@ -138,7 +139,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
     }
 
     .training-muted {
-        color: var(--text-muted);
+        color: var(--faded);
         font-size: var(--step--1);
     }
 

@@ -47,6 +47,7 @@ const limits = fixed && (route.max_m3 !== null || route.max_collateral !== null)
 const days = t('manage.freight.days_pair')
     .replace('~ACCEPT', String(route.expiration_days))
     .replace('~COMPLETE', String(route.days_to_complete))
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <ExpandRow
@@ -58,7 +59,7 @@ const days = t('manage.freight.days_pair')
     dim={!route.active}
 >
     <td>
-        <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+        <StylessButton type="button" class="[ manage-who ]" x-on:click="open = !open">
             <span class="[ manage-who__text ]">
                 <span class="[ manage-who__name ]">{name}</span>
                 {route.fee_never_applies
@@ -66,7 +67,7 @@ const days = t('manage.freight.days_pair')
                     : <span class="[ manage-who__sub market-phone-only ]">{price}</span>
                 }
             </span>
-        </button>
+        </StylessButton>
     </td>
     <td class="is-wide">{price}</td>
     <td class:list={['is-wide', { 'manage-muted': limits === null }]}>{limits ?? t('manage.freight.no_limits')}</td>

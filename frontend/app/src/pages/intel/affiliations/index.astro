@@ -67,6 +67,7 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import IntelAffiliationAddForm from '@components/blocks/IntelAffiliationAddForm.astro'
 import IntelAffiliationRow from '@components/blocks/IntelAffiliationRow.astro'
+import Input from '@components/blocks/Input.astro'
 import IntelEntitySearchResults from '@components/blocks/IntelEntitySearchResults.astro'
 import LazyPartial from '@components/blocks/LazyPartial.astro'
 import SectionTabs from '@components/blocks/SectionTabs.astro'
@@ -103,10 +104,10 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
                         <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-s)">
                             <Flexblock gap="var(--space-2xs)">
                                 <label class="[ intel-affiliations__label ]" for="intel-affiliation-search">{t('intel.affiliations.search.label')}</label>
-                                <input
+                                <Input
                                     id="intel-affiliation-search"
-                                    class="[ intel-affiliations__search ]"
                                     type="search"
+                                    size="sm"
                                     name="q"
                                     minlength="3"
                                     maxlength="100"
@@ -249,20 +250,6 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
         color: var(--faded);
     }
 
-    .intel-affiliations__search {
-        width: 100%;
-        padding: var(--space-2xs) var(--space-xs);
-        color: var(--form-color);
-        color-scheme: dark;
-        background-color: var(--surface-sunken);
-        border: 1px solid var(--border-color-hover);
-
-        &:focus-visible {
-            outline: 2px solid var(--fleet-yellow);
-            outline-offset: -2px;
-        }
-    }
-
     .intel-affiliations__queue {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(min(7rem, 100%), 1fr));
@@ -321,7 +308,7 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
 
         small {
             flex: none;
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
@@ -351,7 +338,7 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
             align-items: center;
             gap: var(--space-3xs) var(--space-s);
             padding-block: var(--space-2xs);
-            border-block-end: 1px solid var(--hairline);
+            border-block-end: 1px solid var(--border-color);
         }
     }
 
@@ -383,7 +370,7 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
 
     .intel-affiliations__counts {
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
 
         b {
             font-weight: normal;

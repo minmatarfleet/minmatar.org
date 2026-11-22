@@ -37,6 +37,7 @@ const MEMBERSHIPS_PARTIAL_URL = translatePath(`/partials/tribe_group_memberships
 const CANDIDATES_PARTIAL_URL = translatePath(`/partials/tribe_invitation_candidates_component?${query_string({ tribe_id, group_id, group_name, q })}`)
 
 import Button from '@components/blocks/Button.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 import CharacterPicture from '@components/blocks/CharacterPicture.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
@@ -65,7 +66,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
             return (
                 <li>
                     {candidate.blocker === null ?
-                        <button
+                        <StylessButton
                             type="button"
                             class="[ invite-candidate invite-candidate--pick ]"
                             x-on:click={`toggle_pick(${candidate.user_id}, ${JSON.stringify(candidate.character_name)}, ${candidate.character_id})`}
@@ -78,12 +79,13 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                                 character_id={candidate.character_id}
                                 character_name={candidate.character_name}
                                 size={64}
+                                inert
                             />
                             <span class="[ invite-candidate__text ]">
                                 <b>{candidate.character_name}</b>
                                 <small>{alt ? `${alt} · ${reason}` : reason}</small>
                             </span>
-                        </button>
+                        </StylessButton>
                         :
                         <div class:list={['[ invite-candidate ]', { 'invite-candidate--blocked': candidate.blocker !== 'applied' }]}>
                             <span class="[ invite-candidate__box invite-candidate__box--off ]" aria-hidden="true"></span>
@@ -129,7 +131,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
     }
 
     .invite-candidates > li + li {
-        border-top: solid 1px var(--hairline);
+        border-top: solid 1px var(--border-color);
     }
 
     .invite-candidate {
@@ -166,7 +168,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         min-width: 0;
 
         small {
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         .text-fleet-yellow {

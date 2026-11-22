@@ -12,7 +12,7 @@ if (!user)
 
 import type { TrainingPlan } from '@dtypes/api.minmatar.org'
 import { add_training_goal, get_training_plan, update_training_goal } from '@helpers/api.minmatar.org/training'
-import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
+import { get_item_icon, get_player_icon } from '@helpers/eve_image'
 import {
     TRAINING_PARTIAL,
     TRAINING_PLAN_PARTIAL,
@@ -79,8 +79,10 @@ const who_shown = new Set([
 const who_hidden = (plan?.who.length ?? 0) - who_shown.size
 
 import Button from '@components/blocks/Button.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
 import ClipboardButton from '@components/blocks/ClipboardButton.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {fetch_error ?
@@ -114,15 +116,18 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
             <legend>{t('training.who_trains')}</legend>
             <div class="[ training-plan__options ]" x-data="{ all: false }">
                 {plan.who.map(who =>
-                    <button
-                        type="button"
+                    <OptionCard
+                        name="training_who"
+                        value={String(who.character_id)}
+                        checked={who.character_id === plan.character_id}
                         x-show={who_shown.has(who.character_id) ? undefined : 'all'}
                         x-cloak={who_shown.has(who.character_id) ? undefined : true}
-                        class:list={['[ training-plan__who ]', { selected: who.character_id === plan.character_id }]}
-                        aria-pressed={who.character_id === plan.character_id ? 'true' : 'false'}
-                        hx-get={plan_url({ character_id: who.character_id })}
-                        hx-target="#modal-description"
-                        hx-swap="innerHTML"
+                        input_attributes={{
+                            'hx-get': plan_url({ character_id: who.character_id }),
+                            'hx-target': '#modal-description',
+                            'hx-swap': 'innerHTML',
+                            'hx-params': 'none',
+                        }}
                     >
                         <img src={get_player_icon(who.character_id, 64)} alt="" width="32" height="32" loading="lazy" />
                         <span class="[ training-plan__who-name ]">
@@ -139,12 +144,12 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                                 <strong>{time_label(t, who.days)}</strong>
                             </span>
                         }
-                    </button>
+                    </OptionCard>
                 )}
                 {who_hidden > 0 &&
-                    <button type="button" class="[ training-plan__link self-start ]" x-show="!all" x-on:click="all = true">
+                    <StylessButton type="button" class="[ training-plan__link self-start ]" x-show="!all" x-on:click="all = true">
                         {t('training.show_all_characters').replace('{count}', plan.who.length.toString())}
-                    </button>
+                    </StylessButton>
                 }
             </div>
         </fieldset>
@@ -154,20 +159,23 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                 <legend>{t('training.train_to')}</legend>
                 <div class="[ training-plan__finishes ]">
                     {finishes.map(finish =>
-                        <button
-                            type="button"
-                            class:list={['[ training-plan__finish ]', { selected: plan.target === finish.id }]}
-                            aria-pressed={plan.target === finish.id ? 'true' : 'false'}
-                            hx-post={plan_url({ character_id, mode: 'target', target: finish.id })}
-                            hx-target="#modal-description"
-                            hx-swap="innerHTML"
+                        <OptionCard
+                            name="training_finish"
+                            value={finish.id}
+                            checked={plan.target === finish.id}
+                            input_attributes={{
+                                'hx-post': plan_url({ character_id, mode: 'target', target: finish.id }),
+                                'hx-target': '#modal-description',
+                                'hx-swap': 'innerHTML',
+                                'hx-params': 'none',
+                            }}
                         >
-                            <span>
+                            <span class="[ training-plan__finish-text ]">
                                 <strong style={`color: var(--${finish.color})`}>{finish.label}</strong>
                                 <small class="[ training-muted ]">{finish.hint}</small>
                             </span>
                             <strong>{finish.days > 0 ? time_label(t, finish.days) : t('training.is_ready')}</strong>
-                        </button>
+                        </OptionCard>
                     )}
                 </div>
             </fieldset>
@@ -228,7 +236,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         {plan.is_goal && plan.up_next.length > 0 &&
             <div class="[ training-plan__next ]">
                 <span><span class="[ training-muted ]">{t('training.up_next')} </span>{plan.up_next.join(', ')}</span>
-                <button
+                <StylessButton
                     type="button"
                     class="[ training-plan__link ]"
                     modal-action="cancel"
@@ -237,7 +245,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                     hx-swap="outerHTML"
                 >
                     {t('training.change_order')}
-                </button>
+                </StylessButton>
             </div>
         }
 
@@ -286,7 +294,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
     }
 
     .training-muted {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .training-plan__error {
@@ -307,7 +315,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         font-weight: 600;
         letter-spacing: 0.06em;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .training-plan__options {
@@ -316,39 +324,12 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         gap: var(--space-3xs);
     }
 
-    .training-plan__who,
-    .training-plan__finish {
-        display: flex;
-        align-items: center;
-        gap: var(--space-xs);
-        padding: var(--space-2xs) var(--space-s);
-        border: 1px solid var(--hairline);
+    .training-plan__options img {
         border-radius: var(--space-3xs);
-        background: none;
-        color: var(--highlight);
-        text-align: start;
-        cursor: pointer;
-
-        &.selected {
-            border-color: var(--fleet-yellow);
-        }
-
-        &:hover,
-        &:focus-visible {
-            border-color: var(--hairline-strong);
-        }
-
-        &.selected:hover {
-            border-color: var(--fleet-yellow);
-        }
-
-        img {
-            border-radius: var(--space-3xs);
-        }
     }
 
     .training-plan__who-name,
-    .training-plan__finish > span {
+    .training-plan__finish-text {
         display: flex;
         flex-direction: column;
         flex-grow: 1;
@@ -389,7 +370,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
             margin: 0;
             padding: 0;
             list-style: none;
-            border-top: 1px solid var(--hairline);
+            border-top: 1px solid var(--border-color);
         }
 
         li {
@@ -398,7 +379,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
             grid-template-columns: 2rem minmax(0, 1fr) auto;
             gap: var(--space-xs);
             padding-block: var(--space-2xs);
-            border-bottom: 1px solid var(--hairline);
+            border-bottom: 1px solid var(--border-color);
 
             > :last-child {
                 white-space: nowrap;
@@ -418,7 +399,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         justify-content: space-between;
         gap: var(--space-s);
         padding: var(--space-xs) var(--space-s);
-        border: 1px solid var(--hairline);
+        border: 1px solid var(--border-color);
         border-radius: var(--space-3xs);
     }
 

@@ -16,6 +16,7 @@ export default {
         title: { control: 'text', description: 'Heading (rendered as `<h4>`); `false` for none.' },
         gap: space_control('Space between the heading and the text.'),
         full: { control: 'boolean', description: 'Stretch to the full width of the parent (`w-full`).' },
+        root_class: { control: 'text', description: 'Extra classes for the root stack (`class` goes to the paragraph).' },
     },
     args: {
         title: 'Why we fly together',
@@ -68,5 +69,14 @@ export const PassthroughAttributes = {
     args: { 'data-testid': 'body', class: 'text-muted' },
     play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
         await expect(within(canvasElement).getByTestId('body').tagName).toBe('P')
+    },
+}
+
+export const RootClass = {
+    args: { root_class: 'badge', full: true },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const root = canvasElement.firstElementChild as HTMLElement
+        await expect(root).toHaveClass('badge')
+        await expect(root).toHaveClass('w-full')
     },
 }

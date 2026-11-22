@@ -52,7 +52,7 @@ import BlueprintTableAlpine from '@components/blocks/BlueprintTableAlpine.astro'
 import Input from '@components/blocks/Input.astro'
 import Form from '@components/blocks/Form.astro'
 import Button from '@components/blocks/Button.astro'
-import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro'
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
@@ -156,7 +156,7 @@ const page_title = t('industry.blueprints.page_title');
                     <FlexInline>
                         <h4>{t('sort_by')}</h4>
 
-                        <UnstyledRadioCheckButton
+                        <RadioCheckInput bare
                             label={t('best_efficiency')}
                             type='radio'
                             x-model="sorting"
@@ -164,7 +164,7 @@ const page_title = t('industry.blueprints.page_title');
                             x-on:change="filter()"
                         />
 
-                        <UnstyledRadioCheckButton
+                        <RadioCheckInput bare
                             label={t('material_efficiency')}
                             type='radio'
                             x-model="sorting"
@@ -172,7 +172,7 @@ const page_title = t('industry.blueprints.page_title');
                             x-on:change="filter()"
                         />
 
-                        <UnstyledRadioCheckButton
+                        <RadioCheckInput bare
                             label={t('time_efficiency')}
                             type='radio'
                             x-model="sorting"
@@ -201,7 +201,7 @@ const page_title = t('industry.blueprints.page_title');
                 <FlexInline>
                     <h4>{t('results_limit')}:</h4>
 
-                    <UnstyledRadioCheckButton
+                    <RadioCheckInput bare
                         label='500'
                         type='radio'
                         x-model="item_listing_limit"
@@ -209,7 +209,7 @@ const page_title = t('industry.blueprints.page_title');
                         x-on:change="filter()"
                     />
 
-                    <UnstyledRadioCheckButton
+                    <RadioCheckInput bare
                         label='1000'
                         type='radio'
                         x-model="item_listing_limit"
@@ -217,7 +217,7 @@ const page_title = t('industry.blueprints.page_title');
                         x-on:change="filter()"
                     />
 
-                    <UnstyledRadioCheckButton
+                    <RadioCheckInput bare
                         label='2000'
                         type='radio'
                         x-model="item_listing_limit"
@@ -225,7 +225,7 @@ const page_title = t('industry.blueprints.page_title');
                         x-on:change="filter()"
                     />
 
-                    <UnstyledRadioCheckButton
+                    <RadioCheckInput bare
                         label='3000'
                         type='radio'
                         x-model="item_listing_limit"
@@ -233,7 +233,7 @@ const page_title = t('industry.blueprints.page_title');
                         x-on:change="filter()"
                     />
 
-                    <UnstyledRadioCheckButton
+                    <RadioCheckInput bare
                         label={t('unlimited')}
                         type='radio'
                         x-model="item_listing_limit"

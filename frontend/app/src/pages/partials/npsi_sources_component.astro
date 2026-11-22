@@ -36,6 +36,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import NpsiSourcesManager from '@components/blocks/NpsiSourcesManager.astro'
 import NpsiFeedForm from '@components/blocks/manage_intel/NpsiFeedForm.astro'
 import NpsiFeedRow from '@components/blocks/manage_intel/NpsiFeedRow.astro'
+import RowSwapFrame from '@components/blocks/manage/RowSwapFrame.astro'
 import NpsiFeedChips from '@components/blocks/manage_intel/NpsiFeedChips.astro'
 
 const PARTS = ['list', 'row', 'toggle', 'create', 'try']
@@ -167,7 +168,7 @@ const try_text = (result: NpsiTryResult) => {
 : part === 'row' && !is_post ?
     <NpsiFeedForm source={row_source} list={list} events={events} />
 :
-    <table>
+    <RowSwapFrame>
         <NpsiFeedRow
             source={row_source}
             list={list}
@@ -177,6 +178,6 @@ const try_text = (result: NpsiTryResult) => {
             error={row_error}
             events={events}
         />
-    </table>
+    </RowSwapFrame>
 }
 {part === 'toggle' && !fetch_error && <NpsiFeedChips list={list} view={view} />}

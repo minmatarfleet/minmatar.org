@@ -2,9 +2,20 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t } = i18n(Astro.url)
 
+const shopping_columns = [
+    { key: 'item', label: t('fitting_buy.item'), width: '36%' },
+    { key: 'needed', label: t('fitting_buy.needed'), numeric: true, width: '10.5%' },
+    { key: 'on_hand', label: t('fitting_buy.on_hand'), numeric: true, width: '10.5%' },
+    { key: 'to_buy', label: t('fitting_buy.to_buy'), numeric: true, width: '10.5%' },
+    { key: 'jita_volume', label: t('fitting_buy.jita_volume'), numeric: true, width: '10.5%' },
+    { key: 'shortfall', label: t('fitting_buy.shortfall'), numeric: true, width: '10.5%' },
+    { key: 'unit_price', label: t('fitting_buy.unit_price'), numeric: true, width: '10.5%' },
+]
+
 import type { FittingBuyOrderDetail } from '@helpers/api.minmatar.org/fitting_buy_orders'
 import { format_number, number_thousand_separator } from '@helpers/numbers'
 
+import DataTable from '@components/blocks/DataTable.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
@@ -125,6 +136,8 @@ const cpu_pg_label = (
         .replace('{cpu}', fmt_fit(cpu))
         .replace('{pg}', fmt_fit(pg))
 }
+import StylessButton from '@components/blocks/StylessButton.astro'
+import Textarea from '@components/blocks/Textarea.astro'
 ---
 
 <ComponentBlock class="[ fitting-buy-section fitting-buy-shopping w-full ]" heavier={true}>
@@ -142,7 +155,7 @@ const cpu_pg_label = (
                 <FlexInline gap="var(--space-xs)" class="[ items-center flex-wrap ]">
                     <h2>{t('fitting_buy.shopping_list')}</h2>
                     {(collapse_purchase_list || purchase_copied) && (
-                        <button
+                        <StylessButton
                             type="button"
                             class="[ fitting-buy-accordion-toggle ]"
                             x-on:click="open = !open"
@@ -151,7 +164,7 @@ const cpu_pg_label = (
                             <span x-text={`open ? '${t('fitting_buy.hide_purchase_list')}' : '${t('fitting_buy.show_purchase_list')}'`}>
                                 {t('fitting_buy.show_purchase_list')}
                             </span>
-                        </button>
+                        </StylessButton>
                     )}
                 </FlexInline>
                 {shopping_summary && (
@@ -191,7 +204,7 @@ const cpu_pg_label = (
                             x-on:submit={`copyFitToClipboard('${multibuy_id}')`}
                         >
                             <input type="hidden" name="action" value="mark_pending_fitting" />
-                            <textarea class="[ hidden ]" id={multibuy_id} readonly>{order.multibuy}</textarea>
+                            <Textarea class="[ hidden ]" id={multibuy_id} readonly>{order.multibuy}</Textarea>
                             <Button
                                 type="submit"
                                 size="sm"
@@ -266,20 +279,7 @@ const cpu_pg_label = (
         ) : order.items.length === 0 ? (
             <p class="[ text-[var(--highlight)] ]">{t('fitting_buy.no_items')}</p>
         ) : (
-            <div class="[ fitting-buy-table-wrap ]">
-                <table class="[ fitting-buy-table ]">
-                    <thead>
-                        <tr>
-                            <th>{t('fitting_buy.item')}</th>
-                            <th class="[ is-num ]">{t('fitting_buy.needed')}</th>
-                            <th class="[ is-num ]">{t('fitting_buy.on_hand')}</th>
-                            <th class="[ is-num ]">{t('fitting_buy.to_buy')}</th>
-                            <th class="[ is-num ]">{t('fitting_buy.jita_volume')}</th>
-                            <th class="[ is-num ]">{t('fitting_buy.shortfall')}</th>
-                            <th class="[ is-num ]">{t('fitting_buy.unit_price')}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <DataTable columns={shopping_columns} class="[ fitting-buy-table ]">
                         {order.items.map((item) => {
                             const allocate_buy = item.allocate_buy_qty ?? item.buy_qty
                             const alloc_by_id = Object.fromEntries(
@@ -376,7 +376,7 @@ const cpu_pg_label = (
                                                                     hx-post={partial_base}
                                                                     hx-target="#fitting-buy-order"
                                                                     hx-swap="outerHTML"
-                                                                    x-on:htmx:after-request="if ($event.detail.successful) close_dialog()"
+                                                                    {...{ 'x-on:htmx:after-request': 'if ($event.detail.successful) close_dialog()' }}
                                                                     novalidate
                                                                     class="[ fitting-buy-alloc-form ]"
                                                                 >
@@ -515,14 +515,14 @@ const cpu_pg_label = (
                                                                             </ul>
 
                                                                             <div class="[ fitting-buy-alloc-footer ]">
-                                                                                <button
+                                                                                <Button
                                                                                     type="submit"
-                                                                                    class="[ button fitting-buy-alloc-submit ]"
-                                                                                    data-size="sm"
+                                                                                    size="sm"
+                                                                                    off_disable={true}
                                                                                     x-bind:disabled="typeof can_save === 'function' && !can_save()"
                                                                                 >
                                                                                     {t('fitting_buy.allocate_submit')}
-                                                                                </button>
+                                                                                </Button>
                                                                             </div>
                                                                         </Flexblock>
                                                                     </div>
@@ -548,9 +548,7 @@ const cpu_pg_label = (
                                 </tr>
                             )
                         })}
-                    </tbody>
-                </table>
-            </div>
+            </DataTable>
         )}
         </div>
     </Flexblock>
@@ -620,48 +618,31 @@ const cpu_pg_label = (
         color: var(--highlight);
     }
 
-    .fitting-buy-table-wrap {
-        overflow-x: auto;
-        width: 100%;
-        max-width: 100%;
-        -webkit-overflow-scrolling: touch;
-    }
-
     .fitting-buy-table {
-        width: 100%;
         table-layout: fixed;
-        border-collapse: collapse;
-        font-size: var(--step--1);
 
-        th,
         td {
-            text-align: left;
-            padding: var(--space-2xs) var(--space-xs);
-            border-bottom: 1px solid var(--border-color);
             white-space: nowrap;
         }
 
-        th:first-child,
         td:first-child {
             white-space: normal;
-            width: 36%;
             min-width: 12rem;
         }
 
         .is-num {
             text-align: right;
             font-variant-numeric: tabular-nums;
-            width: 10.5%;
         }
 
         tr.is-short td {
             color: var(--fleet-red);
-            background-color: color-mix(in srgb, var(--fleet-red) 14%, transparent);
+            background-color: color-mix(in srgb, var(--fleet-red) var(--tint-soft), transparent);
         }
 
         tr.is-stocked td {
             color: var(--green);
-            background-color: color-mix(in srgb, var(--green) 14%, transparent);
+            background-color: color-mix(in srgb, var(--green) var(--tint-soft), transparent);
         }
 
         tr.is-split-variant td:first-child {
@@ -827,41 +808,6 @@ const cpu_pg_label = (
         border-top: 1px solid var(--border-color);
     }
 
-    .fitting-buy-alloc-submit {
-        font-family: var(--button-font);
-        font-size: var(--step--1);
-        font-weight: 600;
-        color: var(--button-color);
-        background-color: var(--fleet-red);
-        border: 1px solid var(--fleet-red);
-        padding: var(--space-2xs) var(--space-s);
-        cursor: pointer;
-        transition: var(--fast-transition);
-
-        &:focus-visible {
-            outline: 1px solid var(--foreground);
-            outline-offset: 2px;
-        }
-
-        &:disabled {
-            opacity: 0.45;
-            cursor: not-allowed;
-        }
-
-        @media (hover: hover) {
-            &:hover:not(:disabled),
-            &:focus-visible:not(:disabled) {
-                transform: scale(1.05);
-            }
-        }
-
-        @media (hover: none) {
-            &:active:not(:disabled) {
-                transform: scale(0.95);
-            }
-        }
-    }
-
     :global(.fitting-buy-alloc-qty) {
         width: 7ch;
         max-width: 7ch;
@@ -902,7 +848,6 @@ const cpu_pg_label = (
             justify-self: start;
         }
 
-        .fitting-buy-table th:first-child,
         .fitting-buy-table td:first-child {
             min-width: 8rem;
         }

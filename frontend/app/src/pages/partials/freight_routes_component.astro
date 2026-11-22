@@ -28,6 +28,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import ViewChips from '@components/blocks/manage/ViewChips.astro'
 import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import RowSwapFrame from '@components/blocks/manage/RowSwapFrame.astro'
 import FreightRouteRow from '@components/blocks/market_settings/FreightRouteRow.astro'
 import FreightRouteDetail from '@components/blocks/market_settings/FreightRouteDetail.astro'
 import FreightQuote from '@components/blocks/market_settings/FreightQuote.astro'
@@ -176,8 +177,8 @@ const columns = [
         )
     : part === 'row' && route
         ? (is_post
-            // The row goes back inside a <table>; the request picks it with hx-select.
-            ? <Fragment><table><FreightRouteRow route={route} open={true} detail={{ saved, error }} /></table><ViewChips {...chips} hx-swap-oob="true" /></Fragment>
+            // The row goes back inside a RowSwapFrame; the request picks it with hx-select.
+            ? <Fragment><RowSwapFrame><FreightRouteRow route={route} open={true} detail={{ saved, error }} /></RowSwapFrame><ViewChips {...chips} hx-swap-oob="true" /></Fragment>
             : <FreightRouteDetail route={route} />)
         : <EmptyState title={t('manage.freight.not_found')} />
 }

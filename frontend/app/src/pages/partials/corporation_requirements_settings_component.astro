@@ -18,6 +18,8 @@ import { over_asks, requirement_from_form } from '@helpers/corporations/requirem
 import { query_string } from '@helpers/string'
 
 import Button from '@components/blocks/Button.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import Input from '@components/blocks/Input.astro'
 import CorporationRequirementForm from '@components/blocks/CorporationRequirementForm.astro'
@@ -111,6 +113,7 @@ const who = (value: string, kind: string) => kind === 'prime_time'
         any: t('corporations.requirements.who_any'),
         other_account: t('corporations.requirements.who_other_account'),
     } as Record<string, string>)[value] ?? value
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <span id={SUMMARY_ID} hx-swap-oob="innerHTML">{summary}</span>
@@ -155,21 +158,20 @@ const who = (value: string, kind: string) => kind === 'prime_time'
                                     {rule.members_pass === null ? '—' : `${rule.members_pass}%`}
                                 </span>
                                 <span role="cell">
-                                    <span class="[ corp-req__toggle ]" role="group" aria-label={t('corporations.requirements.col_importance')}>
+                                    <ChipGroup wrap={true} aria_label={t('corporations.requirements.col_importance')}>
                                         {(['required', 'preferred'] as const).map((value) => (
-                                            <button
-                                                type="button"
-                                                aria-pressed={rule.importance === value ? 'true' : 'false'}
+                                            <FilterChip
+                                                active={rule.importance === value}
                                                 hx-post={PARTIAL_URL}
                                                 hx-target={TARGET}
                                                 hx-swap="outerHTML"
                                                 hx-vals={JSON.stringify({ action: 'importance', rule_id: String(rule.id), importance: value })}
-                                            >{t(value === 'required' ? 'corporations.requirements.importance_required' : 'corporations.requirements.importance_preferred')}</button>
+                                            >{t(value === 'required' ? 'corporations.requirements.importance_required' : 'corporations.requirements.importance_preferred')}</FilterChip>
                                         ))}
-                                    </span>
+                                    </ChipGroup>
                                 </span>
                                 <span role="cell">
-                                    <button
+                                    <StylessButton
                                         type="button"
                                         class="[ corp-req__icon-button ]"
                                         aria-label={t('corporations.requirements.edit')}
@@ -179,7 +181,7 @@ const who = (value: string, kind: string) => kind === 'prime_time'
                                         hx-swap="outerHTML"
                                     >
                                         <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z" /></svg>
-                                    </button>
+                                    </StylessButton>
                                 </span>
                             </div>
                             {warn && <p class="[ corp-req__nudge ]">{t('corporations.requirements.over_ask')}</p>}
@@ -228,7 +230,7 @@ const who = (value: string, kind: string) => kind === 'prime_time'
                 {data.interview_topics.map((topic, index) => (
                     <li>
                         <span>{topic}</span>
-                        <button
+                        <StylessButton
                             type="button"
                             class="[ corp-req__icon-button ]"
                             aria-label={`${t('corporations.requirements.remove_topic')}: ${topic}`}
@@ -238,7 +240,7 @@ const who = (value: string, kind: string) => kind === 'prime_time'
                             hx-vals={JSON.stringify({ action: 'remove_topic', index: String(index) })}
                         >
                             <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
-                        </button>
+                        </StylessButton>
                     </li>
                 ))}
             </ul>
@@ -295,7 +297,7 @@ const who = (value: string, kind: string) => kind === 'prime_time'
         gap: var(--space-s);
         align-items: center;
         min-height: var(--space-xl);
-        border-top: solid 1px var(--hairline);
+        border-top: solid 1px var(--border-color);
 
         @media (max-width: 56rem) {
             grid-template-columns: minmax(0, 1fr) auto auto;
@@ -317,7 +319,7 @@ const who = (value: string, kind: string) => kind === 'prime_time'
         font-size: var(--step--2);
         font-weight: 600;
         letter-spacing: 0.04em;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .corp-req__rule {
@@ -334,7 +336,7 @@ const who = (value: string, kind: string) => kind === 'prime_time'
         font-weight: 600;
         letter-spacing: 0.06em;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .corp-req__text {
@@ -344,7 +346,7 @@ const who = (value: string, kind: string) => kind === 'prime_time'
 
     .corp-req__who {
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .corp-req__num {
@@ -354,36 +356,13 @@ const who = (value: string, kind: string) => kind === 'prime_time'
         color: var(--highlight);
 
         &.is-attention {
-            color: var(--attention);
+            color: var(--fleet-yellow);
         }
     }
 
     .corp-req__row--head .corp-req__num {
         font-weight: 600;
-        color: var(--text-muted);
-    }
-
-    .corp-req__toggle {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        border: solid 1px var(--hairline-strong);
-
-        button {
-            min-height: var(--space-l);
-            padding-inline: var(--space-2xs);
-            background: transparent;
-            border: 0;
-            font: inherit;
-            font-size: var(--step--1);
-            color: var(--text-muted);
-            cursor: pointer;
-        }
-
-        button[aria-pressed='true'] {
-            background: var(--foreground);
-            color: var(--background);
-            font-weight: 600;
-        }
+        color: var(--faded);
     }
 
     .corp-req__icon-button {
@@ -394,7 +373,7 @@ const who = (value: string, kind: string) => kind === 'prime_time'
         height: var(--space-xl);
         background: none;
         border: 0;
-        color: var(--text-muted);
+        color: var(--faded);
         cursor: pointer;
 
         &:hover {
@@ -406,7 +385,7 @@ const who = (value: string, kind: string) => kind === 'prime_time'
         margin: 0 0 var(--space-xs);
         padding-inline-start: calc(6rem + var(--space-s));
         font-size: var(--step--1);
-        color: var(--attention);
+        color: var(--fleet-yellow);
     }
 
     .corp-req__editor {
@@ -414,7 +393,7 @@ const who = (value: string, kind: string) => kind === 'prime_time'
     }
 
     .corp-req__muted {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .corp-req__topics {
@@ -428,7 +407,7 @@ const who = (value: string, kind: string) => kind === 'prime_time'
             justify-content: space-between;
             gap: var(--space-s);
             min-height: var(--space-xl);
-            border-top: solid 1px var(--hairline);
+            border-top: solid 1px var(--border-color);
             color: var(--highlight);
         }
     }

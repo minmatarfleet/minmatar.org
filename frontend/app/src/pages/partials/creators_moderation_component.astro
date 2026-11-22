@@ -41,6 +41,7 @@ import Button from '@components/blocks/Button.astro'
 import ViewChips from '@components/blocks/manage/ViewChips.astro'
 import ManageSearch from '@components/blocks/manage/ManageSearch.astro'
 import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import RowSwapFrame from '@components/blocks/manage/RowSwapFrame.astro'
 import ConfirmAction from '@components/blocks/manage/ConfirmAction.astro'
 import CreatorModerationRow from '@components/blocks/creators/CreatorModerationRow.astro'
 import CreatorItemRow from '@components/blocks/creators/CreatorItemRow.astro'
@@ -204,10 +205,10 @@ const first_page = part === 'item' || (part === 'items' && offset === 0)
 )}
 
 {part === 'status' && account &&
-    // Inside a <table>: htmx drops a bare <tbody> after Astro's leading styles.
-    <table>
+    // In a swap frame: htmx drops a bare <tbody> after Astro's leading styles.
+    <RowSwapFrame>
         <CreatorModerationRow account={account} open={true} />
-    </table>
+    </RowSwapFrame>
 }
 
 {part !== 'list' && part !== 'status' && !account && !error &&
@@ -322,17 +323,17 @@ const first_page = part === 'item' || (part === 'items' && offset === 0)
     </div>
 }
 
-{/* The next page of items: rows inside a <table> (the request picks them
+{/* The next page of items: rows inside a swap frame (the request picks them
     with hx-select) and the pager, swapped out of band. */}
 {part === 'items' && account && !items_error && offset > 0 &&
     <div>
-        <table>
+        <RowSwapFrame>
             <tbody id={ids.body}>
                 {items.map((item) => (
                     <CreatorItemRow item={item} account_id={account.id} post_url={item_post_url} filters_id={ids.filters} saved_id={ids.saved} />
                 ))}
             </tbody>
-        </table>
+        </RowSwapFrame>
         <div id={ids.more}>
             {next_count > 0 &&
                 <Button

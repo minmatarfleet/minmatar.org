@@ -11,7 +11,7 @@ import type { UniverseMoon } from '@dtypes/api.minmatar.org'
 import { get_request_user } from '@helpers/request_user'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import { get_gates, can } from '@helpers/gates'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 import { get_universe_moons } from '@helpers/api.minmatar.org/universe'
 
 const { auth_token } = get_request_user(Astro)
@@ -93,6 +93,7 @@ import HtmxPager from '@components/blocks/HtmxPager.astro'
 import ManageTable from '@components/blocks/manage/ManageTable.astro'
 import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
 import UniverseMoonReport from '@components/blocks/universe/UniverseMoonReport.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <div id="universe-moons">
@@ -134,13 +135,13 @@ import UniverseMoonReport from '@components/blocks/universe/UniverseMoonReport.a
                                     ? (
                                         <ExpandRow colspan={columns.length + 1} label={name_of(moon)}>
                                             <td>
-                                                <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+                                                <StylessButton type="button" class="[ manage-who ]" x-on:click="open = !open">
                                                     <img src={MOON_ICON} alt="" width="40" height="40" loading="lazy" />
                                                     <span class="[ manage-who__text ]">
                                                         <span class="[ manage-who__name ]">{name_of(moon)}</span>
                                                         <span class="[ manage-who__sub ]">{moon.system}</span>
                                                     </span>
-                                                </button>
+                                                </StylessButton>
                                             </td>
                                             <td>
                                                 <span>{moon.rarity ? `R${moon.rarity}` : '—'}</span>

@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { lang, t } = i18n(Astro.url)
 
 import type { MarketHealthChartPoint } from '@dtypes/api.minmatar.org'
-import Flexblock from '@components/compositions/Flexblock.astro'
+import Chart from '@components/blocks/Chart.astro'
 
 interface Props {
     history:            MarketHealthChartPoint[]
@@ -18,8 +18,6 @@ const {
 } = Astro.props
 delete attributes.class
 
-
-const chart_id = `market-health-${type.replace(' ', '-')}-chart`
 
 const points = [...history].reverse()
 
@@ -36,226 +34,61 @@ const coverage = points.map((point) => type === 'contracts' ? point.contracts_he
 const viability = points.map((point) => type === 'contracts' ? point.contracts_viability_pct : point.sell_orders_viability_pct)
 
 const include_viability = viability.some((value) => value != null)
-const has_plottable = coverage.some((value) => value != null)
 
-const empty = t('ops_history_chart_empty')
-const coverage_label = t('coverage')
-const viability_label = t('viability')
+type Tone = 'fleet-red' | 'fleet-yellow' | 'green'
+
+// The line takes the health of the latest reading: green from 80%, yellow from 40%, red below.
+const latest = (values: (number | null)[]) => [...values].reverse().find((value) => value != null)
+const tone_of = (value: number | null | undefined): Tone => {
+    if (value == null) return 'fleet-yellow'
+    if (value >= 80) return 'green'
+    if (value >= 40) return 'fleet-yellow'
+    return 'fleet-red'
+}
+
+const datasets = [
+    {
+        label: t('coverage'),
+        data: coverage,
+        tone: tone_of(latest(coverage)),
+        gradient: 35,
+        borderWidth: 2.5,
+        tension: 0,
+        pointRadius: 0,
+        pointHitRadius: 8,
+    },
+    ...(include_viability ? [{
+        label: t('viability'),
+        data: viability,
+        tone: tone_of(latest(viability)),
+        gradient: 35,
+        borderWidth: 2,
+        borderDash: [6, 4],
+        tension: 0,
+        pointRadius: 0,
+        pointHitRadius: 8,
+    }] : []),
+]
+
+const options = {
+    interaction: { mode: 'index', intersect: false },
+    scales: {
+        x: { display: false },
+        y: { display: false, min: 0, max: 100, clip: false },
+    },
+    plugins: { legend: { labels: { padding: 40 } } },
+}
 ---
 
-<section
-    class:list={[ Astro.props.class]}
-    aria-label={t('ops_history_chart_aria')}
-    x-data={`{
-        labels: ${JSON.stringify(labels)},
-        coverage: ${JSON.stringify(coverage)},
-        viability: ${JSON.stringify(viability)},
-        include_viability: ${include_viability},
-        coverage_label: ${JSON.stringify(coverage_label)},
-        viability_label: ${JSON.stringify(viability_label)},
-        init() {
-            const root = getComputedStyle(document.documentElement)
-            const red = root.getPropertyValue('--fleet-red').trim() || '#b53620'
-            const yellow = root.getPropertyValue('--fleet-yellow').trim() || '#f1d9a0'
-            const green = root.getPropertyValue('--green').trim() || '#198754'
-            const fg = root.getPropertyValue('--highlight').trim() || '#ffffff'
-
-            const canvas = document.getElementById('${chart_id}')
-            if (!canvas || typeof Chart === 'undefined') return
-
-            const reduce_motion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-            
-            const slide_offset_px = 40; 
-
-            const tone_color = (value) => {
-                if (value == null) return yellow
-                if (value >= 80) return green
-                if (value >= 40) return yellow
-                return red
-            }
-
-            const latest = (values) => [...values].reverse().find((value) => value != null)
-
-            const hex_to_rgba = (hex, alpha) => {
-                const value = hex.replace('#', '')
-                return 'rgba('
-                    + parseInt(value.substring(0, 2), 16) + ', '
-                    + parseInt(value.substring(2, 4), 16) + ', '
-                    + parseInt(value.substring(4, 6), 16) + ', ' + alpha + ')'
-            }
-
-            const baseColorCov = tone_color(latest(this.coverage));
-            const datasets = [{
-                label: this.coverage_label,
-                data: this.coverage,
-                borderColor: baseColorCov,
-                baseColorHex: baseColorCov, // Storing this so our plugin can access it
-                borderWidth: 2.5,
-                fill: true,
-                tension: 0,
-                pointRadius: 0,
-                pointHitRadius: 8,
-            }]
-
-            if (this.include_viability) {
-                const baseColorVia = tone_color(latest(this.viability));
-                datasets.push({
-                    label: this.viability_label,
-                    data: this.viability,
-                    borderColor: baseColorVia,
-                    baseColorHex: baseColorVia, // Storing this so our plugin can access it
-                    borderWidth: 2,
-                    borderDash: [6, 4],
-                    fill: true,
-                    tension: 0,
-                    pointRadius: 0,
-                    pointHitRadius: 8,
-                })
-            }
-
-            Chart.defaults.color = fg
-            Chart.defaults.borderColor = 'rgb(255, 255, 255, 0.08)'
-            Chart.defaults.font.family = 'Montserrat Variable'
-
-            new Chart(canvas.getContext('2d'), {
-                type: 'line',
-                data: {
-                    labels: this.labels,
-                    datasets,
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
-                    scales: {
-                        x: { display: false },
-                        y: { display: false, min: 0, max: 100, clip: false },
-                    },
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                usePointStyle: true,
-                                padding: 40, 
-                                generateLabels: (chart) => {
-                                    const defaultLabels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
-                                    
-                                    defaultLabels.forEach(label => {
-                                        const dataset = chart.data.datasets[label.datasetIndex];
-                                        
-                                        const legendCanvas = document.createElement('canvas');
-                                        // 1. Make the canvas wider to include the padding (25px line + 10px gap)
-                                        legendCanvas.width = 45; 
-                                        legendCanvas.height = 10;
-                                        const legendCtx = legendCanvas.getContext('2d');
-                                        
-                                        legendCtx.strokeStyle = label.strokeStyle;
-                                        legendCtx.lineWidth = label.lineWidth || 2;
-                                        
-                                        if (dataset.borderDash && dataset.borderDash.length > 0) {
-                                            legendCtx.setLineDash(dataset.borderDash);
-                                        }
-                                        
-                                        legendCtx.beginPath();
-                                        legendCtx.moveTo(0, 5);
-                                        // 2. Only draw the line up to 25 pixels, leaving the remaining 10px blank
-                                        legendCtx.lineTo(25, 5); 
-                                        legendCtx.stroke();
-                                        
-                                        label.pointStyle = legendCanvas;
-                                    });
-                                    
-                                    return defaultLabels;
-                                }
-                            }
-                        },
-                    },
-                    animations: reduce_motion
-                        ? false
-                        : {
-                            y: {
-                                from: (ctx) => {
-                                    if (ctx.type === 'data' && ctx.parsed !== undefined && ctx.chart.scales.y) {
-                                        return ctx.chart.scales.y.getPixelForValue(ctx.parsed.y) + slide_offset_px;
-                                    }
-                                },
-                                duration: 2000,
-                                delay: (ctx) => ctx.datasetIndex === 1 ? 500 : 0
-                            },
-                            colors: {
-                                type: 'color',
-                                properties: ['borderColor'],
-                                from: 'transparent',
-                                duration: 2000,
-                                delay: (ctx) => ctx.datasetIndex === 1 ? 500 : 0
-                            }
-                        },
-                },
-                plugins: [{
-                    id: 'animatedGradients',
-                    // This hook runs on every frame right before drawing the line/area
-                    beforeDatasetDraw(chart, args) {
-                        const { ctx, chartArea } = chart;
-                        if (!chartArea) return;
-
-                        const meta = args.meta;
-                        const dataset = chart.data.datasets[args.index];
-                        const baseColorHex = dataset.baseColorHex;
-                        
-                        if (!baseColorHex) return;
-
-                        // Grab the currently animating color from the line element
-                        const color_str = String(meta.dataset.options.borderColor);
-                        let currentAlpha = 1;
-
-                        if (color_str === 'transparent') {
-                            currentAlpha = 0;
-                        } else if (color_str.startsWith('#')) {
-                            if (color_str.length === 9) {
-                                // Extract the frame-specific alpha from the 8-digit hex
-                                currentAlpha = parseInt(color_str.substring(7, 9), 16) / 255;
-                            }
-                        } else {
-                            const match = color_str.match(/rgba\(\s*\\d+\s*,\\s*\\d+\s*,\\s*\\d+\s*,\\s*([\\d.]+)\\s*\)/);
-                            if (match && match[1] !== undefined) {
-                                currentAlpha = parseFloat(match[1]);
-                            }
-                        }
-
-                        // Generate the gradient with exact target opacity
-                        const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-                        gradient.addColorStop(0, hex_to_rgba(baseColorHex, 0.35 * currentAlpha));
-                        gradient.addColorStop(1, hex_to_rgba(baseColorHex, 0));
-                        
-                        // Force the background color for this specific frame
-                        meta.dataset.options.backgroundColor = gradient;
-                    }
-                }]
-            })
-        }
-    }`}
->
-    <Flexblock gap="var(--space-s)">
-        {points.length === 0 || !has_plottable ?
-            <p class="[ ops-history-chart__empty ]">{empty}</p>
-            :
-            <div class="[ ops-history-chart__frame ]">
-                <canvas id={chart_id}></canvas>
-            </div>
-        }
-    </Flexblock>
-</section>
-
-<style lang="scss">
-    .ops-history-chart__empty {
-        margin: 0;
-        color: color-mix(in srgb, var(--highlight) 70%, var(--faded));
-        font-size: var(--step--1);
-    }
-
-    .ops-history-chart__frame {
-        position: relative;
-        height: 450px;
-        width: 100%;
-    }
-</style>
+<Chart
+    type='line'
+    labels={labels}
+    datasets={datasets}
+    options={options}
+    legend={true}
+    height='calc(var(--space-3xl) * 4)'
+    aria_label={t('ops_history_chart_aria')}
+    empty_title={t('ops_history_chart_empty')}
+    class:list={[Astro.props.class]}
+    {...attributes}
+/>

@@ -130,7 +130,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
         font-family: var(--default-font);
         font-size: var(--step--1);
         font-weight: 600;
-        color: var(--text-muted);
+        color: var(--faded);
         text-transform: uppercase;
         letter-spacing: 0.06em;
     }
@@ -158,7 +158,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
         dd {
             margin: 0;
             padding: var(--space-3xs) 0;
-            border-top: 1px solid var(--hairline);
+            border-top: 1px solid var(--border-color);
         }
 
         dd {
@@ -179,7 +179,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
             gap: var(--space-3xs);
             margin: var(--space-3xs) 0 0;
             padding: 0 0 0 var(--space-xs);
-            border-left: 2px solid color-mix(in srgb, var(--fleet-red-blind) 55%, transparent);
+            border-left: 2px solid color-mix(in srgb, var(--fleet-red-blind) var(--tint-bold), transparent);
             list-style: none;
         }
 
@@ -195,7 +195,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
     }
 
     .wave-preview__zones ul {
-        border-left-color: var(--hairline-strong);
+        border-left-color: var(--border-color-hover);
     }
 
     .wave-preview__zones li > span:last-child {

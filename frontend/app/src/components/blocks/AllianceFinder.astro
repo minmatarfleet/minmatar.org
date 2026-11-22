@@ -10,8 +10,9 @@ import VerticalCenter from './VerticalCenter.astro';
 
 import alliances from '@json/hosted/alliances.json';
 
-import { get_alliance_logo } from '@helpers/eve_image_server';
+import { get_alliance_logo } from '@helpers/eve_image';
 
+import StylessButton from '@components/blocks/StylessButton.astro'
 interface Props {
     [propName: string]: any;
 }
@@ -44,7 +45,7 @@ interface Props {
         <div class="[ relative ]">
             <Flexblock class="[ alliance-list ][ light-transparency w-full ]" gap='0'>
                 {alliances.map((alliance) =>
-                    <button
+                    <StylessButton
                         type="button"
                         alliance-finder-action="accept"
                         alliance-finder-data={JSON.stringify(alliance)}
@@ -62,7 +63,7 @@ interface Props {
                                 </Flexblock>
                             </VerticalCenter>
                         </FixedFluid>
-                    </button>
+                    </StylessButton>
                 )}
             </Flexblock>
         </div>
@@ -88,7 +89,7 @@ interface Props {
         position: absolute;
         overflow-y: auto;
         max-height: 320px;
-        background-color: #171616;
+        background-color: var(--neutral-900);
         border: solid 1px var(--border-color);
         border-top: none;
     }

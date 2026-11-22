@@ -1,21 +1,21 @@
 ---
 interface Props {
-    width?: string;
+    variant?: 'default' | 'bare';
     [propName: string]: any;
 }
 
 const {
-    width = '100%',
+    variant = 'default',
     ...attributes
 } = Astro.props
 
 const TextareaElement = 'textarea';
 ---
 
-<TextareaElement {...attributes}><slot /></TextareaElement>
+<TextareaElement {...attributes} data-variant={variant === 'bare' ? 'bare' : undefined}><slot /></TextareaElement>
 
 <style lang="scss">
-    textarea {
+    textarea:not([data-variant='bare']) {
         --flex-inline--gap: var(--space-xs);
 
         resize: vertical;
@@ -24,7 +24,7 @@ const TextareaElement = 'textarea';
         color: var(--form-color);
         background-color: transparent;
         border: solid 1px var(--border-color);
-        background-color: rgba(85, 85, 85, 0.1);
+        background-color: color-mix(in srgb, var(--neutral-600) var(--tint-subtle), transparent);
         transition: var(--fast-transition);
         width: 100%;
         backdrop-filter: blur(var(--input-backdrop-blur));
@@ -34,8 +34,41 @@ const TextareaElement = 'textarea';
         }
 
         &:focus-visible {
-            outline: none;
-            background-color: rgba(85, 85, 85, 0.2);
+            /* Keyboard focus ring, as on links (_global.scss). */
+            outline-color: var(--highlight);
+            outline-style: double;
+            background-color: color-mix(in srgb, var(--neutral-600) var(--tint-soft), transparent);
+        }
+
+        &.collapsible {
+            width: var(--space-l);
+            padding: var(--space-s) var(--space-3xs);
+
+            &:focus {
+                width: auto;
+                padding: var(--space-s) var(--space-s-l);
+            }
+        }
+    }
+
+    /* variant="bare": no border or padding, grows with its content; the container supplies the chrome. */
+    textarea[data-variant='bare'] {
+        --flex-inline--gap: var(--space-xs);
+
+        field-sizing: content;
+        resize: none;
+        min-height: 20px;
+        max-height: 132px;
+        border: none;
+        color: var(--form-color);
+        background-color: transparent;
+        transition: var(--fast-transition);
+        width: 100%;
+
+        &:focus-visible {
+            /* Keyboard focus ring, as on links (_global.scss). */
+            outline-color: var(--highlight);
+            outline-style: double;
         }
 
         &.collapsible {

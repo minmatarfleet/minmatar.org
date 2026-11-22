@@ -13,6 +13,9 @@ interface Props {
     icon_quality?:          EvEImageServiceSize;
     quantity?:              number;
     tag_color?:             BadgeColors;
+    /** Sits inside a link or button: render a span role="link" that navigates, never a nested <a>. */
+    nested?:                boolean;
+    [propName: string]: any;
 }
 
 const {
@@ -24,57 +27,54 @@ const {
     icon_quality = 64,
     quantity,
     tag_color,
+    nested = false,
+    ...attributes
 } = Astro.props
 
-import { get_corporation_logo } from '@helpers/eve_image_server'
+import { get_corporation_logo } from '@helpers/eve_image'
 
-import NotificationBadge from '@components/blocks/NotificationBadge.astro'
+// The corporation page is a real link, not a click handler. A static corporation 0
+// has no page; with `x_corporation_id` the href follows the Alpine expression.
+const corporations_path = translatePath('/alliance/corporations/')
+const static_href = !x_corporation_id && corporation_id != 0 ? `${corporations_path}${corporation_id}/` : undefined
+const linked = !!static_href || !!x_corporation_id
+const Target = linked && !nested ? 'a' : 'span'
+const nested_link = linked && nested
+// Without an anchor the click navigates itself (the stop keeps the parent's handler quiet).
+const nested_go = nested_link
+    ? `const id = ${x_corporation_id ? x_corporation_id : `'${corporation_id}'`}; if (id && String(id) !== '0') window.location.assign('${corporations_path}' + id + '/')`
+    : undefined
+
+import Picture from '@components/blocks/Picture.astro'
+
+const extra_class = attributes.class
+delete attributes.class
 ---
-<picture class="[ corporation-picture ]">
-    <img
-        loading="lazy"
-        height={size}
-        width={size}
-        src={get_corporation_logo(corporation_id, icon_quality ?? size)}
-        x-bind:src={`${x_corporation_id} ? get_corporation_logo(${x_corporation_id}) : '${get_corporation_logo(corporation_id, icon_quality ?? size)}'`}
-        alt={`${t('profile_picture_of')} ${corporation_name ?? t('unknown_corporation')}`}
-        x-bind:alt={`\`${t('profile_picture_of')} \${(${x_corporation_name} ? ${x_corporation_name} : "${corporation_name ?? t('unknown_corporation')}")}\``}
-        x-on:click.stop={`
-            const id = ${x_corporation_id ? x_corporation_id : `'${corporation_id}'`}
-            if (!id || String(id) === '0') return
-            window.location.assign('${translatePath('/alliance/corporations/')}' + id + '/')
-        `}
-    />
-
-    {quantity &&
-        <NotificationBadge
-            class="[ quantity-badge ]"
-            color={tag_color ?? 'fleet-red'}
-            number={quantity}
-        />
-    }
-</picture>
-
-<style lang="scss">
-    picture {
-        position: relative;
-        display: inline-flex;
-
-        .quantity-badge {
-            position: absolute;
-            bottom: -5px;
-            right: -5px;
-            z-index: 1;
-        }
-    }
-
-    img {
-        cursor: pointer;
-        transition: var(--fast-transition);
-        filter: brightness(1);
-
-        &:hover {
-            filter: brightness(1.3);
-        }
-    }
-</style>
+<Picture
+    src={get_corporation_logo(corporation_id, icon_quality ?? size)}
+    alt={`${t('profile_picture_of')} ${corporation_name ?? t('unknown_corporation')}`}
+    size={size}
+    quantity={quantity}
+    tag_color={tag_color}
+    animated={false}
+    brighten={linked}
+    class:list={['[ corporation-picture inline-flex ]', extra_class]}
+    {...attributes}
+    target={{
+        tag: Target,
+        attrs: {
+            href: nested_link ? undefined : static_href,
+            role: nested_link ? 'link' : undefined,
+            tabindex: nested_link ? '0' : undefined,
+            'x-on:keydown.enter.stop.prevent': nested_link ? nested_go : undefined,
+            'x-bind:href': nested_link ? undefined : x_corporation_id ? `${x_corporation_id} && String(${x_corporation_id}) !== '0' ? '${corporations_path}' + ${x_corporation_id} + '/' : false` : undefined,
+            'x-on:click.stop': nested_link ? nested_go : linked ? '' : undefined,
+        },
+    }}
+    img_attrs={{
+        // A logo keeps its own width instead of filling the container (the picture is inline).
+        style: `width: ${size}px`,
+        'x-bind:src': `${x_corporation_id} ? get_corporation_logo(${x_corporation_id}) : '${get_corporation_logo(corporation_id, icon_quality ?? size)}'`,
+        'x-bind:alt': `\`${t('profile_picture_of')} \${(${x_corporation_name} ? ${x_corporation_name} : "${corporation_name ?? t('unknown_corporation')}")}\``,
+    }}
+/>

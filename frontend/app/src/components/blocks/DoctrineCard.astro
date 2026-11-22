@@ -54,10 +54,6 @@ import TrainingIcon from '@components/icons/TrainingIcon.astro';
                                 class="[ inline-flex! relative bottom-[5px] ]"
                                 number={doctrine.location_ids.length}
                                 data-tippy-content={t('doctrine_multiple_locations')}
-                                x-init={`tippy($el, {
-                                    delay: [ 100, 200 ],
-                                    arrow: true,
-                                })`}
                             />
                         }
                     </h3>
@@ -76,10 +72,6 @@ import TrainingIcon from '@components/icons/TrainingIcon.astro';
                     t('experimental') :
                     t('non_strategic')
                 }
-                x-init={`tippy($el, {
-                    delay: [ 100, 200 ],
-                    arrow: true,
-                })`}
             >
                 {doctrine.type === 'strategic' ?
                     <StratopIcon /> :

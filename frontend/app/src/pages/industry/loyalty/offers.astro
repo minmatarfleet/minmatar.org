@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { DEFAULT_LOYALTY_OFFERS_PARAMS, TLIB_CORP_ID } from '@helpers/loyalty_offers_metrics'
-import { get_corporation_logo } from '@helpers/eve_image_server'
+import { get_corporation_logo } from '@helpers/eve_image'
 import { query_string } from '@helpers/string'
 
 const LOYALTY_OFFERS_PARTIAL_URL = translatePath(

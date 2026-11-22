@@ -120,6 +120,8 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 
 const page_title = campaign ? `Edit ${campaign.title}` : 'Edit survey'
 ---
@@ -190,11 +192,8 @@ const page_title = campaign ? `Edit ${campaign.title}` : 'Edit survey'
                                         <label for={`q${i}_help`}>Help text</label>
                                         <Input id={`q${i}_help`} name={`q${i}_help`} value={question?.help ?? ''} />
                                         <label for={`q${i}_choices`}>Choices</label>
-                                        <textarea id={`q${i}_choices`} name={`q${i}_choices`} rows="3">{(question?.choices ?? []).join('\n')}</textarea>
-                                        <label class="[ check ]">
-                                            <input type="checkbox" name={`q${i}_required`} checked={question?.required ?? false} />
-                                            Required
-                                        </label>
+                                        <Textarea id={`q${i}_choices`} name={`q${i}_choices`} rows="3">{(question?.choices ?? []).join('\n')}</Textarea>
+                                        <RadioCheckInput type="checkbox" name={`q${i}_required`} checked={question?.required ?? false} label="Required" />
                                     </Flexblock>
                                 </fieldset>
                             ))}
@@ -224,11 +223,8 @@ const page_title = campaign ? `Edit ${campaign.title}` : 'Edit survey'
                                 <label for="heading">Heading</label>
                                 <Input id="heading" name="heading" required />
                                 <label for="body_markdown">Body (Markdown)</label>
-                                <textarea id="body_markdown" name="body_markdown" rows="4"></textarea>
-                                <label class="[ check ]">
-                                    <input type="checkbox" name="published" checked />
-                                    Published
-                                </label>
+                                <Textarea id="body_markdown" name="body_markdown" rows="4"></Textarea>
+                                <RadioCheckInput type="checkbox" name="published" checked={true} label="Published" />
                                 <FlexInline justification="flex-start" gap="var(--space-xs)">
                                     <Button type="submit" size="sm" color="fleet-red">Add entry</Button>
                                 </FlexInline>
@@ -249,11 +245,5 @@ const page_title = campaign ? `Edit ${campaign.title}` : 'Edit survey'
     .question-row {
         border: 1px solid var(--border-color);
         padding: var(--space-s);
-    }
-
-    .check {
-        display: flex;
-        align-items: center;
-        gap: var(--space-xs);
     }
 </style>

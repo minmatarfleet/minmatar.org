@@ -6,6 +6,8 @@ import type { FleetUI } from '@dtypes/layout_components'
 import { filter_systems_by_name } from '@helpers/sde/map'
 import { sec_status_class } from '@helpers/eve'
 import { query_string } from '@helpers/string'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
 
 /**
  * Where to form up: the staging system and undock, then the viewer's own
@@ -30,49 +32,49 @@ const LOCATIONS_URL = system && show_characters ? `${translatePath('/partials/fl
 })}` : null
 ---
 
-<section class="[ fleet-formup ]" aria-labelledby="fleet-formup-title">
-    <h2 id="fleet-formup-title">{t('fleets.formup.title')}</h2>
+<section aria-labelledby="fleet-formup-title">
+    <ComponentBlock padding_block="var(--space-m)" padding_inline="var(--space-m)">
+        <Flexblock gap="var(--space-s)">
+            <h2 id="fleet-formup-title">{t('fleets.formup.title')}</h2>
 
-    <div class="[ fleet-formup__where ]">
-        <span class="[ fleet-formup__system ]">
-            <b>{system_name ?? '—'}</b>
-            {system && <span class:list={['[ fleet-formup__sec ]', sec_status_class(system.security.toFixed(1))]}>{system.security.toFixed(1)}</span>}
-        </span>
-        {station && <span>{t('fleets.formup.undock').replace('{station}', station)}</span>}
-        {system && <small>{system.constellation_name} · {system.region_name}</small>}
-    </div>
-
-    {LOCATIONS_URL &&
-        <div class="[ fleet-formup__pilots ]">
-            <span class="[ fleet-formup__label ]">{t('fleets.formup.your_characters')}</span>
-            <div
-                hx-get={LOCATIONS_URL}
-                hx-trigger="load"
-                hx-swap="innerHTML"
-            >
-                <small class="[ loading ]">{t('fleets.formup.loading')}</small>
+            <div class="[ fleet-formup__where ]">
+                <span class="[ fleet-formup__system ]">
+                    <b>{system_name ?? '—'}</b>
+                    {system && <span class:list={['[ fleet-formup__sec ]', sec_status_class(system.security.toFixed(1))]}>{system.security.toFixed(1)}</span>}
+                </span>
+                {station && <span>{t('fleets.formup.undock').replace('{station}', station)}</span>}
+                {system && <small>{system.constellation_name} · {system.region_name}</small>}
             </div>
-        </div>
-    }
 
-    {system_name &&
-        <a
-            class="[ fleet-formup__dotlan ]"
-            href={`https://evemaps.dotlan.net/system/${encodeURIComponent(system_name.replace(/ /g, '_'))}`}
-            target="_blank"
-            rel="noopener noreferrer"
-        >{t('fleets.formup.dotlan')} ↗</a>
-    }
+            {LOCATIONS_URL &&
+                <div class="[ fleet-formup__pilots ]">
+                    <span class="[ fleet-formup__label ]">{t('fleets.formup.your_characters')}</span>
+                    <div
+                        hx-get={LOCATIONS_URL}
+                        hx-trigger="load"
+                        hx-swap="innerHTML"
+                    >
+                        <small class="[ loading ]">{t('fleets.formup.loading')}</small>
+                    </div>
+                </div>
+            }
+
+            {system_name &&
+                <a
+                    class="[ fleet-formup__dotlan ]"
+                    href={`https://evemaps.dotlan.net/system/${encodeURIComponent(system_name.replace(/ /g, '_'))}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >{t('fleets.formup.dotlan')} ↗</a>
+            }
+        </Flexblock>
+    </ComponentBlock>
 </section>
 
 <style lang="scss">
-    .fleet-formup {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-s);
-        padding: var(--space-m);
-        background-color: var(--component-background);
-        border: 1px solid var(--border-color);
+    /* ComponentBlock shrinks panel headings; the form-up title keeps the page's h2 size. */
+    #fleet-formup-title {
+        font-size: var(--step-2);
     }
 
     .fleet-formup__where {

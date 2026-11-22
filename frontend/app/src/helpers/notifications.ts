@@ -6,7 +6,7 @@ const translatePath = useTranslatedPath('en')
 import { strip_markdown } from '@helpers/string'
 
 import { get_vapid_public_key, get_vapid_private_key, get_vapid_contact } from '@helpers/env'
-import { get_player_icon } from '@helpers/eve_image_server';
+import { get_player_icon } from '@helpers/eve_image';
 import { fetch_fleet_by_id, fetch_fleet_users } from '@helpers/fetching/fleets'
 
 import { get_all_subscriptions, remove_subscription } from '@helpers/api.minmatar.org/notifications'

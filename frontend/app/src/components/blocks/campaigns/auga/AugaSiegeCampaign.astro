@@ -34,8 +34,9 @@ import type { CampaignTableRow } from '@/data/campaigns/etherium-reach'
 import type { PilotKillCount } from '@/data/campaigns/auga'
 
 import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
-import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
-import AugaDailyShipsChartChartjs from '@components/blocks/campaigns/auga/AugaDailyShipsChartChartjs.astro'
+import StatCard from '@components/blocks/StatCard.astro'
+import Chart from '@components/blocks/Chart.astro'
+import { DAYS, SHIPS_DESTROYED_DAILY } from '@/data/campaigns/auga'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import TextBox from '@components/layout/TextBox.astro'
@@ -51,8 +52,9 @@ import KillReportEVEIcon from '@components/icons/KillReportEVEIcon.astro'
 import WalletEVEIcon from '@components/icons/WalletEVEIcon.astro'
 import PilotsEvEIcon from '@components/icons/PilotsEvEIcon.astro'
 
-import { get_alliance_logo, get_corporation_logo } from '@helpers/eve_image_server'
+import { get_alliance_logo, get_corporation_logo } from '@helpers/eve_image'
 import { number_name } from '@helpers/numbers'
+import DataTable from '@components/blocks/DataTable.astro'
 
 const engagementRows: CampaignTableRow[] = ENGAGEMENT_MIX.map((row) => ({
     cells: [row.label, row.value.toLocaleString()],
@@ -124,7 +126,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
             <h4>High level summary</h4>
 
             <div class="auga-stat-row">
-                <CampaignStat label="Ships destroyed">
+                <StatCard variant="glass" label="Ships destroyed">
                     <div slot="icon" class="auga-stat__icon" aria-hidden="true">
                         <KillReportEVEIcon />
                     </div>
@@ -133,8 +135,8 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                         target={SHIPS_DESTROYED}
                         data-tippy-content={number_name(SHIPS_DESTROYED, lang)}
                     />
-                </CampaignStat>
-                <CampaignStat label="ISK destroyed" tone="success">
+                </StatCard>
+                <StatCard variant="glass" label="ISK destroyed" tone="success">
                     <div slot="icon" class="auga-stat__icon" aria-hidden="true">
                         <WalletEVEIcon />
                     </div>
@@ -143,8 +145,8 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                         target={CAMPAIGN_ISK_DESTROYED}
                         data-tippy-content={number_name(CAMPAIGN_ISK_DESTROYED, lang)}
                     />
-                </CampaignStat>
-                <CampaignStat label="Pilots who fought" tone="info">
+                </StatCard>
+                <StatCard variant="glass" label="Pilots who fought" tone="info">
                     <div slot="icon" class="auga-stat__icon" aria-hidden="true">
                         <PilotsEvEIcon />
                     </div>
@@ -153,7 +155,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                         target={UNIQUE_PILOTS}
                         data-tippy-content={number_name(UNIQUE_PILOTS, lang)}
                     />
-                </CampaignStat>
+                </StatCard>
             </div>
         </Flexblock>
 
@@ -161,7 +163,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
             <h4>ISK destroyed</h4>
 
             <div class="auga-stat-row">
-                <CampaignStat label={`Minmatar · ${MINMATAR_DESTROYED_SHIPS.toLocaleString()} ships`} tone="minmatar">
+                <StatCard variant="glass" label={`Minmatar · ${MINMATAR_DESTROYED_SHIPS.toLocaleString()} ships`} tone="minmatar">
                     <div slot="icon" class="auga-faction-stat__logo auga-faction-stat__logo--minmatar" aria-hidden="true">
                         <MinmatarLogo />
                     </div>
@@ -170,8 +172,8 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                         target={MINMATAR_DESTROYED_ISK}
                         data-tippy-content={number_name(MINMATAR_DESTROYED_ISK, lang)}
                     />
-                </CampaignStat>
-                <CampaignStat label={`Amarr · ${AMARR_DESTROYED_SHIPS.toLocaleString()} ships`} tone="amarr">
+                </StatCard>
+                <StatCard variant="glass" label={`Amarr · ${AMARR_DESTROYED_SHIPS.toLocaleString()} ships`} tone="amarr">
                     <div slot="icon" class="auga-faction-stat__logo auga-faction-stat__logo--amarr" aria-hidden="true">
                         <AmarrLogo />
                     </div>
@@ -180,8 +182,8 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                         target={AMARR_DESTROYED_ISK}
                         data-tippy-content={number_name(AMARR_DESTROYED_ISK, lang)}
                     />
-                </CampaignStat>
-                <CampaignStat label={`Third party · ${OTHER_DESTROYED_SHIPS.toLocaleString()} ships`} tone="info">
+                </StatCard>
+                <StatCard variant="glass" label={`Third party · ${OTHER_DESTROYED_SHIPS.toLocaleString()} ships`} tone="info">
                     <img
                         slot="icon"
                         class="auga-faction-stat__corp"
@@ -197,7 +199,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                         target={OTHER_DESTROYED_ISK}
                         data-tippy-content={number_name(OTHER_DESTROYED_ISK, lang)}
                     />
-                </CampaignStat>
+                </StatCard>
             </div>
         </Flexblock>
 
@@ -205,7 +207,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
             <h4>Pilot breakdown</h4>
 
             <div class="auga-stat-row">
-                <CampaignStat label="Minmatar pilots" tone="minmatar">
+                <StatCard variant="glass" label="Minmatar pilots" tone="minmatar">
                     <div slot="icon" class="auga-faction-stat__logo auga-faction-stat__logo--minmatar" aria-hidden="true">
                         <MinmatarLogo />
                     </div>
@@ -214,8 +216,8 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                         target={MINMATAR_PILOTS}
                         data-tippy-content={number_name(MINMATAR_PILOTS, lang)}
                     />
-                </CampaignStat>
-                <CampaignStat label="Amarr pilots" tone="amarr">
+                </StatCard>
+                <StatCard variant="glass" label="Amarr pilots" tone="amarr">
                     <div slot="icon" class="auga-faction-stat__logo auga-faction-stat__logo--amarr" aria-hidden="true">
                         <AmarrLogo />
                     </div>
@@ -224,8 +226,8 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                         target={AMARR_PILOTS}
                         data-tippy-content={number_name(AMARR_PILOTS, lang)}
                     />
-                </CampaignStat>
-                <CampaignStat label="Angel Cartel pilots" tone="angel">
+                </StatCard>
+                <StatCard variant="glass" label="Angel Cartel pilots" tone="angel">
                     <img
                         slot="icon"
                         class="auga-faction-stat__corp"
@@ -240,7 +242,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                         target={ANGEL_PILOTS}
                         data-tippy-content={number_name(ANGEL_PILOTS, lang)}
                     />
-                </CampaignStat>
+                </StatCard>
             </div>
         </Flexblock>
     </Flexblock>
@@ -252,7 +254,19 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
         <small>Ship kills each day in Auga (capsules not counted)</small>
     </Flexblock>
     <ComponentBlock>
-        <AugaDailyShipsChartChartjs />
+        <Chart
+            type='bar'
+            labels={[...DAYS]}
+            datasets={[{ label: 'Ships destroyed', data: [...SHIPS_DESTROYED_DAILY], tone: 'alliance-blue', suffix: ' ships', borderRadius: 2, barPercentage: 0.2, categoryPercentage: 0.8 }]}
+            options={{
+                scales: {
+                    x: { grid: { display: false }, ticks: { maxRotation: 0 } },
+                    y: { title: { display: true, text: 'Ships destroyed' } },
+                },
+            }}
+            height='min(43.75rem, 90vh)'
+            aria_label='Auga daily ship kills'
+        />
     </ComponentBlock>
 </Flexblock>
 
@@ -303,15 +317,14 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
     <h2>Top Minmatar militia pilots</h2>
 
     <TextBox>
-        <div class="er-table-wrap" tabindex="0" role="region" aria-label="Top 5 militia pilots">
-            <table class="er-table auga-pilot-table">
-                <thead>
-                    <tr>
-                        <th scope="col">Pilot</th>
-                        <th scope="col" class="er-table__numeric">Killmails</th>
-                    </tr>
-                </thead>
-                <tbody>
+        <DataTable
+            columns={[
+                { key: '0', label: 'Pilot' },
+                { key: '1', label: 'Killmails', numeric: true },
+            ]}
+            caption="Top 5 militia pilots"
+            class="auga-pilot-table"
+        >
                     {
                         MILITIA_TOP_5.map((pilot) => (
                             <tr>
@@ -326,13 +339,11 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                                         <span>{pilot.name}</span>
                                     </FlexInline>
                                 </td>
-                                <td class="er-table__numeric">{pilot.killmails.toLocaleString()}</td>
+                                <td class="data-table__numeric">{pilot.killmails.toLocaleString()}</td>
                             </tr>
                         ))
                     }
-                </tbody>
-            </table>
-        </div>
+        </DataTable>
     </TextBox>
 
     {
@@ -373,18 +384,17 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
             ISK lost is when they were the victim.
         </small>
     </Flexblock>
-    <div class="er-table-wrap" tabindex="0" role="region" aria-label="Top alliances">
-        <table class="er-table auga-alliance-table">
-            <thead>
-                <tr>
-                    <th scope="col">Alliance</th>
-                    <th scope="col" class="er-table__numeric">Killmails</th>
-                    <th scope="col" class="er-table__numeric">Ships lost</th>
-                    <th scope="col" class="er-table__numeric">ISK destroyed</th>
-                    <th scope="col" class="er-table__numeric">ISK lost</th>
-                </tr>
-            </thead>
-            <tbody>
+    <DataTable
+        columns={[
+            { key: '0', label: 'Alliance' },
+            { key: '1', label: 'Killmails', numeric: true },
+            { key: '2', label: 'Ships lost', numeric: true },
+            { key: '3', label: 'ISK destroyed', numeric: true },
+            { key: '4', label: 'ISK lost', numeric: true },
+        ]}
+        caption="Top alliances"
+        class="auga-alliance-table"
+    >
                 {
                     TOP_ALLIANCES.map((alliance) => (
                         <tr>
@@ -400,16 +410,14 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                                     <span>{alliance.name}</span>
                                 </FlexInline>
                             </td>
-                            <td class="er-table__numeric">{alliance.killmails.toLocaleString()}</td>
-                            <td class="er-table__numeric">{alliance.shipsLost.toLocaleString()}</td>
-                            <td class="er-table__numeric">{formatIsk(alliance.iskDestroyed)}</td>
-                            <td class="er-table__numeric">{formatIsk(alliance.iskLost)}</td>
+                            <td class="data-table__numeric">{alliance.killmails.toLocaleString()}</td>
+                            <td class="data-table__numeric">{alliance.shipsLost.toLocaleString()}</td>
+                            <td class="data-table__numeric">{formatIsk(alliance.iskDestroyed)}</td>
+                            <td class="data-table__numeric">{formatIsk(alliance.iskLost)}</td>
                         </tr>
                     ))
                 }
-            </tbody>
-        </table>
-    </div>
+    </DataTable>
 </Flexblock>
 
 <Flexblock gap="var(--space-l)">
@@ -420,15 +428,13 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
     <div class="auga-ship-split">
         <Flexblock>
             <h4>Most destroyed hulls</h4>
-            <div class="er-table-wrap" tabindex="0" role="region">
-                <table class="er-table auga-ship-table">
-                    <thead>
-                        <tr>
-                            <th scope="col">Hull</th>
-                            <th scope="col" class="er-table__numeric">Destroyed</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <DataTable
+                columns={[
+                    { key: '0', label: 'Hull' },
+                    { key: '1', label: 'Destroyed', numeric: true },
+                ]}
+                class="auga-ship-table"
+            >
                         {
                             SHIPS_DESTROYED_HULLS.map((ship) => (
                                 <tr>
@@ -443,25 +449,21 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                                             <span>{ship.name}</span>
                                         </FlexInline>
                                     </td>
-                                    <td class="er-table__numeric">{ship.count.toLocaleString()}</td>
+                                    <td class="data-table__numeric">{ship.count.toLocaleString()}</td>
                                 </tr>
                             ))
                         }
-                    </tbody>
-                </table>
-            </div>
+            </DataTable>
         </Flexblock>
         <Flexblock>
             <h4>Most common militia hulls</h4>
-            <div class="er-table-wrap" tabindex="0" role="region">
-                <table class="er-table auga-ship-table">
-                    <thead>
-                        <tr>
-                            <th scope="col">Hull</th>
-                            <th scope="col" class="er-table__numeric">Appearances</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <DataTable
+                columns={[
+                    { key: '0', label: 'Hull' },
+                    { key: '1', label: 'Appearances', numeric: true },
+                ]}
+                class="auga-ship-table"
+            >
                         {
                             MILITIA_SHIPS_FLOWN_HULLS.map((ship) => (
                                 <tr>
@@ -476,13 +478,11 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                                             <span>{ship.name}</span>
                                         </FlexInline>
                                     </td>
-                                    <td class="er-table__numeric">{ship.count.toLocaleString()}</td>
+                                    <td class="data-table__numeric">{ship.count.toLocaleString()}</td>
                                 </tr>
                             ))
                         }
-                    </tbody>
-                </table>
-            </div>
+            </DataTable>
         </Flexblock>
     </div>
 </Flexblock>
@@ -492,30 +492,29 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
         <h2>Notable events</h2>
         <small>High ISK clusters and key campaign moments</small>
     </Flexblock>
-    <div class="er-table-wrap" tabindex="0" role="region" aria-label="Notable events">
-        <table class="er-table auga-event-table">
-            <thead>
-                <tr>
-                    <th scope="col">When</th>
-                    <th scope="col" class="er-table__numeric">Ships</th>
-                    <th scope="col" class="er-table__numeric">ISK</th>
-                    <th scope="col" class="er-table__numeric">Pilots</th>
-                    <th scope="col">What happened</th>
-                    <th scope="col">Report</th>
-                </tr>
-            </thead>
-            <tbody>
+    <DataTable
+        columns={[
+            { key: '0', label: 'When' },
+            { key: '1', label: 'Ships', numeric: true },
+            { key: '2', label: 'ISK', numeric: true },
+            { key: '3', label: 'Pilots', numeric: true },
+            { key: '4', label: 'What happened' },
+            { key: '5', label: 'Report' },
+        ]}
+        caption="Notable events"
+        class="auga-event-table"
+    >
                 {
                     NOTABLE_EVENTS.map((e) => (
                         <tr>
                             <td>{e.when}</td>
-                            <td class="er-table__numeric">
+                            <td class="data-table__numeric">
                                 {e.kills != null ? e.kills.toLocaleString() : '—'}
                             </td>
-                            <td class="er-table__numeric">
+                            <td class="data-table__numeric">
                                 {e.isk != null ? formatIsk(e.isk) : '—'}
                             </td>
-                            <td class="er-table__numeric">
+                            <td class="data-table__numeric">
                                 {e.pilots != null ? e.pilots.toLocaleString() : '—'}
                             </td>
                             <td>{e.note}</td>
@@ -532,9 +531,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
                         </tr>
                     ))
                 }
-            </tbody>
-        </table>
-    </div>
+    </DataTable>
 </Flexblock>
 
 <Flexblock>
@@ -725,52 +722,6 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
         fill: var(--fleet-yellow);
     }
 
-    .er-table-wrap {
-        overflow-x: auto;
-        min-width: 0;
-    }
-
-    .er-table {
-        width: 100%;
-        border-spacing: var(--space-3xs);
-        font-size: var(--step--1);
-
-        th,
-        td {
-            padding: var(--space-s);
-            border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
-            text-align: left;
-            vertical-align: middle;
-        }
-
-        th {
-            background: color-mix(in srgb, var(--component-background) 90%, transparent);
-            font-weight: 600;
-            color: var(--highlight);
-            background-color: var(--light-transparency-background-mobile);
-        
-            @media screen and (min-width: 980px) {
-                background-color: var(--light-transparency-background);
-                backdrop-filter: blur(var(--transparency-backdrop-blur-heavier));
-            }
-        }
-
-        td {
-            color: var(--foreground);
-            background-color: var(--light-transparency-background-mobile);
-
-            @media screen and (min-width: 980px) {
-                background-color: var(--light-transparency-background);
-                backdrop-filter: blur(var(--transparency-backdrop-blur));
-            }
-        }
-    }
-
-    .er-table__numeric {
-        text-align: right;
-        font-variant-numeric: tabular-nums;
-    }
-
     .auga-siege__footer {
         margin: 0;
         font-size: var(--step--1);
@@ -788,8 +739,8 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
         --er-headline-accent: var(--fleet-yellow);
         --er-headline-tint: var(--fleet-red);
         --er-headline-tag-fg: var(--fleet-yellow);
-        --er-headline-tag-bg: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
-        --er-headline-tag-border: color-mix(in srgb, var(--fleet-yellow) 28%, transparent);
+        --er-headline-tag-bg: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
+        --er-headline-tag-border: color-mix(in srgb, var(--fleet-yellow) var(--tint-medium), transparent);
 
         position: relative;
         isolation: isolate;
@@ -802,7 +753,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
         overflow: hidden;
         text-decoration: none;
         color: inherit;
-        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
         border-left-width: 3px;
         border-left-color: var(--er-headline-accent);
         transition:
@@ -827,9 +778,9 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
             z-index: 0;
             background: linear-gradient(
                 90deg,
-                color-mix(in srgb, hsl(0 0% 4%) 94%, var(--er-headline-tint) 6%) 0%,
-                color-mix(in srgb, hsl(0 0% 4%) 82%, var(--er-headline-tint) 5%) 42%,
-                color-mix(in srgb, hsl(0 0% 4%) 58%, transparent) 100%
+                color-mix(in srgb, var(--black) 94%, var(--er-headline-tint) 6%) 0%,
+                color-mix(in srgb, var(--black) 82%, var(--er-headline-tint) 5%) 42%,
+                color-mix(in srgb, var(--black) var(--tint-bold), transparent) 100%
             );
             transition: opacity 0.15s ease;
         }
@@ -841,7 +792,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
 
         &:hover,
         &:focus-visible {
-            border-color: color-mix(in srgb, var(--border-color-hover) 80%, transparent);
+            border-color: color-mix(in srgb, var(--border-color-hover) var(--tint-heavy), transparent);
             border-left-color: var(--er-headline-accent);
         }
 
@@ -869,9 +820,9 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
         &:focus-visible::after {
             background: linear-gradient(
                 90deg,
-                color-mix(in srgb, hsl(0 0% 4%) 90%, var(--er-headline-tint) 10%) 0%,
-                color-mix(in srgb, hsl(0 0% 4%) 78%, var(--er-headline-tint) 8%) 42%,
-                color-mix(in srgb, hsl(0 0% 4%) 52%, transparent) 100%
+                color-mix(in srgb, var(--black) 90%, var(--er-headline-tint) 10%) 0%,
+                color-mix(in srgb, var(--black) 78%, var(--er-headline-tint) 8%) 42%,
+                color-mix(in srgb, var(--black) var(--tint-strong), transparent) 100%
             );
         }
 
@@ -886,25 +837,25 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
         --er-headline-accent: var(--fleet-yellow);
         --er-headline-tint: var(--fleet-red);
         --er-headline-tag-fg: var(--fleet-yellow);
-        --er-headline-tag-bg: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
-        --er-headline-tag-border: color-mix(in srgb, var(--fleet-yellow) 28%, transparent);
+        --er-headline-tag-bg: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
+        --er-headline-tag-border: color-mix(in srgb, var(--fleet-yellow) var(--tint-medium), transparent);
     }
 
     .er-headline-card--propaganda {
         --er-headline-accent: var(--fleet-yellow);
         --er-headline-tint: var(--fleet-red);
         --er-headline-tag-fg: var(--fleet-yellow);
-        --er-headline-tag-bg: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
-        --er-headline-tag-border: color-mix(in srgb, var(--fleet-yellow) 28%, transparent);
+        --er-headline-tag-bg: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
+        --er-headline-tag-border: color-mix(in srgb, var(--fleet-yellow) var(--tint-medium), transparent);
     }
 
     /* ER industry chrome (blue border / blue wash / blue tag) — video */
     .er-headline-card--video {
         --er-headline-accent: var(--alliance-blue);
         --er-headline-tint: var(--alliance-blue);
-        --er-headline-tag-fg: color-mix(in srgb, var(--alliance-blue) 65%, white);
-        --er-headline-tag-bg: color-mix(in srgb, var(--alliance-blue) 18%, transparent);
-        --er-headline-tag-border: color-mix(in srgb, var(--alliance-blue) 35%, transparent);
+        --er-headline-tag-fg: var(--alliance-blue-text);
+        --er-headline-tag-bg: color-mix(in srgb, var(--alliance-blue) var(--tint-soft), transparent);
+        --er-headline-tag-border: color-mix(in srgb, var(--alliance-blue) var(--tint-medium), transparent);
     }
 
     .er-headline-card__body {
@@ -956,7 +907,7 @@ const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = 
         gap: 0.45em;
         margin: 0;
         font-size: var(--step--2);
-        color: color-mix(in srgb, var(--faded) 88%, transparent);
+        color: color-mix(in srgb, var(--faded) var(--tint-dense), transparent);
         line-height: 1.4;
     }
 

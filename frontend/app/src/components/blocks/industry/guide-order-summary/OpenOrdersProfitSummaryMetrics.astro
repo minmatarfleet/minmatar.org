@@ -6,7 +6,7 @@ import { number_name } from '@helpers/numbers'
 import { i18n } from '@helpers/i18n'
 import moment from 'moment'
 
-import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
+import StatCard from '@components/blocks/StatCard.astro'
 import Grid from '@components/compositions/Grid.astro'
 
 interface Props {
@@ -56,38 +56,38 @@ const days_remaining_display =
     column_gap="var(--space-3xs)"
     min_item_width="200px"
 >
-    <CampaignStat label="Total order amount" tone="info">
+    <StatCard variant="glass" label="Total order amount" tone="info">
         <span
             data-tippy-content={number_name(totals.total_order_amount, lang)}
         >
             {formatIskCompact(totals.total_order_amount)}
         </span>
-    </CampaignStat>
+    </StatCard>
     {not_costed ?
-        <CampaignStat label="Total order profit">
+        <StatCard variant="glass" label="Total order profit">
             <span class="[ order-metrics-muted ]">{not_costed}</span>
-        </CampaignStat>
+        </StatCard>
         :
-        <CampaignStat
+        <StatCard variant="glass"
             label="Total order profit"
             tone={totals.total_profit >= 0 ? 'success' : 'danger'}
         >
             <span data-tippy-content={number_name(totals.total_profit, lang)}>
                 {formatIskCompact(totals.total_profit)}
             </span>
-        </CampaignStat>
+        </StatCard>
     }
-    <CampaignStat label="Total products" tone="info">
+    <StatCard variant="glass" label="Total products" tone="info">
         {totals.line_count}
-    </CampaignStat>
-    <CampaignStat label={days_remaining_label} tone={days_remaining_tone}>
+    </StatCard>
+    <StatCard variant="glass" label={days_remaining_label} tone={days_remaining_tone}>
         {days_remaining_display}
-    </CampaignStat>
+    </StatCard>
 </Grid>
 
 <style lang="scss">
     .order-metrics-muted {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     /* Fixed 4 KPIs: equal columns that always consume the full row.

@@ -22,7 +22,7 @@ const REP_ICON = {
 
 const image = rep_icon ? REP_ICON[repair.rep_type] : get_item_icon(repair.item_id)
 
-import { get_item_icon } from '@helpers/eve_image_server';
+import { get_item_icon } from '@helpers/eve_image';
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 
@@ -43,7 +43,6 @@ import Progress from '@components/blocks/Progress.astro'
                     max="100"
                     value={repair.effective_reps}
                     data-tippy-content={`${t('effective_repairs')} ${repair.effective_reps.toFixed(0)}%`}
-                    x-init="tippy($el, tippy_options)"
                 >
                     {`${repair.effective_reps.toFixed(2)}%`}
                 </Progress>

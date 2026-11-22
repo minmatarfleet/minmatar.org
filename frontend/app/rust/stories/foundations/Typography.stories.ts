@@ -13,7 +13,7 @@ export default {
             description: {
                 component: [
                     'Every font family the site declares, scanned from the source: the root font tokens (`--heading-font`, `--button-font`, `--default-font`, `--countdown-font`, ...), component-scoped tokens (`--chronicle-font`, the guides\' `--*-display-font`), `@font-face`, `@fontsource` packages and Google Fonts imports.',
-                    '**Norwester** (self-hosted) sets headings, badges and tags in capitals; **Montserrat** sets buttons and body text; **Qahiri** sets countdowns. The long-form guides add **Orbitron** and **Source Sans 3**, and the chronicle uses **Lora**. Use a token, never a family name.',
+                    '**Norwester** (self-hosted) sets headings, badges and tags in capitals; **Montserrat** sets buttons and body text; **Qahiri** sets countdowns. The long-form guides add **Orbitron** (`--guide-display-font`) and **Source Sans 3** (`--guide-body-font`), and the chronicle uses **Lora** (`--long-read-font`). All three are self-hosted with `@fontsource` and imported only by the components that use them (GuideShell, GuideMarkdown, CapitalClassGuide, RatChronicle). Use a token, never a family name.',
                     'The type scale is fluid (Utopia): every `--step-*` grows with the viewport between 320 px and 1240 px.',
                 ].join('\n\n'),
             },
@@ -40,6 +40,11 @@ export const AllFonts = {
         const norwester = canvasElement.querySelector<HTMLElement>('[data-family="Norwester"]')!
         await expect(norwester.dataset.source).toBe('self-hosted')
         await expect(norwester.textContent).toContain('--heading-font')
+        for (const [family, token] of [['Orbitron', '--guide-display-font'], ['Source Sans 3', '--guide-body-font'], ['Lora', '--long-read-font']]) {
+            const entry = canvasElement.querySelector<HTMLElement>(`[data-family="${family}"]`)!
+            await expect(entry.dataset.source).toBe('fontsource')
+            await expect(entry.textContent).toContain(token)
+        }
     },
 }
 

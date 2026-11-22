@@ -50,6 +50,7 @@ export default {
                 component: [
                     'A horizontal scroll container that fades its left and right edges when there is more content that way. Use it for wide tables and chip rows instead of a hand-rolled `overflow-x: auto` (docs/frontend-design.md §4).',
                     'The fade is driven by the global Alpine `edge_fade()` component, which toggles `fade-start` / `fade-end` from the scroll position and watches resizes, so it needs a real browser. Without overflow no fade shows. Set `flex` for a row of chips (`display: flex`); leave it off for a table.',
+                    'Set `below="48rem"` for a row that only scrolls on phones: below that width it scrolls and fades, at or above it it is a plain block. Set `overflow_y_visible` when a row holds dropdown menus: while one is open the scroller stops clipping so the menu can escape vertically.',
                 ].join('\n\n'),
             },
         },
@@ -57,6 +58,8 @@ export default {
     argTypes: {
         flex: { control: 'boolean', description: 'Lay children out in a flex row (chip rows). Leave off for tables.' },
         fade_size: space_control('Width of each edge fade, a space token.'),
+        below: { control: 'text', description: "A width such as '48rem': scroll and fade only below it; plain block at or above it." },
+        overflow_y_visible: { control: 'boolean', description: 'Let an open dropdown (.button-dropdown.is-open) inside escape the scroller vertically.' },
     },
     decorators: [
         (story: () => unknown) => {
@@ -145,5 +148,51 @@ export const NoOverflow = {
         const el = el_of(canvasElement)
         await expect(el).not.toHaveClass('fade-start')
         await expect(el).not.toHaveClass('fade-end')
+    },
+}
+
+export const BelowBreakpoint = {
+    name: 'Below a width: scrolls on phones only',
+    args: { below: '48rem', class: 'max-w-xl' },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const el = el_of(canvasElement)
+        await expect(el).toHaveAttribute('data-below', '48rem')
+        const rule = canvasElement.querySelector('style')?.textContent ?? ''
+        await expect(rule).toContain('@media (min-width: 48rem)')
+        await expect(rule).toContain('overflow-x: visible')
+    },
+}
+
+export const BelowIgnoresBadWidth = {
+    name: 'Below: only a plain length is accepted',
+    args: { below: '48rem) { x', class: 'max-w-xl' },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const el = el_of(canvasElement)
+        await expect(el).not.toHaveAttribute('data-below')
+        await expect(canvasElement.querySelector('style')).toBeNull()
+    },
+}
+
+const dropdown_row = `${doctrine_chips}<div class="button-dropdown is-open rust-demo-box shrink-0">Open menu</div>`
+
+export const OverflowYVisible = {
+    name: 'Open dropdown: stops clipping',
+    args: { overflow_y_visible: true, class: 'max-w-xl', slots: { default: dropdown_row } },
+    tags: ['browser'],
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const el = el_of(canvasElement)
+        await expect(el).toHaveClass('y-visible')
+        await expect(getComputedStyle(el).overflowY).toBe('visible')
+    },
+}
+
+export const OverflowYClipsWithoutOpenMenu = {
+    name: 'No open dropdown: keeps scrolling',
+    args: { overflow_y_visible: true, class: 'max-w-xl' },
+    tags: ['browser'],
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const el = el_of(canvasElement)
+        await expect(el).toHaveClass('y-visible')
+        await expect(getComputedStyle(el).overflowX).toBe('auto')
     },
 }

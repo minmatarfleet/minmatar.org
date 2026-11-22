@@ -22,11 +22,12 @@ import {
     offer_row_figures,
     type LoyaltyOfferRowFigures,
 } from '@helpers/loyalty_offers_rows'
-import { get_bpc_icon, get_item_icon } from '@helpers/eve_image_server'
+import { get_bpc_icon, get_item_icon } from '@helpers/eve_image'
 import { number_thousand_separator } from '@helpers/numbers'
 import { escape_html } from '@helpers/string'
 
 import Tag from '@components/blocks/Tag.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 
 interface Props {
     offer: LoyaltyOffer
@@ -233,6 +234,7 @@ const buyback_verdict = buyback_diff == null
             .replace('{diff}', format_isk_per_lp_rate(Math.abs(buyback_diff)))
 
 const detail_id = `loyalty-offer-detail-${offer.offer_id}`
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <div
@@ -256,7 +258,7 @@ const detail_id = `loyalty-offer-detail-${offer.offer_id}`
                 onerror="this.hidden=true"
             />
             <span class="[ loyalty-offer-item__text ]">
-                <button
+                <StylessButton
                     type="button"
                     class="[ loyalty-offer-item__toggle ]"
                     aria-controls={detail_id}
@@ -269,7 +271,7 @@ const detail_id = `loyalty-offer-detail-${offer.offer_id}`
                     {offer.quantity > 1 && (
                         <span class="[ loyalty-offer-item__qty ]">×{number_thousand_separator(offer.quantity)}</span>
                     )}
-                </button>
+                </StylessButton>
                 <span
                     class="[ loyalty-offer-item__recipe ]"
                     data-tippy-content={other_cost_tooltip()}
@@ -342,7 +344,7 @@ const detail_id = `loyalty-offer-detail-${offer.offer_id}`
                     ))}
                 </ol>
             ) : (
-                <p class="[ loyalty-offer-item__detail-empty ]">{t('industry.loyalty.offers.waterfall.no_price')}</p>
+                <EmptyState title={t('industry.loyalty.offers.waterfall.no_price')} />
             )}
             {buyback_verdict && (
                 <p class:list={[
@@ -359,7 +361,7 @@ const detail_id = `loyalty-offer-detail-${offer.offer_id}`
         border-bottom: solid 1px var(--border-color);
 
         &.is-open {
-            background: color-mix(in srgb, var(--highlight) 4%, transparent);
+            background: color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent);
         }
     }
 
@@ -376,7 +378,7 @@ const detail_id = `loyalty-offer-detail-${offer.offer_id}`
 
         @media (hover: hover) {
             &:hover {
-                background: color-mix(in srgb, var(--highlight) 6%, transparent);
+                background: color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent);
             }
         }
     }
@@ -494,7 +496,7 @@ const detail_id = `loyalty-offer-detail-${offer.offer_id}`
         position: relative;
         flex: 1 1 auto;
         height: var(--space-2xs);
-        background: color-mix(in srgb, var(--foreground) 10%, transparent);
+        background: color-mix(in srgb, var(--foreground) var(--tint-subtle), transparent);
     }
 
     .loyalty-offer-item__fill {
@@ -502,7 +504,7 @@ const detail_id = `loyalty-offer-detail-${offer.offer_id}`
         inset-block: 0;
         inset-inline-start: 0;
         width: var(--fill);
-        background: color-mix(in srgb, var(--foreground) 55%, transparent);
+        background: color-mix(in srgb, var(--foreground) var(--tint-bold), transparent);
     }
 
     .loyalty-offer-item__bar--beats .loyalty-offer-item__fill {
@@ -530,7 +532,7 @@ const detail_id = `loyalty-offer-detail-${offer.offer_id}`
         [data-tippy-content],
         &[data-tippy-content] {
             cursor: help;
-            text-decoration: underline dotted color-mix(in srgb, currentColor 35%, transparent);
+            text-decoration: underline dotted color-mix(in srgb, currentColor var(--tint-medium), transparent);
             text-underline-offset: 0.2em;
         }
     }
@@ -594,11 +596,11 @@ const detail_id = `loyalty-offer-detail-${offer.offer_id}`
         inset-block: 0;
         inset-inline-start: var(--start);
         width: var(--size);
-        background: color-mix(in srgb, var(--fleet-red) 75%, transparent);
+        background: color-mix(in srgb, var(--fleet-red) var(--tint-heavy), transparent);
     }
 
     .loyalty-offer-item__step--gross .loyalty-offer-item__step-bar {
-        background: color-mix(in srgb, var(--foreground) 55%, transparent);
+        background: color-mix(in srgb, var(--foreground) var(--tint-bold), transparent);
     }
 
     .loyalty-offer-item__step--net {
@@ -616,7 +618,6 @@ const detail_id = `loyalty-offer-detail-${offer.offer_id}`
         white-space: nowrap;
     }
 
-    .loyalty-offer-item__detail-empty,
     .loyalty-offer-item__verdict {
         margin: 0;
         font-size: var(--step--2);

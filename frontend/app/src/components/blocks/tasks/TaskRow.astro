@@ -14,7 +14,7 @@ import { i18n, t_key } from '@helpers/i18n'
 const { t, lang, translatePath } = i18n(Astro.url)
 
 import type { TaskItem } from '@dtypes/api.minmatar.org'
-import { get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image'
 import { sub_label, task_glyph, task_person, when_label } from '@helpers/tasks'
 
 interface Props {
@@ -56,6 +56,7 @@ const primary_action = PRIMARY.find((action) => task.actions.includes(action))
 const link = task.status === 'open' && task.link_url ? translatePath(task.link_url) : null
 const row_id = `task-${task.id}`
 const done = task.status !== 'open'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <li
@@ -73,7 +74,7 @@ const done = task.status !== 'open'
                 </span>
             )
         }
-        <button
+        <StylessButton
             type="button"
             class="[ task-row__title ]"
             aria-expanded="false"
@@ -87,12 +88,12 @@ const done = task.status !== 'open'
         >
             <span class="[ task-row__name ]">{task.title}</span>
             {sub && <span class="[ task-row__sub ]">{sub}</span>}
-        </button>
+        </StylessButton>
         <span class:list={['[ task-row__when ]', { 'is-warn': warn && !done, 'is-good': task.status === 'done' }]}>{when}</span>
         <span class="[ task-row__action ]">
             {primary_action
                 ? (
-                    <button
+                    <StylessButton
                         type="button"
                         class="[ task-quiet ]"
                         hx-post={post_url(primary_action)}
@@ -102,13 +103,13 @@ const done = task.status !== 'open'
                         hx-disabled-elt="this"
                     >
                         {t(t_key('tasks.action.', primary_action))}
-                    </button>
+                    </StylessButton>
                 )
                 : link
                     ? <a class="[ task-quiet ]" href={link}>{task.link_label || t('tasks.show')}</a>
                     : task.actions.includes('done')
                         ? (
-                            <button
+                            <StylessButton
                                 type="button"
                                 class="[ task-quiet ]"
                                 hx-post={post_url('done')}
@@ -118,17 +119,17 @@ const done = task.status !== 'open'
                                 hx-disabled-elt="this"
                             >
                                 {t('tasks.action.done')}
-                            </button>
+                            </StylessButton>
                         )
                         : task.status === 'open' && task.link_label
                             ? (
-                                <button
+                                <StylessButton
                                     type="button"
                                     class="[ task-quiet ]"
                                     x-on:click="if (!open) $el.closest('.task-row').querySelector('.task-row__title').click()"
                                 >
                                     {task.link_label}
-                                </button>
+                                </StylessButton>
                             )
                             : null
             }

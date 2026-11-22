@@ -34,14 +34,14 @@
 }
 
 .task-row {
-    border-bottom: 1px solid var(--hairline-medium);
+    border-bottom: 1px solid var(--border-color);
 
     &:last-child {
         border-bottom: 0;
     }
 
     &.is-open {
-        background: var(--hairline);
+        background: var(--border-color);
     }
 }
 
@@ -77,7 +77,7 @@
     }
 
     &.is-done {
-        color: var(--manage_good);
+        color: var(--green-text);
     }
 }
 
@@ -107,12 +107,12 @@
 
 .task-row.is-done .task-row__name {
     font-weight: 500;
-    color: var(--text-muted);
+    color: var(--faded);
 }
 
 .task-row__sub {
     font-size: var(--step--1);
-    color: var(--text-muted);
+    color: var(--faded);
     line-height: 1.4;
 }
 
@@ -123,11 +123,11 @@
     text-align: end;
 
     &.is-warn {
-        color: var(--manage_warn);
+        color: var(--fleet-yellow);
     }
 
     &.is-good {
-        color: var(--manage_good);
+        color: var(--green-text);
     }
 }
 
@@ -150,7 +150,7 @@
     flex-direction: column;
     gap: var(--space-s);
     padding-top: var(--space-s);
-    border-top: 1px solid var(--hairline-medium);
+    border-top: 1px solid var(--border-color);
     font-size: var(--step--1);
 }
 
@@ -167,7 +167,7 @@
 }
 
 .task-detail__note {
-    color: var(--text-muted);
+    color: var(--faded);
 }
 
 .task-comments {
@@ -197,7 +197,7 @@
 }
 
 .task-comment__when {
-    color: var(--text-muted);
+    color: var(--faded);
     margin-inline-start: var(--space-3xs);
 }
 
@@ -224,7 +224,7 @@
     cursor: pointer;
 
     &.is-dim {
-        color: var(--text-muted);
+        color: var(--faded);
         font-weight: 500;
     }
 
@@ -251,7 +251,7 @@
     gap: var(--space-2xs);
     padding-inline: var(--space-m);
     font-size: var(--step--1);
-    color: var(--text-muted);
+    color: var(--faded);
 }
 
 .task-notice {
@@ -261,7 +261,7 @@
     justify-content: space-between;
     gap: var(--space-s) var(--space-m);
     padding: var(--space-xs) var(--space-m);
-    border: 1px solid var(--hairline-strong);
+    border: 1px solid var(--border-color-hover);
     font-size: var(--step--1);
 }
 
@@ -278,7 +278,7 @@
     }
 
     &.is-done > span {
-        background: var(--manage_good);
+        background: var(--green-text);
     }
 }
 
@@ -312,7 +312,7 @@
     gap: var(--space-m);
     min-height: var(--space-xl);
     padding-inline: var(--space-m);
-    border-bottom: 1px solid var(--hairline-medium);
+    border-bottom: 1px solid var(--border-color);
     font-variant-numeric: tabular-nums;
 
     &:last-child {
@@ -328,21 +328,21 @@
 .task-health {
     display: inline-block;
     padding: 0.1em 0.5em;
-    border: 1px solid var(--hairline-strong);
+    border: 1px solid var(--border-color-hover);
     font-size: var(--step--2);
     font-weight: 600;
     white-space: nowrap;
     color: var(--highlight);
 
     &.is-on_track {
-        border-color: color-mix(in srgb, var(--manage_good) 50%, transparent);
-        color: var(--manage_good);
+        border-color: color-mix(in srgb, var(--green-text) var(--tint-strong), transparent);
+        color: var(--green-text);
     }
 
     &.is-at_risk,
     &.is-off_track {
-        border-color: color-mix(in srgb, var(--manage_warn) 50%, transparent);
-        color: var(--manage_warn);
+        border-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
+        color: var(--fleet-yellow);
     }
 }
 
@@ -351,7 +351,7 @@
     flex-direction: column;
     gap: var(--space-xs);
     padding: var(--space-m);
-    border-bottom: 1px solid var(--hairline-medium);
+    border-bottom: 1px solid var(--border-color);
 
     &:last-child {
         border-bottom: 0;
@@ -383,7 +383,7 @@
         align-items: center;
         gap: var(--space-xs);
         min-height: var(--space-xl);
-        border-bottom: 1px solid var(--hairline-medium);
+        border-bottom: 1px solid var(--border-color);
         font-size: var(--step--1);
     }
 

@@ -27,18 +27,19 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import { sort_down_attrs, sort_handle_attrs, sort_up_attrs } from '@helpers/manage_reorder'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <span class:list={['[ manage-sort ]', Astro.props.class]} {...attributes}>
     <span class="[ manage-sort__grip ]" title={t('learning_admin.drag')} {...sort_handle_attrs}>
         <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor"><circle cx="3" cy="3" r="1.5"/><circle cx="9" cy="3" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="9" cy="8" r="1.5"/><circle cx="3" cy="13" r="1.5"/><circle cx="9" cy="13" r="1.5"/></svg>
     </span>
-    <button class="[ manage-sort__move ]" aria-label={t('learning_admin.move_up').replace('~NAME', name)} {...sort_up_attrs(event)}>
+    <StylessButton class="[ manage-sort__move ]" aria-label={t('learning_admin.move_up').replace('~NAME', name)} {...sort_up_attrs(event)}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m18 15-6-6-6 6"></path></svg>
-    </button>
-    <button class="[ manage-sort__move ]" aria-label={t('learning_admin.move_down').replace('~NAME', name)} {...sort_down_attrs(event)}>
+    </StylessButton>
+    <StylessButton class="[ manage-sort__move ]" aria-label={t('learning_admin.move_down').replace('~NAME', name)} {...sort_down_attrs(event)}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
-    </button>
+    </StylessButton>
 </span>
 
 <style lang="scss">
@@ -46,7 +47,7 @@ import { sort_down_attrs, sort_handle_attrs, sort_up_attrs } from '@helpers/mana
         display: inline-flex;
         align-items: center;
         gap: var(--space-3xs);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .manage-sort__grip {
@@ -67,7 +68,7 @@ import { sort_down_attrs, sort_handle_attrs, sort_up_attrs } from '@helpers/mana
         &:hover,
         &:focus-visible {
             color: var(--highlight);
-            border-color: var(--hairline-medium);
+            border-color: var(--border-color);
         }
     }
 

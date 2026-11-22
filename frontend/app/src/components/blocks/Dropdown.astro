@@ -38,8 +38,28 @@ import CollapsableButton from "@components/blocks/CollapsableButton.astro";
             if (this.$refs.trigger?.contains(event.target)) return
             this.close()
         },
+        // Escape closes the panel and returns to the trigger. The matching
+        // keyup is stopped and marked [data-combobox-escape] so a surrounding
+        // dialog, which closes on keyup, stays open.
+        escape(event) {
+            if (!this.expanded) return
+            event.preventDefault()
+            event.stopPropagation()
+            this.close()
+            this.escape_handled = true
+            this.$refs.trigger?.setAttribute('data-combobox-escape', '')
+            this.$refs.trigger?.focus()
+        },
+        escape_released(event) {
+            if (!this.escape_handled) return
+            event.stopPropagation()
+            this.escape_handled = false
+            this.$refs.trigger?.removeAttribute('data-combobox-escape')
+        },
+        escape_handled: false,
     }`}
-    @keydown.escape.prevent.stop="close()"
+    @keydown.escape="escape($event)"
+    @keyup.escape="escape_released($event)"
 >
     <CollapsableButton
         appearance={variant === 'button' ? 'button' : 'plain'}
@@ -68,7 +88,8 @@ import CollapsableButton from "@components/blocks/CollapsableButton.astro";
             x-anchor.fixed.bottom-end="$refs.trigger"
             x-bind:style="expanded ? { '--button-dropdown-min-width': `${$refs.trigger?.offsetWidth || 0}px` } : {}"
             @mousedown.outside="expanded && close_if_outside($event)"
-            @keydown.escape.prevent.stop="close()"
+            @keydown.escape="escape($event)"
+            @keyup.escape="escape_released($event)"
             x-init="if (typeof htmx !== 'undefined') htmx.process($el); $watch('expanded', v => { if (v && typeof htmx !== 'undefined') htmx.process($el) })"
             style="display: none"
         >

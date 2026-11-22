@@ -2,18 +2,25 @@
 interface Props {
     width?: string;
     size?:  'lg' | 'sm';
+    /** Fixed text before the value (a URL path, a unit); the field draws one shell around both. */
+    prefix?: string;
+    /** Attributes for the prefix `<span>` (`x-show`, `id`). */
+    prefix_attributes?: Record<string, any>;
     [propName: string]: any;
 }
 
 const {
     width = '100%',
     size = 'lg',
+    prefix,
+    prefix_attributes = {},
     ...attributes
 } = Astro.props
 ---
 
-<div class="[ input-group ]">
+<div class:list={['[ input-group ]', prefix && '[ input-group--prefixed ]']}>
     <slot name="icon" />
+    {prefix && <span class="[ input-prefix ]" {...prefix_attributes}>{prefix}</span>}
     <input {...attributes} data-size={size}/>
 </div>
 
@@ -25,92 +32,35 @@ const {
 </style>
 
 <style lang="scss">
-    .input-group {
-        position: relative;
-        max-width: var(--width);
-        width: 100%;
-    }
+    @use '../../styles/mixins/input_field';
+    @include input_field.field;
 
-    :global(.input-group svg) {
-        position: absolute;
-        top: 50%;
-        left: var(--space-s);
-        transform: translateY(-50%);
-        pointer-events: none;
-        z-index: 100;
-    }
-
-    :global(.input-group svg path) {
-        fill: var(--highlight);
-    }
-
-    input {
-        --flex-inline--gap: var(--space-xs);
-
-        padding: var(--space-s) var(--space-s-m);
-        border: none;
-        color: var(--form-color);
-        background-color: transparent;
+    /* prefix: one bordered shell around the fixed text and the input. */
+    .input-group--prefixed {
+        display: flex;
+        align-items: center;
         border: solid 1px var(--border-color);
-        background-color: rgba(85, 85, 85, 0.1);
-        transition: var(--fast-transition);
-        width: 100%;
-        backdrop-filter: blur(var(--input-backdrop-blur));
+        background-color: color-mix(in srgb, var(--neutral-600) var(--tint-subtle), transparent);
+        padding-inline: var(--space-s-m);
 
-        /*&[type="date"]::-webkit-calendar-picker-indicator {
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="15" viewBox="0 0 24 24"><path fill="white" d="M20 3h-1V1h-2v2H7V1H5v2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 18H4V8h16v13z"/></svg>');
-        }*/
-
-        &[data-size="sm"] {
-            padding: var(--space-2xs) var(--space-m) var(--space-2xs) var(--space-xs-s);
+        &:focus-within {
+            outline: 1px solid var(--highlight);
         }
 
-        /* iOS zooms the page when focusing a field under 16px. */
-        @media (max-width: 48rem) {
-            font-size: max(1rem, 1em);
-        }
-
-        &[type="date"],
-        &[type="time"] {
-            color-scheme: dark;
-            padding-right: var(--space-2xs);
-            -webkit-appearance: none;
-            appearance: none;
-        }
-        
-        &[type="time"] {
-            padding-right: 8px;
-        }
-
-        &[type="date"]::-webkit-calendar-picker-indicator {
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="15" viewBox="0 0 24 24"><path fill="white" d="M20 3h-1V1h-2v2H7V1H5v2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 18H4V8h16v13z"/></svg>');
-        }
-
-        &[type="time"]::-webkit-calendar-picker-indicator {
-            background-image: url('data:image/svg+xml;utf8,<svg width="15" height="15" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 20C14.1217 20 16.1566 19.1571 17.6569 17.6569C19.1571 16.1566 20 14.1217 20 12C20 9.87827 19.1571 7.84344 17.6569 6.34315C16.1566 4.84285 14.1217 4 12 4C9.87827 4 7.84344 4.84285 6.34315 6.34315C4.84285 7.84344 4 9.87827 4 12C4 14.1217 4.84285 16.1566 6.34315 17.6569C7.84344 19.1571 9.87827 20 12 20ZM12 2C13.3132 2 14.6136 2.25866 15.8268 2.7612C17.0401 3.26375 18.1425 4.00035 19.0711 4.92893C19.9997 5.85752 20.7362 6.95991 21.2388 8.17317C21.7413 9.38642 22 10.6868 22 12C22 14.6522 20.9464 17.1957 19.0711 19.0711C17.1957 20.9464 14.6522 22 12 22C6.47 22 2 17.5 2 12C2 9.34784 3.05357 6.8043 4.92893 4.92893C6.8043 3.05357 9.34784 2 12 2ZM12.5 7V12.25L17 14.92L16.25 16.15L11 13V7H12.5Z" fill="white"/></svg>');
-        }
-
-        &:hover {
-            border-color: var(--border-color-hover);
-        }
-
-        &:focus-visible {
+        input,
+        input[data-size] {
+            flex: 1 1 auto;
+            min-width: 0;
+            padding-inline: 0;
+            border: 0;
+            background: none;
+            backdrop-filter: none;
             outline: none;
-            background-color: rgba(85, 85, 85, 0.2);
-        }
-
-        &.collapsible {
-            width: var(--space-l);
-            padding: var(--space-s) var(--space-3xs);
-
-            &:focus {
-                width: auto;
-                padding: var(--space-s) var(--space-s-l);
-            }
         }
     }
 
-    :global(svg + input) {
-        padding-left: var(--space-xl) !important;
+    .input-prefix {
+        flex: 0 0 auto;
+        color: var(--faded);
     }
 </style>

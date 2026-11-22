@@ -45,6 +45,7 @@ const template = `minmax(11rem, 2fr)${show_share ? ' 4rem' : ''} 4.5rem 4.5rem 4
 
 import DataGrid from '@components/blocks/DataGrid.astro'
 import IntelBlocTag from '@components/blocks/IntelBlocTag.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <div class="[ intel-partners-wrap ]" x-data="{ all: false }">
@@ -80,10 +81,10 @@ import IntelBlocTag from '@components/blocks/IntelBlocTag.astro'
     )}
 </DataGrid>
 {hidden_count > 0 &&
-    <button type="button" class="[ intel-partners__more ]" x-on:click="all = !all" x-bind:aria-expanded="String(all)">
+    <StylessButton type="button" class="[ intel-partners__more ]" x-on:click="all = !all" x-bind:aria-expanded="String(all)">
         <span x-show="!all">{fill(t('intel.affiliations.show_all'), { count: rows.length })}</span>
         <span x-show="all" x-cloak>{t('intel.affiliations.show_fewer')}</span>
-    </button>
+    </StylessButton>
 }
 </div>
 
@@ -123,6 +124,6 @@ import IntelBlocTag from '@components/blocks/IntelBlocTag.astro'
     }
 
     .intel-partners__zero {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 </style>

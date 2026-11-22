@@ -31,7 +31,7 @@ import Button from '@components/blocks/Button.astro'
 import Select from '@components/blocks/Select.astro'
 import ManageField from '@components/blocks/manage/ManageField.astro'
 import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
-import ManageStatCard from '@components/blocks/manage/ManageStatCard.astro'
+import StatCard from '@components/blocks/StatCard.astro'
 ---
 
 <div id="tasks-digest" class="[ task-stack is-loose ]">
@@ -65,14 +65,14 @@ import ManageStatCard from '@components/blocks/manage/ManageStatCard.astro'
             {t('tasks.settings.weekly_last')} · {task_date(digest.last_sent_at, lang)}
         </h3>
         <div class="[ manage-stats ]">
-            <ManageStatCard label={t('tasks.settings.weekly_opted_in')} value={digest.opted_in} />
-            <ManageStatCard label={t('tasks.settings.weekly_had_waiting')} value={digest.had_waiting} detail={t('tasks.settings.weekly_had_waiting_hint')} />
-            <ManageStatCard label={t('tasks.settings.weekly_delivered')} value={digest.delivered} />
-            <ManageStatCard
+            <StatCard label={t('tasks.settings.weekly_opted_in')} value={digest.opted_in} />
+            <StatCard label={t('tasks.settings.weekly_had_waiting')} value={digest.had_waiting} hint={t('tasks.settings.weekly_had_waiting_hint')} />
+            <StatCard label={t('tasks.settings.weekly_delivered')} value={digest.delivered} />
+            <StatCard
                 label={t('tasks.settings.weekly_not_delivered')}
                 value={digest.not_delivered}
-                detail={t('tasks.settings.weekly_not_delivered_hint')}
-                tone={digest.not_delivered > 0 ? 'warn' : undefined}
+                hint={t('tasks.settings.weekly_not_delivered_hint')}
+                tone={digest.not_delivered > 0 ? 'fleet-yellow' : undefined}
             />
         </div>
         {digest.enabled &&

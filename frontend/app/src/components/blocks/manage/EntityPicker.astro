@@ -10,10 +10,11 @@
  * users who can reach a manage screen. Ids are strings, because Discord ids
  * pass JavaScript's safe integers.
  *
+ * A Combobox underneath (keyboard, Escape and click-outside live there).
  * Picking fires `change` on the hidden input (so a form with
  * hx-trigger="change" saves) and a `manage-entity-picked` event with
  * { id, name, icon_url }. Enter picks the first match instead of
- * submitting the form; Escape closes the list.
+ * submitting the form.
  *
  *   <EntityPicker id="timer-12-owner" kind="corporation" name="owner_corporation_id"
  *       label={t('...owner')} value={{ id: timer.owner_id, name: timer.owner_name }} />
@@ -56,9 +57,8 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { query_string } from '@helpers/string'
-import Input from '@components/blocks/Input.astro'
+import Combobox from '@components/blocks/Combobox.astro'
 
-const results_id = `${id}-results`
 const search_url = translatePath(`/partials/manage_entity_search_component/?${query_string({ kind })}`)
 const initial = {
     id: value ? String(value.id) : '',
@@ -69,98 +69,32 @@ const initial = {
 
 <div
     class:list={['[ manage-picker manage-field ]', Astro.props.class]}
-    x-data={`{
-        picked_id: ${JSON.stringify(initial.id)},
-        picked_name: ${JSON.stringify(initial.name)},
-        icon: ${JSON.stringify(initial.icon)},
-        query: ${JSON.stringify(initial.name)},
-        pick(option) {
-            if (!option) return
-            this.picked_id = option.dataset.pickId
-            this.picked_name = option.dataset.pickName
-            this.icon = option.dataset.pickIcon ?? ''
-            this.query = this.picked_name
-            this.close()
-            this.$nextTick(() => {
-                this.$refs.hidden.dispatchEvent(new Event('change', { bubbles: true }))
-                this.$dispatch('manage-entity-picked', { id: this.picked_id, name: this.picked_name, icon_url: this.icon })
-            })
-        },
-        typed() {
-            if (this.query !== this.picked_name) {
-                this.picked_id = ''
-                this.icon = ''
-            }
-        },
-        close() {
-            this.$refs.menu.replaceChildren()
-        },
-        options() {
-            return [...this.$refs.menu.querySelectorAll('[data-pick-id]')]
-        },
-        move(step) {
-            const options = this.options()
-            if (options.length === 0) return
-            const index = options.indexOf(document.activeElement)
-            const next = index + step
-            if (next < 0) return this.$refs.input.focus()
-            options[Math.min(next, options.length - 1)].focus()
-        },
-    }`}
-    x-on:keydown.escape="close()"
-    x-on:click.outside="close()"
+    x-data={`{ icon: ${JSON.stringify(initial.icon)}, picked_name: ${JSON.stringify(initial.name)} }`}
+    {...{ 'x-on:combobox:select': `
+        icon = $event.detail.data.icon ?? ''
+        picked_name = $event.detail.label
+        $dispatch('manage-entity-picked', { id: $event.detail.value, name: $event.detail.label, icon_url: icon })
+    ` }}
     {...attributes}
 >
-    <label for={id}>{label}</label>
-    <div class="[ manage-picker__field ]" x-bind:class="{ 'has-icon': icon }">
-        <img x-show="icon" x-bind:src="icon || null" alt="" width="32" height="32" style={initial.icon ? undefined : 'display: none'} src={initial.icon || undefined} />
-        {/* Its name `q` is for the search request only; form="" keeps it out of the enclosing form,
-            and the "unset" attributes stop it inheriting that form's htmx settings. */}
-        <Input
-            id={id}
-            size="sm"
-            x-ref="input"
-            type="search"
-            name="q"
-            form=""
-            value={initial.name}
-            x-model="query"
-            x-on:input="typed()"
-            x-on:keydown.enter.prevent="pick(options()[0])"
-            x-on:keydown.down.prevent="move(1)"
-            placeholder={placeholder ?? t('manage.kit.picker_placeholder')}
-            autocomplete="off"
-            role="combobox"
-            aria-autocomplete="list"
-            aria-controls={results_id}
-            required={required}
-            hx-get={search_url}
-            hx-trigger="input changed delay:300ms, focus[this.value.length > 1] once"
-            hx-target={`#${results_id}`}
-            hx-swap="innerHTML"
-            hx-sync="this:replace"
-            hx-select="unset"
-            hx-select-oob="unset"
-            hx-include="unset"
-            hx-indicator="unset"
-            hx-params="unset"
-            hx-confirm="unset"
-            hx-disabled-elt="unset"
-            hx-push-url="false"
-        />
-    </div>
-    <input type="hidden" x-ref="hidden" name={name} value={initial.id} x-bind:value="picked_id" />
+    <Combobox
+        id={id}
+        name={name}
+        label={label}
+        size="sm"
+        value={initial.id}
+        value_label={initial.name}
+        search_url={search_url}
+        placeholder={placeholder ?? t('manage.kit.picker_placeholder')}
+        required={required}
+        pick_first={true}
+        form_validation={false}
+        class="[ manage-picker__combobox ]"
+        x-bind:class="{ 'has-icon': icon }"
+        x-on:input="icon = ''"
+    >
+        <img slot="field_start" x-show="icon" x-bind:src="icon || null" alt="" width="32" height="32" style={initial.icon ? undefined : 'display: none'} src={initial.icon || undefined} />
+    </Combobox>
     {name_field && <input type="hidden" name={name_field} value={initial.name} x-bind:value="picked_name" />}
-    <div
-        id={results_id}
-        x-ref="menu"
-        class="[ manage-picker__menu ]"
-        role="listbox"
-        aria-label={label}
-        x-on:click="pick($event.target.closest('[data-pick-id]'))"
-        x-on:keydown.down.prevent="move(1)"
-        x-on:keydown.up.prevent="move(-1)"
-        x-on:keydown.enter.prevent="pick($event.target.closest('[data-pick-id]'))"
-    ></div>
     {hint && <span class="[ manage-field__hint ]">{hint}</span>}
 </div>

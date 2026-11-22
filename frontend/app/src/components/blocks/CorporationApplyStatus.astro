@@ -106,7 +106,6 @@ import Markdown from '@components/blocks/Markdown.astro';
         <span
             class="[ unavailable ]"
             data-tippy-content={unavailable_reason ?? undefined}
-            x-init={unavailable_reason ? 'tippy($el, tippy_options)' : undefined}
             tabindex={unavailable_reason ? '0' : undefined}
         >
             <Button color="green" disabled={true} type="button">
@@ -138,7 +137,6 @@ import Markdown from '@components/blocks/Markdown.astro';
     corporation?.status == 'error' &&
         <Tag
             data-tippy-content={t('error_reload')}
-            x-init="tippy($el, tippy_options)"
             text={t('error_status_corp')}
         />
     }

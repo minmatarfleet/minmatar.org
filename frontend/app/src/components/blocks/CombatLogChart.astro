@@ -20,156 +20,63 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 
 import Button from '@components/blocks/Button.astro'
+import Chart from '@components/blocks/Chart.astro'
 import MultiRangeInput from '@components/blocks/MultiRangeInput.astro';
+
+// Each series is plotted per second, so a tenth of the tick's total.
+const per_second = (values: number[]) => values.map((value) => value / 10)
+
+const dots = (values: number[]) => values.map((value) => value === 0 ? 0 : 2)
+
+const series = (label: string, values: number[], tone: 'fleet-red' | 'alliance-blue' | 'green') => ({
+    label,
+    data: per_second(values),
+    tone,
+    fill: false,
+    pointStyle: 'rect',
+    borderWidth: 0,
+    pointRadius: dots(values),
+})
+
+const datasets = [
+    series(t('damage_taken'), damage_in, 'fleet-red'),
+    series(t('damage_done'), damage_out, 'alliance-blue'),
+    series(t('reps_done'), reps_out, 'green'),
+]
+
+const options = {
+    scales: {
+        x: { title: { display: true, text: t('ticks_axis') }, grid: { display: false }, ticks: { maxTicksLimit: 10 } },
+        y: { title: { display: true, text: t('damage_reps_per_second') }, grid: { display: false } },
+    },
+}
 ---
 
 <Flexblock
     x-data={`{
         min: 0,
         max: 0,
-        INC_DAMAGE_COLOR: '#b53620',
-        OUT_DAMAGE_COLOR: '#2051b5',
-        REPS_COLOR: '#198754',
-        timeline_time: ${JSON.stringify(timeline_time)},
-        damage_in: ${JSON.stringify(damage_in.map(damage => damage/10))},
-        damage_out: ${JSON.stringify(damage_out.map(damage => damage/10))},
-        reps_out: ${JSON.stringify(reps_out.map(rep => rep/10))},
-        init() {
-            const ctx = document.getElementById("damage-log-chart").getContext("2d")
-
-            Chart.defaults.borderColor = 'rgb(255, 255, 255, 0.05)'
-            Chart.defaults.color = '#ffffff';
-            Chart.defaults.font.family = 'Montserrat Variable';
-
-            const damage_log_chart = new Chart(ctx, {
-                type: "line",
-                data: {
-                    labels: this.timeline_time,
-                    datasets: [
-                        {
-                            label: "${t('damage_taken')}",
-                            data: this.damage_in,
-                            pointStyle: 'rect',
-                            backgroundColor: this.INC_DAMAGE_COLOR,
-                            borderColor: this.INC_DAMAGE_COLOR,
-                            borderWidth: 0,
-                            pointRadius: function(context) {
-                                const value = context.raw
-                                return value === 0 ? 0 : 2
-                            }
-                        },
-                        {
-                            label: "${t('damage_done')}",
-                            data: this.damage_out,
-                            pointStyle: 'rect',
-                            backgroundColor: this.OUT_DAMAGE_COLOR,
-                            borderColor: this.OUT_DAMAGE_COLOR,
-                            borderWidth: 0,
-                            pointRadius: function(context) {
-                                const value = context.raw
-                                return value === 0 ? 0 : 2
-                            }
-                        },
-                        {
-                            label: "${t('reps_done')}",
-                            data: this.reps_out,
-                            pointStyle: 'rect',
-                            backgroundColor: this.REPS_COLOR,
-                            borderColor: this.REPS_COLOR,
-                            borderWidth: 0,
-                            pointRadius: function(context) {
-                                const value = context.raw
-                                return value === 0 ? 0 : 2
-                            }
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: {
-                            title: {
-                                display: true,
-                                text: "${t('ticks_axis')}"
-                            },
-                            grid: {
-                                display: false
-                            },
-                            ticks: {
-                                maxTicksLimit: 10
-                            },
-                        },
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: "${t('damage_reps_per_second')}"
-                            },
-                            grid: {
-                                display: false
-                            },
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            position: "top"
-                        },
-                        title: {
-                            display: false,
-                        }
-                    }
-                },
-                plugins: [{
-                    // Plugin to draw vertical lines
-                    id: 'verticalLines',
-                    beforeDraw: (chart) => {
-                        const ctx = chart.ctx
-                        const xScale = chart.scales.x
-                        const yScale = chart.scales.y
-
-                        ctx.save()
-
-                        const SHADE_COLOR = [
-                            'rgba(181, 54, 32, 0.25)',
-                            'rgba(32, 81, 181, 0.25)',
-                            'rgba(25, 135, 84, 0.25)',
-                        ]
-
-                        chart.data.datasets.forEach((dataset, dataset_index) => {
-                            dataset.data.forEach((value, index) => {
-                                const x = xScale.getPixelForValue(index)
-                                const y = yScale.getPixelForValue(value)
-
-                                // Draw a vertical line
-                                ctx.beginPath()
-                                ctx.moveTo(x, y)
-                                ctx.lineTo(x, yScale.getPixelForValue(0))
-                                ctx.strokeStyle = SHADE_COLOR[dataset_index]
-                                ctx.lineWidth = 1
-                                ctx.stroke()
-                            })
-                        })
-
-                        ctx.restore()
-                    }
-                }]
-            })
-
-            const set_axis_button = document.querySelector('.set-x-axis')
-            set_axis_button.addEventListener('click', () => {
-                damage_log_chart.options.scales.x.min = this.min
-                damage_log_chart.options.scales.x.max = this.max
-                damage_log_chart.update()
-            })
-        }
+        set_x_axis() {
+            const chart = Chart.getChart(this.$el.querySelector('canvas'))
+            if (!chart) return
+            chart.options.scales.x.min = this.min
+            chart.options.scales.x.max = this.max
+            chart.update()
+        },
     }`}
 >
-    <div class="[ max-h-[70vh] h-screen ]">
-        <canvas id="damage-log-chart"></canvas>
-    </div>
+    <Chart
+        type='line'
+        labels={timeline_time}
+        datasets={datasets}
+        options={options}
+        plugins={[{ id: 'stems' }]}
+        legend={true}
+        height='70vh'
+        aria_label={t('damage_reps_per_second')}
+    />
     <FlexInline>
-        <Button size='sm' narrow={true} class="[ set-x-axis ]">
+        <Button size='sm' narrow={true} x-on:click='set_x_axis()'>
             {t('set')}
         </Button>
         <div class="[ grow ]">

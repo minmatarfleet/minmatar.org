@@ -40,5 +40,6 @@ try {
 
 import FleetMissingSignups from '@components/blocks/FleetMissingSignups.astro'
 ---
+{/* no-error-refetch: polled every 60s: a failed read renders the empty card until the next poll, and a failed nudge shows in the card's own error line. */}
 
 <FleetMissingSignups fleet_id={fleet_id} data={data} queued={queued} nudge_error={nudge_error} />

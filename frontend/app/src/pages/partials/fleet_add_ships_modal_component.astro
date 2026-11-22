@@ -17,7 +17,7 @@ import type { FittingItem } from '@dtypes/layout_components'
 import { fetch_fittings } from '@helpers/fetching/ships'
 import { get_fleet_composition, get_my_fleet_fittings, get_fleet_fitting_access, type FleetCompositionEntry, type MyFleetFitting, type FleetFittingAccess } from '@helpers/api.minmatar.org/fleets'
 import { query_string } from '@helpers/string'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 import { SHIP_TYPES_SORTED } from '@helpers/eve'
 
 let catalog: FittingItem[] = []
@@ -25,6 +25,7 @@ let current: FleetCompositionEntry[] = []
 let my_fittings: MyFleetFitting[] = []
 let access: FleetFittingAccess | null = null
 let fetch_error: Error | false = false
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 try {
     const [fittings, composition, remembered, fetched_access] = await Promise.all([
@@ -55,7 +56,7 @@ const eft_url = `${SHIPS_PARTIAL_URL}?${query_string({ ...base_params, action: '
 const remove_url = (fleet_fitting_id:number) => `${SHIPS_PARTIAL_URL}?${query_string({ ...base_params, remove_fleet_fitting_id: fleet_fitting_id })}`
 const role_label = (role:string) => t(t_key('fitting_role_', role))
 
-const CLOSE_MODAL = "if (event.detail.successful) document.querySelector('.modal-backdrop')?.click()"
+const CLOSE_MODAL = "if (event.detail.successful) close_modal()"
 
 // Custom (EFT) fits are saved in-game under the FC and need the fittings
 // scope; catalog picks only link to their web page and stay available.
@@ -72,6 +73,8 @@ const roles = [
 ]
 
 import Flexblock from '@components/compositions/Flexblock.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 import Wrapper from '@components/compositions/Wrapper.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 
@@ -80,7 +83,7 @@ import Badge from '@components/blocks/Badge.astro'
 import Input from '@components/blocks/Input.astro'
 import Textarea from '@components/blocks/Textarea.astro'
 import StylessButton from '@components/blocks/StylessButton.astro'
-import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro'
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 import FleetRowAction from '@components/blocks/FleetRowAction.astro'
 import FleetFittingScopeNotice from '@components/blocks/FleetFittingScopeNotice.astro'
 
@@ -90,7 +93,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 ---
 
 {fetch_error ?
-    <p>{(fetch_error as Error).message}</p>
+    <ErrorRefetch args={{ partial: MODAL_URL, error: fetch_error, delay: delay }} />
     :
     <Wrapper padding_block='var(--space-m)' padding_inline='var(--space-m)' max_width='100%'>
     <div
@@ -137,15 +140,15 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
             }
 
             <FlexInline justification='space-between' gap='var(--space-s)' class="[ items-center ]">
-                <FlexInline gap='var(--space-s)' role="tablist">
-                    <UnstyledRadioCheckButton type="radio" name="add_ships_mode" value="catalog" label={t('add_ships_from_catalog')} x-model="mode" />
-                    <UnstyledRadioCheckButton type="radio" name="add_ships_mode" value="eft" label={t('add_ships_paste_eft')} x-model="mode" />
+                <FlexInline gap='var(--space-s)' role="radiogroup" aria-label={t('add_ships_source')}>
+                    <RadioCheckInput bare type="radio" name="add_ships_mode" value="catalog" label={t('add_ships_from_catalog')} x-model="mode" />
+                    <RadioCheckInput bare type="radio" name="add_ships_mode" value="eft" label={t('add_ships_paste_eft')} x-model="mode" />
                 </FlexInline>
 
                 <FlexInline id="add-ships-role" gap='var(--space-s)' class="[ items-center ]" role="radiogroup" aria-label={t('add_ships_role')}>
                     <small>{t('add_ships_role')}</small>
                     {roles.map(option =>
-                        <UnstyledRadioCheckButton type="radio" name="role" value={option.value} label={option.label} x-model="role" />
+                        <RadioCheckInput bare type="radio" name="role" value={option.value} label={option.label} x-model="role" />
                     )}
                 </FlexInline>
             </FlexInline>
@@ -187,7 +190,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
                             </div>
                         }
                         {(my_fittings.length === 0 || !can_publish) &&
-                            <p class="[ add-ships__empty ]" x-show="search.trim().length < 2">{t('add_ships_search_hint')}</p>
+                            <EmptyState title={t('add_ships_search_hint')} x-show="search.trim().length < 2" />
                         }
                         {catalog.map(fitting =>
                             <StylessButton
@@ -298,25 +301,18 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
         opacity: 0.75;
     }
 
-    .add-ships__empty {
-        margin: auto;
-        padding: var(--space-l);
-        text-align: center;
-        opacity: 0.7;
-    }
-
     :global(.add-ships__result) {
         text-align: left;
         padding: var(--space-3xs) var(--space-2xs);
 
         &:hover,
         &:focus-visible {
-            background: color-mix(in srgb, var(--fleet-red) 25%, transparent);
+            background: color-mix(in srgb, var(--fleet-red) var(--tint-medium), transparent);
         }
     }
 
     :global(textarea.eft) {
-        font-family: var(--mono-font, monospace);
+        font-family: var(--mono-font);
         font-size: var(--step--1);
         min-height: 260px;
     }

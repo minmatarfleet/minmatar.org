@@ -5,6 +5,7 @@ const { lang, t, translatePath } = i18n(Astro.url)
 import type { CampaignSystemSummary } from '@dtypes/api.minmatar.org'
 import { clamp_percent, status_chip_color, status_chip_i18n_key, campaign_goal_i18n_key, contest_bar_percent, normalize_campaign_goal } from '@helpers/fetching/campaigns'
 import { format_date_time, from_now_diff } from '@helpers/date'
+import { escape_html } from '@helpers/string'
 
 interface Props {
     system:             CampaignSystemSummary;
@@ -64,6 +65,10 @@ const advantage_source_text = [
     system.advantage_basis === 'estimate' ? t('campaigns.system.estimated') : null,
 ].filter(Boolean).join(' · ')
 
+const freshness_tip_html = `<div class="campaign-freshness-tip"><strong>${escape_html(t('campaigns.system.freshness'))}</strong>${
+    updated.map(item => `<div><span>${escape_html(item.text)}</span>${item.full_date ? `<small>${escape_html(item.full_date)}</small>` : ''}</div>`).join('')
+}<div><span>${escape_html(advantage_source_text)}</span></div><div><span>${escape_html(t('campaigns.system.updated_kills'))}</span></div></div>`
+
 /** A reading nobody can trust changes how the numbers read, so that warning stays on the card. */
 const advantage_warning = system.advantage_basis === 'unknown' || system.advantage_age_minutes === null
     ? t('campaigns.system.no_reading')
@@ -80,6 +85,7 @@ import Input from '@components/blocks/Input.astro'
 import CampaignMeter from '@components/blocks/CampaignMeter.astro'
 import CampaignPriorityIcon from '@components/blocks/CampaignPriorityIcon.astro'
 import CampaignSparkline from '@components/blocks/CampaignSparkline.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <ComponentBlock
@@ -97,32 +103,21 @@ import CampaignSparkline from '@components/blocks/CampaignSparkline.astro'
                 <CampaignPriorityIcon priority={system.priority} />
                 <h3 title={`${t(goal_key)} · ${t(status_chip_i18n_key(system.status_chip))}`}>{system.name}</h3>
             </FlexInline>
-            <div class="[ campaign-system-freshness ]" x-data="{}">
-                <button
+            <div class="[ campaign-system-freshness ]">
+                <StylessButton
                     type="button"
                     class="[ campaign-system-freshness-button ]"
                     aria-label={t('campaigns.system.freshness')}
-                    x-init="tippy($el, Object.assign({}, tippy_options, { allowHTML: true, placement: 'bottom-end', content: $refs.freshness.innerHTML }))"
+                    data-tippy-content={freshness_tip_html}
+                    data-tippy-allowHTML="true"
+                    data-tippy-placement="bottom-end"
                 >
                     <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
                         <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.25" />
                         <circle cx="8" cy="4.75" r="0.9" fill="currentColor" />
                         <path d="M8 7v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                     </svg>
-                </button>
-                <template x-ref="freshness">
-                    <div class="[ campaign-freshness-tip ]">
-                        <strong>{t('campaigns.system.freshness')}</strong>
-                        {updated.map(item =>
-                            <div>
-                                <span>{item.text}</span>
-                                {item.full_date && <small>{item.full_date}</small>}
-                            </div>
-                        )}
-                        <div><span>{advantage_source_text}</span></div>
-                        <div><span>{t('campaigns.system.updated_kills')}</span></div>
-                    </div>
-                </template>
+                </StylessButton>
             </div>
         </FlexInline>
 

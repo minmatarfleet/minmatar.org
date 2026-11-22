@@ -6,7 +6,7 @@ import type { StructureLocationDetail, StructureLocationModule } from '@dtypes/a
 import { get_request_user } from '@helpers/request_user'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import { get_structure_location } from '@helpers/api.minmatar.org/structure_locations'
-import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
+import { get_item_icon, get_player_icon } from '@helpers/eve_image'
 import { structure_flags, security_colour, security_label, percent, short_isk } from '@helpers/structure_locations'
 
 const { auth_token } = get_request_user(Astro)
@@ -58,7 +58,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import Button from '@components/blocks/Button.astro'
 import Textarea from '@components/blocks/Textarea.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
-import ManageStatCard from '@components/blocks/manage/ManageStatCard.astro'
+import StatCard from '@components/blocks/StatCard.astro'
 import ManageField from '@components/blocks/manage/ManageField.astro'
 import SectionTabs from '@components/blocks/SectionTabs.astro'
 import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
@@ -66,6 +66,7 @@ import StructureFlags from '@components/blocks/structures/StructureFlags.astro'
 import StructureRigChip from '@components/blocks/structures/StructureRigChip.astro'
 import LazyPartial from '@components/blocks/LazyPartial.astro'
 import StructureSettingsForm from '@components/blocks/structures/StructureSettingsForm.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <Viewport title={page_title} meta_description={t('structures.description')}>
@@ -86,7 +87,7 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
                     <span>{detail.solar_system_name}</span>
                     <span class="[ structure-hero__type ]">{detail.type_name}</span>
                 </p>
-                <button type="button" class="[ structure-copyname ]"
+                <StylessButton type="button" class="[ structure-copyname ]"
                     data-name={detail.name}
                     x-data="{ copied: false }"
                     x-on:click="navigator.clipboard.writeText($el.dataset.name).then(() => { copied = true; setTimeout(() => copied = false, 1500) })"
@@ -96,7 +97,7 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
                         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="12" height="12" /><path d="M5 15V3h12" /></svg>
                         <span x-text={`copied ? '${t('structures.card.copied')}' : '${t('structures.card.copy_button')}'`}>{t('structures.card.copy_button')}</span>
                     </kbd>
-                </button>
+                </StylessButton>
             </div>
             {detail.rigs.length > 0 &&
                 <ul class="[ structure-hero__rigs ]" aria-label={t('structures.card.rigs')}>
@@ -112,10 +113,10 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
             <SectionTabPanel id="overview" id_prefix="structure" is_default={true}>
                 <Flexblock gap="var(--space-l)">
                     <div class="[ structure-stats ]">
-                        <ManageStatCard label={t('structures.stat.build_index')} value={percent(detail.manufacturing_index) ?? '—'} detail={paid(detail.manufacturing_index) ?? t('structures.stat.system_index')} />
-                        <ManageStatCard label={t('structures.stat.reactions_index')} value={percent(detail.reaction_index) ?? '—'} detail={paid(detail.reaction_index) ?? t('structures.stat.system_index')} />
-                        <ManageStatCard label={t('structures.stat.tax')} value={percent(detail.facility_tax) ?? '—'} detail={detail.facility_tax === null ? t('structures.stat.tax_unknown_hint') : undefined} />
-                        <ManageStatCard label={t('structures.stat.office')} value={short_isk(detail.office_fee_isk)} detail={t('structures.stat.office_hint')} />
+                        <StatCard label={t('structures.stat.build_index')} value={percent(detail.manufacturing_index) ?? '—'} hint={paid(detail.manufacturing_index) ?? t('structures.stat.system_index')} />
+                        <StatCard label={t('structures.stat.reactions_index')} value={percent(detail.reaction_index) ?? '—'} hint={paid(detail.reaction_index) ?? t('structures.stat.system_index')} />
+                        <StatCard label={t('structures.stat.tax')} value={percent(detail.facility_tax) ?? '—'} hint={detail.facility_tax === null ? t('structures.stat.tax_unknown_hint') : undefined} />
+                        <StatCard label={t('structures.stat.office')} value={short_isk(detail.office_fee_isk)} hint={t('structures.stat.office_hint')} />
                     </div>
 
                     <section class="[ structure-section ]" aria-labelledby="structure-about">
@@ -313,12 +314,12 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
             line-height: 1;
             text-transform: uppercase;
             color: var(--highlight);
-            background-color: var(--hairline-strong);
+            background-color: var(--border-color-hover);
         }
     }
 
     .structure-hero__full {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .structure-hero__line {
@@ -335,7 +336,7 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
     }
 
     .structure-hero__type {
-        color: var(--text-muted);
+        color: var(--faded);
 
         &::before {
             content: "·";
@@ -354,7 +355,7 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
         color: var(--highlight);
         cursor: pointer;
         background-color: var(--component-background);
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
 
         kbd {
             display: inline-flex;
@@ -363,8 +364,8 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
             padding: var(--space-3xs) var(--space-xs);
             font: inherit;
             font-weight: 600;
-            color: var(--text-muted);
-            border-inline-start: 1px solid var(--hairline-strong);
+            color: var(--faded);
+            border-inline-start: 1px solid var(--border-color-hover);
         }
 
         svg {
@@ -426,20 +427,20 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
 
         p {
             font-size: var(--step--1);
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         &:is(a):focus-visible,
         &:is(a):hover {
-            border-color: var(--hairline-strong);
+            border-color: var(--border-color-hover);
         }
 
         &.off {
             background: none;
-            border: 1px dashed var(--hairline-strong);
+            border: 1px dashed var(--border-color-hover);
 
             h3 {
-                color: var(--text-muted);
+                color: var(--faded);
             }
         }
     }
@@ -454,7 +455,7 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
             padding: var(--space-s) var(--space-m) var(--space-2xs);
 
             span {
-                color: var(--text-muted);
+                color: var(--faded);
             }
         }
 
@@ -470,7 +471,7 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
             gap: var(--space-s);
             padding: var(--space-xs) var(--space-m);
             color: var(--highlight);
-            border-top: 1px solid var(--hairline-medium);
+            border-top: 1px solid var(--border-color);
         }
     }
 
@@ -500,7 +501,7 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
             align-items: center;
             gap: var(--space-s);
             padding: var(--space-xs) var(--space-m);
-            border-bottom: 1px solid var(--hairline-medium);
+            border-bottom: 1px solid var(--border-color);
         }
 
         p {
@@ -513,7 +514,7 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
 
         time {
             font-size: var(--step--1);
-            color: var(--text-muted);
+            color: var(--faded);
             white-space: nowrap;
         }
     }
@@ -535,7 +536,7 @@ import StructureSettingsForm from '@components/blocks/structures/StructureSettin
         }
 
         .del {
-            color: var(--attention);
+            color: var(--fleet-yellow);
             text-decoration: line-through;
         }
     }

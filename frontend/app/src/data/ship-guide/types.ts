@@ -86,3 +86,46 @@ export type OpponentShipResolver = (
     opponent: string,
     selfShip?: ResolvedOpponentShip,
 ) => ResolvedOpponentShip | null
+
+export type GuideResourceLink = {
+    title: string
+    href: string
+    note: string
+}
+
+export type GuideMatchupLegendItem = {
+    rating: MatchupRating
+    label: string
+    description: string
+}
+
+/** A run of the Additional Resources lead-in: plain text or an external link. */
+export type ResourcesIntroPart = string | { href: string; label: string }
+
+/** Everything the `ShipGuide` block renders: one config per guide, assembled in `src/data/<guide>/guide.ts`. */
+export type ShipGuideConfig = {
+    /** Prefix for heading and copy-button ids, e.g. `nfg`. */
+    id_prefix: string
+    /** Hull class shown in each ship's kicker, e.g. `Frigate`. */
+    hull_class: string
+    /** Optional line under every ship's "Example fits" heading. */
+    fits_lead?: string
+    meta: { title: string; edition: string; yc: string }
+    introduction: string[]
+    considerations: string[]
+    consideration_bullets: string[]
+    disclaimers: string[]
+    metagame_summary: { archetype: string; text: string }[]
+    matchup_legend: GuideMatchupLegendItem[]
+    matchup_charts: MatchupChart[]
+    ships: ShipGuide[]
+    glossary: GlossaryEntry[]
+    sections: GuideSection[]
+    resources: GuideResourceLink[]
+    /** The lead-in paragraph above the resource list. */
+    resources_intro: ResourcesIntroPart[]
+    /** First-edition testimonials and thanks, shown under the lead-in. */
+    credits?: { quotes: { text: string; attribution: string }[]; thanks: string }
+    get_fittings: (ship_id: string) => GuideFitting[]
+    resolve_opponent: OpponentShipResolver
+}

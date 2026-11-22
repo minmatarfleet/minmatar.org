@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { Doctrine } from '@dtypes/api.minmatar.org'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 import { query_string } from '@helpers/string'
 
 /**
@@ -34,7 +34,9 @@ const sorted = [...doctrines].sort((a, b) => a.name.localeCompare(b.name))
 const DOCTRINE_URL = `${translatePath('/partials/fleet_doctrine_component')}?${query_string({ fleet_id })}`
 const ADD_SHIPS_MODAL_URL = `${translatePath('/partials/fleet_add_ships_modal_component/')}?${query_string({ fleet_id })}`
 
+import Input from '@components/blocks/Input.astro'
 import Button from '@components/blocks/Button.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
 ---
 
 <section id="fleet-ships" class="[ fleet-ships-setup ]" aria-labelledby="fleet-ships-setup-title">
@@ -53,26 +55,28 @@ import Button from '@components/blocks/Button.astro'
             <small>{t('fleets.ships_setup.doctrine_hint')}</small>
             <fieldset x-data="{ query: '' }">
                 <legend class="[ visually-hidden ]">{t('fleets.ships_setup.doctrine')}</legend>
-                <input
+                <Input
                     type="search"
                     x-model="query"
                     placeholder={t('search')}
                     aria-label={t('search')}
-                    class="[ fleet-ships-setup__search ]"
                 />
                 <div class="[ fleet-ships-setup__doctrines ]">
                     {sorted.map((doctrine, index) =>
-                        <label
+                        <OptionCard
                             class="[ fleet-ships-setup__doctrine ]"
+                            name="doctrine_id"
+                            value={String(doctrine.id)}
+                            checked={index === 0}
+                            input_attributes={{ required: true }}
                             x-show={`!query || ${JSON.stringify(doctrine.name.toLowerCase())}.includes(query.toLowerCase())`}
                         >
-                            <input type="radio" name="doctrine_id" value={doctrine.id} required checked={index === 0} />
                             {doctrine.primary_fittings[0] &&
                                 <img src={get_item_icon(doctrine.primary_fittings[0].ship_id, 64)} alt="" width="36" height="36" loading="lazy" />
                             }
                             <span>{doctrine.name}</span>
                             <small>{t('fleets.ships_setup.fits').replace('{count}', fits(doctrine).toString())}</small>
-                        </label>
+                        </OptionCard>
                     )}
                 </div>
             </fieldset>
@@ -150,15 +154,6 @@ import Button from '@components/blocks/Button.astro'
         }
     }
 
-    .fleet-ships-setup__search {
-        min-height: 2.75rem;
-        padding: 0 var(--space-xs);
-        background: var(--background);
-        border: 1px solid var(--border-color-hover);
-        color: var(--highlight);
-        font: inherit;
-    }
-
     .fleet-ships-setup__doctrines {
         display: flex;
         flex-direction: column;
@@ -168,25 +163,12 @@ import Button from '@components/blocks/Button.astro'
     }
 
     .fleet-ships-setup__doctrine {
-        display: grid;
-        grid-template-columns: auto auto minmax(0, 1fr) auto;
-        gap: var(--space-xs);
-        align-items: center;
-        min-height: 2.75rem;
-        padding: var(--space-3xs) var(--space-xs);
-        border: 1px solid var(--border-color);
-        cursor: pointer;
-
         span {
             color: var(--highlight);
         }
 
-        &:has(input:checked) {
-            border-color: var(--fleet-yellow);
-        }
-
-        input {
-            accent-color: var(--fleet-red);
+        small {
+            margin-inline-start: auto;
         }
     }
 

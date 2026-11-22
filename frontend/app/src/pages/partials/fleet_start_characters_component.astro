@@ -18,7 +18,7 @@ if (isNaN(fleet_id))
 import type { SummaryCharacter, UserActiveFleet } from '@dtypes/api.minmatar.org'
 import { get_characters_summary } from '@helpers/api.minmatar.org/characters'
 import { get_my_active_fleets } from '@helpers/api.minmatar.org/fleets'
-import { get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image'
 
 let characters:SummaryCharacter[] = []
 let active_fleets:UserActiveFleet[] = []
@@ -96,7 +96,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         margin: 0;
         padding: var(--space-3xs) var(--space-2xs);
         font-size: var(--step--2);
-        color: var(--text-muted);
+        color: var(--faded);
         text-transform: uppercase;
     }
 
@@ -118,7 +118,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
 
     @media (hover: hover) {
         .start-characters :global(.start-fleet-row:hover) {
-            background-color: var(--hairline);
+            background-color: var(--border-color);
         }
     }
 
@@ -128,6 +128,6 @@ import EmptyState from '@components/blocks/EmptyState.astro'
     }
 
     .start-characters__main {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 </style>

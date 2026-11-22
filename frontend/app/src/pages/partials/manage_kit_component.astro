@@ -1,4 +1,5 @@
 ---
+import { get_corporation_logo } from '@helpers/eve_image'
 /**
  * The working examples on /manage/kit/: every manage kit component wired to
  * a real htmx round trip. Nothing is stored; saves echo what was posted.
@@ -27,6 +28,7 @@ import HtmxPager from '@components/blocks/HtmxPager.astro'
 import ViewChips from '@components/blocks/manage/ViewChips.astro'
 import ManageSearch from '@components/blocks/manage/ManageSearch.astro'
 import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import RowSwapFrame from '@components/blocks/manage/RowSwapFrame.astro'
 import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
 import EntityPicker from '@components/blocks/manage/EntityPicker.astro'
 import EveTimeInput from '@components/blocks/manage/EveTimeInput.astro'
@@ -88,6 +90,7 @@ const COLUMNS = [
     { label: t('manage.kit.demo_group'), phone: false },
     { label: t('manage.kit.demo_waiting'), align: 'num' as const },
 ]
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {part === 'list' &&
@@ -122,12 +125,12 @@ const COLUMNS = [
                                 url={kit_url({ part: 'row', key: screen.key })}
                             >
                                 <td>
-                                    <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+                                    <StylessButton type="button" class="[ manage-who ]" x-on:click="open = !open">
                                         <span class="[ manage-who__text ]">
                                             <span class="[ manage-who__name ]">{label_of(screen.key)}</span>
                                             <span class="[ manage-who__sub ]">{manage_screen(screen.key)?.path}</span>
                                         </span>
-                                    </button>
+                                    </StylessButton>
                                 </td>
                                 <td class="[ is-wide ]">{t(t_key('manage.group_', screen.group))}</td>
                                 <td class:list={['num', { 'manage-warn': waiting.has(screen.key) }]}>{waiting.get(screen.key)?.count ?? 0}</td>
@@ -149,16 +152,16 @@ const COLUMNS = [
 {part === 'row' && row_screen && (
     removed
         ? (
-            // A row goes back inside a <table> and the request picks it with hx-select:
+            // A row goes back inside a RowSwapFrame and the request picks it with hx-select:
             // htmx would drop a bare <tbody> after Astro's leading <style>/<link>.
-            <table>
+            <RowSwapFrame>
                 <ExpandRow id={`kit-row-${row_screen.key}`} colspan={COLUMNS.length + 1} label={label_of(row_screen.key)} dim={true}>
                     <td><span class="[ manage-who__name ]">{label_of(row_screen.key)}</span></td>
                     <td class="[ is-wide ]">{t(t_key('manage.group_', row_screen.group))}</td>
                     <td class="num"><span class="[ manage-saved ]">{t('manage.kit.demo_removed')}</span></td>
                     <p slot="detail" class="[ manage-muted ]">{t('manage.kit.demo_removed')}</p>
                 </ExpandRow>
-            </table>
+            </RowSwapFrame>
         )
         : (
             <form
@@ -208,7 +211,7 @@ const COLUMNS = [
                 name="corporation_id"
                 name_field="corporation_name"
                 label={t('manage.kit.demo_corporation')}
-                value={picked_corporation.id ? { id: picked_corporation.id, name: picked_corporation.name, icon_url: `https://images.evetech.net/corporations/${picked_corporation.id}/logo?size=64` } : null}
+                value={picked_corporation.id ? { id: picked_corporation.id, name: picked_corporation.name, icon_url: get_corporation_logo(Number(picked_corporation.id), 64) } : null}
             />
             <EntityPicker
                 id="kit-system"

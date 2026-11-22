@@ -4,9 +4,11 @@ const { t, translatePath } = i18n(Astro.url)
 
 import type { FleetKills, FleetFightRound } from '@helpers/api.minmatar.org/fleets'
 import { format_isk } from '@helpers/numbers'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 import { killmail_engagement } from '@helpers/fleet_fights'
+import Select from '@components/blocks/Select.astro'
 
+import StylessButton from '@components/blocks/StylessButton.astro'
 /**
  * The Kills tab: every killmail of a finished fleet, oldest first, filtered
  * to kills or losses and to one engagement over the rendered rows. Links to
@@ -77,30 +79,30 @@ const PUBLIC_URL = translatePath(`/fleets/${fleet_id}/kills`)
         <h2 id="kill-feed-title" class="visually-hidden">{t('fleets.tabs.kills')}</h2>
         <div class="[ kill-feed__filters ]" role="group" aria-label={t('fleets.killfeed.filter')}>
             {filters.map(filter =>
-                <button
+                <StylessButton
                     type="button"
                     x-on:click={`outcome = '${filter.key}'`}
                     x-bind:aria-pressed={`outcome === '${filter.key}'`}
                     aria-pressed={filter.key === 'all' ? 'true' : 'false'}
-                >{filter.label}</button>
+                >{filter.label}</StylessButton>
             )}
             {engagements.length > 1 &&
                 <label class="[ kill-feed__engagement ]">
                     <span class="visually-hidden">{t('fleets.killfeed.engagement')}</span>
-                    <select x-model="engagement">
+                    <Select size="sm" width="auto" x-model="engagement">
                         <option value="">{t('fleets.killfeed.every_engagement')}</option>
                         {engagements.map(number =>
                             <option value={number.toString()}>{t('fleets.fights.round').replace('{number}', number.toString())}</option>
                         )}
-                    </select>
+                    </Select>
                 </label>
             }
         </div>
         <span class="[ kill-feed__share ]">
-            <button type="button" x-on:click="share()">
+            <StylessButton type="button" x-on:click="share()">
                 <span x-show="!copied">{t('fleets.killfeed.share')}</span>
                 <span x-show="copied" x-cloak>{t('fleets.killfeed.copied')}</span>
-            </button>
+            </StylessButton>
             {!public_view && <a href={PUBLIC_URL} target="_blank" rel="noopener noreferrer">{t('fleets.killfeed.public_page')} ↗</a>}
         </span>
     </header>
@@ -133,10 +135,10 @@ const PUBLIC_URL = translatePath(`/fleets/${fleet_id}/kills`)
     </ol>
 
     {killmails.length > ROWS_SHOWN &&
-        <button type="button" class="[ kill-feed__more ]" x-on:click="show_all = !show_all">
+        <StylessButton type="button" class="[ kill-feed__more ]" x-on:click="show_all = !show_all">
             <span x-show="!show_all">{t('fleets.killfeed.show_all').replace('{count}', killmails.length.toString())}</span>
             <span x-show="show_all" x-cloak>{t('fleets.after.show_fewer')}</span>
-        </button>
+        </StylessButton>
     }
 </section>
 
@@ -165,12 +167,11 @@ const PUBLIC_URL = translatePath(`/fleets/${fleet_id}/kills`)
 
     .kill-feed__filters button,
     .kill-feed__share button,
-    .kill-feed__engagement select,
     .kill-feed__more {
         min-height: 2.75rem;
         padding: 0 var(--space-s);
         background: transparent;
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
         color: var(--foreground);
         font: inherit;
         font-weight: 700;
@@ -190,10 +191,6 @@ const PUBLIC_URL = translatePath(`/fleets/${fleet_id}/kills`)
         background-color: var(--highlight);
         border-color: var(--highlight);
         color: var(--background);
-    }
-
-    .kill-feed__engagement select {
-        background-color: var(--component-background);
     }
 
     .kill-feed__share a {
@@ -260,15 +257,15 @@ const PUBLIC_URL = translatePath(`/fleets/${fleet_id}/kills`)
     }
 
     .kill-feed__kill {
-        color: color-mix(in srgb, var(--alliance-blue) 55%, white);
+        color: var(--alliance-blue-300);
     }
 
     .kill-feed__loss {
-        color: color-mix(in srgb, var(--fleet-red) 70%, white);
+        color: var(--fleet-red-text);
     }
 
     .kill-feed__tag {
-        color: var(--text-muted);
+        color: var(--faded);
         text-align: center;
     }
 

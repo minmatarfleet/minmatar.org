@@ -70,7 +70,8 @@ function blocks(source: string) {
     const found: { selector: string; body: string; start: number }[] = []
     const re = /([^{}]+)\{([^{}]*)\}/g
     for (let match = re.exec(source); match; match = re.exec(source))
-        found.push({ selector: match[1].trim().split('\n').pop()!.trim(), body: match[2], start: match.index })
+        // A selector list (`:root,\nbody.color-blind-mode`) keeps its parts; comment lines above it are not selectors.
+        found.push({ selector: match[1].split('\n').filter((l) => !/^\s*(\/\/|\/\*|\*)/.test(l)).join(' ').replace(/\s+/g, ' ').trim(), body: match[2], start: match.index })
     return found
 }
 
@@ -98,7 +99,7 @@ export function read_tokens(): Token[] {
     for (const [path, source] of Object.entries(get_sources())) {
         const file = short_file(path)
         for (const block of blocks(source)) {
-            if (block.selector !== ':root')
+            if (!block.selector.split(',').some((part) => part.trim() === ':root'))
                 continue
             for (const { name, value, group } of declarations(block.body)) {
                 const references = [...value.matchAll(/var\((--[\w-]+)/g)].map((m) => m[1])
@@ -122,6 +123,7 @@ export function read_theme_overrides(): ThemeOverride[] {
     const overrides: ThemeOverride[] = []
     for (const source of Object.values(get_sources())) {
         for (const block of blocks(source)) {
+            // `:root, body.x` lists re-declare root tokens for a mode, they are not mode overrides.
             if (!block.selector.startsWith('body.'))
                 continue
             const tokens = declarations(block.body).map(({ name, value }) => ({ name, value }))
@@ -184,14 +186,17 @@ export function color_family(token: Token): string {
     if (name.startsWith('security-status')) return 'Security status'
     if (/^(tech-|storyline|faction|officer|deadspace|abyssal)/.test(name)) return 'Item meta groups'
     if (name.startsWith('discord-')) return 'Discord'
+    if (/^neutral-\d+$/.test(name)) return 'Neutral grade'
+    if (/-(?:50|100|200|300|400|500|600|700|800|900|950)$/.test(name)) return 'Brand grades'
+    if (/-text$/.test(name) && /^(fleet-red|green|alliance-blue)/.test(name)) return 'Semantic'
     if (name.endsWith('-blind')) return 'Colour-blind mode'
     if (/transparency|backdrop/.test(name)) return 'Glass (effects)'
-    if (/^(hairline|text-muted|glow|surface-sunken|border-color|faded)/.test(name)) return 'Alpha tints'
+    if (/^(tint-|surface-sunken|border-color|faded)/.test(name)) return 'Alpha tints'
     if (token.tier === 'semantic' || /^(foreground|background|component-background|highlight|form-color|button-color|skeleton)/.test(name)) return 'Semantic'
     return 'Brand palette'
 }
 
-export const COLOR_FAMILIES = ['Brand palette', 'Semantic', 'Alpha tints', 'Colour-blind mode', 'Glass (effects)', 'Item meta groups', 'Security status', 'Discord']
+export const COLOR_FAMILIES = ['Brand palette', 'Semantic', 'Alpha tints', 'Brand grades', 'Neutral grade', 'Colour-blind mode', 'Glass (effects)', 'Item meta groups', 'Security status', 'Discord']
 
 // ---- Whole-app scan: fonts and colours used outside the token files ----
 
@@ -253,7 +258,7 @@ export function read_font_families(): FontFamily[] {
     const source_of = (family: string): FontFamily['source'] => {
         if (font_face_families.has(family)) return 'self-hosted'
         if (google.has(family)) return 'google-fonts'
-        if (/Montserrat|Qahiri/.test(family)) return 'fontsource'
+        if (/Montserrat|Qahiri|Orbitron|Source Sans|Lora/.test(family)) return 'fontsource'
         return 'system'
     }
 

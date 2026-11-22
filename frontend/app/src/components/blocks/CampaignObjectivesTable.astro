@@ -25,11 +25,12 @@ delete attributes.class
 const rows = campaign_objective_rows(week, systems, t)
 
 import CampaignObjectiveRow from '@components/blocks/CampaignObjectiveRow.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 ---
 
 <div class:list={['[ campaign-objectives ]', Astro.props.class]} {...attributes}>
     {rows.length === 0 ?
-        <p class="[ campaign-objectives-empty ]">{t('campaigns.week.no_targets')}</p>
+        <EmptyState title={t('campaigns.week.no_targets')} />
         :
         <>
             <div class="[ campaign-objectives-header ]" aria-hidden="true">
@@ -59,11 +60,6 @@ import CampaignObjectiveRow from '@components/blocks/CampaignObjectiveRow.astro'
             letter-spacing: 0.05em;
             font-size: var(--step--2);
         }
-    }
-
-    .campaign-objectives-empty {
-        color: var(--foreground);
-        font-size: var(--step-0);
     }
 
     @media screen and (max-width: 767px) {

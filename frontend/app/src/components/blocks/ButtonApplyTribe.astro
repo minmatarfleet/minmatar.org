@@ -111,16 +111,8 @@ import Tag from '@components/blocks/Tag.astro';
         x-data={`{
             characters: [],
             character_ids: '[]',
-            tippy_instance: null,
             update_character_ids() {
                 this.character_ids = JSON.stringify(this.characters.map(c => parseInt(c)));
-
-                $nextTick(() => {
-                    if (this.characters.length === 0)
-                        this.tippy_instance = tippy($el.querySelector('.apply-tooltip'), tippy_options)
-                    else
-                        if (this.tippy_instance) this.tippy_instance.destroy()
-                })
             }
         }`}
         x-init="update_character_ids()"

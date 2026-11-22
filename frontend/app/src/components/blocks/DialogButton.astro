@@ -97,7 +97,6 @@ import StylessButton from '@components/blocks/StylessButton.astro';
     <template x-teleport="body">
         <Dialog
             breakout={true}
-            non_centered={true}
             close_button={close_button}
             non_centered={non_centered}
             full_screen={full_screen}
@@ -110,12 +109,12 @@ import StylessButton from '@components/blocks/StylessButton.astro';
             x-bind:aria-hidden="button_dialog_open == false"
             x-trap="button_dialog_open"
             x-bind:inert="!button_dialog_open"
-            @keyup.escape.window="close_dialog()"
-            @mousedown.outside="button_dialog_open && close_dialog()"
+            @keyup.escape.window="!$event.target?.closest?.('[data-combobox-escape]') && close_dialog()"
+            @mousedown.outside="button_dialog_open && !$event.target.closest('[data-dialog-base]') && close_dialog()"
             style={max_width ? `--dialog-max-width: ${max_width}` : undefined}
             thin={thin_dialog}
             transparent={transparent}
-            x-init="htmx.process($el); $watch('button_dialog_open', v => { if(v) $nextTick(() => $el.focus()) })"
+            x-init="if (typeof htmx !== 'undefined') htmx.process($el); $watch('button_dialog_open', v => { if(v) $nextTick(() => $el.focus()) })"
             tabindex="-1"
         >
             <slot name="header" slot="header" />

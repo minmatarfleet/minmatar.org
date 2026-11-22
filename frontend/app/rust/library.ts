@@ -13,32 +13,32 @@ export const RUST_LIBRARY = {
     'Layout': [
         'compositions/Wrapper', 'compositions/Grid', 'compositions/FlexInline', 'compositions/FlexInlineSiblings',
         'compositions/Flexblock', 'compositions/FixedFluid', 'compositions/FluidFixed', 'compositions/BlockList',
-        'compositions/XFadeScroll', 'compositions/Cover', 'compositions/Center',
+        'compositions/XFadeScroll',
     ],
     'Components/Forms': [
         'blocks/Button', 'blocks/StylessButton', 'blocks/ButtonStack', 'blocks/ButtonConfirm', 'blocks/ClipboardButton',
-        'blocks/Input', 'blocks/InputError', 'blocks/Select', 'blocks/Textarea', 'blocks/StylessTextArea',
-        'blocks/RadioCheckInput', 'blocks/UnstyledRadioCheckButton', 'blocks/Switch', 'blocks/SwitchSquare',
-        'blocks/FlatPicker', 'blocks/Kbd',
+        'blocks/Input', 'blocks/InputError', 'blocks/Select', 'blocks/Textarea',
+        'blocks/RadioCheckInput', 'blocks/Switch',
+        'blocks/FlatPicker', 'blocks/Kbd', 'blocks/Combobox',
     ],
     'Components/Feedback': [
-        'blocks/EmptyState', 'blocks/ErrorRefetch', 'blocks/ShowAlert', 'blocks/Progress', 'blocks/PageProgress',
-        'blocks/Countdown', 'blocks/LocalTime', 'blocks/CountUpAnimation', 'blocks/StatusText', 'blocks/LazyPartial',
+        'blocks/EmptyState', 'blocks/ErrorRefetch', 'blocks/ShowAlert', 'blocks/Progress',
+        'blocks/Countdown', 'blocks/LocalTime', 'blocks/CountUpAnimation', 'blocks/LazyPartial',
         'blocks/SkipToContent',
     ],
     'Components/Data display': [
-        'blocks/Badge', 'blocks/Tag', 'blocks/TextBadge', 'blocks/NotificationBadge', 'blocks/VisibilityTag',
+        'blocks/Badge', 'blocks/Tag', 'blocks/NotificationBadge',
         'blocks/DebugTag', 'blocks/ComponentBlock', 'blocks/ComponentBlockHeader', 'blocks/CollapsibleBlock',
-        'blocks/CollapsableButton', 'blocks/StatCard', 'blocks/Table', 'blocks/DataGrid', 'blocks/TextGroup',
+        'blocks/CollapsableButton', 'blocks/StatCard', 'blocks/RowList', 'blocks/DataGrid', 'blocks/DataTable', 'blocks/Chart', 'blocks/Carousel', 'blocks/TextGroup',
         'blocks/Square', 'blocks/Markdown', 'blocks/Marquee', 'blocks/SettingRow', 'blocks/NumberNameTooltip',
-        'blocks/Tile', 'blocks/OptionCard', 'blocks/Card', 'blocks/PictureCard',
+        'blocks/Tile', 'blocks/OptionCard', 'blocks/PictureCard',
     ],
     'Components/Navigation': [
         'blocks/ActionMenu', 'blocks/ActionMenuItem', 'blocks/Dropdown', 'blocks/SectionTabs', 'blocks/SectionTabPanel',
-        'blocks/HtmxPager', 'blocks/FilterChip', 'blocks/ChipGroup', 'blocks/Breadcrumb', 'blocks/ExternalLink',
+        'blocks/HtmxPager', 'blocks/FilterChip', 'blocks/ChipGroup', 'blocks/ExternalLink',
     ],
     'Components/Overlays': [
-        'blocks/Dialog', 'blocks/DialogButton', 'blocks/AlertDialog', 'blocks/ConfirmDialog', 'blocks/Modal', 'blocks/Tippy',
+        'blocks/Dialog', 'blocks/DialogBase', 'blocks/DialogButton', 'blocks/AlertDialog', 'blocks/ConfirmDialog', 'blocks/Modal', 'blocks/Tippy',
     ],
     'EVE': [
         'blocks/Picture', 'blocks/CharacterPicture', 'blocks/CorporationPicture', 'blocks/ItemPicture',
@@ -50,7 +50,7 @@ export const RUST_LIBRARY = {
         'blocks/sde/SolarSystemSearch',
     ],
     'Page': [
-        'page/PageTitle', 'page/PageSubheader', 'page/PageActions', 'page/PageBreadcrumbs', 'page/BreadcrumbLink',
+        'page/PageTitle', 'blocks/Hero', 'page/PageSubheader', 'page/PageActions', 'page/PageBreadcrumbs',
         'layout/TextBox', 'layout/Context',
     ],
 } as const

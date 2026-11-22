@@ -15,6 +15,13 @@
  * `variant`: 'compact' (boards: heading-font header, tight gaps, highlighted
  * rows) or 'ledger' (contract lists: bold body-font header, roomier gaps).
  *
+ * `header` slot: your own header cells (sort buttons with hx-*, tooltips)
+ * instead of the plain `columns` text; give each cell `role="columnheader"`.
+ * `columns` may then be empty.
+ *
+ * `hidden_columns`: indexes whose header text is visually hidden (an icon
+ * column); it stays the column's accessible name.
+ *
  * `stack`: on phones (48rem and below) drop the header and the minimum width
  * so rows can lay out as cards; cells with a `data-label` show it as their
  * caption. The row layout itself stays with the component that owns the row.
@@ -23,6 +30,7 @@ interface Props {
     columns:            string[];
     template:           string;
     numeric?:           number[];
+    hidden_columns?:    number[];
     min_width?:         string;
     variant?:           'compact' | 'ledger';
     stack?:             boolean;
@@ -33,6 +41,7 @@ const {
     columns,
     template,
     numeric = [],
+    hidden_columns = [],
     min_width = '38rem',
     variant = 'compact',
     stack = false,
@@ -57,12 +66,16 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
         {...attributes}
     >
         <div class="[ data-grid-row data-grid-head ]" role="row">
-            {columns.map((column, index) =>
-                <span
-                    role="columnheader"
-                    class:list={{ 'data-grid-numeric': numeric.includes(index) }}
-                >{column}</span>
-            )}
+            {Astro.slots.has('header') ?
+                <slot name="header" />
+                :
+                columns.map((column, index) =>
+                    <span
+                        role="columnheader"
+                        class:list={{ 'data-grid-numeric': numeric.includes(index) }}
+                    >{hidden_columns.includes(index) ? <span class="[ visually-hidden ]">{column}</span> : column}</span>
+                )
+            }
         </div>
         <slot />
     </div>

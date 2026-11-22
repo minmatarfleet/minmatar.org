@@ -81,3 +81,44 @@ export const WrappingContent = {
         await expect(button.querySelectorAll('span')).toHaveLength(2)
     },
 }
+
+export const BareXData = {
+    args: { 'x-data': true, 'x-on:click': 'opened = true', slots: { default: 'Open details' } },
+    play: async ({ canvasElement }: Ctx) => {
+        // A bare `x-data` used to throw while rendering (`true.slice`).
+        const button = within(canvasElement).getByRole('button', { name: 'Open details' })
+        await expect(button).toHaveAttribute('x-data', '{}')
+    },
+}
+
+export const ExternalHrefWithQuote = {
+    args: { href: "https://example.com/it's?a=1", external: true, slots: { default: 'Quoted link' } },
+    play: async ({ canvasElement }: Ctx) => {
+        const link = within(canvasElement).getByRole('link', { name: 'Quoted link' })
+        // The href is JSON-encoded in the expressions, so the quote cannot end the string early.
+        await expect(link.getAttribute('x-on:click.prevent')).toContain(`window.open("https://example.com/it's?a=1", '_blank')`)
+        await expect(link.getAttribute('x-data')).toContain(`accept_href: "https://example.com/it's?a=1"`)
+    },
+}
+
+export const CallerClassWins = {
+    args: { class: 'caller-chip', slots: { default: 'Caller styled' } },
+    parameters: {
+        docs: { description: { story: 'The reset has zero specificity, so a single global class sets colour and padding exactly as it would on a raw `<button>`.' } },
+    },
+    play: async ({ canvasElement }: Ctx) => {
+        const style = document.createElement('style')
+        style.textContent = '.caller-chip { color: rgb(1, 2, 3); padding: 7px; background-color: rgb(4, 5, 6); border: 1px solid rgb(7, 8, 9); }'
+        document.head.appendChild(style)
+        try {
+            const button = within(canvasElement).getByRole('button', { name: 'Caller styled' })
+            const computed = getComputedStyle(button)
+            await expect(computed.color).toBe('rgb(1, 2, 3)')
+            await expect(computed.paddingTop).toBe('7px')
+            await expect(computed.backgroundColor).toBe('rgb(4, 5, 6)')
+            await expect(computed.borderTopWidth).toBe('1px')
+        } finally {
+            style.remove()
+        }
+    },
+}

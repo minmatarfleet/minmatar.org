@@ -63,6 +63,7 @@ const show_actions = order.status === 'pending'
 const copy_label = t('buyback.purchase.orders.copy_isk').replace(/'/g, "\\'")
 const copied_label = t('copied').replace(/'/g, "\\'")
 const janice_label = t('buyback.purchase.copy_janice').replace(/'/g, "\\'")
+import Textarea from '@components/blocks/Textarea.astro'
 ---
 
 <div
@@ -96,12 +97,8 @@ const janice_label = t('buyback.purchase.copy_janice').replace(/'/g, "\\'")
         data-label={t("buyback.purchase.orders.col.items")}
         tabindex="0"
         aria-label={line_count_label}
-        x-init={`tippy($el, {
-            content: ${JSON.stringify(lines_tip_html(order.lines))},
-            allowHTML: true,
-            delay: [100, 200],
-            arrow: true,
-        })`}
+        data-tippy-content={lines_tip_html(order.lines)}
+        data-tippy-allowHTML="true"
     >
         <span>{number_thousand_separator(quantity)}</span>
     </div>
@@ -124,7 +121,6 @@ const janice_label = t('buyback.purchase.copy_janice').replace(/'/g, "\\'")
         role="cell"
         data-label={t("date_created")}
         data-tippy-content={t('date_issued').replace('{date}', created_datetime)}
-        x-init="tippy($el, tippy_options)"
     >
         <span class="[ whitespace-nowrap ]">{created_date}</span>
     </div>
@@ -190,18 +186,18 @@ const janice_label = t('buyback.purchase.copy_janice').replace(/'/g, "\\'")
                     </form>
                 }
             </ActionMenu>
-            <textarea
+            <Textarea
                 class="[ hidden ]"
                 id={`buyback-order-isk-${order.id}`}
                 readonly
-            >{String(order.contract_total)}</textarea>
+            >{String(order.contract_total)}</Textarea>
         }
         {show_actions && order.janice_tsv &&
-            <textarea
+            <Textarea
                 class="[ hidden ]"
                 id={`buyback-order-janice-${order.id}`}
                 readonly
-            >{order.janice_tsv}</textarea>
+            >{order.janice_tsv}</Textarea>
         }
     </div>
 </div>
@@ -220,7 +216,7 @@ const janice_label = t('buyback.purchase.copy_janice').replace(/'/g, "\\'")
     }
 
     .buyback-purchase-order-item--highlight {
-        background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+        background: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
     }
 
     .buyback-purchase-order-item__quantity {

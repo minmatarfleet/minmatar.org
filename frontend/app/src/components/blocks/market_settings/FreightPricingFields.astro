@@ -27,6 +27,8 @@ import { FREIGHT_STANDARD_MAX_M3, isk_input_text, share_to_percent } from '@help
 import { number_thousand_separator } from '@helpers/numbers'
 
 import Input from '@components/blocks/Input.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import ManageField from '@components/blocks/manage/ManageField.astro'
 
 const mode = route?.route_type === 'fixed' ? 'fixed' : 'rate'
@@ -38,14 +40,19 @@ const modes = [
 ---
 
 <div class="[ manage-form ]" x-data={`{ mode: ${JSON.stringify(mode)} }`}>
-    <fieldset class="[ manage-chips market-mode ]">
+    <fieldset class="[ market-mode ]">
         <legend class="[ manage-field__label ]">{t('manage.freight.pricing')}</legend>
-        {modes.map((option) => (
-            <label class="[ manage-chip ]">
-                <input type="radio" name="route_type" value={option.value} checked={option.value === mode} x-model="mode" />
-                <span>{option.label}</span>
-            </label>
-        ))}
+        <ChipGroup wrap={true}>
+            {modes.map((option) => (
+                <FilterChip
+                    type="radio"
+                    name="route_type"
+                    value={option.value}
+                    checked={option.value === mode}
+                    input_attributes={{ 'x-model': 'mode' }}
+                >{option.label}</FilterChip>
+            ))}
+        </ChipGroup>
     </fieldset>
 
     <div class="[ manage-fields ]">

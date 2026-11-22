@@ -31,7 +31,7 @@ const colors = limit ? all.slice(0, limit) : all
 
 <style lang="scss">
     .intro {
-        color: var(--text-muted);
+        color: var(--faded);
         margin: 0 0 var(--space-s);
     }
 
@@ -53,22 +53,22 @@ const colors = limit ? all.slice(0, limit) : all
         gap: var(--space-2xs) var(--space-xs);
         align-items: center;
         padding: var(--space-2xs);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
     }
 
     .swatch {
         block-size: var(--space-l);
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
     }
 
     .count {
-        color: var(--text-muted);
+        color: var(--faded);
         font-size: var(--step--1);
     }
 
     details {
         grid-column: 1 / -1;
         font-size: var(--step--2);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 </style>

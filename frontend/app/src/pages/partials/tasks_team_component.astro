@@ -13,7 +13,7 @@ import type { TaskTeamDetail, TaskTeamOverview, TaskTeamRow } from '@dtypes/api.
 import { get_request_user } from '@helpers/request_user'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import { get_task_team, get_task_teams, is_task_action, post_task_action } from '@helpers/api.minmatar.org/tasks'
-import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
+import { get_corporation_logo, get_player_icon } from '@helpers/eve_image'
 
 const { auth_token } = get_request_user(Astro)
 if (!auth_token) return HTTP_403_Forbidden()
@@ -54,10 +54,13 @@ const teams: TaskTeamRow[] = overview ? [...overview.corporations, ...overview.t
 const team_url = (row: { kind: string, id: number }) => `${BASE_URL}?kind=${row.kind}&id=${row.id}`
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ManageTable from '@components/blocks/manage/ManageTable.astro'
 import TaskRollupRow from '@components/blocks/tasks/TaskRollupRow.astro'
 import TaskGroup from '@components/blocks/tasks/TaskGroup.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <div id={TARGET} class="[ tasks-team ][ task-stack is-loose ]">
@@ -74,32 +77,28 @@ import TaskGroup from '@components/blocks/tasks/TaskGroup.astro'
             ? <EmptyState title={t('tasks.team.empty_title')} hint={t('tasks.team.empty_hint')} />
             : (
                 <>
-                    <nav class="[ manage-chips ]" aria-label={t('tasks.tab.team')}>
-                        <button
-                            type="button"
-                            class:list={['[ manage-chip ]', { 'is-on': !detail }]}
-                            aria-current={!detail ? 'true' : undefined}
-                            hx-get={BASE_URL}
-                            hx-target={`#${TARGET}`}
-                            hx-swap="outerHTML"
-                        >
-                            {t('tasks.team.all_teams')}
-                        </button>
-                        {teams.map((row) => {
-                            const on = detail?.kind === row.kind && detail?.id === row.id
-                            return (
-                                <button
-                                    type="button"
-                                    class:list={['[ manage-chip ]', { 'is-on': on }]}
-                                    aria-current={on ? 'true' : undefined}
-                                    hx-get={team_url(row)}
-                                    hx-target={`#${TARGET}`}
-                                    hx-swap="outerHTML"
-                                >
-                                    {row.name}
-                                </button>
-                            )
-                        })}
+                    <nav aria-label={t('tasks.tab.team')}>
+                        <ChipGroup wrap={true}>
+                            <FilterChip
+                                active={!detail}
+                                aria-current={!detail ? 'true' : undefined}
+                                hx-get={BASE_URL}
+                                hx-target={`#${TARGET}`}
+                                hx-swap="outerHTML"
+                            >{t('tasks.team.all_teams')}</FilterChip>
+                            {teams.map((row) => {
+                                const on = detail?.kind === row.kind && detail?.id === row.id
+                                return (
+                                    <FilterChip
+                                        active={on}
+                                        aria-current={on ? 'true' : undefined}
+                                        hx-get={team_url(row)}
+                                        hx-target={`#${TARGET}`}
+                                        hx-swap="outerHTML"
+                                    >{row.name}</FilterChip>
+                                )
+                            })}
+                        </ChipGroup>
                     </nav>
 
                     {action_error && <p class="[ manage-field__error ]" role="alert">{action_error}</p>}
@@ -135,9 +134,9 @@ import TaskGroup from '@components/blocks/tasks/TaskGroup.astro'
                                                     <td class="[ num ]">{row.open}</td>
                                                     <td class="[ num manage-good ]">{row.closed_this_week}</td>
                                                     <td class="[ act ]">
-                                                        <button type="button" class="[ task-quiet ]" hx-get={team_url(row)} hx-target={`#${TARGET}`} hx-swap="outerHTML">
+                                                        <StylessButton type="button" class="[ task-quiet ]" hx-get={team_url(row)} hx-target={`#${TARGET}`} hx-swap="outerHTML">
                                                             {t('tasks.team.open_team')}
-                                                        </button>
+                                                        </StylessButton>
                                                     </td>
                                                 </tr>
                                             ))}

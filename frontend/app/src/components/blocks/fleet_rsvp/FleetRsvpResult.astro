@@ -120,7 +120,7 @@ const fc = result.fleet.fc_name
         block-size: var(--space-2xl);
         border-radius: 50%;
         border: 1px solid var(--green);
-        background-color: color-mix(in srgb, var(--green) 18%, transparent);
+        background-color: color-mix(in srgb, var(--green) var(--tint-soft), transparent);
         color: var(--green);
 
         svg {
@@ -129,9 +129,9 @@ const fc = result.fleet.fc_name
         }
 
         &.is-out {
-            border-color: var(--hairline-strong);
+            border-color: var(--border-color-hover);
             background-color: var(--component-background);
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 

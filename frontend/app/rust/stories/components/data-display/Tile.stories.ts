@@ -136,3 +136,14 @@ export const CustomAlt = {
         await expect(canvasElement.querySelector('.tile__body')?.getAttribute('style')).toContain('min-height: 24rem')
     },
 }
+
+export const Passthrough = {
+    name: 'Attributes reach the root',
+    args: { 'data-testid': 'doctrine-tile', 'x-data': '{ open: false }' },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        // Extra attributes used to be collected and dropped.
+        const tile = within(canvasElement).getByTestId('doctrine-tile')
+        await expect(tile).toHaveClass('tile')
+        await expect(tile).toHaveAttribute('x-data', '{ open: false }')
+    },
+}

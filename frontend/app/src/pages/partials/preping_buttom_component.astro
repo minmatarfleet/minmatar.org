@@ -38,5 +38,6 @@ import PrepingButton from '@components/blocks/PrepingButton.astro';
 import ShowAlert from '@components/blocks/ShowAlert.astro';
 ---
 
+{/* no-error-refetch: the preping result or its error opens in the alert dialog */}
 {alert && <ShowAlert alert={alert} /> }
 <PrepingButton fleet_id={fleet_id} />

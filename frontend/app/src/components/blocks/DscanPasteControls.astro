@@ -35,6 +35,9 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 ---
 
 <Flexblock gap="var(--space-s)" class:list={['[ dscan-controls ]', Astro.props.class]} {...attributes}>
@@ -44,24 +47,24 @@ import Input from '@components/blocks/Input.astro'
             <span class="[ dscan-controls__faded ]">{preview.lines} {t('dscan.lines')}</span>
             <fieldset class="[ dscan-controls__kinds ]">
                 <legend class="[ visually-hidden ]">{t('dscan.paste_kind')}</legend>
-                {kinds.map(kind =>
-                    <label class:list={['[ dscan-controls__kind ]', { 'is-on': preview.kind === kind }]}>
-                        <input
-                            class="[ visually-hidden ]"
+                <ChipGroup wrap={true} role="none">
+                    {kinds.map(kind =>
+                        <FilterChip
                             type="radio"
                             name="kind"
                             value={kind}
                             checked={preview.kind === kind}
-                            hx-post={PREVIEW_URL}
-                            hx-trigger="change"
-                            hx-include="closest form"
-                            hx-target="#dscan-controls"
-                        />
-                        {t(kind === 'dscan' ? 'dscan.kind.dscan' : 'dscan.kind.local')}
-                    </label>
-                )}
+                            input_attributes={{
+                                'hx-post': PREVIEW_URL,
+                                'hx-trigger': 'change',
+                                'hx-include': 'closest form',
+                                'hx-target': '#dscan-controls',
+                            }}
+                        >{t(kind === 'dscan' ? 'dscan.kind.dscan' : 'dscan.kind.local')}</FilterChip>
+                    )}
+                </ChipGroup>
             </fieldset>
-            <button type="button" class="[ dscan-controls__clear ]" x-on:click="clear_paste()">{t('dscan.clear')}</button>
+            <StylessButton type="button" class="[ dscan-controls__clear ]" x-on:click="clear_paste()">{t('dscan.clear')}</StylessButton>
         </FlexInline>
     }
 
@@ -104,7 +107,7 @@ import Input from '@components/blocks/Input.astro'
     }
 
     .dscan-controls__faded {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .dscan-controls__kinds {
@@ -113,28 +116,6 @@ import Input from '@components/blocks/Input.astro'
         margin: 0 0 0 auto;
         padding: 0;
         border: 0;
-    }
-
-    .dscan-controls__kind {
-        display: inline-flex;
-        align-items: center;
-        padding: var(--space-3xs) var(--space-xs);
-        border: 1px solid var(--hairline-strong);
-        color: var(--highlight);
-        font-size: var(--step--1);
-        font-weight: 600;
-        cursor: pointer;
-
-        &.is-on {
-            background-color: var(--fleet-red);
-            border-color: var(--fleet-red);
-            color: var(--fleet-yellow);
-        }
-
-        &:has(input:focus-visible) {
-            outline: 2px solid var(--highlight);
-            outline-offset: 2px;
-        }
     }
 
     .dscan-controls__clear {

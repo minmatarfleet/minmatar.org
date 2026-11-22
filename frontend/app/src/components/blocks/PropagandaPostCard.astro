@@ -22,7 +22,7 @@ const {
 const image_sanitized = post.image ? post.image.replaceAll('amp;', '') : undefined
 const post_href = translatePath(`/alliance/propaganda/${post.post_id}`)
 
-import { get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image'
 import { format_date } from '@helpers/date'
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -33,7 +33,7 @@ import PostActions from '@components/blocks/PostActions.astro';
 import Tag from '@components/blocks/Tag.astro';
 import PostByline from '@components/blocks/PostByline.astro';
 import TribeGroupChip from '@components/blocks/TribeGroupChip.astro';
-import VisibilityTag from '@components/blocks/VisibilityTag.astro';
+import VisibilityTag from '@components/blocks/tribes/VisibilityTag.astro';
 ---
 
 <div class="[ propaganda-post-card ]">

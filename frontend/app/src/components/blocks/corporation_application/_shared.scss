@@ -1,5 +1,5 @@
 .form-subtext {
-    margin: 0;
+    margin-block-end: 0;
     font-size: var(--step--1);
     font-weight: 400;
     color: var(--faded);
@@ -40,7 +40,7 @@
 
 .browse-corps-link {
     color: var(--faded);
-    text-decoration-color: color-mix(in srgb, var(--faded) 55%, transparent);
+    text-decoration-color: color-mix(in srgb, var(--faded) var(--tint-bold), transparent);
 
     @media (hover: hover) {
         &:hover {
@@ -71,18 +71,18 @@
 .form-link {
     color: var(--fleet-yellow);
     text-decoration: underline;
-    text-decoration-color: color-mix(in srgb, var(--fleet-yellow) 55%, transparent);
+    text-decoration-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-bold), transparent);
     text-underline-offset: 0.15em;
 
     @media (hover: hover) {
         &:hover {
-            color: color-mix(in srgb, var(--fleet-yellow) 75%, white);
+            color: var(--fleet-yellow-400);
             text-decoration-color: currentColor;
         }
     }
 
     &:focus-visible {
-        color: color-mix(in srgb, var(--fleet-yellow) 75%, white);
+        color: var(--fleet-yellow-400);
         outline-color: var(--fleet-yellow);
         text-decoration-color: currentColor;
     }

@@ -41,9 +41,20 @@ import {
 } from '@/data/campaigns/etherium-reach'
 
 import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
-import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
-import PlayerContentChartChartjs from '@components/blocks/campaigns/etherium-reach/PlayerContentChartChartjs.astro'
-import PlayerIncomeChartChartjs from '@components/blocks/campaigns/etherium-reach/PlayerIncomeChartChartjs.astro'
+import StatCard from '@components/blocks/StatCard.astro'
+import CampaignContentChart from '@components/blocks/campaigns/CampaignContentChart.astro'
+import Chart from '@components/blocks/Chart.astro'
+import {
+    CAMPAIGN_BEATS,
+    EXPLORATION_GROSS_ISK,
+    FLEETS_MONTHLY,
+    ISK_DESTROYED_MONTHLY,
+    MINING_GROSS_ISK,
+    MONTHS,
+    PI_GROSS_ISK,
+    RATTING_GROSS_ISK,
+    toBillions,
+} from '@/data/campaigns/etherium-reach'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import TextBox from '@components/layout/TextBox.astro'
 import Grid from '@components/compositions/Grid.astro'
@@ -142,7 +153,7 @@ import { number_name } from '@helpers/numbers'
             column_gap="var(--space-3xs)"
             min_item_width="300px"
         >
-            <CampaignStat
+            <StatCard variant="glass"
                 label="Participation"
                 tone="success"
             >
@@ -153,8 +164,8 @@ import { number_name } from '@helpers/numbers'
                     element='span' 
                     target={FLEET_PILOTS}
                 /> pilots
-            </CampaignStat>
-            <CampaignStat
+            </StatCard>
+            <StatCard variant="glass"
                 label="ISK destroyed"
                 tone="success"
             >
@@ -163,8 +174,8 @@ import { number_name } from '@helpers/numbers'
                     target={CAMPAIGN_ISK_DESTROYED}
                     data-tippy-content={number_name(CAMPAIGN_ISK_DESTROYED, lang)}
                 />
-            </CampaignStat>
-            <CampaignStat
+            </StatCard>
+            <StatCard variant="glass"
                 label="Total income"
             >
                 <CountUpAnimation
@@ -172,7 +183,7 @@ import { number_name } from '@helpers/numbers'
                     target={CAMPAIGN_TOTAL_INCOME}
                     data-tippy-content={number_name(CAMPAIGN_TOTAL_INCOME, lang)}
                 />
-            </CampaignStat>
+            </StatCard>
         </Grid>
     </Flexblock>
 </TextBox>
@@ -193,7 +204,7 @@ import { number_name } from '@helpers/numbers'
                 column_gap="var(--space-3xs)"
                 min_item_width="300px"
             >
-                <CampaignStat
+                <StatCard variant="glass"
                     label="ISK destroyed"
                     tone="success"
                 >
@@ -202,8 +213,8 @@ import { number_name } from '@helpers/numbers'
                         target={PERIOD_DRONELANDS_ISK_KILLS}
                         data-tippy-content={number_name(PERIOD_DRONELANDS_ISK_KILLS, lang)}
                     />
-                </CampaignStat>
-                <CampaignStat
+                </StatCard>
+                <StatCard variant="glass"
                     label="ISK lost"
                     tone="danger"
                 >
@@ -212,14 +223,14 @@ import { number_name } from '@helpers/numbers'
                         target={PERIOD_DRONELANDS_ISK_LOSSES}
                         data-tippy-content={number_name(PERIOD_DRONELANDS_ISK_LOSSES, lang)}
                     />
-                </CampaignStat>
-                <CampaignStat label="Campaign fleets">
+                </StatCard>
+                <StatCard variant="glass" label="Campaign fleets">
                     <CountUpAnimation
                         element='span' 
                         target={PERIOD_DRONELANDS_FLEETS}
                         data-tippy-content={number_name(PERIOD_DRONELANDS_FLEETS, lang)}
                     />
-                </CampaignStat>
+                </StatCard>
             </Grid>
         </Flexblock>
 
@@ -232,7 +243,7 @@ import { number_name } from '@helpers/numbers'
                 column_gap="var(--space-3xs)"
                 min_item_width="300px"
             >
-                <CampaignStat
+                <StatCard variant="glass"
                     label="ISK destroyed"
                     tone="success"
                 >
@@ -241,8 +252,8 @@ import { number_name } from '@helpers/numbers'
                         target={PERIOD_OUTSIDE_ISK_KILLS}
                         data-tippy-content={number_name(PERIOD_OUTSIDE_ISK_KILLS, lang)}
                     />
-                </CampaignStat>
-                <CampaignStat
+                </StatCard>
+                <StatCard variant="glass"
                     label="ISK lost"
                     tone="danger"
                 >
@@ -251,14 +262,14 @@ import { number_name } from '@helpers/numbers'
                         target={PERIOD_OUTSIDE_ISK_LOSSES}
                         data-tippy-content={number_name(PERIOD_OUTSIDE_ISK_LOSSES, lang)}
                     />
-                </CampaignStat>
-                <CampaignStat label="Warzone fleets">
+                </StatCard>
+                <StatCard variant="glass" label="Warzone fleets">
                     <CountUpAnimation
                         element='span' 
                         target={PERIOD_OUTSIDE_FLEETS}
                         data-tippy-content={number_name(PERIOD_OUTSIDE_FLEETS, lang)}
                     />
-                </CampaignStat>
+                </StatCard>
             </Grid>
         </Flexblock>
     </Flexblock>
@@ -297,7 +308,26 @@ import { number_name } from '@helpers/numbers'
     </Flexblock>
 
     <ComponentBlock>
-        <PlayerIncomeChartChartjs />
+        <Chart
+            type='line'
+            labels={[...MONTHS]}
+            datasets={[
+                { label: 'Ratting', data: RATTING_GROSS_ISK.map(toBillions), tone: 'fleet-red', gradient: 100, ring: true, suffix: ' B ISK', borderWidth: 2.5, pointRadius: 3.5, pointBorderWidth: 1.5, tension: 0 },
+                { label: 'Mining', data: MINING_GROSS_ISK.map(toBillions), tone: 'alliance-blue', gradient: 100, ring: true, suffix: ' B ISK', borderWidth: 2.5, pointRadius: 3.5, pointBorderWidth: 1.5, tension: 0 },
+                { label: 'Planetary Interaction', data: PI_GROSS_ISK.map(toBillions), tone: 'militia-purple', gradient: 100, ring: true, suffix: ' B ISK', borderWidth: 2.5, pointRadius: 3.5, pointBorderWidth: 1.5, tension: 0 },
+                { label: 'Exploration (estimated)', data: EXPLORATION_GROSS_ISK.map(toBillions), tone: 'highlight', fill: false, ring: true, suffix: ' B ISK', borderWidth: 2, borderDash: [6, 4], pointRadius: 3.5, pointBorderWidth: 1.5, pointStyle: 'rectRot', tension: 0 },
+            ]}
+            options={{
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { title: { display: true, text: 'ISK (billions)' }, grid: { display: false } },
+                },
+            }}
+            tick_suffix=' B'
+            legend={true}
+            height='min(43.75rem, 90vh)'
+            aria_label='Monthly gross ISK by activity: ratting, mining, planetary interaction and estimated exploration'
+        />
     </ComponentBlock>
 </Flexblock>
 
@@ -308,7 +338,16 @@ import { number_name } from '@helpers/numbers'
     </Flexblock>
 
     <ComponentBlock>
-        <PlayerContentChartChartjs />
+        <CampaignContentChart
+            months={MONTHS}
+            isk={ISK_DESTROYED_MONTHLY.map(toBillions)}
+            fleets={FLEETS_MONTHLY}
+            beats={CAMPAIGN_BEATS}
+            beat_labels={{ 3: 'SL0W collapses', 5: 'B0SS loses region', 6: 'RMC consolidates space', 7: 'TRD disbands' }}
+            beat_layout={{ 5: { anchor: 'end', dx: -10 }, 6: { anchor: 'middle', dx: 0 }, 7: { anchor: 'start', dx: 10 } }}
+            band={{ from: 0, to: 3 }}
+            aria_label='Monthly ISK destroyed in the Etherium Reach campaign against fleets flown'
+        />
     </ComponentBlock>
 </Flexblock>
 
@@ -537,7 +576,7 @@ import { number_name } from '@helpers/numbers'
         gap: var(--space-m);
         min-width: 0;
         padding-top: var(--space-l);
-        border-top: 1px solid color-mix(in srgb, var(--border-color) 45%, transparent);
+        border-top: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
     }
 
     .er-campaign__meta,
@@ -568,7 +607,7 @@ import { number_name } from '@helpers/numbers'
         overflow: hidden;
         text-decoration: none;
         color: inherit;
-        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
         border-left-width: 3px;
         transition:
             border-color 0.15s ease,
@@ -600,7 +639,7 @@ import { number_name } from '@helpers/numbers'
 
         &:hover,
         &:focus-visible {
-            border-color: color-mix(in srgb, var(--border-color-hover) 80%, transparent);
+            border-color: color-mix(in srgb, var(--border-color-hover) var(--tint-heavy), transparent);
         }
 
         &:focus-visible {
@@ -636,9 +675,9 @@ import { number_name } from '@helpers/numbers'
             background:
                 linear-gradient(
                     90deg,
-                    color-mix(in srgb, hsl(0 0% 4%) 94%, var(--fleet-red) 6%) 0%,
-                    color-mix(in srgb, hsl(0 0% 4%) 82%, var(--fleet-red) 5%) 42%,
-                    color-mix(in srgb, hsl(0 0% 4%) 58%, transparent) 100%
+                    color-mix(in srgb, var(--black) 94%, var(--fleet-red) 6%) 0%,
+                    color-mix(in srgb, var(--black) 82%, var(--fleet-red) 5%) 42%,
+                    color-mix(in srgb, var(--black) var(--tint-bold), transparent) 100%
                 );
         }
 
@@ -647,16 +686,16 @@ import { number_name } from '@helpers/numbers'
             background:
                 linear-gradient(
                     90deg,
-                    color-mix(in srgb, hsl(0 0% 4%) 90%, var(--fleet-red) 10%) 0%,
-                    color-mix(in srgb, hsl(0 0% 4%) 78%, var(--fleet-red) 8%) 42%,
-                    color-mix(in srgb, hsl(0 0% 4%) 52%, transparent) 100%
+                    color-mix(in srgb, var(--black) 90%, var(--fleet-red) 10%) 0%,
+                    color-mix(in srgb, var(--black) 78%, var(--fleet-red) 8%) 42%,
+                    color-mix(in srgb, var(--black) var(--tint-strong), transparent) 100%
                 );
         }
 
         .er-headline-card__tag {
             color: var(--fleet-yellow);
-            background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
-            border-color: color-mix(in srgb, var(--fleet-yellow) 28%, transparent);
+            background: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
+            border-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-medium), transparent);
         }
     }
 
@@ -667,9 +706,9 @@ import { number_name } from '@helpers/numbers'
             background:
                 linear-gradient(
                     90deg,
-                    color-mix(in srgb, hsl(0 0% 4%) 94%, var(--alliance-blue) 6%) 0%,
-                    color-mix(in srgb, hsl(0 0% 4%) 82%, var(--alliance-blue) 5%) 42%,
-                    color-mix(in srgb, hsl(0 0% 4%) 58%, transparent) 100%
+                    color-mix(in srgb, var(--black) 94%, var(--alliance-blue) 6%) 0%,
+                    color-mix(in srgb, var(--black) 82%, var(--alliance-blue) 5%) 42%,
+                    color-mix(in srgb, var(--black) var(--tint-bold), transparent) 100%
                 );
         }
 
@@ -678,16 +717,16 @@ import { number_name } from '@helpers/numbers'
             background:
                 linear-gradient(
                     90deg,
-                    color-mix(in srgb, hsl(0 0% 4%) 90%, var(--alliance-blue) 10%) 0%,
-                    color-mix(in srgb, hsl(0 0% 4%) 78%, var(--alliance-blue) 8%) 42%,
-                    color-mix(in srgb, hsl(0 0% 4%) 52%, transparent) 100%
+                    color-mix(in srgb, var(--black) 90%, var(--alliance-blue) 10%) 0%,
+                    color-mix(in srgb, var(--black) 78%, var(--alliance-blue) 8%) 42%,
+                    color-mix(in srgb, var(--black) var(--tint-strong), transparent) 100%
                 );
         }
 
         .er-headline-card__tag {
-            color: color-mix(in srgb, var(--alliance-blue) 65%, white);
-            background: color-mix(in srgb, var(--alliance-blue) 18%, transparent);
-            border-color: color-mix(in srgb, var(--alliance-blue) 35%, transparent);
+            color: var(--alliance-blue-text);
+            background: color-mix(in srgb, var(--alliance-blue) var(--tint-soft), transparent);
+            border-color: color-mix(in srgb, var(--alliance-blue) var(--tint-medium), transparent);
         }
     }
 
@@ -738,7 +777,7 @@ import { number_name } from '@helpers/numbers'
         gap: 0.45em;
         margin: 0;
         font-size: var(--step--2);
-        color: color-mix(in srgb, var(--faded) 88%, transparent);
+        color: color-mix(in srgb, var(--faded) var(--tint-dense), transparent);
         line-height: 1.4;
     }
 
@@ -811,8 +850,8 @@ import { number_name } from '@helpers/numbers'
         align-items: center;
         gap: var(--space-s);
         padding: var(--space-s);
-        background: color-mix(in srgb, var(--component-background) 80%, transparent);
-        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        background: color-mix(in srgb, var(--component-background) var(--tint-heavy), transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
         min-width: 0;
         text-align: center;
     }
@@ -890,8 +929,8 @@ import { number_name } from '@helpers/numbers'
         flex-direction: column;
         gap: var(--space-s);
         padding: var(--space-m);
-        background: color-mix(in srgb, var(--component-background) 70%, transparent);
-        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        background: color-mix(in srgb, var(--component-background) var(--tint-heavy), transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
         min-width: 0;
     }
 

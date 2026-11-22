@@ -23,6 +23,7 @@ delete attributes.class
 const partial_url = translatePath(`/partials/role_drills_component/?role=${guide.slug}`)
 const tracking = Array.isArray(completed)
 const done = new Set(completed ?? [])
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <div class:list={['[ role-drills ]', Astro.props.class]} {...attributes}>
@@ -40,7 +41,7 @@ const done = new Set(completed ?? [])
                     </span>
                     <span class="[ role-drills__kind ]">{t(t_key('fleet_roles.drill.', drill.kind))}</span>
                     {tracking && counts && !is_done && (
-                        <button
+                        <StylessButton
                             type="button"
                             class="[ role-drills__button ]"
                             hx-post={partial_url}
@@ -49,7 +50,7 @@ const done = new Set(completed ?? [])
                             hx-swap="outerHTML"
                         >
                             {t('fleet_roles.mark_done')}
-                        </button>
+                        </StylessButton>
                     )}
                     {is_done && <span class="visually-hidden">{t('fleet_roles.done')}</span>}
                 </li>
@@ -72,7 +73,7 @@ const done = new Set(completed ?? [])
         margin: 0;
         padding: 0;
         list-style: none;
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
     }
 
     .role-drills__item {
@@ -83,7 +84,7 @@ const done = new Set(completed ?? [])
         padding: var(--space-xs) var(--space-s);
 
         & + & {
-            border-top: 1px solid var(--hairline);
+            border-top: 1px solid var(--border-color);
         }
     }
 
@@ -94,7 +95,7 @@ const done = new Set(completed ?? [])
         justify-content: center;
         width: 1.25em;
         height: 1.25em;
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
         font-size: var(--step--1);
         font-weight: 700;
     }
@@ -123,7 +124,7 @@ const done = new Set(completed ?? [])
     .role-drills__note {
         margin: 0;
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     @media (max-width: 30rem) {
@@ -136,7 +137,7 @@ const done = new Set(completed ?? [])
     .role-drills__kind {
         flex: none;
         padding: var(--space-3xs) var(--space-2xs);
-        background: var(--hairline);
+        background: var(--border-color);
         font-size: var(--step--2);
         font-weight: 600;
         text-transform: uppercase;
@@ -146,7 +147,7 @@ const done = new Set(completed ?? [])
     .role-drills__button {
         min-height: 2.75rem;
         padding: 0 var(--space-s);
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
         background: transparent;
         color: var(--highlight);
         font-family: var(--button-font);

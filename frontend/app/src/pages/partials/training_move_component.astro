@@ -12,7 +12,7 @@ if (!user)
 
 import type { TrainingAccountOptions, TrainingCharacterSummary } from '@dtypes/api.minmatar.org'
 import { get_training_accounts, get_training_overview } from '@helpers/api.minmatar.org/training'
-import { get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image'
 import { TRAINING_MOVE_PARTIAL, TRAINING_PARTIAL, training_url } from '@helpers/training'
 
 const character_id = parseInt(Astro.url.searchParams.get('character_id') ?? '0') || 0
@@ -76,6 +76,8 @@ const conflicts = choices.filter(choice => choice.seen).map(choice => choice.val
 import Button from '@components/blocks/Button.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
 ---
 
 {fetch_error ?
@@ -100,7 +102,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
             :
             <div class="[ training-move__choices ]">
                 {account_characters.map(character =>
-                    <button
+                    <StylessButton
                         type="button"
                         class="[ training-move__choice ]"
                         hx-get={translatePath(training_url(TRAINING_MOVE_PARTIAL, { character_id: character.character_id }))}
@@ -110,7 +112,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                         <img src={get_player_icon(character.character_id, 64)} alt="" width="32" height="32" loading="lazy" />
                         <span class="[ training-move__label ]"><strong>{character.name}</strong></span>
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"></path></svg>
-                    </button>
+                    </StylessButton>
                 )}
             </div>
         }
@@ -139,22 +141,20 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         <fieldset>
             <legend>{t('training.account').replace(' {number}', '')}</legend>
             {choices.map(choice =>
-                <label class:list={['[ training-move__choice ]', { disabled: choice.disabled }]} x-bind:class={`{ selected: selected === '${choice.value}' }`}>
-                    <input
-                        type="radio"
-                        name="account"
-                        value={choice.value}
-                        checked={choice.value === current}
-                        disabled={choice.disabled}
-                        x-model="selected"
-                    />
+                <OptionCard
+                    name="account"
+                    value={choice.value}
+                    checked={choice.value === current}
+                    class={choice.disabled ? '[ training-move__choice--off ]' : undefined}
+                    input_attributes={{ disabled: choice.disabled, 'x-model': 'selected' }}
+                >
                     <span class="[ training-move__label ]">
                         <strong>{choice.label}</strong>
                         {choice.hint && <small class="[ training-muted ]">{choice.hint}</small>}
                     </span>
                     {choice.seen && <span class="[ training-move__seen ]">{choice.seen}</span>}
                     <span class="[ training-muted ]">{choice.room}</span>
-                </label>
+                </OptionCard>
             )}
         </fieldset>
 
@@ -201,7 +201,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
     }
 
     .training-muted {
-        color: var(--text-muted);
+        color: var(--faded);
         font-size: var(--step--1);
     }
 
@@ -221,7 +221,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         font-weight: 600;
         letter-spacing: 0.06em;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .training-move__choice {
@@ -230,26 +230,18 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         gap: var(--space-s);
         min-height: 3rem;
         padding: var(--space-3xs) var(--space-s);
-        border: 1px solid var(--hairline);
+        border: 1px solid var(--border-color);
         border-radius: var(--space-3xs);
         cursor: pointer;
-
-        &.selected {
-            border-color: var(--fleet-yellow);
-        }
-
-        &.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        input {
-            accent-color: var(--fleet-yellow);
-        }
 
         img {
             border-radius: var(--space-3xs);
         }
+    }
+
+    .training-move__choice--off {
+        opacity: 0.5;
+        cursor: not-allowed;
     }
 
     button.training-move__choice {

@@ -5,7 +5,7 @@ const { t, translatePath } = i18n(Astro.url)
 
 import type { DoctrineType } from '@dtypes/layout_components'
 import type { FleetParticipants } from '@helpers/api.minmatar.org/fleets'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 import { eve_clock } from '@helpers/fleet_fights'
 
 /**
@@ -180,7 +180,7 @@ const off_plan = Boolean(planned && flown_ids.size > 0 && !flown_ids.has(planned
     }
 
     .doctrine-flown__segment--mixed {
-        background-color: var(--hairline-strong);
+        background-color: var(--border-color-hover);
         color: var(--foreground);
     }
 

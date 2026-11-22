@@ -16,7 +16,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import Grid from '@components/compositions/Grid.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 
-import ContentSwiper from '@components/blocks/ContentSwiper.astro';
+import Carousel from '@components/blocks/Carousel.astro';
 import TileHero from '@components/blocks/TileHero.astro';
 import StylessButton from '@components/blocks/StylessButton.astro';
 import PostSlides from '@components/blocks/PostSlides.astro';
@@ -33,7 +33,7 @@ const WrapperElement = coverless ? Wrapper : ComponentBlock
         padding_inline='0'
         max_width='100%'
     >
-        <ContentSwiper swiper_selector='#posts-swiper'>
+        <Carousel selector='#posts-swiper' effect='fade' navigation={false} allow_touch_move={false}>
             <div class="[ swiper-slide ][ w-full ]">
                 <TileHero
                     title="Posts"
@@ -72,7 +72,7 @@ const WrapperElement = coverless ? Wrapper : ComponentBlock
             </div>
 
             <PostSlides coverless={coverless} />
-        </ContentSwiper>
+        </Carousel>
     </WrapperElement>
 
     <WrapperElement
@@ -82,7 +82,7 @@ const WrapperElement = coverless ? Wrapper : ComponentBlock
         padding_inline='0'
         max_width='100%'
     >
-        <ContentSwiper swiper_selector='#videos-swiper'>
+        <Carousel selector='#videos-swiper' effect='fade' navigation={false} allow_touch_move={false}>
             <div class="[ swiper-slide ][ w-full ]">
                 <TileHero
                     title="Videos"
@@ -112,7 +112,7 @@ const WrapperElement = coverless ? Wrapper : ComponentBlock
             </div>
 
             {/* <VideosSlides coverless={coverless} /> Check PostSlides component for reference */}
-        </ContentSwiper>
+        </Carousel>
     </WrapperElement>
 
     <WrapperElement
@@ -122,7 +122,7 @@ const WrapperElement = coverless ? Wrapper : ComponentBlock
         padding_inline='0'
         max_width='100%'
     >
-        <ContentSwiper swiper_selector='#series-swiper'>
+        <Carousel selector='#series-swiper' effect='fade' navigation={false} allow_touch_move={false}>
             <div class="[ swiper-slide ][ w-full ]">
                 <TileHero
                     title="Series"
@@ -147,7 +147,7 @@ const WrapperElement = coverless ? Wrapper : ComponentBlock
                     </Grid>
                 </TileHero>
             </div>
-        </ContentSwiper>
+        </Carousel>
 
         {/* <SerierSlides coverless={coverless} /> Check PostSlides component for reference */}
     </WrapperElement>

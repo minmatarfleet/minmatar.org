@@ -15,7 +15,8 @@ import { percent } from '@/data/amamake-market/format'
 import { query_string } from '@helpers/string'
 import { number_thousand_separator } from '@helpers/numbers'
 
-import FlexInline from '@components/compositions/FlexInline.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
 
 interface Props {
@@ -44,22 +45,16 @@ const chips = [
 ---
 
 <div class="[ mk-sold-types ]">
-    <nav class="[ mk-sold-chips ]" aria-label="Filter Top Items Sold by class">
-        <FlexInline gap="var(--space-2xs)">
-            {chips.map((chip) => (
-                <button
-                    type="button"
-                    class:list={['mk-sold-chip', chip.slug === resolved.slug && 'is-active']}
-                    hx-get={sold_types_partial(chip.slug)}
-                    hx-target="#mk-sold-types"
-                    hx-swap="innerHTML"
-                    aria-pressed={chip.slug === resolved.slug}
-                >
-                    {chip.label}
-                </button>
-            ))}
-        </FlexInline>
-    </nav>
+    <ChipGroup wrap={true} role="navigation" aria_label="Filter Top Items Sold by class">
+        {chips.map((chip) => (
+            <FilterChip
+                active={chip.slug === resolved.slug}
+                hx-get={sold_types_partial(chip.slug)}
+                hx-target="#mk-sold-types"
+                hx-swap="innerHTML"
+            >{chip.label}</FilterChip>
+        ))}
+    </ChipGroup>
 
     <ol
         class="[ mk-types ]"
@@ -111,43 +106,6 @@ const chips = [
         flex-direction: column;
         gap: var(--space-s);
         min-width: 0;
-    }
-
-    .mk-sold-chips {
-        min-width: 0;
-    }
-
-    .mk-sold-chip {
-        padding: var(--space-3xs) var(--space-s);
-        border: solid 1px var(--border-color);
-        border-radius: var(--space-l);
-        background: transparent;
-        color: var(--foreground);
-        font-family: var(--default-font);
-        font-size: var(--step--1);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        white-space: nowrap;
-        cursor: pointer;
-        transition: border-color var(--fast-transition), color var(--fast-transition), background-color var(--fast-transition);
-
-        &:focus-visible {
-            outline: 2px solid var(--highlight);
-            outline-offset: 2px;
-        }
-
-        &.is-active {
-            border-color: var(--highlight);
-            color: var(--highlight);
-            background-color: var(--light-transparency-background-mobile);
-        }
-
-        @media (hover: hover) {
-            &:hover {
-                border-color: var(--highlight);
-                color: var(--highlight);
-            }
-        }
     }
 
     .mk-types {
@@ -245,8 +203,8 @@ const chips = [
         letter-spacing: 0.06em;
         text-transform: uppercase;
         color: var(--green);
-        border: solid 1px color-mix(in srgb, var(--green) 45%, transparent);
-        background: color-mix(in srgb, var(--green) 14%, transparent);
+        border: solid 1px color-mix(in srgb, var(--green) var(--tint-strong), transparent);
+        background: color-mix(in srgb, var(--green) var(--tint-soft), transparent);
         vertical-align: middle;
         white-space: nowrap;
     }
@@ -270,7 +228,7 @@ const chips = [
     .mk-bar {
         width: 100%;
         height: var(--space-2xs);
-        background: var(--mk-track, color-mix(in srgb, var(--highlight) 6%, transparent));
+        background: var(--mk-track, color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent));
     }
 
     .mk-bar__fill {

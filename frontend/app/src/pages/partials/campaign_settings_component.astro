@@ -34,7 +34,7 @@ import {
 import { get_fittings } from '@helpers/api.minmatar.org/ships'
 import { get_doctrines } from '@helpers/api.minmatar.org/doctrines'
 import type { CampaignCoordination, CampaignDiscordLink, CampaignSettings, Doctrine, Fitting } from '@dtypes/api.minmatar.org'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon, get_player_icon } from '@helpers/eve_image'
 import { campaign_sides } from '@helpers/campaign_sides'
 import { form_text } from '@helpers/manage_forms'
 import { query_string } from '@helpers/string'
@@ -433,17 +433,19 @@ const party_kind_label = (kind: string) =>
 const format_number = (value: number) => value.toLocaleString(lang, { maximumFractionDigits: 1 })
 
 import Button from '@components/blocks/Button.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
 import Tag from '@components/blocks/Tag.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import ManageTable from '@components/blocks/manage/ManageTable.astro'
 import ManageField from '@components/blocks/manage/ManageField.astro'
 import EntityPicker from '@components/blocks/manage/EntityPicker.astro'
 import EveTimeInput from '@components/blocks/manage/EveTimeInput.astro'
 import SectionSummary from '@components/blocks/manage/SectionSummary.astro'
-import SwitchSquare from '@components/blocks/SwitchSquare.astro'
+import Switch from '@components/blocks/Switch.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {fetch_error || !settings || !choices ?
@@ -469,7 +471,7 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
             <Fragment>
                 <div class="[ campaign-features ]">
                     {CAMPAIGN_FEATURES.map((feature) =>
-                        <SwitchSquare
+                        <Switch shape="square"
                             name={`${feature}_enabled`}
                             label={t(`campaigns.features.${feature}`)}
                             description={t(`campaigns.features.${feature}_help`)}
@@ -502,7 +504,7 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
                     <EveTimeInput id="campaign-basics-start" name="start_at" label={t('campaigns.manage.starts')} value={settings.start_at} required />
                     <EveTimeInput id="campaign-basics-end" name="end_at" label={t('campaigns.manage.ends')} value={settings.end_at} required />
                 </div>
-                <SwitchSquare
+                <Switch shape="square"
                     name="undisclosed"
                     label={t('campaigns.manage.undisclosed')}
                     description={t('campaigns.manage.undisclosed_hint')}
@@ -521,18 +523,18 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
                 {rows.length === 0 ?
                     <EmptyState title={t('campaigns.manage.no_systems')} />
                     :
-                    <XFadeScroll>
-                        <table class="[ manage-table campaign-systems ]" style="--manage_table_min_width: 40rem">
-                            <caption class="[ visually-hidden ]">{t('campaigns.manage.systems_caption')}</caption>
-                            <thead>
-                                <tr>
-                                    <th scope="col">{t('campaigns.manage.system')}</th>
-                                    <th scope="col">{t('campaigns.manage.goal')}</th>
-                                    <th scope="col">{t('campaigns.manage.role')}</th>
-                                    <th scope="col">{t('campaigns.manage.priority')}</th>
-                                    <th scope="col" class="act"><span class="[ visually-hidden ]">{t('campaigns.manage.retire')}</span></th>
-                                </tr>
-                            </thead>
+                    <ManageTable
+                        caption={t('campaigns.manage.systems_caption')}
+                        columns={[
+                            { label: t('campaigns.manage.system') },
+                            { label: t('campaigns.manage.goal') },
+                            { label: t('campaigns.manage.role') },
+                            { label: t('campaigns.manage.priority') },
+                            { label: t('campaigns.manage.retire'), align: 'act', hidden: true },
+                        ]}
+                        expandable={false}
+                        min_width="40rem"
+                    >
                             <tbody>
                                 {rows.map((row) => (
                                     <tr class:list={['[ campaign-systems__row ]', { 'is-new': row.is_new }]}>
@@ -564,7 +566,7 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
                                         </td>
                                         <td class="act">
                                             {row.is_new ?
-                                                <button
+                                                <StylessButton
                                                     type="button"
                                                     class="[ campaign-systems__action ]"
                                                     aria-label={t('campaigns.manage.remove_system').replace('~NAME', row.name)}
@@ -572,7 +574,7 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
                                                     x-on:click="$el.closest('tr').remove()"
                                                 >
                                                     {t('campaigns.manage.remove')}
-                                                </button>
+                                                </StylessButton>
                                                 :
                                                 <label class="[ campaign-systems__action campaign-systems__retire ]">
                                                     <input type="checkbox" name={`retire_${row.key}`} checked={row.retire} class="[ visually-hidden ]" />
@@ -584,8 +586,7 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
                                     </tr>
                                 ))}
                             </tbody>
-                        </table>
-                    </XFadeScroll>
+                    </ManageTable>
                 }
                 {retired.length > 0 &&
                     <p class="[ manage-muted ]">{t('campaigns.manage.retired_systems').replace('~NAMES', retired.map((system) => system.name).join(', '))}</p>
@@ -629,13 +630,13 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
                                             <span class="[ manage-who__name ]">{party.name}{party.ticker && ` [${party.ticker}]`}</span>
                                             <span class="[ manage-who__sub ]">{party_kind_label(party.kind)}</span>
                                         </span>
-                                        <button
+                                        <StylessButton
                                             type="button"
                                             class="[ campaign-icon-button ]"
                                             aria-label={`${t('campaigns.manage.remove')} ${party.name}`}
                                             hx-post={PART_URL}
                                             hx-vals={JSON.stringify({ op: 'remove', party_id: String(party.id) })}
-                                        ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                                        ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></StylessButton>
                                     </li>
                                 ))}
                             </ul>
@@ -677,7 +678,7 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
                     <ul class="[ campaign-list ]" role="list">
                         {settings.coordinators.map((row) => (
                             <li class="[ campaign-list__row ]">
-                                <img src={`https://images.evetech.net/characters/${row.character_id}/portrait?size=64`} alt="" width="40" height="40" class="[ campaign-portrait ]" />
+                                <img src={get_player_icon(row.character_id, 64)} alt="" width="40" height="40" class="[ campaign-portrait ]" />
                                 <span class="[ campaign-list__name ]">
                                     <span class="[ manage-who__name ]">{row.character_name}</span>
                                     <span class="[ manage-who__sub ]">{[row.corporation_name, row.alliance_name].filter(Boolean).join(' · ')}</span>
@@ -690,13 +691,13 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
                                         ? t('campaigns.coordinators.discord').replace('{servers}', row.discord_servers.join(', '))
                                         : t('campaigns.coordinators.no_discord')}
                                 </span>
-                                <button
+                                <StylessButton
                                     type="button"
                                     class="[ campaign-icon-button ]"
                                     aria-label={t('campaigns.coordinators.remove').replace('{name}', row.character_name)}
                                     hx-post={PART_URL}
                                     hx-vals={JSON.stringify({ op: 'remove', coordinator_id: String(row.id) })}
-                                ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                                ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></StylessButton>
                             </li>
                         ))}
                     </ul>
@@ -704,13 +705,12 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
                 <div class="[ campaign-scopes ]">
                     <span class="[ manage-muted ]">{t('campaigns.coordinators.can_see')}</span>
                     {COORDINATOR_SCOPES.map((scope) =>
-                        <button
-                            type="button"
-                            class="[ campaign-chip ]"
-                            aria-pressed={settings.coordinator_scopes.includes(scope) ? 'true' : 'false'}
+                        <FilterChip
+                            tone="green"
+                            active={settings.coordinator_scopes.includes(scope)}
                             hx-post={PART_URL}
                             hx-vals={JSON.stringify({ op: 'scope', scope })}
-                        >{t(`campaigns.coordinators.scope.${scope}`)}</button>
+                        >{t(`campaigns.coordinators.scope.${scope}`)}</FilterChip>
                     )}
                 </div>
                 <div class="[ campaign-invite ]">
@@ -729,16 +729,14 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
             <Fragment>
                 <div class="[ campaign-doctrines ]">
                     {settings.doctrines.map((row) =>
-                        <span class="[ campaign-doctrine-chip ]">
-                            {row.name}
-                            <button
-                                type="button"
-                                class="[ campaign-icon-button ]"
-                                aria-label={t('campaigns.doctrines.remove').replace('{name}', row.name)}
-                                hx-post={PART_URL}
-                                hx-vals={JSON.stringify({ op: 'remove_doctrine', campaign_doctrine_id: String(row.id) })}
-                            ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
-                        </span>
+                        <FilterChip
+                            removable={true}
+                            remove_label={t('campaigns.doctrines.remove').replace('{name}', row.name)}
+                            remove_attributes={{
+                                'hx-post': PART_URL,
+                                'hx-vals': JSON.stringify({ op: 'remove_doctrine', campaign_doctrine_id: String(row.id) }),
+                            }}
+                        >{row.name}</FilterChip>
                     )}
                     <label for="campaign-doctrine" class="[ visually-hidden ]">{t('campaigns.doctrines.add')}</label>
                     <Select id="campaign-doctrine" size="sm" name="doctrine_id">
@@ -757,22 +755,21 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
                                     {fitting.doctrine_name && <span class="[ manage-who__sub ]">{fitting.doctrine_name}</span>}
                                 </span>
                                 <span class="[ campaign-fitting__role ]">{fitting.role_label}</span>
-                                <button
-                                    type="button"
-                                    class="[ campaign-chip ]"
-                                    aria-pressed={fitting.enabled ? 'true' : 'false'}
+                                <FilterChip
+                                    tone="green"
+                                    active={fitting.enabled}
                                     aria-label={t('campaigns.doctrines.toggle').replace('{name}', fitting.name)}
                                     hx-post={PART_URL}
                                     hx-vals={JSON.stringify({ op: 'toggle', row_id: String(fitting.id), enabled: String(!fitting.enabled) })}
-                                >{fitting.enabled ? t('campaigns.doctrines.on') : t('campaigns.doctrines.off')}</button>
+                                >{fitting.enabled ? t('campaigns.doctrines.on') : t('campaigns.doctrines.off')}</FilterChip>
                                 {!fitting.doctrine_id ?
-                                    <button
+                                    <StylessButton
                                         type="button"
                                         class="[ campaign-icon-button ]"
                                         aria-label={`${t('campaigns.manage.remove')} ${fitting.name}`}
                                         hx-post={PART_URL}
                                         hx-vals={JSON.stringify({ op: 'remove', row_id: String(fitting.id) })}
-                                    ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                                    ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></StylessButton>
                                     :
                                     <span class="[ campaign-icon-spacer ]" aria-hidden="true"></span>
                                 }
@@ -804,18 +801,18 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
                 {settings.week_targets.length === 0 ?
                     <p class="[ manage-muted ]">{t('campaigns.manage.targets_empty')}</p>
                     :
-                    <XFadeScroll>
-                        <table class="[ manage-table ]" style="--manage_table_min_width: 36rem">
-                            <caption class="[ visually-hidden ]">{t('campaigns.manage.targets_caption')}</caption>
-                            <thead>
-                                <tr>
-                                    <th scope="col">{t('campaigns.manage.system')}</th>
-                                    <th scope="col">{t('campaigns.manage.metric')}</th>
-                                    <th scope="col" class="num">{t('campaigns.manage.progress')}</th>
-                                    <th scope="col">{t('campaigns.manage.target')}</th>
-                                    <th scope="col">{t('campaigns.manage.target_state')}</th>
-                                </tr>
-                            </thead>
+                    <ManageTable
+                        caption={t('campaigns.manage.targets_caption')}
+                        columns={[
+                            { label: t('campaigns.manage.system') },
+                            { label: t('campaigns.manage.metric') },
+                            { label: t('campaigns.manage.progress'), align: 'num' },
+                            { label: t('campaigns.manage.target') },
+                            { label: t('campaigns.manage.target_state') },
+                        ]}
+                        expandable={false}
+                        min_width="36rem"
+                    >
                             <tbody>
                                 {settings.week_targets.map((row) => (
                                     <tr>
@@ -840,8 +837,7 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
                                     </tr>
                                 ))}
                             </tbody>
-                        </table>
-                    </XFadeScroll>
+                    </ManageTable>
                 }
                 <div class="[ manage-actions ]">
                     {settings.week_targets.length > 0 &&
@@ -954,13 +950,13 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
                                     </Select>
                                 </ManageField>
                             )}
-                            <button
+                            <StylessButton
                                 type="button"
                                 class="[ campaign-icon-button ]"
                                 aria-label={t('campaigns.discord.remove').replace('{name}', link.guild_name || link.guild_id)}
                                 hx-post={PART_URL}
                                 hx-vals={JSON.stringify({ op: 'remove_link', link_id: String(link.id) })}
-                            ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                            ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></StylessButton>
                         </li>
                     )}
                 </ul>
@@ -997,7 +993,7 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
     }
 
     .campaign-systems__row.is-new > td {
-        background: color-mix(in srgb, var(--fleet-yellow) 5%, transparent);
+        background: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
     }
 
     .campaign-systems__action {
@@ -1054,7 +1050,7 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
         align-items: center;
         gap: var(--space-s);
         padding-block: var(--space-2xs);
-        border-block-end: 1px solid var(--hairline);
+        border-block-end: 1px solid var(--border-color);
     }
 
     .campaign-list__name {
@@ -1084,7 +1080,7 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
     }
 
     [data-side='enemy'] > .campaign-sides-col__label { color: var(--fleet-red); }
-    [data-side='ally'] > .campaign-sides-col__label { color: color-mix(in srgb, var(--alliance-blue) 55%, var(--highlight)); }
+    [data-side='ally'] > .campaign-sides-col__label { color: var(--alliance-blue-300); }
     [data-side='third_party'] > .campaign-sides-col__label { color: var(--fleet-yellow); }
 
     .campaign-sides-add {
@@ -1103,7 +1099,7 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
         flex: none;
         background: none;
         border: 0;
-        color: var(--text-muted);
+        color: var(--faded);
         cursor: pointer;
 
         @media (hover: hover) {
@@ -1122,30 +1118,8 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
         flex: none;
     }
 
-    .campaign-list__row.is-off > :not(.campaign-chip) {
+    .campaign-list__row.is-off > :not(.filter-chip) {
         opacity: 0.5;
-    }
-
-    .campaign-chip {
-        flex: none;
-        min-inline-size: 4.5rem;
-        min-block-size: 2.25rem;
-        padding-inline: var(--space-2xs);
-        font-family: var(--button-font);
-        font-size: var(--step--2);
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: var(--text-muted);
-        background: none;
-        border: 1px solid var(--hairline-strong);
-        cursor: pointer;
-
-        &[aria-pressed='true'] {
-            color: var(--fleet-yellow);
-            background: var(--green);
-            border-color: var(--green);
-        }
     }
 
     .campaign-fitting__role {
@@ -1165,19 +1139,9 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
         flex: 1 1 18rem;
     }
 
-    .campaign-doctrine-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-3xs);
-        padding-inline-start: var(--space-xs);
-        background: var(--hairline-medium);
-        color: var(--highlight);
-        font-weight: 700;
-    }
-
     .campaign-coordinator__state {
         flex: 0 0 14rem;
-        color: var(--text-muted);
+        color: var(--faded);
 
         &.is-on { color: var(--green); }
     }

@@ -86,9 +86,9 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
             {srp.is_corp_ship || (srp.character_id !== srp.primary_character_id) &&
                 <FixedFluid width='16px' gap='var(--space-3xs)' class="[ main-character !items-start ][ grow ]" slot="header">
                     {srp.is_corp_ship ?
-                        <CorporationPicture corporation_id={srp.corporation_id} corporation_name={srp.corporation_name} size={16} icon_quality={32} />
+                        <CorporationPicture corporation_id={srp.corporation_id} corporation_name={srp.corporation_name} size={16} icon_quality={32} nested />
                         <small>{srp.corporation_name}</small> :
-                        <CharacterPicture character_id={srp.primary_character_id} character_name={srp.primary_character_name} size={16} icon_quality={32} />
+                        <CharacterPicture character_id={srp.primary_character_id} character_name={srp.primary_character_name} size={16} icon_quality={32} nested />
                         <small>{srp.primary_character_name}</small>
                     }
                 </FixedFluid>

@@ -13,7 +13,7 @@ if (!user || !can(await get_gates(Astro), 'learning.manage'))
 
 import type { MentorsMe, MentorsMetrics } from '@dtypes/api.minmatar.org'
 import { get_mentors_me, get_mentors_metrics } from '@helpers/api.minmatar.org/mentors'
-import { get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image'
 import { MENTORS_METRICS_PARTIAL, brackets_text, mentors_url } from '@helpers/mentors'
 
 const PERIODS = [30, 90, 365]
@@ -56,10 +56,12 @@ const scale = (measure: { mentored: number, similar: number, percent: boolean })
     measure.percent ? 100 : Math.max(measure.mentored, measure.similar, 1)
 
 import EmptyState from '@components/blocks/EmptyState.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import Grid from '@components/compositions/Grid.astro'
 import StatCard from '@components/blocks/StatCard.astro'
-import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import DataTable from '@components/blocks/DataTable.astro'
 import MentorsNav from '@components/blocks/mentors/MentorsNav.astro'
 import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
 ---
@@ -71,19 +73,17 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
         <>
             <MentorsNav active="metrics" me={me} />
 
-            <nav class="[ mentors-periods ]" aria-label={t('mentors.metrics.period')}>
-                {PERIODS.map(days =>
-                    <button
-                        type="button"
-                        class:list={['[ mentors-period ]', { 'is-active': days === period }]}
-                        aria-pressed={days === period ? 'true' : 'false'}
-                        hx-get={translatePath(mentors_url(MENTORS_METRICS_PARTIAL, { period: days }))}
-                        hx-target="#mentors-metrics"
-                        hx-swap="outerHTML"
-                    >
-                        {period_label(days)}
-                    </button>
-                )}
+            <nav aria-label={t('mentors.metrics.period')}>
+                <ChipGroup wrap={true}>
+                    {PERIODS.map(days =>
+                        <FilterChip
+                            active={days === period}
+                            hx-get={translatePath(mentors_url(MENTORS_METRICS_PARTIAL, { period: days }))}
+                            hx-target="#mentors-metrics"
+                            hx-swap="outerHTML"
+                        >{period_label(days)}</FilterChip>
+                    )}
+                </ChipGroup>
             </nav>
 
             {metrics.requests === 0 && metrics.mentors.length === 0 ?
@@ -95,19 +95,7 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                     </Grid>
 
                     <MentorsSection title={t('mentors.metrics.mentors')}>
-                        <XFadeScroll>
-                            <table class="[ mentors-table ]">
-                                <thead>
-                                    <tr>
-                                        <th scope="col">{t('mentors.metrics.col.mentor')}</th>
-                                        <th scope="col">{t('mentors.metrics.col.timezones')}</th>
-                                        <th scope="col">{t('mentors.metrics.col.classes')}</th>
-                                        <th scope="col">{t('mentors.metrics.col.pilots')}</th>
-                                        <th scope="col">{t('mentors.metrics.col.answers')}</th>
-                                        <th scope="col">{t('mentors.metrics.col.passed')}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                        <DataTable class="[ mentors-table ]" density="dense" columns={[{ key: 'c0', label: t('mentors.metrics.col.mentor') }, { key: 'c1', label: t('mentors.metrics.col.timezones') }, { key: 'c2', label: t('mentors.metrics.col.classes') }, { key: 'c3', label: t('mentors.metrics.col.pilots') }, { key: 'c4', label: t('mentors.metrics.col.answers') }, { key: 'c5', label: t('mentors.metrics.col.passed') }]}>
                                     {metrics.mentors.map(row =>
                                         <tr>
                                             <th scope="row">
@@ -123,9 +111,7 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                                             <td>{row.passed}</td>
                                         </tr>
                                     )}
-                                </tbody>
-                            </table>
-                        </XFadeScroll>
+                            </DataTable>
                     </MentorsSection>
 
                     <MentorsSection title={t('mentors.metrics.zones')} hint={t('mentors.metrics.zones_hint')}>
@@ -147,17 +133,7 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
 
                     {metrics.topics.length > 0 &&
                         <MentorsSection title={t('mentors.metrics.topics')}>
-                            <XFadeScroll>
-                                <table class="[ mentors-table ]">
-                                    <thead>
-                                        <tr>
-                                            <th scope="col">{t('mentors.metrics.col.class')}</th>
-                                            <th scope="col">{t('mentors.metrics.col.requests')}</th>
-                                            <th scope="col">{t('mentors.metrics.mentors')}</th>
-                                            <th scope="col">{t('mentors.metrics.col.waiting')}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
+                            <DataTable class="[ mentors-table ]" density="dense" columns={[{ key: 'c0', label: t('mentors.metrics.col.class') }, { key: 'c1', label: t('mentors.metrics.col.requests') }, { key: 'c2', label: t('mentors.metrics.mentors') }, { key: 'c3', label: t('mentors.metrics.col.waiting') }]}>
                                         {metrics.topics.map(topic =>
                                             <tr>
                                                 <th scope="row">{topic.title}</th>
@@ -166,9 +142,7 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                                                 <td>{topic.waiting}</td>
                                             </tr>
                                         )}
-                                    </tbody>
-                                </table>
-                            </XFadeScroll>
+                                </DataTable>
                         </MentorsSection>
                     }
 
@@ -216,59 +190,8 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
     }
 
     .mentors-muted {
-        color: var(--text-muted);
+        color: var(--faded);
         font-size: var(--step--1);
-    }
-
-    .mentors-periods {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-3xs);
-    }
-
-    .mentors-period {
-        min-height: var(--space-l);
-        padding: 0 var(--space-s);
-        border: solid 1px var(--hairline-strong);
-        background: none;
-        color: var(--foreground);
-        font-size: var(--step--1);
-        font-weight: 600;
-        cursor: pointer;
-
-        &.is-active {
-            border-color: var(--fleet-yellow);
-            color: var(--highlight);
-        }
-
-        &:focus-visible {
-            outline: solid 2px var(--fleet-yellow);
-            outline-offset: 2px;
-        }
-    }
-
-    .mentors-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: var(--step--1);
-
-        th,
-        td {
-            padding: var(--space-2xs) var(--space-s);
-            border-bottom: solid 1px var(--hairline);
-            text-align: start;
-            white-space: nowrap;
-        }
-
-        thead th {
-            color: var(--text-muted);
-            font-weight: 600;
-        }
-
-        tbody th {
-            color: var(--highlight);
-            font-weight: 600;
-        }
     }
 
     .mentors-table__who {
@@ -295,7 +218,7 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
 
         span,
         small {
-            color: var(--text-muted);
+            color: var(--faded);
             font-size: var(--step--1);
         }
 
@@ -342,7 +265,7 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
         font-size: var(--step--1);
 
         span:first-child {
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         strong {
@@ -352,13 +275,13 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
 
     .mentors-impact__track {
         block-size: var(--space-2xs);
-        background: var(--hairline);
+        background: var(--border-color);
     }
 
     .mentors-impact__fill {
         display: block;
         block-size: 100%;
-        background: var(--text-muted);
+        background: var(--faded);
 
         &.is-mentored {
             background: var(--fleet-yellow);

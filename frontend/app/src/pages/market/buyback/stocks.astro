@@ -290,7 +290,8 @@ const refine_hx = {
 </Viewport>
 
 <style lang="scss">
-    .buyback-purchase-form__hint {
+    /* Doubled class: it must outrank the Flexblock gap margin whatever the stylesheet order. */
+    .buyback-purchase-form__hint.buyback-purchase-form__hint {
         margin: 0;
         font-size: var(--step--1);
         color: var(--foreground);

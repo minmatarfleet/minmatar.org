@@ -29,6 +29,8 @@ const {
     ...attributes
 } = Astro.props
 
+delete attributes.class
+
 const transparent_class = transparent ? '' : 'border light-transparency'
 
 const slot_content = await Astro.slots.render('default')
@@ -47,6 +49,7 @@ import Markdown from '@components/blocks/Markdown.astro';
     padding_inline='var(--component-padding-block)'
     padding_block='var(--component-padding-block)'
     max_width='100%'
+    {...attributes}
 >
     <slot name="cover">
         {optimize ?

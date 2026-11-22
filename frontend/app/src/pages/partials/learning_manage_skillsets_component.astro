@@ -4,7 +4,7 @@
  *
  * part=list  the skillsets table (GET); new=1 adds an open blank row
  * part=edit  an open row's form (GET, id=)
- * part=save  save a skillset (POST): the row, open, inside a <table>
+ * part=save  save a skillset (POST): the row, open, inside a RowSwapFrame
  * ?q=        skill-name typeahead: <option>s for the form's datalist
  *
  * Writes go through the learning manage API, which writes the audit log.
@@ -29,6 +29,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import Button from '@components/blocks/Button.astro'
 import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import RowSwapFrame from '@components/blocks/manage/RowSwapFrame.astro'
 import LearningSkillsetRow from '@components/blocks/learning_manage/LearningSkillsetRow.astro'
 import LearningSkillsetForm from '@components/blocks/learning_manage/LearningSkillsetForm.astro'
 
@@ -144,9 +145,8 @@ const row_skillset = saved ?? (posted?.id ? skillsets.find((skillset) => skillse
 )}
 
 {part === 'save' && posted &&
-    // Inside a <table>: htmx drops a bare <tbody> after Astro's leading styles.
     // The row keeps its id (a new skillset stays "skillset-new") so later saves find it.
-    <table>
+    <RowSwapFrame>
         <LearningSkillsetRow skillset={row_skillset} row_id={posted.row_id} open={true}>
             <LearningSkillsetForm
                 slot="detail"
@@ -160,5 +160,5 @@ const row_skillset = saved ?? (posted?.id ? skillsets.find((skillset) => skillse
                 error={save_error}
             />
         </LearningSkillsetRow>
-    </table>
+    </RowSwapFrame>
 }

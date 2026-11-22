@@ -10,7 +10,7 @@ import type { TaskTeamRulePilot } from '@dtypes/api.minmatar.org'
 import { get_request_user } from '@helpers/request_user'
 import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
 import { get_task_team_rule, remind_task_pilot } from '@helpers/api.minmatar.org/tasks'
-import { get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image'
 import { task_date, waiting_label } from '@helpers/tasks'
 
 const { auth_token } = get_request_user(Astro)
@@ -44,6 +44,7 @@ const SELF_URL = translatePath(`/partials/tasks_team_rule_component/?kind=${enco
 const now = new Date()
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {error
@@ -69,7 +70,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                         <span>
                             {row.can_remind
                                 ? (
-                                    <button
+                                    <StylessButton
                                         type="button"
                                         class="[ task-quiet ]"
                                         hx-post={`${SELF_URL}&task_id=${row.task_id}`}
@@ -78,7 +79,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                                         hx-disabled-elt="this"
                                     >
                                         {t('tasks.team.remind_once')}
-                                    </button>
+                                    </StylessButton>
                                 )
                                 : row.reminders_off
                                     ? <span class="[ manage-muted ]">{t('tasks.team.reminders_off')}</span>

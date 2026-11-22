@@ -124,3 +124,11 @@ export const SlotContent = {
         await expect(canvas.getByText('Flying a Rifter')).toBeVisible()
     },
 }
+
+export const ImageHasAlt = {
+    name: 'Image uses the title as alt text',
+    play: async ({ canvasElement }: Play) => {
+        const canvas = within(canvasElement)
+        await expect(canvas.getByRole('img', { name: EVE.character_name })).toHaveAttribute('alt', EVE.character_name)
+    },
+}

@@ -1,4 +1,9 @@
 ---
+// A heading over a short block of text. A thin wrapper over TextGroup (the
+// library component): same tight stack, with the `badge` line height and the
+// body slotted as is (no <p>). Kept for its callers; new code uses TextGroup.
+import TextGroup from '@components/blocks/TextGroup.astro';
+
 interface Props {
     title:      string;
 }
@@ -6,10 +11,7 @@ interface Props {
 const {
     title,
 } = Astro.props
-
-import Flexblock from '@components/compositions/Flexblock.astro';
 ---
-<Flexblock gap='var(--space-3xs)' class="[ badge w-full ]">
-    <h4>{title}</h4>
-    <slot />
-</Flexblock>
+<TextGroup title={title} full root_class="badge">
+    <slot slot="outside" />
+</TextGroup>

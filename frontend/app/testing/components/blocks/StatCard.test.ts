@@ -46,3 +46,26 @@ test("coming soon replaces the value", async () => {
   expect(result).toContain("stat-card--soon");
   expect(result).not.toContain("stat-card__value");
 });
+
+test("glass variant keeps the card hooks and renders the default slot as the value", async () => {
+  const container = await AstroContainer.create();
+  const result = await container.renderToString(StatCard, {
+    props: { label: "ISK destroyed", variant: "glass", tone: "success" },
+    slots: { default: "128b", icon: '<i class="ic"></i>' },
+  });
+
+  expect(result).toContain("card border light-transparency");
+  expect(result).toContain("--stat-tone: var(--green)");
+  expect(result).toContain("128b");
+  expect(result).toContain('<i class="ic"></i>');
+});
+
+test("cell variant puts the value above the label", async () => {
+  const container = await AstroContainer.create();
+  const result = await container.renderToString(StatCard, {
+    props: { label: "Kills", value: "9", variant: "cell", title: "nine" },
+  });
+
+  expect(result).toContain('title="nine"');
+  expect(result.indexOf("9")).toBeLessThan(result.indexOf("Kills"));
+});

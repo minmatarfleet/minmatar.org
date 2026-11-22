@@ -2,6 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
+import { guide } from '@/data/navy-destroyer-metagame/guide'
 import { guideMeta, credits, buildNavyDestroyerMetagameJsonLd, guideSections } from '@/data/navy-destroyer-metagame'
 import { pageProgressFromSections } from '@helpers/pageProgress'
 import { get_site_origin } from '@helpers/seo'
@@ -13,8 +14,8 @@ import PageTitle from '@components/page/PageTitle.astro'
 import TextBox from '@components/layout/TextBox.astro'
 import Wrapper from '@components/compositions/Wrapper.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
-import NavyDestroyerMetagame from '@components/blocks/navy-destroyer-metagame/NavyDestroyerMetagame.astro'
-import PageProgress from '@components/blocks/PageProgress.astro'
+import ShipGuide from '@components/blocks/ship-guide/ShipGuide.astro'
+import PageProgress from '@components/blocks/guides/PageProgress.astro'
 
 const page_title = t('ships.navy_destroyer_metagame.page_title')
 const page_description = t('ships.navy_destroyer_metagame.leading_text')
@@ -100,7 +101,7 @@ const progress = pageProgressFromSections({
                 padding_inline="0"
                 padding_block="0"
             >
-                <NavyDestroyerMetagame />
+                <ShipGuide guide={guide} />
             </Wrapper>
         </Flexblock>
     </PageLanding>

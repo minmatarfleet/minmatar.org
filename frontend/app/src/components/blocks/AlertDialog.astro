@@ -2,9 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import Dialog from '@components/blocks/Dialog.astro';
-import Flexblock from '@components/compositions/Flexblock.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
+import DialogBase from '@components/blocks/DialogBase.astro';
 import Button from '@components/blocks/Button.astro';
 
 
@@ -13,124 +11,52 @@ interface Props {
 }
 ---
 
-<div
-    class="[ alert-dialog ]"
+<DialogBase
+    name="alert_dialog"
+    titled={true}
+    backdrop_action="close"
+    close_button={false}
+    class="[ w-full max-h-[80vh] overflow-y-auto ]"
+    max_width="500px"
 >
-    <Dialog
-        close_button={false}
-        x-data={`{
-            close_dialog() {
-                if (!alert_dialog_open)
-                    return
-                
-                var clickEvent = new MouseEvent("click", {
-                    "view": window,
-                    "bubbles": true,
-                    "cancelable": false
-                });
-
-                document.querySelector('.alert-dialog-backdrop').dispatchEvent(clickEvent);
-            }
-        }`}
-        @keyup.escape.window="close_dialog()"
-        x-bind:class="(alert_dialog_open ? 'open' : '')"
-        x-bind:aria-hidden="alert_dialog_open == false"
-        breakout={true}
-        class="[ w-full max-h-[80vh] overflow-y-auto ]"
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-        x-trap="alert_dialog_open"
-        x-bind:inert="!alert_dialog_open"
-        style='--dialog-max-width: 500px'
-    >
-        <Flexblock gap="var(--space-l)">
-            <Flexblock gap="var(--space-s)">
-                <h3 id="alert-dialog-title" x-text="alert_dialog_title"></h3>
-                <div
-                    id="alert-dialog-description"
-                    class="[ alert-dialog-content ]"
-                    x-html="alert_dialog_content"
-                    x-bind:hx-get="alert_dialog_partial ? (alert_dialog_partial ?? false) : false"
-                    x-bind:hx-trigger="alert_dialog_partial ? 'intersect' : false"
-                    x-bind:hx-swap="alert_dialog_partial ? 'innerHTML transition:true' : false"
-                    hx-target="#alert-dialog-description"
-                    hx-indicator=".loader"
-                ></div>
-            </Flexblock>
-
-            <FlexInline justification='flex-end'>
-                {/* Real <a target=_blank>: Open click stays a user gesture (mobile popup-safe). */}
-                <span x-show="!!alert_dialog_accept_href" x-cloak>
-                    <Button
-                        size='sm'
-                        href="#"
-                        new_tab={true}
-                        x-bind:href="alert_dialog_accept_href"
-                        alert-dialog-action="accept"
-                    >
-                        <span x-text="alert_dialog_accept_label || 'Open'"></span>
-                    </Button>
-                </span>
-                <span x-show="!alert_dialog_accept_href">
-                    <Button
-                        size='sm'
-                        alert-dialog-action="accept"
-                        x-bind:hx-get="alert_dialog_hx?.method == 'get' ? (alert_dialog_hx?.url ?? false) : false"
-                        x-bind:hx-post="alert_dialog_hx?.method == 'post' ? (alert_dialog_hx?.url ?? false) : false"
-                        x-bind:hx-put="alert_dialog_hx?.method == 'put' ? (alert_dialog_hx?.url ?? false) : false"
-                        x-bind:hx-patch="alert_dialog_hx?.method == 'patch' ? (alert_dialog_hx?.url ?? false) : false"
-                        x-bind:hx-delete="alert_dialog_hx?.method == 'delete' ? (alert_dialog_hx?.url ?? false) : false"
-                        x-bind:hx-target="alert_dialog_hx?.target ?? false"
-                        x-bind:hx-swap="alert_dialog_hx?.swap ?? 'none'"
-                        hx-indicator=".loader"
-                    >
-                        <span x-text="alert_dialog_accept_label || 'OK'">{t('ok')}</span>
-                    </Button>
-                </span>
-                <span x-show="alert_dialog_show_cancel" x-cloak>
-                    <Button
-                        size='sm'
-                        type="button"
-                        alert-dialog-action="close"
-                    >
-                        <span x-text="alert_dialog_cancel_label || 'Cancel'">{t('cancel')}</span>
-                    </Button>
-                </span>
-            </FlexInline>
-        </Flexblock>
-    </Dialog>
-
-    <div
-        class="alert-dialog-backdrop"
-        x-bind:class="{ open: alert_dialog_open }"
-        alert-dialog-action="close"
-    />
-</div>
-
-<style lang="scss">
-    :global(.alert-dialog .dialog) {
-        z-index: var(--alert-z-index);
-    }
-
-    :global([alert-dialog-action] *) {
-        pointer-events: none !important;
-    }
-
-    :global(.alert-dialog .alert-dialog-content p) {
-        font-size: var(--step--1);
-    }
-
-    .alert-dialog-backdrop {
-        position: fixed;
-        inset: 0;
-        z-index: var(--backdrop-z-index);
-        display: none;
-
-        &.open {
-            display: block;
-        }
-    }
-</style>
+    {/* Real <a target=_blank>: Open click stays a user gesture (mobile popup-safe). */}
+    <span x-show="!!alert_dialog_accept_href" x-cloak>
+        <Button
+            size='sm'
+            href="#"
+            new_tab={true}
+            x-bind:href="alert_dialog_accept_href"
+            alert-dialog-action="accept"
+        >
+            <span x-text={`alert_dialog_accept_label || ${JSON.stringify(t('open'))}`}>{t('open')}</span>
+        </Button>
+    </span>
+    <span x-show="!alert_dialog_accept_href">
+        <Button
+            size='sm'
+            alert-dialog-action="accept"
+            x-bind:hx-get="alert_dialog_hx?.method == 'get' ? (alert_dialog_hx?.url ?? false) : false"
+            x-bind:hx-post="alert_dialog_hx?.method == 'post' ? (alert_dialog_hx?.url ?? false) : false"
+            x-bind:hx-put="alert_dialog_hx?.method == 'put' ? (alert_dialog_hx?.url ?? false) : false"
+            x-bind:hx-patch="alert_dialog_hx?.method == 'patch' ? (alert_dialog_hx?.url ?? false) : false"
+            x-bind:hx-delete="alert_dialog_hx?.method == 'delete' ? (alert_dialog_hx?.url ?? false) : false"
+            x-bind:hx-target="alert_dialog_hx?.target ?? false"
+            x-bind:hx-swap="alert_dialog_hx?.swap ?? 'none'"
+            hx-indicator=".loader"
+        >
+            <span x-text={`alert_dialog_accept_label || ${JSON.stringify(t('ok'))}`}>{t('ok')}</span>
+        </Button>
+    </span>
+    <span x-show="alert_dialog_show_cancel" x-cloak>
+        <Button
+            size='sm'
+            type="button"
+            alert-dialog-action="close"
+        >
+            <span x-text={`alert_dialog_cancel_label || ${JSON.stringify(t('cancel'))}`}>{t('cancel')}</span>
+        </Button>
+    </span>
+</DialogBase>
 
 <script>
     import { schedule_alert_dialog_reset } from '@helpers/alertDialog'

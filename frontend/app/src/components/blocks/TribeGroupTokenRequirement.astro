@@ -39,7 +39,7 @@ const tooltip_html = [
         class:list={['[ tribe-group-token-requirement ]', Astro.props.class]}
         data-tippy-content={tooltip_html}
         data-tippy-allowHTML="true"
-        x-init="tippy($el, { ...tippy_options, allowHTML: true, maxWidth: 360 })"
+        data-tippy-maxWidth="360"
         {...attributes}
     >
         {label}

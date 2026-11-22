@@ -37,6 +37,7 @@ import { sort_item_attrs } from '@helpers/manage_reorder'
 
 import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 import Select from '@components/blocks/Select.astro'
 import Textarea from '@components/blocks/Textarea.astro'
 import ManageField from '@components/blocks/manage/ManageField.astro'
@@ -60,6 +61,7 @@ const add_guide = `
     $refs.list.appendChild(row)
     $refs.pick.value = ''
 `
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <form
@@ -82,27 +84,22 @@ const add_guide = `
                 <Textarea id={id('summary')} name="summary" rows="3">{values.summary}</Textarea>
             </ManageField>
             <ManageField label={t('learning_admin.page_address')} for={id('slug')} hint={t('learning_admin.page_address_hint')}>
-                <div class="[ cert-form__address ]">
-                    <span class="[ cert-form__prefix ]">{CERTIFICATE_PATH_PREFIX}</span>
-                    <input
-                        id={id('slug')}
-                        name="slug"
-                        value={values.slug}
-                        required
-                        pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                        autocomplete="off"
-                        x-model="slug"
-                        x-on:input="slug_edited = true"
-                    />
-                </div>
+                <Input
+                    id={id('slug')}
+                    name="slug"
+                    value={values.slug}
+                    required
+                    pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                    autocomplete="off"
+                    prefix={CERTIFICATE_PATH_PREFIX}
+                    x-model="slug"
+                    x-on:input="slug_edited = true"
+                />
             </ManageField>
             <fieldset class="[ cert-form__personas ]">
                 <legend>{t('learning_admin.personas')}</legend>
                 {PERSONAS.map((persona) => (
-                    <label>
-                        <input type="checkbox" name="personas" value={persona} checked={personas.includes(persona)} />
-                        {t(t_key('learning_manage.persona_', persona))}
-                    </label>
+                    <RadioCheckInput type="checkbox" name="personas" value={persona} checked={personas.includes(persona)} label={t(t_key('learning_manage.persona_', persona))} />
                 ))}
             </fieldset>
         </div>
@@ -117,7 +114,7 @@ const add_guide = `
                         <span class="[ cert-guide__title ]">{guide.title}</span>
                         {!guide.published && <span class="[ manage-muted ]">{t('learning_manage.draft')}</span>}
                         <ManageSortControls event={CERTIFICATE_GUIDES_EVENT} name={guide.title} />
-                        <button type="button" class="[ cert-guide__remove ]" aria-label={t('learning_admin.remove_guide').replace('~NAME', guide.title)} x-on:click="$el.closest('li').remove()">×</button>
+                        <StylessButton type="button" class="[ cert-guide__remove ]" aria-label={t('learning_admin.remove_guide').replace('~NAME', guide.title)} x-on:click="$el.closest('li').remove()">×</StylessButton>
                     </li>
                 ))}
             </ol>
@@ -127,7 +124,7 @@ const add_guide = `
                     <input type="hidden" name="learning_slugs" value="" />
                     <span class="[ cert-guide__title ]"></span>
                     <ManageSortControls event={CERTIFICATE_GUIDES_EVENT} name={t('learning_admin.this_guide')} />
-                    <button type="button" class="[ cert-guide__remove ]" aria-label={t('learning_admin.remove_guide').replace('~NAME', t('learning_admin.this_guide'))} x-on:click="$el.closest('li').remove()">×</button>
+                    <StylessButton type="button" class="[ cert-guide__remove ]" aria-label={t('learning_admin.remove_guide').replace('~NAME', t('learning_admin.this_guide'))} x-on:click="$el.closest('li').remove()">×</StylessButton>
                 </li>
             </template>
             <div class="[ cert-form__add ]">
@@ -173,34 +170,6 @@ const add_guide = `
         min-width: 0;
     }
 
-    .cert-form__address {
-        display: flex;
-        align-items: center;
-        border: solid 1px var(--border-color);
-        background-color: var(--surface-sunken);
-        padding-inline: var(--space-s-m);
-
-        &:focus-within {
-            outline: 1px solid var(--highlight);
-        }
-
-        input {
-            flex: 1 1 auto;
-            min-width: 0;
-            padding: var(--space-s) 0;
-            border: 0;
-            background: none;
-            color: var(--form-color);
-            font: inherit;
-            outline: none;
-        }
-    }
-
-    .cert-form__prefix {
-        flex: 0 0 auto;
-        color: var(--text-muted);
-    }
-
     .cert-form__personas {
         display: flex;
         flex-wrap: wrap;
@@ -213,13 +182,6 @@ const add_guide = `
             margin-block-end: var(--space-2xs);
             font-size: var(--step--1);
         }
-
-        label {
-            display: inline-flex;
-            align-items: center;
-            gap: var(--space-2xs);
-            color: var(--highlight);
-        }
     }
 
     .cert-guides {
@@ -229,7 +191,7 @@ const add_guide = `
         padding: 0;
         list-style: none;
         counter-reset: step;
-        border: 1px solid var(--hairline);
+        border: 1px solid var(--border-color);
     }
 
     .cert-guide {
@@ -241,14 +203,14 @@ const add_guide = `
         background-color: var(--surface-sunken);
 
         & + & {
-            border-top: 1px solid var(--hairline);
+            border-top: 1px solid var(--border-color);
         }
 
         &::before {
             content: counter(step);
             flex: 0 0 auto;
             min-width: 1.5em;
-            color: var(--text-muted);
+            color: var(--faded);
             font-variant-numeric: tabular-nums;
         }
 
@@ -271,7 +233,7 @@ const add_guide = `
         padding: 0 var(--space-2xs);
         background: none;
         border: 1px solid transparent;
-        color: var(--text-muted);
+        color: var(--faded);
         font-size: var(--step-1);
         line-height: 1;
         cursor: pointer;
@@ -279,7 +241,7 @@ const add_guide = `
         &:hover,
         &:focus-visible {
             color: var(--fleet-red);
-            border-color: var(--hairline-medium);
+            border-color: var(--border-color);
         }
     }
 

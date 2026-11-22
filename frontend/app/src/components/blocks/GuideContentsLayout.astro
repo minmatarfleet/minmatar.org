@@ -8,6 +8,7 @@
  */
 import './GuideContentsLayout.scss'
 
+import StylessButton from '@components/blocks/StylessButton.astro'
 export type GuideContentsSection = {
     id: string
     title: string
@@ -37,7 +38,7 @@ const list_id = 'guide-contents-list'
         <nav class="guide-contents__nav" aria-label="Guide sections" data-guide-contents-nav>
             <p class="guide-contents__rail-label" aria-hidden="true">{label}</p>
             <div class="guide-contents__bar">
-                <button
+                <StylessButton
                     type="button"
                     class="guide-contents__toggle"
                     data-guide-contents-toggle
@@ -46,7 +47,7 @@ const list_id = 'guide-contents-list'
                 >
                     <span class="guide-contents__label">{label}</span>
                     <span class="guide-contents__chevron" aria-hidden="true"></span>
-                </button>
+                </StylessButton>
                 <span class="guide-contents__toggle-current" data-guide-contents-current></span>
                 <span class="guide-contents__count" data-guide-contents-count aria-hidden="true"></span>
             </div>

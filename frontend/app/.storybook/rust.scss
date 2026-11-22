@@ -18,8 +18,8 @@ body.sb-show-main {
 // Placeholder content for layout stories (rust/stories/_controls.ts demo_box).
 .rust-demo-box {
     padding: var(--space-xs) var(--space-s);
-    background: color-mix(in srgb, var(--fleet-yellow) 8%, transparent);
-    border: 1px solid var(--hairline-strong);
+    background: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
+    border: 1px solid var(--border-color-hover);
     color: var(--foreground);
     font-family: var(--default-font);
     font-size: var(--step--1);
@@ -40,9 +40,9 @@ body.sb-show-main {
 $docs: '#storybook-docs .sbdocs-wrapper';
 
 #{$docs} {
-    --docs-text:        color-mix(in srgb, var(--highlight) 78%, transparent);
+    --docs-text:        color-mix(in srgb, var(--highlight) var(--tint-heavy), transparent);
     --docs-text-strong: var(--highlight);
-    --docs-rule:        var(--hairline-medium);
+    --docs-rule:        var(--border-color);
 
     background: var(--background);
     padding: var(--space-xl) var(--space-m) var(--space-3xl);
@@ -94,7 +94,7 @@ $docs: '#storybook-docs .sbdocs-wrapper';
     a:not(.sb-anchor, [class*='button']) {
         color: var(--foreground);
         text-decoration: underline;
-        text-decoration-color: color-mix(in srgb, var(--fleet-yellow) 40%, transparent);
+        text-decoration-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
         text-underline-offset: 0.2em;
         transition: var(--fast-transition);
 
@@ -160,7 +160,7 @@ $docs: '#storybook-docs .sbdocs-wrapper';
         padding: 0.12em 0.4em;
         border: 0;
         border-radius: 2px;
-        background: color-mix(in srgb, var(--fleet-yellow) 10%, transparent);
+        background: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
         color: var(--foreground);
         white-space: nowrap;
     }
@@ -195,10 +195,10 @@ $docs: '#storybook-docs .sbdocs-wrapper';
             font-size: var(--step--2);
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            color: var(--text-muted);
+            color: var(--faded);
             background: transparent;
             border: 0;
-            border-block-end: 1px solid var(--hairline-strong);
+            border-block-end: 1px solid var(--border-color-hover);
             padding: var(--space-2xs) var(--space-s) var(--space-2xs) 0;
         }
 
@@ -206,7 +206,7 @@ $docs: '#storybook-docs .sbdocs-wrapper';
         tr:nth-of-type(2n) {
             background: transparent;
             border: 0;
-            border-block-end: 1px solid var(--hairline);
+            border-block-end: 1px solid var(--border-color);
         }
 
         td {

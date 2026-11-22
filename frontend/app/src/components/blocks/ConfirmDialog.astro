@@ -2,9 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import Dialog from '@components/blocks/Dialog.astro';
-import Flexblock from '@components/compositions/Flexblock.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
+import DialogBase from '@components/blocks/DialogBase.astro';
 import Button from '@components/blocks/Button.astro';
 
 interface Props {
@@ -12,96 +10,27 @@ interface Props {
 }
 ---
 
-<div
-    class="[ confirm-dialog ]"
+<DialogBase
+    name="confirm_dialog"
+    titled={true}
+    class="[ w-full max-h-[80vh] overflow-y-auto ]"
+    max_width="500px"
 >
-    <Dialog
-        x-data={`{
-            close_dialog() {
-                if (!confirm_dialog_open)
-                    return
-
-                var clickEvent = new MouseEvent("click", {
-                    "view": window,
-                    "bubbles": true,
-                    "cancelable": false
-                });
-
-                document.querySelector('.confirm-dialog-backdrop').dispatchEvent(clickEvent);
-            }
-        }`}
-        @keyup.escape.window="close_dialog()"
-        x-bind:class="(confirm_dialog_open ? 'open' : '')"
-        x-bind:aria-hidden="confirm_dialog_open == false"
-        breakout={true}
-        class="[ w-full max-h-[80vh] overflow-y-auto ]"
-        aria-labelledby="confirm-dialog-title"
-        aria-describedby="confirm-dialog-description"
-        x-trap="confirm_dialog_open"
-        x-bind:inert="!confirm_dialog_open"
-        style='--dialog-max-width: 500px'
+    <Button
+        size='sm'
+        confirm-dialog-action="accept"
+        x-bind:hx-get="confirm_dialog_hx?.method == 'get' ? (confirm_dialog_hx?.url ?? false) : false"
+        x-bind:hx-post="confirm_dialog_hx?.method == 'post' ? (confirm_dialog_hx?.url ?? false) : false"
+        x-bind:hx-put="confirm_dialog_hx?.method == 'put' ? (confirm_dialog_hx?.url ?? false) : false"
+        x-bind:hx-patch="confirm_dialog_hx?.method == 'patch' ? (confirm_dialog_hx?.url ?? false) : false"
+        x-bind:hx-delete="confirm_dialog_hx?.method == 'delete' ? (confirm_dialog_hx?.url ?? false) : false"
+        x-bind:hx-target="confirm_dialog_hx?.target ?? false"
+        x-bind:hx-swap="confirm_dialog_hx?.swap ?? 'none'"
+        x-bind:hx-vals="confirm_dialog_hx?.vals ? JSON.stringify({ data: JSON.stringify(confirm_dialog_hx?.vals) }) : false"
+        hx-indicator=".loader"
+        x-bind:disabled="confirm_dialog_accept_disabled"
     >
-        <Flexblock gap="var(--space-l)">
-            <Flexblock gap="var(--space-s)">
-                <h3 id="confirm-dialog-title" x-text="confirm_dialog_title"></h3>
-                <div
-                    id="confirm-dialog-description"
-                    class="[ confirm-dialog-content ]"
-                    x-html="confirm_dialog_content"
-                    x-bind:hx-get="confirm_dialog_partial ? (confirm_dialog_partial ?? false) : false"
-                    x-bind:hx-trigger="confirm_dialog_partial ? 'intersect' : false"
-                    x-bind:hx-swap="confirm_dialog_partial ? 'innerHTML transition:true' : false"
-                    hx-target="#confirm-dialog-description"
-                    hx-indicator=".loader"
-                ></div>
-            </Flexblock>
-                
-            <FlexInline justification='flex-end'>
-                <Button
-                    size='sm'
-                    confirm-dialog-action="accept"
-                    x-bind:hx-get="confirm_dialog_hx?.method == 'get' ? (confirm_dialog_hx?.url ?? false) : false"
-                    x-bind:hx-post="confirm_dialog_hx?.method == 'post' ? (confirm_dialog_hx?.url ?? false) : false"
-                    x-bind:hx-put="confirm_dialog_hx?.method == 'put' ? (confirm_dialog_hx?.url ?? false) : false"
-                    x-bind:hx-patch="confirm_dialog_hx?.method == 'patch' ? (confirm_dialog_hx?.url ?? false) : false"
-                    x-bind:hx-delete="confirm_dialog_hx?.method == 'delete' ? (confirm_dialog_hx?.url ?? false) : false"
-                    x-bind:hx-target="confirm_dialog_hx?.target ?? false"
-                    x-bind:hx-swap="confirm_dialog_hx?.swap ?? 'none'"
-                    x-bind:hx-vals="confirm_dialog_hx?.vals ? JSON.stringify({ data: JSON.stringify(confirm_dialog_hx?.vals) }) : false"
-                    hx-indicator=".loader"
-                    x-bind:disabled="confirm_dialog_accept_disabled"
-                >
-                    {t('yes')}
-                </Button>
-                <Button size='sm' confirm-dialog-action="cancel">{t('no')}</Button>
-            </FlexInline>
-        </Flexblock>
-    </Dialog>
-
-    <div
-        class="confirm-dialog-backdrop"
-        x-bind:class="{ open: confirm_dialog_open }"
-        confirm-dialog-action="cancel"
-    />
-</div>
-
-<style lang="scss">
-    :global([confirm-dialog-action] *) {
-        pointer-events: none !important;
-    }
-
-    :global(.confirm-dialog .confirm-dialog-content p) {
-        font-size: var(--step--1);
-    }
-
-    .confirm-dialog-backdrop {
-        position: fixed;
-        inset: 0;
-        z-index: var(--backdrop-z-index);
-        display: none;
-
-        &.open {
-            display: block;
-        }
-    }
-</style>
+        {t('yes')}
+    </Button>
+    <Button size='sm' confirm-dialog-action="cancel">{t('no')}</Button>
+</DialogBase>

@@ -98,3 +98,13 @@ export const NoName = {
         await expect(within(canvasElement).getByRole('img', { name: 'Item picture' })).toBeVisible()
     },
 }
+
+export const ZeroQuantity = {
+    name: 'Zero quantity shows no badge',
+    args: { item_id: 34, item_name: 'Tritanium', quantity: 0 },
+    play: async ({ canvasElement }: Ctx) => {
+        // `{quantity && ...}` used to print a literal 0 beside the icon.
+        await expect(canvasElement.querySelector('.quantity-badge')).toBeNull()
+        await expect(canvasElement.querySelector('picture')?.textContent?.trim()).toBe('')
+    },
+}

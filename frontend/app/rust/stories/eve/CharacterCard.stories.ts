@@ -44,7 +44,7 @@ export const Default = {
         await expect(img).toHaveAttribute('height', '412')
         await expect(img).toHaveClass('mask')
         await expect(canvas.getByText(EVE.corporation_name)).toBeVisible()
-        await expect(img.getAttribute('x-on:click.stop.prevent')).toBe('show_character_modal()')
+        await expect(canvas.getByRole('button', { name: `Profile picture of ${EVE.character_name}` }).getAttribute('x-on:click.stop.prevent')).toBe('show_character_modal()')
     },
 }
 
