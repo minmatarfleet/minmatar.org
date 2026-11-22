@@ -528,11 +528,11 @@ One choice of a radio group (or a pick-many group with `type="checkbox"`), drawn
 
 ### Card
 
-A picture card built on `ComponentBlock`: a cover fills the card, the body text sits over its bottom edge, a header badge over the top-left, and `actions` fade in at the top-right on hover.
+A picture card built on `ComponentBlock`: a cover fills the card, the body text sits over its bottom edge, a header badge over the top-left, and `actions` fade in at the top-right on hover or keyboard focus (always shown on touch devices).
 
 - Import: `import Card from '@components/blocks/Card.astro'`
 - Slots: `cover`, `default`, `header`, `actions`, `visible-actions`
-- Stories (7): `frontend/app/rust/stories/components/data-display/Card.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-card--docs: Default, With Header, Hover actions, Always-visible actions, All slots, No cover (text only), Attributes pass through
+- Stories (8): `frontend/app/rust/stories/components/data-display/Card.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-card--docs: Default, With Header, Hover actions, Always-visible actions, All slots, No cover (text only), Attributes pass through, Keyboard focus reveals actions
 
 ### PictureCard
 
