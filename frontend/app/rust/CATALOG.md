@@ -440,14 +440,14 @@ A big-number card: an uppercase label, the value in the heading font, and an opt
 - Slots: `value`, `hint`
 - Stories (5): `frontend/app/rust/stories/components/data-display/StatCard.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-statcard--docs: Default, Without hint, Coming soon, Slotted value and hint, Long label and text value
 
-### Table
+### RowList
 
 A list-based "table": a `role="list"` BlockList wrapped in an edge-fading horizontal scroller.
 
-- Import: `import Table from '@components/blocks/Table.astro'`
+- Import: `import RowList from '@components/blocks/RowList.astro'`
 - Props: `gap?: string`, `responsive?: boolean = true`, `width?: string = '70rem'`
 - Slots: `default`
-- Stories (5): `frontend/app/rust/stories/components/data-display/Table.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-table--docs: Default, Not responsive (full width), Wide (scrolls sideways), Single row, Passthrough attributes
+- Stories (5): `frontend/app/rust/stories/components/data-display/RowList.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-rowlist--docs: Default, Not responsive (full width), Wide (scrolls sideways), Single row, Passthrough attributes
 
 ### DataGrid
 

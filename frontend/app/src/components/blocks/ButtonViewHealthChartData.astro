@@ -51,7 +51,7 @@ labels.map((label, index) => {
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
-import Table from '@components/blocks/Table.astro';
+import RowList from '@components/blocks/RowList.astro';
 import Button from '@components/blocks/Button.astro';
 import DialogButton from '@components/blocks/DialogButton.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
@@ -75,7 +75,7 @@ import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 
     <Flexblock gap="var(--space-l)" slot="dialog">
         <Flexblock gap="var(--space-s)">
-            <Table width='635px'>
+            <RowList width='635px'>
                 <table style={`--coverage_color: ${coverage_color}; --viability_color: ${viability_color};`}>
                     <tr>
                         <th class="[ w-[] ]">{t('timestamp')}</th>
@@ -101,7 +101,7 @@ import ClipboardButton from '@components/blocks/ClipboardButton.astro';
                         </tr>)
                     })}
                 </table>
-            </Table>
+            </RowList>
         </Flexblock>
     </Flexblock>
 

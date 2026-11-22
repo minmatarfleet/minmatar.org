@@ -8,12 +8,12 @@ const {
 } = Astro.props
 
 import BlueprintTableItemAlpine from '@components/blocks/BlueprintTableItemAlpine.astro';
-import Table from '@components/blocks/Table.astro';
+import RowList from '@components/blocks/RowList.astro';
 ---
 
-<Table id="blueprint-table" width='70rem'>
+<RowList id="blueprint-table" width='70rem'>
     <template x-for="blueprint in blueprints_sorted">
         <BlueprintTableItemAlpine is_copy={is_copy} />
     </template>
     <slot />
-</Table>
+</RowList>

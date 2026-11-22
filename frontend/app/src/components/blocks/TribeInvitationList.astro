@@ -41,7 +41,7 @@ import FixedFluid from '@components/compositions/FixedFluid.astro';
 import Button from '@components/blocks/Button.astro';
 import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
-import Table from '@components/blocks/Table.astro';
+import RowList from '@components/blocks/RowList.astro';
 import Tag from '@components/blocks/Tag.astro';
 ---
 
@@ -52,7 +52,7 @@ import Tag from '@components/blocks/Tag.astro';
             <small class="[ text-muted ]">{t('tribes.invite.list_hint')}</small>
         </FlexInline>
 
-        <Table>
+        <RowList>
             {invitations.map((invitation) => {
                 const detail = invitation_detail(invitation, t, lang)
                 const tone = invitation_tone(invitation.status)
@@ -131,7 +131,7 @@ import Tag from '@components/blocks/Tag.astro';
                 )
             })}
             <p class="[ no-result-text ]">{t('no_results')}</p>
-        </Table>
+        </RowList>
     </Flexblock>
 }
 

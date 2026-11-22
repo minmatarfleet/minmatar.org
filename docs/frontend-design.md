@@ -176,7 +176,7 @@ Reach for these before building a variant of your own (all in `src/components/bl
 | Block | Use it for |
 | --- | --- |
 | `DataGrid` | Grid "tables" of rows you render (`data-grid-row`, one child per column). Owns the header, the column template, sideways scroll and, with `stack`, the phone card captions (`data-label`). `variant`: `compact` (boards) or `ledger` (contract lists). |
-| `Table` | Older list-style rows (BlockList); not a column grid. |
+| `RowList` | Older list-style rows (BlockList); not a column grid. |
 | `campaigns/etherium-reach/CampaignDataTable` | Real `<table>` rendered from row data (CSV export, search); used by the war reports and Alliance Health. |
 | `StatCard` | Big-number stat: label, value, hint (`value`/`hint` slots for tooltips). |
 | `ActionMenu` + `ActionMenuItem` | Every action dropdown. Items can be links (`href`), submit buttons, status lines (`text_only`) or two-step confirms (`confirm_label`). |

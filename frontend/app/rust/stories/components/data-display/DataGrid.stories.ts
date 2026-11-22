@@ -46,7 +46,7 @@ export default {
         docs: {
             description: {
                 component: [
-                    'A grid-based table with a real header row (`role="table"`, `columnheader`, `row`, `cell`). `columns` builds the header and `template` is the shared `grid-template-columns` for the header and every slotted `.data-grid-row`. Use it for boards and ledgers (fleet history, SRP, contracts); use Table for rows made of free-form components.',
+                    'A grid-based table with a real header row (`role="table"`, `columnheader`, `row`, `cell`). `columns` builds the header and `template` is the shared `grid-template-columns` for the header and every slotted `.data-grid-row`. Use it for boards and ledgers (fleet history, SRP, contracts); use RowList for rows made of free-form components.',
                     'Cell helpers: `data-grid-numeric` right-aligns, `data-grid-muted` dims, `data-grid-media` pairs an EVE image with a label, `data-grid-cell` wraps cells that keep their own role. `variant` is `compact` (boards) or `ledger` (contract lists). With `stack`, below 48rem the header hides and each cell with a `data-label` shows it as a caption, so rows become cards; the row layout itself is up to the row\'s owner. Resize the viewport to see it.',
                 ].join('\n\n'),
             },

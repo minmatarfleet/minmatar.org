@@ -13,12 +13,12 @@ const {
 } = Astro.props
 
 import ProductItem from '@components/blocks/ProductItem.astro';
-import Table from '@components/blocks/Table.astro';
+import RowList from '@components/blocks/RowList.astro';
 ---
 
-<Table id="products-list" width="100%" responsive={false}>
+<RowList id="products-list" width="100%" responsive={false}>
     {products.map(product =>
         <ProductItem product={product} />
     )}
     <p x-show="products_count === 0">{t('no_products_to_display')}</p>
-</Table>
+</RowList>
