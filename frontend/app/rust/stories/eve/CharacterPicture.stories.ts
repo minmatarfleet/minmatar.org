@@ -130,7 +130,8 @@ export const WithTooltip = {
     play: async ({ canvasElement }: Ctx) => {
         const picture = canvasElement.querySelector('picture') as HTMLElement
         await expect(picture).toHaveAttribute('data-tippy-content', 'FC for tonight')
-        await expect(picture).toHaveAttribute('x-init', 'tippy($el, tippy_options)')
+        // The global data-tippy-content delegate shows it: no per-instance x-init.
+        await expect(picture).not.toHaveAttribute('x-init')
     },
 }
 

@@ -118,6 +118,7 @@ export const Persistent = {
 
         const backdrop = canvasElement.querySelector('.persistent-modal-backdrop') as HTMLElement
         await expect(backdrop.hasAttribute('persistent-modal-action')).toBe(false)
+        await waitFor(() => expect(open).toBeVisible())
         await userEvent.click(backdrop)
         await new Promise((resolve) => setTimeout(resolve, 50))
         await expect(settled).toBe(false)

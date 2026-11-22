@@ -144,11 +144,14 @@ export const InputAttributes = {
         value: 'rate',
         input_attributes: { 'x-model': 'mode', 'data-test': 'rate-input' },
         'data-chip': 'rate',
+        // x-model needs a scope: the host page's x-data, here on the label.
+        'x-data': "{ mode: 'rate' }",
         slots: { default: 'Per m3' },
     },
     play: async ({ canvasElement }: Ctx) => {
         const input = within(canvasElement).getByRole('radio', { name: 'Per m3' })
         await expect(input).toHaveAttribute('x-model', 'mode')
+        await expect(input).toBeChecked()
         await expect(input).toHaveAttribute('data-test', 'rate-input')
         // Everything else goes to the label, not the input.
         await expect(input.closest('label')).toHaveAttribute('data-chip', 'rate')
