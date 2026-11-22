@@ -128,24 +128,6 @@
         "src/pages/partials/tasks_assignees_component.astro": 1,
         "src/pages/partials/universe_locations_component.astro": 1
     },
-    "raw_styled_button": {
-        "src/components/blocks/landing/LandingReel.astro": 3,
-        "src/components/blocks/LearningCenterHub.astro": 1,
-        "src/components/blocks/role-guide/RoleAmmoChart.astro": 1,
-        "src/components/blocks/role-guide/RoleModulePanel.astro": 1,
-        "src/components/blocks/SectionTabs.astro": 1,
-        "src/pages/partials/tribe_invitation_candidates_component.astro": 1
-    },
-    "raw_chip": {
-        "src/components/blocks/amamake-market/AmamakeMarketVolumeSkeleton.astro": 2,
-        "src/components/blocks/capital-guide/CapitalGuideShipChip.astro": 1,
-        "src/components/blocks/FleetBattleReport.astro": 2,
-        "src/components/blocks/FleetParticipantsPilots.astro": 2,
-        "src/components/blocks/FleetScheduleSkeleton.astro": 2,
-        "src/components/blocks/structures/StructureRigChip.astro": 1,
-        "src/components/blocks/TribeGroupChip.astro": 1,
-        "src/components/blocks/universe/UniverseSkeleton.astro": 2
-    },
     "hand_rolled_pager": {},
     "component_font": {
         "src/components/blocks/ChangeDiff.astro": 1,

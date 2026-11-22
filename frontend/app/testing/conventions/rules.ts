@@ -371,8 +371,12 @@ const RULE_DEFINITIONS: ConventionRule[] = [
     },
     {
         id: 'raw_styled_button',
-        kind: 'ratchet',
+        kind: 'absolute',
         why: 'Buttons are <Button> (variants, sizes, loading and focus states), <StylessButton> for a bare control, or <ButtonConfirm>/<ClipboardButton>/<CollapsableButton>; a raw <button> skips the styling.',
+        exempt: {
+            'src/components/blocks/landing/LandingReel.astro': 'in-flight landing work (owner: keep untouched)',
+            'src/components/blocks/SectionTabs.astro': 'the tab strip primitive itself: its tabs are the role=tab buttons that SectionTabs exists to render',
+        },
         find: (file) => {
             if (!is_astro(file)) return []
             const exempt = COMPONENT_FILES('blocks/Button', 'blocks/StylessButton', 'blocks/ButtonConfirm', 'blocks/ClipboardButton', 'blocks/CollapsableButton')
@@ -382,8 +386,18 @@ const RULE_DEFINITIONS: ConventionRule[] = [
     },
     {
         id: 'raw_chip',
-        kind: 'ratchet',
+        kind: 'absolute',
         why: 'Filter and status chips are <FilterChip> or <ChipGroup>, and labels are <Tag>; a hand-styled *-chip / *-pill class re-creates them without their states.',
+        exempt: {
+            'src/components/blocks/amamake-market/AmamakeMarketVolumeSkeleton.astro': 'skeleton shimmer placeholder: chip-shaped blocks that stand in for content, not chips',
+            'src/components/blocks/FleetScheduleSkeleton.astro': 'skeleton shimmer placeholder: chip-shaped blocks that stand in for content, not chips',
+            'src/components/blocks/universe/UniverseSkeleton.astro': 'skeleton shimmer placeholder: chip-shaped blocks that stand in for content, not chips',
+            'src/components/blocks/capital-guide/CapitalGuideShipChip.astro': 'a hull tile (ship render above its name, linking to a fitting), not a filter or status chip',
+            'src/components/blocks/structures/StructureRigChip.astro': 'a rig tile: use icon, tier steps and a tooltip anchor, not a filter or status chip',
+            'src/components/blocks/TribeGroupChip.astro': 'a crest + group name link (Tag takes text only); a tribe identity badge, not a filter or status chip',
+            'src/components/blocks/FleetBattleReport.astro': 'saved-segment scope chip: a link plus its own delete form (hx-post with hidden fields), which FilterChip removable cannot express',
+            'src/components/blocks/FleetParticipantsPilots.astro': 'pilot roster entry (portrait, name, kill and loss badges), not a filter or status chip',
+        },
         find: (file) => {
             if (!is_astro(file)) return []
             const exempt = COMPONENT_FILES('blocks/FilterChip', 'blocks/ChipGroup', 'blocks/Tag')

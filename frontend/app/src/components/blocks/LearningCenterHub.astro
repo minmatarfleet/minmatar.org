@@ -13,6 +13,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Grid from '@components/compositions/Grid.astro'
 import Button from '@components/blocks/Button.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 import PilotReadinessBanner from '@components/blocks/PilotReadinessBanner.astro'
 import GuidesCatalog from '@components/blocks/GuidesCatalog.astro'
 import LearningSkillsets from '@components/blocks/LearningSkillsets.astro'
@@ -161,7 +162,7 @@ const progress_label = t('learning_center.certificate.progress')
                 min_item_width="220px"
             >
                 {personas.map((p) => (
-                    <button
+                    <StylessButton
                         type="button"
                         class="[ persona-card card border light-transparency ]"
                         data-persona={p.id}
@@ -175,7 +176,7 @@ const progress_label = t('learning_center.certificate.progress')
                                 <span class="[ badge ]">{t('learning_center.persona.recommended')}</span>
                             }
                         </Flexblock>
-                    </button>
+                    </StylessButton>
                 ))}
             </Grid>
 
