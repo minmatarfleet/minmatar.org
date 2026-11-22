@@ -313,6 +313,7 @@ class Command(BaseCommand):
                 status=row["status"],
                 timer=timer,
                 created_by=operator,
+                announce=False,
             )
 
         # Devoid (10000036) covers Kamela and Raa — ops guidance, not FW.

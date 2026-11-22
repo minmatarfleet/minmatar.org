@@ -1,8 +1,9 @@
 ---
 /**
  * A coordinator's own Discord servers for a campaign: link one (the bot
- * goes in through Discord's code grant), pick its timers and fleet pings
- * channels, or stop forwarding. The API checks the coordinator.
+ * goes in through Discord's code grant), pick its intel, timerboard, fleet
+ * schedule and fleet pings channels, or stop forwarding. The API checks the
+ * coordinator.
  */
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
@@ -13,7 +14,7 @@ import { change_campaign, get_campaign_discord_links } from '@helpers/api.minmat
 import type { CampaignDiscordLink } from '@dtypes/api.minmatar.org'
 import { form_text } from '@helpers/manage_forms'
 import { query_string } from '@helpers/string'
-import { refusal_text } from '@helpers/campaign_manage'
+import { DISCORD_CHANNEL_SLOTS, discord_channel_body, discord_channel_label_key, refusal_text } from '@helpers/campaign_manage'
 
 const { auth_token, user } = get_request_user(Astro)
 if (!user || !auth_token) return HTTP_403_Forbidden()
@@ -35,10 +36,8 @@ if (Astro.request.method === 'POST') {
             await change_campaign(slug, auth_token, 'DELETE', `/discord-links/${parseInt(field('link_id'))}`)
         } else {
             for (const id of form.getAll('link_id').map(String)) {
-                await change_campaign(slug, auth_token, 'PATCH', `/discord-links/${parseInt(id)}`, {
-                    timers_channel_id: field(`link_timers_${id}`) || null,
-                    fleets_channel_id: field(`link_fleets_${id}`) || null,
-                })
+                await change_campaign(slug, auth_token, 'PATCH', `/discord-links/${parseInt(id)}`,
+                    discord_channel_body((slot) => field(`link_${slot}_${id}`)))
             }
         }
         saved = true
@@ -79,18 +78,14 @@ import ManageField from '@components/blocks/manage/ManageField.astro'
                         <li class="[ campaign-discord__row ]">
                             <input type="hidden" name="link_id" value={String(link.id)} />
                             <span class="[ campaign-discord__name ]">{link.guild_name || link.guild_id}</span>
-                            <ManageField label={t('campaigns.manage.coordination_timers')} for={`discord-timers-${link.id}`}>
-                                <Select id={`discord-timers-${link.id}`} size="sm" name={`link_timers_${link.id}`}>
-                                    <option value="">{t('campaigns.manage.coordination_none')}</option>
-                                    {link.channels.map((channel) => <option value={channel.id} selected={channel.id === link.timers_channel_id}>#{channel.name}</option>)}
-                                </Select>
-                            </ManageField>
-                            <ManageField label={t('campaigns.manage.coordination_fleets')} for={`discord-fleets-${link.id}`}>
-                                <Select id={`discord-fleets-${link.id}`} size="sm" name={`link_fleets_${link.id}`}>
-                                    <option value="">{t('campaigns.manage.coordination_none')}</option>
-                                    {link.channels.map((channel) => <option value={channel.id} selected={channel.id === link.fleets_channel_id}>#{channel.name}</option>)}
-                                </Select>
-                            </ManageField>
+                            {DISCORD_CHANNEL_SLOTS.map((slot) =>
+                                <ManageField label={t(discord_channel_label_key(slot))} for={`discord-${slot}-${link.id}`}>
+                                    <Select id={`discord-${slot}-${link.id}`} size="sm" name={`link_${slot}_${link.id}`}>
+                                        <option value="">{t('campaigns.manage.coordination_none')}</option>
+                                        {link.channels.map((channel) => <option value={channel.id} selected={channel.id === link[`${slot}_channel_id`]}>#{channel.name}</option>)}
+                                    </Select>
+                                </ManageField>
+                            )}
                             <Button
                                 type="button"
                                 color="transparent"

@@ -1215,8 +1215,9 @@ export interface paths {
         get: operations["campaigns_endpoints_get_coordination_get_coordination"];
         /**
          * Put Coordination
-         * @description Link the campaign to a server the bot is in, and pick its timers and
-         *     fleet pings channels there. Admins only.
+         * @description Link the campaign to a server the bot is in, and pick its intel,
+         *     timerboard, fleet schedule and fleet pings channels there. Admins
+         *     only.
          */
         put: operations["campaigns_endpoints_put_coordination_put_coordination"];
         post?: never;
@@ -1328,7 +1329,8 @@ export interface paths {
         head?: never;
         /**
          * Update Link
-         * @description Pick the timers and fleet pings channels on a linked server.
+         * @description Pick the intel, timerboard, fleet schedule and fleet pings channels
+         *     on a linked server.
          */
         patch: operations["campaigns_endpoints_patch_discord_link_update_link"];
         trace?: never;
@@ -12928,6 +12930,8 @@ export interface components {
              * @default
              */
             guild_name?: string;
+            /** Intel Channel Id */
+            intel_channel_id?: string | null;
             /**
              * Invite Url
              * @default
@@ -12948,6 +12952,8 @@ export interface components {
              * @default []
              */
             links?: components["schemas"]["CampaignDiscordLinkOut"][];
+            /** Schedule Channel Id */
+            schedule_channel_id?: string | null;
             /**
              * Servers
              * @default []
@@ -12962,6 +12968,10 @@ export interface components {
             fleets_channel_id?: string | null;
             /** Guild Id */
             guild_id?: string | null;
+            /** Intel Channel Id */
+            intel_channel_id?: string | null;
+            /** Schedule Channel Id */
+            schedule_channel_id?: string | null;
             /** Timers Channel Id */
             timers_channel_id?: string | null;
         };
@@ -13294,11 +13304,15 @@ export interface components {
             guild_name?: string;
             /** Id */
             id: number;
+            /** Intel Channel Id */
+            intel_channel_id?: string | null;
             /**
              * Linked By
              * @default
              */
             linked_by?: string;
+            /** Schedule Channel Id */
+            schedule_channel_id?: string | null;
             /** Timers Channel Id */
             timers_channel_id?: string | null;
         };
@@ -13306,6 +13320,10 @@ export interface components {
         CampaignDiscordLinkRequest: {
             /** Fleets Channel Id */
             fleets_channel_id?: string | null;
+            /** Intel Channel Id */
+            intel_channel_id?: string | null;
+            /** Schedule Channel Id */
+            schedule_channel_id?: string | null;
             /** Timers Channel Id */
             timers_channel_id?: string | null;
         };

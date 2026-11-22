@@ -137,6 +137,9 @@ FAST_TASKS = frozenset(
         "discord.tasks.snapshot_guild_roles_task",
         # Fleet pings that are useless late
         "fleets.tasks.update_fleet_schedule",
+        # A campaign's timerboard or fleet schedule message (one edit per
+        # picked channel for one campaign, no fan-out)
+        "campaigns.tasks.refresh_campaign_board",
         "fleets.tasks.nudge_missing_signups",
         # A pilot joined a tribe and is waiting for the Discord role
         "tribes.tasks.sync_external_guild_for_membership",

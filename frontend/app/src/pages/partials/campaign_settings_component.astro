@@ -44,6 +44,9 @@ import {
     sides_summary,
     eve_weekday_date,
     refusal_text,
+    DISCORD_CHANNEL_SLOTS,
+    discord_channel_body,
+    discord_channel_label_key,
 } from '@helpers/campaign_manage'
 import { CAMPAIGN_FEATURES, features_on } from '@helpers/campaign_features'
 
@@ -304,14 +307,11 @@ if (is_post && settings && choices) {
                 } else {
                     await put_campaign_coordination(slug, auth_token, {
                         guild_id: field('guild_id') || null,
-                        timers_channel_id: field('timers_channel_id') || null,
-                        fleets_channel_id: field('fleets_channel_id') || null,
+                        ...discord_channel_body((slot) => field(`${slot}_channel_id`)),
                     })
                     for (const id of (form?.getAll('link_id') ?? []).map(String)) {
-                        await change_campaign(slug, auth_token, 'PATCH', `/discord-links/${id}`, {
-                            timers_channel_id: field(`link_timers_${id}`) || null,
-                            fleets_channel_id: field(`link_fleets_${id}`) || null,
-                        })
+                        await change_campaign(slug, auth_token, 'PATCH', `/discord-links/${id}`,
+                            discord_channel_body((slot) => field(`link_${slot}_${id}`)))
                     }
                 }
                 saved = true
@@ -925,18 +925,14 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
                             </ManageField>
                             <span class="[ manage-who__sub ]">{t('campaigns.discord.ours')}</span>
                         </span>
-                        <ManageField label={t('campaigns.manage.coordination_timers')} for="campaign-coordination-timers">
-                            <Select id="campaign-coordination-timers" size="sm" name="timers_channel_id" disabled={coordination.channels.length === 0}>
-                                <option value="">{coordination.channels.length === 0 ? t('campaigns.discord.needs_bot') : t('campaigns.manage.coordination_none')}</option>
-                                {coordination.channels.map((channel) => <option value={channel.id} selected={channel.id === coordination.timers_channel_id}>#{channel.name}</option>)}
-                            </Select>
-                        </ManageField>
-                        <ManageField label={t('campaigns.manage.coordination_fleets')} for="campaign-coordination-fleets">
-                            <Select id="campaign-coordination-fleets" size="sm" name="fleets_channel_id" disabled={coordination.channels.length === 0}>
-                                <option value="">{coordination.channels.length === 0 ? t('campaigns.discord.needs_bot') : t('campaigns.manage.coordination_none')}</option>
-                                {coordination.channels.map((channel) => <option value={channel.id} selected={channel.id === coordination.fleets_channel_id}>#{channel.name}</option>)}
-                            </Select>
-                        </ManageField>
+                        {DISCORD_CHANNEL_SLOTS.map((slot) =>
+                            <ManageField label={t(discord_channel_label_key(slot))} for={`campaign-coordination-${slot}`}>
+                                <Select id={`campaign-coordination-${slot}`} size="sm" name={`${slot}_channel_id`} disabled={coordination.channels.length === 0}>
+                                    <option value="">{coordination.channels.length === 0 ? t('campaigns.discord.needs_bot') : t('campaigns.manage.coordination_none')}</option>
+                                    {coordination.channels.map((channel) => <option value={channel.id} selected={channel.id === coordination[`${slot}_channel_id`]}>#{channel.name}</option>)}
+                                </Select>
+                            </ManageField>
+                        )}
                         {coordination.invite_url && !(coordination.servers.find((server) => server.id === coordination.guild_id)?.is_administrator) ?
                             <Button size="sm" href={BOT_CONNECT_URL('ours')}>{t('campaigns.discord.add_bot')}</Button>
                             :
@@ -950,18 +946,14 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro'
                                 <span class="[ manage-who__name ]">{link.guild_name || link.guild_id}</span>
                                 {link.linked_by && <span class="[ manage-who__sub ]">{t('campaigns.discord.linked_by').replace('{name}', link.linked_by)}</span>}
                             </span>
-                            <ManageField label={t('campaigns.manage.coordination_timers')} for={`campaign-link-timers-${link.id}`}>
-                                <Select id={`campaign-link-timers-${link.id}`} size="sm" name={`link_timers_${link.id}`}>
-                                    <option value="">{t('campaigns.manage.coordination_none')}</option>
-                                    {link.channels.map((channel) => <option value={channel.id} selected={channel.id === link.timers_channel_id}>#{channel.name}</option>)}
-                                </Select>
-                            </ManageField>
-                            <ManageField label={t('campaigns.manage.coordination_fleets')} for={`campaign-link-fleets-${link.id}`}>
-                                <Select id={`campaign-link-fleets-${link.id}`} size="sm" name={`link_fleets_${link.id}`}>
-                                    <option value="">{t('campaigns.manage.coordination_none')}</option>
-                                    {link.channels.map((channel) => <option value={channel.id} selected={channel.id === link.fleets_channel_id}>#{channel.name}</option>)}
-                                </Select>
-                            </ManageField>
+                            {DISCORD_CHANNEL_SLOTS.map((slot) =>
+                                <ManageField label={t(discord_channel_label_key(slot))} for={`campaign-link-${slot}-${link.id}`}>
+                                    <Select id={`campaign-link-${slot}-${link.id}`} size="sm" name={`link_${slot}_${link.id}`}>
+                                        <option value="">{t('campaigns.manage.coordination_none')}</option>
+                                        {link.channels.map((channel) => <option value={channel.id} selected={channel.id === link[`${slot}_channel_id`]}>#{channel.name}</option>)}
+                                    </Select>
+                                </ManageField>
+                            )}
                             <button
                                 type="button"
                                 class="[ campaign-icon-button ]"
