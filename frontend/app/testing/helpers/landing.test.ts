@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 
 import type { LandingEvent } from '@dtypes/api.minmatar.org'
-import { amount_grade, bar_heights, dedupe_posts, eve_clock, eve_day, event_who, format_number, subject_icon } from '@helpers/landing'
+import { amount_grade, bar_heights, dedupe_posts, eve_clock, eve_day, event_who, format_number, pick_premium_posts, subject_icon } from '@helpers/landing'
 
 const event = (others: number): LandingEvent => ({
     occurred_at: '2026-11-21T17:58:00Z',
@@ -76,5 +76,24 @@ describe('dedupe_posts', () => {
 
     test('same cover image with a different title is one story', () => {
         expect(dedupe_posts([{ title: 'A', image: 'x.jpg' }, { title: 'B', image: 'x.jpg' }])).toHaveLength(1)
+    })
+})
+
+describe('pick_premium_posts', () => {
+    const post = (title: string, date_posted: string) => ({ title, date_posted })
+
+    test('the newest of each series, whatever order the posts come in', () => {
+        const picked = pick_premium_posts([
+            post('EVE Online – The Cope – Dread Brawl in Dal', '2026-02-23T00:00:00Z'),
+            post('EvE Online - Minmatar Fleet Alliance YC128 In Review', '2026-11-14T00:00:00Z'),
+            post('EvE Online - The Cope - The Imperium Retreats', '2026-11-15T00:00:00Z'),
+            post('Minmatar Fleet YC127 in review', '2025-11-20T00:00:00Z'),
+        ])
+        expect(picked.cope?.title).toBe('EvE Online - The Cope - The Imperium Retreats')
+        expect(picked.review?.title).toBe('EvE Online - Minmatar Fleet Alliance YC128 In Review')
+    })
+
+    test('a series with no post is left out', () => {
+        expect(pick_premium_posts([post('The Scope reveals all', '2026-11-01T00:00:00Z'), post('Reviewing doctrines', '2026-11-01T00:00:00Z')])).toEqual({})
     })
 })

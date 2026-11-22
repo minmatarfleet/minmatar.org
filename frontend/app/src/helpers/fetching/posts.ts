@@ -55,6 +55,7 @@ let latest_posts_ttl_ms: number | null = null
 /** Tests: empty the latest-posts cache and set its TTL in ms (null re-reads the env). */
 export function reset_latest_posts_cache(ttl_ms: number | null = null) {
     latest_posts_cache.clear()
+    tagged_posts_cache.clear()
     latest_posts_ttl_ms = ttl_ms
 }
 
@@ -70,6 +71,25 @@ export async function fetch_latest_published_posts(page_size:number):Promise<Pos
     const posts = await latest_posts_cache.get(`published:1:${page_size}`, latest_posts_ttl_ms, () =>
         fetch_posts({ page_num: 1, page_size: page_size, status: 'published' })
     )
+    return structuredClone(posts)
+}
+
+const tagged_posts_cache = create_memo_cache<Posts>(10)
+
+/**
+ * The newest published posts under a tag, looked up by the tag's name (ids
+ * differ between databases), cached like fetch_latest_published_posts. An
+ * unknown tag is an empty list.
+ */
+export async function fetch_published_posts_tagged(tag_name:string, page_size:number):Promise<Posts> {
+    if (latest_posts_ttl_ms === null)
+        latest_posts_ttl_ms = ttl_ms_from_env('HOME_POSTS_CACHE_TTL_SECONDS', 60)
+
+    const posts = await tagged_posts_cache.get(`published:${tag_name}:${page_size}`, latest_posts_ttl_ms, async () => {
+        const tag = (await get_posts_tags()).find((candidate) => candidate.tag === tag_name)
+        if (!tag) return { total: 0, chunk: [] } as Posts
+        return fetch_posts({ tag_id: tag.tag_id, page_num: 1, page_size: page_size, status: 'published' })
+    })
     return structuredClone(posts)
 }
 
