@@ -18,7 +18,7 @@ export const amarrCollapses: ChronicleChapterSource = {
             blocks: [
                 {
                     type: 'paragraph',
-                    text: `By the autumn of YC125 the siege of **Auga** had been won so thoroughly that it had become a problem. The Amarr militia, the enemy Minmatar Fleet had been founded to fight, had mostly stopped turning up. "Where the fuck are Amarr at?" **BearThatCares** asked in public that November. "Y'all stopped logging in :("`,
+                    text: `The siege of **Auga** ended in the autumn of YC125 without anybody announcing it. The Amarr militia, the enemy Minmatar Fleet had been founded to fight, had mostly stopped turning up. "Where the fuck are Amarr at?" **BearThatCares** asked in public that November. "Y'all stopped logging in :("`,
                 },
                 {
                     type: 'paragraph',
@@ -112,7 +112,7 @@ export const amarrCollapses: ChronicleChapterSource = {
                 },
                 {
                     type: 'paragraph',
-                    text: `In among the pirates that month was Twan Molenaar, the helpful Amarr commander of October, now flying against the rats and killing their frigates from a battleship. By the end of December he had changed sides again. "we have Twan now," Bear told the public.`,
+                    text: `In among the pirates that month was Twan Molenaar, the helpful Amarr commander of October, now flying against the rats and killing their frigates from a battleship. By the end of December he had changed sides again, and brought his corporation, **Balls Deep**, with him. "we have Twan now," Bear told the public.`,
                 },
             ],
         },
@@ -130,7 +130,7 @@ export const amarrCollapses: ChronicleChapterSource = {
                 },
                 {
                     type: 'paragraph',
-                    text: `On the first of January Minmatar Fleet was one year old. Bear's birthday message admitted that he had only agreed to run another alliance "after a severe hangover". "it's unreal the amount of growth we've had in only a year," he wrote. Then he told two hundred and twenty people that they were declaring "an *actual* war" on Providence, a region of nullsec, and on **CVA**, the alliance that ruled it with a coalition several times their size. They would fight it from the new Fortizar, which the orders called the WATERMELLON.`,
+                    text: `On the first of January Minmatar Fleet was one year old. Bear's birthday message admitted that he had run an alliance once before and had only agreed to run another "after a severe hangover". "it's unreal the amount of growth we've had in only a year," he wrote. Then he told two hundred and twenty people that they were declaring "an *actual* war" on Providence, a region of nullsec, and on **CVA**, the alliance that ruled it with a coalition several times their size. They would fight it from the new Fortizar, which the orders called the WATERMELLON.`,
                 },
                 {
                     type: 'pieces',

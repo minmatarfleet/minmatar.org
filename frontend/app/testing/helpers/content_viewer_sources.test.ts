@@ -71,7 +71,9 @@ describe('viewable paths', () => {
         expect(resolve_viewer_path('/newsletter/')).toEqual({ source: 'newsletter', id: newsletter.get_latest_issue().slug })
         expect(resolve_viewer_path('/alliance/values/')).toEqual({ source: 'values', id: '' })
         expect(resolve_viewer_path('/alliance/story/')?.source).toBe('story')
-        expect(resolve_viewer_path('/alliance/story/chapter-3/')).toEqual({ source: 'story', id: 'chapter-3' })
+        expect(resolve_viewer_path('/alliance/story/sosala/')).toEqual({ source: 'story', id: 'sosala' })
+        // An address from before the eras opens the chapter its content moved to.
+        expect(resolve_viewer_path('/alliance/story/chapter-3/')).toEqual({ source: 'story', id: 'amarr-collapses' })
     })
 
     test('every guide with markdown is viewable', () => {
@@ -114,8 +116,8 @@ describe('resolving a target', () => {
         await expect(resolve_viewer_target({ source: 'values', id: '' }, { t })).resolves.toMatchObject({
             status: 'ok', title: 'Our values', width: 'reading',
         })
-        await expect(resolve_viewer_target({ source: 'story', id: 'chapter-1' }, { t })).resolves.toMatchObject({
-            status: 'ok', page_path: '/alliance/story/chapter-1/',
+        await expect(resolve_viewer_target({ source: 'story', id: 'rat-genesis' }, { t })).resolves.toMatchObject({
+            status: 'ok', page_path: '/alliance/story/rat-genesis/',
         })
     })
 
@@ -139,7 +141,7 @@ describe('the partial', () => {
         ['source=market&id=' + market.get_latest_issue().slug, 'market', 'wide'],
         ['source=newsletter&id=' + newsletter.get_latest_issue().slug, 'newsletter', 'wide'],
         ['source=values&id=', 'values', 'reading'],
-        ['source=story&id=chapter-2', 'story', 'wide'],
+        ['source=story&id=the-siege-of-auga', 'story', 'wide'],
         ['path=%2Falliance%2Fvalues%2F', 'values', 'reading'],
         ['post=275', 'post', 'fit'],
     ])('?%s renders the %s body', async (query, source, width) => {

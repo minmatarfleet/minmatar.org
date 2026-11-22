@@ -107,7 +107,7 @@ export const sosala: ChronicleChapterSource = {
                 },
                 {
                     type: 'paragraph',
-                    text: `In October the rats tried an offensive of their own in another region, and while they were gone the neighbours reinforced their drills and pushed on Sosala itself. Bear called the campaign off within days. "It was at this moment we realized that we cannot leave conduit range of our primary staging without sacrificing some of our holdings".`,
+                    text: `In October the rats tried an offensive of their own in Molden Heath, a region away, and while they were gone the neighbours reinforced their drills and pushed on Sosala itself. Bear called the campaign off within days. "It was at this moment we realized that we cannot leave conduit range of our primary staging without sacrificing some of our holdings".`,
                 },
             ],
         },

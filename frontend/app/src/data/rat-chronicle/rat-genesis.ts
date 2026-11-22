@@ -73,7 +73,7 @@ export const ratGenesis: ChronicleChapterSource = {
                 },
                 {
                     type: 'paragraph',
-                    text: 'BearThatCares wrote it up as the alliance\'s first formal battle record, with every detail preserved: the CONCORD intervention, the cap failure, the fix. He posted it where everyone in the alliance could read it. He and every commander after him would go on posting these records — after every fight, win or loss — for the next three years.',
+                    text: 'BearThatCares wrote it up as the alliance\'s first formal battle record, with every detail preserved: the CONCORD intervention, the cap failure, the fix. He posted it where everyone in the alliance could read it. He and every commander after him would go on posting these records — after every fight, win or loss — in the years that followed.',
                 },
                 { type: 'beat', text: 'That habit was baked in from day one.' },
                 { type: 'beat', text: '**Try it, screw it up, figure out why, fix it, go again.**' },

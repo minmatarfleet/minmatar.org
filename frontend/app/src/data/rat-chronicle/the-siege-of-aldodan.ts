@@ -98,7 +98,7 @@ export const theSiegeOfAldodan: ChronicleChapterSource = {
                 },
                 {
                     type: 'paragraph',
-                    text: `That night they anchored a new Fortizar in **Vard**, a system nearer the middle of the warzone. Two and a half hours later Sedition anchored one of its own in Sisiede. A truce over the pair was offered. The rats declined on principle. "No deals, no batphones, no fucks," wrote Bear, "let's see what Minmatar Fleet can form and throw down."`,
+                    text: `That night they anchored a new Fortizar in **Vard**, a system nearer the middle of the warzone. Two and a half hours later Sedition anchored one of its own in Siseide. A truce over the pair was offered. The rats declined on principle. "No deals, no batphones, no fucks," wrote Bear, "let's see what Minmatar Fleet can form and throw down."`,
                 },
                 {
                     type: 'paragraph',

@@ -77,7 +77,7 @@ export const dronelands: ChronicleChapterSource = {
             blocks: [
                 {
                     type: 'paragraph',
-                    text: `For some of the alliance this was the life they had been waiting for, and they wanted more of it than Minmatar Fleet meant to have. In January **Black Omega Security**, the corporation that had owned the Watermelon, left to join Test Alliance, one of the old nullsec empires. It wanted to belong to an empire. The rats had borrowed a corner of one for the winter.`,
+                    text: `For some of the alliance this was the life they had been waiting for, and they wanted more of it than Minmatar Fleet meant to have. In January **Black Omega Security**, the corporation in whose name the Watermelon had stood, left to join Test Alliance, one of the old nullsec empires. It wanted to belong to an empire. The rats had borrowed a corner of one for the winter.`,
                 },
                 {
                     type: 'paragraph',
@@ -137,7 +137,7 @@ export const dronelands: ChronicleChapterSource = {
                 },
                 {
                     type: 'paragraph',
-                    text: `In April the habit acquired a price. **Snuffed Out**, the strongest alliance in lowsec, and Deepwater were fighting over a fortress near home, Bear was on his way to shoot at both, and three rats who had wandered off on their own announced that they had caught a Deepwater supercarrier in Amamake.`,
+                    text: `In April the habit acquired a price. **Snuffed Out** and Deepwater were fighting over a fortress near home, Bear was on his way to shoot at both, and three rats who had wandered off on their own announced that they had caught a Deepwater supercarrier in Amamake.`,
                 },
                 {
                     type: 'paragraph',
