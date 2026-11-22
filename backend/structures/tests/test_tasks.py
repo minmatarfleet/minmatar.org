@@ -2,7 +2,9 @@ import factory
 from datetime import timedelta
 from unittest.mock import patch, MagicMock
 
+from django.db import IntegrityError, transaction
 from django.db.models import signals
+from django.db.models.query import QuerySet
 from django.utils import timezone
 
 from app.test import TestCase
@@ -17,6 +19,7 @@ from eveonline.models import (
 
 from structures.tasks import (
     process_structure_notifications,
+    store_structure_ping,
     update_corporation_structures,
     update_structures,
 )
@@ -79,6 +82,53 @@ class StructureTaskTests(TestCase):
         # A second run finds nothing left to do.
         self.assertEqual((0, 0), process_structure_notifications())
         discord_mock.create_message.assert_called_once()
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("structures.tasks.discord")
+    def test_same_notification_is_stored_once(self, discord_mock):
+        corp = self._structure_corp()
+        character = make_character(2007, corp, [])
+        row = self._stored(character, 1234567893)
+
+        self.assertTrue(store_structure_ping(row))
+        self.assertFalse(store_structure_ping(row))
+        self.assertEqual(1, EveStructurePing.objects.count())
+        discord_mock.create_message.assert_called_once()
+
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            EveStructurePing.objects.create(
+                notification_id=1234567893,
+                notification_type="StructureLostArmor",
+                summary="",
+            )
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("structures.tasks.discord")
+    def test_losing_a_race_does_not_raise_or_post(self, discord_mock):
+        """Another worker inserts between our lookup and our insert (M4)."""
+        corp = self._structure_corp()
+        character = make_character(2008, corp, [])
+        row = self._stored(character, 1234567894)
+        EveStructurePing.objects.create(
+            notification_id=1234567894,
+            notification_type="StructureLostArmor",
+            summary="",
+        )
+        real_get = QuerySet.get
+        calls = []
+
+        def get_missing_first(qs, *args, **kwargs):
+            calls.append(kwargs)
+            if qs.model is EveStructurePing and len(calls) == 1:
+                raise EveStructurePing.DoesNotExist
+            return real_get(qs, *args, **kwargs)
+
+        with patch.object(QuerySet, "get", get_missing_first):
+            self.assertFalse(store_structure_ping(row))
+
+        self.assertEqual(2, len(calls))
+        self.assertEqual(1, EveStructurePing.objects.count())
+        discord_mock.create_message.assert_not_called()
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("structures.tasks.discord")

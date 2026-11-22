@@ -37,8 +37,6 @@ const state: UniverseReportState = {
     structure_id: number('structure_id'),
     campaign_slug: text('campaign_slug'),
     corporation_name: text('corporation_name'),
-    alliance_name: text('alliance_name'),
-    affiliated_alliance_name: text('affiliated_alliance_name'),
     fitting: text('fitting'),
     reinforce_hour: number('reinforce_hour'),
 }
@@ -81,8 +79,6 @@ try {
             picked = (await find_candidates()).find((row) => row.id === state.structure_id) ?? null
             if (picked) {
                 state.corporation_name ||= picked.corporation_name ?? ''
-                state.alliance_name ||= picked.alliance_name ?? ''
-                state.affiliated_alliance_name ||= picked.affiliated_alliance_name ?? ''
                 state.fitting ||= picked.fitting ?? ''
                 state.reinforce_hour ??= picked.reinforce_hour ?? null
             }
@@ -99,8 +95,6 @@ try {
             type_id: state.type_id ?? 0,
             name: state.name,
             corporation_name: state.corporation_name,
-            alliance_name: state.alliance_name,
-            affiliated_alliance_name: state.affiliated_alliance_name,
             reinforce_hour: state.reinforce_hour,
             fitting: state.fitting,
         }
@@ -112,8 +106,6 @@ try {
                 structure_type,
                 system_name: report.system_name,
                 corporation_name: report.corporation_name,
-                alliance_name: report.alliance_name,
-                related_alliance_name: report.affiliated_alliance_name,
                 fitting: report.fitting,
                 reinforce_hour: report.reinforce_hour,
             })

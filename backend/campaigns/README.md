@@ -237,7 +237,9 @@ How the feed records killmails and hands them to campaigns: [docs/architecture/f
   low confidence rather than guessing.
 - Timer `alliance_name` / `system_name` are strings; attach resolves system
   id from the SDE / monitored list and alliance id from `EveAlliance` when
-  known. Enemy citadels usually have no `EveStructure` FK.
+  known. With no alliance given, it comes from the owning corporation: our
+  `EveCorporation` row, else ESI (`structures.reported.owner_alliance_name`).
+  Enemy citadels usually have no `EveStructure` FK.
 
 ## Not implemented yet
 

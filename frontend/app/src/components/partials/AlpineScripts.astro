@@ -331,9 +331,18 @@ export const InitXData = `
         
     },`
 
+// x-init on <body> can run before Alpine has registered the x-ref inside it,
+// so $refs.rifter may still be undefined then (MINMATAR-FRONTEND-HM). Read it
+// now if it is there, else after this tick; without it the dialogs simply
+// show no Rifter.
 export const RifterAnimationXData = `
-    rifter_animation: false,
+    rifter_animation: '',
     rifter_animation_init() {
-        this.rifter_animation = $refs.rifter.outerHTML
+        const read = () => {
+            const rifter = this.$refs.rifter ?? document.querySelector('[x-ref="rifter"]')
+            if (rifter) this.rifter_animation = rifter.outerHTML
+            return Boolean(rifter)
+        }
+        if (!read()) this.$nextTick(read)
     },`
 ---

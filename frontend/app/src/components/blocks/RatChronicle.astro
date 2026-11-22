@@ -34,6 +34,7 @@ const last_chapter_id = chapters[chapters.length - 1]?.id
     class="rat-chronicle"
     x-data={`{
         init_zoom() {
+            if (!window.mediumZoom) return
             mediumZoom('[data-zoomable]', {
                 background: 'var(--solid-transparency-background)',
                 scrollOffset: 0,

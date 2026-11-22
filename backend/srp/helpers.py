@@ -277,13 +277,22 @@ def is_valid_for_reimbursement(
     return True, None
 
 
+class DecisionMailFailed(Exception):
+    """ESI refused the SRP decision mail. The message is ESI's error text."""
+
+
 def send_decision_notification(reimbursement: EveFleetShipReimbursement):
     # Future: route via notifications app + NOTIFICATIONS_EVE_MAIL_CHARACTER_ID
     # (BearThatCares) instead of this hardcoded sender.
     mail_character_id = 2116116149
     evemail = make_reimbursement_evemail(reimbursement)
 
-    result = EsiClient(mail_character_id).send_evemail(evemail).results()
+    response = EsiClient(mail_character_id).send_evemail(evemail)
+    if not response.success():
+        # results() would raise "Cannot return data for failed ESI call
+        # (906)", which hides what ESI said (MINMATAR-REST-API-P5).
+        raise DecisionMailFailed(response.error_text())
+    result = response.data
 
     logger.info(
         f"Mail sent to {reimbursement.primary_character_id} for reimbursement"

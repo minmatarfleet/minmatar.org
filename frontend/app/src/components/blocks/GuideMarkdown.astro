@@ -48,6 +48,7 @@ const character_modal_partial = translatePath('/partials/character_modal_compone
     class:list={['guide-md', class_name]}
     x-data={`{
         init_guide_md() {
+            if (!window.mediumZoom) return
             mediumZoom('.guide-md img', {
                 background: 'var(--solid-transparency-background)',
                 scrollOffset: 0,

@@ -31361,11 +31361,6 @@ export interface components {
         /** StructureReportRequest */
         StructureReportRequest: {
             /**
-             * Affiliated Alliance Name
-             * @default
-             */
-            affiliated_alliance_name?: string;
-            /**
              * Alliance Name
              * @default
              */

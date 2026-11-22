@@ -12,6 +12,7 @@ from app.monitoring import (
     dsn_for,
     tick_task_names,
     traces_sampler,
+    monitored_schedules,
     unmonitored_schedules_pattern,
 )
 
@@ -84,6 +85,36 @@ class CronMonitorTestCase(SimpleTestCase):
         for name in ("[Misc] Check Fleets", "[Feed] Poll zKill R2Z2"):
             with self.subTest(name):
                 self.assertTrue(match_regex_list(name, excluded))
+
+    def test_character_monitor_follows_the_sync_mode(self):
+        fanout = monitoring.CHARACTER_FANOUT_SCHEDULE
+        scheduler = monitoring.CHARACTER_SCHEDULER_SCHEDULE
+        cases = {
+            "fanout": {fanout},
+            "shadow": {fanout, scheduler},
+            "scheduled": {scheduler},
+            "typo": {fanout},
+        }
+        for mode, expected in cases.items():
+            with self.subTest(mode):
+                names = set(monitored_schedules(mode))
+                self.assertEqual(expected, names & {fanout, scheduler})
+                self.assertTrue(set(CRON_MONITORED_SCHEDULES) <= names)
+                excluded = [unmonitored_schedules_pattern(mode)]
+                for name in (fanout, scheduler):
+                    self.assertEqual(
+                        name not in expected,
+                        bool(match_regex_list(name, excluded)),
+                    )
+
+    def test_mode_comes_from_the_environment(self):
+        with patch.dict("os.environ", {"CHARACTER_SYNC_MODE": "scheduled"}):
+            self.assertIn(
+                monitoring.CHARACTER_SCHEDULER_SCHEDULE, monitored_schedules()
+            )
+            self.assertNotIn(
+                monitoring.CHARACTER_FANOUT_SCHEDULE, monitored_schedules()
+            )
 
 
 class TaskSignalsTestCase(SimpleTestCase):

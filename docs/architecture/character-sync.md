@@ -128,7 +128,8 @@ Rollout:
 ## Monitoring
 - **`manage.py character_sync_status`:** per section, the in-scope count, overdue count (older than twice the interval), failing count, p95 and oldest age, and top errors. Also new characters whose first fetch was never attempted.
 - **`report_character_sync_health`, every 15 min:** sends Sentry gauges `character_sync.overdue_ratio` and `character_sync.p95_age_hours`. In scheduled mode it warns when more than 5% of a section is overdue, or when a new character has no first fetch after 10 minutes.
-- **The scheduler:** gauges `character_sync.due` (per section) and `character_sync.queued`. It has the Sentry cron monitor in place of the old fan-out.
+- **The scheduler:** gauges `character_sync.due` (per section) and `character_sync.queued`.
+- **Cron monitor:** follows `CHARACTER_SYNC_MODE` (`app.monitoring.monitored_schedules`): the 4-hourly fan-out in fanout mode, the scheduler in scheduled mode, both in shadow mode. The schedule that returns early in a mode has no monitor.
 - **Queue limit:** `eveonline`'s 30-minute queue warning should now stay quiet.
 
 ## What counts as a regression

@@ -58,4 +58,9 @@ import AllianceHealthPilotAlpine from '@components/partials/AllianceHealthPilotA
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
 
-<script src="https://cdn.jsdelivr.net/npm/medium-zoom@1.1.0/dist/medium-zoom.min.js"></script>
+<!--
+	is:inline keeps this a classic, parser-blocking script, so window.mediumZoom exists before
+	Alpine starts and survives soft navigation. Without it Astro processed the tag and the global
+	was missing when x-init ran (MINMATAR-FRONTEND-HY).
+-->
+<script is:inline src="https://cdn.jsdelivr.net/npm/medium-zoom@1.1.0/dist/medium-zoom.min.js"></script>

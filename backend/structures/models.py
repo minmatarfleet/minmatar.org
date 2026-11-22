@@ -204,7 +204,9 @@ class EveStructureTimer(models.Model):
 class EveStructurePing(models.Model):
     """Record of a structure ping"""
 
-    notification_id = models.BigIntegerField(db_index=True)
+    # Unique: two workers storing the same notification must not both insert
+    # (get_or_create then raised MultipleObjectsReturned, MINMATAR-CELERY-M4).
+    notification_id = models.BigIntegerField(unique=True)
     notification_type = models.CharField(max_length=40)
     summary = models.CharField(max_length=255)
     discord_success = models.BooleanField(default=False)

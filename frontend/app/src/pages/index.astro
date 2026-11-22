@@ -181,6 +181,10 @@ import LandingReel from '@components/blocks/landing/LandingReel.astro'
         // A rotator for the hero's button and Latest: shows item `index`,
         // fills the x-ref="bar" over `ms`, then moves to the next. Hover or
         // focus pauses both; reduced motion never advances.
+        // The fill is a Web Animation, which outlives the page: after a soft
+        // navigation it still finishes, and $refs.bar is gone by then
+        // (MINMATAR-FRONTEND-KN/KM). destroy() cancels it, and run() stops
+        // when the bar is no longer on the page.
         window.landing_rotator = (count, ms) => ({
             index: 0,
             count,
@@ -191,9 +195,20 @@ import LandingReel from '@components/blocks/landing/LandingReel.astro'
                 this.still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
                 if (!this.still && this.count > 1) this.run()
             },
+            destroy() {
+                this.stop()
+            },
+            stop() {
+                if (!this.timer) return
+                this.timer.onfinish = null
+                this.timer.cancel()
+                this.timer = null
+            },
             run() {
-                this.timer?.cancel()
-                this.timer = this.$refs.bar.animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: ms, fill: 'forwards' })
+                this.stop()
+                const bar = this.$refs.bar
+                if (!bar?.isConnected) return
+                this.timer = bar.animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: ms, fill: 'forwards' })
                 if (this.paused) this.timer.pause()
                 this.timer.onfinish = () => { this.index = (this.index + 1) % this.count; this.run() }
             },
@@ -243,7 +258,7 @@ import LandingReel from '@components/blocks/landing/LandingReel.astro'
                                 <span
                                     class="[ landing-cta__label ]"
                                     x-text="item.label"
-                                    x-effect="index; if (!still) $el.animate([{ opacity: 0, transform: 'translateY(0.25em)' }, { opacity: 1, transform: 'none' }], 250)"
+                                    x-effect="index; if (!still && $el.isConnected) $el.animate([{ opacity: 0, transform: 'translateY(0.25em)' }, { opacity: 1, transform: 'none' }], 250)"
                                 >{HERO_CTAS[0].label}</span>
                             </Button>
                             <span class="[ landing-cta__bar ]" aria-hidden="true" x-show="!still"><span x-ref="bar"></span></span>
