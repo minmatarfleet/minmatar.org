@@ -3,7 +3,7 @@
  * How to get a structure's details out of the EVE client, for the fields on
  * the current step of a structure dialog. One chip per topic; each shows a
  * short clip recorded in the client and three numbered steps. Shared by Add
- * a structure and Report a structure.
+ * a structure, Report a structure and Add a timer.
  */
 import { i18n, t_key } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
@@ -25,6 +25,8 @@ const CLIPS: Partial<Record<StructureHowToTopic, { src: string, width: number, h
     owner:      { src: '/images/structure-guide/show-info.gif', width: 400, height: 329 },
     reinforce:  { src: '/images/structure-guide/hack-reinforce.gif', width: 400, height: 292 },
     fitting:    { src: '/images/structure-guide/ship-scan-copy.gif', width: 276, height: 420 },
+    selected_item:  { src: '/images/structure-guide/selected-item.gif', width: 400, height: 110 },
+    timer_owner:    { src: '/images/structure-guide/timer-owner.gif', width: 420, height: 248 },
 }
 ---
 

@@ -1,0 +1,201 @@
+---
+/**
+ * The body of the Add a timer dialog, one step at a time:
+ * Paste → Check → Owner → Sent, inside the shared StructureSteps shell with
+ * StructureHowTo clips, like Add a structure and Report a structure. Each
+ * step posts to structure_timer_add_component, which renders the next one;
+ * what the pilot entered so far travels along as hidden fields.
+ */
+import { i18n, t_key, dynamic_key } from '@helpers/i18n'
+const { t, translatePath, lang } = i18n(Astro.url)
+
+import type { CampaignListItem } from '@dtypes/api.minmatar.org'
+import { structure_types, structure_states } from '@dtypes/api.minmatar.org'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { get_structure_id } from '@helpers/eve'
+import { eve_date_time } from '@helpers/campaign_manage'
+
+export interface TimerAddState {
+    text:               string;
+    structure_type:     string;
+    system_name:        string;
+    name:               string;
+    state:              string;
+    /** ISO, EVE time. */
+    timer:              string;
+    corporation_name:   string;
+    alliance_name:      string;
+    campaign_slug:      string;
+}
+
+interface Props {
+    step:               'paste' | 'check' | 'owner' | 'sent';
+    state?:             Partial<TimerAddState>;
+    campaigns?:         CampaignListItem[];
+    can_verify?:        boolean;
+    /** The paste could not be read: say so on the Check step. */
+    unread?:            boolean;
+    /** Owner fields came from a structure already in Structures. */
+    known?:             boolean;
+    verify_error?:      string | null;
+    error?:             string | null;
+}
+
+const { step, campaigns = [], can_verify = false, unread = false, known = false, verify_error = null, error = null } = Astro.props
+const state: TimerAddState = {
+    text: '', structure_type: '', system_name: '', name: '', state: '', timer: '',
+    corporation_name: '', alliance_name: '', campaign_slug: '',
+    ...(Astro.props.state ?? {}),
+}
+
+const URL = translatePath('/partials/structure_timer_add_component/')
+const STEPS = ['paste', 'check', 'owner', 'sent'] as const
+const current = STEPS.indexOf(step)
+const when = state.timer ? eve_date_time(lang, state.timer) : ''
+const summary = [
+    state.name,
+    [state.state ? t(dynamic_key(state.state)) : '', when].filter(Boolean).join(' · '),
+    state.corporation_name,
+    '',
+]
+const steps = STEPS.map((name, index) => ({
+    label: t(t_key('timers.add.step_', name)),
+    note: index < current ? summary[index] : index === current ? t(t_key('timers.add.step_now_', name)) : '',
+}))
+const go = (value: string) => JSON.stringify({ go: value })
+const type_id = state.structure_type ? get_structure_id(state.structure_type) : null
+const selected_campaign = campaigns.find((campaign) => campaign.slug === state.campaign_slug)
+
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+import SwitchSquare from '@components/blocks/SwitchSquare.astro'
+import EveTimeInput from '@components/blocks/manage/EveTimeInput.astro'
+import ManageField from '@components/blocks/manage/ManageField.astro'
+import StructureSteps from '@components/blocks/structures/StructureSteps.astro'
+import StructureHowTo from '@components/blocks/structures/StructureHowTo.astro'
+---
+
+<StructureSteps title={t('timers.add.title')} steps_label={t('timers.add.steps')} steps={steps} current={current}>
+    {/* What travels between steps. */}
+    <input type="hidden" name="campaign_slug" value={state.campaign_slug} />
+    {step !== 'paste' && <input type="hidden" name="text" value={state.text} />}
+    {step === 'check' && <input type="hidden" name="corporation_name" value={state.corporation_name} />}
+    {step === 'owner' &&
+        <Fragment>
+            <input type="hidden" name="structure_type" value={state.structure_type} />
+            <input type="hidden" name="system_name" value={state.system_name} />
+            <input type="hidden" name="name" value={state.name} />
+            <input type="hidden" name="state" value={state.state} />
+            <input type="hidden" name="timer" value={state.timer} />
+        </Fragment>
+    }
+
+    {error && <p class="[ manage-field__error ]" role="alert">{error}</p>}
+
+    {step === 'paste' &&
+        <div class="[ structure-add__body ]">
+            <StructureHowTo topics={['selected_item']} />
+            <ManageField label={t('timers.add.paste_label')} for="timer-add-text">
+                <Textarea id="timer-add-text" name="text" rows="4" placeholder={t('timers.add.paste_placeholder')}>{state.text}</Textarea>
+            </ManageField>
+            <button type="button" class="[ structure-add__link ]" hx-post={URL} hx-vals={go('by_hand')} hx-target="closest form" hx-swap="innerHTML">
+                {t('timers.add.by_hand')}
+            </button>
+            <div class="[ manage-actions ]">
+                <Button type="button" size="sm" color="fleet-red" hx-post={URL} hx-vals={go('check')} hx-target="closest form" hx-swap="innerHTML" hx-disabled-elt="this">{t('timers.add.next')}</Button>
+                <Button type="button" size="sm" color="transparent" x-on:click="close_dialog()">{t('cancel')}</Button>
+            </div>
+        </div>
+    }
+
+    {step === 'check' &&
+        <div class="[ structure-add__body ]">
+            {unread && <p class="[ manage-muted ]">{t('timers.add.unread')}</p>}
+            <div class="[ structure-add__two ]">
+                <ManageField label={t('timers.add.type')} for="timer-add-type" hint={t('timers.add.type_hint')}>
+                    <Select id="timer-add-type" name="structure_type" size="sm" required>
+                        <option value="">{t('timers.add.pick_type')}</option>
+                        {structure_types.map((type) => <option value={type} selected={state.structure_type === type}>{t(type)}</option>)}
+                    </Select>
+                </ManageField>
+                <ManageField label={t('timers.add.state')} for="timer-add-state" hint={state.state ? undefined : t('timers.add.state_hint')}>
+                    <Select id="timer-add-state" name="state" size="sm" required>
+                        <option value="">{t('timers.add.pick_state')}</option>
+                        {structure_states.map((value) => <option value={value} selected={state.state === value}>{t(value)}</option>)}
+                    </Select>
+                </ManageField>
+                <ManageField label={t('timers.add.system')} for="timer-add-system">
+                    <Input id="timer-add-system" name="system_name" value={state.system_name} required />
+                </ManageField>
+                <ManageField label={t('timers.add.name')} for="timer-add-name">
+                    <Input id="timer-add-name" name="name" value={state.name} required />
+                </ManageField>
+            </div>
+            <EveTimeInput id="timer-add-timer" name="timer" label={t('timers.add.timer')} value={state.timer || null} required />
+            <div class="[ manage-actions ]">
+                <Button type="button" size="sm" color="fleet-red" hx-post={URL} hx-vals={go('owner')} hx-target="closest form" hx-swap="innerHTML" hx-disabled-elt="this">{t('timers.add.next')}</Button>
+                <Button type="button" size="sm" color="transparent" hx-post={URL} hx-vals={go('paste')} hx-target="closest form" hx-swap="innerHTML">{t('timers.add.back')}</Button>
+            </div>
+        </div>
+    }
+
+    {step === 'owner' &&
+        <div class="[ structure-add__body ]">
+            <div class="[ structure-add__result ]">
+                {type_id ? <img src={get_item_icon(type_id, 64)} alt="" width="56" height="56" /> : <span class="[ structure-add__glyph ]" aria-hidden="true"></span>}
+                <div>
+                    <b>{state.name}</b>
+                    <small>{[state.structure_type ? t(dynamic_key(state.structure_type)) : '', state.system_name].filter(Boolean).join(' · ')}</small>
+                </div>
+                <span class="[ timer-add__when ]">{state.state ? t(dynamic_key(state.state)) : ''} · {when}</span>
+            </div>
+            <StructureHowTo topics={['timer_owner']} />
+            <div class="[ structure-add__two ]">
+                <ManageField label={t('timers.add.corporation')} for="timer-add-corp" hint={known ? t('timers.add.known') : undefined}>
+                    <Input id="timer-add-corp" name="corporation_name" value={state.corporation_name} required />
+                </ManageField>
+                <ManageField label={t('timers.add.alliance')} for="timer-add-alliance" hint={t('timers.add.alliance_hint')}>
+                    <Input id="timer-add-alliance" name="alliance_name" value={state.alliance_name} />
+                </ManageField>
+            </div>
+            <ManageField label={t('campaigns.structures.campaign_optional')} for="timer-add-campaign">
+                <Select id="timer-add-campaign" name="campaign_id" size="sm">
+                    <option value="">{t('campaigns.structures.no_campaign')}</option>
+                    {campaigns.map((campaign) => <option value={campaign.id} selected={campaign.id === selected_campaign?.id}>{campaign.name}</option>)}
+                </Select>
+            </ManageField>
+            {can_verify &&
+                <SwitchSquare name="verify_timer" label={t('verify_timer')} description={t('verify_timer_description')} />
+            }
+            <div class="[ manage-actions ]">
+                <Button type="button" size="sm" color="fleet-red" hx-post={URL} hx-vals={go('send')} hx-target="closest form" hx-swap="innerHTML" hx-disabled-elt="this">{t('timers.add.send')}</Button>
+                <Button type="button" size="sm" color="transparent" hx-post={URL} hx-vals={go('check_back')} hx-target="closest form" hx-swap="innerHTML">{t('timers.add.back')}</Button>
+            </div>
+        </div>
+    }
+
+    {step === 'sent' &&
+        <div class="[ structure-add__body ]">
+            <div class="[ structure-add__sent ]">
+                <h3>{t('timers.add.sent_title')}</h3>
+                <p>{selected_campaign ? t('timers.add.sent_body_campaign').replace('~CAMPAIGN', selected_campaign.name) : t('timers.add.sent_body')}</p>
+                {verify_error && <p class="[ manage-field__error ]" role="alert">{t('timers.add.verify_failed').replace('~ERROR', verify_error)}</p>}
+            </div>
+            <div class="[ manage-actions ]">
+                <Button type="button" size="sm" color="fleet-red" x-on:click="close_dialog()">{t('timers.add.done')}</Button>
+                <Button type="button" size="sm" color="transparent" hx-post={URL} hx-vals={go('paste_new')} hx-target="closest form" hx-swap="innerHTML">{t('timers.add.another')}</Button>
+            </div>
+        </div>
+    }
+</StructureSteps>
+
+<style lang="scss" is:global>
+    .timer-add__when {
+        font-size: var(--step--1);
+        font-weight: 600;
+        color: var(--fleet-yellow);
+        font-variant-numeric: tabular-nums;
+    }
+</style>

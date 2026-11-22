@@ -16,7 +16,7 @@ export default {
         docs: {
             description: {
                 component: [
-                    'The structures under recon in a strategic campaign\'s theatre, on `/campaigns/<slug>/` (Structures tab): name and fit, system, type, owner, related alliance, side, status, reinforcement hour and timer or destruction time. Pilots with intel access also get Report structure and Add timer buttons that open the intel pages with the campaign preselected.',
+                    'The structures under recon in a strategic campaign\'s theatre, on `/campaigns/<slug>/` (Structures tab): name and fit, system, type, owner, related alliance, side, status, reinforcement hour and timer or destruction time. Pilots with intel access also get Report structure and Add timer buttons that open their dialogs with the campaign preselected.',
                     'Scenarios: a typical mix of friendly, hostile and destroyed structures, a single reinforced keep, a busy 14-row list, the empty state, a pilot who can add timers, and long names with unknown structure types.',
                 ].join('\n\n'),
             },
@@ -24,7 +24,7 @@ export default {
     },
     argTypes: {
         structures: { control: 'object', description: 'Structures from `/api/campaigns/<slug>`.' },
-        slug: { control: 'text', description: 'Campaign slug for the report and timer links.' },
+        slug: { control: 'text', description: 'Campaign slug the report and timer dialogs preselect.' },
         show_add_timer: { control: 'boolean', description: 'Show the Report structure and Add timer buttons (intel access).' },
         tracking: { control: 'text', description: 'Optional summary line under the hint, e.g. "3 destroyed · 7 remaining".' },
     },
@@ -50,7 +50,7 @@ export const Typical = {
         // Structures with a recorded fit carry a Fit tag (the column header also reads Fit).
         const fit_cells = canvas.getAllByRole('cell').filter(cell => cell.textContent?.trim() === 'Fit')
         await expect(fit_cells).toHaveLength(2)
-        await expect(canvas.queryByRole('link', { name: 'Add timer' })).toBeNull()
+        await expect(canvas.queryByRole('button', { name: 'Add timer' })).toBeNull()
     },
 }
 
@@ -60,7 +60,8 @@ export const WithIntelButtons = {
         const canvas = within(canvasElement)
         // Report structure opens the shared Report a structure dialog, tied to this campaign.
         await expect(canvas.getByRole('button', { name: 'Report structure' })).toBeVisible()
-        await expect(canvas.getByRole('link', { name: 'Add timer' })).toHaveAttribute('href', '/intel/timers/add/?campaign_slug=snuffed-out-sovereignty')
+        // Add timer opens the stepped Add a timer dialog, with this campaign preselected.
+        await expect(canvas.getByRole('button', { name: 'Add timer' })).toBeVisible()
     },
 }
 

@@ -2,6 +2,7 @@
 /**
  * One step of the Report a structure dialog. The form posts `go` (the step to
  * show next) plus what the pilot entered so far; this renders that step.
+ * Picking a known structure prefills owner, fit and hour from it.
  * Opened from a campaign, the form carries campaign_slug and the sent report
  * is attached to that campaign as well.
  */
@@ -16,7 +17,7 @@ import { match_universe_structures, report_universe_structure } from '@helpers/a
 import { attach_campaign_structure } from '@helpers/api.minmatar.org/campaigns'
 import { get_structure_type } from '@helpers/eve'
 import UniverseReportSteps from '@components/blocks/universe/UniverseReportSteps.astro'
-import type { UniverseReportState } from '@components/blocks/universe/UniverseReportSteps.astro'
+import type { UniverseReportState, UniverseReportStep } from '@components/blocks/universe/UniverseReportSteps.astro'
 
 const { auth_token } = get_request_user(Astro)
 if (!auth_token || Astro.request.method !== 'POST') return HTTP_403_Forbidden()
@@ -34,39 +35,59 @@ const state: UniverseReportState = {
     name: text('name'),
     structure_id: number('structure_id'),
     campaign_slug: text('campaign_slug'),
+    corporation_name: text('corporation_name'),
+    alliance_name: text('alliance_name'),
+    affiliated_alliance_name: text('affiliated_alliance_name'),
+    fitting: text('fitting'),
+    reinforce_hour: number('reinforce_hour'),
 }
 
-let step: 'find' | 'match' | 'details' | 'sent' = 'find'
+let step: UniverseReportStep = 'find'
 let candidates: UniverseStructure[] = []
 let picked: UniverseStructure | null = null
 let error: string | null = null
 const go = text('go') || 'find'
 
+// The structures in that system like the one described, or an error for an unknown system.
+const find_candidates = async () => {
+    if (!state.system_name || state.type_id === null) throw new Error(t('universe.report.unknown_system'))
+    const match = await match_universe_structures(auth_token, state.system_name, state.type_id, state.name)
+    if (!match?.system_found) throw new Error(t('universe.report.unknown_system'))
+    return match.candidates
+}
+
 try {
-    if (go === 'match' || go === 'details') {
-        if (!state.system_name || state.type_id === null) {
-            error = t('universe.report.unknown_system')
-        } else {
-            const match = await match_universe_structures(auth_token, state.system_name, state.type_id, state.name)
-            if (!match?.system_found) {
-                error = t('universe.report.unknown_system')
-            } else {
-                candidates = match.candidates
-                step = go
-                picked = candidates.find((row) => row.id === state.structure_id) ?? null
+    if (go === 'match') {
+        candidates = await find_candidates()
+        step = 'match'
+    } else if (go === 'owner') {
+        if (text('prefill') && state.structure_id !== null) {
+            // Picked a known structure: start from what we already hold, keep what the pilot typed.
+            picked = (await find_candidates()).find((row) => row.id === state.structure_id) ?? null
+            if (picked) {
+                state.corporation_name ||= picked.corporation_name ?? ''
+                state.alliance_name ||= picked.alliance_name ?? ''
+                state.affiliated_alliance_name ||= picked.affiliated_alliance_name ?? ''
+                state.fitting ||= picked.fitting ?? ''
+                state.reinforce_hour ??= picked.reinforce_hour ?? null
             }
         }
+        step = 'owner'
+    } else if (go === 'fitting') {
+        step = 'fitting'
+    } else if (go === 'reinforce') {
+        step = 'reinforce'
     } else if (go === 'send') {
         const report = {
             structure_id: state.structure_id,
             system_name: state.system_name,
             type_id: state.type_id ?? 0,
             name: state.name,
-            corporation_name: text('corporation_name'),
-            alliance_name: text('alliance_name'),
-            affiliated_alliance_name: text('affiliated_alliance_name'),
-            reinforce_hour: number('reinforce_hour'),
-            fitting: text('fitting'),
+            corporation_name: state.corporation_name,
+            alliance_name: state.alliance_name,
+            affiliated_alliance_name: state.affiliated_alliance_name,
+            reinforce_hour: state.reinforce_hour,
+            fitting: state.fitting,
         }
         await report_universe_structure(auth_token, report)
         const structure_type = state.type_id === null ? null : get_structure_type(state.type_id)
@@ -86,7 +107,7 @@ try {
     }
 } catch (failure) {
     error = (failure as Error).message
-    step = go === 'send' ? 'details' : 'find'
+    step = go === 'send' ? 'reinforce' : 'find'
 }
 ---
 

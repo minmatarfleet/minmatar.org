@@ -1159,5 +1159,5 @@ export interface StructureStep {
     note:   string;
 }
 
-/** A "how to get this from EVE" topic shown under a structure dialog step (StructureHowTo). */
-export type StructureHowToTopic = 'name' | 'owner' | 'reinforce' | 'fitting' | 'dscan'
+/** A "how to get this from EVE" topic shown under a structure or timer dialog step (StructureHowTo). */
+export type StructureHowToTopic = 'name' | 'owner' | 'reinforce' | 'fitting' | 'selected_item' | 'timer_owner'

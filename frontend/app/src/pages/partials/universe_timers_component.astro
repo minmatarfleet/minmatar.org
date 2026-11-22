@@ -18,7 +18,6 @@ const gates = await get_gates(Astro)
 if (!can(gates, 'structures.timers.view')) return HTTP_403_Forbidden()
 
 const PARTIAL_URL = translatePath('/partials/universe_timers_component/')
-const ADD_TIMER_URL = translatePath('/intel/timers/add/')
 
 let timers: UniverseTimer[] = []
 let can_add = false
@@ -51,7 +50,7 @@ const rows = timers.map((timer) => ({
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
-import Button from '@components/blocks/Button.astro'
+import TimerAddDialog from '@components/blocks/structures/TimerAddDialog.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
@@ -59,7 +58,7 @@ import ManageSearch from '@components/blocks/manage/ManageSearch.astro'
 import CampaignTimersTable from '@components/blocks/CampaignTimersTable.astro'
 ---
 
-<div id="universe-timers" x-data="{ view: 'all', q: '' }">
+<div id="universe-timers" x-data="{ view: 'all', q: '' }" hx-get={PARTIAL_URL} hx-trigger="structure-timers-changed from:body" hx-target="this" hx-swap="outerHTML">
     {fetch_error ?
         <ErrorRefetch args={{ partial: PARTIAL_URL, error: fetch_error, delay: 0, target: '#universe-timers' }} />
         :
@@ -75,7 +74,7 @@ import CampaignTimersTable from '@components/blocks/CampaignTimersTable.astro'
                 </div>
                 <FlexInline gap="var(--space-s)" class="[ universe-toolbar ]">
                     <ManageSearch id="universe-timers-search" label={t('universe.timers.search')} placeholder={t('universe.timers.search')} x-model="q" />
-                    {can_add && <Button size="sm" color="fleet-red" href={ADD_TIMER_URL}>{t('universe.timers.add')}</Button>}
+                    {can_add && <TimerAddDialog label={t('universe.timers.add')} />}
                 </FlexInline>
             </div>
             <ComponentBlock>

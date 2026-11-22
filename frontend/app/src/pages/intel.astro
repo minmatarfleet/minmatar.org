@@ -6,6 +6,7 @@ import { get_gates, can } from '@helpers/gates'
 const gates = await get_gates(Astro)
 
 const can_view_timers = can(gates, 'structures.timers.view#strict')
+const can_add_timers = can(gates, 'structures.timers.manage')
 const can_add_moons = can(gates, 'moons.manage#strict')
 const can_view_moons = can(gates, 'moons.view#strict')
 const can_view_affiliations = can(gates, 'intel.affiliations')
@@ -53,6 +54,7 @@ const leading_text = t('intel.leading_text');
             
             <IntelTiles
                 can_view_timers={can_view_timers}
+                can_add_timers={can_add_timers}
                 can_add_moons={can_add_moons}
                 can_view_moons={can_view_moons}
                 can_view_affiliations={can_view_affiliations}

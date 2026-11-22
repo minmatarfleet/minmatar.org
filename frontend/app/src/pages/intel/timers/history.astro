@@ -55,6 +55,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 
 import StructureTimerList from '@components/blocks/StructureTimerList.astro';
 import Button from '@components/blocks/Button.astro';
+import TimerAddDialog from '@components/blocks/structures/TimerAddDialog.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
@@ -94,10 +95,9 @@ const page_title = t('intel.timers.history.page_title');
             </FlexInline>
             {can_add_timers &&
                 <PageActions>
-                    <Button color={'green'} href={translatePath('/intel/timers/add/')}>
+                    <TimerAddDialog size="lg" color="green" label={t('add_structure_timer')}>
                         <AddIcon slot="icon" />
-                        {t('add_structure_timer')}
-                    </Button>
+                    </TimerAddDialog>
                 </PageActions>
             }
         </FlexInline>
