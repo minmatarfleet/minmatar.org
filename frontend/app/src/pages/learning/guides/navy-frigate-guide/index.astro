@@ -2,6 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
+import { guide } from '@/data/navy-frigate-guide/guide'
 import { guideMeta, buildNavyFrigateGuideJsonLd, guideSections } from '@/data/navy-frigate-guide'
 import { pageProgressFromSections } from '@helpers/pageProgress'
 import { get_site_origin } from '@helpers/seo'
@@ -13,7 +14,7 @@ import PageTitle from '@components/page/PageTitle.astro'
 import TextBox from '@components/layout/TextBox.astro'
 import Wrapper from '@components/compositions/Wrapper.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
-import NavyFrigateGuide from '@components/blocks/navy-frigate-guide/NavyFrigateGuide.astro'
+import ShipGuide from '@components/blocks/ship-guide/ShipGuide.astro'
 import PageProgress from '@components/blocks/guides/PageProgress.astro'
 
 const page_title = t('ships.navy_frigate_guide.page_title')
@@ -100,7 +101,7 @@ const progress = pageProgressFromSections({
                 padding_inline="0"
                 padding_block="0"
             >
-                <NavyFrigateGuide />
+                <ShipGuide guide={guide} />
             </Wrapper>
         </Flexblock>
     </PageLanding>

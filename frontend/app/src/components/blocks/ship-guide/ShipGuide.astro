@@ -1,0 +1,485 @@
+---
+/**
+ * The shared body of the three ship guides (navy frigates, navy destroyers,
+ * FW cruisers): every section, the matchup charts and the per-ship blocks,
+ * rendered from one `ShipGuideConfig` (see `src/data/<guide>/guide.ts`).
+ */
+import GuideContentsLayout from '@components/blocks/GuideContentsLayout.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import GuideShell from '@components/blocks/GuideShell.astro'
+import GuideMatchupChart from '@components/blocks/ship-guide/GuideMatchupChart.astro'
+import GuideShipSection from '@components/blocks/ship-guide/GuideShipSection.astro'
+import { get_fittings } from '@helpers/api.minmatar.org/ships'
+import type { ShipGuideConfig } from '@/data/ship-guide/types'
+import type { Fitting } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    guide: ShipGuideConfig
+}
+
+const { guide } = Astro.props
+const { id_prefix: prefix } = guide
+
+let fitting_library: Fitting[] = []
+try {
+    fitting_library = await get_fittings()
+} catch {
+    fitting_library = []
+}
+
+const rating_class = (rating: string) =>
+    rating === '?' ? 'unknown' : rating.replace(/\+/g, 'plus').replace(/-/g, 'minus').replace(/=/g, 'even')
+const is_external = (href: string) => href.startsWith('http')
+---
+
+<GuideShell
+    title={guide.meta.title}
+    subtitle={`${guide.meta.edition} · ${guide.meta.yc}`}
+>
+    <div class="ship-guide">
+    <GuideContentsLayout sections={guide.sections}>
+            <section id="introduction" data-section-id="introduction" class="ship-guide__section" aria-labelledby={`${prefix}-intro-title`}>
+                <ComponentBlock variant="guide">
+                    <h2 id={`${prefix}-intro-title`}>Introduction</h2>
+                    {
+                        guide.introduction.map((paragraph) => (
+                            <p class="ship-guide__section-paragraph" set:html={paragraph} />
+                        ))
+                    }
+                </ComponentBlock>
+            </section>
+
+            <section id="considerations" data-section-id="considerations" class="ship-guide__section" aria-labelledby={`${prefix}-considerations-title`}>
+                <ComponentBlock variant="guide">
+                    <h2 id={`${prefix}-considerations-title`}>Considerations of the Metagame</h2>
+                    {
+                        guide.considerations.map((paragraph) => (
+                            <p class="ship-guide__section-paragraph">{paragraph}</p>
+                        ))
+                    }
+                    <ul class="ship-guide__section-list">
+                        {
+                            guide.consideration_bullets.map((bullet) => (
+                                <li>{bullet}</li>
+                            ))
+                        }
+                    </ul>
+                </ComponentBlock>
+            </section>
+
+            <section id="disclaimers" data-section-id="disclaimers" class="ship-guide__section" aria-labelledby={`${prefix}-disclaimers-title`}>
+                <ComponentBlock variant="guide">
+                    <h2 id={`${prefix}-disclaimers-title`}>Disclaimers</h2>
+                    {
+                        guide.disclaimers.map((paragraph) => (
+                            <p class="ship-guide__section-paragraph">{paragraph}</p>
+                        ))
+                    }
+                </ComponentBlock>
+            </section>
+
+            <section id="summary" data-section-id="summary" class="ship-guide__section" aria-labelledby={`${prefix}-summary-title`}>
+                <ComponentBlock variant="guide">
+                    <h2 id={`${prefix}-summary-title`}>Summary of the Metagame</h2>
+                    <div class="ship-guide__summary-grid">
+                        {
+                            guide.metagame_summary.map((entry) => (
+                                <article class="ship-guide__summary-card">
+                                    <h3 class="ship-guide__summary-card-title">{entry.archetype}</h3>
+                                    <p class="ship-guide__summary-card-text">{entry.text}</p>
+                                </article>
+                            ))
+                        }
+                    </div>
+                </ComponentBlock>
+            </section>
+
+            <section id="matchups" data-section-id="matchups" class="ship-guide__section" aria-labelledby={`${prefix}-matchups-title`}>
+                <ComponentBlock variant="guide">
+                    <h2 id={`${prefix}-matchups-title`}>Matchup Charts</h2>
+
+                    <p class="ship-guide__charts-mobile-note">
+                        Matchup charts are available on desktop.
+                    </p>
+
+                    <div class="ship-guide__charts-desktop">
+                        <div class="ship-guide__legend" aria-label="Matchup rating legend">
+                            {
+                                guide.matchup_legend.map((item) => (
+                                    <div class="ship-guide__legend-item">
+                                        <span class:list={['ship-guide__legend-symbol', `ship-guide__legend-symbol--${rating_class(item.rating)}`]}>
+                                            {item.rating}
+                                        </span>
+                                        <span class="ship-guide__legend-label">
+                                            <strong>{item.label}</strong>
+                                            <span>{item.description}</span>
+                                        </span>
+                                    </div>
+                                ))
+                            }
+                        </div>
+
+                        <div class="ship-guide__charts-grid">
+                            {
+                                guide.matchup_charts.map((chart) => (
+                                    <GuideMatchupChart chart={chart} />
+                                ))
+                            }
+                        </div>
+                    </div>
+                </ComponentBlock>
+            </section>
+
+            <div class="ship-guide__ships">
+                {
+                    guide.ships.map((ship) => (
+                        <GuideShipSection
+                            ship={ship}
+                            fittings={guide.get_fittings(ship.id)}
+                            fitting_library={fitting_library}
+                            hull_class={guide.hull_class}
+                            id_prefix={prefix}
+                            resolve_opponent={guide.resolve_opponent}
+                            fits_lead={guide.fits_lead}
+                        />
+                    ))
+                }
+            </div>
+
+            <section id="glossary" data-section-id="glossary" class="ship-guide__section" aria-labelledby={`${prefix}-glossary-title`}>
+                <ComponentBlock variant="guide">
+                    <h2 id={`${prefix}-glossary-title`}>Glossary</h2>
+                    <dl class="ship-guide__glossary">
+                        {
+                            guide.glossary.map((entry) => (
+                                <>
+                                    <dt class="ship-guide__glossary-term">{entry.term}</dt>
+                                    <dd class="ship-guide__glossary-definition">{entry.definition}</dd>
+                                </>
+                            ))
+                        }
+                    </dl>
+                </ComponentBlock>
+            </section>
+
+            <section id="resources" data-section-id="resources" class="ship-guide__section" aria-labelledby={`${prefix}-resources-title`}>
+                <ComponentBlock variant="guide">
+                    <h2 id={`${prefix}-resources-title`}>Additional Resources</h2>
+                    <p class="ship-guide__section-paragraph">
+                        {
+                            guide.resources_intro.map((part) => (
+                                typeof part === 'string' ? part : (
+                                    <a
+                                        href={part.href}
+                                        target="_blank"
+                                        rel="nofollow noopener noreferrer"
+                                        class="ship-guide__link"
+                                    >
+                                        {part.label}
+                                    </a>
+                                )
+                            ))
+                        }
+                    </p>
+
+                    {guide.credits && (
+                        <>
+                            <div class="ship-guide__credits-quotes" aria-label="Reader testimonials from the First Edition">
+                                {
+                                    guide.credits.quotes.map((quote) => (
+                                        <blockquote class="ship-guide__credits-quote">
+                                            <p>"{quote.text}"</p>
+                                            <footer>- {quote.attribution}</footer>
+                                        </blockquote>
+                                    ))
+                                }
+                            </div>
+
+                            <p class="ship-guide__credits-thanks">{guide.credits.thanks}</p>
+                        </>
+                    )}
+
+                    <ul class="ship-guide__resources">
+                        {
+                            guide.resources.map((resource) => (
+                                <li class="ship-guide__resources-item">
+                                    <a
+                                        href={resource.href}
+                                        target={is_external(resource.href) ? '_blank' : undefined}
+                                        rel={is_external(resource.href) ? 'nofollow noopener noreferrer' : undefined}
+                                        class="ship-guide__link"
+                                    >
+                                        {resource.title}
+                                    </a>
+                                    <span class="ship-guide__resources-note">{resource.note}</span>
+                                </li>
+                            ))
+                        }
+                    </ul>
+                </ComponentBlock>
+            </section>
+    </GuideContentsLayout>
+    </div>
+</GuideShell>
+
+<style lang="scss">
+    .ship-guide {
+        --ship-guide-display-font: var(--guide-display-font);
+        font-family: inherit;
+    }
+
+    .ship-guide__ships {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+    }
+
+    .ship-guide__section {
+        scroll-margin-top: calc(var(--header-height, 4rem) + var(--space-l));
+    }
+
+    .ship-guide__section-paragraph {
+        margin: 0 0 var(--space-m);
+        font-size: var(--step-0);
+        line-height: 1.7;
+        max-width: var(--max-text-width);
+    }
+
+    .ship-guide__section-paragraph :global(a) {
+        color: var(--highlight);
+        text-decoration: underline;
+        text-underline-offset: 0.15em;
+    }
+
+    .ship-guide__section-list {
+        margin: 0;
+        padding-left: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        line-height: 1.65;
+        max-width: var(--max-text-width);
+    }
+
+    .ship-guide__credits-thanks {
+        margin: 0 0 var(--space-l);
+        max-width: var(--max-text-width);
+        line-height: 1.65;
+        font-size: var(--step--1);
+        color: var(--text-color-secondary, var(--faded));
+    }
+
+    .ship-guide__credits-quotes {
+        display: grid;
+        gap: var(--space-m);
+        margin: var(--space-l) 0;
+        max-width: var(--max-text-width);
+    }
+
+    @media (min-width: 40rem) {
+        .ship-guide__credits-quotes {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    .ship-guide__credits-quote {
+        margin: 0;
+        padding: var(--component-padding-block) var(--space-m);
+        background: color-mix(in srgb, var(--component-background) var(--tint-heavy), transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
+        border-left: 3px solid var(--fleet-yellow);
+
+        p {
+            margin: 0 0 var(--space-2xs);
+            font-style: italic;
+        }
+
+        footer {
+            font-size: var(--step--1);
+            color: var(--text-color-secondary, var(--faded));
+        }
+    }
+
+    .ship-guide__link {
+        color: var(--highlight);
+        text-decoration: underline;
+        text-decoration-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
+        text-underline-offset: 0.15em;
+
+        &:hover,
+        &:focus-visible {
+            color: var(--fleet-yellow);
+            text-decoration-color: currentColor;
+        }
+    }
+
+    .ship-guide__summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+        gap: var(--space-m);
+        margin-top: var(--space-m);
+    }
+
+    .ship-guide__summary-card {
+        padding: var(--component-padding-block) var(--space-m);
+        background: color-mix(in srgb, var(--component-background) var(--tint-heavy), transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
+    }
+
+    .ship-guide__summary-card .ship-guide__summary-card-title {
+        margin: 0 0 var(--space-s);
+        font-family: var(--ship-guide-display-font);
+        font-size: var(--step--1);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--fleet-red);
+    }
+
+    .ship-guide__summary-card-text {
+        margin: 0;
+        font-size: var(--step--1);
+        line-height: 1.6;
+    }
+
+    .ship-guide__legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+        margin-bottom: var(--space-l);
+        padding: var(--space-s);
+        background: color-mix(in srgb, var(--component-background) var(--tint-bold), transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
+    }
+
+    .ship-guide__legend-item {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        padding: var(--space-xs) var(--space-s);
+        background: color-mix(in srgb, var(--component-background) var(--tint-heavy), transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
+    }
+
+    .ship-guide__legend-symbol {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.75rem;
+        min-height: 1.75rem;
+        border-radius: 999px;
+        font-family: var(--ship-guide-display-font);
+        font-size: var(--step--1);
+        font-weight: 700;
+    }
+
+    .ship-guide__legend-symbol--plusplus { background: color-mix(in srgb, var(--green) var(--tint-strong), transparent); color: var(--green-text); }
+    .ship-guide__legend-symbol--plus { background: color-mix(in srgb, var(--green) var(--tint-soft), transparent); color: var(--green-text); }
+    .ship-guide__legend-symbol--even { background: color-mix(in srgb, var(--alliance-blue) var(--tint-soft), transparent); color: var(--alliance-blue-text); }
+    .ship-guide__legend-symbol--minus { background: color-mix(in srgb, var(--fleet-red) var(--tint-soft), transparent); color: var(--fleet-red-text); }
+    .ship-guide__legend-symbol--minusminus { background: color-mix(in srgb, var(--fleet-red) var(--tint-strong), transparent); color: var(--fleet-red-text); }
+    .ship-guide__legend-symbol--unknown { background: color-mix(in srgb, var(--faded) var(--tint-soft), transparent); color: var(--text-color-secondary, var(--faded)); }
+
+    .ship-guide__legend-label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+        font-size: var(--step--1);
+
+        strong {
+            font-size: var(--step--1);
+        }
+
+        span {
+            font-size: var(--step--2);
+            color: var(--text-color-secondary, var(--faded));
+        }
+    }
+
+    @media (min-width: 48rem) {
+        .ship-guide__legend-label {
+            flex-direction: row;
+            align-items: baseline;
+            gap: var(--space-2xs);
+        }
+
+        .ship-guide__legend-label span {
+            font-size: var(--step--1);
+        }
+    }
+
+    .ship-guide__charts-mobile-note {
+        margin: 0;
+        padding: var(--space-s);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
+        background: color-mix(in srgb, var(--component-background) var(--tint-bold), transparent);
+        font-size: var(--step--1);
+        line-height: 1.55;
+        color: var(--text-color-secondary, var(--faded));
+    }
+
+    .ship-guide__charts-desktop {
+        display: none;
+    }
+
+    @media (min-width: 48rem) {
+        .ship-guide__charts-mobile-note {
+            display: none;
+        }
+
+        .ship-guide__charts-desktop {
+            display: contents;
+        }
+    }
+
+    .ship-guide__charts-grid {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xl);
+    }
+
+    .ship-guide__glossary {
+        display: grid;
+        grid-template-columns: minmax(6rem, 10rem) 1fr;
+        gap: var(--space-s) var(--space-l);
+        margin: 0 0 var(--space-xl);
+    }
+
+    .ship-guide__glossary-term {
+        margin: 0;
+        font-weight: 700;
+        color: var(--fleet-yellow);
+    }
+
+    .ship-guide__glossary-definition {
+        margin: 0;
+        line-height: 1.6;
+    }
+
+    .ship-guide__resources {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        max-width: var(--max-text-width);
+    }
+
+    .ship-guide__resources-item {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        line-height: 1.55;
+    }
+
+    .ship-guide__resources-note {
+        font-size: var(--step--1);
+        color: var(--text-color-secondary, var(--faded));
+    }
+
+    @media (max-width: 40rem) {
+        .ship-guide__glossary {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
