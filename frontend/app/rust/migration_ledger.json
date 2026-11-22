@@ -54,5 +54,12 @@
     "path": "converge",
     "pattern": "component-block",
     "note": "Flat component-background panel became the glass ComponentBlock (padding kept at --space-m via props). ComponentBlock's .component class sets p/li to --step--1, so .loyalty-quote__paused is now --step--1."
+  },
+  {
+    "file": "src/components/blocks/FleetFormUp.astro",
+    "selector": ".fleet-formup",
+    "path": "converge",
+    "pattern": "component-block",
+    "note": "Flat component-background panel became the glass ComponentBlock with a Flexblock inside (padding kept at --space-m). The .component class sets p/li/h4 to --step--1 and h2 to --step-1, so the swapped-in pilot list rows are now --step--1."
   }
 ]
