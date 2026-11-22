@@ -71,7 +71,7 @@ class LandingEvent(Schema):
     # characters did the mining (which one is not public).
     on_alt: bool = False
     # A mining line outside high sec: no pilot (character_id 0, name
-    # "Undisclosed Character"), so the page shows no portrait.
+    # "Undisclosed Character"), so the page shows the default portrait.
     undisclosed: bool = False
 
 
