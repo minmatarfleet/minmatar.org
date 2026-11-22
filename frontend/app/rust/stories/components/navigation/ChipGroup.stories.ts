@@ -22,6 +22,8 @@ export default {
     argTypes: {
         aria_label: { control: 'text', description: 'Accessible name of the group (what the chips filter).' },
         wrap: { control: 'boolean', description: 'Wrap onto several lines instead of one scrolling line.' },
+        variant: { control: 'radio', options: ['default', 'segmented', 'grid'], description: '`segmented` joins the chips into one bordered control (mixed case, yellow-tinted selected segment); `grid` lays link chips out as icon cards.' },
+        selected_fill: { control: 'boolean', description: 'Segmented only: the selected segment fills solid yellow instead of the tint with an underline.' },
         scroll_below: { control: 'text', description: 'A width such as `48rem`: chips wrap at and above it and scroll in one line below it.' },
         class: { control: 'text', description: 'Extra classes on the chip row.' },
     },
@@ -157,5 +159,72 @@ export const WrapsOnDesktopScrollsOnPhone = {
         await expect(group).toHaveAttribute('data-scroll-below', '48rem')
         await expect(group.closest('.xfade-scroll')).toHaveAttribute('data-below', '48rem')
         await expect(within(group).getAllByRole('button')).toHaveLength(DOCTRINES.length)
+    },
+}
+
+function radio_chips(values: string[], checked: string) {
+    return values.map((label) => ({
+        component: FilterChip,
+        props: { type: 'radio', name: 'markup', value: label, checked: label === checked },
+        slots: { default: label },
+    }))
+}
+
+export const Segmented = {
+    args: { variant: 'segmented', aria_label: 'Markup', slots: { default: radio_chips(['+10%', '+20%', 'Other', '0%'], '+10%') } },
+    play: async ({ canvasElement }: Ctx) => {
+        const canvas = within(canvasElement)
+        const group = canvas.getByRole('group', { name: 'Markup' })
+        await expect(group).toHaveClass('chip-group--segmented')
+        const radios = within(group).getAllByRole('radio')
+        await expect(radios).toHaveLength(4)
+        await expect(radios[0]).toBeChecked()
+        await userEvent.click(canvas.getByText('Other'))
+        await expect(canvas.getByRole('radio', { name: 'Other' })).toBeChecked()
+        await expect(radios[0]).not.toBeChecked()
+    },
+}
+
+export const SegmentedKeyboard = {
+    name: 'Segmented, arrow keys',
+    args: { variant: 'segmented', aria_label: 'Markup', slots: { default: radio_chips(['+10%', '+20%', 'Other'], '+10%') } },
+    play: async ({ canvasElement }: Ctx) => {
+        const canvas = within(canvasElement)
+        const first = canvas.getByRole('radio', { name: '+10%' })
+        first.focus()
+        await userEvent.keyboard('{ArrowRight}')
+        await expect(canvas.getByRole('radio', { name: '+20%' })).toBeChecked()
+        await expect(first).not.toBeChecked()
+    },
+}
+
+export const SegmentedFill = {
+    name: 'Segmented, solid selected',
+    args: { variant: 'segmented', selected_fill: true, aria_label: 'How sure', slots: { default: radio_chips(['Yes', 'Maybe', 'No'], 'Maybe') } },
+    play: async ({ canvasElement }: Ctx) => {
+        const group = within(canvasElement).getByRole('group', { name: 'How sure' })
+        await expect(group).toHaveClass('chip-group--segmented', 'chip-group--fill')
+        await expect(within(group).getByRole('radio', { name: 'Maybe' })).toBeChecked()
+    },
+}
+
+export const Grid = {
+    name: 'Grid of link cards',
+    args: {
+        variant: 'grid',
+        aria_label: 'Made from',
+        slots: {
+            default: ['Tritanium', 'Pyerite', 'Mexallon'].map((name) => ({
+                component: FilterChip,
+                props: { href: `/industry/products/${name.toLowerCase()}/` },
+                slots: { default: name },
+            })),
+        },
+    },
+    play: async ({ canvasElement }: Ctx) => {
+        const group = within(canvasElement).getByRole('group', { name: 'Made from' })
+        await expect(group).toHaveClass('chip-group--grid')
+        await expect(within(group).getAllByRole('link')).toHaveLength(3)
+        await expect(within(group).getByRole('link', { name: 'Pyerite' })).toHaveAttribute('href', '/industry/products/pyerite/')
     },
 }

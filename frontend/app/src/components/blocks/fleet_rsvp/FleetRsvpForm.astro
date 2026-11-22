@@ -164,7 +164,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
 
                         <fieldset class="[ rsvp-form__sure ]">
                             <legend class="[ fleet-rsvp__label ]">{t('fleets.rsvp.how_sure')}</legend>
-                            <ChipGroup wrap={true} role="none">
+                            <ChipGroup variant="segmented" selected_fill={true} role="none" class="[ rsvp-form__segments ]">
                                 {sure_options.map((option) =>
                                     <FilterChip
                                         type="radio"
@@ -554,6 +554,16 @@ import StylessButton from '@components/blocks/StylessButton.astro'
             :global(.button) {
                 inline-size: auto;
             }
+        }
+    }
+
+    .rsvp-form__segments {
+        display: flex;
+        width: 100%;
+
+        :global(.filter-chip) {
+            flex: 1 1 0;
+            justify-content: center;
         }
     }
 </style>
