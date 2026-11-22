@@ -97,12 +97,8 @@ import Textarea from '@components/blocks/Textarea.astro'
         data-label={t("buyback.purchase.orders.col.items")}
         tabindex="0"
         aria-label={line_count_label}
-        x-init={`tippy($el, {
-            content: ${JSON.stringify(lines_tip_html(order.lines))},
-            allowHTML: true,
-            delay: [100, 200],
-            arrow: true,
-        })`}
+        data-tippy-content={lines_tip_html(order.lines)}
+        data-tippy-allowHTML="true"
     >
         <span>{number_thousand_separator(quantity)}</span>
     </div>
@@ -125,7 +121,6 @@ import Textarea from '@components/blocks/Textarea.astro'
         role="cell"
         data-label={t("date_created")}
         data-tippy-content={t('date_issued').replace('{date}', created_datetime)}
-        x-init="tippy($el, tippy_options)"
     >
         <span class="[ whitespace-nowrap ]">{created_date}</span>
     </div>
