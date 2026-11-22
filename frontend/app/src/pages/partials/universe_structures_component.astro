@@ -90,6 +90,7 @@ import ManageSearch from '@components/blocks/manage/ManageSearch.astro'
 import ManageTable from '@components/blocks/manage/ManageTable.astro'
 import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
 import StructureReportDialog from '@components/blocks/structures/StructureReportDialog.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <div id="universe-structures" class="[ universe-structures ]" x-data="{ view: 'all', q: '' }">
@@ -128,13 +129,13 @@ import StructureReportDialog from '@components/blocks/structures/StructureReport
                                 x-show="$el.dataset.view.split(' ').includes(view) && (!q || $el.dataset.search.includes(q.toLowerCase()))"
                             >
                                 <td>
-                                    <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+                                    <StylessButton type="button" class="[ manage-who ]" x-on:click="open = !open">
                                         <img src={get_item_icon(row.type_id, 64)} alt="" width="40" height="40" loading="lazy" />
                                         <span class="[ manage-who__text ]">
                                             <span class="[ manage-who__name ]">{row.name}</span>
                                             <span class="[ manage-who__sub ]">{row.type_name} · {row.system_name}</span>
                                         </span>
-                                    </button>
+                                    </StylessButton>
                                 </td>
                                 <td class="[ is-wide ]">
                                     <span>{row.corporation_name || '—'}</span>
@@ -159,11 +160,11 @@ import StructureReportDialog from '@components/blocks/structures/StructureReport
                                         <FlexInline justification="space-between" class="[ items-center ]">
                                             <h4>{t('universe.structures.fitting')}</h4>
                                             {row.fitting &&
-                                                <button type="button" class="[ universe-copy ]" x-data="{ copied: false }"
+                                                <StylessButton type="button" class="[ universe-copy ]" x-data="{ copied: false }"
                                                     x-on:click="navigator.clipboard.writeText($el.closest('.universe-detail').querySelector('pre').textContent).then(() => { copied = true; setTimeout(() => copied = false, 1500) })"
                                                     x-text={`copied ? ${JSON.stringify(t('universe.structures.copied'))} : ${JSON.stringify(t('universe.structures.copy_pyfa'))}`}>
                                                     {t('universe.structures.copy_pyfa')}
-                                                </button>
+                                                </StylessButton>
                                             }
                                         </FlexInline>
                                         {row.fitting ? <pre>{row.fitting}</pre> : <p class="[ manage-muted ]">{t('universe.structures.no_fit')}</p>}

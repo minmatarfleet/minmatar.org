@@ -220,6 +220,7 @@ const planner_copy = JSON.stringify({
     step_build: t('industry.orders.planner.step_build'),
     step_inputs_note: t('industry.orders.planner.step_inputs_note'),
 })
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <Viewport
@@ -1488,7 +1489,7 @@ const planner_copy = JSON.stringify({
                                                 <div class="[ planner-fittings ]">
                                                     <template x-for="structure in (facility_detail.structures || [])" :key="structure.name">
                                                         <div class="[ planner-fitting-row ]">
-                                                            <button
+                                                            <StylessButton
                                                                 type="button"
                                                                 class="[ planner-fitting-piece planner-fitting-structure planner-tip ]"
                                                                 x-bind:data-tippy-content="fittingTooltip(structure)"
@@ -1503,10 +1504,10 @@ const planner_copy = JSON.stringify({
                                                                     x-bind:alt="structure.name"
                                                                 />
                                                                 <small class="[ planner-tip__label ]" x-text="structure.kind"></small>
-                                                            </button>
+                                                            </StylessButton>
                                                             <div class="[ planner-fitting-rigs ]">
                                                                 <template x-for="rig in (structure.rigs || [])" :key="rig.type_id">
-                                                                    <button
+                                                                    <StylessButton
                                                                         type="button"
                                                                         class="[ planner-fitting-piece planner-tip ]"
                                                                         x-bind:data-tippy-content="fittingTooltip(rig)"
@@ -1524,7 +1525,7 @@ const planner_copy = JSON.stringify({
                                                                             class="[ planner-tip__label ]"
                                                                             x-text="rig.name"
                                                                         ></small>
-                                                                    </button>
+                                                                    </StylessButton>
                                                                 </template>
                                                             </div>
                                                         </div>

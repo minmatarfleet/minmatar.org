@@ -291,6 +291,7 @@ const breadcrumbs = [
     { page_title: t('industry.orders.page_title'), accumulated_path: '/industry/orders/' },
     { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <Viewport
@@ -613,7 +614,7 @@ const breadcrumbs = [
                                 >
                                     <template x-for="product in filtered" x-bind:key="product.type_id">
                                         <li>
-                                            <button
+                                            <StylessButton
                                                 type="button"
                                                 class="[ create-order-form__result ]"
                                                 x-on:click="pick_product(product)"
@@ -627,7 +628,7 @@ const breadcrumbs = [
                                                     x-bind:alt="product.name"
                                                 />
                                                 <span class="[ truncate ]" x-text="product.name"></span>
-                                            </button>
+                                            </StylessButton>
                                         </li>
                                     </template>
                                 </ul>
@@ -686,12 +687,12 @@ const breadcrumbs = [
                                                         x-bind:aria-label="quantity_label"
                                                     />
                                                 </label>
-                                                <button
+                                                <StylessButton
                                                     type="button"
                                                     class="[ create-order-form__remove ]"
                                                     x-on:click="remove_line(index)"
                                                     x-text="remove_label"
-                                                ></button>
+                                                ></StylessButton>
                                             </div>
                                             <div
                                                 class="[ create-order-form__pricing ]"

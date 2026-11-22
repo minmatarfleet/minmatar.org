@@ -32,6 +32,7 @@ delete attributes.class
 const tip = !on_stock_progress && !(order.stock_paste?.trim())
     ? t('fitting_buy.stock_skipped_tip')
     : t('fitting_buy.stock_paste_tip')
+import Textarea from '@components/blocks/Textarea.astro'
 ---
 
 <ComponentBlock
@@ -70,13 +71,13 @@ const tip = !on_stock_progress && !(order.stock_paste?.trim())
             >
                 <input type="hidden" name="action" value="stock" />
                 <Flexblock gap="var(--space-xs)">
-                    <textarea
+                    <Textarea
                         name="stock_paste"
                         rows="5"
                         class="[ fitting-buy-textarea ]"
                         placeholder={t('fitting_buy.stock_placeholder')}
                         aria-label={t('fitting_buy.stock_paste')}
-                    >{order.stock_paste}</textarea>
+                    >{order.stock_paste}</Textarea>
                     <FlexInline gap="var(--space-xs)" class="[ flex-wrap items-center ]">
                         <Button type="submit" size="sm">
                             {on_stock_progress

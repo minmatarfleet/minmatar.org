@@ -104,6 +104,7 @@ import CogIcon from '@components/icons/buttons/CogIcon.astro';
 import ClipboardIcon from '@components/icons/buttons/ClipboardIcon.astro';
 import MemberIcon from '@components/icons/MemberIcon.astro';
 import CaretIcon from '@components/icons/CaretIcon.astro';
+import Textarea from '@components/blocks/Textarea.astro'
 ---
 
 <div id={id} class:list={[ '[ fleet-ship-row ][ light-transparency ]', { 'fleet-ship-row--no-volunteers': !show_volunteers } ]} role="listitem" x-data="{ open: false }">
@@ -200,7 +201,7 @@ import CaretIcon from '@components/icons/CaretIcon.astro';
                         >
                             <ClipboardIcon />
                         </FleetRowAction>
-                        <textarea class="[ hidden ]" id={`${id}-eft`} readonly>{entry.eft_format}</textarea>
+                        <Textarea class="[ hidden ]" id={`${id}-eft`} readonly>{entry.eft_format}</Textarea>
                     </>
                 }
                 {can_refit &&

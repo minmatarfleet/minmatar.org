@@ -28,6 +28,7 @@ if (query.length >= 2) {
         matches = []
     }
 }
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {query.length >= 2 && matches.length === 0 &&
@@ -35,7 +36,7 @@ if (query.length >= 2) {
 }
 
 {matches.map((match) =>
-    <button
+    <StylessButton
         type="button"
         class="entity-option"
         data-input={input_id}
@@ -46,7 +47,7 @@ if (query.length >= 2) {
         onclick="pick_entity(this)"
     >
         {match.name}{match.ticker ? ` [${match.ticker}]` : ''}
-    </button>
+    </StylessButton>
 )}
 
 <style is:global>

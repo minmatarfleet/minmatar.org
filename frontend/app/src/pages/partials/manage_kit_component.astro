@@ -90,6 +90,7 @@ const COLUMNS = [
     { label: t('manage.kit.demo_group'), phone: false },
     { label: t('manage.kit.demo_waiting'), align: 'num' as const },
 ]
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {part === 'list' &&
@@ -124,12 +125,12 @@ const COLUMNS = [
                                 url={kit_url({ part: 'row', key: screen.key })}
                             >
                                 <td>
-                                    <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+                                    <StylessButton type="button" class="[ manage-who ]" x-on:click="open = !open">
                                         <span class="[ manage-who__text ]">
                                             <span class="[ manage-who__name ]">{label_of(screen.key)}</span>
                                             <span class="[ manage-who__sub ]">{manage_screen(screen.key)?.path}</span>
                                         </span>
-                                    </button>
+                                    </StylessButton>
                                 </td>
                                 <td class="[ is-wide ]">{t(t_key('manage.group_', screen.group))}</td>
                                 <td class:list={['num', { 'manage-warn': waiting.has(screen.key) }]}>{waiting.get(screen.key)?.count ?? 0}</td>

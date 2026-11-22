@@ -45,6 +45,7 @@ function name_list(names: string[]): string {
         .replace('{names}', list)
         .replace('{count}', String(extra))
 }
+import Textarea from '@components/blocks/Textarea.astro'
 ---
 
 <ComponentBlock
@@ -65,13 +66,13 @@ function name_list(names: string[]): string {
         >
             <input type="hidden" name="action" value="landed_prices" />
             <Flexblock gap="var(--space-xs)">
-                <textarea
+                <Textarea
                     name="paste"
                     rows="4"
                     class="[ fitting-buy-textarea ]"
                     placeholder={t('fitting_buy.landed_placeholder')}
                     aria-label={t('fitting_buy.landed_prices')}
-                >{paste_value}</textarea>
+                >{paste_value}</Textarea>
                 <FlexInline gap="var(--space-xs)" class="[ flex-wrap items-center ]">
                     <Button type="submit" size="sm">
                         {shopping_landed_complete
