@@ -12,6 +12,7 @@ import alliances from '@json/hosted/alliances.json';
 
 import { get_alliance_logo } from '@helpers/eve_image';
 
+import StylessButton from '@components/blocks/StylessButton.astro'
 interface Props {
     [propName: string]: any;
 }
@@ -44,7 +45,7 @@ interface Props {
         <div class="[ relative ]">
             <Flexblock class="[ alliance-list ][ light-transparency w-full ]" gap='0'>
                 {alliances.map((alliance) =>
-                    <button
+                    <StylessButton
                         type="button"
                         alliance-finder-action="accept"
                         alliance-finder-data={JSON.stringify(alliance)}
@@ -62,7 +63,7 @@ interface Props {
                                 </Flexblock>
                             </VerticalCenter>
                         </FixedFluid>
-                    </button>
+                    </StylessButton>
                 )}
             </Flexblock>
         </div>

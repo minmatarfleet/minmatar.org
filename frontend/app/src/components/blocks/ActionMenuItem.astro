@@ -1,4 +1,6 @@
 ---
+import StylessButton from '@components/blocks/StylessButton.astro'
+
 interface Props {
     variant?:           'default' | 'primary' | 'danger' | 'success' | 'muted';
     /**
@@ -53,15 +55,15 @@ const item_class = [
         x-on:keydown.escape="confirming = false"
         x-on:click.outside="confirming = false"
     >
-        <button
+        <StylessButton
             type="button"
             class:list={item_class}
             x-show="!confirming"
             x-on:click.stop="confirming = true; $nextTick(() => $refs.confirm.focus())"
         >
             <slot />
-        </button>
-        <button
+        </StylessButton>
+        <StylessButton
             type={type}
             class:list={[...item_class, 'is-confirm']}
             x-show="confirming"
@@ -70,12 +72,12 @@ const item_class = [
             {...attributes}
         >
             {confirm_label}
-        </button>
+        </StylessButton>
     </div>
 ) : (
-    <button type={type} class:list={item_class} {...attributes}>
+    <StylessButton type={type} class:list={item_class} {...attributes}>
         <slot />
-    </button>
+    </StylessButton>
 )}
 
 <style lang="scss">
