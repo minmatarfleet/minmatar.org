@@ -19,7 +19,7 @@ export const RUST_LIBRARY = {
         'blocks/Button', 'blocks/StylessButton', 'blocks/ButtonStack', 'blocks/ButtonConfirm', 'blocks/ClipboardButton',
         'blocks/Input', 'blocks/InputError', 'blocks/Select', 'blocks/Textarea',
         'blocks/RadioCheckInput', 'blocks/Switch',
-        'blocks/FlatPicker', 'blocks/Kbd',
+        'blocks/FlatPicker', 'blocks/Kbd', 'blocks/Combobox',
     ],
     'Components/Feedback': [
         'blocks/EmptyState', 'blocks/ErrorRefetch', 'blocks/ShowAlert', 'blocks/Progress',
@@ -29,7 +29,7 @@ export const RUST_LIBRARY = {
     'Components/Data display': [
         'blocks/Badge', 'blocks/Tag', 'blocks/NotificationBadge',
         'blocks/DebugTag', 'blocks/ComponentBlock', 'blocks/ComponentBlockHeader', 'blocks/CollapsibleBlock',
-        'blocks/CollapsableButton', 'blocks/StatCard', 'blocks/RowList', 'blocks/DataGrid', 'blocks/DataTable', 'blocks/TextGroup',
+        'blocks/CollapsableButton', 'blocks/StatCard', 'blocks/RowList', 'blocks/DataGrid', 'blocks/DataTable', 'blocks/Chart', 'blocks/Carousel', 'blocks/TextGroup',
         'blocks/Square', 'blocks/Markdown', 'blocks/Marquee', 'blocks/SettingRow', 'blocks/NumberNameTooltip',
         'blocks/Tile', 'blocks/OptionCard', 'blocks/PictureCard',
     ],
@@ -50,7 +50,7 @@ export const RUST_LIBRARY = {
         'blocks/sde/SolarSystemSearch',
     ],
     'Page': [
-        'page/PageTitle', 'page/PageSubheader', 'page/PageActions', 'page/PageBreadcrumbs',
+        'page/PageTitle', 'blocks/Hero', 'page/PageSubheader', 'page/PageActions', 'page/PageBreadcrumbs',
         'layout/TextBox', 'layout/Context',
     ],
 } as const

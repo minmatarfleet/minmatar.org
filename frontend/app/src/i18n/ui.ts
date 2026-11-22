@@ -10208,5 +10208,10 @@ export const ui = {
         'sde.no_types_match': 'No items match “~QUERY”',
         'sde.no_systems': 'No systems found',
         'sde.no_systems_match': 'No systems match “~QUERY”',
+        'combobox.clear': 'Clear',
+        'combobox.no_results': 'No results',
+        'carousel.previous': 'Previous slide',
+        'carousel.next': 'Next slide',
+        'chart.no_data': 'No data to chart',
     },
 } as const;

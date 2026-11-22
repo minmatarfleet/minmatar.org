@@ -1,9 +1,9 @@
 ---
 /**
  * TypeSearch results: inventory types whose name contains `q`.
+ * Rows are Combobox options: `<li role="option" data-value data-label>`.
  * Query: q, category_ids, group_ids (comma-separated), published (0 to include
- * unpublished), limit (max 50), selectable (1: rows are pick buttons), href
- * (same-site link template, `{type_id}` / `{type_name}`), slots (1: ship slots).
+ * unpublished), limit (max 50), slots (1: ship slots).
  * Static data only, so no login is needed. Under 2 letters renders nothing.
  */
 import { i18n } from '@helpers/i18n'
@@ -14,8 +14,6 @@ import type { SdeType } from '@dtypes/sde'
 
 const params = Astro.url.searchParams
 const query = normalise_query(params.get('q'))
-const selectable = params.get('selectable') === '1'
-const href_template = params.get('href') ?? undefined
 const show_slots = params.get('slots') === '1'
 
 let types: SdeType[] = []
@@ -41,18 +39,21 @@ const delay = parseInt(params.get('delay') ?? '0') || 0
 const SELF_URL = `${translatePath('/partials/sde_type_search_component')}?${params.toString()}`
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-import TypeResults from '@components/blocks/sde/TypeResults.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import TypeRow from '@components/blocks/sde/TypeRow.astro'
+const empty = query ? t('sde.no_types_match').replace('~QUERY', query) : t('sde.no_types')
 ---
 
 {search_error ?
-    <ErrorRefetch args={{ partial: SELF_URL, error: search_error, delay }} />
+    <li role="presentation"><ErrorRefetch args={{ partial: SELF_URL, error: search_error, delay }} /></li>
     :
-    query.length >= SEARCH_MIN_LENGTH &&
-        <TypeResults
-            types={types}
-            query={query}
-            selectable={selectable}
-            href_template={selectable ? undefined : href_template}
-            show_slots={show_slots}
-        />
+    query.length >= SEARCH_MIN_LENGTH && (types.length === 0 ?
+        <li role="presentation"><EmptyState title={empty} /></li>
+        :
+        types.map((type) =>
+            <li role="option" data-value={type.type_id} data-label={type.type_name}>
+                <TypeRow type={type} size={32} show_slots={show_slots} />
+            </li>
+        )
+    )
 }

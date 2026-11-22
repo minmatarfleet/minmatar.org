@@ -206,6 +206,14 @@ An inline keyboard-key chip for shortcut hints ("press Esc to close").
 - Slots: `default`
 - Stories (4): `frontend/app/rust/stories/components/forms/Kbd.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-kbd--docs: Default, Modifier, Long Label, Symbol
 
+### Combobox
+
+A search-as-you-type picker for a value the browser cannot list up front (pilots, items, systems).
+
+- Import: `import Combobox from '@components/blocks/Combobox.astro'`
+- Props: `name: string`, `label: string`, `hidden_label?: boolean = false`, `search_url: string`, `value?: string = ''`, `value_label?: string = ''`, `placeholder?: string`, `min_chars?: number = 2`, `debounce_ms?: number = 300`, `allow_clear?: boolean = false`
+- Stories (10): `frontend/app/rust/stories/components/forms/Combobox.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-combobox--docs: Default, Keyboard Navigation, Select dispatches combobox:select, Escape inside a dialog keeps the dialog open, Click Outside Closes List, Empty Results, Already picked, with Clear, Hidden Label, Type, swap results, pick, Under min_chars asks nothing
+
 ## Components/Feedback
 
 ### EmptyState
@@ -390,6 +398,23 @@ Semantic tabular data: a real `<table>` with a `<thead>` built from `columns`, i
 - Props: `columns: DataTableColumn[]`, `caption?: string`, `density?: 'default' | 'dense' = 'default'`, `borders?: 'rows' | 'grid' | 'none' = 'rows'`, `striped?: boolean = false`, `sticky_header?: boolean = false`, `empty_title?: string`, `is_empty?: boolean = false`
 - Slots: `default`
 - Stories (8): `frontend/app/rust/stories/components/data-display/DataTable.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-datatable--docs: Default, Sorting (text, numeric and data-sort), aria-sort follows the sorted column, Only sortable columns are buttons, Empty, Dense, Sticky header (many rows), No borders, no sorting
+
+### Chart
+
+A Chart.js chart in the site's colours.
+
+- Import: `import Chart from '@components/blocks/Chart.astro'`
+- Props: `type: ChartKind`, `labels: (string | number)[]`, `datasets: ChartDataset[]`, `options?: Record<string, any>`, `height?: string = 'calc(var(--space-3xl) * 2.5)'`, `aria_label: string`, `legend?: boolean`, `empty_title?: string`
+- Stories (9): `frontend/app/rust/stories/components/data-display/Chart.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-chart--docs: Line, Bar, Doughnut, Pie, Radar, Options and height, Missing data, Missing data: every point null, Tones
+
+### Carousel
+
+A Swiper carousel with the prev/next markup and styling the site's reels share: a relatively positioned wrapper, the `.swiper` with its `.swiper-wrapper` track, optional pagination bullets, and the arrows as siblings of the `.swiper`, so they appear once Swiper has initialised and hide when there is nothing further to scroll to.
+
+- Import: `import Carousel from '@components/blocks/Carousel.astro'`
+- Props: `slides_per_view?: number | 'auto' = 1`, `breakpoints?: Record<number, Breakpoint>`, `space_between?: number = 0`, `loop?: boolean = false`, `autoplay_ms?: number = 0`, `navigation?: boolean = true`, `pagination?: boolean = false`, `nav_tone?: 'highlight' | 'fleet-yellow' = 'highlight'`, `nav_offset?: string = '-46px'`, `hide_nav_on_mobile?: boolean = true`, `align?: 'start' | 'center' | 'end' | 'stretch' = 'start'`, `initial_slide?: number = 0`
+- Slots: `default`
+- Stories (7): `frontend/app/rust/stories/components/data-display/Carousel.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-carousel--docs: Default, Yellow Arrows, With Pagination, Responsive Breakpoints, Autoplay And Loop, Without Navigation, Arrows kept below the lg breakpoint
 
 ### TextGroup
 
@@ -756,19 +781,19 @@ A list of solar systems: the results SolarSystemSearch's partial renders, or any
 
 ### TypeSearch
 
-Search inventory types by name.
+Search inventory types by name: a preset over `Combobox`.
 
 - Import: `import TypeSearch from '@components/blocks/sde/TypeSearch.astro'`
-- Props: `id: string`, `name?: string`, `label?: string = t('sde.type_search.label')`, `placeholder?: string = t('sde.type_search.placeholder')`, `category_ids?: number[] = []`, `group_ids?: number[] = []`, `published?: boolean = true`, `limit?: number = String(limit)`, `href_template?: string`, `show_slots?: boolean = false`, `selected?: Pick<SdeType, 'type_id' | 'type_name'> | null = null`
-- Stories (7): `frontend/app/rust/stories/eve/sde/TypeSearch.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-sde-typesearch--docs: Default, Filtered: Minmatar frigates, Picks into a form field (name), Already picked (edit form), Results link to pages (href_template), Type, swap results, pick, Type, no match
+- Props: `name: string`, `label?: string = t('sde.type_search.label')`, `placeholder?: string = t('sde.type_search.placeholder')`, `category_ids?: number[] = []`, `group_ids?: number[] = []`, `published?: boolean = true`, `limit?: number = String(limit)`, `show_slots?: boolean = false`, `selected?: Pick<SdeType, 'type_id' | 'type_name'> | null = null`, `allow_clear?: boolean = true`
+- Stories (6): `frontend/app/rust/stories/eve/sde/TypeSearch.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-sde-typesearch--docs: Default, Filtered: Minmatar frigates, Includes Unpublished, Already picked (edit form), Type, swap results, pick, No Matches
 
 ### SolarSystemSearch
 
 Search solar systems by name: staging and home systems, cyno spots, timer locations.
 
 - Import: `import SolarSystemSearch from '@components/blocks/sde/SolarSystemSearch.astro'`
-- Props: `id: string`, `name?: string`, `label?: string = t('sde.system_search.label')`, `placeholder?: string = t('sde.system_search.placeholder')`, `region_ids?: number[] = []`, `security?: SystemSecurityFilter = 'any'`, `wormholes?: boolean = true`, `limit?: number = String(limit)`, `href_template?: string`, `selected?: Pick<SdeSolarSystem, 'system_id' | 'system_name'> | null = null`
-- Stories (6): `frontend/app/rust/stories/eve/sde/SolarSystemSearch.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-sde-solarsystemsearch--docs: Default, Filtered: Heimatar and Metropolis low-sec, K-space only, Already picked (edit form), Results link to pages (href_template), Type, swap results, pick
+- Props: `name: string`, `label?: string = t('sde.system_search.label')`, `placeholder?: string = t('sde.system_search.placeholder')`, `region_ids?: number[] = []`, `security?: SystemSecurityFilter = 'any'`, `wormholes?: boolean = true`, `limit?: number = String(limit)`, `selected?: Pick<SdeSolarSystem, 'system_id' | 'system_name'> | null = null`, `allow_clear?: boolean = true`
+- Stories (6): `frontend/app/rust/stories/eve/sde/SolarSystemSearch.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-sde-solarsystemsearch--docs: Default, Filtered: Heimatar and Metropolis low-sec, K-space only, Already picked (edit form), Type, swap results, pick, No Matches
 
 ## Page
 
@@ -780,6 +805,15 @@ The `<h1>` at the top of a page, linked to the page itself by default (so reload
 - Props: `is_landing?: boolean = false`, `no_link?: boolean = false`, `path?: string`
 - Slots: `default`
 - Stories (6): `frontend/app/rust/stories/page/PageTitle.stories.ts`, https://my.minmatar.org/rust/?path=/docs/page-pagetitle--docs: Default, No Link, Landing, Custom Path, Long Title, With Attributes
+
+### Hero
+
+The page masthead: an image, the title as the landing heading, a meta row and actions on the right.
+
+- Import: `import Hero from '@components/blocks/Hero.astro'`
+- Props: `title: string = "LP desk" image={logo} eyebrow="Industry">`, `eyebrow?: string = "Industry">`, `image?: string = {logo} eyebrow="Industry">`, `image_alt?: string = ''`, `variant?: 'default' | 'compact' = "compact"` drops the title to page-title size and the image to a`, `path?: string`, `meta_gap?: string = 'var(--space-3xs) var(--space-xs)'`, `meta_size?: string = 'var(--step--1)'`, `actions_align?: 'center' | 'flex-start' = 'center'`, `actions_id?: string`
+- Slots: `meta`, `default`, `actions`
+- Stories (5): `frontend/app/rust/stories/page/Hero.stories.ts`, https://my.minmatar.org/rust/?path=/docs/page-hero--docs: Default, Compact, With Eyebrow And Body, Title Only, Actions with an anchor id, top-aligned
 
 ### PageSubheader
 

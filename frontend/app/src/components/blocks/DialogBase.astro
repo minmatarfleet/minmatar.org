@@ -104,7 +104,7 @@ if (partial_once) {
 <div class:list={[ `[ ${css} dialog-base ]` ]} data-dialog-base>
     <Dialog
         x-data={dialog_x_data}
-        @keyup.escape.window.capture={`if (${name}_open) { $event.stopImmediatePropagation(); close_dialog() }`}
+        @keyup.escape.window.capture={`if (${name}_open && !$event.target?.closest?.('[data-combobox-escape]')) { $event.stopImmediatePropagation(); close_dialog() }`}
         x-effect={`${name}_shown && $nextTick(() => window.htmx?.process($el))`}
         x-bind:class={`(${name}_open ? 'open' : '')`}
         x-bind:aria-hidden={`${name}_open == false`}

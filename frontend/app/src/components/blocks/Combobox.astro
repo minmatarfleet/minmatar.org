@@ -1,0 +1,251 @@
+---
+/**
+ * A search-as-you-type picker. The visible field asks the server (`search_url`,
+ * `GET ?q=`) 300 ms after the last keystroke once it holds `min_chars`
+ * letters; htmx swaps the `<li role="option" data-value data-label>` items the
+ * partial returns into the listbox. The pick lives in a hidden `<input name>`.
+ *
+ * Alpine only handles what is local: ArrowUp/ArrowDown/Enter/Escape, the
+ * active option and open/closed. Escape closes the listbox and stops the key,
+ * so a surrounding dialog stays open (the dialogs ignore the Escape keyup
+ * while `[data-combobox-escape]` is set on the combobox). A click outside
+ * closes the listbox only.
+ *
+ * Picking sets both inputs and dispatches a bubbling `combobox:select` with
+ * `{ name, value, label }`; callers listen with `x-on:combobox:select`.
+ */
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+interface Props {
+    /** Name of the hidden input that holds the picked value. */
+    name:               string;
+    label:              string;
+    /** Keep the label for assistive tech only. */
+    hidden_label?:      boolean;
+    /** htmx partial: GET `?q=` returns `<li role="option" data-value data-label>` items. */
+    search_url:         string;
+    value?:             string;
+    value_label?:       string;
+    placeholder?:       string;
+    /** Letters needed before the server is asked. */
+    min_chars?:         number;
+    debounce_ms?:       number;
+    /** Show a Clear button while something is picked. */
+    allow_clear?:       boolean;
+    [propName: string]: any;
+}
+
+const {
+    name,
+    label,
+    hidden_label = false,
+    search_url,
+    value = '',
+    value_label = '',
+    placeholder,
+    min_chars = 2,
+    debounce_ms = 300,
+    allow_clear = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const base_id = attributes.id ?? `combobox-${name}`
+delete attributes.id
+
+const input_id = `${base_id}-input`
+const list_id = `${base_id}-listbox`
+
+import Input from '@components/blocks/Input.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
+---
+
+<div
+    id={base_id}
+    class:list={['[ combobox ]', Astro.props.class]}
+    x-data={`{
+        open: false,
+        active: -1,
+        value: ${JSON.stringify(String(value))},
+        escape_handled: false,
+        options() { return $refs.list ? Array.from($refs.list.querySelectorAll('[role=option]')) : [] },
+        active_id() { return this.active >= 0 ? (this.options()[this.active]?.id ?? null) : null },
+        mark() {
+            this.options().forEach((option, index) => {
+                option.id = option.id || '${base_id}-option-' + index
+                option.setAttribute('aria-selected', index === this.active ? 'true' : 'false')
+            })
+            const current = this.options()[this.active]
+            if (current && current.scrollIntoView) current.scrollIntoView({ block: 'nearest' })
+        },
+        close() { this.open = false; this.active = -1; this.mark() },
+        typed() {
+            this.value = ''
+            $refs.hidden.value = ''
+            if ($refs.input.value.trim().length < ${Number(min_chars)}) {
+                $refs.list.replaceChildren()
+                this.close()
+            }
+        },
+        swapped() {
+            this.active = -1
+            this.open = $refs.list.childElementCount > 0
+            this.mark()
+        },
+        pick(option) {
+            const picked = option.dataset.value ?? ''
+            const picked_label = option.dataset.label ?? option.textContent.trim()
+            this.value = picked
+            $refs.hidden.value = picked
+            $refs.input.value = picked_label
+            $refs.hidden.dispatchEvent(new Event('change', { bubbles: true }))
+            this.close()
+            $dispatch('combobox:select', { name: ${JSON.stringify(name)}, value: picked, label: picked_label })
+        },
+        clear() {
+            this.value = ''
+            $refs.hidden.value = ''
+            $refs.input.value = ''
+            $refs.list.replaceChildren()
+            this.close()
+            $refs.input.focus()
+        },
+        keydown(event) {
+            const options = this.options()
+            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                event.preventDefault()
+                if (options.length === 0) return
+                this.open = true
+                if (event.key === 'ArrowDown') this.active = (this.active + 1) % options.length
+                else this.active = this.active <= 0 ? options.length - 1 : this.active - 1
+                this.mark()
+            } else if (event.key === 'Enter') {
+                if (this.open && this.active >= 0) {
+                    event.preventDefault()
+                    this.pick(options[this.active])
+                }
+            } else if (event.key === 'Escape' && this.open) {
+                event.preventDefault()
+                event.stopPropagation()
+                this.escape_handled = true
+                $root.setAttribute('data-combobox-escape', '')
+                this.close()
+            }
+        },
+        escape_released(event) {
+            if (!this.escape_handled) return
+            event.stopPropagation()
+            this.escape_handled = false
+            $root.removeAttribute('data-combobox-escape')
+        },
+        choose(event) {
+            const option = event.target.closest('[role=option]')
+            if (option) this.pick(option)
+        },
+    }`}
+    x-on:click.outside="close()"
+    {...attributes}
+>
+    <label for={input_id} class:list={[{ 'visually-hidden': hidden_label }]}>{label}</label>
+    <div class="[ combobox__field ]">
+        <Input
+            id={input_id}
+            type="text"
+            role="combobox"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder={placeholder}
+            value={value_label}
+            aria-autocomplete="list"
+            aria-controls={list_id}
+            x-ref="input"
+            x-bind:aria-expanded="open"
+            x-bind:aria-activedescendant="active_id()"
+            x-on:input="typed()"
+            x-on:keydown="keydown($event)"
+            x-on:keyup.escape="escape_released($event)"
+            hx-get={search_url}
+            hx-trigger={`input[target.value.trim().length >= ${Number(min_chars)}] changed delay:${Number(debounce_ms)}ms`}
+            hx-target={`#${list_id}`}
+            hx-swap="innerHTML"
+            hx-sync="this:replace"
+            hx-vals={`js:{q: document.getElementById('${input_id}').value.trim()}`}
+        />
+        {allow_clear &&
+            <StylessButton
+                type="button"
+                class="[ combobox__clear ]"
+                aria-label={t('combobox.clear')}
+                x-show="value !== ''"
+                style={value ? undefined : 'display: none'}
+                x-on:click="clear()"
+            >
+                {t('combobox.clear')}
+            </StylessButton>
+        }
+    </div>
+    <ul
+        id={list_id}
+        class="[ combobox__listbox ]"
+        role="listbox"
+        aria-label={label}
+        x-ref="list"
+        x-show="open"
+        style="display: none"
+        x-on:mousedown.prevent
+        x-on:click="choose($event)"
+        {...{ 'x-on:htmx:after-swap': 'swapped()' }}
+    ></ul>
+    <input type="hidden" name={name} value={value} x-ref="hidden" />
+</div>
+
+<style lang="scss">
+    .combobox {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 0;
+    }
+
+    .combobox__field {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+    }
+
+    .combobox__clear {
+        flex: 0 0 auto;
+        color: var(--fleet-red);
+        text-decoration: underline;
+    }
+
+    .combobox__listbox {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        max-height: 50vh;
+        overflow-y: auto;
+        border: solid 1px var(--border-color);
+        background-color: var(--component-background);
+    }
+
+    .combobox__listbox :global([role="option"]) {
+        cursor: pointer;
+        padding: var(--space-3xs) var(--space-2xs);
+        transition: background-color var(--fast-transition);
+
+        &[aria-selected="true"] {
+            background-color: var(--surface-sunken);
+            outline: solid 1px var(--border-color-hover);
+            outline-offset: -1px;
+        }
+    }
+
+    @media (hover: hover) {
+        .combobox__listbox :global([role="option"]:hover) {
+            background-color: var(--surface-sunken);
+        }
+    }
+</style>
