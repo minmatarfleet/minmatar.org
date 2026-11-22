@@ -57,7 +57,7 @@ const compact = variant === 'compact'
 
 // A caller (ManageHero) can pass a slot that renders nothing; an empty actions
 // group would still take a flex gap, 18px of extra height on phones.
-const actions_html = Astro.slots.has('actions') ? (await Astro.slots.render('actions')).trim() : ''
+const has_actions = Astro.slots.has('actions') && (await Astro.slots.render('actions')).trim() !== ''
 
 import PageTitle from '@components/page/PageTitle.astro'
 ---
@@ -80,9 +80,9 @@ import PageTitle from '@components/page/PageTitle.astro'
             </div>
         }
     </div>
-    {actions_html &&
+    {has_actions &&
         <div class="[ hero__actions ]" id={actions_id} style={`--hero-actions-align: ${actions_align}`}>
-            <Fragment set:html={actions_html} />
+            <slot name="actions" />
         </div>
     }
 </div>
