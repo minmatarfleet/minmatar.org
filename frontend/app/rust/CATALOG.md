@@ -204,7 +204,7 @@ A styled checkbox or radio: the native input is hidden by the stylesheet and a `
 - Import: `import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'`
 - Props: `label?: string`, `type: 'checkbox' | 'radio'`
 - Slots: `default`
-- Stories (6): `frontend/app/rust/stories/components/forms/RadioCheckInput.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-radiocheckinput--docs: Default, Checkbox toggles, Radio, Checked, Disabled, Custom label (default slot)
+- Stories (7): `frontend/app/rust/stories/components/forms/RadioCheckInput.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-radiocheckinput--docs: Default, Checkbox toggles, Radio, Checked, Disabled, Custom label (default slot), Checked label turns bold
 
 ### UnstyledRadioCheckButton
 

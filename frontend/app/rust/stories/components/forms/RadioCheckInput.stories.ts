@@ -96,3 +96,17 @@ export const CustomLabelSlot = {
         await expect(canvas.queryByText('Ignored label')).toBeNull()
     },
 }
+
+export const CheckedLabelStyle = {
+    name: 'Checked label turns bold',
+    tags: ['browser'], // asserts the computed style from the component's CSS
+    args: { label: 'I have read the SRP rules' },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const label = canvasElement.querySelector('small') as HTMLElement
+        const input = within(canvasElement).getByRole('checkbox')
+        await expect(getComputedStyle(label).fontWeight).not.toBe('600')
+        await userEvent.click(input)
+        // `.box` sits between the input and the label, so the rule must be `:checked ~ small`.
+        await expect(getComputedStyle(label).fontWeight).toBe('600')
+    },
+}
