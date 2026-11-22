@@ -1,5 +1,5 @@
 import { expect, within } from 'storybook/test'
-import Table from '@components/blocks/Table.astro'
+import RowList from '@components/blocks/RowList.astro'
 
 const row = (fc: string, hull: string, pilots: number, isk: string) =>
     `<div class="flex flex-wrap items-center justify-between" role="listitem"><strong>${fc}</strong><span>${hull}</span><span>${pilots} pilots</span><span>${isk} ISK</span></div>`
@@ -29,8 +29,8 @@ if (!w.edge_fade) {
 }
 
 export default {
-    title: 'Components/Data display/Table',
-    component: Table,
+    title: 'Components/Data display/RowList',
+    component: RowList,
     parameters: {
         docs: {
             description: {

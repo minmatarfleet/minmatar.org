@@ -1,6 +1,7 @@
 ---
 import type { CampaignTableRow } from '@/data/campaigns/etherium-reach'
 import Button from '@components/blocks/Button.astro'
+import DataTable from '@components/blocks/DataTable.astro'
 
 interface Props {
     headers: string[]
@@ -12,135 +13,71 @@ interface Props {
 
 const { headers, rows, striped = false, success_marker = true } = Astro.props
 const has_actions = rows.some((row) => !!row.action)
+const columns = headers.map((label, index) => ({
+    key: String(index),
+    label,
+    numeric: index > 0 && (!has_actions || index < headers.length - 1),
+}))
 ---
 
-<div class="er-table-wrap" tabindex="0" role="region">
-    <table class:list={['er-table', !success_marker && 'er-table--no-markers']}>
-        <thead>
-            <tr>
+<DataTable columns={columns} striped={striped} class:list={[!success_marker && 'er-table--no-markers']}>
+    {
+        rows.map((row) => (
+            <tr
+                class:list={[row.tone && `er-table__row--${row.tone}`]}
+                data-search={row.search_text ?? row.cells.join(' ').toLowerCase()}
+                data-corp={row.corp ?? ''}
+                data-csv={JSON.stringify(row.cells)}
+            >
                 {
-                    headers.map((header, index) => (
-                        <th
-                            scope="col"
-                            class:list={[
-                                index > 0 && !has_actions && 'er-table__numeric',
-                                index > 0 && has_actions && index < headers.length - 1 && 'er-table__numeric',
-                            ]}
-                        >
-                            {header}
-                        </th>
-                    ))
-                }
-            </tr>
-        </thead>
-        <tbody>
-            {
-                rows.map((row) => (
-                    <tr
-                        class:list={[row.tone && `er-table__row--${row.tone}`]}
-                        data-search={row.search_text ?? row.cells.join(' ').toLowerCase()}
-                        data-corp={row.corp ?? ''}
-                        data-csv={JSON.stringify(row.cells)}
-                    >
-                        {
-                            row.cells.map((cell, index) => {
-                                const icon =
-                                    row.cell_icons?.[index]
-                                    ?? (index === 0 ? row.icon_url : undefined)
-                                return (
-                                    <td class:list={[index > 0 && 'er-table__numeric']}>
-                                        {icon ? (
-                                            <span class="er-table__name">
-                                                <img
-                                                    class="er-table__icon"
-                                                    src={icon}
-                                                    alt=""
-                                                    width="24"
-                                                    height="24"
-                                                    loading="lazy"
-                                                />
-                                                <span>{cell}</span>
-                                            </span>
-                                        ) : (
-                                            cell
-                                        )}
-                                    </td>
-                                )
-                            })
-                        }
-                        {has_actions && (
-                            <td class="er-table__action">
-                                {row.action ? (
-                                    <Button
-                                        size="sm"
-                                        type="button"
-                                        data-confirm-title={row.action.confirm_title}
-                                        data-confirm-content={row.action.confirm_content}
-                                        data-post-url={row.action.post_url}
-                                        data-target={row.action.target}
-                                        x-on:click.prevent="confirm_row_action($el)"
-                                    >
-                                        {row.action.label}
-                                    </Button>
-                                ) : null}
+                    row.cells.map((cell, index) => {
+                        const icon =
+                            row.cell_icons?.[index]
+                            ?? (index === 0 ? row.icon_url : undefined)
+                        return (
+                            <td class:list={[index > 0 && 'data-table__numeric']}>
+                                {icon ? (
+                                    <span class="er-table__name">
+                                        <img
+                                            class="er-table__icon"
+                                            src={icon}
+                                            alt=""
+                                            width="24"
+                                            height="24"
+                                            loading="lazy"
+                                        />
+                                        <span>{cell}</span>
+                                    </span>
+                                ) : (
+                                    cell
+                                )}
                             </td>
-                        )}
-                    </tr>
-                ))
-            }
-        </tbody>
-    </table>
-</div>
+                        )
+                    })
+                }
+                {has_actions && (
+                    <td class="data-table__actions">
+                        {row.action ? (
+                            <Button
+                                size="sm"
+                                type="button"
+                                data-confirm-title={row.action.confirm_title}
+                                data-confirm-content={row.action.confirm_content}
+                                data-post-url={row.action.post_url}
+                                data-target={row.action.target}
+                                x-on:click.prevent="confirm_row_action($el)"
+                            >
+                                {row.action.label}
+                            </Button>
+                        ) : null}
+                    </td>
+                )}
+            </tr>
+        ))
+    }
+</DataTable>
 
 <style lang="scss">
-    .er-table-wrap {
-        overflow-x: auto;
-        min-width: 0;
-    }
-
-    table {
-        width: 100%;
-        border-spacing: var(--space-3xs);
-        font-size: var(--step--1);
-    }
-
-    th,
-    td {
-        padding: var(--space-s);
-        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
-        text-align: left;
-        vertical-align: top;
-    }
-
-    th {
-        background: color-mix(in srgb, var(--component-background) 90%, transparent);
-        font-weight: 600;
-        color: var(--highlight);
-        background-color: var(--light-transparency-background-mobile);
-        
-        @media screen and (min-width: 980px) {
-            background-color: var(--light-transparency-background);
-            backdrop-filter: blur(var(--transparency-backdrop-blur-heavier));
-        }
-    }
-
-    td {
-        color: var(--foreground);
-        background-color: var(--light-transparency-background);
-        backdrop-filter: blur(var(--transparency-backdrop-blur));
-    }
-
-    .er-table__numeric {
-        text-align: right;
-        font-variant-numeric: tabular-nums;
-    }
-
-    .er-table__action {
-        text-align: right;
-        white-space: nowrap;
-        width: 1%;
-    }
-
     .er-table__name {
         display: inline-flex;
         align-items: center;
@@ -164,7 +101,7 @@ const has_actions = rows.some((row) => !!row.action)
         color: var(--green);
     }
 
-    .er-table--no-markers .er-table__row--success td:first-child:after {
+    :global(.er-table--no-markers) .er-table__row--success td:first-child:after {
         content: none;
     }
 

@@ -13,6 +13,7 @@ export default {
                 component: [
                     'The standard bordered panel: a translucent card with the site\'s block padding. Wrap page sections in it instead of hand-rolling a border and background.',
                     '`width` caps the panel (`narrow` is the readable text width, `thin` is 650px, `normal` fills its parent). `heavier` swaps in the denser transparency class. `Card` is only the picture card with hover actions; do not use it for panels.',
+                    '`variant="guide"` is the flat bordered panel the ship guides use: its `h2` is a ruled, spaced display-font title and its `h3` a highlighted sub-title, both in `--guide-display-font` (the heading font when that token is unset). Headings use sizes from the type scale; a guide section is one panel per `h2`.',
                 ].join('\n\n'),
             },
         },
@@ -22,12 +23,14 @@ export default {
         padding_inline: { control: 'text', description: 'Inline padding; defaults to `--space-l-xl`.' },
         width: select_control(['narrow', 'normal', 'thin'], 'Maximum width of the panel.'),
         heavier: { control: 'boolean', description: 'Use the heavier transparency effect (more opaque background).' },
+        variant: select_control(['default', 'guide'], '`guide`: the flat bordered panel with display-font headings used by the ship guides.'),
     },
     args: {
         padding_block: 'var(--component-padding-block)',
         padding_inline: 'var(--space-l-xl)',
         width: 'normal',
         heavier: false,
+        variant: 'default',
         slots: { default: body },
     },
 }
@@ -82,5 +85,21 @@ export const PassthroughAttributes = {
         const block = within(canvasElement).getByTestId('notes')
         await expect(block).toHaveAttribute('id', 'fleet-notes')
         await expect(block).toHaveClass('component')
+    },
+}
+
+export const Guide = {
+    args: {
+        variant: 'guide',
+        padding_inline: undefined,
+        slots: { default: '<h2>Introduction</h2><p>The Cormorant Navy Issue is the alliance\'s staple frigate.</p><h3>Fitting</h3><p>Dual-rep with a webifier.</p>' },
+    },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const block = canvasElement.querySelector('.component-block--guide') as HTMLElement
+        await expect(block).toBeTruthy()
+        await expect(block).not.toHaveClass('card', 'border', 'component', 'light-transparency')
+        await expect(block.getAttribute('style')).toContain('--guide-panel-padding-inline')
+        await expect(within(block).getByRole('heading', { level: 2, name: 'Introduction' })).toBeVisible()
+        await expect(within(block).getByRole('heading', { level: 3, name: 'Fitting' })).toBeVisible()
     },
 }

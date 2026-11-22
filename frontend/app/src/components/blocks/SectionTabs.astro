@@ -10,6 +10,8 @@ interface SectionTab {
     flag?: 'attention' | 'live'
     /** An icon-only tab at the end of the row; `label` becomes its accessible name and tooltip. */
     icon?: 'cog'
+    /** Makes the tab a link to another page. When any tab has one, the component renders a `<nav>` of links (no panels). */
+    href?: string
 }
 
 interface Props {
@@ -23,8 +25,10 @@ interface Props {
     hash_aliases?: Record<string, string>
     /** The tab shown when the URL names none; the first tab otherwise. */
     default_tab?: string
-    /** `pills` for sub-tabs inside a tab panel. */
-    variant?: 'tabs' | 'pills'
+    /** `pills` for sub-tabs inside a tab panel; `compact` for small in-card toggles. */
+    variant?: 'tabs' | 'pills' | 'compact'
+    /** Link mode: the id of the active tab. Otherwise the tab whose `href` is the longest prefix of the page path. */
+    active_tab?: string
     [propName: string]: any
 }
 
@@ -35,6 +39,7 @@ const {
     hash_aliases = {},
     default_tab: requested_default,
     variant = 'tabs',
+    active_tab: requested_active,
     ...attributes
 } = Astro.props
 
@@ -42,12 +47,60 @@ delete attributes.class
 
 const tab_ids = tabs.map((tab) => tab.id)
 const default_tab = requested_default && tab_ids.includes(requested_default) ? requested_default : (tab_ids[0] ?? '')
+
+const variant_class = variant === 'tabs' ? undefined : `section-tabs--${variant}`
+
+// Link mode: tabs that go to other pages.
+const link_mode = tabs.some((tab) => tab.href)
+const path_of = (href: string) => href.split(/[?#]/)[0].replace(/\/+$/, '')
+const pathname = Astro.url.pathname.replace(/\/+$/, '')
+const prefix_length = (tab: SectionTab) => {
+    if (!tab.href) return -1
+    const base = path_of(tab.href)
+    return pathname === base || pathname.startsWith(base + '/') ? base.length : -1
+}
+const longest_prefix = tabs.reduce<SectionTab | null>(
+    (best, tab) => (prefix_length(tab) > (best ? prefix_length(best) : -1) ? tab : best),
+    null,
+)
+const current_tab = requested_active && tab_ids.includes(requested_active) ? requested_active : longest_prefix?.id
 ---
 
-{tabs.length > 0 &&
+{tabs.length > 0 && link_mode &&
+    <nav
+        {...attributes}
+        aria-label={aria_label}
+        class:list={['[ section-tabs section-tabs--links ]', variant_class, Astro.props.class]}
+    >
+        <div class="[ section-tabs-list ]">
+            {tabs.map((tab) =>
+                <a
+                    href={tab.href}
+                    id={`${id_prefix}-tab-${tab.id}`}
+                    class:list={['[ section-tab ]', { 'is-active': tab.id === current_tab, 'section-tab--icon': tab.icon }]}
+                    title={tab.icon ? tab.label : undefined}
+                    aria-current={tab.id === current_tab ? 'page' : undefined}
+                >
+                    {tab.icon === 'cog' ?
+                        <>
+                            <span class="[ section-tab__icon ]" aria-hidden="true"><CogIcon /></span>
+                            <span class="[ visually-hidden ]">{tab.label}</span>
+                        </> :
+                        tab.label
+                    }
+                    {tab.meta &&
+                        <span class:list={['[ section-tab__meta ]', tab.flag && `section-tab__meta--${tab.flag}`]}>{tab.meta}</span>
+                    }
+                </a>
+            )}
+        </div>
+    </nav>
+}
+
+{tabs.length > 0 && !link_mode &&
     <div
         {...attributes}
-        class:list={['[ section-tabs ]', { 'section-tabs--pills': variant === 'pills' }, Astro.props.class]}
+        class:list={['[ section-tabs ]', variant_class, Astro.props.class]}
         x-data={`{
             tabs: ${JSON.stringify(tab_ids)},
             tab: ${JSON.stringify(default_tab)},
@@ -265,6 +318,23 @@ const default_tab = requested_default && tab_ids.includes(requested_default) ? r
         }
     }
 
+    // Link tabs: the same look on an <a>.
+    a.section-tab {
+        display: inline-flex;
+        align-items: center;
+        text-decoration: none;
+    }
+
+    // Small toggles inside a card.
+    .section-tabs--compact {
+        gap: var(--space-xs);
+
+        > .section-tabs-list > .section-tab {
+            padding: var(--space-3xs) var(--space-xs);
+            font-size: var(--step-0);
+        }
+    }
+
     @media (hover: hover) {
         .section-tab:hover {
             color: var(--highlight);
@@ -289,6 +359,11 @@ const default_tab = requested_default && tab_ids.includes(requested_default) ? r
         .section-tab--icon {
             flex: 0 0 auto;
             justify-content: center;
+        }
+
+        .section-tabs--compact > .section-tabs-list > .section-tab {
+            font-size: var(--step--1);
+            padding-inline: var(--space-xs);
         }
     }
 </style>

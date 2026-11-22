@@ -29,7 +29,7 @@ export const RUST_LIBRARY = {
     'Components/Data display': [
         'blocks/Badge', 'blocks/Tag', 'blocks/TextBadge', 'blocks/NotificationBadge', 'blocks/VisibilityTag',
         'blocks/DebugTag', 'blocks/ComponentBlock', 'blocks/ComponentBlockHeader', 'blocks/CollapsibleBlock',
-        'blocks/CollapsableButton', 'blocks/StatCard', 'blocks/Table', 'blocks/DataGrid', 'blocks/TextGroup',
+        'blocks/CollapsableButton', 'blocks/StatCard', 'blocks/RowList', 'blocks/DataGrid', 'blocks/DataTable', 'blocks/TextGroup',
         'blocks/Square', 'blocks/Markdown', 'blocks/Marquee', 'blocks/SettingRow', 'blocks/NumberNameTooltip',
         'blocks/Tile', 'blocks/OptionCard', 'blocks/Card', 'blocks/PictureCard',
     ],

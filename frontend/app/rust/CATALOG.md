@@ -398,9 +398,9 @@ A coloured strip that wraps an unexpected-error message in a partial, such as "n
 The standard bordered panel: a translucent card with the site's block padding.
 
 - Import: `import ComponentBlock from '@components/blocks/ComponentBlock.astro'`
-- Props: `padding_block?: string = 'var(--component-padding-block)'`, `padding_inline?: string = 'var(--space-l-xl)'`, `width?: 'narrow' | 'normal' | 'thin' = 'normal'`, `heavier?: boolean = false`
+- Props: `padding_block?: string = 'var(--component-padding-block)'`, `padding_inline?: string`, `width?: 'narrow' | 'normal' | 'thin' = 'normal'`, `heavier?: boolean = false`, `variant?: 'default' | 'guide' = 'default'`
 - Slots: `default`
-- Stories (6): `frontend/app/rust/stories/components/data-display/ComponentBlock.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-componentblock--docs: Default, Heavier, Narrow, Thin, Custom Padding, Passthrough attributes
+- Stories (7): `frontend/app/rust/stories/components/data-display/ComponentBlock.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-componentblock--docs: Default, Heavier, Narrow, Thin, Custom Padding, Passthrough attributes, Guide
 
 ### ComponentBlockHeader
 
@@ -434,18 +434,18 @@ The header button behind CollapsibleBlock: a label with a caret that rotates wit
 A big-number card: an uppercase label, the value in the heading font, and an optional hint line.
 
 - Import: `import StatCard from '@components/blocks/StatCard.astro'`
-- Props: `label: string`, `value?: string | number`, `hint?: string`, `coming_soon?: boolean = false`
+- Props: `label: string`, `value?: string | number`, `hint?: string`, `coming_soon?: boolean = false`, `variant?: 'default' | 'compact' | 'bar' = 'default'`, `bar_value?: number = 0`, `tone?: 'fleet-red' | 'green' | 'alliance-blue' | 'fleet-yellow'`, `coming_soon_label?: string`
 - Slots: `value`, `hint`
-- Stories (5): `frontend/app/rust/stories/components/data-display/StatCard.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-statcard--docs: Default, Without hint, Coming soon, Slotted value and hint, Long label and text value
+- Stories (10): `frontend/app/rust/stories/components/data-display/StatCard.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-statcard--docs: Default, Without hint, Coming soon, Slotted value and hint, Long label and text value, Compact, Bar (progress), Bar value is clamped to 0-1, Toned, Coming soon with a custom label
 
-### Table
+### RowList
 
 A list-based "table": a `role="list"` BlockList wrapped in an edge-fading horizontal scroller.
 
-- Import: `import Table from '@components/blocks/Table.astro'`
+- Import: `import RowList from '@components/blocks/RowList.astro'`
 - Props: `gap?: string`, `responsive?: boolean = true`, `width?: string = '70rem'`
 - Slots: `default`
-- Stories (5): `frontend/app/rust/stories/components/data-display/Table.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-table--docs: Default, Not responsive (full width), Wide (scrolls sideways), Single row, Passthrough attributes
+- Stories (5): `frontend/app/rust/stories/components/data-display/RowList.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-rowlist--docs: Default, Not responsive (full width), Wide (scrolls sideways), Single row, Passthrough attributes
 
 ### DataGrid
 
@@ -455,6 +455,15 @@ A grid-based table with a real header row (`role="table"`, `columnheader`, `row`
 - Props: `columns: string[]`, `template: string`, `numeric?: number[] = []`, `min_width?: string = '38rem'`, `variant?: 'compact' | 'ledger' = 'compact'`, `stack?: boolean = false`
 - Slots: `default`
 - Stories (6): `frontend/app/rust/stories/components/data-display/DataGrid.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-datagrid--docs: Default, Ledger, Stacked on phones (stack), Media cells (portraits and icons), Empty grid, Narrow viewport scrolls (min_width)
+
+### DataTable
+
+Semantic tabular data: a real `<table>` with a `<thead>` built from `columns`, in an edge-fading horizontal scroller.
+
+- Import: `import DataTable from '@components/blocks/DataTable.astro'`
+- Props: `columns: DataTableColumn[]`, `caption?: string`, `density?: 'default' | 'dense' = 'default'`, `borders?: 'rows' | 'grid' | 'none' = 'rows'`, `striped?: boolean = false`, `sticky_header?: boolean = false`, `empty_title?: string`, `is_empty?: boolean = false`
+- Slots: `default`
+- Stories (8): `frontend/app/rust/stories/components/data-display/DataTable.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-datatable--docs: Default, Sorting (text, numeric and data-sort), aria-sort follows the sorted column, Only sortable columns are buttons, Empty, Dense, Sticky header (many rows), No borders, no sorting
 
 ### TextGroup
 
@@ -575,9 +584,9 @@ The generic popover: a trigger (`button` slot) that toggles a panel (default slo
 Page-section tabs: a `tablist` of buttons plus `SectionTabPanel` children (one per tab id).
 
 - Import: `import SectionTabs from '@components/blocks/SectionTabs.astro'`
-- Props: `tabs: SectionTab[]`, `aria_label: string`, `id_prefix: string`, `hash_aliases?: Record<string, string> = {}`, `default_tab?: string = requested_default && tab_ids.includes(requested_default) ? requested_default : (tab_ids[0] ?? '')`, `variant?: 'tabs' | 'pills' = 'tabs'`
+- Props: `tabs: SectionTab[]`, `aria_label: string`, `id_prefix: string`, `hash_aliases?: Record<string, string> = {}`, `default_tab?: string = requested_default && tab_ids.includes(requested_default) ? requested_default : (tab_ids[0] ?? '')`, `variant?: 'tabs' | 'pills' | 'compact' = 'tabs'`, `active_tab?: string`
 - Slots: `default`
-- Stories (8): `frontend/app/rust/stories/components/navigation/SectionTabs.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-sectiontabs--docs: Default, Click through three tabs, Keyboard Navigation, aria-selected and roving tabindex follow the tab, Counts, flags and icon tab, Non-first default tab, Pills, Tab and panel ids are wired
+- Stories (12): `frontend/app/rust/stories/components/navigation/SectionTabs.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-sectiontabs--docs: Default, Click through three tabs, Keyboard Navigation, aria-selected and roving tabindex follow the tab, Counts, flags and icon tab, Non-first default tab, Pills, Tab and panel ids are wired, Compact (in-card toggle), Link mode: active by path prefix, Link mode: active_tab wins, Link mode: compact
 
 ### SectionTabPanel
 
