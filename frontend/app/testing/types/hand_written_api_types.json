@@ -76,7 +76,6 @@
       "BaseLocation": "closest backend schema OrderLocationResponse, no field or null drift found; alias it when its domain is next changed",
       "Location": "closest backend schema LocationResponse, no field or null drift found; alias it when its domain is next changed",
       "FleetUsers": "closest backend schema EveFleetUsersResponse, no field or null drift found; alias it when its domain is next changed",
-      "StructureTimerRequest": "closest backend schema EveStructureTimerRequest, no field or null drift found; alias it when its domain is next changed",
       "UniverseEntityMatch": "closest backend schema UniverseEntityMatch, no field or null drift found; alias it when its domain is next changed",
       "CampaignStructureAttachRequest": "closest backend schema StructureAttachRequest, no field or null drift found; alias it when its domain is next changed",
       "PostParams": "closest backend schema CreateEvePostRequest, no field or null drift found; alias it when its domain is next changed",

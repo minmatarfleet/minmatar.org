@@ -1,0 +1,163 @@
+---
+/**
+ * One step of the Add a timer dialog. The form posts `go` (the step to show
+ * next) plus what the pilot entered so far; this renders that step. Paste
+ * reads the Selected Item text, Check lets the pilot fix it, Owner prefills
+ * the owner from Structures when we know the structure, and Send creates
+ * the timer (and verifies it, for pilots who may).
+ */
+// no-error-refetch: a form step; errors show inside the dialog.
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CampaignListItem, StructureState, StructureType } from '@dtypes/api.minmatar.org'
+import { structure_states, structure_types } from '@dtypes/api.minmatar.org'
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_gates, can } from '@helpers/gates'
+import { create_structure_timer, verify_structure_timer } from '@helpers/api.minmatar.org/structures'
+import { get_campaigns } from '@helpers/api.minmatar.org/campaigns'
+import { match_universe_structures } from '@helpers/api.minmatar.org/universe'
+import { get_structure_id } from '@helpers/eve'
+import { eve_time_iso, parse_selected_item_timer } from '@helpers/selected_item_timer'
+import TimerAddSteps from '@components/blocks/structures/TimerAddSteps.astro'
+import type { TimerAddState } from '@components/blocks/structures/TimerAddSteps.astro'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token || Astro.request.method !== 'POST') return HTTP_403_Forbidden()
+const gates = await get_gates(Astro)
+if (!can(gates, 'structures.timers.manage')) return HTTP_403_Forbidden()
+const can_verify = can(gates, 'structures.timers.verify')
+
+const form = await Astro.request.formData()
+const text = (name: string) => String(form.get(name) ?? '').trim()
+
+const state: TimerAddState = {
+    text: text('text'),
+    structure_type: text('structure_type'),
+    system_name: text('system_name'),
+    name: text('name'),
+    state: text('state'),
+    timer: text('timer'),
+    corporation_name: text('corporation_name'),
+    alliance_name: text('alliance_name'),
+    campaign_slug: text('campaign_slug'),
+}
+
+let step: 'paste' | 'check' | 'owner' | 'sent' = 'paste'
+let campaigns: CampaignListItem[] = []
+let unread = false
+let known = false
+let verify_error: string | null = null
+let error: string | null = null
+const go = text('go') || 'paste'
+
+const live_campaigns = async () => {
+    try {
+        return (await get_campaigns(auth_token)).filter((campaign) => campaign.status === 'active' || campaign.status === 'scheduled')
+    } catch {
+        return []
+    }
+}
+
+try {
+    if (go === 'paste') {
+        step = 'paste'
+    } else if (go === 'paste_new') {
+        Object.assign(state, { text: '', structure_type: '', system_name: '', name: '', state: '', timer: '', corporation_name: '', alliance_name: '' })
+    } else if (go === 'check' || go === 'by_hand') {
+        const parsed = parse_selected_item_timer(go === 'check' ? state.text : '')
+        const timer = eve_time_iso(parsed.date, parsed.time)
+        if (go === 'check' && !state.text) {
+            error = t('timers.add.paste_first')
+        } else {
+            unread = go === 'check' && !timer
+            Object.assign(state, {
+                text: go === 'check' ? state.text : '',
+                system_name: parsed.system_name,
+                name: parsed.name,
+                state: parsed.state,
+                timer: timer ?? '',
+                corporation_name: parsed.corporation_name,
+                structure_type: parsed.structure_type,
+            })
+            step = 'check'
+        }
+    } else if (go === 'check_back') {
+        step = 'check'
+    } else if (go === 'owner') {
+        const ready = structure_types.includes(state.structure_type as StructureType)
+            && structure_states.includes(state.state as StructureState)
+            && state.system_name && state.name && !Number.isNaN(Date.parse(state.timer))
+        if (!ready) {
+            error = t('timers.add.need_fields')
+            step = 'check'
+        } else {
+            step = 'owner'
+            campaigns = await live_campaigns()
+            if (!state.corporation_name) {
+                // Best effort: a structure already in Structures knows its owner.
+                try {
+                    const type_id = get_structure_id(state.structure_type)
+                    const match = type_id ? await match_universe_structures(auth_token, state.system_name, type_id, state.name) : null
+                    const wanted = [state.name, `${state.system_name} - ${state.name}`].map((name) => name.toLowerCase())
+                    const found = match?.candidates.find((row) => wanted.includes(row.name.toLowerCase()))
+                    if (found?.corporation_name) {
+                        state.corporation_name = found.corporation_name
+                        state.alliance_name = found.alliance_name ?? ''
+                        known = true
+                    }
+                } catch {
+                    // Pilots without the Structures feature fill it in themselves.
+                }
+            }
+        }
+    } else if (go === 'send') {
+        campaigns = await live_campaigns()
+        const campaign_id = parseInt(text('campaign_id'))
+        if (!state.corporation_name) {
+            error = t('timers.add.need_corporation')
+            step = 'owner'
+        } else {
+            const timer = await create_structure_timer(auth_token, {
+                selected_item_window: state.text || `${state.system_name} - ${state.name}`,
+                structure_name: state.name,
+                location: state.system_name,
+                timer: state.timer,
+                corporation_name: state.corporation_name,
+                state: state.state as StructureState,
+                type: state.structure_type as StructureType,
+                campaign_id: Number.isFinite(campaign_id) ? campaign_id : null,
+            })
+            if (!timer?.id) throw new Error(t('create_structure_timer_error'))
+            state.campaign_slug = campaigns.find((campaign) => campaign.id === campaign_id)?.slug ?? ''
+            if (can_verify && text('verify_timer') === 'on') {
+                try {
+                    await verify_structure_timer(auth_token, timer.id, {
+                        corporation_name: state.corporation_name,
+                        alliance_name: state.alliance_name || null,
+                    })
+                } catch (failure) {
+                    verify_error = (failure as Error).message
+                }
+            }
+            Astro.response.headers.set('HX-Trigger', 'structure-timers-changed')
+            step = 'sent'
+        }
+    }
+} catch (failure) {
+    error = (failure as Error).message
+    step = go === 'send' ? 'owner' : 'paste'
+}
+---
+
+<TimerAddSteps
+    step={step}
+    state={state}
+    campaigns={campaigns}
+    can_verify={can_verify}
+    unread={unread}
+    known={known}
+    verify_error={verify_error}
+    error={error}
+/>

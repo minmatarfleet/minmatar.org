@@ -1,10 +1,11 @@
 ---
 /**
- * The body of the Add a structure dialog, one step at a time:
- * Paste → Match → Fitting → Details → Approval, inside the shared
- * StructureSteps shell with StructureHowTo clips. Each step posts to
- * structures_add_component, which renders the next one. What the pilot
- * pasted and what we found travel along as hidden fields.
+ * The body of the Add a structure dialog, one piece at a time, in the order
+ * the client gives it: Selected Item (paste, then match) → Fitting (ship
+ * scan) → Reinforcement (hacking) → Details → Approval. Each step shows the
+ * one clip for its piece, inside the shared StructureSteps shell. Each step
+ * posts to structures_add_component, which renders the next one. What the
+ * pilot pasted and what we found travel along as hidden fields.
  */
 import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
@@ -14,6 +15,8 @@ import { get_item_icon } from '@helpers/eve_image_server'
 
 export interface StructureAddState {
     text:               string;
+    /** The ship scan, pasted on the Fitting step. */
+    fit_text:           string;
     name:               string;
     solar_system_name:  string;
     location_id:        number | null;
@@ -28,7 +31,7 @@ export interface StructureAddState {
 }
 
 interface Props {
-    step:           'paste' | 'docked' | 'match' | 'fitting' | 'details' | 'sent';
+    step:           'paste' | 'docked' | 'match' | 'fitting' | 'reinforce' | 'details' | 'sent';
     state?:         Partial<StructureAddState>;
     docked?:        StructureLocationDocked[];
     error?:         string | null;
@@ -36,28 +39,28 @@ interface Props {
 
 const { step, docked = [], error = null } = Astro.props
 const state: StructureAddState = {
-    text: '', name: '', solar_system_name: '', location_id: null, id_source: '', found_with: '',
+    text: '', fit_text: '', name: '', solar_system_name: '', location_id: null, id_source: '', found_with: '',
     type_id: null, type_name: '', match_status: '', reinforce_hour: null, modules: [], parts: [],
     ...(Astro.props.state ?? {}),
 }
 
 const URL = translatePath('/partials/structures_add_component/')
-const STEPS = ['paste', 'match', 'fitting', 'details', 'sent'] as const
-const current = step === 'docked' ? 0 : STEPS.indexOf(step as typeof STEPS[number])
+const STEPS = ['paste', 'fitting', 'reinforce', 'details', 'sent'] as const
+const current = step === 'docked' || step === 'match' ? 0 : STEPS.indexOf(step as typeof STEPS[number])
 
 const rigs = state.modules.filter((m) => m.slot === 'rig')
 const services = state.modules.filter((m) => m.slot === 'service')
 const defenses = state.modules.filter((m) => m.slot === 'defense')
 const step_summary = [
-    state.parts.map((part) => t(t_key('structures.add.part_', part))).join(', '),
     state.name.split(' - ').slice(1).join(' - ') || state.name,
     state.modules.length ? t('structures.add.fit_summary').replace('~RIGS', String(rigs.length)).replace('~SERVICES', String(services.length)) : t('structures.add.no_scan'),
+    state.reinforce_hour === null ? t('structures.add.not_known') : `${String(state.reinforce_hour).padStart(2, '0')}:00 EVE`,
     '',
     '',
 ]
 const steps = STEPS.map((name, index) => ({
     label: t(t_key('structures.add.step_', name)),
-    note: index < current ? step_summary[index] : index === current ? t(t_key('structures.add.step_now_', name)) : '',
+    note: index < current ? step_summary[index] : index === current ? t(t_key('structures.add.step_now_', step === 'match' ? 'match' : name)) : '',
 }))
 const short_default = state.name.length <= 32 ? state.name : (state.name.split(' - ')[0] + ' - ' + (state.name.split(' - ')[1] ?? '')).slice(0, 32)
 const hour = (value: number | null) => value === null ? '' : String(value)
@@ -86,13 +89,14 @@ import StructureHowTo from '@components/blocks/structures/StructureHowTo.astro'
     <input type="hidden" name="match_status" value={state.match_status} />
     <input type="hidden" name="modules" value={JSON.stringify(state.modules)} />
     <input type="hidden" name="parts" value={state.parts.join(',')} />
-    {step !== 'details' && <input type="hidden" name="reinforce_hour" value={hour(state.reinforce_hour)} />}
+    {step !== 'fitting' && <input type="hidden" name="fit_text" value={state.fit_text} />}
+    {step !== 'reinforce' && <input type="hidden" name="reinforce_hour" value={hour(state.reinforce_hour)} />}
 
     {error && <p class="[ manage-field__error ]" role="alert">{error}</p>}
 
     {step === 'paste' &&
         <div class="[ structure-add__body ]">
-            <StructureHowTo topics={['name', 'fitting', 'dscan']} />
+            <StructureHowTo topics={['name']} />
             <ManageField label={t('structures.add.paste_label')} for="structure-add-text">
                 <Textarea id="structure-add-text" name="text_input" rows="5" placeholder={t('structures.add.paste_placeholder')} x-ref="paste">{state.text}</Textarea>
             </ManageField>
@@ -160,56 +164,69 @@ import StructureHowTo from '@components/blocks/structures/StructureHowTo.astro'
 
     {step === 'fitting' &&
         <div class="[ structure-add__body ]">
-            {state.modules.length > 0
-                ? (
-                    <>
-                        <span class="[ manage-field__label ]">{t('structures.add.fit_from_scan')}</span>
-                        <div class="[ structure-add__mods ]">
-                            {[['rigs', rigs], ['services', services], ['defenses', defenses]].filter(([, list]) => (list as StructureLocationModule[]).length > 0).map(([group, list]) => (
-                                <div>
-                                    <p class="[ structure-add__group ]"><span>{t(t_key('structures.add.group_', group as string))}</span><span>{(list as StructureLocationModule[]).length}</span></p>
-                                    <ul>
-                                        {(list as StructureLocationModule[]).map((module) => <li>{module.name}</li>)}
-                                    </ul>
-                                </div>
-                            ))}
-                        </div>
-                        <StructureFit rigs={rigs} services={services.map((s) => s.label)} is_structure={true} scanned={true} />
-                    </>
-                )
-                : <p>{t('structures.add.no_scan_hint')}</p>
+            <StructureHowTo topics={['fitting']} />
+            <ManageField label={t('structures.add.fit_label')} for="structure-add-fit">
+                <Textarea id="structure-add-fit" name="fit_text" rows="5" placeholder={t('structures.add.fit_placeholder')}>{state.fit_text}</Textarea>
+            </ManageField>
+            {state.modules.length > 0 &&
+                <Fragment>
+                    <span class="[ manage-field__label ]">{t('structures.add.fit_from_scan')}</span>
+                    <div class="[ structure-add__mods ]">
+                        {[['rigs', rigs], ['services', services], ['defenses', defenses]].filter(([, list]) => (list as StructureLocationModule[]).length > 0).map(([group, list]) => (
+                            <div>
+                                <p class="[ structure-add__group ]"><span>{t(t_key('structures.add.group_', group as string))}</span><span>{(list as StructureLocationModule[]).length}</span></p>
+                                <ul>
+                                    {(list as StructureLocationModule[]).map((module) => <li>{module.name}</li>)}
+                                </ul>
+                            </div>
+                        ))}
+                    </div>
+                    <StructureFit rigs={rigs} services={services.map((s) => s.label)} is_structure={true} scanned={true} />
+                </Fragment>
             }
             <div class="[ manage-actions ]">
-                <Button type="button" size="sm" color="fleet-red" hx-post={URL} hx-vals={go('details')} hx-target="#structure-add" hx-swap="innerHTML">
-                    {state.modules.length ? t('structures.add.next') : t('structures.add.skip_scan')}
-                </Button>
+                {state.modules.length > 0
+                    ? <Button type="button" size="sm" color="fleet-red" hx-post={URL} hx-vals={go('reinforce')} hx-target="#structure-add" hx-swap="innerHTML">{t('structures.add.next')}</Button>
+                    : <Button type="button" size="sm" color="fleet-red" hx-post={URL} hx-vals={go('fitting_read')} hx-target="#structure-add" hx-swap="innerHTML" hx-disabled-elt="this">{t('structures.add.read_scan')}</Button>
+                }
+                {state.modules.length > 0
+                    ? <Button type="button" size="sm" color="transparent" hx-post={URL} hx-vals={go('fitting_read')} hx-target="#structure-add" hx-swap="innerHTML">{t('structures.add.read_again')}</Button>
+                    : <Button type="button" size="sm" color="transparent" hx-post={URL} hx-vals={go('reinforce_skip')} hx-target="#structure-add" hx-swap="innerHTML">{t('structures.add.skip_scan')}</Button>
+                }
                 <Button type="button" size="sm" color="transparent" hx-post={URL} hx-vals={go('match_back')} hx-target="#structure-add" hx-swap="innerHTML">{t('structures.add.back')}</Button>
+            </div>
+        </div>
+    }
+
+    {step === 'reinforce' &&
+        <div class="[ structure-add__body ]">
+            <StructureHowTo topics={['reinforce']} />
+            <ManageField label={t('structures.add.reinforce')} for="structure-add-hour" hint={t('structures.add.reinforce_hint')}>
+                <Select id="structure-add-hour" name="reinforce_hour" size="sm">
+                    <option value="">{t('structures.add.not_known')}</option>
+                    {Array.from({ length: 24 }, (_, h) => (
+                        <option value={h} selected={state.reinforce_hour === h}>{String(h).padStart(2, '0')}:00 EVE</option>
+                    ))}
+                </Select>
+            </ManageField>
+            <div class="[ manage-actions ]">
+                <Button type="button" size="sm" color="fleet-red" hx-post={URL} hx-vals={go('details')} hx-target="#structure-add" hx-swap="innerHTML">{t('structures.add.next')}</Button>
+                <Button type="button" size="sm" color="transparent" hx-post={URL} hx-vals={go('fitting')} hx-target="#structure-add" hx-swap="innerHTML">{t('structures.add.back')}</Button>
             </div>
         </div>
     }
 
     {step === 'details' &&
         <div class="[ structure-add__body ]">
-            <StructureHowTo topics={['reinforce']} />
             <ManageField label={t('structures.add.short_name')} for="structure-add-short" hint={t('structures.add.short_name_hint')}>
                 <Input id="structure-add-short" name="short_name" maxlength="32" value={short_default} required />
             </ManageField>
-            <div class="[ structure-add__two ]">
-                <ManageField label={t('structures.add.reinforce')} for="structure-add-hour" hint={t('structures.add.reinforce_hint')}>
-                    <Select id="structure-add-hour" name="reinforce_hour" size="sm">
-                        <option value="">{t('structures.add.not_known')}</option>
-                        {Array.from({ length: 24 }, (_, h) => (
-                            <option value={h} selected={state.reinforce_hour === h}>{String(h).padStart(2, '0')}:00 EVE</option>
-                        ))}
-                    </Select>
-                </ManageField>
-                <ManageField label={t('structures.add.audience')} for="structure-add-aud" hint={t('structures.add.audience_hint')}>
-                    <Select id="structure-add-aud" name="audience" size="sm">
-                        <option value="public" selected>{t('structures.audience.public')}</option>
-                        <option value="alliance">{t('structures.audience.alliance')}</option>
-                    </Select>
-                </ManageField>
-            </div>
+            <ManageField label={t('structures.add.audience')} for="structure-add-aud" hint={t('structures.add.audience_hint')}>
+                <Select id="structure-add-aud" name="audience" size="sm">
+                    <option value="public" selected>{t('structures.audience.public')}</option>
+                    <option value="alliance">{t('structures.audience.alliance')}</option>
+                </Select>
+            </ManageField>
             <fieldset class="[ manage-chips ]">
                 <legend class="[ manage-field__label ]">{t('structures.add.good_for')}</legend>
                 {['industry', 'clones', 'logistics'].map((value) => (
@@ -224,7 +241,7 @@ import StructureHowTo from '@components/blocks/structures/StructureHowTo.astro'
             </ManageField>
             <div class="[ manage-actions ]">
                 <Button type="button" size="sm" color="fleet-red" hx-post={URL} hx-vals={go('submit')} hx-target="#structure-add" hx-swap="innerHTML" hx-disabled-elt="this">{t('structures.add.send')}</Button>
-                <Button type="button" size="sm" color="transparent" hx-post={URL} hx-vals={go('fitting')} hx-target="#structure-add" hx-swap="innerHTML">{t('structures.add.back')}</Button>
+                <Button type="button" size="sm" color="transparent" hx-post={URL} hx-vals={go('reinforce')} hx-target="#structure-add" hx-swap="innerHTML">{t('structures.add.back')}</Button>
             </div>
         </div>
     }

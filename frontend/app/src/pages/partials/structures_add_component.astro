@@ -1,7 +1,9 @@
 ---
 /**
  * One step of the Add a structure dialog. The form posts `go` (the step to
- * show next) plus everything gathered so far; this renders that step.
+ * show next) plus everything gathered so far; this renders that step. The
+ * Selected Item paste and the ship scan arrive on separate steps and are
+ * sent together as the submission's paste text.
  */
 // no-error-refetch: a form step; errors show inside the dialog.
 import { i18n } from '@helpers/i18n'
@@ -32,6 +34,7 @@ try {
 
 const state: StructureAddState = {
     text: form.has('text_input') ? text_field('text_input') : text_field('text'),
+    fit_text: text_field('fit_text'),
     name: text_field('name'),
     solar_system_name: text_field('solar_system_name'),
     location_id: number_field('location_id'),
@@ -46,7 +49,7 @@ const state: StructureAddState = {
 }
 
 let go = text_field('go') || 'paste'
-let step: 'paste' | 'docked' | 'match' | 'fitting' | 'details' | 'sent' = 'paste'
+let step: 'paste' | 'docked' | 'match' | 'fitting' | 'reinforce' | 'details' | 'sent' = 'paste'
 let error: string | null = null
 let docked: StructureLocationDocked[] = []
 
@@ -55,7 +58,7 @@ try {
         step = 'paste'
     } else if (go === 'paste_new') {
         step = 'paste'
-        state.text = ''
+        Object.assign(state, { text: '', fit_text: '', modules: [], parts: [], reinforce_hour: null })
     } else if (go === 'docked') {
         docked = await get_docked_characters(auth_token)
         step = 'docked'
@@ -70,8 +73,6 @@ try {
             state.id_source = 'docked'
             state.found_with = text_field('docked_character')
             state.match_status = parsed?.match.status === 'listed' ? 'listed' : 'found'
-            state.modules = parsed?.modules ?? []
-            state.reinforce_hour = parsed?.reinforce_hour ?? null
             state.parts = parsed?.parts ?? []
             state.type_id = parsed?.type_id ?? null
             state.type_name = parsed?.match.type_name ?? ''
@@ -93,8 +94,6 @@ try {
                 state.type_id = parsed.match.type_id
                 state.type_name = parsed.match.type_name
                 state.match_status = parsed.match.status
-                state.reinforce_hour = parsed.reinforce_hour
-                state.modules = parsed.modules
                 state.parts = parsed.parts
                 step = 'match'
             }
@@ -103,11 +102,26 @@ try {
         step = 'match'
     } else if (go === 'fitting') {
         step = 'fitting'
+    } else if (go === 'fitting_read') {
+        // The ship scan, read next to the name so the backend knows the hull.
+        step = 'fitting'
+        if (!state.fit_text) {
+            error = t('structures.add.fit_first')
+        } else {
+            const parsed = await parse_structure_paste(auth_token, [state.text || state.name, state.fit_text].join('\n'))
+            state.modules = parsed.modules
+            if (!parsed.modules.length) error = t('structures.add.no_modules')
+        }
+    } else if (go === 'reinforce') {
+        step = 'reinforce'
+    } else if (go === 'reinforce_skip') {
+        Object.assign(state, { fit_text: '', modules: [] })
+        step = 'reinforce'
     } else if (go === 'details') {
         step = 'details'
     } else if (go === 'submit') {
         await submit_structure(auth_token, {
-            paste_text: state.text,
+            paste_text: [state.text, state.fit_text].filter(Boolean).join('\n'),
             name: state.name,
             location_id: state.location_id,
             id_source: state.id_source,
@@ -124,7 +138,7 @@ try {
     }
 } catch (failure) {
     error = (failure as Error).message
-    step = go === 'submit' ? 'details' : go === 'match' ? 'paste' : step
+    step = go === 'submit' ? 'details' : go === 'match' ? 'paste' : go === 'fitting_read' ? 'fitting' : step
 }
 ---
 

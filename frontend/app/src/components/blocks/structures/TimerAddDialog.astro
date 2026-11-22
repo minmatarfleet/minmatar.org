@@ -1,0 +1,45 @@
+---
+/**
+ * The Add a timer button and its stepped dialog (Paste → Check → Owner →
+ * Sent, with clips of the Selected Item window and Show Info). Every page
+ * that adds a structure timer opens this one: the timer board, Universe >
+ * Timers, the Intel tiles and a campaign's Structures and Timers tabs. Pass
+ * campaign_slug to preselect that campaign. Boards that list timers listen
+ * for `structure-timers-changed` to refresh.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components'
+
+interface Props {
+    campaign_slug?:     string;
+    label?:             string;
+    size?:              ButtonSizes;
+    color?:             ButtonColors;
+    [propName: string]: any;
+}
+
+const {
+    campaign_slug = '',
+    label,
+    size = 'sm',
+    color = 'fleet-red',
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const URL = translatePath('/partials/structure_timer_add_component/')
+
+import DialogButton from '@components/blocks/DialogButton.astro'
+import TimerAddSteps from '@components/blocks/structures/TimerAddSteps.astro'
+---
+
+<DialogButton size={size} color={color} max_width="52rem" class={Astro.props.class} {...attributes}>
+    <slot name="icon" slot="icon" />
+    {label ?? t('timers.add.title')}
+    <form slot="dialog" class="[ timer-add ]" hx-post={URL} hx-target="this" hx-swap="innerHTML" x-on:submit.prevent="">
+        <TimerAddSteps step="paste" state={{ campaign_slug }} />
+    </form>
+</DialogButton>

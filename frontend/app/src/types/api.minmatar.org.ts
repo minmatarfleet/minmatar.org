@@ -987,14 +987,7 @@ export const structure_types = [
 ] as const
 export type StructureType = typeof structure_types[number]
 
-export interface StructureTimerRequest {
-    selected_item_window:   string;
-    corporation_name:       string;
-    state:                  StructureState;
-    type:                   StructureType;
-    campaign_id?:           number | null;
-    fitting?:               string | null;
-}
+export type StructureTimerRequest = ApiRequest<'EveStructureTimerRequest'>
 
 export interface UniverseEntityMatch {
     id:     number;

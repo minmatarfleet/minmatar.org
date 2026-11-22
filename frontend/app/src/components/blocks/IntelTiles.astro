@@ -4,6 +4,7 @@ const { t, translatePath } = i18n(Astro.url)
 
 interface Props {
     can_view_timers?:           boolean;
+    can_add_timers?:            boolean;
     can_view_moons?:            boolean;
     can_add_moons?:             boolean;
     can_view_affiliations?:     boolean;
@@ -11,6 +12,7 @@ interface Props {
 
 const {
     can_view_timers = false,
+    can_add_timers = false,
     can_view_moons = false,
     can_add_moons = false,
     can_view_affiliations = false,
@@ -22,6 +24,7 @@ import Grid from '@components/compositions/Grid.astro';
 import Button from '@components/blocks/Button.astro';
 import Tile from '@components/blocks/Tile.astro';
 import AddMoonButton from '@components/blocks/AddMoonButton.astro';
+import TimerAddDialog from '@components/blocks/structures/TimerAddDialog.astro'
 
 import CalendarEVEIcon from '@components/icons/CalendarEVEIcon.astro';
 import PlanetEVEIcon from '@components/icons/PlanetEVEIcon.astro';
@@ -52,9 +55,7 @@ import AllianceEvEIcon from '@components/icons/AllianceEvEIcon.astro';
                 <Button size='sm' href={translatePath('/intel/timers/active/')}>
                     {t('browse')}
                 </Button>
-                <Button size='sm' href={translatePath('/intel/timers/add/')}>
-                    {t('add_timer')}
-                </Button>
+                {can_add_timers && <TimerAddDialog color="green" label={t('add_timer')} />}
             </Tile>
         }
 

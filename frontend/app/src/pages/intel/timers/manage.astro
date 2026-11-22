@@ -47,6 +47,7 @@ import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 
 import Button from '@components/blocks/Button.astro'
+import TimerAddDialog from '@components/blocks/structures/TimerAddDialog.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import SectionTabs from '@components/blocks/SectionTabs.astro'
 import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
@@ -71,7 +72,7 @@ import StructureTimersManager from '@components/blocks/StructureTimersManager.as
                 <Fragment slot="actions">
                     <Button color="transparent" href={translatePath('/intel/timers/active/')}>{t('manage.timers.active')}</Button>
                     {can(gates, 'structures.timers.manage') &&
-                        <Button href={translatePath('/intel/timers/add/')}>{t('manage.timers.add')}</Button>
+                        <TimerAddDialog size="lg" color="green" label={t('manage.timers.add')} />
                     }
                 </Fragment>
             </ManageHero>

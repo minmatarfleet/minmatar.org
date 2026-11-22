@@ -17,6 +17,7 @@ if (!can(gates, 'structures.timers.view'))
     return HTTP_403_Forbidden()
 
 const can_verify_timer = can(gates, 'structures.timers.verify')
+const can_add_timers = can(gates, 'structures.timers.manage')
 
 import type { StructureTimerUI } from '@dtypes/layout_components'
 import { fetch_structure_timers } from '@helpers/fetching/structures'
@@ -66,6 +67,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 
 import StructureTimerList from '@components/blocks/StructureTimerList.astro';
 import Button from '@components/blocks/Button.astro';
+import TimerAddDialog from '@components/blocks/structures/TimerAddDialog.astro'
 import NotificationBadge from '@components/blocks/NotificationBadge.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
@@ -107,10 +109,11 @@ const page_title = t('intel.timers.page_title');
                 </Flexblock>
             </FlexInline>
             <PageActions>
-                <Button color={'green'} href={translatePath('/intel/timers/add/')}>
-                    <AddIcon slot="icon" />
-                    {t('add_structure_timer')}
-                </Button>
+                {can_add_timers &&
+                    <TimerAddDialog size="lg" color="green" label={t('add_structure_timer')}>
+                        <AddIcon slot="icon" />
+                    </TimerAddDialog>
+                }
                 {can(gates, 'structures.timers.correct') &&
                     <Button href={translatePath('/intel/timers/manage/')}>
                         {t('structure_timers_manage.link')}
@@ -163,12 +166,20 @@ const page_title = t('intel.timers.page_title');
                 }}
             />
             :
+            <div
+                hx-get={`${STRUCTURE_TIMERS_LIST_PARTIAL_URL}&duplicated=false`}
+                hx-trigger="structure-timers-changed from:body"
+                hx-select=".structure-timers-list-container"
+                hx-target="find .structure-timers-list-container"
+                hx-swap="outerHTML"
+            >
             <div class="[ structure-timers-list-container ]">
                 <StructureTimerList
                     structure_timers={structure_timers}
                     can_verify_timer={can_verify_timer}
                     create_fleet={true}
                 />
+            </div>
             </div>
         }
 	</PageWide>

@@ -1,6 +1,6 @@
 ---
 import { i18n, dynamic_key, t_key } from '@helpers/i18n'
-const { lang, t, translatePath } = i18n(Astro.url)
+const { lang, t } = i18n(Astro.url)
 
 import type { CampaignStructure } from '@dtypes/api.minmatar.org'
 import { get_item_icon } from '@helpers/eve_image_server'
@@ -26,7 +26,6 @@ const {
 
 delete attributes.class
 
-const ADD_TIMER_URL = translatePath(`/intel/timers/add/?campaign_slug=${slug}`)
 
 const status_color = (status:string) => {
     if (status === 'destroyed') return 'green'
@@ -51,7 +50,7 @@ const rows = sort_campaign_structures(structures)
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
-import Button from '@components/blocks/Button.astro'
+import TimerAddDialog from '@components/blocks/structures/TimerAddDialog.astro'
 import StructureReportDialog from '@components/blocks/structures/StructureReportDialog.astro'
 import Tag from '@components/blocks/Tag.astro'
 import Countdown from '@components/blocks/Countdown.astro'
@@ -67,9 +66,7 @@ import Countdown from '@components/blocks/Countdown.astro'
         {show_add_timer &&
             <FlexInline gap='var(--space-3xs)'>
                 <StructureReportDialog campaign_slug={slug} label={t('campaigns.structures.report')} />
-                <Button size='sm' href={ADD_TIMER_URL}>
-                    {t('campaigns.structures.add_timer')}
-                </Button>
+                <TimerAddDialog campaign_slug={slug} color="green" label={t('campaigns.structures.add_timer')} />
             </FlexInline>
         }
     </FlexInline>

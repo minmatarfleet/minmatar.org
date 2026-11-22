@@ -1,7 +1,8 @@
 ---
 /**
- * The body of the Report a structure dialog, one step at a time:
- * Find → Match → Details → Sent. Each step posts to
+ * The body of the Report a structure dialog, one piece at a time:
+ * Selected Item (find, then match) → Owner → Fitting → Reinforcement → Sent.
+ * Each step posts to
  * universe_structure_report_component, which renders the next one; what the
  * pilot entered so far travels along as hidden fields. It renders inside the
  * shared StructureSteps shell with StructureHowTo clips, like Add a
@@ -14,15 +15,22 @@ import type { UniverseStructure } from '@dtypes/api.minmatar.org'
 import { get_item_icon } from '@helpers/eve_image_server'
 
 export interface UniverseReportState {
-    system_name:    string;
-    type_id:        number | null;
-    name:           string;
-    structure_id:   number | null;
-    campaign_slug:  string;
+    system_name:                string;
+    type_id:                    number | null;
+    name:                       string;
+    structure_id:               number | null;
+    campaign_slug:              string;
+    corporation_name:           string;
+    alliance_name:              string;
+    affiliated_alliance_name:   string;
+    fitting:                    string;
+    reinforce_hour:             number | null;
 }
 
+export type UniverseReportStep = 'find' | 'match' | 'owner' | 'fitting' | 'reinforce' | 'sent'
+
 interface Props {
-    step:           'find' | 'match' | 'details' | 'sent';
+    step:           UniverseReportStep;
     state?:         Partial<UniverseReportState>;
     candidates?:    UniverseStructure[];
     picked?:        UniverseStructure | null;
@@ -30,7 +38,11 @@ interface Props {
 }
 
 const { step, candidates = [], picked = null, error = null } = Astro.props
-const state: UniverseReportState = { system_name: '', type_id: null, name: '', structure_id: null, campaign_slug: '', ...(Astro.props.state ?? {}) }
+const state: UniverseReportState = {
+    system_name: '', type_id: null, name: '', structure_id: null, campaign_slug: '',
+    corporation_name: '', alliance_name: '', affiliated_alliance_name: '', fitting: '', reinforce_hour: null,
+    ...(Astro.props.state ?? {}),
+}
 
 // Types a pilot can report; the backend holds the same list.
 const REPORTABLE_TYPES: [number, string][] = [
@@ -42,19 +54,37 @@ const REPORTABLE_TYPES: [number, string][] = [
 const type_name = REPORTABLE_TYPES.find(([id]) => id === state.type_id)?.[1] ?? ''
 
 const URL = translatePath('/partials/universe_structure_report_component/')
-const STEPS = ['find', 'match', 'details', 'sent'] as const
-const current = STEPS.indexOf(step)
+// One piece per step, in the order the client gives it: the structure
+// (Selected Item), who owns it (Show Info), its fit (ship scan), then its
+// reinforcement hour (hacking). Match is the second half of the first step.
+const STEPS = ['find', 'owner', 'fitting', 'reinforce', 'sent'] as const
+const current = step === 'match' ? 0 : STEPS.indexOf(step)
+const fit_lines = state.fitting.split('\n').filter((line) => line.trim()).length
 const summary = [
-    [type_name, state.system_name].filter(Boolean).join(' · '),
-    picked?.name ?? (state.structure_id === null && current > 1 ? t('universe.report.none') : ''),
-    '',
+    [picked?.name ?? state.name, type_name, state.system_name].filter(Boolean).join(' · '),
+    state.alliance_name || state.corporation_name,
+    fit_lines ? t('universe.report.fit_lines').replace('~COUNT', String(fit_lines)) : t('universe.report.skipped'),
+    state.reinforce_hour === null ? t('universe.report.not_known') : `${String(state.reinforce_hour).padStart(2, '0')}:00 EVE`,
     '',
 ]
 const steps = STEPS.map((name, index) => ({
     label: t(t_key('universe.report.step_', name)),
-    note: index < current ? summary[index] : index === current ? t(t_key('universe.report.step_now_', name)) : '',
+    note: index < current ? summary[index] : index === current ? t(t_key('universe.report.step_now_', step === 'match' ? 'match' : name)) : '',
 }))
-const go = (value: string) => JSON.stringify({ go: value })
+const go = (value: string, extra: Record<string, string> = {}) => JSON.stringify({ go: value, ...extra })
+const move = (value: string, extra: Record<string, string> = {}) => ({ 'hx-post': URL, 'hx-vals': go(value, extra), 'hx-target': 'closest form', 'hx-swap': 'innerHTML' })
+
+// Everything entered so far travels as hidden fields, except what this step shows.
+const VISIBLE: Record<UniverseReportStep, string[]> = {
+    find: ['system_name', 'type_id', 'name'],
+    match: ['structure_id'],
+    owner: ['corporation_name', 'alliance_name', 'affiliated_alliance_name'],
+    fitting: ['fitting'],
+    reinforce: ['reinforce_hour'],
+    sent: [],
+}
+const carried = (Object.entries(state) as [string, string | number | null][])
+    .filter(([key]) => !VISIBLE[step].includes(key))
 
 import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
@@ -66,15 +96,7 @@ import StructureHowTo from '@components/blocks/structures/StructureHowTo.astro'
 ---
 
 <StructureSteps title={t('universe.report.title')} steps_label={t('universe.report.steps')} steps={steps} current={current}>
-    {state.campaign_slug && <input type="hidden" name="campaign_slug" value={state.campaign_slug} />}
-    {step !== 'find' &&
-        <Fragment>
-            <input type="hidden" name="system_name" value={state.system_name} />
-            <input type="hidden" name="type_id" value={state.type_id ?? ''} />
-            <input type="hidden" name="name" value={state.name} />
-        </Fragment>
-    }
-    {step === 'details' && <input type="hidden" name="structure_id" value={state.structure_id ?? ''} />}
+    {step !== 'sent' && carried.map(([key, value]) => <input type="hidden" name={key} value={value ?? ''} />)}
 
     {error && <p class="[ manage-field__error ]" role="alert">{error}</p>}
 
@@ -95,7 +117,7 @@ import StructureHowTo from '@components/blocks/structures/StructureHowTo.astro'
                 <Input id="universe-report-name" name="name" value={state.name} />
             </ManageField>
             <div class="[ manage-actions ]">
-                <Button type="button" size="sm" color="fleet-red" hx-post={URL} hx-vals={go('match')} hx-target="#universe-report" hx-swap="innerHTML" hx-disabled-elt="this">{t('universe.report.next')}</Button>
+                <Button type="button" size="sm" color="fleet-red" {...move('match')} hx-disabled-elt="this">{t('universe.report.next')}</Button>
                 <Button type="button" size="sm" color="transparent" x-on:click="close_dialog()">{t('cancel')}</Button>
             </div>
         </div>
@@ -109,7 +131,7 @@ import StructureHowTo from '@components/blocks/structures/StructureHowTo.astro'
                     <label class="[ structure-add__result ]">
                         <img src={get_item_icon(structure.type_id, 64)} alt="" width="56" height="56" />
                         <div>
-                            <input type="radio" name="structure_id" value={structure.id} checked={index === 0} class="[ visually-hidden ]" />
+                            <input type="radio" name="structure_id" value={structure.id} checked={state.structure_id === null ? index === 0 : state.structure_id === structure.id} class="[ visually-hidden ]" />
                             <b>{structure.name}</b>
                             <small>{[structure.type_name, structure.system_name, structure.corporation_name].filter(Boolean).join(' · ')}</small>
                         </div>
@@ -125,53 +147,74 @@ import StructureHowTo from '@components/blocks/structures/StructureHowTo.astro'
                 </label>
             </fieldset>
             <div class="[ manage-actions ]">
-                <Button type="button" size="sm" color="fleet-red" hx-post={URL} hx-vals={go('details')} hx-target="#universe-report" hx-swap="innerHTML">{t('universe.report.next')}</Button>
-                <Button type="button" size="sm" color="transparent" hx-post={URL} hx-vals={go('find')} hx-target="#universe-report" hx-swap="innerHTML">{t('universe.report.back')}</Button>
+                <Button type="button" size="sm" color="fleet-red" {...move('owner', { prefill: '1' })}>{t('universe.report.next')}</Button>
+                <Button type="button" size="sm" color="transparent" {...move('find')}>{t('universe.report.back')}</Button>
             </div>
         </div>
     }
 
-    {step === 'details' &&
+    {step === 'owner' &&
         <div class="[ structure-add__body ]">
-            <StructureHowTo topics={['owner', 'reinforce', 'fitting']} />
+            <StructureHowTo topics={['owner']} />
             <div class="[ structure-add__two ]">
                 <ManageField label={t('universe.report.corporation')} for="universe-report-corp">
-                    <Input id="universe-report-corp" name="corporation_name" value={picked?.corporation_name ?? ''} />
+                    <Input id="universe-report-corp" name="corporation_name" value={state.corporation_name} />
                 </ManageField>
                 <ManageField label={t('universe.report.alliance')} for="universe-report-alliance">
-                    <Input id="universe-report-alliance" name="alliance_name" value={picked?.alliance_name ?? ''} />
-                </ManageField>
-                <ManageField label={t('universe.report.affiliated')} for="universe-report-affiliated">
-                    <Input id="universe-report-affiliated" name="affiliated_alliance_name" value={picked?.affiliated_alliance_name ?? ''} placeholder={t('universe.report.affiliated_placeholder')} />
-                </ManageField>
-                <ManageField label={t('universe.report.reinforce')} for="universe-report-hour">
-                    <Select id="universe-report-hour" name="reinforce_hour" size="sm">
-                        <option value="">{t('universe.report.not_known')}</option>
-                        {Array.from({ length: 24 }, (_, hour) => (
-                            <option value={hour} selected={picked?.reinforce_hour === hour}>{String(hour).padStart(2, '0')}:00 EVE</option>
-                        ))}
-                    </Select>
+                    <Input id="universe-report-alliance" name="alliance_name" value={state.alliance_name} />
                 </ManageField>
             </div>
-            <ManageField label={t('universe.report.fitting')} for="universe-report-fit">
-                <Textarea id="universe-report-fit" name="fitting" rows="5">{picked?.fitting ?? ''}</Textarea>
+            <ManageField label={t('universe.report.affiliated')} for="universe-report-affiliated">
+                <Input id="universe-report-affiliated" name="affiliated_alliance_name" value={state.affiliated_alliance_name} placeholder={t('universe.report.affiliated_placeholder')} />
             </ManageField>
             <div class="[ manage-actions ]">
-                <Button type="button" size="sm" color="fleet-red" hx-post={URL} hx-vals={go('send')} hx-target="#universe-report" hx-swap="innerHTML" hx-disabled-elt="this">{t('universe.report.send')}</Button>
-                <Button type="button" size="sm" color="transparent" hx-post={URL} hx-vals={go('match')} hx-target="#universe-report" hx-swap="innerHTML">{t('universe.report.back')}</Button>
+                <Button type="button" size="sm" color="fleet-red" {...move('fitting')}>{t('universe.report.next')}</Button>
+                <Button type="button" size="sm" color="transparent" {...move('match')}>{t('universe.report.back')}</Button>
+            </div>
+        </div>
+    }
+
+    {step === 'fitting' &&
+        <div class="[ structure-add__body ]">
+            <StructureHowTo topics={['fitting']} />
+            <ManageField label={t('universe.report.fitting')} for="universe-report-fit">
+                <Textarea id="universe-report-fit" name="fitting" rows="6">{state.fitting}</Textarea>
+            </ManageField>
+            <div class="[ manage-actions ]">
+                <Button type="button" size="sm" color="fleet-red" {...move('reinforce')}>{t('universe.report.next')}</Button>
+                <Button type="button" size="sm" color="transparent" {...move('owner')}>{t('universe.report.back')}</Button>
+            </div>
+        </div>
+    }
+
+    {step === 'reinforce' &&
+        <div class="[ structure-add__body ]">
+            <StructureHowTo topics={['reinforce']} />
+            <ManageField label={t('universe.report.reinforce')} for="universe-report-hour">
+                <Select id="universe-report-hour" name="reinforce_hour" size="sm">
+                    <option value="">{t('universe.report.not_known')}</option>
+                    {Array.from({ length: 24 }, (_, hour) => (
+                        <option value={hour} selected={state.reinforce_hour === hour}>{String(hour).padStart(2, '0')}:00 EVE</option>
+                    ))}
+                </Select>
+            </ManageField>
+            <div class="[ manage-actions ]">
+                <Button type="button" size="sm" color="fleet-red" {...move('send')} hx-disabled-elt="this">{t('universe.report.send')}</Button>
+                <Button type="button" size="sm" color="transparent" {...move('fitting')}>{t('universe.report.back')}</Button>
             </div>
         </div>
     }
 
     {step === 'sent' &&
         <div class="[ structure-add__body ]">
+            {state.campaign_slug && <input type="hidden" name="campaign_slug" value={state.campaign_slug} />}
             <div class="[ structure-add__sent ]">
                 <h3>{t('universe.report.sent_title')}</h3>
                 <p>{state.campaign_slug ? t('universe.report.sent_body_campaign') : t('universe.report.sent_body')}</p>
             </div>
             <div class="[ manage-actions ]">
                 <Button type="button" size="sm" color="fleet-red" x-on:click="close_dialog()">{t('universe.report.done')}</Button>
-                <Button type="button" size="sm" color="transparent" hx-post={URL} hx-vals={go('find')} hx-target="#universe-report" hx-swap="innerHTML">{t('universe.report.another')}</Button>
+                <Button type="button" size="sm" color="transparent" {...move('find')}>{t('universe.report.another')}</Button>
             </div>
         </div>
     }

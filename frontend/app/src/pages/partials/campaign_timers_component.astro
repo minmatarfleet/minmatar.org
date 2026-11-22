@@ -28,19 +28,18 @@ try {
 }
 
 const PARTIAL_URL = translatePath(`/partials/campaign_timers_component?slug=${encodeURIComponent(slug)}`)
-const ADD_TIMER_URL = translatePath(`/intel/timers/add/?campaign_slug=${slug}`)
 const tracking = t('campaigns.timers.tracking')
     .replace('~UPCOMING', String(timers.filter((timer) => !timer.done).length))
     .replace('~DONE', String(timers.filter((timer) => timer.done).length))
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
-import Button from '@components/blocks/Button.astro'
+import TimerAddDialog from '@components/blocks/structures/TimerAddDialog.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import CampaignTimersTable from '@components/blocks/CampaignTimersTable.astro'
 ---
 
-<div id="campaign-timers">
+<div id="campaign-timers" hx-get={PARTIAL_URL} hx-trigger="structure-timers-changed from:body" hx-target="this" hx-swap="outerHTML">
     {fetch_error ?
         <ErrorRefetch
             args={{
@@ -58,7 +57,7 @@ import CampaignTimersTable from '@components/blocks/CampaignTimersTable.astro'
                     <small>{t('campaigns.timers.hint')}</small>
                     {timers.length > 0 && <small class="[ campaign-timers-tracking ]">{tracking}</small>}
                 </Flexblock>
-                <Button size="sm" href={ADD_TIMER_URL}>{t('campaigns.structures.add_timer')}</Button>
+                <TimerAddDialog campaign_slug={slug} color="green" label={t('campaigns.structures.add_timer')} />
             </FlexInline>
             <CampaignTimersTable timers={timers} />
         </Flexblock>
