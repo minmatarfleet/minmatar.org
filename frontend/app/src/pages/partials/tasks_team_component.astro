@@ -13,7 +13,7 @@ import type { TaskTeamDetail, TaskTeamOverview, TaskTeamRow } from '@dtypes/api.
 import { get_request_user } from '@helpers/request_user'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import { get_task_team, get_task_teams, is_task_action, post_task_action } from '@helpers/api.minmatar.org/tasks'
-import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
+import { get_corporation_logo, get_player_icon } from '@helpers/eve_image'
 
 const { auth_token } = get_request_user(Astro)
 if (!auth_token) return HTTP_403_Forbidden()

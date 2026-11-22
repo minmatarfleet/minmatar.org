@@ -12,7 +12,7 @@ if (!user)
 
 import type { MentorsHome } from '@dtypes/api.minmatar.org'
 import { get_mentors_home } from '@helpers/api.minmatar.org/mentors'
-import { get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image'
 import { MENTORS_HOME_PARTIAL, MENTOR_CLASS_PARTIAL, MENTOR_REQUEST_MODAL, mentors_url } from '@helpers/mentors'
 
 const params = Astro.url.searchParams

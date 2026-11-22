@@ -1,5 +1,5 @@
 import type { StructureLocationCard, StructureLocationModule } from '@dtypes/api.minmatar.org'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 
 export type StructureView = 'all' | 'staging' | 'production' | 'reactions' | 'reprocessing'
 export const STRUCTURE_VIEWS: StructureView[] = ['all', 'staging', 'production', 'reactions', 'reprocessing']

@@ -7,7 +7,7 @@ import type { StructureLocationList } from '@dtypes/api.minmatar.org'
 import { get_request_user } from '@helpers/request_user'
 import { get_gates, can } from '@helpers/gates'
 import { get_structure_locations } from '@helpers/api.minmatar.org/structure_locations'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 import { in_view, has_rig_group, parse_rig_groups, parse_structure_view, rig_groups_of, RIG_GROUP_SECTIONS, STRUCTURE_VIEWS, type StructureView } from '@helpers/structure_locations'
 
 const { auth_token } = get_request_user(Astro)

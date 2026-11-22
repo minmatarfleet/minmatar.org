@@ -13,6 +13,7 @@ interface Props {
     icon_quality?:          EvEImageServiceSize;
     quantity?:              number;
     tag_color?:             BadgeColors;
+    [propName: string]: any;
 }
 
 const {
@@ -24,9 +25,10 @@ const {
     icon_quality = 64,
     quantity,
     tag_color,
+    ...attributes
 } = Astro.props
 
-import { get_corporation_logo } from '@helpers/eve_image_server'
+import { get_corporation_logo } from '@helpers/eve_image'
 
 // The corporation page is a real link, not a click handler. A static corporation 0
 // has no page; with `x_corporation_id` the href follows the Alpine expression.
@@ -35,67 +37,33 @@ const static_href = !x_corporation_id && corporation_id != 0 ? `${corporations_p
 const linked = !!static_href || !!x_corporation_id
 const Target = linked ? 'a' : 'span'
 
-import NotificationBadge from '@components/blocks/NotificationBadge.astro'
+import Picture from '@components/blocks/Picture.astro'
+
+const extra_class = attributes.class
+delete attributes.class
 ---
-<picture class="[ corporation-picture ]">
-    <Target
-        class="[ picture-target ]"
-        href={static_href}
-        x-bind:href={x_corporation_id ? `${x_corporation_id} && String(${x_corporation_id}) !== '0' ? '${corporations_path}' + ${x_corporation_id} + '/' : false` : undefined}
-        x-on:click.stop={linked ? '' : undefined}
-    >
-        <img
-            loading="lazy"
-            height={size}
-            width={size}
-            src={get_corporation_logo(corporation_id, icon_quality ?? size)}
-            x-bind:src={`${x_corporation_id} ? get_corporation_logo(${x_corporation_id}) : '${get_corporation_logo(corporation_id, icon_quality ?? size)}'`}
-            alt={`${t('profile_picture_of')} ${corporation_name ?? t('unknown_corporation')}`}
-            x-bind:alt={`\`${t('profile_picture_of')} \${(${x_corporation_name} ? ${x_corporation_name} : "${corporation_name ?? t('unknown_corporation')}")}\``}
-        />
-    </Target>
-
-    {quantity != null && quantity > 0 &&
-        <NotificationBadge
-            class="[ quantity-badge ]"
-            color={tag_color ?? 'fleet-red'}
-            number={quantity}
-        />
-    }
-</picture>
-
-<style lang="scss">
-    picture {
-        position: relative;
-        display: inline-flex;
-
-        .quantity-badge {
-            position: absolute;
-            bottom: -5px;
-            right: -5px;
-            z-index: 1;
-        }
-    }
-
-    .picture-target {
-        display: flex;
-
-        &:focus-visible {
-            outline-color: var(--highlight);
-            outline-style: double;
-        }
-    }
-
-    img {
-        transition: var(--fast-transition);
-        filter: brightness(1);
-    }
-
-    a.picture-target img {
-        cursor: pointer;
-
-        &:hover {
-            filter: brightness(1.3);
-        }
-    }
-</style>
+<Picture
+    src={get_corporation_logo(corporation_id, icon_quality ?? size)}
+    alt={`${t('profile_picture_of')} ${corporation_name ?? t('unknown_corporation')}`}
+    size={size}
+    quantity={quantity}
+    tag_color={tag_color}
+    animated={false}
+    brighten={linked}
+    class:list={['[ corporation-picture inline-flex ]', extra_class]}
+    {...attributes}
+    target={{
+        tag: Target,
+        attrs: {
+            href: static_href,
+            'x-bind:href': x_corporation_id ? `${x_corporation_id} && String(${x_corporation_id}) !== '0' ? '${corporations_path}' + ${x_corporation_id} + '/' : false` : undefined,
+            'x-on:click.stop': linked ? '' : undefined,
+        },
+    }}
+    img_attrs={{
+        // A logo keeps its own width instead of filling the container (the picture is inline).
+        style: `width: ${size}px`,
+        'x-bind:src': `${x_corporation_id} ? get_corporation_logo(${x_corporation_id}) : '${get_corporation_logo(corporation_id, icon_quality ?? size)}'`,
+        'x-bind:alt': `\`${t('profile_picture_of')} \${(${x_corporation_name} ? ${x_corporation_name} : "${corporation_name ?? t('unknown_corporation')}")}\``,
+    }}
+/>

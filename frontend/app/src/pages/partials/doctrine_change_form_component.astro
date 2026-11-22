@@ -1,4 +1,5 @@
 ---
+import { get_type_icon } from '@helpers/eve_image'
 // no-error-refetch: a mutation partial that shows the API error inline in the dialog
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
@@ -163,7 +164,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
                 {rows.map((row) =>
                     <li class="[ doctrine-review__row ]">
                         {row.ship_id
-                            ? <img src={`https://images.evetech.net/types/${row.ship_id}/icon?size=64`} alt="" width="32" height="32" loading="lazy" />
+                            ? <img src={get_type_icon(row.ship_id, 64)} alt="" width="32" height="32" loading="lazy" />
                             : <span class="[ doctrine-review__spacer ]" aria-hidden="true"></span>
                         }
                         <span class="[ doctrine-review__name ]">{row.name}</span>

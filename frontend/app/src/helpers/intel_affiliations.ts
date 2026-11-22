@@ -5,7 +5,7 @@ import type {
 } from '@dtypes/api.minmatar.org'
 import type { TranslationKey } from '@helpers/i18n'
 import type { EvEImageServiceSize } from '@dtypes/layout_components'
-import { get_alliance_logo, get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
+import { get_alliance_logo, get_corporation_logo, get_player_icon } from '@helpers/eve_image'
 
 /**
  * View helpers for the intel affiliation database pages: the enums the API

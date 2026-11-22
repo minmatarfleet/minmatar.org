@@ -1,4 +1,5 @@
 ---
+import { get_alliance_logo, get_corporation_logo, get_type_icon } from '@helpers/eve_image'
 import { i18n, t_key } from '@helpers/i18n'
 import { eve_clock } from '@helpers/date'
 const { t, translatePath } = i18n(Astro.url)
@@ -30,10 +31,10 @@ const AMARR_FACTION_ID = 500003
 const MINMATAR_FACTION_ID = 500002
 const RAW_LINES = 60
 
-const type_icon = (type_id: number) => `https://images.evetech.net/types/${type_id}/icon?size=64`
-const faction_logo = (id: number) => `https://images.evetech.net/corporations/${id}/logo?size=64`
-const alliance_logo = (id: number) => `https://images.evetech.net/alliances/${id}/logo?size=64`
-const corporation_logo = (id: number) => `https://images.evetech.net/corporations/${id}/logo?size=64`
+const type_icon = (type_id: number) => get_type_icon(type_id, 64)
+const faction_logo = (id: number) => get_corporation_logo(id, 64)
+const alliance_logo = (id: number) => get_alliance_logo(id, 64)
+const corporation_logo = (id: number) => get_corporation_logo(id, 64)
 // Alpine calls take names from the paste; JSON keeps their quotes safe.
 const js = (value: unknown) => JSON.stringify(value)
 

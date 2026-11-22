@@ -122,7 +122,7 @@ const TEXT_STATUS_BLOCK = /\.text-status-[\w-]+[^{]*\{[^}]*\}/g
 /** A custom-property definition named for a semantic meaning (`--hp-warn:`), not a token that holds a colour (`--fleet-red:`). */
 const LOCAL_SEMANTIC_DEFINITION = /(?<![\w-])--[\w-]*[_-](?:warn|good|bad|warning|success|danger)\s*:/g
 
-const EVE_IMAGE_HELPERS = ['src/helpers/eve_image_server.ts', 'src/helpers/landing.ts', 'src/helpers/fleet_rsvp.ts']
+const EVE_IMAGE_HELPERS = ['src/helpers/eve_image.ts', 'src/helpers/landing.ts', 'src/helpers/fleet_rsvp.ts']
 const EVE_IMAGE_COMPONENTS = ['Picture', 'CharacterPicture', 'CorporationPicture', 'ItemPicture'].map((n) => `src/components/blocks/${n}.astro`)
 const COMPONENT_FILES = (...names: string[]) => names.map((n) => `src/components/${n}.astro`)
 
@@ -254,7 +254,7 @@ export const RULES: ConventionRule[] = [
     {
         id: 'raw_eve_image',
         kind: 'ratchet',
-        why: 'EVE image URLs come from @helpers/eve_image_server (get_item_icon, get_player_icon, get_corporation_logo, ...) or the Picture components (<ItemPicture>, <CharacterPicture>, <CorporationPicture>, <Picture>), which pick the size and the fallback. Do not write an images.evetech.net URL in markup or scripts.',
+        why: 'EVE image URLs come from @helpers/eve_image (get_item_icon, get_player_icon, get_corporation_logo, ...) or the Picture components (<ItemPicture>, <CharacterPicture>, <CorporationPicture>, <Picture>), which pick the size and the fallback. Do not write an images.evetech.net URL in markup or scripts.',
         find: (file) => {
             if (EVE_IMAGE_HELPERS.includes(file.path) || EVE_IMAGE_COMPONENTS.includes(file.path)) return []
             return hits_in(file, [{ text: file.text, offset: 0 }], /(?:https?:)?\/\/images\.evetech\.net/g)

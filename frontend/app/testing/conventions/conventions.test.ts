@@ -190,7 +190,7 @@ describe('convention rule matchers', () => {
     it('raw_eve_image: EVE image URLs outside the helpers and Picture components', () => {
         expect(count('raw_eve_image', astro(`<img src="https://images.evetech.net/types/\${id}/icon?size=32" />`))).toBe(1)
         expect(count('raw_eve_image', { path: 'src/helpers/format.ts', text: 'const u = `//images.evetech.net/characters/${id}/portrait`' })).toBe(1)
-        expect(count('raw_eve_image', { path: 'src/helpers/eve_image_server.ts', text: 'const u = `https://images.evetech.net/types/${id}/icon`' })).toBe(0)
+        expect(count('raw_eve_image', { path: 'src/helpers/eve_image.ts', text: 'const u = `https://images.evetech.net/types/${id}/icon`' })).toBe(0)
         expect(count('raw_eve_image', astro(`<ItemPicture id={id} />`, 'src/components/blocks/ItemPicture.astro'))).toBe(0)
         expect(count('raw_eve_image', astro(`// the icons come from images.evetech.net\n<p>Served from images.evetech.net</p>`))).toBe(0)
     })

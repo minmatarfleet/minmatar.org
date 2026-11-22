@@ -13,7 +13,7 @@ if (!user || !can(await get_gates(Astro), 'learning.manage'))
 
 import type { MentorAdminClass, MentorsAdmin, MentorsMe } from '@dtypes/api.minmatar.org'
 import { get_mentors_admin, get_mentors_me } from '@helpers/api.minmatar.org/mentors'
-import { get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image'
 import { MENTORS_ADMIN_PARTIAL, NEW_MENTOR_CLASS_PATH, brackets_text, class_time, mentor_class_cover, mentor_class_edit_path, mentors_url } from '@helpers/mentors'
 import { handle_mentor_post } from '@helpers/mentors_actions'
 

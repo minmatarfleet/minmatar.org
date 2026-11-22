@@ -4,6 +4,7 @@
  * the pure bits the page, its partial and the tests share.
  */
 import type { RsvpCharacter, RsvpSubmit } from '@dtypes/api.minmatar.org'
+import { get_player_icon, get_type_icon } from '@helpers/eve_image'
 
 export const RSVP_CONFIDENCES = ['high', 'medium', 'low'] as const
 export type RsvpConfidence = typeof RSVP_CONFIDENCES[number]
@@ -93,10 +94,10 @@ export function countdown_text(templates: CountdownTemplates, ms: number): strin
 
 /** Portrait and ship icon URLs on the EVE image server. */
 export const rsvp_portrait = (character_id: number | null | undefined, size = 64) =>
-    `https://images.evetech.net/characters/${character_id ?? 1}/portrait?size=${size}`
+    get_player_icon(character_id ?? 1, size)
 
 export const rsvp_ship_icon = (ship_id: number | null | undefined, size = 64) =>
-    `https://images.evetech.net/types/${ship_id ?? 0}/icon?size=${size}`
+    get_type_icon(ship_id ?? 0, size)
 
 /** Where "Back to Discord" goes: the pilot's DMs, where the invite is. */
 export const DISCORD_DMS_URL = 'https://discord.com/channels/@me'

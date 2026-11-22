@@ -2,8 +2,8 @@ import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { expect, test, vi } from "vitest";
 import CharacterPicture from "@components/blocks/CharacterPicture.astro";
 
-import { get_player_icon } from "@helpers/eve_image_server";
-vi.mock("@helpers/eve_image_server");
+import { get_player_icon } from "@helpers/eve_image";
+vi.mock("@helpers/eve_image");
 
 test("CharacterPicture defaults", async () => {
   vi.mocked(get_player_icon).mockImplementation((id, size) => {

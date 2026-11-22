@@ -1,4 +1,5 @@
 import type { LandingEvent } from '@dtypes/api.minmatar.org'
+import { get_alliance_logo, get_corporation_logo, get_player_icon, get_type_icon } from '@helpers/eve_image'
 
 /** HH:MM in EVE time (UTC). */
 export function eve_clock(iso: string): string {
@@ -41,10 +42,10 @@ export function subject_icon(event: Pick<LandingEvent, 'subject_type' | 'subject
     const id = event.subject_id
     if (!id) return null
     switch (event.subject_type) {
-        case 'type': return `https://images.evetech.net/types/${id}/icon?size=${size}`
-        case 'alliance': return `https://images.evetech.net/alliances/${id}/logo?size=${size}`
-        case 'corporation': return `https://images.evetech.net/corporations/${id}/logo?size=${size}`
-        case 'faction': return MILITIA_CORPORATIONS[id] ? `https://images.evetech.net/corporations/${MILITIA_CORPORATIONS[id]}/logo?size=${size}` : null
+        case 'type': return get_type_icon(id, size)
+        case 'alliance': return get_alliance_logo(id, size)
+        case 'corporation': return get_corporation_logo(id, size)
+        case 'faction': return MILITIA_CORPORATIONS[id] ? get_corporation_logo(MILITIA_CORPORATIONS[id], size) : null
         default: return null
     }
 }
@@ -93,7 +94,7 @@ export function short_number(value: number): string {
 }
 
 export function character_portrait(character_id: number, size = 64): string {
-    return `https://images.evetech.net/characters/${character_id}/portrait?size=${size}`
+    return get_player_icon(character_id, size)
 }
 
 /** Bar heights as percentages of the tallest bar; never below a stub. */

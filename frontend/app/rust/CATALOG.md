@@ -650,8 +650,8 @@ A tooltip trigger.
 A generic lazy-loaded `<picture>` + `<img>` for any image URL (posts, doctrine renders, thumbnails).
 
 - Import: `import Picture from '@components/blocks/Picture.astro'`
-- Props: `src: string`, `alt?: string`, `size?: ImageSize = 64`, `narrow?: boolean = false`, `mask?: boolean = false`, `zoomable?: boolean = false`, `placeholder?: string`, `thumbnail?: boolean = false`, `astro_image?: AstroImageOptions`
-- Stories (8): `frontend/app/rust/stories/eve/Picture.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-picture--docs: Default, Large, Narrow, Masked, Thumbnail, Placeholder, Decorative, Zoomable
+- Props: `src: string = '${placeholder}';`, `alt?: string`, `size?: ImageSize = 64`, `narrow?: boolean = false`, `height?: number = 412`, `mask?: boolean = false`, `zoomable?: boolean = false`, `placeholder?: string`, `thumbnail?: boolean = false`, `astro_image?: AstroImageOptions`, `quantity?: number`, `tag_color?: BadgeColors`, `animated?: boolean = true`, `brighten?: boolean = false`, `target?: PictureTarget`, `img_attrs?: Record<string, any> = {}`
+- Stories (11): `frontend/app/rust/stories/eve/Picture.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-picture--docs: Default, Large, Narrow, Masked, Thumbnail, Placeholder, Decorative, Zoomable, With Quantity, No Badge Without Quantity, Wrapped in a link target
 
 ### CharacterPicture
 
