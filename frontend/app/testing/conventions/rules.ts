@@ -15,6 +15,12 @@ export interface ConventionRule {
     /** What the rule protects and what to do instead; printed on failure. */
     why: string
     find: (file: SourceFile) => Hit[]
+    /**
+     * File path -> reason. An exempt file is never scanned by this rule. Use it only for code that
+     * legitimately cannot use the library (a `pre` block, a heatmap matrix, game data drawn in game
+     * colours); the reasons are printed in the test output. Keep each reason specific.
+     */
+    exempt?: Record<string, string>
 }
 
 const is_astro = (file: SourceFile) => file.path.endsWith('.astro')
@@ -150,7 +156,7 @@ const EVE_IMAGE_HELPERS = ['src/helpers/eve_image.ts', 'src/helpers/landing.ts',
 const EVE_IMAGE_COMPONENTS = ['Picture', 'CharacterPicture', 'CorporationPicture', 'ItemPicture'].map((n) => `src/components/blocks/${n}.astro`)
 const COMPONENT_FILES = (...names: string[]) => names.map((n) => `src/components/${n}.astro`)
 
-export const RULES: ConventionRule[] = [
+const RULE_DEFINITIONS: ConventionRule[] = [
     {
         id: 'client_fetch',
         kind: 'ratchet',
@@ -432,6 +438,14 @@ export const RULES: ConventionRule[] = [
         },
     },
 ]
+
+/** Rules as enforced: a file in a rule's `exempt` map yields no hits. `RULE_DEFINITIONS` keeps the unfiltered matchers. */
+export const with_exemptions = (r: ConventionRule): ConventionRule =>
+    r.exempt ? { ...r, find: (file: SourceFile) => (Object.hasOwn(r.exempt!, file.path) ? [] : r.find(file)) } : r
+export const RULES: ConventionRule[] = RULE_DEFINITIONS.map(with_exemptions)
+
+/** Rules that carry exemptions, with the raw matcher, so a stale exemption (the file is gone or now clean) can be caught. */
+export const EXEMPTIONS = RULE_DEFINITIONS.filter((r) => r.exempt).map((r) => ({ id: r.id, exempt: r.exempt!, find: r.find }))
 
 export function rule(id: string): ConventionRule {
     const found = RULES.find((r) => r.id === id)
