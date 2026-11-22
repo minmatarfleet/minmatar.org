@@ -27,6 +27,7 @@ const nothing = needs_you === 0 && board.minute.length === 0 && board.up_for_gra
 
 import EmptyState from '@components/blocks/EmptyState.astro'
 import TaskGroup from '@components/blocks/tasks/TaskGroup.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <div
@@ -46,7 +47,7 @@ import TaskGroup from '@components/blocks/tasks/TaskGroup.astro'
                 <strong>{t('tasks.paused_title')}.</strong>
                 {' '}{t('tasks.paused_hint')}
             </span>
-            <button
+            <StylessButton
                 type="button"
                 class="[ task-quiet ]"
                 hx-post={PREFS_URL}
@@ -54,7 +55,7 @@ import TaskGroup from '@components/blocks/tasks/TaskGroup.astro'
                 hx-swap="none"
             >
                 {t('tasks.resume')}
-            </button>
+            </StylessButton>
         </div>
     }
 
@@ -85,9 +86,9 @@ import TaskGroup from '@components/blocks/tasks/TaskGroup.astro'
                     <span>{t('tasks.snoozed').replace('~COUNT', String(board.snoozed))}</span>
                 }
                 {(board.closed_this_week.length > 0 || board.stopped.length > 0) &&
-                    <button type="button" class="[ task-quiet ]" x-on:click="show_closed = !show_closed" x-text={`show_closed ? '${t('tasks.hide')}' : '${t('tasks.show')}'`}>
+                    <StylessButton type="button" class="[ task-quiet ]" x-on:click="show_closed = !show_closed" x-text={`show_closed ? '${t('tasks.hide')}' : '${t('tasks.show')}'`}>
                         {t('tasks.show')}
-                    </button>
+                    </StylessButton>
                 }
             </div>
             <div x-show="show_closed" x-cloak class="[ task-stack ]">

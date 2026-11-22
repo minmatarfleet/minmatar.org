@@ -57,6 +57,7 @@ const weekend_timezone = { brackets: card.availability.weekend_brackets, source:
 import Button from '@components/blocks/Button.astro'
 import Tag from '@components/blocks/Tag.astro'
 import TimezoneTags from '@components/blocks/TimezoneTags.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <article class:list={['[ mentor-card ]', Astro.props.class]} {...attributes}>
@@ -137,10 +138,10 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
             )}
             {capped &&
                 <li x-bind:hidden="all">
-                    <button type="button" class="[ mentor-card__tile mentor-card__tile--more ]" x-on:click="all = true">
+                    <StylessButton type="button" class="[ mentor-card__tile mentor-card__tile--more ]" x-on:click="all = true">
                         <span class="[ mentor-card__more-count ]">{t('mentors.more_classes').replace('{count}', hidden.length.toString())}</span>
                         <span class="[ mentor-card__tile-meta ]">{t('mentors.see_all_classes')}</span>
-                    </button>
+                    </StylessButton>
                 </li>
             }
         </ul>

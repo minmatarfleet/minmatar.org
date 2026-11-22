@@ -59,6 +59,7 @@ const add_skill = `
     $refs.skill.value = ''
     $refs.skill.focus()
 `
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <form
@@ -93,7 +94,7 @@ const add_skill = `
                                 </select>
                             </label>
                             <ManageSortControls event={SKILLSET_SKILLS_EVENT} name={skill.name} />
-                            <button type="button" class="[ skill-line__remove ]" aria-label={t('learning_admin.remove_skill').replace('~NAME', skill.name)} x-on:click="$el.closest('li').remove()">×</button>
+                            <StylessButton type="button" class="[ skill-line__remove ]" aria-label={t('learning_admin.remove_skill').replace('~NAME', skill.name)} x-on:click="$el.closest('li').remove()">×</StylessButton>
                         </li>
                     ))}
                 </ol>
@@ -108,7 +109,7 @@ const add_skill = `
                             </select>
                         </label>
                         <ManageSortControls event={SKILLSET_SKILLS_EVENT} name={t('learning_admin.this_skill')} />
-                        <button type="button" class="[ skill-line__remove ]" aria-label={t('learning_admin.remove_skill').replace('~NAME', t('learning_admin.this_skill'))} x-on:click="$el.closest('li').remove()">×</button>
+                        <StylessButton type="button" class="[ skill-line__remove ]" aria-label={t('learning_admin.remove_skill').replace('~NAME', t('learning_admin.this_skill'))} x-on:click="$el.closest('li').remove()">×</StylessButton>
                     </li>
                 </template>
             </div>

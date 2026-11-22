@@ -35,6 +35,7 @@ import ManageSortControls from '@components/blocks/manage/ManageSortControls.ast
 
 const title = certificate?.title || t('learning_admin.certificates_new')
 const personas = certificate?.personas.map((persona) => t(t_key('learning_manage.persona_', persona))).join(' · ') ?? ''
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <ExpandRow
@@ -46,12 +47,12 @@ const personas = certificate?.personas.map((persona) => t(t_key('learning_manage
     {...(certificate ? sort_item_attrs(CERTIFICATE_ORDER_EVENT) : {})}
 >
     <td>
-        <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+        <StylessButton type="button" class="[ manage-who ]" x-on:click="open = !open">
             <span class="[ manage-who__text ]">
                 <span class="[ manage-who__name ]">{title}</span>
                 {personas && <span class="[ manage-who__sub ]">{personas}</span>}
             </span>
-        </button>
+        </StylessButton>
     </td>
     <td class="[ num is-wide ]">{certificate?.learning_slugs.length ?? 0}</td>
     <td class="[ num is-wide ]">{certificate?.award_count ?? 0}</td>

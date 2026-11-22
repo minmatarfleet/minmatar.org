@@ -33,6 +33,7 @@ import ManageStatusDot from '@components/blocks/manage/ManageStatusDot.astro'
 
 const name = creator_name(account)
 const items_url = translatePath(`/partials/creators_moderation_component/?${query_string({ part: 'items', account: String(account.id) })}`)
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <ExpandRow
@@ -46,7 +47,7 @@ const items_url = translatePath(`/partials/creators_moderation_component/?${quer
     {...attributes}
 >
     <td>
-        <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+        <StylessButton type="button" class="[ manage-who ]" x-on:click="open = !open">
             {account.character_id
                 ? <img src={get_player_icon(account.character_id, 64)} alt="" width="40" height="40" loading="lazy" />
                 : <span class="[ creator-row__blank ]" aria-hidden="true"></span>
@@ -55,7 +56,7 @@ const items_url = translatePath(`/partials/creators_moderation_component/?${quer
                 <span class="[ manage-who__name ]">{name}</span>
                 <span class="[ manage-who__sub ]">{creator_handle(account, t(t_key('creators_manage.channel_', account.provider)))}</span>
             </span>
-        </button>
+        </StylessButton>
     </td>
     <td class="[ is-wide ]">{t(t_key('creators_manage.provider_', account.provider))}</td>
     <td class="[ num is-wide ]">{account.item_count}</td>

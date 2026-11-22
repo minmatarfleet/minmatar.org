@@ -44,6 +44,7 @@ const TIER_LABELS = {
     standard: t('industry.loyalty.tier.standard'),
     express: t('industry.loyalty.tier.express'),
 }
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {orders.length > 0 && (
@@ -123,10 +124,10 @@ const TIER_LABELS = {
             })}
         </ul>
         {orders.length > VISIBLE && (
-            <button type="button" class="[ loyalty-mine__more ]" x-on:click="show_all = !show_all">
+            <StylessButton type="button" class="[ loyalty-mine__more ]" x-on:click="show_all = !show_all">
                 <span x-show="!show_all">{t('industry.loyalty.mine.show_all').replace('{count}', String(orders.length))}</span>
                 <span x-show="show_all" x-cloak>{t('industry.loyalty.mine.show_fewer')}</span>
-            </button>
+            </StylessButton>
         )}
     </section>
 )}

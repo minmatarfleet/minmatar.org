@@ -13,6 +13,7 @@ interface Props {
 const { orders, selected_order_ids } = Astro.props
 const selected_set = new Set(selected_order_ids)
 const MAX_ICONS = 12
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {
@@ -21,20 +22,20 @@ const MAX_ICONS = 12
             <FlexInline justification="space-between" class="[ w-full ]">
                 <strong>Orders in range</strong>
                 <FlexInline gap="var(--space-s)">
-                    <button
+                    <StylessButton
                         type="button"
                         class="[ filter-action ]"
                         data-order-select="all"
                     >
                         Select all
-                    </button>
-                    <button
+                    </StylessButton>
+                    <StylessButton
                         type="button"
                         class="[ filter-action ]"
                         data-order-select="none"
                     >
                         Select none
-                    </button>
+                    </StylessButton>
                 </FlexInline>
             </FlexInline>
             <div class="[ order-checklist ]">

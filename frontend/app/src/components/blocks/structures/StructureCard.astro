@@ -36,6 +36,7 @@ const costs = [
 ]
 
 import StructureRigChip from '@components/blocks/structures/StructureRigChip.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <article class:list={['[ structure-card ]', { 'no-art': !art }, banner && `is-${banner}`, Astro.props.class]} {...attributes}>
@@ -77,7 +78,7 @@ import StructureRigChip from '@components/blocks/structures/StructureRigChip.ast
             <h3 class="[ structure-card__name ]" title={card.short_name}>
                 <a href={href}>{card.short_name}</a>
             </h3>
-            <button type="button" class="[ structure-card__copy ]"
+            <StylessButton type="button" class="[ structure-card__copy ]"
                 data-name={card.name}
                 x-data="{ copied: false }"
                 x-on:click="navigator.clipboard.writeText($el.dataset.name).then(() => { copied = true; setTimeout(() => copied = false, 1500) })"
@@ -87,7 +88,7 @@ import StructureRigChip from '@components/blocks/structures/StructureRigChip.ast
                 <svg viewBox="0 0 24 24" aria-hidden="true" x-show="!copied"><rect x="9" y="9" width="12" height="12" /><path d="M5 15V3h12" /></svg>
                 <svg viewBox="0 0 24 24" aria-hidden="true" x-show="copied" x-cloak><path d="m5 12 5 5 9-10" /></svg>
                 <span class="[ structure-card__tip ]" role="status" x-show="copied" x-cloak>{t('structures.card.copied')}</span>
-            </button>
+            </StylessButton>
         </div>
         <p class="[ structure-card__sys ]">
             {card.security !== null && <b style={`color: ${security_colour(card.security)}`}>{security_label(card.security)}</b>}

@@ -22,17 +22,18 @@ const opens = row.weight === 'needs_you' && row.waiting > 0
 const url = translatePath(`/partials/tasks_team_rule_component/?kind=${team_kind}&id=${team_id}&rule=${encodeURIComponent(row.rule)}`)
 
 import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {opens
     ? (
         <ExpandRow colspan={4} label={t('tasks.team.see_pilots')} url={url}>
             <td>
-                <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+                <StylessButton type="button" class="[ manage-who ]" x-on:click="open = !open">
                     <span class="[ manage-who__text ]">
                         <span class="[ manage-who__name ]">{row.label}</span>
                     </span>
-                </button>
+                </StylessButton>
             </td>
             <td class="[ num ]">{row.waiting}</td>
             <td class="[ num manage-good ]">{row.closed_this_week}</td>

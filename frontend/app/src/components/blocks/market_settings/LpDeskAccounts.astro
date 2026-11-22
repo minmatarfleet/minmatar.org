@@ -47,6 +47,7 @@ function account_sub(account: LoyaltyDeskCorp['accounts'][number]): string {
         : account.isk_per_lp === null ? t('manage.lp.standard_rate') : ''
     return [role_label(account.role), detail, account.is_active ? '' : t('manage.lp.account_off')].filter(Boolean).join(' · ')
 }
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <div id={`lp-accounts-${id}`} class="[ manage-form ]">
@@ -62,7 +63,7 @@ function account_sub(account: LoyaltyDeskCorp['accounts'][number]): string {
                             </span>
                             <span class="[ manage-who__sub ]">{account_sub(account)}</span>
                         </span>
-                        <button
+                        <StylessButton
                             type="button"
                             class="[ market-account__edit ]"
                             aria-label={t('manage.lp.edit_account').replace('~NAME', account.name)}
@@ -71,7 +72,7 @@ function account_sub(account: LoyaltyDeskCorp['accounts'][number]): string {
                             hx-swap="innerHTML"
                         >
                             {t('manage.lp.edit')}
-                        </button>
+                        </StylessButton>
                     </li>
                 ))}
             </ul>

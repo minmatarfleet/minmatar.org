@@ -39,6 +39,7 @@ const config_json = JSON.stringify({
     tipAcceptLabel: t('learning_center.learning.open'),
     tipCancelLabel: t('cancel'),
 })
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <div
@@ -110,7 +111,7 @@ const config_json = JSON.stringify({
                                         </Button>
                                     }
                                     {/* A mentor class completes when the mentor closes it out. */}
-                                    {!mentor_class && <button
+                                    {!mentor_class && <StylessButton
                                         type="button"
                                         class="[ learning-card__complete ]"
                                         x-show={'!completed["' + learning.slug + '"]'}
@@ -119,7 +120,7 @@ const config_json = JSON.stringify({
                                         x-on:click={'markComplete("' + learning.slug + '")'}
                                     >
                                         {t('learning_center.learning.mark_complete')}
-                                    </button>}
+                                    </StylessButton>}
                                     <span
                                         class="[ done ]"
                                         x-show={'completed["' + learning.slug + '"]'}

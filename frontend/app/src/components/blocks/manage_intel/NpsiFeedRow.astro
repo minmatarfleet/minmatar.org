@@ -44,6 +44,7 @@ const upcoming = source.upcoming_count ?? source.event_count
 import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
 import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
 import NpsiFeedForm from '@components/blocks/manage_intel/NpsiFeedForm.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <ExpandRow
@@ -55,12 +56,12 @@ import NpsiFeedForm from '@components/blocks/manage_intel/NpsiFeedForm.astro'
     dim={!source.enabled}
 >
     <td>
-        <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+        <StylessButton type="button" class="[ manage-who ]" x-on:click="open = !open">
             <span class="[ manage-who__text ]">
                 <span class="[ manage-who__name ]">{source.name}</span>
                 <span class:list={['[ manage-who__sub feed-row__sub-phone ]', { 'manage-warn': failing }]}>{status}</span>
             </span>
-        </button>
+        </StylessButton>
     </td>
     <td class="[ is-wide ]">
         <span class:list={['[ feed-row__status ]', failing ? 'manage-warn' : source.last_polled_at ? 'manage-good' : 'manage-muted']}>

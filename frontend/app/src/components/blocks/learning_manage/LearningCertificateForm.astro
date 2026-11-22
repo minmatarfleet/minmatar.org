@@ -60,6 +60,7 @@ const add_guide = `
     $refs.list.appendChild(row)
     $refs.pick.value = ''
 `
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <form
@@ -117,7 +118,7 @@ const add_guide = `
                         <span class="[ cert-guide__title ]">{guide.title}</span>
                         {!guide.published && <span class="[ manage-muted ]">{t('learning_manage.draft')}</span>}
                         <ManageSortControls event={CERTIFICATE_GUIDES_EVENT} name={guide.title} />
-                        <button type="button" class="[ cert-guide__remove ]" aria-label={t('learning_admin.remove_guide').replace('~NAME', guide.title)} x-on:click="$el.closest('li').remove()">×</button>
+                        <StylessButton type="button" class="[ cert-guide__remove ]" aria-label={t('learning_admin.remove_guide').replace('~NAME', guide.title)} x-on:click="$el.closest('li').remove()">×</StylessButton>
                     </li>
                 ))}
             </ol>
@@ -127,7 +128,7 @@ const add_guide = `
                     <input type="hidden" name="learning_slugs" value="" />
                     <span class="[ cert-guide__title ]"></span>
                     <ManageSortControls event={CERTIFICATE_GUIDES_EVENT} name={t('learning_admin.this_guide')} />
-                    <button type="button" class="[ cert-guide__remove ]" aria-label={t('learning_admin.remove_guide').replace('~NAME', t('learning_admin.this_guide'))} x-on:click="$el.closest('li').remove()">×</button>
+                    <StylessButton type="button" class="[ cert-guide__remove ]" aria-label={t('learning_admin.remove_guide').replace('~NAME', t('learning_admin.this_guide'))} x-on:click="$el.closest('li').remove()">×</StylessButton>
                 </li>
             </template>
             <div class="[ cert-form__add ]">
