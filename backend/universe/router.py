@@ -33,7 +33,9 @@ from authentication import AuthBearer
 from campaigns.services import disclosure
 from campaigns.services.timers import TYPE_NAMES, timer_stage
 from eveonline.helpers.characters.identity import primary_refs_for_users
+from eveonline.models import EveAlliance
 from groups.helpers.feature_access import can_use_feature
+from intel.affiliations.resolve import bloc_for, bloc_map
 from moons.models import (
     EveMoon,
     EveMoonDistribution,
@@ -125,8 +127,8 @@ class StructureReportRequest(Schema):
     type_id: int
     name: str = ""
     corporation_name: str = ""
+    # Optional: left empty, it comes from the corporation.
     alliance_name: str = ""
-    affiliated_alliance_name: str = ""
     reinforce_hour: Optional[int] = None
     fitting: str = ""
 
@@ -304,11 +306,54 @@ def _fitting(structure: EveStructure) -> Optional[str]:
     return "\n".join(lines)
 
 
-def _structure(structure: EveStructure, user, refs) -> UniverseStructure:
+def _alliance_name(structure: EveStructure) -> str:
     corporation = structure.corporation
     alliance = structure.owner_alliance_name
     if not alliance and corporation and corporation.alliance:
         alliance = corporation.alliance.name
+    return alliance or ""
+
+
+def _affiliations(rows: list[EveStructure]) -> dict[int, str]:
+    """
+    Structure id -> the bloc its owner fights for, from the intel
+    affiliation database (confirmed only, since every pilot sees this). A
+    row we have no bloc for keeps what an older report typed in.
+    """
+    alliance_ids = {
+        name.lower(): alliance_id
+        for alliance_id, name in EveAlliance.objects.filter(
+            name__in={_alliance_name(s) for s in rows} - {""}
+        ).values_list("alliance_id", "name")
+    }
+    blocs = bloc_map()
+    found = {}
+    for structure in rows:
+        corporation = structure.corporation
+        alliance = _alliance_name(structure)
+        alliance_id = alliance_ids.get(alliance.lower())
+        if alliance_id is None and corporation and corporation.alliance:
+            alliance_id = corporation.alliance.alliance_id
+        entry = bloc_for(
+            corporation_id=corporation.corporation_id if corporation else None,
+            alliance_id=alliance_id,
+            confirmed_only=True,
+            blocs=blocs,
+        )
+        bloc = entry["name"] if entry else ""
+        if bloc and bloc.lower() == alliance.lower():
+            bloc = ""
+        found[structure.id] = bloc or structure.affiliated_alliance_name
+    return found
+
+
+def _structure(
+    structure: EveStructure, user, refs, affiliations=None
+) -> UniverseStructure:
+    corporation = structure.corporation
+    alliance = _alliance_name(structure)
+    if affiliations is None:
+        affiliations = _affiliations([structure])
     return UniverseStructure(
         id=structure.id,
         esi_structure_id=structure.esi_structure_id,
@@ -320,7 +365,7 @@ def _structure(structure: EveStructure, user, refs) -> UniverseStructure:
         corporation_id=corporation.corporation_id if corporation else None,
         corporation_name=structure.owner_name,
         alliance_name=alliance,
-        affiliated_alliance_name=structure.affiliated_alliance_name,
+        affiliated_alliance_name=affiliations.get(structure.id, ""),
         reinforce_hour=structure.reinforce_hour,
         state=structure.state,
         state_timer_end=structure.state_timer_end,
@@ -341,7 +386,8 @@ def _serialize(structures, user) -> List[UniverseStructure]:
         {s.reported_by_id for s in rows if s.reported_by_id}
         | {s.last_confirmed_by_id for s in rows if s.last_confirmed_by_id}
     )
-    return [_structure(s, user, refs) for s in rows]
+    affiliations = _affiliations(rows)
+    return [_structure(s, user, refs, affiliations) for s in rows]
 
 
 def _visible(user):
@@ -415,7 +461,6 @@ def report_structure(request, payload: StructureReportRequest):
         name=payload.name,
         corporation_name=payload.corporation_name,
         alliance_name=payload.alliance_name,
-        affiliated_alliance_name=payload.affiliated_alliance_name,
         reinforce_hour=payload.reinforce_hour,
         fitting=payload.fitting,
     )

@@ -5,6 +5,7 @@ from datetime import timedelta
 from unittest.mock import patch
 
 from django.contrib.auth.models import AnonymousUser, Group, User
+from django.core.cache import cache
 from django.db.models import signals
 from django.test import Client
 from django.utils import timezone
@@ -15,6 +16,7 @@ from app.testing import make_token
 from eveonline.constants import MINMATAR_FLEET_ALLIANCE_ID
 from eveonline.models import EveAlliance, EveCharacter, EveCorporation
 from groups.models import AffiliationType, UserAffiliation
+from intel.models import IntelAffiliation, IntelBloc, IntelEntity
 from moons.models import (
     EveMoon,
     EveMoonDistribution,
@@ -36,6 +38,7 @@ from universe.access import (
 )
 
 ALLOW = "universe.router.can_use_feature"
+ESI = "eveonline.client.EsiClient"
 
 AMAMAKE = 30002537
 TU_O0T = 30001111
@@ -365,6 +368,131 @@ class StructureApiTests(UniverseFixture):
         self.assertEqual(row.visibility, "alliance")
         self.assertEqual(row.corporation, self.corp)
         self.assertIsNone(row.esi_structure_id)
+
+    def test_jump_gate_in_an_unloaded_system_is_found_through_esi(self, _):
+        """Most of null-sec is not in the local universe table until
+        something loads it; a jump gate there must still be reportable."""
+        gate = {
+            "system_name": "1DQ1-A",
+            "type_id": 35841,
+            "name": "1DQ1-A \u00bb 8WA-Z6 - Highway",
+        }
+
+        def load(id):  # pylint: disable=redefined-builtin
+            return _system(id, "1DQ1-A"), True
+
+        with patch(ESI) as esi, patch(
+            "eveuniverse.models.EveSolarSystem.objects.get_or_create_esi",
+            side_effect=load,
+        ):
+            esi.return_value.resolve_universe_ids.return_value.success.return_value = (
+                True
+            )
+            esi.return_value.resolve_universe_ids.return_value.results.return_value = {
+                "systems": [{"id": 30004759, "name": "1DQ1-A"}]
+            }
+            match = self.send(
+                self.pilots["member"],
+                "post",
+                "/api/universe/structures/match",
+                gate,
+            )
+            self.assertTrue(match.json()["system_found"])
+            report = self.send(
+                self.pilots["member"],
+                "post",
+                "/api/universe/structures/report",
+                gate,
+            )
+        self.assertEqual(report.status_code, 200, report.content)
+        row = EveStructure.objects.get(type_id=35841)
+        self.assertEqual((row.system_id, row.name), (30004759, gate["name"]))
+
+    def test_report_takes_the_alliance_from_the_corporation(self, _):
+        hostile = EveAlliance.objects.create(
+            alliance_id=99010022, name="Scary Wormhole People"
+        )
+        EveCorporation.objects.create(
+            corporation_id=1705300610, name="TDSIN", alliance=hostile
+        )
+        response = self.send(
+            self.pilots["member"],
+            "post",
+            "/api/universe/structures/report",
+            {
+                "system_name": "TU-O0T",
+                "type_id": 35832,
+                "name": "TU-O0T - Hole",
+                "corporation_name": "TDSIN",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        row = EveStructure.objects.get(name="TU-O0T - Hole")
+        self.assertEqual(row.owner_alliance_name, "Scary Wormhole People")
+
+    def test_report_asks_esi_for_an_unknown_corporations_alliance(self, _):
+        with patch(ESI) as esi:
+            client = esi.return_value
+            client.resolve_universe_ids.return_value.success.return_value = (
+                True
+            )
+            client.resolve_universe_ids.return_value.results.return_value = {
+                "corporations": [{"id": 98000001, "name": "Far Away Corp"}]
+            }
+            client.get_corporation.return_value.success.return_value = True
+            client.get_corporation.return_value.results.return_value = {
+                "alliance_id": 99000001
+            }
+            client.get_alliance.return_value.success.return_value = True
+            client.get_alliance.return_value.results.return_value = {
+                "name": "Far Away Alliance"
+            }
+            self.send(
+                self.pilots["member"],
+                "post",
+                "/api/universe/structures/report",
+                {
+                    "system_name": "TU-O0T",
+                    "type_id": 35832,
+                    "name": "TU-O0T - Far",
+                    "corporation_name": "Far Away Corp",
+                },
+            )
+        row = EveStructure.objects.get(name="TU-O0T - Far")
+        self.assertEqual(row.owner_alliance_name, "Far Away Alliance")
+        self.assertEqual(row.owner_corporation_name, "Far Away Corp")
+
+    def test_affiliation_comes_from_the_owners_bloc(self, _):
+        cache.clear()
+        snuffed = IntelEntity.objects.create(
+            kind="alliance", eve_id=99004901, name="Snuffed Out"
+        )
+        bloc = IntelBloc.objects.create(
+            name="Snuffed Out", anchor=snuffed, manual=True
+        )
+        pet = IntelEntity.objects.create(
+            kind="alliance", eve_id=99010022, name="Scary Wormhole People"
+        )
+        IntelAffiliation.objects.create(
+            entity=pet,
+            bloc=bloc,
+            relation="pet",
+            status="confirmed",
+            confidence=0.9,
+        )
+        EveAlliance.objects.create(
+            alliance_id=99010022, name="Scary Wormhole People"
+        )
+        self.reported.owner_alliance_name = "Scary Wormhole People"
+        self.reported.affiliated_alliance_name = "typed by hand"
+        self.reported.save()
+        response = self.get(
+            self.pilots["member"],
+            f"/api/universe/structures/{self.reported.id}",
+        )
+        self.assertEqual(
+            response.json()["affiliated_alliance_name"], "Snuffed Out"
+        )
 
     def test_report_with_unknown_system_is_400(self, _):
         response = self.send(

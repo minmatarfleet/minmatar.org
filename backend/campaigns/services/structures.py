@@ -228,6 +228,12 @@ def _resolve_attach_ownership(
         alliance_id = corp_alliance_id
     if not alliance_name and corp_alliance_name:
         alliance_name = corp_alliance_name
+    if not alliance_name and corporation_name and resolved_corp_id is None:
+        # A corporation we hold no row for: ask ESI which alliance it is in.
+        # pylint: disable=import-outside-toplevel
+        from structures.reported import owner_alliance_name
+
+        alliance_name = owner_alliance_name(corporation_name)
 
     if related_alliance_id is None and related_alliance_name:
         related_alliance_id = resolve_alliance_id(related_alliance_name)
