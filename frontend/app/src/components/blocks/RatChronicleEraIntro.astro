@@ -14,7 +14,7 @@ const { era } = Astro.props
 ---
 
 <section class="chronicle-era" aria-labelledby={`chronicle-era-${era.id}`}>
-    <p class="chronicle-era__kicker">{era.dateRange}</p>
+    <p class="chronicle-era__kicker">{era.date_range}</p>
     <h2 class="chronicle-era__title" id={`chronicle-era-${era.id}`}>{era.name}</h2>
     <p class="chronicle-era__home">{era.home}</p>
     <div class="chronicle-era__body">

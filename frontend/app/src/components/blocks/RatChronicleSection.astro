@@ -67,8 +67,8 @@ const first_paragraph_index = drop_cap
 
         if (block.type === 'pieces') {
             return (
-                <aside class="chronicle__pieces" aria-label={block.label ?? 'From the archive'}>
-                    <p class="chronicle__pieces-label">{block.label ?? 'From the archive'}</p>
+                <aside class="chronicle__pieces" aria-label={block.label}>
+                    <p class="chronicle__pieces-label">{block.label}</p>
                     <ul class="chronicle__pieces-list">
                         {block.items.map((piece) => (
                             <li class="chronicle__piece">

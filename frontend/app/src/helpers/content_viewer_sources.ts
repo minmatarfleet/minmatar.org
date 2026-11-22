@@ -32,7 +32,7 @@ import {
     ratChronicleChapters,
     getChronicleChapterById,
     defaultChronicleChapterId,
-    legacyChronicleChapterIds,
+    legacy_chronicle_chapter_ids,
 } from '@/data/rat-chronicle'
 import * as values_page from '@markdown/values.md'
 import * as story_page from '@markdown/story.md'
@@ -122,7 +122,7 @@ export function viewer_path_table(): Map<string, ViewerTarget> {
     add('/alliance/story/', 'story', defaultChronicleChapterId)
     for (const chapter of ratChronicleChapters) add(`/alliance/story/${chapter.id}/`, 'story', chapter.id)
     // Addresses from before the chronicle was regrouped open the chapter their content moved to.
-    for (const [retired, current] of Object.entries(legacyChronicleChapterIds)) {
+    for (const [retired, current] of Object.entries(legacy_chronicle_chapter_ids)) {
         if (getChronicleChapterById(current)) add(`/alliance/story/${retired}/`, 'story', current)
     }
 

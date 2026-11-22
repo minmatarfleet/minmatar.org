@@ -1,6 +1,6 @@
 import type { ChronicleChapterSource } from './types'
 
-export const lettingThemGo: ChronicleChapterSource = {
+export const letting_them_go: ChronicleChapterSource = {
     id: 'letting-them-go',
     era: 'vard',
     title: 'Letting Them Go',

@@ -1,6 +1,6 @@
 import type { ChronicleChapterSource } from './types'
 
-export const theSiegeOfAuga: ChronicleChapterSource = {
+export const the_siege_of_auga: ChronicleChapterSource = {
     id: 'the-siege-of-auga',
     era: 'auga',
     title: 'The Siege of Auga',

@@ -1,6 +1,6 @@
 import type { ChronicleChapterSource } from './types'
 
-export const ratGenesis: ChronicleChapterSource = {
+export const rat_genesis: ChronicleChapterSource = {
     id: 'rat-genesis',
     era: 'auga',
     title: 'Rat Genesis',

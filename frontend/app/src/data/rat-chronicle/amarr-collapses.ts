@@ -1,6 +1,6 @@
 import type { ChronicleChapterSource } from './types'
 
-export const amarrCollapses: ChronicleChapterSource = {
+export const amarr_collapses: ChronicleChapterSource = {
     id: 'amarr-collapses',
     era: 'auga',
     title: 'Amarr Collapses',

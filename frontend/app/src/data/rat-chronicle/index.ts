@@ -1,26 +1,26 @@
 import { slugifySectionId } from '@helpers/pageProgress'
-import { amarrCollapses } from './amarr-collapses'
+import { amarr_collapses } from './amarr-collapses'
 import { dronelands } from './dronelands'
-import { lettingThemGo } from './letting-them-go'
-import { providenceWar } from './providence-war'
-import { ratGenesis } from './rat-genesis'
+import { letting_them_go } from './letting-them-go'
+import { providence_war } from './providence-war'
+import { rat_genesis } from './rat-genesis'
 import { sosala } from './sosala'
-import { theSiegeOfAldodan } from './the-siege-of-aldodan'
-import { theSiegeOfAuga } from './the-siege-of-auga'
-import { theWaifuWars } from './the-waifu-wars'
-import { ratChronicleEras } from './eras'
+import { the_siege_of_aldodan } from './the-siege-of-aldodan'
+import { the_siege_of_auga } from './the-siege-of-auga'
+import { the_waifu_wars } from './the-waifu-wars'
+import { rat_chronicle_eras } from './eras'
 import type { ChronicleChapter, ChronicleChapterSource, ChronicleEra, ChronicleEraId, ChronicleSection } from './types'
 
 /** The book in reading order. A chapter's number is its place here. */
 const chapters_in_order: ChronicleChapterSource[] = [
-    ratGenesis,
-    theSiegeOfAuga,
-    amarrCollapses,
-    providenceWar,
+    rat_genesis,
+    the_siege_of_auga,
+    amarr_collapses,
+    providence_war,
     sosala,
-    theSiegeOfAldodan,
-    theWaifuWars,
-    lettingThemGo,
+    the_siege_of_aldodan,
+    the_waifu_wars,
+    letting_them_go,
     dronelands,
 ]
 
@@ -38,7 +38,7 @@ export function getChronicleChapterById(chapter_id: string): ChronicleChapter | 
  * chapter each one's content now lives in. Old links keep working: the page
  * redirects them.
  */
-export const legacyChronicleChapterIds: Record<string, string> = {
+export const legacy_chronicle_chapter_ids: Record<string, string> = {
     'chapter-1': 'rat-genesis',
     'chapter-2': 'the-siege-of-auga',
     'chapter-3': 'amarr-collapses',
@@ -53,27 +53,27 @@ export const legacyChronicleChapterIds: Record<string, string> = {
 }
 
 /** The current chapter id for an address: itself, or where a retired one moved to. */
-export function resolveChronicleChapterId(chapter_id: string): string | undefined {
+export function resolve_chronicle_chapter_id(chapter_id: string): string | undefined {
     if (getChronicleChapterById(chapter_id)) return chapter_id
-    const moved = legacyChronicleChapterIds[chapter_id]
+    const moved = legacy_chronicle_chapter_ids[chapter_id]
     return moved && getChronicleChapterById(moved) ? moved : undefined
 }
 
-export { ratChronicleEras }
+export { rat_chronicle_eras }
 
-export function getChronicleEraById(era_id: ChronicleEraId): ChronicleEra {
-    return ratChronicleEras.find((era) => era.id === era_id) ?? ratChronicleEras[0]
+export function get_chronicle_era_by_id(era_id: ChronicleEraId): ChronicleEra {
+    return rat_chronicle_eras.find((era) => era.id === era_id) ?? rat_chronicle_eras[0]
 }
 
 /** The eras in order, each with its chapters. An era with no chapter yet is left out. */
-export function getChronicleErasWithChapters(): { era: ChronicleEra; chapters: ChronicleChapter[] }[] {
-    return ratChronicleEras
+export function get_chronicle_eras_with_chapters(): { era: ChronicleEra; chapters: ChronicleChapter[] }[] {
+    return rat_chronicle_eras
         .map((era) => ({ era, chapters: ratChronicleChapters.filter((chapter) => chapter.era === era.id) }))
         .filter((group) => group.chapters.length > 0)
 }
 
 /** True when the chapter is the first of its era, which is where the era's intro is shown. */
-export function isFirstChapterOfEra(chapter: ChronicleChapter): boolean {
+export function is_first_chapter_of_era(chapter: ChronicleChapter): boolean {
     return ratChronicleChapters.find((entry) => entry.era === chapter.era)?.id === chapter.id
 }
 

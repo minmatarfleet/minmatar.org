@@ -1,6 +1,6 @@
 import type { ChronicleChapterSource } from './types'
 
-export const providenceWar: ChronicleChapterSource = {
+export const providence_war: ChronicleChapterSource = {
     id: 'providence-war',
     era: 'sosala',
     title: 'The Providence War',

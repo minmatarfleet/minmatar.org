@@ -8,10 +8,10 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
     ratChronicleChapters,
-    ratChronicleEras,
-    legacyChronicleChapterIds,
-    resolveChronicleChapterId,
-    getChronicleErasWithChapters,
+    rat_chronicle_eras,
+    legacy_chronicle_chapter_ids,
+    resolve_chronicle_chapter_id,
+    get_chronicle_eras_with_chapters,
 } from '@/data/rat-chronicle'
 import type { ChronicleBlock } from '@/data/rat-chronicle'
 
@@ -44,16 +44,16 @@ describe('the Rat Chronicle', () => {
     })
 
     test('every chapter sits in an era, and eras keep their chapters together', () => {
-        const era_ids = ratChronicleEras.map((era) => era.id)
+        const era_ids = rat_chronicle_eras.map((era) => era.id)
         for (const chapter of ratChronicleChapters) expect(era_ids).toContain(chapter.era)
         // In reading order the eras never interleave: A A B B, never A B A.
         const order = ratChronicleChapters.map((chapter) => era_ids.indexOf(chapter.era))
         expect(order).toEqual([...order].sort((a, b) => a - b))
-        expect(getChronicleErasWithChapters().flatMap((group) => group.chapters)).toEqual(ratChronicleChapters)
+        expect(get_chronicle_eras_with_chapters().flatMap((group) => group.chapters)).toEqual(ratChronicleChapters)
     })
 
     test('every era with chapters has an intro', () => {
-        for (const { era } of getChronicleErasWithChapters()) {
+        for (const { era } of get_chronicle_eras_with_chapters()) {
             expect(era.intro.length, `${era.name} needs an intro`).toBeGreaterThan(0)
         }
     })
@@ -62,9 +62,9 @@ describe('the Rat Chronicle', () => {
         const ids = new Set(ratChronicleChapters.map((chapter) => chapter.id))
         for (let number = 1; number <= 11; number++) {
             const retired = `chapter-${number}`
-            expect(resolveChronicleChapterId(retired), `${retired} must still lead somewhere`).toBeDefined()
+            expect(resolve_chronicle_chapter_id(retired), `${retired} must still lead somewhere`).toBeDefined()
         }
-        for (const [retired, current] of Object.entries(legacyChronicleChapterIds)) {
+        for (const [retired, current] of Object.entries(legacy_chronicle_chapter_ids)) {
             expect(ids.has(retired), `${retired} is a current chapter, not a retired address`).toBe(false)
             expect(ids.has(current), `${retired} points at ${current}, which is not a chapter`).toBe(true)
         }

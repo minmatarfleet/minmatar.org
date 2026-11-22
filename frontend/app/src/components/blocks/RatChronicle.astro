@@ -6,9 +6,9 @@ import '@fontsource/lora/400-italic.css'
 import '@fontsource/lora/500-italic.css'
 import {
     ratChronicleChapters,
-    getChronicleEraById,
-    getChronicleErasWithChapters,
-    isFirstChapterOfEra,
+    get_chronicle_era_by_id,
+    get_chronicle_eras_with_chapters,
+    is_first_chapter_of_era,
 } from '@/data/rat-chronicle'
 import RatChronicleEraIntro from '@components/blocks/RatChronicleEraIntro.astro'
 import RatChronicleChapter from '@components/blocks/RatChronicleChapter.astro'
@@ -25,8 +25,8 @@ const active_index = Math.max(0, chapters.findIndex((chapter) => chapter.id === 
 const active_chapter = chapters[active_index]
 const previous_chapter = chapters[active_index - 1]
 const next_chapter = chapters[active_index + 1]
-const era_groups = getChronicleErasWithChapters()
-const active_era = active_chapter ? getChronicleEraById(active_chapter.era) : undefined
+const era_groups = get_chronicle_eras_with_chapters()
+const active_era = active_chapter ? get_chronicle_era_by_id(active_chapter.era) : undefined
 const last_chapter_id = chapters[chapters.length - 1]?.id
 ---
 
@@ -106,7 +106,7 @@ const last_chapter_id = chapters[chapters.length - 1]?.id
     </nav>
 
     <div class="rat-chronicle__content">
-        {active_chapter && active_era && isFirstChapterOfEra(active_chapter) && active_era.intro.length > 0 && (
+        {active_chapter && active_era && is_first_chapter_of_era(active_chapter) && active_era.intro.length > 0 && (
             <RatChronicleEraIntro era={active_era} />
         )}
         {active_chapter && <RatChronicleChapter chapter={active_chapter} />}

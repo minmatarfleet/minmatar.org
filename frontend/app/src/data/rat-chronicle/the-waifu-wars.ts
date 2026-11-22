@@ -1,6 +1,6 @@
 import type { ChronicleChapterSource } from './types'
 
-export const theWaifuWars: ChronicleChapterSource = {
+export const the_waifu_wars: ChronicleChapterSource = {
     id: 'the-waifu-wars',
     era: 'vard',
     title: 'The Waifu Wars',

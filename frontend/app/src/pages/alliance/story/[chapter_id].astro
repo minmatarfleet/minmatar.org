@@ -9,7 +9,7 @@ import {
     defaultChronicleChapterId,
     getChronicleChapterById,
     getChronicleProgressSections,
-    resolveChronicleChapterId,
+    resolve_chronicle_chapter_id,
 } from '@/data/rat-chronicle'
 
 import Viewport from '@layouts/Viewport.astro'
@@ -26,7 +26,7 @@ import PageProgress from '@components/blocks/guides/PageProgress.astro'
 import ContentViewer from '@components/blocks/ContentViewer.astro'
 
 const chapter_id = Astro.params.chapter_id ?? ''
-const current_id = resolveChronicleChapterId(chapter_id)
+const current_id = resolve_chronicle_chapter_id(chapter_id)
 
 // An address from before the chronicle was regrouped moves for good to the
 // chapter that holds its content now; anything else goes to the first chapter.

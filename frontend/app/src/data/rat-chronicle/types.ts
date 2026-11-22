@@ -37,7 +37,7 @@ export type ChronicleBlock =
           /** Where the words come from, when the reader can open it. */
           source?: ChroniclePiece
       }
-    | { type: 'pieces'; label?: string; items: ChroniclePiece[] }
+    | { type: 'pieces'; label: string; items: ChroniclePiece[] }
 
 export type ChronicleEraId = 'auga' | 'sosala' | 'vard' | 'amamake'
 
@@ -47,7 +47,7 @@ export type ChronicleEra = {
     name: string
     /** The home, as a pilot would say it. */
     home: string
-    dateRange: string
+    date_range: string
     yc: string
     /** A few paragraphs shown before the era's first chapter. */
     intro: ChronicleBlock[]
