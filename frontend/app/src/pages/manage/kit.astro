@@ -30,7 +30,7 @@ import LazyPartial from '@components/blocks/LazyPartial.astro'
 import ManageHero from '@components/blocks/manage/ManageHero.astro'
 import SettingsSection from '@components/blocks/manage/SettingsSection.astro'
 import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
-import ManageStatCard from '@components/blocks/manage/ManageStatCard.astro'
+import StatCard from '@components/blocks/StatCard.astro'
 import ManageTile from '@components/blocks/manage/ManageTile.astro'
 import KitGrid from '@components/blocks/manage/KitGrid.astro'
 ---
@@ -97,8 +97,8 @@ import KitGrid from '@components/blocks/manage/KitGrid.astro'
         <Flexblock gap="var(--space-s)">
             <h2>{t('manage.kit.demo_cards')}</h2>
             <div class="[ manage-stats ]">
-                <ManageStatCard label={t('manage.queue_doctrine_changes')} value={2} detail={t('manage.queue_oldest').replace('~AGE', '3 h').replace('~NAME', 'Rifter Roam')} />
-                <ManageStatCard label={t('manage.queue_npsi_feeds')} value={1} tone="warn" detail={t('manage.queue_since').replace('~NAME', 'Unaligned').replace('~TIME', '18:26')} />
+                <StatCard label={t('manage.queue_doctrine_changes')} value={2} hint={t('manage.queue_oldest').replace('~AGE', '3 h').replace('~NAME', 'Rifter Roam')} />
+                <StatCard label={t('manage.queue_npsi_feeds')} value={1} tone="fleet-yellow" hint={t('manage.queue_since').replace('~NAME', 'Unaligned').replace('~TIME', '18:26')} />
             </div>
             <ul class="[ manage-tiles ]" role="list">
                 <ManageTile label="Tritanium" image={get_item_icon(34)} />

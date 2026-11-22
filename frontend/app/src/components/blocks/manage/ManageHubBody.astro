@@ -29,7 +29,7 @@ import {
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
-import ManageStatCard from '@components/blocks/manage/ManageStatCard.astro'
+import StatCard from '@components/blocks/StatCard.astro'
 import ManageTile from '@components/blocks/manage/ManageTile.astro'
 
 const now = new Date()
@@ -89,12 +89,12 @@ const groups = MANAGE_GROUPS
                 : (
                     <div class="[ manage-stats ]">
                         {queues.map((queue) => (
-                            <ManageStatCard
+                            <StatCard
                                 label={t(t_key('manage.queue_', queue.key))}
                                 value={queue.count}
-                                detail={queue_detail(queue)}
+                                hint={queue_detail(queue)}
                                 href={screen_href(queue.screen)}
-                                tone={queue.tone === 'warn' ? 'warn' : undefined}
+                                tone={queue.tone === 'warn' ? 'fleet-yellow' : undefined}
                             />
                         ))}
                     </div>

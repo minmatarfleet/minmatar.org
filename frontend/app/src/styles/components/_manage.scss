@@ -759,62 +759,16 @@ button.manage-who {
     display: none;
 }
 
-// ManageStatCard: the About tab's vitals card. One number per card.
-.manage-stat {
-    container-type: inline-size;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3xs);
-    padding: var(--space-m);
-    background: var(--component-background);
-    min-width: 0;
-    color: var(--foreground);
-    text-decoration: none;
-    transition: background-color var(--fast-transition);
-
-    @media (max-width: 30rem) {
-        padding: var(--space-s);
-    }
-}
-
-@media (hover: hover) {
-    a.manage-stat:hover {
-        background: color-mix(in srgb, var(--highlight) 4%, var(--component-background));
-    }
-}
-
-.manage-stat__label {
-    font-family: var(--heading-font);
-    font-size: var(--step--1);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--faded);
-}
-
-// Scales with the card, so four digits never clip on a phone.
-.manage-stat__value {
-    font-family: var(--heading-font);
-    font-size: min(var(--step-4), 28cqi);
-    line-height: 1;
-    white-space: nowrap;
-    color: var(--highlight);
-    font-variant-numeric: tabular-nums;
-}
-
-.manage-stat.is-warn .manage-stat__value {
-    color: var(--fleet-yellow);
-}
-
-.manage-stat__detail {
-    font-size: var(--step--1);
-    color: var(--foreground);
-}
-
+// StatCard rows: "Pilots 107" vitals and the hub's waiting queues.
 .manage-stats {
     display: grid;
     // auto-fill: two cards keep a quarter width each, as four would.
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
     gap: var(--space-s);
+
+    > * {
+        min-width: 0;
+    }
 
     @media (max-width: 30rem) {
         grid-template-columns: repeat(2, minmax(0, 1fr));
