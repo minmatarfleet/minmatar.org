@@ -591,7 +591,7 @@
     "selector": "li.filter-chip--removable",
     "path": "converge",
     "pattern": "removable-chip",
-    "note": "The picked-system tags become removable filter chips: --step--2 uppercase tracked, --fleet-yellow outline (were --step--1 white text with a hairline outline); the \u00d7 button keeps its handler and aria-label, with a muted glyph that turns white on hover.",
+    "note": "The picked-system tags become removable filter chips: --step--2 uppercase tracked, --fleet-yellow outline (were --step--1 white text with a hairline outline); the × button keeps its handler and aria-label, with a muted glyph that turns white on hover.",
     "batch": "w8-chips-skips"
   },
   {
@@ -1689,5 +1689,21 @@
     "pattern": "SectionTabs link mode pills",
     "note": "Pills variant; the open-asks count is the attention-flagged meta (yellow dot badge instead of the red box).",
     "batch": "w9a-9"
+  },
+  {
+    "file": "src/pages/ships/fittings/edit/[fitting_id].astro",
+    "selector": "fieldset tags",
+    "path": "converge",
+    "pattern": "radio-check-library",
+    "note": "Fitting tag checkboxes become RadioCheckInput (library box, small yellow label) instead of native checkboxes with white label text.",
+    "batch": "fix2"
+  },
+  {
+    "file": "src/components/blocks/ProductBuildMaterials.astro",
+    "selector": ".bom td, .bom th",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Cell and header text take the DataTable colours: cells inherit the page yellow instead of white, numeric headers are white instead of yellow.",
+    "batch": "fix2"
   }
 ]
