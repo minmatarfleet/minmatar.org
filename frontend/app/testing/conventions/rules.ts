@@ -112,6 +112,25 @@ const ROLE_TABLIST = /\srole=["']tablist["']/g
 const CLICK_OUTSIDE = /(?:x-on:|@)click\.outside(?![\w-])/g
 const DIRECT_TIPPY = /(?<![\w.$])tippy\s*\(/g
 const OVERFLOW_X_SCROLL_CSS = /(?<![\w-])overflow-x\s*:\s*(?:auto|scroll)(?![\w-])/g
+/**
+ * `<pre>` blocks come out of markdown (set:html), so they cannot be wrapped in XFadeScroll: a
+ * declaration inside a rule whose selector names `pre` is exempt. Walks back to the rule's `{`.
+ */
+const in_pre_rule = (text: string, index: number): boolean => {
+    let depth = 0
+    let open = -1
+    for (let i = index - 1; i >= 0; i--) {
+        if (text[i] === '}') depth++
+        else if (text[i] === '{') {
+            if (depth === 0) { open = i; break }
+            depth--
+        }
+    }
+    if (open < 0) return false
+    let start = open
+    while (start > 0 && !'{};'.includes(text[start - 1])) start--
+    return /(?<![\w-])pre(?![\w-])/.test(text.slice(start, open))
+}
 const OVERFLOW_X_SCROLL_CLASS = /(?<![\w-])overflow-x-(?:auto|scroll)(?![\w-])/g
 /** An hx-get attribute value: quoted, or an Astro expression. Captures the value in groups 1-3. */
 const HX_GET_VALUE = /<[a-zA-Z][^>]*?\shx-get=(?:"([^"]*)"|'([^']*)'|\{([^}]*)\})/g
@@ -289,10 +308,10 @@ export const RULES: ConventionRule[] = [
     {
         id: 'overflow_x_scroll',
         kind: 'ratchet',
-        why: 'Wide tables and chip rows scroll inside <XFadeScroll> (it adds the edge fades and the scroll affordance), not a hand-rolled overflow-x: auto/scroll.',
+        why: 'Wide tables and chip rows scroll inside <XFadeScroll> (it adds the edge fades and the scroll affordance), not a hand-rolled overflow-x: auto/scroll. Rules for `pre` are exempt: markdown code blocks are set:html and cannot be wrapped.',
         find: (file) => {
             if (file.path === 'src/components/compositions/XFadeScroll.astro') return []
-            const css = hits_in(file, css_regions(file).map(without_css_comments), OVERFLOW_X_SCROLL_CSS)
+            const css = hits_in(file, css_regions(file).map(without_css_comments), OVERFLOW_X_SCROLL_CSS, (m) => !in_pre_rule(m.input!, m.index!))
             const tailwind = is_astro(file) ? hits_in(file, [astro_template(file.text)], OVERFLOW_X_SCROLL_CLASS) : []
             return [...css, ...tailwind]
         },

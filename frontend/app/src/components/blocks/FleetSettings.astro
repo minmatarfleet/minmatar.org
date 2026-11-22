@@ -42,97 +42,107 @@ const DECLASSIFY_URL = `${translatePath('/partials/fleet_declassify_component')}
 
 import Button from '@components/blocks/Button.astro'
 import FleetCopyButton from '@components/blocks/FleetCopyButton.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
 ---
 
 <div class="[ fleet-settings ]">
     <section class="[ fleet-settings__card ]" aria-labelledby="fleet-settings-title">
-        <h2 id="fleet-settings-title">{t('fleets.command.this_fleet')}</h2>
+        <ComponentBlock padding_block="var(--space-m)" padding_inline="var(--space-m)">
+            <Flexblock gap="var(--space-s)">
+                <h2 id="fleet-settings-title">{t('fleets.command.this_fleet')}</h2>
 
-        {editable &&
-            <form
-                class="[ fleet-settings__toggle ]"
-                hx-post={HIDE_NAMES_URL}
-                hx-trigger="change"
-                hx-target="find .fleet-settings__saved"
-                hx-swap="innerHTML"
-            >
-                <label>
-                    <input type="checkbox" name="hide_volunteers" checked={fleet.hide_volunteers} />
-                    <span>
-                        <span class="[ fleet-settings__toggle-label ]">{t('fleets.command.hide_names')}</span>
-                        <small>{t('fleets.command.hide_names_hint')}</small>
-                    </span>
-                </label>
-                <span class="[ fleet-settings__saved ]" role="status"></span>
-            </form>
-        }
+                {editable &&
+                    <form
+                        class="[ fleet-settings__toggle ]"
+                        hx-post={HIDE_NAMES_URL}
+                        hx-trigger="change"
+                        hx-target="find .fleet-settings__saved"
+                        hx-swap="innerHTML"
+                    >
+                        <label>
+                            <input type="checkbox" name="hide_volunteers" checked={fleet.hide_volunteers} />
+                            <span>
+                                <span class="[ fleet-settings__toggle-label ]">{t('fleets.command.hide_names')}</span>
+                                <small>{t('fleets.command.hide_names_hint')}</small>
+                            </span>
+                        </label>
+                        <span class="[ fleet-settings__saved ]" role="status"></span>
+                    </form>
+                }
 
-        {editable && <small>{t('fleets.command.edit_hint')}</small>}
-        {can_copy && <small>{t('fleets.copy.hint')}</small>}
+                {editable && <small>{t('fleets.command.edit_hint')}</small>}
+                {can_copy && <small>{t('fleets.copy.hint')}</small>}
 
-        <div class="[ fleet-settings__actions ]">
-            {editable &&
-                <Button href={translatePath(`/fleets/upcoming/edit/${fleet.id}`)} size="sm" color="transparent">
-                    {t('edit_fleet')}
-                </Button>
-            }
-            {tracking_active &&
-                <form method="post" action={translatePath(`/fleets/upcoming/${fleet.id}/refresh-motd`)}>
-                    <Button type="submit" size="sm" color="transparent">{t('refresh_motd')}</Button>
-                </form>
-            }
-            {can_cancel &&
-                <Button
-                    type="button"
-                    size="sm"
-                    color="transparent"
-                    class="[ fleet-settings__cancel ]"
-                    x-on:click={`show_confirm_dialog({
-                        title: ${JSON.stringify(cancelled ? t('restore_fleet_dialog_title') : t('cancel_fleet_dialog_title'))},
-                        content: ${JSON.stringify(cancelled ? t('restore_fleet_dialog_text') : t('cancel_fleet_dialog_text'))},
-                        hx: {
-                            method: 'patch',
-                            url: ${JSON.stringify(STATE_URL)},
-                            target: '#fleet-settings-sink',
-                            swap: 'innerHTML'
-                        }
-                    })`}
-                >
-                    {cancelled ? t('restore_fleet') : t('cancel_fleet')}
-                </Button>
-            }
-            {can_copy && <FleetCopyButton fleet={fleet} />}
-        </div>
-        <div id="fleet-settings-sink" hidden></div>
+                <div class="[ fleet-settings__actions ]">
+                    {editable &&
+                        <Button href={translatePath(`/fleets/upcoming/edit/${fleet.id}`)} size="sm" color="transparent">
+                            {t('edit_fleet')}
+                        </Button>
+                    }
+                    {tracking_active &&
+                        <form method="post" action={translatePath(`/fleets/upcoming/${fleet.id}/refresh-motd`)}>
+                            <Button type="submit" size="sm" color="transparent">{t('refresh_motd')}</Button>
+                        </form>
+                    }
+                    {can_cancel &&
+                        <Button
+                            type="button"
+                            size="sm"
+                            color="transparent"
+                            class="[ fleet-settings__cancel ]"
+                            x-on:click={`show_confirm_dialog({
+                                title: ${JSON.stringify(cancelled ? t('restore_fleet_dialog_title') : t('cancel_fleet_dialog_title'))},
+                                content: ${JSON.stringify(cancelled ? t('restore_fleet_dialog_text') : t('cancel_fleet_dialog_text'))},
+                                hx: {
+                                    method: 'patch',
+                                    url: ${JSON.stringify(STATE_URL)},
+                                    target: '#fleet-settings-sink',
+                                    swap: 'innerHTML'
+                                }
+                            })`}
+                        >
+                            {cancelled ? t('restore_fleet') : t('cancel_fleet')}
+                        </Button>
+                    }
+                    {can_copy && <FleetCopyButton fleet={fleet} />}
+                </div>
+                <div id="fleet-settings-sink" hidden></div>
+            </Flexblock>
+        </ComponentBlock>
     </section>
 
     {still_private &&
         <section class="[ fleet-settings__card ]" aria-labelledby="fleet-settings-private">
-            <h2 id="fleet-settings-private">{t('fleets.private.declassify_title')}</h2>
-            <small>{t('fleets.private.declassify_hint')}</small>
-            <p>{t('fleets.private.declassify_makes')}</p>
-            <p>{t('fleets.private.declassify_stays')}</p>
-            <div class="[ fleet-settings__actions ]">
-                {fleet_over ?
-                    <Button
-                        type="button"
-                        size="sm"
-                        x-on:click={`show_confirm_dialog({
-                            title: ${JSON.stringify(t('fleets.private.declassify_confirm_title'))},
-                            content: ${JSON.stringify(t('fleets.private.declassify_confirm_text'))},
-                            hx: {
-                                method: 'post',
-                                url: ${JSON.stringify(DECLASSIFY_URL)},
-                                target: '#fleet-settings-sink',
-                                swap: 'innerHTML'
-                            }
-                        })`}
-                    >
-                        {t('fleets.private.declassify')}
-                    </Button> :
-                    <small>{t('fleets.private.declassify_after')}</small>
-                }
-            </div>
+            <ComponentBlock padding_block="var(--space-m)" padding_inline="var(--space-m)">
+                <Flexblock gap="var(--space-s)">
+                    <h2 id="fleet-settings-private">{t('fleets.private.declassify_title')}</h2>
+                    <small>{t('fleets.private.declassify_hint')}</small>
+                    <p>{t('fleets.private.declassify_makes')}</p>
+                    <p>{t('fleets.private.declassify_stays')}</p>
+                    <div class="[ fleet-settings__actions ]">
+                        {fleet_over ?
+                            <Button
+                                type="button"
+                                size="sm"
+                                x-on:click={`show_confirm_dialog({
+                                    title: ${JSON.stringify(t('fleets.private.declassify_confirm_title'))},
+                                    content: ${JSON.stringify(t('fleets.private.declassify_confirm_text'))},
+                                    hx: {
+                                        method: 'post',
+                                        url: ${JSON.stringify(DECLASSIFY_URL)},
+                                        target: '#fleet-settings-sink',
+                                        swap: 'innerHTML'
+                                    }
+                                })`}
+                            >
+                                {t('fleets.private.declassify')}
+                            </Button> :
+                            <small>{t('fleets.private.declassify_after')}</small>
+                        }
+                    </div>
+                </Flexblock>
+            </ComponentBlock>
         </section>
     }
 </div>
@@ -146,13 +156,6 @@ import FleetCopyButton from '@components/blocks/FleetCopyButton.astro'
     }
 
     .fleet-settings__card {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-s);
-        padding: var(--space-m);
-        background-color: var(--component-background);
-        border: 1px solid var(--border-color);
-
         h2 {
             font-size: var(--step-1);
         }

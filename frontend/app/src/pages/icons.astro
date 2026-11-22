@@ -44,11 +44,11 @@ const page_title = 'Icons';
                         <ClipboardIcon slot="icon" />
                         {t('copy_to_clipboard')}
                     </Button>
-                    <textarea id="item-clipboard" x-model="`https://images.evetech.net/types/${item_id}/icon?size=64`"></textarea>
+                    <textarea id="item-clipboard" x-bind:value="get_item_icon(item_id, 64)"></textarea>
                 </Flexblock>
 
                 <div>
-                    <img loading="lazy" x-bind:src="`https://images.evetech.net/types/${item_id}/icon?size=64`" />
+                    <img loading="lazy" x-bind:src="get_item_icon(item_id, 64)" />
                 </div>
             </Flexblock>
 		</Wrapper>

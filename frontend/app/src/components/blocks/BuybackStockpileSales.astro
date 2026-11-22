@@ -4,6 +4,7 @@ import type { BuybackLedgerEntry } from '@dtypes/api.minmatar.org'
 import { aggregate_stockpile_sales } from '@helpers/buyback_stockpile_sales'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 import DataGrid from '@components/blocks/DataGrid.astro'
 import BuybackStockpileSaleItem from '@components/blocks/BuybackStockpileSaleItem.astro'
 
@@ -32,9 +33,9 @@ function reason_label(reason: string): string {
         </Flexblock>
 
         {fetch_failed ? (
-            <p class="[ buyback-stockpile-sales__empty ]">{t('buyback.ledger.fetch_error')}</p>
+            <p class="[ buyback-stockpile-sales__error ]">{t('buyback.ledger.fetch_error')}</p>
         ) : sale_rows.length === 0 ? (
-            <p class="[ buyback-stockpile-sales__empty ]">{t('buyback.ledger.empty')}</p>
+            <EmptyState title={t('buyback.ledger.empty')} />
         ) : (
             <DataGrid
                 variant="ledger"
@@ -74,7 +75,7 @@ function reason_label(reason: string): string {
         font-size: var(--step--1);
     }
 
-    .buyback-stockpile-sales__empty {
+    .buyback-stockpile-sales__error {
         margin: 0;
         font-size: var(--step--1);
         color: var(--highlight);

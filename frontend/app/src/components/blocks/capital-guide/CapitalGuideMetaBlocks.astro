@@ -15,6 +15,7 @@ interface Props {
 
 const { blocks, fitting_library = [] } = Astro.props
 const no_fitting_label = t('ships.capital_guide.no_fitting')
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 ---
 
 {blocks.map((block) => {

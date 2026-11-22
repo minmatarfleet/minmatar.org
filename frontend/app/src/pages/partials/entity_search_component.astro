@@ -29,10 +29,12 @@ if (query.length >= 2) {
     }
 }
 import StylessButton from '@components/blocks/StylessButton.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 ---
+{/* no-error-refetch: a failed lookup shows no matches, like an empty result. */}
 
 {query.length >= 2 && matches.length === 0 &&
-    <p class="entity-empty">{t('intel.add_structure.no_matches')}</p>
+    <EmptyState title={t('intel.add_structure.no_matches')} />
 }
 
 {matches.map((match) =>
@@ -51,8 +53,11 @@ import StylessButton from '@components/blocks/StylessButton.astro'
 )}
 
 <style is:global>
-    .entity-results .entity-option,
-    .entity-results .entity-empty {
+    .entity-results .empty-state {
+        padding: var(--space-2xs) var(--space-s);
+    }
+
+    .entity-results .entity-option {
         display: block;
         width: 100%;
         margin: 0;
@@ -62,11 +67,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         background: transparent;
         border: 0;
         cursor: pointer;
-    }
-
-    .entity-results .entity-empty {
-        color: var(--highlight);
-        cursor: default;
     }
 
     .entity-results .entity-option:hover,

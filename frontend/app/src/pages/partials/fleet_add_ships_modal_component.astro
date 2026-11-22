@@ -25,6 +25,7 @@ let current: FleetCompositionEntry[] = []
 let my_fittings: MyFleetFitting[] = []
 let access: FleetFittingAccess | null = null
 let fetch_error: Error | false = false
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 try {
     const [fittings, composition, remembered, fetched_access] = await Promise.all([
@@ -72,6 +73,8 @@ const roles = [
 ]
 
 import Flexblock from '@components/compositions/Flexblock.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 import Wrapper from '@components/compositions/Wrapper.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 
@@ -90,7 +93,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 ---
 
 {fetch_error ?
-    <p>{(fetch_error as Error).message}</p>
+    <ErrorRefetch args={{ partial: MODAL_URL, error: fetch_error, delay: delay }} />
     :
     <Wrapper padding_block='var(--space-m)' padding_inline='var(--space-m)' max_width='100%'>
     <div
@@ -187,7 +190,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
                             </div>
                         }
                         {(my_fittings.length === 0 || !can_publish) &&
-                            <p class="[ add-ships__empty ]" x-show="search.trim().length < 2">{t('add_ships_search_hint')}</p>
+                            <EmptyState title={t('add_ships_search_hint')} x-show="search.trim().length < 2" />
                         }
                         {catalog.map(fitting =>
                             <StylessButton
@@ -296,13 +299,6 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
         text-transform: uppercase;
         letter-spacing: 0.08em;
         opacity: 0.75;
-    }
-
-    .add-ships__empty {
-        margin: auto;
-        padding: var(--space-l);
-        text-align: center;
-        opacity: 0.7;
     }
 
     :global(.add-ships__result) {

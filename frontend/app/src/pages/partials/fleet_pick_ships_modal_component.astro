@@ -38,6 +38,11 @@ let hulls: ShipHull[] = []
 let targets: ShipTargetProgress[] = []
 let hangar: MyTargetHangar = { lines_by_ship: [], hangars: [] }
 let fetch_error: Error | false = false
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+const MODAL_URL = `${translatePath('/partials/fleet_pick_ships_modal_component/')}?${query_string({
+    fleet_id: fleet_id,
+    ...(can_manage && { can_manage: true }),
+})}`
 
 try {
     ;[composition, pilots, hulls, targets, hangar] = await Promise.all([
@@ -284,12 +289,13 @@ import Wrapper from '@components/compositions/Wrapper.astro'
 import Button from '@components/blocks/Button.astro'
 import Select from '@components/blocks/Select.astro'
 import Input from '@components/blocks/Input.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import PilotBadge from '@components/blocks/PilotBadge.astro'
 import CaretIcon from '@components/icons/CaretIcon.astro'
 ---
 
 {fetch_error ?
-    <p>{(fetch_error as Error).message}</p>
+    <ErrorRefetch args={{ partial: MODAL_URL, error: fetch_error, delay: delay }} />
     :
     <Wrapper padding_block='var(--space-m)' padding_inline='var(--space-m)' max_width='100%'>
     <form

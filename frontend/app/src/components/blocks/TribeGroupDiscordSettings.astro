@@ -53,6 +53,8 @@ const PARTIAL_URL = translatePath(`/partials/tribe_group_settings_component?sect
 
 import Button from '@components/blocks/Button.astro'
 import Select from '@components/blocks/Select.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
 ---
 
 <form
@@ -64,65 +66,60 @@ import Select from '@components/blocks/Select.astro'
     aria-labelledby="tribe-settings-discord-title"
     {...attributes}
 >
-    <div class="[ tribe-settings-section__head ]">
-        <h2 id="tribe-settings-discord-title">{t('tribes.settings.discord.title')}</h2>
-        <p>{fill(t('tribes.settings.discord.lead'))}</p>
-    </div>
-
-    <div class="[ tribe-settings-section__row ]">
-        <label class="[ tribe-settings-section__label ]" for="tribe-settings-discord-channel">
-            <b>{t('tribes.settings.discord.channel')}</b>
-            <small>{channel_help}</small>
-        </label>
-        {channels ?
-            <div class="[ tribe-settings-section__control ]">
-                <Select id="tribe-settings-discord-channel" name="discord_channel_id" size="sm">
-                    <option value="" selected={!own_channel}>{inherit_label}</option>
-                    {own_missing && <option value={own_channel} selected>{settings.effective_discord_channel_name ?? own_channel}</option>}
-                    {channels.map((channel) =>
-                        <option value={channel.id} selected={channel.id === own_channel}>#{channel.name}</option>
-                    )}
-                </Select>
+    <ComponentBlock padding_block="var(--space-m)" padding_inline="var(--space-m)">
+        <Flexblock gap="var(--space-s)">
+            <div class="[ tribe-settings-section__head ]">
+                <h2 id="tribe-settings-discord-title">{t('tribes.settings.discord.title')}</h2>
+                <p>{fill(t('tribes.settings.discord.lead'))}</p>
             </div>
-            :
-            <p class="[ tribe-settings-section__value ]" role="status">
-                <span>#{(settings.effective_discord_channel_name ?? '').replace(/^#/, '') || '—'}</span>
-                <small>{t('tribes.settings.discord.channels_error')}</small>
-            </p>
-        }
-    </div>
 
-    <div class="[ tribe-settings-section__row ]">
-        <span class="[ tribe-settings-section__label ]">
-            <b>{t('tribes.settings.discord.role')}</b>
-            <small>{t('tribes.settings.discord.role_help')}</small>
-        </span>
-        <span class="[ tribe-settings-section__value ]">
-            {settings.discord_role_name ? `@${settings.discord_role_name}` : t('tribes.settings.discord.role_none')}
-        </span>
-    </div>
+            <div class="[ tribe-settings-section__row ]">
+                <label class="[ tribe-settings-section__label ]" for="tribe-settings-discord-channel">
+                    <b>{t('tribes.settings.discord.channel')}</b>
+                    <small>{channel_help}</small>
+                </label>
+                {channels ?
+                    <div class="[ tribe-settings-section__control ]">
+                        <Select id="tribe-settings-discord-channel" name="discord_channel_id" size="sm">
+                            <option value="" selected={!own_channel}>{inherit_label}</option>
+                            {own_missing && <option value={own_channel} selected>{settings.effective_discord_channel_name ?? own_channel}</option>}
+                            {channels.map((channel) =>
+                                <option value={channel.id} selected={channel.id === own_channel}>#{channel.name}</option>
+                            )}
+                        </Select>
+                    </div>
+                    :
+                    <p class="[ tribe-settings-section__value ]" role="status">
+                        <span>#{(settings.effective_discord_channel_name ?? '').replace(/^#/, '') || '—'}</span>
+                        <small>{t('tribes.settings.discord.channels_error')}</small>
+                    </p>
+                }
+            </div>
 
-    <div class="[ tribe-settings-section__foot ]">
-        {status &&
-            <p
-                class:list={['[ tribe-settings-section__status ]', { 'is-error': status.kind === 'error' }]}
-                role={status.kind === 'error' ? 'alert' : 'status'}
-            >{status.message}</p>
-        }
-        <Button type="submit" size="sm" disabled={!channels}>{t('tribes.settings.discord.save')}</Button>
-    </div>
+            <div class="[ tribe-settings-section__row ]">
+                <span class="[ tribe-settings-section__label ]">
+                    <b>{t('tribes.settings.discord.role')}</b>
+                    <small>{t('tribes.settings.discord.role_help')}</small>
+                </span>
+                <span class="[ tribe-settings-section__value ]">
+                    {settings.discord_role_name ? `@${settings.discord_role_name}` : t('tribes.settings.discord.role_none')}
+                </span>
+            </div>
+
+            <div class="[ tribe-settings-section__foot ]">
+                {status &&
+                    <p
+                        class:list={['[ tribe-settings-section__status ]', { 'is-error': status.kind === 'error' }]}
+                        role={status.kind === 'error' ? 'alert' : 'status'}
+                    >{status.message}</p>
+                }
+                <Button type="submit" size="sm" disabled={!channels}>{t('tribes.settings.discord.save')}</Button>
+            </div>
+        </Flexblock>
+    </ComponentBlock>
 </form>
 
 <style lang="scss" is:global>
-    .tribe-settings-section {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-s);
-        padding: var(--space-m);
-        background-color: var(--component-background);
-        border: 1px solid var(--border-color);
-    }
-
     .tribe-settings-section .tribe-settings-section__head {
         display: flex;
         flex-direction: column;
@@ -197,10 +194,6 @@ import Select from '@components/blocks/Select.astro'
     }
 
     @media (max-width: 48rem) {
-        .tribe-settings-section {
-            padding: var(--space-s);
-        }
-
         .tribe-settings-section__row {
             grid-template-columns: minmax(0, 1fr);
         }

@@ -85,9 +85,9 @@ A vertical list where every child is full width and rows are separated by `gap` 
 A horizontal scroll container that fades its left and right edges when there is more content that way.
 
 - Import: `import XFadeScroll from '@components/compositions/XFadeScroll.astro'`
-- Props: `flex?: boolean = false`, `fade_size?: string = 'var(--space-s)'`
+- Props: `flex?: boolean = false`, `fade_size?: string = 'var(--space-s)'`, `below?: string = ''`, `overflow_y_visible?: boolean = false`
 - Slots: `default`
-- Stories (7): `frontend/app/rust/stories/layout/XFadeScroll.stories.ts`, https://my.minmatar.org/rust/?path=/docs/layout-xfadescroll--docs: Default, Chip row fades at the end, Scrolled: fades both sides, Scrolled to the end: fades the start only, Wide table, Big Fade, Fits: no fade
+- Stories (11): `frontend/app/rust/stories/layout/XFadeScroll.stories.ts`, https://my.minmatar.org/rust/?path=/docs/layout-xfadescroll--docs: Default, Chip row fades at the end, Scrolled: fades both sides, Scrolled to the end: fades the start only, Wide table, Big Fade, Fits: no fade, Below a width: scrolls on phones only, Below: only a plain length is accepted, Open dropdown: stops clipping, No open dropdown: keeps scrolling
 
 ## Components/Forms
 

@@ -23,9 +23,10 @@ const columns: Column[] = [
         ? [{ label: t('industry.loyalty.orders.col.actions'), align: 'end' as const }]
         : []),
 ]
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 ---
 
-<div class:list={['loyalty-order-list', `loyalty-order-list--${variant}`]}>
+<XFadeScroll below="48rem" overflow_y_visible class={`loyalty-order-list loyalty-order-list--${variant}`}>
     <div class="[ loyalty-order-list__inner ]">
         <div class="[ loyalty-order-list__head ]" aria-hidden="true">
             {columns.map((column) => (
@@ -39,17 +40,11 @@ const columns: Column[] = [
         </div>
         <slot />
     </div>
-</div>
+</XFadeScroll>
 
 <style lang="scss">
     .loyalty-order-list {
         width: 100%;
-        overflow-x: auto;
-
-        /* Dropdown panels open outside the row; avoid clipping while open. */
-        &:has(.button-dropdown.is-open) {
-            overflow: visible;
-        }
     }
 
     .loyalty-order-list--book {
@@ -95,10 +90,6 @@ const columns: Column[] = [
     }
 
     @media (max-width: 48rem) {
-        .loyalty-order-list {
-            overflow-x: visible;
-        }
-
         .loyalty-order-list__inner {
             min-width: 0;
         }

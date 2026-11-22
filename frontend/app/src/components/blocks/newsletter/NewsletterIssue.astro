@@ -12,6 +12,7 @@ import type {
 import { get_item_icon, get_player_icon } from '@helpers/eve_image'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 import Button from '@components/blocks/Button.astro'
 import ClipboardButton from '@components/blocks/ClipboardButton.astro'
 
@@ -111,7 +112,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
                     <Fragment>
                         {figure_list(section.figures).map((figure) =>
                             <figure class="[ nl-shot nl-shot--wide ]">
-                                <div class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></div>
+                                <XFadeScroll below="40rem" class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></XFadeScroll>
                                 <figcaption>{figure.caption}</figcaption>
                             </figure>
                         )}
@@ -146,7 +147,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
                         </div>
                         {figure_list(section.figures).map((figure) =>
                             <figure class:list={['[ nl-shot ]', { 'nl-shot--wide': figure.wide, 'nl-shot--tall': is_tall(figure) }]}>
-                                <div class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></div>
+                                {figure.wide ? <XFadeScroll below="40rem" class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></XFadeScroll> : <div class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></div>}
                                 <figcaption>{figure.caption}</figcaption>
                             </figure>
                         )}
@@ -190,7 +191,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
                     <Fragment>
                         {figure_list(section.figures).map((figure) =>
                             <figure class:list={['[ nl-shot ]', { 'nl-shot--wide': figure.wide, 'nl-shot--tall': is_tall(figure) }]}>
-                                <div class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></div>
+                                {figure.wide ? <XFadeScroll below="40rem" class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></XFadeScroll> : <div class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></div>}
                                 <figcaption>{figure.caption}</figcaption>
                             </figure>
                         )}
@@ -291,7 +292,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
                     <div class:list={['[ nl-figures ]', { 'nl-figures--pair': figure_list(section.figures).length > 1 }]} style={figure_list(section.figures).length > 1 ? `--nl_pair_columns: ${pair_columns(section.figures)}` : undefined}>
                         {figure_list(section.figures).map((figure) =>
                             <figure class:list={['[ nl-shot ]', { 'nl-shot--wide': figure.wide, 'nl-shot--tall': is_tall(figure) }]}>
-                                <div class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></div>
+                                {figure.wide ? <XFadeScroll below="40rem" class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></XFadeScroll> : <div class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></div>}
                                 <figcaption>{figure.caption}</figcaption>
                             </figure>
                         )}
@@ -329,7 +330,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
                     <div class="[ nl-figures nl-figures--pair ]" style={`--nl_pair_columns: ${pair_columns(section.figures_after_orders)}`}>
                         {figure_list(section.figures_after_orders).map((figure) =>
                             <figure class:list={['[ nl-shot ]', { 'nl-shot--wide': figure.wide, 'nl-shot--tall': is_tall(figure) }]}>
-                                <div class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></div>
+                                {figure.wide ? <XFadeScroll below="40rem" class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></XFadeScroll> : <div class="[ nl-shot__frame ]"><img src={figure.src} width={figure.width} height={figure.height} alt={figure.alt} loading="lazy" /></div>}
                                 <figcaption>{figure.caption}</figcaption>
                             </figure>
                         )}
@@ -755,10 +756,6 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
 
     /* Wide composites stay legible on phones: scroll sideways instead of shrinking. */
     @media (max-width: 40rem) {
-        .nl-shot--wide .nl-shot__frame {
-            overflow-x: auto;
-        }
-
         .nl-shot--wide img {
             width: 44rem;
             max-width: none;

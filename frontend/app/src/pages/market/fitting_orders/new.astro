@@ -80,6 +80,7 @@ import FluidFixed from '@components/compositions/FluidFixed.astro'
 import TextBox from '@components/layout/TextBox.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Button from '@components/blocks/Button.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 import Input from '@components/blocks/Input.astro'
 import Textarea from '@components/blocks/Textarea.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
@@ -214,7 +215,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                         <FlexInline gap="var(--space-2xs)" class="[ items-center min-w-0 ]">
                                             <img
                                                 class="[ fitting-buy-icon ]"
-                                                :src="`https://images.evetech.net/types/${fitting.ship_id}/icon?size=32`"
+                                                :src="get_item_icon(fitting.ship_id, 32)"
                                                 :alt="fitting.name"
                                                 width="32"
                                                 height="32"
@@ -256,9 +257,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                 <ComponentBlock class="[ fitting-buy-panel fitting-buy-cart-panel ]">
                     <Flexblock gap="var(--space-s)" class="[ fitting-buy-panel-body ]">
                         <h3>{t('fitting_buy.order_cart')}</h3>
-                        <p x-show="cart.length === 0 && !custom_eft.trim()" x-cloak class="[ text-[var(--highlight)] fitting-buy-cart-empty ]">
-                            {t('fitting_buy.empty_cart')}
-                        </p>
+                        <EmptyState title={t('fitting_buy.empty_cart')} prominent x-show="cart.length === 0 && !custom_eft.trim()" x-cloak />
                         <ul class="[ fitting-buy-cart ]" x-show="cart.length > 0" x-cloak>
                             <template x-for="row in cart" :key="row.fitting_id">
                                 <li>
@@ -266,7 +265,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                         <FlexInline gap="var(--space-2xs)" class="[ items-center min-w-0 ]">
                                             <img
                                                 class="[ fitting-buy-icon ]"
-                                                :src="`https://images.evetech.net/types/${row.ship_id}/icon?size=32`"
+                                                :src="get_item_icon(row.ship_id, 32)"
                                                 :alt="row.fitting_name"
                                                 width="32"
                                                 height="32"
@@ -380,10 +379,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
     .fitting-buy-panel-body {
         flex: 1;
         min-height: 0;
-    }
-
-    .fitting-buy-cart-empty {
-        flex: 1;
     }
 
     .fitting-buy-submit {
