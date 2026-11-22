@@ -357,13 +357,29 @@ const RULE_DEFINITIONS: ConventionRule[] = [
     },
     {
         id: 'raw_form_control',
-        kind: 'ratchet',
+        kind: 'absolute',
         why: 'Form controls are <Input>, <Select>, <Textarea>, <RadioCheckInput>, <Switch>, <FlatPicker> (labels, errors, the token styling); a raw <select>, <textarea> or non-hidden <input> bypasses them.',
+        exempt: {
+            'src/components/blocks/DiscordServerAccess.astro': 'borderless text input typed inside a chip tray (the tray draws the field border); Input would add a second shell',
+            'src/components/blocks/FittingBuyOrderContractPrices.astro': 'number field nested inside a segmented radio chip ("custom %"); Input is a block shell and would break the chip',
+            'src/components/blocks/fleet_rsvp/FleetRsvpForm.astro': 'visually hidden checkbox of a whole-row pilot card with a drawn tick; the card, not the input, is the control',
+            'src/components/blocks/FleetFightsEdit.astro': 'leading checkbox of a table-like fight row grid (label sits in the row grid, not beside the box)',
+            'src/components/blocks/FleetShipTargetOwners.astro': 'leading checkbox of a four-column owner row; the label owns the grid',
+            'src/components/blocks/manage/KitGrid.astro': 'amount cell with dirty-state styling (.manage-amount) inside a composite grid; Input shell breaks the cell',
+            'src/pages/partials/srp_programs_component.astro': 'amount cell with dirty-state styling (.manage-amount) inside a table row; Input shell breaks the cell',
+            'src/components/blocks/manage/ManageSwitch.astro': 'the manage-surface role=switch primitive: it is the library control for these forms',
+            'src/components/blocks/SelectFinder.astro': 'hidden <select> that Alpine keeps in sync with the searchable list; never shown',
+            'src/components/blocks/structures/StructureSettingsForm.astro': 'native multi-select listbox (size=8); Select draws a single-choice caret shell',
+            'src/pages/industry/orders/planner.astro': 'checkbox row inside an Alpine x-for template with a column layout owned by the label',
+            'src/pages/partials/campaign_settings_component.astro': 'visually hidden checkbox of a retire/undo text toggle (two labels swap on :checked)',
+            'src/pages/partials/corporation_members_table_component.astro': 'row-select and select-all checkboxes of the members table; header is Alpine-swapped and sorted by htmx (see raw_table)',
+            'src/pages/partials/order_line_pricing_component.astro': 'connected four-up segmented radio bar with one shared border; OptionCard draws separate cards',
+        },
         find: (file) => {
             if (!is_astro(file)) return []
             const exempt = COMPONENT_FILES(
                 'blocks/Input', 'blocks/Select', 'blocks/Textarea', 'blocks/RadioCheckInput',
-                'blocks/Switch', 'blocks/FlatPicker', 'blocks/FilterChip', 'blocks/OptionCard', 'blocks/RadioCheckPill',
+                'blocks/Switch', 'blocks/FlatPicker', 'blocks/FilterChip', 'blocks/OptionCard', 'blocks/RadioCheckPill', 'blocks/RadioCheck',
             )
             if (exempt.includes(file.path)) return []
             return hits_in(file, [astro_template(file.text)], RAW_FORM_CONTROL)

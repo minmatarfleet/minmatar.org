@@ -106,28 +106,6 @@
         "src/pages/partials/fleet_pick_ships_modal_component.astro": 1,
         "src/pages/ships/doctrines/edit/[doctrine_id].astro": 1
     },
-    "raw_form_control": {
-        "src/components/blocks/DiscordServerAccess.astro": 1,
-        "src/components/blocks/FittingBuyOrderContractPrices.astro": 1,
-        "src/components/blocks/fleet_rsvp/FleetRsvpForm.astro": 1,
-        "src/components/blocks/FleetFightsEdit.astro": 1,
-        "src/components/blocks/FleetInviteDialog.astro": 3,
-        "src/components/blocks/FleetShipsSetup.astro": 1,
-        "src/components/blocks/FleetShipTargetOwners.astro": 1,
-        "src/components/blocks/manage/KitGrid.astro": 1,
-        "src/components/blocks/manage/ManageSwitch.astro": 1,
-        "src/components/blocks/SelectFinder.astro": 1,
-        "src/components/blocks/structures/StructureSettingsForm.astro": 1,
-        "src/pages/character/assets.astro": 2,
-        "src/pages/character/assets/user.astro": 2,
-        "src/pages/industry/orders/planner.astro": 1,
-        "src/pages/partials/campaign_settings_component.astro": 1,
-        "src/pages/partials/corporation_members_table_component.astro": 3,
-        "src/pages/partials/order_line_pricing_component.astro": 1,
-        "src/pages/partials/srp_programs_component.astro": 1,
-        "src/pages/partials/tasks_assignees_component.astro": 1,
-        "src/pages/partials/universe_locations_component.astro": 1
-    },
     "hand_rolled_pager": {},
     "component_font": {
         "src/components/blocks/ChangeDiff.astro": 1,

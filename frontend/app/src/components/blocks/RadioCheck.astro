@@ -1,4 +1,20 @@
-<label class="[ radio-icon ]" {...Astro.props}>
+---
+/**
+ * An icon toggle: a visually hidden radio or checkbox whose icon turns yellow when checked.
+ * `input_attributes` become the input's attributes (`name`, `value`, `checked`, `x-model`, ...);
+ * anything else goes to the label.
+ */
+interface Props {
+    type?:              'radio' | 'checkbox';
+    input_attributes?:  Record<string, any>;
+    [propName: string]: any;
+}
+
+const { type = 'radio', input_attributes = {}, ...attributes } = Astro.props
+---
+
+<label class="[ radio-icon ]" {...attributes}>
+    <input type={type} {...input_attributes} />
     <slot name="input" />
     <slot />
 </label>

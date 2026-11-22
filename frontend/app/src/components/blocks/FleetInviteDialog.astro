@@ -80,6 +80,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
 import ChipGroup from '@components/blocks/ChipGroup.astro'
 import FilterChip from '@components/blocks/FilterChip.astro'
 import OptionCard from '@components/blocks/OptionCard.astro'
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 ---
 
 <DialogButton
@@ -118,22 +119,20 @@ import OptionCard from '@components/blocks/OptionCard.astro'
                                 <Dropdown variant="button" color="transparent" size="sm">
                                     <Fragment slot="button">{t('fleets.invites.timezone_change')}</Fragment>
                                     <div class="[ invite-dialog__tz-options ]">
-                                        <label>
-                                            <input type="checkbox" x-model="any_timezone" x-on:change="refresh()" />
+                                        <RadioCheckInput type="checkbox" x-model="any_timezone" x-on:change="refresh()">
                                             <span>{t('fleets.invites.timezone_any')}</span>
-                                        </label>
+                                        </RadioCheckInput>
                                         {timezone_options.map(option =>
-                                            <label>
-                                                <input
-                                                    type="checkbox"
-                                                    value={option.code}
-                                                    x-model="timezones"
-                                                    x-bind:disabled={`any_timezone || (timezones.length === 1 && timezones[0] === '${option.code}')`}
-                                                    x-on:change="refresh()"
-                                                />
+                                            <RadioCheckInput
+                                                type="checkbox"
+                                                value={option.code}
+                                                x-model="timezones"
+                                                x-bind:disabled={`any_timezone || (timezones.length === 1 && timezones[0] === '${option.code}')`}
+                                                x-on:change="refresh()"
+                                            >
                                                 <span>{option.code}</span>
                                                 <small class="[ text-muted ]">{fleet_timezones.includes(option.code) ? t('fleets.invites.timezone_fleet') : option.description}</small>
-                                            </label>
+                                            </RadioCheckInput>
                                         )}
                                     </div>
                                 </Dropdown>
@@ -141,17 +140,18 @@ import OptionCard from '@components/blocks/OptionCard.astro'
                             fleet_timezones.length > 1 ?
                                 <div class="[ invite-dialog__tzs ]" role="group" aria-label={t('fleets.invites.timezone')}>
                                     {fleet_timezones.map(code =>
-                                        <label class="[ invite-dialog__tz ]">
-                                            <input
-                                                type="checkbox"
-                                                value={code}
-                                                x-model="timezones"
-                                                x-bind:disabled={`timezones.length === 1 && timezones[0] === '${code}'`}
-                                                x-on:change="refresh()"
-                                            />
+                                        <FilterChip
+                                            type="checkbox"
+                                            value={code}
+                                            input_attributes={{
+                                                'x-model': 'timezones',
+                                                'x-bind:disabled': `timezones.length === 1 && timezones[0] === '${code}'`,
+                                                'x-on:change': 'refresh()',
+                                            }}
+                                        >
                                             <span>{code}</span>
                                             <small class="[ text-muted ]">{timezone_description(code, t)}</small>
-                                        </label>
+                                        </FilterChip>
                                     )}
                                 </div> :
                                 fleet_timezones.map(code =>
@@ -411,37 +411,17 @@ import OptionCard from '@components/blocks/OptionCard.astro'
             cursor: default;
         }
 
-        input {
-            width: var(--space-s);
-            height: var(--space-s);
-            margin: 0;
-            accent-color: var(--fleet-red);
-        }
     }
 
     .invite-dialog__tz-options {
         display: flex;
         flex-direction: column;
+        gap: var(--space-2xs);
         min-width: 16rem;
-
-        label {
-            display: flex;
-            align-items: center;
-            gap: var(--space-2xs);
-            min-height: var(--space-xl);
-            padding: 0 var(--space-2xs);
-            color: var(--highlight);
-            font-size: var(--step--1);
-            cursor: pointer;
-        }
+        padding: var(--space-2xs);
 
         small {
-            margin-left: auto;
-        }
-
-        input {
-            margin: 0;
-            accent-color: var(--fleet-red);
+            margin-left: var(--space-xs);
         }
     }
 
