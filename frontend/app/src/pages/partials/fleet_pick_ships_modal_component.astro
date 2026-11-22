@@ -292,6 +292,7 @@ import Input from '@components/blocks/Input.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import PilotBadge from '@components/blocks/PilotBadge.astro'
 import CaretIcon from '@components/icons/CaretIcon.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {fetch_error ?
@@ -392,7 +393,7 @@ import CaretIcon from '@components/icons/CaretIcon.astro'
                                 x-on:click.outside="open = false"
                             >
                                 <input type="hidden" name={`ship_${pilot.character_id}`} value={selected_key(pilot)} x-bind:value="picks[cid]" />
-                                <button
+                                <StylessButton
                                     type="button"
                                     class="[ pick-ships__trigger ]"
                                     x-ref="trigger"
@@ -418,7 +419,7 @@ import CaretIcon from '@components/icons/CaretIcon.astro'
                                         <small x-show="ships[picks[cid]]?.line" x-text="ships[picks[cid]]?.line ?? ''">{pick_label(pilot)?.line}</small>
                                     </span>
                                     <CaretIcon aria-hidden="true" />
-                                </button>
+                                </StylessButton>
 
                                 <div
                                     class="[ pick-ships__menu ]"
@@ -439,7 +440,7 @@ import CaretIcon from '@components/icons/CaretIcon.astro'
                                         />
                                     </label>
                                     <div class="[ pick-ships__options ]" role="listbox" aria-label={t('pick_ships_ship_for').replace('{name}', pilot.character_name)}>
-                                        <button
+                                        <StylessButton
                                             type="button"
                                             role="option"
                                             class="[ pick-ships__option ]"
@@ -448,7 +449,7 @@ import CaretIcon from '@components/icons/CaretIcon.astro'
                                             x-on:click="picks[cid] = ''; open = false"
                                         >
                                             <span class="[ pick-ships__quiet ]">{NOT_FLYING}</span>
-                                        </button>
+                                        </StylessButton>
                                         {menu_groups.map(group =>
                                             <div
                                                 class="[ pick-ships__group ]"
@@ -467,7 +468,7 @@ import CaretIcon from '@components/icons/CaretIcon.astro'
                                                     }
                                                 </div>
                                                 {group.entries.map(entry =>
-                                                    <button
+                                                    <StylessButton
                                                         type="button"
                                                         role="option"
                                                         class="[ pick-ships__option ]"
@@ -481,14 +482,14 @@ import CaretIcon from '@components/icons/CaretIcon.astro'
                                                             {fit_name(entry) && <small>{fit_name(entry)}</small>}
                                                         </span>
                                                         {owns(pilot, entry) && <small class="[ pick-ships__hangar ]">{t('pick_ships_in_hangar')}</small>}
-                                                    </button>
+                                                    </StylessButton>
                                                 )}
                                             </div>
                                         )}
                                         <div class="[ pick-ships__group ]" role="group" aria-label={t('pick_ships_off_doctrine')} x-show="!search">
                                             <div class="[ pick-ships__group-head ]" aria-hidden="true"><span>{t('pick_ships_off_doctrine')}</span></div>
                                             {off_doctrine_hull(pilot) &&
-                                                <button
+                                                <StylessButton
                                                     type="button"
                                                     role="option"
                                                     class="[ pick-ships__option ]"
@@ -497,9 +498,9 @@ import CaretIcon from '@components/icons/CaretIcon.astro'
                                                 >
                                                     <img src={get_item_icon(pilot.selection!.ship_type_id!, 64)} alt="" width="32" height="32" loading="lazy" />
                                                     <span>{off_doctrine_hull(pilot)!.name}</span>
-                                                </button>
+                                                </StylessButton>
                                             }
-                                            <button
+                                            <StylessButton
                                                 type="button"
                                                 role="option"
                                                 class="[ pick-ships__option ]"
@@ -507,7 +508,7 @@ import CaretIcon from '@components/icons/CaretIcon.astro'
                                                 x-on:click="picks[cid] = 'other'; open = false"
                                             >
                                                 <span>{t('pick_ships_other_ship')}</span>
-                                            </button>
+                                            </StylessButton>
                                         </div>
                                     </div>
                                 </div>
@@ -520,7 +521,7 @@ import CaretIcon from '@components/icons/CaretIcon.astro'
                                         {t('fleets.targets.has_hull').replace('{ship}', hangar_hint(pilot)!.entry.ship_name || hangar_hint(pilot)!.entry.name)}
                                         {' '}<b>{t('fleets.targets.line_needs_it').replace('{name}', hangar_hint(pilot)!.line.name)}</b>
                                     </span>
-                                    <button type="button" x-on:click={`picks[cid] = ${JSON.stringify(hangar_hint(pilot)!.entry.key)}`}>{t('fleets.targets.bring_it')}</button>
+                                    <StylessButton type="button" x-on:click={`picks[cid] = ${JSON.stringify(hangar_hint(pilot)!.entry.key)}`}>{t('fleets.targets.bring_it')}</StylessButton>
                                 </p>
                             }
                             <label class="[ pick-ships__other ]" x-show="picks[cid] === 'other'" x-cloak>
@@ -581,11 +582,11 @@ import CaretIcon from '@components/icons/CaretIcon.astro'
                     )}
                     {others.length > 0 && !show_all_by_default &&
                         <div class="[ pick-ships__more ]">
-                            <button type="button" class="[ pick-ships__toggle ]" x-on:click="show_all = !show_all" x-bind:aria-expanded="show_all.toString()">
+                            <StylessButton type="button" class="[ pick-ships__toggle ]" x-on:click="show_all = !show_all" x-bind:aria-expanded="show_all.toString()">
                                 <span x-show="!show_all">{t('pick_ships_show_all').replace('{count}', others.length.toString())}</span>
                                 <span x-show="show_all" x-cloak>{t('pick_ships_show_recent')}</span>
                                 <CaretIcon aria-hidden="true" x-bind:class="{ 'is-open': show_all }" />
-                            </button>
+                            </StylessButton>
                         </div>
                     }
                 </div>

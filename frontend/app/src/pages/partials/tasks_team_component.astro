@@ -58,6 +58,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
 import ManageTable from '@components/blocks/manage/ManageTable.astro'
 import TaskRollupRow from '@components/blocks/tasks/TaskRollupRow.astro'
 import TaskGroup from '@components/blocks/tasks/TaskGroup.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <div id={TARGET} class="[ tasks-team ][ task-stack is-loose ]">
@@ -135,9 +136,9 @@ import TaskGroup from '@components/blocks/tasks/TaskGroup.astro'
                                                     <td class="[ num ]">{row.open}</td>
                                                     <td class="[ num manage-good ]">{row.closed_this_week}</td>
                                                     <td class="[ act ]">
-                                                        <button type="button" class="[ task-quiet ]" hx-get={team_url(row)} hx-target={`#${TARGET}`} hx-swap="outerHTML">
+                                                        <StylessButton type="button" class="[ task-quiet ]" hx-get={team_url(row)} hx-target={`#${TARGET}`} hx-swap="outerHTML">
                                                             {t('tasks.team.open_team')}
-                                                        </button>
+                                                        </StylessButton>
                                                     </td>
                                                 </tr>
                                             ))}

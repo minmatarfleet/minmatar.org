@@ -147,6 +147,7 @@ import Textarea from '@components/blocks/Textarea.astro'
 import Button from '@components/blocks/Button.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <Flexblock gap="var(--space-s)" class="[ doctrine-review ]">
@@ -155,7 +156,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
             <h2>{t('doctrine_changes.review_failed')}</h2>
             <p role="alert">{error_message}</p>
             <FlexInline justification="flex-end">
-                <button type="button" class="[ doctrine-review__link ]" x-on:click="close_dialog()">{t('doctrine_changes.keep_editing')}</button>
+                <StylessButton type="button" class="[ doctrine-review__link ]" x-on:click="close_dialog()">{t('doctrine_changes.keep_editing')}</StylessButton>
             </FlexInline>
         </Flexblock>
         :
@@ -181,7 +182,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
             </Flexblock>
             <small class="[ doctrine-review__muted ]">{reviewer_line}</small>
             <FlexInline justification="flex-end" gap="var(--space-s)">
-                <button type="button" class="[ doctrine-review__link ]" x-on:click="close_dialog()">{t('doctrine_changes.keep_editing')}</button>
+                <StylessButton type="button" class="[ doctrine-review__link ]" x-on:click="close_dialog()">{t('doctrine_changes.keep_editing')}</StylessButton>
                 <Button
                     type="button"
                     color="fleet-red"

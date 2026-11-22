@@ -81,6 +81,7 @@ const who_hidden = (plan?.who.length ?? 0) - who_shown.size
 import Button from '@components/blocks/Button.astro'
 import ClipboardButton from '@components/blocks/ClipboardButton.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {fetch_error ?
@@ -142,9 +143,9 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                     </button>
                 )}
                 {who_hidden > 0 &&
-                    <button type="button" class="[ training-plan__link self-start ]" x-show="!all" x-on:click="all = true">
+                    <StylessButton type="button" class="[ training-plan__link self-start ]" x-show="!all" x-on:click="all = true">
                         {t('training.show_all_characters').replace('{count}', plan.who.length.toString())}
-                    </button>
+                    </StylessButton>
                 }
             </div>
         </fieldset>
@@ -228,7 +229,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         {plan.is_goal && plan.up_next.length > 0 &&
             <div class="[ training-plan__next ]">
                 <span><span class="[ training-muted ]">{t('training.up_next')} </span>{plan.up_next.join(', ')}</span>
-                <button
+                <StylessButton
                     type="button"
                     class="[ training-plan__link ]"
                     modal-action="cancel"
@@ -237,7 +238,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                     hx-swap="outerHTML"
                 >
                     {t('training.change_order')}
-                </button>
+                </StylessButton>
             </div>
         }
 

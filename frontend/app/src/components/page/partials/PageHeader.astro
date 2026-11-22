@@ -21,6 +21,7 @@ import CaretIcon from '@components/icons/CaretIcon.astro';
 
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <div
@@ -84,7 +85,7 @@ const { t } = i18n(Astro.url)
                 </Wrapper>
             </Wrapper>
 
-            <button
+            <StylessButton
                 type="button"
                 class="[ subheader-bar-toggle ]"
                 x-on:click="bar_open = !bar_open; $nextTick(() => measure_bar())"
@@ -93,7 +94,7 @@ const { t } = i18n(Astro.url)
             >
                 <span x-text={`bar_open ? '${t('page_header.fewer_actions')}' : '${t('page_header.more_actions')}'`}>{t('page_header.more_actions')}</span>
                 <CaretIcon />
-            </button>
+            </StylessButton>
         </div>
     </Flexblock>
 </div>

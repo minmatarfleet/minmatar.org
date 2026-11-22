@@ -31,6 +31,7 @@ const readd_url = main
     : ''
 
 import Button from '@components/blocks/Button.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {main
@@ -49,12 +50,12 @@ import Button from '@components/blocks/Button.astro'
             </div>
             <div class="[ main-esi__actions ]">
                 <Button size="sm" href={readd_url}>{t('account.readd_one').replace('~NAME', main.character_name)}</Button>
-                <button
+                <StylessButton
                     type="button"
                     class="[ main-esi__hide ]"
                     aria-label={t('main_esi_banner.hide')}
                     x-on:click="hidden_until = Date.now() + 7 * 86400000"
-                >×</button>
+                >×</StylessButton>
             </div>
         </section>
     )
@@ -92,6 +93,7 @@ import Button from '@components/blocks/Button.astro'
     .main-esi__hide {
         min-width: 44px;
         min-height: 44px;
+        text-align: center;
         border: 0;
         background: none;
         color: var(--faded);

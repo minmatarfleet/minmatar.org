@@ -51,6 +51,7 @@ import ActionMenuItem from '@components/blocks/ActionMenuItem.astro';
 import EmptyState from '@components/blocks/EmptyState.astro';
 
 delete attributes.class
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <DisableBlock
@@ -153,7 +154,7 @@ delete attributes.class
                         />
                         <Flexblock gap='0' class="[ min-w-0 ]">
                             <FlexInline gap='var(--space-2xs)' class="[ items-center ]">
-                                <button
+                                <StylessButton
                                     type="button"
                                     class="[ pilot-list__name ][ truncate ]"
                                     set:text={pilot.character_name}

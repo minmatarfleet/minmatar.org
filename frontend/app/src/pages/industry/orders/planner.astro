@@ -1557,18 +1557,18 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                             <FlexInline justification='space-between' class="[ w-full flex-wrap ]">
                                                 <h4 x-text="group.label"></h4>
                                                 <FlexInline gap='var(--space-s)' class="[ planner-bucket-actions ]">
-                                                    <button
+                                                    <StylessButton
                                                         type="button"
                                                         class="[ planner-bucket-action ]"
                                                         x-on:click="selectBucketSubitems(group.key)"
                                                         x-bind:disabled="loading"
-                                                    >{t('industry.orders.planner.select_all')}</button>
-                                                    <button
+                                                    >{t('industry.orders.planner.select_all')}</StylessButton>
+                                                    <StylessButton
                                                         type="button"
                                                         class="[ planner-bucket-action ]"
                                                         x-on:click="deselectBucketSubitems(group.key)"
                                                         x-bind:disabled="loading"
-                                                    >{t('industry.orders.planner.deselect_all')}</button>
+                                                    >{t('industry.orders.planner.deselect_all')}</StylessButton>
                                                 </FlexInline>
                                             </FlexInline>
                                             <p
