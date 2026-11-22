@@ -10,7 +10,8 @@ import { character_portrait, event_who, subject_icon } from '@helpers/landing'
  * The icon is the ship or ore, or the logo of the side we fought (round).
  * A subject with `detail` ("4 ores") shows it on hover or focus.
  * Mining names the pilot's main: a line mined on an alt says so on hover over
- * the name, and one outside high sec is undisclosed (no name, no portrait).
+ * the name, and one outside high sec is undisclosed (no name, EVE's default
+ * portrait).
  */
 interface Props {
     event:          LandingEvent;
@@ -24,6 +25,10 @@ const { event, size = 'sm', wrap = false, ...attributes } = Astro.props
 
 delete attributes.class
 
+// The image server's portrait for a character that doesn't exist is EVE's
+// default silhouette.
+const DEFAULT_PORTRAIT_ID = 1
+
 const icon = subject_icon(event, 32)
 const who = event.undisclosed
     ? t('landing_new.undisclosed_character')
@@ -31,10 +36,12 @@ const who = event.undisclosed
 ---
 
 <span class:list={['[ landing-line ]', `landing-line--${size}`, { 'landing-line--wrap': wrap }, Astro.props.class]} {...attributes}>
-    {event.undisclosed
-        ? <span class="[ landing-line__portrait landing-line__portrait--none ]" aria-hidden="true" />
-        : <img class="[ landing-line__portrait ]" src={character_portrait(event.character_id, 64)} alt="" loading="lazy" />
-    }
+    <img
+        class="[ landing-line__portrait ]"
+        src={character_portrait(event.undisclosed ? DEFAULT_PORTRAIT_ID : event.character_id, 64)}
+        alt=""
+        loading="lazy"
+    />
     <span class="[ landing-line__text ]">
         {event.on_alt
             ? <strong class="[ landing-line__more ]" data-tippy-content={t('landing_new.mined_on_alt')} tabindex="0">{who}</strong>
@@ -98,11 +105,6 @@ const who = event.undisclosed
         flex-shrink: 0;
         object-fit: cover;
         background: var(--surface-sunken);
-    }
-
-    // Keeps an undisclosed line's text level with the others.
-    .landing-line__portrait--none {
-        background: none;
     }
 
     .landing-line__text {
