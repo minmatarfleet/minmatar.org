@@ -91,6 +91,41 @@ const PINNED: Record<string, RegExp> = {
     'ajax.googleapis.com': /^https?:\/\/ajax\.googleapis\.com\/ajax\/libs\/[^/]+\/\d+\.\d+\.\d+\//,
 }
 
+/** Blank CSS comments in place (same length), so a commented-out declaration is not a hit. `https://` is kept. */
+const without_css_comments = (region: Region): Region => ({
+    text: region.text.replace(/\/\*[\s\S]*?\*\/|(?<![:\w(])\/\/[^\n]*/g, (m) => m.replace(/[^\n]/g, ' ')),
+    offset: region.offset,
+})
+
+/** Element start tag for `<table`/`<button`/`<select`, not `<tablet-x` or `<button-group`. */
+const RAW_TABLE = /<table(?=[\s>/])|\srole=["']table["']/g
+const RAW_STYLED_BUTTON = /<button(?=[\s>/])/g
+/** `<select`, `<textarea`, and `<input` unless its static type is hidden, submit or button. */
+const RAW_FORM_CONTROL = /<(?:select|textarea)(?=[\s>/])|<input(?=[\s/>])(?![^>]*?(?<![\w-])type\s*=\s*["']?(?:hidden|submit|button)(?=["'\s/>]))[^>]*>/g
+/** The element's own role, not `[role="tablist"]` in a selector. */
+const ROLE_TABLIST = /\srole=["']tablist["']/g
+const CLICK_OUTSIDE = /(?:x-on:|@)click\.outside(?![\w-])/g
+const DIRECT_TIPPY = /(?<![\w.$])tippy\s*\(/g
+const OVERFLOW_X_SCROLL_CSS = /(?<![\w-])overflow-x\s*:\s*(?:auto|scroll)(?![\w-])/g
+const OVERFLOW_X_SCROLL_CLASS = /(?<![\w-])overflow-x-(?:auto|scroll)(?![\w-])/g
+/** An hx-get attribute value: quoted, or an Astro expression. Captures the value in groups 1-3. */
+const HX_GET_VALUE = /<[a-zA-Z][^>]*?\shx-get=(?:"([^"]*)"|'([^']*)'|\{([^}]*)\})/g
+const PAGE_PARAM = /[?&]page(?:_num)?=/
+/** A class token ending in chip, pill or chips: `fleet-type-chip`, `chip`. Not `spill`, `chip-list` or `chip__label`. */
+const CHIP_TOKEN = /(?<![a-z0-9-])(?:[a-z0-9]+-)*(?:chips?|pills?)(?![\w-])/
+const GOOGLE_FONTS = /fonts\.googleapis\.com/g
+/** A font-family declaration that is not a `var(--token)` or `inherit`; `$font-family` SCSS variables are skipped. */
+const FONT_FAMILY_LITERAL = /(?<![\w$-])font-family\s*:(?!\s*(?:var\(|inherit\b))\s*[^;{}\s][^;{}\n]*/g
+/** Meta-group and security-status tokens carry a fixed meaning; only the components that draw them may use them. */
+const OFF_MEANING_TOKEN = /var\(\s*--(?:security-status-[\w-]+|tech-i{1,3}|storyline|faction|officer|deadspace|abyssal)(?![\w-])/g
+const TEXT_STATUS_BLOCK = /\.text-status-[\w-]+[^{]*\{[^}]*\}/g
+/** A custom-property definition named for a semantic meaning (`--hp-warn:`), not a token that holds a colour (`--fleet-red:`). */
+const LOCAL_SEMANTIC_DEFINITION = /(?<![\w-])--[\w-]*[_-](?:warn|good|bad|warning|success|danger)\s*:/g
+
+const EVE_IMAGE_HELPERS = ['src/helpers/eve_image_server.ts', 'src/helpers/landing.ts', 'src/helpers/fleet_rsvp.ts']
+const EVE_IMAGE_COMPONENTS = ['Picture', 'CharacterPicture', 'CorporationPicture', 'ItemPicture'].map((n) => `src/components/blocks/${n}.astro`)
+const COMPONENT_FILES = (...names: string[]) => names.map((n) => `src/components/${n}.astro`)
+
 export const RULES: ConventionRule[] = [
     {
         id: 'client_fetch',
@@ -215,6 +250,150 @@ export const RULES: ConventionRule[] = [
                 const host = m[1]
                 return !PINNED[host].test(m[0])
             }),
+    },
+    {
+        id: 'raw_eve_image',
+        kind: 'ratchet',
+        why: 'EVE image URLs come from @helpers/eve_image_server (get_item_icon, get_player_icon, get_corporation_logo, ...) or the Picture components (<ItemPicture>, <CharacterPicture>, <CorporationPicture>, <Picture>), which pick the size and the fallback. Do not write an images.evetech.net URL in markup or scripts.',
+        find: (file) => {
+            if (EVE_IMAGE_HELPERS.includes(file.path) || EVE_IMAGE_COMPONENTS.includes(file.path)) return []
+            return hits_in(file, [{ text: file.text, offset: 0 }], /(?:https?:)?\/\/images\.evetech\.net/g)
+        },
+    },
+    {
+        id: 'raw_table',
+        kind: 'ratchet',
+        why: 'Tables are <DataGrid> (sortable, responsive) or <Table> (the styled base); a hand-written <table> or role="table" skips both. Use the library table.',
+        find: (file) => {
+            if (!is_astro(file) || COMPONENT_FILES('blocks/DataGrid', 'blocks/Table', 'blocks/campaigns/etherium-reach/CampaignDataTable').includes(file.path)) return []
+            return hits_in(file, [astro_template(file.text)], RAW_TABLE)
+        },
+    },
+    {
+        id: 'overflow_x_scroll',
+        kind: 'ratchet',
+        why: 'Wide tables and chip rows scroll inside <XFadeScroll> (it adds the edge fades and the scroll affordance), not a hand-rolled overflow-x: auto/scroll.',
+        find: (file) => {
+            if (file.path === 'src/components/compositions/XFadeScroll.astro') return []
+            const css = hits_in(file, css_regions(file).map(without_css_comments), OVERFLOW_X_SCROLL_CSS)
+            const tailwind = is_astro(file) ? hits_in(file, [astro_template(file.text)], OVERFLOW_X_SCROLL_CLASS) : []
+            return [...css, ...tailwind]
+        },
+    },
+    {
+        id: 'direct_tippy',
+        kind: 'ratchet',
+        why: 'Tooltips are <Tippy> (or the tippy_options on a swapped partial, initialised by swap_init.ts). A direct tippy(...) call is not re-initialised after an htmx swap.',
+        find: (file) => {
+            const exempt = ['src/helpers/swap_init.ts', 'src/components/blocks/Tippy.astro', 'src/components/partials/TippyBootstrap.astro']
+            if (exempt.includes(file.path)) return []
+            return hits_in(file, code_regions(file), DIRECT_TIPPY)
+        },
+    },
+    {
+        id: 'hand_rolled_tablist',
+        kind: 'ratchet',
+        why: 'Tab strips are <SectionTabs> (keyboard, aria and the hash-linked active tab), not a hand-written role="tablist".',
+        find: (file) => {
+            if (!is_astro(file) || file.path === 'src/components/blocks/SectionTabs.astro') return []
+            return hits_in(file, [astro_template(file.text)], ROLE_TABLIST)
+        },
+    },
+    {
+        id: 'hand_rolled_popover',
+        kind: 'ratchet',
+        why: 'Click-away popups are <Dropdown>, <ActionMenu>, <Dialog>/<DialogButton> or <Modal> (focus, Escape and stacking handled); a bare @click.outside re-implements them.',
+        find: (file) => {
+            if (!is_astro(file)) return []
+            const exempt = COMPONENT_FILES(
+                'blocks/Dropdown', 'blocks/ActionMenu', 'blocks/Dialog', 'blocks/DialogButton', 'blocks/Modal',
+                'page/PageBreadcrumbs', 'page/BreadcrumbHub',
+            )
+            if (exempt.includes(file.path)) return []
+            return hits_in(file, [astro_template(file.text)], CLICK_OUTSIDE)
+        },
+    },
+    {
+        id: 'raw_form_control',
+        kind: 'ratchet',
+        why: 'Form controls are <Input>, <Select>, <Textarea>, <RadioCheckInput>, <Switch>, <FlatPicker> (labels, errors, the token styling); a raw <select>, <textarea> or non-hidden <input> bypasses them.',
+        find: (file) => {
+            if (!is_astro(file)) return []
+            const exempt = COMPONENT_FILES(
+                'blocks/Input', 'blocks/Select', 'blocks/Textarea', 'blocks/StylessTextArea', 'blocks/RadioCheckInput',
+                'blocks/UnstyledRadioCheckButton', 'blocks/Switch', 'blocks/SwitchSquare', 'blocks/FlatPicker',
+            )
+            if (exempt.includes(file.path)) return []
+            return hits_in(file, [astro_template(file.text)], RAW_FORM_CONTROL)
+        },
+    },
+    {
+        id: 'raw_styled_button',
+        kind: 'ratchet',
+        why: 'Buttons are <Button> (variants, sizes, loading and focus states), <StylessButton> for a bare control, or <ButtonConfirm>/<ClipboardButton>/<CollapsableButton>; a raw <button> skips the styling.',
+        find: (file) => {
+            if (!is_astro(file)) return []
+            const exempt = COMPONENT_FILES('blocks/Button', 'blocks/StylessButton', 'blocks/ButtonConfirm', 'blocks/ClipboardButton', 'blocks/CollapsableButton')
+            if (exempt.includes(file.path)) return []
+            return hits_in(file, [astro_template(file.text)], RAW_STYLED_BUTTON)
+        },
+    },
+    {
+        id: 'raw_chip',
+        kind: 'ratchet',
+        why: 'Filter and status chips are <FilterChip> or <ChipGroup>, and labels are <Tag>; a hand-styled *-chip / *-pill class re-creates them without their states.',
+        find: (file) => {
+            if (!is_astro(file)) return []
+            const exempt = COMPONENT_FILES('blocks/FilterChip', 'blocks/ChipGroup', 'blocks/Tag')
+            if (exempt.includes(file.path)) return []
+            // Quoted class values, or the string literals inside class:list={[...]} (a bare identifier is JS, not a class).
+            const has_chip = (m: RegExpMatchArray) => {
+                const value = m[1] ?? m[2] ?? [...(m[3] ?? '').matchAll(/(["'`])([^"'`]*)\1/g)].map((s) => s[2]).join(' ')
+                return CHIP_TOKEN.test(value)
+            }
+            return hits_in(file, [astro_template(file.text)], /\sclass(?::list)?=(?:"([^"]*)"|'([^']*)'|\{([^}]*)\})/g, has_chip)
+        },
+    },
+    {
+        id: 'hand_rolled_pager',
+        kind: 'ratchet',
+        why: 'Paged htmx lists are <HtmxPager> (page state, the swap target and the disabled ends), not an hx-get that builds its own ?page= link.',
+        find: (file) => {
+            if (!is_astro(file) || file.path === 'src/components/blocks/HtmxPager.astro') return []
+            return hits_in(file, [astro_template(file.text)], HX_GET_VALUE, (m) => PAGE_PARAM.test(m[1] ?? m[2] ?? m[3] ?? ''))
+        },
+    },
+    {
+        id: 'component_font',
+        kind: 'ratchet',
+        why: 'Fonts load once from src/styles/_fonts.scss and are used through the font tokens (var(--heading-font), var(--default-font), var(--button-font)); a Google Fonts link or a literal font-family bypasses them.',
+        find: (file) => {
+            if (file.path === 'src/styles/_fonts.scss' || file.path.startsWith('src/styles/properties/')) return []
+            const links = hits_in(file, [{ text: file.text, offset: 0 }], GOOGLE_FONTS)
+            const literals = hits_in(file, css_regions(file).map(without_css_comments), FONT_FAMILY_LITERAL)
+            return [...links, ...literals]
+        },
+    },
+    {
+        id: 'palette_off_meaning',
+        kind: 'ratchet',
+        why: 'Security-status and meta-group colours have one meaning each: draw them with <SecurityStatus> or <MetaGroupTag>, or the icons. Using these tokens anywhere else lends the colour a different meaning.',
+        find: (file) => {
+            if (file.path.startsWith('src/components/icons/') || file.path.startsWith('src/styles/properties/')) return []
+            if (COMPONENT_FILES('blocks/sde/SecurityStatus', 'blocks/sde/MetaGroupTag').includes(file.path)) return []
+            // The .text-status-* definitions in _global.scss are the one place the security-status tokens are read directly.
+            const text = file.path === 'src/styles/_global.scss' ? file.text.replace(TEXT_STATUS_BLOCK, (m) => m.replace(/[^\n]/g, ' ')) : file.text
+            return hits_in(file, [{ text, offset: 0 }], OFF_MEANING_TOKEN)
+        },
+    },
+    {
+        id: 'local_semantic_colour',
+        kind: 'ratchet',
+        why: 'Semantic colours (warn, good, bad, success, danger) are defined once in src/styles/properties/_colors.scss; a component-local --x-warn definition forks that palette. Use the token it names.',
+        find: (file) => {
+            if (file.path === 'src/styles/properties/_colors.scss') return []
+            return hits_in(file, css_regions(file).map(without_css_comments), LOCAL_SEMANTIC_DEFINITION)
+        },
     },
 ]
 
