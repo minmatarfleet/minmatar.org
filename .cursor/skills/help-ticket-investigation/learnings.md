@@ -39,6 +39,16 @@ do not duplicate it — one clarifying clause at most.
 **Skill update:** what changed in SKILL.md, or “none (already covered)”
 ```
 
+## 2026-11-21 — Booked mentor class time cannot be changed
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL posted in the thread
+**PR:** fix+skill
+**Symptom vs cause:** After a class is booked, the only time change is the 48-hour "We moved it" answer, which clears the time and returns the request to asked. The mentor can now change the date and time while the class stays booked. Both pilots get a DM, and a new time restarts the 24-hour reminder.
+**Durable rule:** Accept books an asked request. `reschedule` moves a booked one. "We moved it" is still the close-out that puts the request back to asked.
+**Skill update:** added the booked-class reschedule row.
+
 ## 2026-11-21 — Fitting order Save prices reloads with an empty box
 
 **Category:** pulse.technology

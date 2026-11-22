@@ -117,6 +117,9 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                                                 {t('mentors.message')}
                                             </Button>
                                         }
+                                        <Button type="button" size="sm" color="transparent" x-data x-on:click={modal_click(accept_url(request.id))}>
+                                            {t('mentors.change_time')}
+                                        </Button>
                                         <Button
                                             type="button"
                                             size="sm"

@@ -51,6 +51,8 @@ export const pass_mentor_request = (token: string, request_id: number) =>
     send<MentorAction>('POST', `/requests/${request_id}/pass`, token)
 export const accept_mentor_request = (token: string, request_id: number, starts_at: string, bring: string) =>
     send<MentorAction>('POST', `/requests/${request_id}/accept`, token, { starts_at, bring })
+export const reschedule_mentor_request = (token: string, request_id: number, starts_at: string, bring: string) =>
+    send<MentorAction>('POST', `/requests/${request_id}/reschedule`, token, { starts_at, bring })
 export const send_mentor_feedback = (token: string, request_id: number, answer: string, note: string) =>
     send<MentorAction>('POST', `/requests/${request_id}/feedback`, token, { answer, note })
 export const save_mentor_settings = (token: string, body: MentorSettingsPatch) =>

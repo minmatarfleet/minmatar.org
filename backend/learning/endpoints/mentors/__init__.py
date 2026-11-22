@@ -11,6 +11,7 @@ from learning.endpoints.mentors import post_request_cancel
 from learning.endpoints.mentors import post_request_pass
 from learning.endpoints.mentors import post_request_feedback
 from learning.endpoints.mentors import post_request_accept
+from learning.endpoints.mentors import post_request_reschedule
 from learning.endpoints.mentors import get_mentoring
 from learning.endpoints.mentors import get_request_slots
 from learning.endpoints.mentors import get_settings
@@ -52,6 +53,7 @@ _MODULES = (
     post_request,
     get_request_slots,
     post_request_accept,
+    post_request_reschedule,
     post_request_pass,
     post_request_cancel,
     post_request_feedback,

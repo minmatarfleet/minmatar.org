@@ -262,6 +262,82 @@ class RequestFlowTestCase(TestCase):
         }
         self.assertIn("@orion", sent[11]["content"])
         self.assertIn("@talisker", sent[22]["content"])
+        mentor_buttons = sent[22]["components"][0]["components"]
+        self.assertIn(
+            "Change the time", [button["label"] for button in mentor_buttons]
+        )
+        pilot_buttons = sent[11]["components"][0]["components"]
+        self.assertNotIn(
+            "Change the time", [button["label"] for button in pilot_buttons]
+        )
+
+    def test_reschedule_moves_the_time_and_resets_the_reminder(self, dm):
+        req = self._ask()
+        starts = timezone.now() + timedelta(days=2)
+        service.accept(req, self.orion, starts, "A Rifter")
+        MentorRequest.objects.filter(pk=req.pk).update(
+            reminded_at=timezone.now(),
+            pilot_confirmed_at=timezone.now(),
+            pilot_rating="bit",
+            pilot_note="Early",
+        )
+        req.refresh_from_db()
+        dm.reset_mock()
+        later = starts + timedelta(days=1)
+        with self.captureOnCommitCallbacks(execute=True):
+            changed = service.reschedule(req, self.orion, later, "A Rifter")
+        self.assertTrue(changed)
+        req.refresh_from_db()
+        self.assertEqual(MentorRequest.STATUS_BOOKED, req.status)
+        self.assertEqual(
+            int(later.timestamp()), int(req.starts_at.timestamp())
+        )
+        self.assertIsNone(req.reminded_at)
+        self.assertIsNone(req.pilot_confirmed_at)
+        self.assertEqual("", req.pilot_rating)
+        self.assertEqual("", req.pilot_note)
+        sent = {
+            call.args[0]: call.kwargs["payload"] for call in dm.call_args_list
+        }
+        self.assertIn("moved to", sent[11]["content"])
+        self.assertIn("moved to", sent[22]["content"])
+
+    def test_same_time_is_left_alone_and_bring_keeps_the_reminder(self, dm):
+        req = self._ask()
+        starts = timezone.now() + timedelta(days=2)
+        service.accept(req, self.orion, starts, "A Rifter")
+        req.refresh_from_db()
+        dm.reset_mock()
+        self.assertFalse(
+            service.reschedule(req, self.orion, req.starts_at, "A Rifter")
+        )
+        self.assertEqual(0, dm.call_count)
+        MentorRequest.objects.filter(pk=req.pk).update(
+            reminded_at=timezone.now()
+        )
+        req.refresh_from_db()
+        with self.captureOnCommitCallbacks(execute=True):
+            service.reschedule(req, self.orion, req.starts_at, "A Probe")
+        req.refresh_from_db()
+        self.assertEqual("A Probe", req.bring)
+        self.assertIsNotNone(req.reminded_at)
+        self.assertIn("bring", dm.call_args.kwargs["payload"]["content"])
+
+    def test_only_the_mentor_can_move_a_booked_class(self, dm):
+        req = self._ask()
+        starts = timezone.now() + timedelta(days=2)
+        service.accept(req, self.orion, starts)
+        req.refresh_from_db()
+        with self.assertRaises(service.MentorError):
+            service.reschedule(req, self.pilot, starts + timedelta(days=1), "")
+        with self.assertRaises(service.MentorError):
+            service.reschedule(
+                req, self.orion, timezone.now() + timedelta(minutes=30), ""
+            )
+        req.refresh_from_db()
+        self.assertEqual(
+            int(starts.timestamp()), int(req.starts_at.timestamp())
+        )
 
     def test_reminder_then_follow_up_then_done_completes_the_learning(
         self, dm
@@ -575,6 +651,37 @@ class MentorApiTestCase(TestCase):
 
     def test_managers_still_see_new_mentor(self, *_):
         self.assertEqual("New mentor", service.answer_text(None))
+
+    def test_reschedule_endpoint_moves_a_booked_class(self, *_):
+        starts = timezone.now() + timedelta(days=2)
+        req = MentorRequest.objects.create(
+            pilot=self.pilot,
+            mentor=self.profile,
+            mentor_class=self.mc,
+            status=MentorRequest.STATUS_BOOKED,
+            starts_at=starts,
+            bring="A Rifter",
+        )
+        later = timezone.now() + timedelta(days=5)
+        response = self.client.post(
+            f"{BASE}/requests/{req.pk}/reschedule",
+            data={"starts_at": later.isoformat(), "bring": "A probe"},
+            content_type="application/json",
+            **auth_headers(self.orion),
+        )
+        self.assertEqual(200, response.status_code)
+        req.refresh_from_db()
+        self.assertEqual("A probe", req.bring)
+        self.assertEqual(
+            int(later.timestamp()), int(req.starts_at.timestamp())
+        )
+        denied = self.client.post(
+            f"{BASE}/requests/{req.pk}/reschedule",
+            data={"starts_at": later.isoformat(), "bring": "A probe"},
+            content_type="application/json",
+            **auth_headers(self.pilot),
+        )
+        self.assertEqual(403, denied.status_code)
 
     def test_bot_endpoints_need_the_service_account(self, *_):
         req = MentorRequest.objects.create(

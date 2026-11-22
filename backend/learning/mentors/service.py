@@ -7,7 +7,8 @@ asked -> passed (the next mentor who fits gets a new request) | expired
 asked/booked -> cancelled
 
 The mentor's 48-hour answer closes a booked class; "We moved it" puts it
-back to asked so the mentor picks a new time. See docs/learning/mentors.md.
+back to asked so the mentor picks a new time. A booked class can also
+have its time changed in place (`reschedule`). See docs/learning/mentors.md.
 """
 
 from __future__ import annotations
@@ -487,10 +488,7 @@ def slots(req: MentorRequest, now=None) -> list[datetime]:
     )
 
 
-def accept(req: MentorRequest, user, starts_at: datetime, bring="") -> None:
-    _require_mentor(req, user)
-    if req.status != MentorRequest.STATUS_ASKED:
-        raise MentorError("This request isn't waiting for a time.")
+def _bookable_start(starts_at: datetime) -> datetime:
     if timezone.is_naive(starts_at):
         starts_at = starts_at.replace(tzinfo=dt_timezone.utc)
     now = timezone.now()
@@ -498,6 +496,19 @@ def accept(req: MentorRequest, user, starts_at: datetime, bring="") -> None:
         raise MentorError("Pick a time at least an hour from now.")
     if starts_at > now + timedelta(days=30):
         raise MentorError("Pick a time in the next 30 days.")
+    return starts_at
+
+
+def _same_moment(left: datetime | None, right: datetime) -> bool:
+    return left is not None and int(left.timestamp()) == int(right.timestamp())
+
+
+def accept(req: MentorRequest, user, starts_at: datetime, bring="") -> None:
+    _require_mentor(req, user)
+    if req.status != MentorRequest.STATUS_ASKED:
+        raise MentorError("This request isn't waiting for a time.")
+    starts_at = _bookable_start(starts_at)
+    now = timezone.now()
     with transaction.atomic():
         req.status = MentorRequest.STATUS_BOOKED
         req.starts_at = starts_at
@@ -530,6 +541,67 @@ def _send_booked(req: MentorRequest) -> None:
                 as_mentor=as_mentor,
             ),
             f"mentor request {req.pk} booked",
+        )
+
+
+def reschedule(
+    req: MentorRequest, user, starts_at: datetime, bring=""
+) -> bool:
+    """Move a booked class. Returns whether a DM was sent.
+
+    The same time and bring is left alone. A new time clears the reminder
+    and any "I'll be there" or pilot rating, so they apply to the new time.
+    """
+    _require_mentor(req, user)
+    if req.status != MentorRequest.STATUS_BOOKED:
+        raise MentorError("This class isn't booked.")
+    starts_at = _bookable_start(starts_at)
+    bring = (bring or "").strip()[:200]
+    same_time = _same_moment(req.starts_at, starts_at)
+    if same_time and (req.bring or "") == bring:
+        return False
+    previous = req.starts_at
+    with transaction.atomic():
+        req.starts_at = starts_at
+        req.bring = bring
+        if not same_time:
+            req.reminded_at = None
+            req.followed_up_at = None
+            req.pilot_confirmed_at = None
+            req.mentor_confirmed_at = None
+            req.pilot_rating = ""
+            req.pilot_note = ""
+            req.pilot_answered_at = None
+            req.mentor_outcome = ""
+            req.mentor_notes = ""
+            req.mentor_answered_at = None
+        req.save()
+        _send_rescheduled(req, previous)
+    return True
+
+
+def _send_rescheduled(req: MentorRequest, previous: datetime | None) -> None:
+    ids = pilot_identity([req.pilot_id, req.mentor.user_id])
+    pilot, mentor = ids[req.pilot_id], ids[req.mentor.user_id]
+    for me, other, as_mentor in (
+        (pilot, mentor, False),
+        (mentor, pilot, True),
+    ):
+        _dm(
+            me["user_id"],
+            mdiscord.rescheduled_payload(
+                request_id=req.pk,
+                other_name=other["name"],
+                other_portrait=other["portrait"],
+                other_handle=other["handle"],
+                other_discord_id=other["discord_id"],
+                class_title=req.mentor_class.title,
+                starts_at=req.starts_at,
+                previous=previous,
+                bring=req.bring,
+                as_mentor=as_mentor,
+            ),
+            f"mentor request {req.pk} rescheduled",
         )
 
 
