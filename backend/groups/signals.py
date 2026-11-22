@@ -1,6 +1,7 @@
 import logging
 
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.db.models import signals
 from django.dispatch import receiver
 
@@ -32,6 +33,23 @@ def _user_being_deleted(origin, user_id: int) -> bool:
     return getattr(origin, "model", None) is User
 
 
+def _offboard_tribe_memberships_after_commit(user_id: int) -> None:
+    """Offboard once the affiliation write has committed.
+
+    Sync deletes the previous affiliation before inserting the new one.
+    Offboarding in that gap sees no affiliation and clears every open
+    application, including groups the new affiliation still allows.
+    """
+
+    def _run():
+        user = User.objects.filter(pk=user_id).first()
+        if user is None:
+            return
+        offboard_tribe_memberships_without_feature(user)
+
+    transaction.on_commit(_run)
+
+
 @receiver(
     signals.post_delete,
     sender=UserAffiliation,
@@ -47,7 +65,7 @@ def user_affiliation_post_delete(sender, instance, origin=None, **kwargs):
     logger.info("User affiliation deleted, syncing user community groups")
     reconcile_community_status_for_affiliation(instance.user)
     sync_user_community_groups(instance.user)
-    offboard_tribe_memberships_without_feature(instance.user)
+    _offboard_tribe_memberships_after_commit(instance.user_id)
 
 
 @receiver(
@@ -65,7 +83,7 @@ def user_affiliation_post_save(sender, instance, created, **kwargs):
     instance.user.refresh_from_db()
     reconcile_community_status_for_affiliation(instance.user)
     sync_user_community_groups(instance.user)
-    offboard_tribe_memberships_without_feature(instance.user)
+    _offboard_tribe_memberships_after_commit(instance.user_id)
 
 
 @receiver(

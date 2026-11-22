@@ -2,13 +2,17 @@
 
 from django.contrib.auth.models import Group, User
 from django.db.models import signals as django_signals
-from django.test import Client, TestCase
+from django.test import Client, TestCase, TransactionTestCase
 
+from eveonline.helpers.characters import set_primary_character
+from eveonline.models import EveCharacter
+from eveonline.signals import populate_eve_character_public_data
 from groups.helpers.feature_access import clear_feature_cache
 from groups.management.commands.sync_pilot_features import (
     Command as SyncCommand,
 )
 from groups.models import AffiliationType, PilotFeature, UserAffiliation
+from groups.tasks import _update_affiliation_for_user
 from tribes.helpers.offboarding import (
     offboard_tribe_memberships_without_feature,
 )
@@ -227,7 +231,8 @@ class TribeGroupAffiliationGateTestCase(TestCase):
             tribe_group=self.alliance_only,
             status=TribeGroupMembership.STATUS_ACTIVE,
         )
-        UserAffiliation.objects.filter(user=self.user).delete()
+        with self.captureOnCommitCallbacks(execute=True):
+            UserAffiliation.objects.filter(user=self.user).delete()
         membership.refresh_from_db()
         self.assertEqual(
             membership.status, TribeGroupMembership.STATUS_INACTIVE
@@ -251,3 +256,143 @@ class TribeGroupAffiliationGateTestCase(TestCase):
                 membership__user_id=user_id
             ).exists()
         )
+
+
+def _affiliation_rule(affiliation, character_ids=()):
+    return {
+        "affiliation": affiliation,
+        "character_ids": set(character_ids),
+        "corp_ids": set(),
+        "alliance_ids": set(),
+        "faction_ids": set(),
+    }
+
+
+class AffiliationSwapKeepsApplicationsTestCase(TransactionTestCase):
+    """Affiliation replacement commits before tribe applications are reviewed.
+
+    TestCase wraps the test in a transaction, so on_commit never sees a
+    real commit boundary. This case commits, which is what hid the gap.
+    """
+
+    databases = {"default"}
+
+    def setUp(self):
+        django_signals.post_save.disconnect(
+            sender=Group,
+            dispatch_uid="group_post_save",
+        )
+        django_signals.post_save.disconnect(
+            sender=EveCharacter,
+            dispatch_uid="populate_eve_character_public_data",
+        )
+        clear_feature_cache()
+        SyncCommand().handle()
+
+        self.alliance = AffiliationType.objects.create(
+            name="Alliance",
+            group=Group.objects.create(name="Alliance Swap Gate"),
+            priority=100,
+            default=False,
+        )
+        self.associate = AffiliationType.objects.create(
+            name="Associate",
+            group=Group.objects.create(name="Associate Swap Gate"),
+            priority=90,
+            default=False,
+        )
+
+        feature = PilotFeature.objects.get(code="tribes.apply")
+        feature.affiliations.set([self.alliance, self.associate])
+        feature.tribe_groups.clear()
+        feature.legacy_permission = ""
+        feature.save(update_fields=["legacy_permission"])
+        clear_feature_cache()
+
+        self.tribe = Tribe.objects.create(name="Supply", slug="supply-swap")
+        self.alliance_only = TribeGroup.objects.create(
+            tribe=self.tribe, name="Dreads", code="supply.dreads-swap"
+        )
+        self.alliance_only.allowed_affiliations.set([self.alliance])
+        self.open_group = TribeGroup.objects.create(
+            tribe=self.tribe, name="Mining", code="supply.mining-swap"
+        )
+        self.open_group.allowed_affiliations.set(
+            [self.alliance, self.associate]
+        )
+
+        self.user = User.objects.create_user(username="aff_swap_user")
+        self.character = EveCharacter.objects.create(
+            character_id=88001001,
+            character_name="Swap Pilot",
+            user=self.user,
+        )
+        set_primary_character(self.user, self.character)
+
+    def tearDown(self):
+        django_signals.post_save.connect(
+            populate_eve_character_public_data,
+            sender=EveCharacter,
+            dispatch_uid="populate_eve_character_public_data",
+        )
+        clear_feature_cache()
+
+    def _pending(self, group):
+        return TribeGroupMembership.objects.create(
+            user=self.user,
+            tribe_group=group,
+            status=TribeGroupMembership.STATUS_PENDING,
+        )
+
+    def test_promotion_keeps_applications_the_new_affiliation_allows(self):
+        UserAffiliation.objects.create(
+            user=self.user, affiliation=self.associate
+        )
+        kept = self._pending(self.open_group)
+        also_kept = self._pending(self.alliance_only)
+
+        _update_affiliation_for_user(
+            self.user,
+            [
+                _affiliation_rule(
+                    self.alliance, [self.character.character_id]
+                ),
+                _affiliation_rule(self.associate),
+            ],
+        )
+
+        kept.refresh_from_db()
+        also_kept.refresh_from_db()
+        self.assertEqual(
+            UserAffiliation.objects.get(user=self.user).affiliation_id,
+            self.alliance.id,
+        )
+        self.assertEqual(kept.status, TribeGroupMembership.STATUS_PENDING)
+        # The group is alliance-only, and the new affiliation is Alliance.
+        self.assertEqual(also_kept.status, TribeGroupMembership.STATUS_PENDING)
+
+    def test_demotion_drops_only_groups_the_new_affiliation_cannot_join(self):
+        UserAffiliation.objects.create(
+            user=self.user, affiliation=self.alliance
+        )
+        kept = self._pending(self.open_group)
+        dropped = self._pending(self.alliance_only)
+
+        _update_affiliation_for_user(
+            self.user,
+            [
+                _affiliation_rule(self.alliance),
+                _affiliation_rule(
+                    self.associate, [self.character.character_id]
+                ),
+            ],
+        )
+
+        kept.refresh_from_db()
+        dropped.refresh_from_db()
+        self.assertEqual(
+            UserAffiliation.objects.get(user=self.user).affiliation_id,
+            self.associate.id,
+        )
+        self.assertEqual(kept.status, TribeGroupMembership.STATUS_PENDING)
+        self.assertEqual(dropped.status, TribeGroupMembership.STATUS_INACTIVE)
