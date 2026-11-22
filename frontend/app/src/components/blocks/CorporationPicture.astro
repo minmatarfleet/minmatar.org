@@ -46,7 +46,7 @@ import NotificationBadge from '@components/blocks/NotificationBadge.astro'
         `}
     />
 
-    {quantity &&
+    {quantity != null && quantity > 0 &&
         <NotificationBadge
             class="[ quantity-badge ]"
             color={tag_color ?? 'fleet-red'}

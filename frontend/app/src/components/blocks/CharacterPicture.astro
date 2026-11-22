@@ -70,7 +70,7 @@ import NotificationBadge from '@components/blocks/NotificationBadge.astro';
         x-on:click.stop.prevent={inert ? undefined : 'show_character_modal()'}
     />
     
-    {quantity &&
+    {quantity != null && quantity > 0 &&
         <NotificationBadge
             class="[ quantity-badge ]"
             color={tag_color ?? 'fleet-red'}

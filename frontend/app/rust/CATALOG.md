@@ -700,7 +700,7 @@ A pilot portrait from the EVE image server.
 
 - Import: `import CharacterPicture from '@components/blocks/CharacterPicture.astro'`
 - Props: `character_id: number`, `character_name?: string`, `x_character_id?: string | false = false`, `x_character_name?: string | false = false`, `size?: ImageSize = 64`, `narrow?: boolean = false`, `icon_quality?: EvEImageServiceSize = 64`, `tooltip?: string`, `mask?: boolean = false`, `inert?: boolean = false`, `centered?: boolean = false`, `quantity?: number`, `tag_color?: BadgeColors`, `height?: number = 412`
-- Stories (8): `frontend/app/rust/stories/eve/CharacterPicture.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-characterpicture--docs: Default, Large Portrait, Small, Inert, With Quantity, Masked, Unknown Character, With Tooltip
+- Stories (9): `frontend/app/rust/stories/eve/CharacterPicture.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-characterpicture--docs: Default, Large Portrait, Small, Inert, With Quantity, Masked, Unknown Character, With Tooltip, Zero quantity shows no badge
 
 ### CorporationPicture
 
@@ -708,7 +708,7 @@ A corporation logo from the EVE image server.
 
 - Import: `import CorporationPicture from '@components/blocks/CorporationPicture.astro'`
 - Props: `corporation_id: number`, `corporation_name?: string`, `x_corporation_id?: string | false = false`, `x_corporation_name?: string | false = false`, `size?: ImageSize = 64`, `icon_quality?: EvEImageServiceSize = 64`, `quantity?: number`, `tag_color?: BadgeColors`
-- Stories (6): `frontend/app/rust/stories/eve/CorporationPicture.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-corporationpicture--docs: Default, Large, Small, With Quantity, Different Corporation, Unknown Corporation
+- Stories (7): `frontend/app/rust/stories/eve/CorporationPicture.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-corporationpicture--docs: Default, Large, Small, With Quantity, Different Corporation, Unknown Corporation, Zero quantity shows no badge
 
 ### ItemPicture
 
@@ -716,7 +716,7 @@ An EVE type icon (or, from 128px up, a ship render) from the image server.
 
 - Import: `import ItemPicture from '@components/blocks/ItemPicture.astro'`
 - Props: `item_id: number`, `item_name?: string`, `size?: ImageSize = 64`, `narrow?: boolean = false`, `icon_quality?: EvEImageServiceSize = 64`, `mask?: boolean = false`, `quantity?: number`, `blueprint?: BlueprintParam`
-- Stories (7): `frontend/app/rust/stories/eve/ItemPicture.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-itempicture--docs: Default, Ship Render, Blueprint Original, Blueprint Copy, With Quantity, Masked Narrow, No Name
+- Stories (8): `frontend/app/rust/stories/eve/ItemPicture.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-itempicture--docs: Default, Ship Render, Blueprint Original, Blueprint Copy, With Quantity, Masked Narrow, No Name, Zero quantity shows no badge
 
 ### CorporationBadge
 

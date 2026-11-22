@@ -127,3 +127,13 @@ export const WithTooltip = {
         await expect(picture).toHaveAttribute('x-init', 'tippy($el, tippy_options)')
     },
 }
+
+export const ZeroQuantity = {
+    name: 'Zero quantity shows no badge',
+    args: { quantity: 0 },
+    play: async ({ canvasElement }: Ctx) => {
+        // `{quantity && ...}` used to print a literal 0 beside the portrait.
+        await expect(canvasElement.querySelector('.quantity-badge')).toBeNull()
+        await expect(canvasElement.querySelector('picture')?.textContent?.trim()).toBe('')
+    },
+}
