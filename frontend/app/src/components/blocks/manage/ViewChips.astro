@@ -68,6 +68,7 @@ const { t } = i18n(Astro.url)
 
 import ChipGroup from '@components/blocks/ChipGroup.astro'
 import FilterChip from '@components/blocks/FilterChip.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
 
 const views_id = `${id}-views`
 const attention_id = `${id}-attention`
@@ -95,7 +96,7 @@ const trigger = search_id
     hx-swap="outerHTML"
     {...attributes}
 >
-    <div class="[ manage-filters__chips ]">
+    <FlexInline gap="var(--space-2xs) var(--space-s)">
         <fieldset id={views_id}>
             <legend class="[ visually-hidden ]">{legend}</legend>
             <ChipGroup wrap={true} role="none">
@@ -121,6 +122,6 @@ const trigger = search_id
                 </ChipGroup>
             </fieldset>
         }
-    </div>
+    </FlexInline>
     <slot />
 </form>

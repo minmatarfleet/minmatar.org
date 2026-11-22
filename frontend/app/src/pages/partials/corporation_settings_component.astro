@@ -30,6 +30,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
 import Switch from '@components/blocks/Switch.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
 import Input from '@components/blocks/Input.astro'
 import MarkdownTextArea from '@components/blocks/MarkdownTextArea.astro'
 import SectionTabs from '@components/blocks/SectionTabs.astro'
@@ -363,39 +364,21 @@ const status_text = (() => {
                 <fieldset class="[ corp-settings__delivery ]">
                     <legend class="[ corp-settings__label ]">{t('corporations.settings.delivery_label')}</legend>
                     <Flexblock gap="var(--space-xs)">
-                        <label class="[ corp-settings__option ]">
-                            <input
-                                type="radio"
-                                name="delivery_method"
-                                value="alliance"
-                                checked={delivery_method === 'alliance'}
-                            />
+                        <OptionCard name="delivery_method" value="alliance" checked={delivery_method === 'alliance'}>
                             <span class="[ corp-settings__option-body ]">
                                 <strong>{t('corporations.settings.delivery_alliance')}</strong>
                                 <small>{t(settings.can_link_account ? 'corporations.settings.delivery_alliance_help' : 'corporations.settings.delivery_alliance_help_ceo')}</small>
                             </span>
-                        </label>
+                        </OptionCard>
 
-                        <label class="[ corp-settings__option ]">
-                            <input
-                                type="radio"
-                                name="delivery_method"
-                                value="automatic"
-                                checked={delivery_method === 'automatic'}
-                            />
+                        <OptionCard name="delivery_method" value="automatic" checked={delivery_method === 'automatic'}>
                             <span class="[ corp-settings__option-body ]">
                                 <strong>{t(settings.can_link_account ? 'corporations.settings.delivery_automatic' : 'corporations.settings.delivery_automatic_ceo')}</strong>
                                 <small>{t(settings.can_link_account ? 'corporations.settings.delivery_automatic_help' : 'corporations.settings.delivery_automatic_help_ceo')}</small>
                             </span>
-                        </label>
+                        </OptionCard>
 
-                        <label class="[ corp-settings__option ]">
-                            <input
-                                type="radio"
-                                name="delivery_method"
-                                value="discord_reminder"
-                                checked={delivery_method === 'discord_reminder'}
-                            />
+                        <OptionCard name="delivery_method" value="discord_reminder" checked={delivery_method === 'discord_reminder'}>
                             <span class="[ corp-settings__option-body ]">
                                 <strong>{t(settings.can_link_account ? 'corporations.settings.delivery_reminder' : 'corporations.settings.delivery_reminder_ceo')}</strong>
                                 <small>{t(settings.can_link_account ? 'corporations.settings.delivery_reminder_help' : 'corporations.settings.delivery_reminder_help_ceo')}</small>
@@ -407,7 +390,7 @@ const status_text = (() => {
                                     </small>
                                 }
                             </span>
-                        </label>
+                        </OptionCard>
                     </Flexblock>
                 </fieldset>
 
@@ -705,38 +688,6 @@ const status_text = (() => {
 
         legend {
             margin-bottom: var(--space-3xs);
-        }
-    }
-
-    .corp-settings__option {
-        display: flex;
-        gap: var(--space-xs);
-        align-items: flex-start;
-        padding: var(--space-s);
-        border: solid 1px var(--border-color);
-        cursor: pointer;
-        transition: border-color var(--fast-transition);
-
-        &:hover {
-            border-color: var(--border-color-hover);
-        }
-
-        &:has(input:checked) {
-            border-color: var(--fleet-yellow);
-        }
-
-        &:has(input:disabled) {
-            cursor: not-allowed;
-            opacity: 0.6;
-
-            &:hover {
-                border-color: var(--border-color);
-            }
-        }
-
-        input {
-            margin-top: var(--space-3xs);
-            accent-color: var(--fleet-red);
         }
     }
 

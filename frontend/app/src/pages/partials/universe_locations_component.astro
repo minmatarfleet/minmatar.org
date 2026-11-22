@@ -47,6 +47,8 @@ function page_query(next_view: StructureView, rigs: string[]) {
 import Flexblock from '@components/compositions/Flexblock.astro'
 import Button from '@components/blocks/Button.astro'
 import Dropdown from '@components/blocks/Dropdown.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import Input from '@components/blocks/Input.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
@@ -94,12 +96,12 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
                 </Dropdown>
             </div>
             <div class="[ structures-controls__views ]">
-                <nav class="[ manage-chips ]" aria-label={t('structures.views')}>
-                    {STRUCTURE_VIEWS.map((name) => (
-                        <a class:list={['[ manage-chip ]', { 'is-on': name === view }]} href={page_query(name, picked_rigs)} aria-current={name === view ? 'page' : undefined}>
-                            {t(t_key('structures.view_', name))} <span class="[ manage-muted ]">{counts[name]}</span>
-                        </a>
-                    ))}
+                <nav aria-label={t('structures.views')}>
+                    <ChipGroup wrap={true}>
+                        {STRUCTURE_VIEWS.map((name) => (
+                            <FilterChip href={page_query(name, picked_rigs)} active={name === view} count={counts[name]}>{t(t_key('structures.view_', name))}</FilterChip>
+                        ))}
+                    </ChipGroup>
                 </nav>
                 {(can_manage || list?.can_add) &&
                     <div class="[ structures-controls__acts ]">
@@ -199,17 +201,6 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
         display: flex;
         flex-direction: column;
         gap: var(--space-s);
-
-        .manage-chip.is-on {
-            color: var(--background);
-            background-color: var(--fleet-yellow);
-            border-color: var(--fleet-yellow);
-
-            :global(.manage-muted) {
-                color: inherit;
-                opacity: 0.7;
-            }
-        }
     }
 
     .structures-controls__row {

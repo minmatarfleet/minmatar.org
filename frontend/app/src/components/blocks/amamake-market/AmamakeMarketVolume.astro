@@ -19,6 +19,8 @@ import AmamakeMarketVolumeSkeleton from '@components/blocks/amamake-market/Amama
 import ChipGroup from '@components/blocks/ChipGroup.astro'
 import FilterChip from '@components/blocks/FilterChip.astro'
 import ButtonAuth from '@components/blocks/ButtonAuth.astro'
+import Button from '@components/blocks/Button.astro'
+import HtmxPager from '@components/blocks/HtmxPager.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Input from '@components/blocks/Input.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
@@ -122,8 +124,6 @@ const max_isk = Math.max(...rows.map((row) => row.isk), 1)
 const total_pages = volume?.total_pages ?? 1
 const total = volume?.total ?? 0
 const current_page = volume?.page ?? page
-const can_prev = current_page > 1
-const can_next = Boolean(volume) && current_page < total_pages
 const show_table = !login_required && !fetch_error && volume != null
 const search_url = volume_partial({ page: 1, q: '' })
 
@@ -141,14 +141,16 @@ const hx_body = {
                 <p>Keep browsing — log in for more page flips and filters. First looks stay free.</p>
                 <FlexInline gap="var(--space-2xs)">
                     <ButtonAuth size="sm">Log in</ButtonAuth>
-                    <StylessButton
+                    <Button
+                        size="sm"
+                        color="transparent"
                         type="button"
-                        class="[ mk-sold-chip ]"
+                        off_disable={true}
                         hx-get={volume_partial({ page: 1, q: '' })}
                         {...hx_body}
                     >
                         Back to page 1
-                    </StylessButton>
+                    </Button>
                 </FlexInline>
             </div>
         )}
@@ -239,39 +241,20 @@ const hx_body = {
                                     ))}
                         </DataTable>
 
-                        <div class="[ mk-volume__pager ]">
-                            <p class="[ mk-volume__meta ]">
+                        <HtmxPager
+                            page={current_page}
+                            total_pages={total_pages}
+                            url_for={(to) => volume_partial({ page: to })}
+                            target="#mk-volume-body"
+                            swap="innerHTML"
+                            request={{ 'hx-indicator': hx_body['hx-indicator'] }}
+                        >
+                            <p slot="status" class="[ mk-volume__meta ]">
                                 Page {current_page} of {total_pages}
                                 {total > 0 && <> · {number_thousand_separator(total)} types</>}
                                 {q && <> · matching “{q}”</>}
                             </p>
-                            <FlexInline gap="var(--space-2xs)">
-                                {can_prev ? (
-                                    <StylessButton
-                                        type="button"
-                                        class="[ mk-sold-chip ]"
-                                        hx-get={volume_partial({ page: current_page - 1 })}
-                                        {...hx_body}
-                                    >
-                                        ← Prev
-                                    </StylessButton>
-                                ) : (
-                                    <span class="[ mk-sold-chip is-disabled ]" aria-disabled="true">← Prev</span>
-                                )}
-                                {can_next ? (
-                                    <StylessButton
-                                        type="button"
-                                        class="[ mk-sold-chip ]"
-                                        hx-get={volume_partial({ page: current_page + 1 })}
-                                        {...hx_body}
-                                    >
-                                        Next →
-                                    </StylessButton>
-                                ) : (
-                                    <span class="[ mk-sold-chip is-disabled ]" aria-disabled="true">Next →</span>
-                                )}
-                            </FlexInline>
-                        </div>
+                        </HtmxPager>
                     </>
                 )}
             </>
@@ -284,14 +267,16 @@ const hx_body = {
                 <p>Keep browsing — log in for more page flips and filters. First looks stay free.</p>
                 <FlexInline gap="var(--space-2xs)">
                     <ButtonAuth size="sm">Log in</ButtonAuth>
-                    <StylessButton
+                    <Button
+                        size="sm"
+                        color="transparent"
                         type="button"
-                        class="[ mk-sold-chip ]"
+                        off_disable={true}
                         hx-get={volume_partial({ page: 1, q: '' })}
                         {...hx_body}
                     >
                         Back to page 1
-                    </StylessButton>
+                    </Button>
                 </FlexInline>
             </div>
         )}
@@ -414,39 +399,20 @@ const hx_body = {
                                             ))}
                                 </DataTable>
 
-                                <div class="[ mk-volume__pager ]">
-                                    <p class="[ mk-volume__meta ]">
+                                <HtmxPager
+                                    page={current_page}
+                                    total_pages={total_pages}
+                                    url_for={(to) => volume_partial({ page: to })}
+                                    target="#mk-volume-body"
+                                    swap="innerHTML"
+                                    request={{ 'hx-indicator': hx_body['hx-indicator'] }}
+                                >
+                                    <p slot="status" class="[ mk-volume__meta ]">
                                         Page {current_page} of {total_pages}
                                         {total > 0 && <> · {number_thousand_separator(total)} types</>}
                                         {q && <> · matching “{q}”</>}
                                     </p>
-                                    <FlexInline gap="var(--space-2xs)">
-                                        {can_prev ? (
-                                            <StylessButton
-                                                type="button"
-                                                class="[ mk-sold-chip ]"
-                                                hx-get={volume_partial({ page: current_page - 1 })}
-                                                {...hx_body}
-                                            >
-                                                ← Prev
-                                            </StylessButton>
-                                        ) : (
-                                            <span class="[ mk-sold-chip is-disabled ]" aria-disabled="true">← Prev</span>
-                                        )}
-                                        {can_next ? (
-                                            <StylessButton
-                                                type="button"
-                                                class="[ mk-sold-chip ]"
-                                                hx-get={volume_partial({ page: current_page + 1 })}
-                                                {...hx_body}
-                                            >
-                                                Next →
-                                            </StylessButton>
-                                        ) : (
-                                            <span class="[ mk-sold-chip is-disabled ]" aria-disabled="true">Next →</span>
-                                        )}
-                                    </FlexInline>
-                                </div>
+                                </HtmxPager>
                             </>
                         )}
                     </div>
@@ -559,46 +525,6 @@ const hx_body = {
         padding: var(--space-m);
         border: solid 1px var(--border-color);
         background: var(--light-transparency-background-mobile);
-    }
-
-    .mk-volume__pager {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        align-items: center;
-        gap: var(--space-s);
-    }
-
-    .mk-sold-chip {
-        padding: var(--space-3xs) var(--space-s);
-        border: solid 1px var(--border-color);
-        border-radius: var(--space-l);
-        background: transparent;
-        color: var(--foreground);
-        font-family: var(--default-font);
-        font-size: var(--step--1);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        white-space: nowrap;
-        cursor: pointer;
-        transition: border-color var(--fast-transition), color var(--fast-transition), background-color var(--fast-transition);
-
-        &:focus-visible {
-            outline: 2px solid var(--highlight);
-            outline-offset: 2px;
-        }
-
-        &.is-disabled {
-            opacity: 0.4;
-            cursor: default;
-        }
-
-        @media (hover: hover) {
-            &:hover:not(.is-disabled) {
-                border-color: var(--highlight);
-                color: var(--highlight);
-            }
-        }
     }
 
     .mk-table__num {

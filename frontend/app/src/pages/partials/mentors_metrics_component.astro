@@ -56,6 +56,8 @@ const scale = (measure: { mentored: number, similar: number, percent: boolean })
     measure.percent ? 100 : Math.max(measure.mentored, measure.similar, 1)
 
 import EmptyState from '@components/blocks/EmptyState.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import Grid from '@components/compositions/Grid.astro'
 import StatCard from '@components/blocks/StatCard.astro'
@@ -71,19 +73,17 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
         <>
             <MentorsNav active="metrics" me={me} />
 
-            <nav class="[ mentors-periods ]" aria-label={t('mentors.metrics.period')}>
-                {PERIODS.map(days =>
-                    <button
-                        type="button"
-                        class:list={['[ mentors-period ]', { 'is-active': days === period }]}
-                        aria-pressed={days === period ? 'true' : 'false'}
-                        hx-get={translatePath(mentors_url(MENTORS_METRICS_PARTIAL, { period: days }))}
-                        hx-target="#mentors-metrics"
-                        hx-swap="outerHTML"
-                    >
-                        {period_label(days)}
-                    </button>
-                )}
+            <nav aria-label={t('mentors.metrics.period')}>
+                <ChipGroup wrap={true}>
+                    {PERIODS.map(days =>
+                        <FilterChip
+                            active={days === period}
+                            hx-get={translatePath(mentors_url(MENTORS_METRICS_PARTIAL, { period: days }))}
+                            hx-target="#mentors-metrics"
+                            hx-swap="outerHTML"
+                        >{period_label(days)}</FilterChip>
+                    )}
+                </ChipGroup>
             </nav>
 
             {metrics.requests === 0 && metrics.mentors.length === 0 ?
@@ -192,33 +192,6 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
     .mentors-muted {
         color: var(--faded);
         font-size: var(--step--1);
-    }
-
-    .mentors-periods {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-3xs);
-    }
-
-    .mentors-period {
-        min-height: var(--space-l);
-        padding: 0 var(--space-s);
-        border: solid 1px var(--border-color-hover);
-        background: none;
-        color: var(--foreground);
-        font-size: var(--step--1);
-        font-weight: 600;
-        cursor: pointer;
-
-        &.is-active {
-            border-color: var(--fleet-yellow);
-            color: var(--highlight);
-        }
-
-        &:focus-visible {
-            outline: solid 2px var(--fleet-yellow);
-            outline-offset: 2px;
-        }
     }
 
     .mentors-table__who {

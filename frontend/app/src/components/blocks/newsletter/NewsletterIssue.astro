@@ -14,6 +14,7 @@ import { get_item_icon, get_player_icon } from '@helpers/eve_image'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 import Button from '@components/blocks/Button.astro'
+import Tag from '@components/blocks/Tag.astro'
 import ClipboardButton from '@components/blocks/ClipboardButton.astro'
 
 interface Props {
@@ -308,7 +309,9 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
                                     <div class="[ nl-order__body ]">
                                         <div class="[ nl-order__head ]">
                                             <b>{order.ship} <span>×{order.quantity}</span></b>
-                                            <span class:list={['[ nl-chip ]', `nl-chip--${order.status}`]}>{order.status_label}</span>
+                                            {order.status === 'delivered'
+                                                ? <Tag text={order.status_label} color="foreground" text_color="var(--black)" />
+                                                : <Tag text={order.status_label} color="fleet-red" variant="outline" />}
                                         </div>
                                         <div class="[ nl-bar ]"><i style={`width: ${order.progress}%`}></i></div>
                                         <div class="[ nl-order__foot ]">
@@ -1079,24 +1082,6 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
         .nl-orders {
             grid-template-columns: minmax(0, 1fr);
         }
-    }
-
-    .nl-chip {
-        font-size: var(--step--2);
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        padding: 0 var(--space-2xs);
-        white-space: nowrap;
-    }
-
-    .nl-chip--delivered {
-        background: var(--foreground);
-        color: var(--black);
-    }
-
-    .nl-chip--in_progress {
-        border: 1px solid var(--fleet-red);
-        color: var(--fleet-red);
     }
 
     .nl-bar {

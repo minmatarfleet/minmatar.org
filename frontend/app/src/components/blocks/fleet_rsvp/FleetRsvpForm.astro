@@ -12,6 +12,8 @@ import Select from '@components/blocks/Select.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import FleetRsvpShell from '@components/blocks/fleet_rsvp/FleetRsvpShell.astro'
 import FleetRsvpWhen from '@components/blocks/fleet_rsvp/FleetRsvpWhen.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 
 /**
  * The sign-up picker behind the I'm available link: how sure the pilot is,
@@ -162,21 +164,17 @@ import StylessButton from '@components/blocks/StylessButton.astro'
 
                         <fieldset class="[ rsvp-form__sure ]">
                             <legend class="[ fleet-rsvp__label ]">{t('fleets.rsvp.how_sure')}</legend>
-                            <div class="[ rsvp-switch ]">
+                            <ChipGroup wrap={true} role="none">
                                 {sure_options.map((option) =>
-                                    <label class="[ rsvp-switch__option ]" x-bind:class={`{ 'is-on': confidence === '${option.value}' }`} class:list={[{ 'is-on': option.value === confidence }]}>
-                                        <input
-                                            type="radio"
-                                            class="[ visually-hidden ]"
-                                            name="confidence"
-                                            value={option.value}
-                                            checked={option.value === confidence}
-                                            x-model="confidence"
-                                        />
-                                        {option.label}
-                                    </label>
+                                    <FilterChip
+                                        type="radio"
+                                        name="confidence"
+                                        value={option.value}
+                                        checked={option.value === confidence}
+                                        input_attributes={{ 'x-model': 'confidence' }}
+                                    >{option.label}</FilterChip>
                                 )}
-                            </div>
+                            </ChipGroup>
                             {sure_options.map((option) =>
                                 <div
                                     class="[ fleet-rsvp__muted ]"
@@ -362,41 +360,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         legend {
             margin-bottom: var(--space-2xs);
             padding: 0;
-        }
-    }
-
-    .rsvp-switch {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: var(--space-3xs);
-        padding: var(--space-3xs);
-        background-color: var(--component-background);
-        border: 1px solid var(--border-color);
-        border-radius: var(--space-3xs);
-
-        &:has(:focus-visible) {
-            outline: 2px solid var(--fleet-yellow);
-            outline-offset: 2px;
-        }
-    }
-
-    .rsvp-switch__option {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-block-size: var(--space-xl);
-        padding: var(--space-3xs);
-        border-radius: var(--space-3xs);
-        font-size: var(--step--1);
-        font-weight: 600;
-        text-align: center;
-        color: var(--highlight);
-        cursor: pointer;
-        transition: background-color var(--fast-transition);
-
-        &.is-on {
-            background-color: var(--fleet-yellow);
-            color: var(--background);
         }
     }
 

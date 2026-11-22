@@ -17,6 +17,8 @@ import Button from '@components/blocks/Button.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import Select from '@components/blocks/Select.astro'
 import Switch from '@components/blocks/Switch.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import DataGrid from '@components/blocks/DataGrid.astro'
 
 import StylessButton from '@components/blocks/StylessButton.astro'
@@ -152,14 +154,12 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         <div class="[ server-access__body ]">
             <div class="[ server-access__options ]" role="radiogroup" aria-labelledby="server-access-policy">
                 {POLICIES.map((option) => (
-                    <label class="[ server-access__option ]">
-                        <input type="radio" name="member_policy" value={option.value} checked={policy === option.value} x-model="policy" />
-                        <span class="[ server-access__radio ]" aria-hidden="true"></span>
+                    <OptionCard name="member_policy" value={option.value} checked={policy === option.value} input_attributes={{ 'x-model': 'policy' }}>
                         <span>
                             <span class="[ server-access__option-title ]">{t(option.title)}</span>
                             <span class="[ server-access__option-sub ]">{t(option.sub)}</span>
                         </span>
-                    </label>
+                    </OptionCard>
                 ))}
             </div>
         </div>
@@ -363,9 +363,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         <div class="[ server-access__body ]" x-show="policy !== '' || strip" x-cloak={!cleanup_on ? true : undefined}>
             <div class="[ server-access__options ]" role="radiogroup" aria-labelledby="server-access-cleanup" x-show="policy !== ''" x-cloak={!policy ? true : undefined}>
                 {ACTIONS.map((option) => (
-                    <label class="[ server-access__option ]">
-                        <input type="radio" name="member_cleanup" value={option.value} checked={action === option.value} x-model="action" />
-                        <span class="[ server-access__radio ]" aria-hidden="true"></span>
+                    <OptionCard name="member_cleanup" value={option.value} checked={action === option.value} input_attributes={{ 'x-model': 'action' }}>
                         <span>
                             <span class="[ server-access__option-title ]">
                                 {t(option.title)}
@@ -373,7 +371,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
                             </span>
                             <span class="[ server-access__option-sub ]">{t(option.sub)}</span>
                         </span>
-                    </label>
+                    </OptionCard>
                 ))}
             </div>
 
@@ -406,14 +404,15 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
                 <label class="[ server-access__label ]" for="member-access-exemptions">{t('corporations.discord.members_exemptions')}</label>
                 <div>
                     <input type="hidden" name="member_exemptions" value={exemptions.join(',')} x-bind:value="names.join(',')" />
-                    <div class="[ server-access__chips ]">
+                    <div class="[ server-access__tag-input ]">
                         <template x-for="name in names" x-bind:key="name">
-                            <span class="[ server-access__chip ]">
-                                <span x-text="name"></span>
-                                <button type="button" x-bind:aria-label={`'${t('corporations.discord.members_exemption_drop')}'.replace('{name}', name)`} x-on:click="drop_name(name)">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-                                </button>
-                            </span>
+                            <FilterChip
+                                removable={true}
+                                remove_attributes={{
+                                    'x-bind:aria-label': `'${t('corporations.discord.members_exemption_drop')}'.replace('{name}', name)`,
+                                    'x-on:click': 'drop_name(name)',
+                                }}
+                            ><span x-text="name"></span></FilterChip>
                         </template>
                         <input
                             id="member-access-exemptions"
@@ -626,51 +625,6 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         gap: var(--space-xs);
     }
 
-    .server-access__option {
-        position: relative;
-        display: flex;
-        align-items: flex-start;
-        gap: var(--space-xs);
-        padding: var(--space-xs) var(--space-s);
-        border: solid 1px var(--border-color-hover);
-        border-radius: var(--space-3xs);
-        background-color: var(--surface-sunken);
-        cursor: pointer;
-        transition: border-color var(--fast-transition), background-color var(--fast-transition);
-
-        input {
-            position: absolute;
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        &:has(input:checked) {
-            border-color: var(--foreground);
-            background-color: color-mix(in srgb, var(--foreground) var(--tint-subtle), transparent);
-        }
-
-        &:has(input:focus-visible) {
-            outline: solid 2px var(--foreground);
-            outline-offset: 2px;
-        }
-    }
-
-    .server-access__radio {
-        flex: none;
-        box-sizing: border-box;
-        width: var(--space-s);
-        height: var(--space-s);
-        margin-block-start: var(--space-3xs);
-        border: solid 2px var(--faded);
-        border-radius: 50%;
-
-        :checked + & {
-            border-color: var(--foreground);
-            background-color: var(--foreground);
-            box-shadow: inset 0 0 0 3px var(--component-background);
-        }
-    }
-
     .server-access__option-title {
         display: block;
         font-family: var(--button-font);
@@ -859,7 +813,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         color: var(--faded);
     }
 
-    .server-access__chips {
+    .server-access__tag-input {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
@@ -872,27 +826,6 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
 
         &:focus-within {
             border-color: var(--foreground);
-        }
-    }
-
-    .server-access__chip {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-3xs);
-        padding: var(--space-3xs) var(--space-3xs) var(--space-3xs) var(--space-2xs);
-        border-radius: var(--space-s);
-        background-color: var(--border-color-hover);
-        font-size: var(--step--1);
-        color: var(--highlight);
-
-        button {
-            display: grid;
-            place-items: center;
-            border: none;
-            border-radius: 50%;
-            background: none;
-            color: var(--faded);
-            cursor: pointer;
         }
     }
 

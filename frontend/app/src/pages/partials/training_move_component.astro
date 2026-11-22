@@ -77,6 +77,7 @@ import Button from '@components/blocks/Button.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import StylessButton from '@components/blocks/StylessButton.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
 ---
 
 {fetch_error ?
@@ -140,22 +141,20 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         <fieldset>
             <legend>{t('training.account').replace(' {number}', '')}</legend>
             {choices.map(choice =>
-                <label class:list={['[ training-move__choice ]', { disabled: choice.disabled }]} x-bind:class={`{ selected: selected === '${choice.value}' }`}>
-                    <input
-                        type="radio"
-                        name="account"
-                        value={choice.value}
-                        checked={choice.value === current}
-                        disabled={choice.disabled}
-                        x-model="selected"
-                    />
+                <OptionCard
+                    name="account"
+                    value={choice.value}
+                    checked={choice.value === current}
+                    class={choice.disabled ? '[ training-move__choice--off ]' : undefined}
+                    input_attributes={{ disabled: choice.disabled, 'x-model': 'selected' }}
+                >
                     <span class="[ training-move__label ]">
                         <strong>{choice.label}</strong>
                         {choice.hint && <small class="[ training-muted ]">{choice.hint}</small>}
                     </span>
                     {choice.seen && <span class="[ training-move__seen ]">{choice.seen}</span>}
                     <span class="[ training-muted ]">{choice.room}</span>
-                </label>
+                </OptionCard>
             )}
         </fieldset>
 
@@ -235,22 +234,14 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         border-radius: var(--space-3xs);
         cursor: pointer;
 
-        &.selected {
-            border-color: var(--fleet-yellow);
-        }
-
-        &.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        input {
-            accent-color: var(--fleet-yellow);
-        }
-
         img {
             border-radius: var(--space-3xs);
         }
+    }
+
+    .training-move__choice--off {
+        opacity: 0.5;
+        cursor: not-allowed;
     }
 
     button.training-move__choice {

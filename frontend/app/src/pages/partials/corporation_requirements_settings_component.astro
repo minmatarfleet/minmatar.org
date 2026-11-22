@@ -18,6 +18,8 @@ import { over_asks, requirement_from_form } from '@helpers/corporations/requirem
 import { query_string } from '@helpers/string'
 
 import Button from '@components/blocks/Button.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import Input from '@components/blocks/Input.astro'
 import CorporationRequirementForm from '@components/blocks/CorporationRequirementForm.astro'
@@ -156,18 +158,17 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                     {rule.members_pass === null ? '—' : `${rule.members_pass}%`}
                                 </span>
                                 <span role="cell">
-                                    <span class="[ corp-req__toggle ]" role="group" aria-label={t('corporations.requirements.col_importance')}>
+                                    <ChipGroup wrap={true} aria_label={t('corporations.requirements.col_importance')}>
                                         {(['required', 'preferred'] as const).map((value) => (
-                                            <button
-                                                type="button"
-                                                aria-pressed={rule.importance === value ? 'true' : 'false'}
+                                            <FilterChip
+                                                active={rule.importance === value}
                                                 hx-post={PARTIAL_URL}
                                                 hx-target={TARGET}
                                                 hx-swap="outerHTML"
                                                 hx-vals={JSON.stringify({ action: 'importance', rule_id: String(rule.id), importance: value })}
-                                            >{t(value === 'required' ? 'corporations.requirements.importance_required' : 'corporations.requirements.importance_preferred')}</button>
+                                            >{t(value === 'required' ? 'corporations.requirements.importance_required' : 'corporations.requirements.importance_preferred')}</FilterChip>
                                         ))}
-                                    </span>
+                                    </ChipGroup>
                                 </span>
                                 <span role="cell">
                                     <StylessButton
@@ -362,29 +363,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
     .corp-req__row--head .corp-req__num {
         font-weight: 600;
         color: var(--faded);
-    }
-
-    .corp-req__toggle {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        border: solid 1px var(--border-color-hover);
-
-        button {
-            min-height: var(--space-l);
-            padding-inline: var(--space-2xs);
-            background: transparent;
-            border: 0;
-            font: inherit;
-            font-size: var(--step--1);
-            color: var(--faded);
-            cursor: pointer;
-        }
-
-        button[aria-pressed='true'] {
-            background: var(--foreground);
-            color: var(--background);
-            font-weight: 600;
-        }
     }
 
     .corp-req__icon-button {

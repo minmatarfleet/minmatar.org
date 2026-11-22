@@ -25,34 +25,23 @@ const options = kind === 'brackets'
 const chosen = new Set(selected.map(value => value.toString()))
 
 import OptionCard from '@components/blocks/OptionCard.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
 ---
 
-<fieldset class="[ mentor-chips manage-field ]">
+<fieldset class="[ manage-fieldset manage-field ]">
     <legend class="[ manage-field__label ]">{legend}</legend>
-    <div class="[ mentor-chips__row ]">
+    <FlexInline gap="var(--space-3xs)">
         {options.map(option =>
             <OptionCard type="checkbox" name={name} value={option.value} checked={chosen.has(option.value)} title={option.title || undefined}>
                 {option.label}
             </OptionCard>
         )}
-    </div>
+    </FlexInline>
     {hint && <span class="[ manage-field__hint ]">{hint}</span>}
 </fieldset>
 
 <style lang="scss">
-    .mentor-chips {
-        margin: 0;
-        padding: 0;
-        border: 0;
-    }
-
     legend {
         padding: 0 0 var(--space-3xs);
-    }
-
-    .mentor-chips__row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-3xs);
     }
 </style>

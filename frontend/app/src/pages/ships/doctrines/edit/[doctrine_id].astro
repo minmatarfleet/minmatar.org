@@ -232,6 +232,8 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 
 import Button from '@components/blocks/Button.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import ChangeDiff from '@components/blocks/ChangeDiff.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Dialog from '@components/blocks/Dialog.astro'
@@ -397,24 +399,23 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                     <div class="[ doctrine-popover ]" x-show="open" x-cloak>
                                         <div class="[ doctrine-popover__bar ]">
                                             <span class="[ doctrine-muted ]">{t('doctrine_changes.add_as')}</span>
-                                            <div class="[ doctrine-segments ]" role="group" aria-label={t('doctrine_changes.add_as')}>
+                                            <ChipGroup wrap={true} aria_label={t('doctrine_changes.add_as')}>
                                                 {DOCTRINE_ROLES.map((role) =>
-                                                    <button
-                                                        type="button"
+                                                    <FilterChip
                                                         x-on:click={`add_as = '${role}'`}
+                                                        x-bind:class={`{ 'is-active': add_as === '${role}' }`}
                                                         x-bind:aria-pressed={`add_as === '${role}'`}
-                                                    >{ROLE_LABELS[role]}</button>
+                                                    >{ROLE_LABELS[role]}</FilterChip>
                                                 )}
-                                            </div>
+                                            </ChipGroup>
                                         </div>
                                         <div class="[ doctrine-popover__filters ]" role="group" aria-label={t('doctrine_changes.hull_filter')}>
                                             {['all', ...HULL_FILTERS].map((filter) =>
-                                                <button
-                                                    type="button"
-                                                    class="[ doctrine-chip ]"
+                                                <FilterChip
                                                     x-on:click={`filter = '${filter}'`}
+                                                    x-bind:class={`{ 'is-active': filter === '${filter}' }`}
                                                     x-bind:aria-pressed={`filter === '${filter}'`}
-                                                >{FILTER_LABELS[filter]}</button>
+                                                >{FILTER_LABELS[filter]}</FilterChip>
                                             )}
                                         </div>
                                         <ul id="doctrine-add-results" class="[ doctrine-results ]" x-ref="results" role="listbox">
@@ -595,44 +596,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
 
     .doctrine-popover__bar {
         border-bottom: 1px solid var(--border-color);
-    }
-
-    .doctrine-segments {
-        display: flex;
-        flex-wrap: wrap;
-
-        button {
-            min-height: 2.25rem;
-            padding: 0 var(--space-xs);
-            background: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--faded);
-            font-size: var(--step--1);
-            cursor: pointer;
-
-            & + button {
-                margin-inline-start: -1px;
-            }
-        }
-    }
-
-    .doctrine-chip {
-        min-height: 2rem;
-        padding: 0 var(--space-xs);
-        border-radius: var(--space-s);
-        background: transparent;
-        border: 1px solid var(--border-color);
-        color: var(--faded);
-        font-size: var(--step--1);
-        cursor: pointer;
-    }
-
-    .doctrine-segments button[aria-pressed="true"],
-    .doctrine-chip[aria-pressed="true"] {
-        position: relative;
-        border-color: var(--highlight);
-        color: var(--foreground);
-        background: color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent);
     }
 
     .doctrine-results {

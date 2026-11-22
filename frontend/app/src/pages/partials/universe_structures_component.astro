@@ -93,6 +93,7 @@ import ManageTable from '@components/blocks/manage/ManageTable.astro'
 import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
 import StructureReportDialog from '@components/blocks/structures/StructureReportDialog.astro'
 import StylessButton from '@components/blocks/StylessButton.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
 ---
 
 <div id="universe-structures" class="[ universe-structures ]" x-data="{ view: 'all', q: '' }">
@@ -209,13 +210,12 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                                         <input type="hidden" name="structure_id" value={row.id} />
                                                         <input type="hidden" name="action" value="visibility" />
                                                         {(['alliance', 'corporation', 'private'] as const).map((level) => (
-                                                            <label class="[ universe-visibility__option ]">
-                                                                <input type="radio" name="visibility" value={level} checked={row.visibility === level} />
-                                                                <span>
+                                                            <OptionCard name="visibility" value={level} checked={row.visibility === level}>
+                                                                <span class="[ universe-visibility__text ]">
                                                                     <b>{t(`universe.visibility.${level}`)}</b>
                                                                     <small>{t(`universe.visibility.${level}_hint`).replace('~CORP', row.corporation_name)}</small>
                                                                 </span>
-                                                            </label>
+                                                            </OptionCard>
                                                         ))}
                                                         <div class="[ manage-actions ]">
                                                             <Button type="submit" size="sm" color="fleet-red">{t('universe.visibility.save')}</Button>
@@ -324,24 +324,10 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         gap: var(--space-s);
     }
 
-    .universe-visibility__option {
+    .universe-visibility__text {
         display: flex;
-        gap: var(--space-s);
-        align-items: flex-start;
-        padding: var(--space-s);
-        border: 1px solid var(--border-color);
-        cursor: pointer;
-
-        &:has(input:checked) {
-            border-color: var(--fleet-yellow);
-            background: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
-        }
-
-        span {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-3xs);
-        }
+        flex-direction: column;
+        gap: var(--space-3xs);
 
         b {
             color: var(--highlight);

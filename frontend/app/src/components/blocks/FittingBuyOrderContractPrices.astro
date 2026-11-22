@@ -15,6 +15,9 @@ import ClipboardButton from '@components/blocks/ClipboardButton.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
 import Select from '@components/blocks/Select.astro'
 import Textarea from '@components/blocks/Textarea.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
 
 interface Props {
     rows: FittingBuyContractPrice[]
@@ -133,28 +136,25 @@ import StylessButton from '@components/blocks/StylessButton.astro'
             <input type="hidden" name="action" value="contract_settings" />
             <fieldset class="[ contract-settings__group ]" disabled={settings_disabled}>
                 <legend class="[ contract-settings__legend ]">{t('fitting_buy.contract_markup')}</legend>
-                <div class="[ contract-segments ]" role="radiogroup" aria-label={t('fitting_buy.contract_markup')}>
+                <ChipGroup wrap={true} role="radiogroup" aria_label={t('fitting_buy.contract_markup')}>
                     {presets.map((preset) => (
-                        <label class="[ contract-segment ]">
-                            <input
-                                type="radio"
-                                name="contract_markup_pct"
-                                value={String(preset)}
-                                checked={!is_custom_markup && preset === markup_value}
-                                x-on:change="custom = false"
-                            />
-                            <span class="[ contract-segment__label ]">+{preset}%</span>
-                        </label>
-                    ))}
-                    <label class="[ contract-segment contract-segment--custom ]" x-bind:data-active="custom">
-                        <input
+                        <FilterChip
                             type="radio"
                             name="contract_markup_pct"
-                            value="custom"
-                            checked={is_custom_markup}
-                            x-on:change="custom = true; $nextTick(() => $refs.custom_markup.focus())"
-                        />
-                        <span class="[ contract-segment__label ]">{t('fitting_buy.contract_markup_custom')}</span>
+                            value={String(preset)}
+                            checked={!is_custom_markup && preset === markup_value}
+                            input_attributes={{ 'x-on:change': 'custom = false' }}
+                        >+{preset}%</FilterChip>
+                    ))}
+                    <FilterChip
+                        type="radio"
+                        name="contract_markup_pct"
+                        value="custom"
+                        checked={is_custom_markup}
+                        x-bind:class="{ 'is-active': custom }"
+                        input_attributes={{ 'x-on:change': 'custom = true; $nextTick(() => $refs.custom_markup.focus())' }}
+                    >
+                        {t('fitting_buy.contract_markup_custom')}
                         <span class="[ contract-segment__custom ]">
                             <input
                                 x-ref="custom_markup"
@@ -172,34 +172,26 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                             />
                             <span aria-hidden="true">%</span>
                         </span>
-                    </label>
-                </div>
+                    </FilterChip>
+                </ChipGroup>
             </fieldset>
 
             <fieldset class="[ contract-settings__group ]" disabled={settings_disabled}>
                 <legend class="[ contract-settings__legend ]">{t('fitting_buy.contract_type')}</legend>
-                <div class="[ contract-segments ]" role="radiogroup" aria-label={t('fitting_buy.contract_type')}>
-                    <label class="[ contract-segment contract-segment--stacked ]">
-                        <input
-                            type="radio"
-                            name="contract_type"
-                            value="alliance"
-                            checked={contract_type !== 'public'}
-                        />
-                        <span class="[ contract-segment__label ]">{t('fitting_buy.contract_type_alliance')}</span>
-                        <small class="[ contract-segment__sub ]">{alliance_fee_summary}</small>
-                    </label>
-                    <label class="[ contract-segment contract-segment--stacked ]">
-                        <input
-                            type="radio"
-                            name="contract_type"
-                            value="public"
-                            checked={contract_type === 'public'}
-                        />
-                        <span class="[ contract-segment__label ]">{t('fitting_buy.contract_type_public')}</span>
-                        <small class="[ contract-segment__sub ]">{public_fee_summary}</small>
-                    </label>
-                </div>
+                <FlexInline gap="var(--space-2xs)" role="radiogroup" aria-label={t('fitting_buy.contract_type')}>
+                    <OptionCard name="contract_type" value="alliance" checked={contract_type !== 'public'}>
+                        <span class="[ contract-segment__text ]">
+                            <span class="[ contract-segment__label ]">{t('fitting_buy.contract_type_alliance')}</span>
+                            <small class="[ contract-segment__sub ]">{alliance_fee_summary}</small>
+                        </span>
+                    </OptionCard>
+                    <OptionCard name="contract_type" value="public" checked={contract_type === 'public'}>
+                        <span class="[ contract-segment__text ]">
+                            <span class="[ contract-segment__label ]">{t('fitting_buy.contract_type_public')}</span>
+                            <small class="[ contract-segment__sub ]">{public_fee_summary}</small>
+                        </span>
+                    </OptionCard>
+                </FlexInline>
             </fieldset>
         </form>
 
@@ -444,10 +436,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         padding: 0;
         border: 0;
         min-width: 0;
-
-        &[disabled] .contract-segment {
-            cursor: default;
-        }
     }
 
     .contract-settings__legend {
@@ -459,61 +447,9 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         text-transform: uppercase;
     }
 
-    .contract-segments {
-        display: inline-flex;
-        flex-wrap: wrap;
-        max-width: 100%;
-        border: 1px solid var(--border-color-hover);
-        background: color-mix(in srgb, var(--background) var(--tint-strong), transparent);
-    }
-
-    .contract-segment {
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-2xs);
-        min-height: var(--space-xl);
-        padding: var(--space-2xs) var(--space-s);
-        color: var(--highlight);
-        font-size: var(--step--1);
-        cursor: pointer;
-        transition: var(--fast-transition);
-
-        & + & {
-            border-inline-start: 1px solid var(--border-color-hover);
-        }
-
-        input[type='radio'] {
-            position: absolute;
-            inset: 0;
-            margin: 0;
-            opacity: 0;
-            cursor: inherit;
-        }
-
-        &:has(input[type='radio']:checked),
-        &[data-active='true'] {
-            background: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
-            color: var(--fleet-yellow);
-            box-shadow: inset 0 -2px 0 var(--fleet-yellow);
-        }
-
-        &:has(input[type='radio']:focus-visible) {
-            outline: 1px solid var(--foreground);
-            outline-offset: -3px;
-        }
-
-        @media (hover: hover) {
-            &:hover {
-                color: var(--fleet-yellow);
-            }
-        }
-    }
-
-    .contract-segment--stacked {
+    .contract-segment__text {
+        display: flex;
         flex-direction: column;
-        align-items: flex-start;
-        justify-content: center;
         gap: 2px;
     }
 
@@ -536,10 +472,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         }
     }
 
-    .contract-segment:has(input[type='radio']:checked) .contract-segment__sub {
-        color: var(--highlight);
-    }
-
     .contract-segment__custom {
         position: relative;
         z-index: 1;
@@ -555,7 +487,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
             border: 0;
             border-bottom: 1px solid var(--border-color-hover);
             background: transparent;
-            color: var(--fleet-yellow);
+            color: inherit;
             font: inherit;
             font-variant-numeric: tabular-nums;
             text-align: right;
@@ -916,14 +848,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
     @media (max-width: 48rem) {
         .wrapper.fitting-buy-contract-prices {
             padding-inline: var(--space-s);
-        }
-
-        .contract-segments {
-            display: flex;
-        }
-
-        .contract-segment {
-            flex: 1 1 auto;
         }
 
         .contract-segment__sub {

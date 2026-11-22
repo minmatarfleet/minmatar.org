@@ -51,6 +51,8 @@ const sub = (row: TaskProjectRow) => [
 ].filter(Boolean).join(' · ')
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ManageTable from '@components/blocks/manage/ManageTable.astro'
 import TaskProjectStartDialog from '@components/blocks/tasks/TaskProjectStartDialog.astro'
@@ -68,20 +70,19 @@ import TaskProjectStartDialog from '@components/blocks/tasks/TaskProjectStartDia
         )
         : (
             <>
-                <nav class="[ manage-chips ]" aria-label={t('tasks.tab.projects')}>
-                    {VIEWS.map((value) => (
-                        <button
-                            type="button"
-                            class:list={['[ manage-chip ]', { 'is-on': view === value }]}
-                            aria-current={view === value ? 'true' : undefined}
-                            hx-get={`${SELF_URL}?view=${value}`}
-                            hx-target={`#${TARGET}`}
-                            hx-swap="outerHTML"
-                        >
-                            {t(value === 'all' ? 'tasks.projects.all' : value === 'i_lead' ? 'tasks.projects.i_lead' : 'tasks.projects.mine')}
-                            <span class="[ manage-chip__count ]">{counts[value]}</span>
-                        </button>
-                    ))}
+                <nav aria-label={t('tasks.tab.projects')}>
+                    <ChipGroup wrap={true}>
+                        {VIEWS.map((value) => (
+                            <FilterChip
+                                active={view === value}
+                                count={counts[value]}
+                                aria-current={view === value ? 'true' : undefined}
+                                hx-get={`${SELF_URL}?view=${value}`}
+                                hx-target={`#${TARGET}`}
+                                hx-swap="outerHTML"
+                            >{t(value === 'all' ? 'tasks.projects.all' : value === 'i_lead' ? 'tasks.projects.i_lead' : 'tasks.projects.mine')}</FilterChip>
+                        ))}
+                    </ChipGroup>
                 </nav>
 
                 {open_rows.length === 0 && finished_rows.length === 0 &&
