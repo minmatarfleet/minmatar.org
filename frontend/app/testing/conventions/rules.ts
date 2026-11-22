@@ -338,7 +338,7 @@ export const RULES: ConventionRule[] = [
             if (!is_astro(file)) return []
             const exempt = COMPONENT_FILES(
                 'blocks/Input', 'blocks/Select', 'blocks/Textarea', 'blocks/RadioCheckInput',
-                'blocks/Switch', 'blocks/FlatPicker',
+                'blocks/Switch', 'blocks/FlatPicker', 'blocks/FilterChip', 'blocks/OptionCard', 'blocks/RadioCheckPill',
             )
             if (exempt.includes(file.path)) return []
             return hits_in(file, [astro_template(file.text)], RAW_FORM_CONTROL)
