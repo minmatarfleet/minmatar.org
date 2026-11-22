@@ -227,7 +227,7 @@ const breadcrumbs = [
                         <Flexblock gap="var(--space-s)">
                             <FlexInline justification="space-between" class="[ w-full ]">
                                 <h2 id="loyalty-book-title">{t('industry.loyalty.book.title')}</h2>
-                                <ChipGroup wrap={true} aria_label={t('industry.loyalty.book.view')}>
+                                <ChipGroup variant="segmented" aria_label={t('industry.loyalty.book.view')}>
                                     <FilterChip
                                         active={default_tab === 'open'}
                                         x-bind:class="{ 'is-active': tab === 'open' }"

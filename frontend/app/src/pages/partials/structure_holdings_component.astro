@@ -54,7 +54,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                     {pilots.length > 0 && <p>{lead}</p>}
                 </div>
                 {pilots.length > 0 &&
-                    <ChipGroup wrap={true} aria_label={t('structures.holdings.group')}>
+                    <ChipGroup variant="segmented" selected_fill={true} aria_label={t('structures.holdings.group')}>
                         <FilterChip active={true} x-bind:class="{ 'is-active': by === 'pilot' }" x-bind:aria-pressed="by === 'pilot'" x-on:click="by = 'pilot'">{t('structures.holdings.by_pilot')}</FilterChip>
                         <FilterChip x-bind:class="{ 'is-active': by === 'item' }" x-bind:aria-pressed="by === 'item'" x-on:click="by = 'item'">{t('structures.holdings.by_item')}</FilterChip>
                     </ChipGroup>

@@ -399,7 +399,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                     <div class="[ doctrine-popover ]" x-show="open" x-cloak>
                                         <div class="[ doctrine-popover__bar ]">
                                             <span class="[ doctrine-muted ]">{t('doctrine_changes.add_as')}</span>
-                                            <ChipGroup wrap={true} aria_label={t('doctrine_changes.add_as')}>
+                                            <ChipGroup variant="segmented" aria_label={t('doctrine_changes.add_as')}>
                                                 {DOCTRINE_ROLES.map((role) =>
                                                     <FilterChip
                                                         x-on:click={`add_as = '${role}'`}

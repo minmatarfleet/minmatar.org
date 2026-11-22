@@ -4,12 +4,16 @@
  * group), drawn as a card. The input is real (and visually hidden), so arrow
  * keys, Space and form submission work natively. Pages add Alpine (`x-model`)
  * or htmx (`hx-get`, `hx-trigger`) attributes through `input_attributes`.
+ * `variant="tile"` is the lighter tinted tile: a hairline border and a
+ * dim background, adjacent tiles join, and the selected tile takes the
+ * yellow tint with an underline.
  */
 interface Props {
     name:               string;
     value:              string;
     type?:              'radio' | 'checkbox';
     checked?:           boolean;
+    variant?:           'default' | 'tile';
     input_attributes?:  Record<string, any>;
     [propName: string]: any;
 }
@@ -19,6 +23,7 @@ const {
     value,
     type = 'radio',
     checked = false,
+    variant = 'default',
     input_attributes = {},
     ...attributes
 } = Astro.props
@@ -26,7 +31,7 @@ const {
 delete attributes.class
 ---
 
-<label class:list={['[ option-card ]', Astro.props.class]} {...attributes}>
+<label class:list={['[ option-card ]', { 'option-card--tile': variant === 'tile' }, Astro.props.class]} {...attributes}>
     <input type={type} name={name} value={value} checked={checked} {...input_attributes} />
     <span class="[ option-card__body ]">
         <slot />
@@ -78,5 +83,29 @@ delete attributes.class
         input:not(:checked):hover + .option-card__body {
             border-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
         }
+    }
+
+    .option-card--tile .option-card__body {
+        min-height: var(--space-xl);
+        padding: calc((var(--space-2xs) + var(--space-xs)) / 2) var(--space-s);
+        border: 1px solid var(--border-color-hover);
+        background: color-mix(in srgb, var(--background) var(--tint-strong), transparent);
+        color: var(--highlight);
+    }
+
+    .option-card--tile + .option-card--tile {
+        margin-inline-start: -1px;
+    }
+
+    .option-card--tile input:checked + .option-card__body {
+        border-color: var(--border-color-hover);
+        background: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
+        color: var(--fleet-yellow);
+        box-shadow: inset 0 -2px 0 var(--fleet-yellow);
+    }
+
+    .option-card--tile input:focus-visible + .option-card__body {
+        outline: 1px solid var(--foreground);
+        outline-offset: 2px;
     }
 </style>
