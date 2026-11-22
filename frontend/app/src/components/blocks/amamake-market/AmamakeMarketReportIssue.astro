@@ -51,6 +51,7 @@ const max_category_isk = Math.max(...issue.categories.map((c) => c.isk), 1)
 
 const { auth_token } = get_request_user(Astro)
 
+import DataTable from '@components/blocks/DataTable.astro'
 ---
 
 <div class="[ market-report ]">
@@ -127,19 +128,22 @@ const { auth_token } = get_request_user(Astro)
                     </ol>
                 </div>
 
-                <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Sell orders by class">
+                <div class="[ mk-table-wrap ]">
                     <h4>Sell orders by class</h4>
-                    <table class="[ mk-table mk-table--weeks ]">
-                        <thead>
-                            <tr>
-                                <th scope="col">Class</th>
-                                <th scope="col" class="[ mk-table__bar-head ]">ISK sold</th>
-                                <th scope="col" class="[ mk-table__num ]">{vs_label}</th>
-                                <th scope="col" class="[ mk-table__num ]">Orders</th>
-                                <th scope="col" class="[ mk-table__num ]">Markup</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                    <DataTable
+                        variant="report"
+                        cards={true}
+                        class="[ mk-table--weeks ]"
+                        style="--data-table-card-columns: 3"
+                        caption="Sell orders by class"
+                        columns={[
+                            { key: 'class', label: 'Class' },
+                            { key: 'isk', label: 'ISK sold', class: 'data-table__bar' },
+                            { key: 'vs', label: vs_label, numeric: true },
+                            { key: 'orders', label: 'Orders', numeric: true },
+                            { key: 'markup', label: 'Markup', numeric: true },
+                        ]}
+                    >
                             {issue.categories.map((row) => (
                                 <tr>
                                     <td class="[ mk-table__when ]">{row.name}</td>
@@ -175,8 +179,7 @@ const { auth_token } = get_request_user(Astro)
                                     </td>
                                 </tr>
                             ))}
-                        </tbody>
-                    </table>
+                    </DataTable>
                 </div>
             </Flexblock>
         </ComponentBlock>
@@ -522,61 +525,14 @@ const { auth_token } = get_request_user(Astro)
         display: flex;
         flex-direction: column;
         gap: var(--space-s);
-        overflow-x: auto;
         min-width: 0;
         width: 100%;
-    }
-
-    .mk-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: var(--step--1);
-
-        th,
-        td {
-            padding: var(--space-xs) var(--space-s);
-            text-align: left;
-            vertical-align: middle;
-            border-bottom: solid 1px var(--mk-rule);
-        }
-
-        th {
-            font-weight: 600;
-            color: var(--faded);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-size: var(--step--2);
-            white-space: nowrap;
-        }
-
-        tbody tr:hover td {
-            background: color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent);
-        }
-
-        td:first-child {
-            white-space: nowrap;
-        }
-
-        @media screen and (max-width: 720px) {
-            th,
-            td {
-                padding: var(--space-xs) var(--space-2xs);
-            }
-        }
     }
 
     .mk-table__num {
         text-align: right !important;
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
-    }
-
-    .mk-table__bar-head {
-        min-width: 12rem;
-
-        @media screen and (max-width: 720px) {
-            min-width: 8rem;
-        }
     }
 
     .mk-table__bar {
@@ -595,7 +551,7 @@ const { auth_token } = get_request_user(Astro)
         }
     }
 
-    .mk-table--weeks .mk-table__bar {
+    :global(.mk-table--weeks) .mk-table__bar {
         width: 45%;
     }
 
@@ -684,69 +640,36 @@ const { auth_token } = get_request_user(Astro)
         min-width: 0;
     }
 
-    /* Phones: stack each row as a card — name, bar, then the numbers with their column labels. */
+    /* Phones: the cards layout comes from DataTable; the bar cell lays out its own label, bar and value. */
     @media (max-width: 48rem) {
-        .mk-table--weeks {
-            thead {
-                display: none;
+        :global(.mk-table--weeks) td,
+        :global(.mk-table--weeks) td.mk-table__num {
+            white-space: normal !important;
+            text-align: left !important;
+        }
+
+        :global(.mk-table--weeks) td:nth-child(1),
+        :global(.mk-table--weeks) td:nth-child(2) {
+            grid-column: 1 / -1;
+        }
+
+        :global(.mk-table--weeks) td.mk-table__bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0 var(--space-xs);
+            width: auto;
+
+            &::before {
+                flex-basis: 100%;
             }
 
-            tr {
-                display: grid;
-                grid-template-columns: repeat(3, minmax(0, 1fr));
-                gap: var(--space-2xs) var(--space-s);
-                padding-block: var(--space-s);
-                border-bottom: solid 1px var(--mk-rule);
+            > .mk-bar {
+                flex: 1;
             }
 
-            tbody tr:hover td {
-                background: none;
-            }
-
-            td {
-                padding: 0;
-                border: none;
-                background: none;
-                white-space: normal !important;
-                text-align: left !important;
-                min-width: 0;
-                width: auto;
-            }
-
-            td:nth-child(1),
-            td:nth-child(2) {
-                grid-column: 1 / -1;
-            }
-
-            td.mk-table__bar {
-                display: flex;
-                flex-wrap: wrap;
-                align-items: center;
-                gap: 0 var(--space-xs);
-                width: auto;
-                min-width: 0;
-
-                &::before {
-                    flex-basis: 100%;
-                }
-
-                > .mk-bar {
-                    flex: 1;
-                }
-
-                > b {
-                    margin-top: 0;
-                }
-            }
-
-            td[data-label]::before {
-                content: attr(data-label);
-                display: block;
-                font-size: var(--step--2);
-                color: var(--faded);
-                text-transform: uppercase;
-                letter-spacing: 0.06em;
-                margin-bottom: 0.15em;
+            > b {
+                margin-top: 0;
             }
         }
     }

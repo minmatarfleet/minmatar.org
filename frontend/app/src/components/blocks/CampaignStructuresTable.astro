@@ -55,6 +55,7 @@ import StructureReportDialog from '@components/blocks/structures/StructureReport
 import Tag from '@components/blocks/Tag.astro'
 import Countdown from '@components/blocks/Countdown.astro'
 import StylessButton from '@components/blocks/StylessButton.astro'
+import DataGrid from '@components/blocks/DataGrid.astro'
 ---
 
 <Flexblock gap='var(--space-s)' class:list={['[ campaign-structures ]', Astro.props.class]} {...attributes}>
@@ -75,21 +76,28 @@ import StylessButton from '@components/blocks/StylessButton.astro'
     {structures.length === 0 ?
         <small>{t('campaigns.structures.none')}</small>
         :
-        <div class="[ campaign-structures-table ]" role="table" aria-label={t('campaigns.structures.title')}>
-            <div class="[ campaign-structures-head ]" role="row">
-                <span role="columnheader"><span class="[ visually-hidden ]">{t('campaigns.structures.col.name')}</span></span>
-                <span role="columnheader">{t('campaigns.structures.col.system')}</span>
-                <span role="columnheader">{t('campaigns.structures.col.owner')}</span>
-                <span role="columnheader">{t('campaigns.structures.col.status')}</span>
-                <span role="columnheader">{t('campaigns.structures.col.rh')}</span>
-                <span role="columnheader">{t('campaigns.structures.next_timer')}</span>
-                <span role="columnheader">{t('campaigns.structures.has_fit')}</span>
-            </div>
+        <DataGrid
+            class="[ campaign-structures-table ]"
+            aria-label={t('campaigns.structures.title')}
+            template="3rem minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 1fr) 4rem minmax(0, 2.4fr) 3rem"
+            min_width="0"
+            stack={true}
+            hidden_columns={[0]}
+            columns={[
+                t('campaigns.structures.col.name'),
+                t('campaigns.structures.col.system'),
+                t('campaigns.structures.col.owner'),
+                t('campaigns.structures.col.status'),
+                t('campaigns.structures.col.rh'),
+                t('campaigns.structures.next_timer'),
+                t('campaigns.structures.has_fit'),
+            ]}
+        >
             {rows.map(structure => {
                 const icon = structure_icon(structure)
                 const destroyed = structure.status === 'destroyed'
                 return (
-                <div class:list={['[ campaign-structures-row ]', { 'is-destroyed': destroyed }]} role="row">
+                <div class:list={['[ data-grid-row campaign-structures-row ]', { 'is-destroyed': destroyed }]} role="row">
                     <span role="cell">
                         <StylessButton
                             type="button"
@@ -148,7 +156,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                 </div>
                 )
             })}
-        </div>
+        </DataGrid>
     }
 </Flexblock>
 
@@ -176,20 +184,16 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         }
     }
 
-    .campaign-structures-head,
     .campaign-structures-row {
-        display: grid;
         grid-template-columns: 3rem minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 1fr) 4rem minmax(0, 2.4fr) 3rem;
         gap: var(--space-xs);
         align-items: center;
         white-space: nowrap;
     }
 
-    .campaign-structures-head {
+    :global(.campaign-structures-table .data-grid-head) {
+        gap: var(--space-xs);
         font-size: var(--step--1);
-        color: var(--highlight);
-        border-bottom: solid 1px var(--border-color);
-        padding-block-end: var(--space-3xs);
     }
 
     .campaign-structures-row {
@@ -224,10 +228,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
     }
 
     @media (max-width: 720px) {
-        .campaign-structures-head {
-            display: none;
-        }
-
         .campaign-structures-row {
             grid-template-columns: 3rem 1fr 1fr;
             gap: var(--space-3xs);
