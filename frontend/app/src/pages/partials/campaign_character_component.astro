@@ -54,6 +54,7 @@ try {
 
 import CampaignReadinessTable from '@components/blocks/CampaignReadinessTable.astro'
 ---
+{/* no-error-refetch: failures render as a flash line above the readiness table, for the read and for include/exclude POSTs. */}
 
 <CampaignReadinessTable
     readiness={readiness}

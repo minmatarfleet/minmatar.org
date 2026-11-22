@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 import { get_request_user } from '@helpers/request_user'
 const { t, translatePath, lang } = i18n(Astro.url)
 
-import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { HTTP_403_Forbidden, HTTP_500_Server_Error } from '@helpers/http_responses'
 import { get_corporation_members } from '@helpers/api.minmatar.org/corporations'
 import { get_player_icon } from '@helpers/eve_image'
 import {
@@ -56,10 +56,20 @@ const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id') ?? 
 if (!corporation_id) return HTTP_403_Forbidden()
 
 const params = parse_member_params(Astro.url.searchParams)
-const members_result = await get_corporation_members(auth_token, corporation_id)
-if (!members_result) return HTTP_403_Forbidden()
+let members_result: Awaited<ReturnType<typeof get_corporation_members>> = null
+let fetch_members_error: Error | false = false
+try {
+    members_result = await get_corporation_members(auth_token, corporation_id)
+} catch (error) {
+    fetch_members_error = error
+}
+// A failed filter or page request keeps the table on screen (htmx ignores the 500);
+// only the first load, which has no table yet, renders the retry block.
+if (fetch_members_error && Astro.request.headers.get('HX-Target') === BODY_ID) return HTTP_500_Server_Error()
+if (!fetch_members_error && !members_result) return HTTP_403_Forbidden()
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
-const grouped = group_corporation_members(members_result)
+const grouped = group_corporation_members(members_result ?? [])
 const roster = build_member_roster(grouped, { ...params, ids: [] })
 const pagination = paginate_corporation_member_rows(roster, params.page, MEMBER_PAGE_SIZE)
 const now = new Date()
@@ -234,8 +244,19 @@ const range_start = pagination.total === 0 ? 0 : (pagination.page - 1) * paginat
 const range_end = Math.min(pagination.total, pagination.page * pagination.page_size)
 const selected_template = t('corporations.members.selected')
 import StylessButton from '@components/blocks/StylessButton.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 ---
 
+{fetch_members_error ?
+<div id={BODY_ID}>
+    <ErrorRefetch args={{
+        partial: partial_url(Object.fromEntries([...Astro.url.searchParams].filter(([key]) => key !== 'delay'))),
+        error: fetch_members_error,
+        delay: delay,
+        target: `#${BODY_ID}`,
+    }} />
+</div>
+:
 <div class="cm">
     <form
         id={FORM_ID}
@@ -592,6 +613,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
     </HtmxPager>
 </div>
 </div>
+}
 
 <style lang="scss">
     .cm {

@@ -73,6 +73,7 @@ try {
 
 const partial_base = translatePath('/partials/missing_skills_modal_component/')
 ---
+{/* no-error-refetch: lookup and validation failures render as a tag in the modal body; a retry cannot fix a bad character or skillset. */}
 
 {skillset_missing_skills_modal_error ?
     <Tag text={skillset_missing_skills_modal_error.message} />

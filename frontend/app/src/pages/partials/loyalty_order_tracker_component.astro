@@ -60,6 +60,7 @@ if (auth_token) {
 
 import LoyaltyOrderTracker from '@components/blocks/LoyaltyOrderTracker.astro'
 ---
+{/* no-error-refetch: only answers the tracker's POST buttons: a failed step renders in the tracker's error line, and a missing order is a 404. */}
 
 <LoyaltyOrderTracker
     order={order}

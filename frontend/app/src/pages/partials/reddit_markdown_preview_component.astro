@@ -7,6 +7,7 @@ import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import { render_reddit_markdown } from '@helpers/reddit_markdown'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 
 const { auth_token } = get_request_user(Astro)
 if (!auth_token || Astro.request.method !== 'POST') return HTTP_403_Forbidden()
@@ -20,14 +21,14 @@ const content = String(form.get('content') ?? '')
     {title ?
         <p class="[ reddit-preview__title ]">{title}</p>
         :
-        <p class="[ reddit-preview__empty ]">{t('corporations.settings.preview_no_title')}</p>
+        <EmptyState title={t('corporations.settings.preview_no_title')} />
     }
     {content.trim() ?
         <div class="[ reddit-preview__body ]" set:html={render_reddit_markdown(content)} />
         :
-        <p class="[ reddit-preview__empty ]">{t('corporations.settings.preview_empty')}</p>
+        <EmptyState title={t('corporations.settings.preview_empty')} />
     }
-    <small class="[ reddit-preview__empty ]">{t('corporations.settings.preview_note')}</small>
+    <small class="[ reddit-preview__note ]">{t('corporations.settings.preview_note')}</small>
 </Flexblock>
 
 <style lang="scss">
@@ -40,7 +41,7 @@ const content = String(form.get('content') ?? '')
         border-bottom: solid 1px var(--border-color);
     }
 
-    .reddit-preview__empty {
+    .reddit-preview__note {
         color: var(--faded);
         margin: 0;
     }
