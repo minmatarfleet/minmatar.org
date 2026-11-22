@@ -147,13 +147,13 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         letter-spacing: 0;
         text-transform: none;
         color: var(--highlight);
-        background-color: color-mix(in srgb, var(--alliance-blue) 45%, transparent);
+        background-color: color-mix(in srgb, var(--alliance-blue) var(--tint-strong), transparent);
         border: 1px solid var(--alliance-blue);
     }
 
     .structure-holdings__switch {
         display: inline-flex;
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
 
         button {
             min-block-size: 2.5rem;
@@ -161,7 +161,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
             font-family: var(--button-font);
             font-size: var(--step--1);
             font-weight: 600;
-            color: var(--text-muted);
+            color: var(--faded);
             cursor: pointer;
             background: none;
             border: 0;
@@ -180,7 +180,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         background-color: var(--component-background);
 
         > li {
-            border-bottom: 1px solid var(--hairline-medium);
+            border-bottom: 1px solid var(--border-color);
         }
 
         summary {
@@ -220,7 +220,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 
         small {
             font-size: var(--step--1);
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
@@ -244,7 +244,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
             gap: var(--space-s);
             padding-block: var(--space-3xs);
             color: var(--highlight);
-            border-bottom: 1px dotted var(--hairline-strong);
+            border-bottom: 1px dotted var(--border-color-hover);
         }
 
         b {
@@ -255,7 +255,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
     .structure-holdings__more {
         padding: 0 var(--space-m) var(--space-s) calc(var(--space-m) + 2.75rem + var(--space-s));
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .structure-holdings__table {
@@ -268,7 +268,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
             padding: var(--space-2xs) var(--space-m);
             text-align: end;
             font-variant-numeric: tabular-nums;
-            border-bottom: 1px solid var(--hairline-medium);
+            border-bottom: 1px solid var(--border-color);
         }
 
         thead th {
@@ -276,7 +276,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
             font-weight: 700;
             letter-spacing: 0.06em;
             text-transform: uppercase;
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         th:first-child {

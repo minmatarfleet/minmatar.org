@@ -1856,7 +1856,7 @@ const planner_copy = JSON.stringify({
 <style lang="scss">
     .planner-beta {
         padding: var(--space-s) var(--space-m);
-        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
         border-left: 4px solid var(--fleet-yellow, #c9a227);
         background: color-mix(in srgb, var(--fleet-yellow, #c9a227) 8%, var(--component-background));
         font-size: var(--step--1);
@@ -1960,7 +1960,7 @@ const planner_copy = JSON.stringify({
     .planner-tip {
         cursor: help;
         color: var(--foreground);
-        border-bottom: dotted 2px color-mix(in srgb, currentColor 30%, transparent);
+        border-bottom: dotted 2px color-mix(in srgb, currentColor var(--tint-medium), transparent);
     }
 
     /* Block tip targets: underline the value / label, not the whole card */
@@ -1973,7 +1973,7 @@ const planner_copy = JSON.stringify({
     .planner-tip__mark,
     .planner-tip__label {
         color: var(--foreground);
-        border-bottom: dotted 2px color-mix(in srgb, currentColor 30%, transparent);
+        border-bottom: dotted 2px color-mix(in srgb, currentColor var(--tint-medium), transparent);
     }
 
     .planner-settings-row {
@@ -2138,7 +2138,7 @@ const planner_copy = JSON.stringify({
 
     .planner-bucket {
         padding-block: var(--space-2xs);
-        border-top: 1px solid var(--hairline-medium);
+        border-top: 1px solid var(--border-color);
     }
 
     .planner-bucket-action {

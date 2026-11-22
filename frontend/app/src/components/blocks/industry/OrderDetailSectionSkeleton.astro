@@ -115,16 +115,16 @@ const { section } = Astro.props
 
     .order-summary-skeleton .skel-stat {
         min-height: 4.75rem;
-        border: 1px solid var(--hairline-medium);
-        @include skeleton.shimmer(transparent, var(--hairline-medium), $fill: rgba(85, 85, 85, 0.12));
+        border: 1px solid var(--border-color);
+        @include skeleton.shimmer(transparent, var(--border-color), $fill: color-mix(in srgb, var(--neutral-600) var(--tint-soft), transparent));
     }
 
     .order-summary-skeleton .skel-chart {
         width: 100%;
         min-height: 360px;
         height: min(420px, 70vh);
-        border: 1px solid var(--hairline-medium);
-        @include skeleton.shimmer(transparent, rgba(255, 255, 255, 0.07), $fill: rgba(85, 85, 85, 0.1));
+        border: 1px solid var(--border-color);
+        @include skeleton.shimmer(transparent, rgba(255, 255, 255, 0.07), $fill: color-mix(in srgb, var(--neutral-600) var(--tint-subtle), transparent));
     }
 
     .order-summary-skeleton .skel-table {
@@ -134,6 +134,6 @@ const { section } = Astro.props
 
     .order-summary-skeleton .skel-row {
         height: 2.75rem;
-        border: 1px solid var(--hairline);
+        border: 1px solid var(--border-color);
     }
 </style>

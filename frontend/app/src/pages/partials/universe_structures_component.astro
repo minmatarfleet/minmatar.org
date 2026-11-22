@@ -244,7 +244,9 @@ import StructureReportDialog from '@components/blocks/structures/StructureReport
     }
 
     .universe-attention {
-        color: var(--security-status-point-4);
+        padding-inline: var(--space-3xs);
+        background-color: var(--fleet-yellow);
+        color: var(--background);
     }
 
     .universe-detail {
@@ -297,7 +299,7 @@ import StructureReportDialog from '@components/blocks/structures/StructureReport
         font-size: var(--step--1);
 
         dt {
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         dd {
@@ -325,7 +327,7 @@ import StructureReportDialog from '@components/blocks/structures/StructureReport
 
         &:has(input:checked) {
             border-color: var(--fleet-yellow);
-            background: color-mix(in srgb, var(--fleet-yellow) 8%, transparent);
+            background: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
         }
 
         span {

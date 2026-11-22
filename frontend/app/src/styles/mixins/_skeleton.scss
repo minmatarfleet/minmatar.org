@@ -10,7 +10,7 @@
 
 // Sweeping highlight: $base -> $peak -> $base, travelling right to left.
 // $fill is an optional solid colour under the gradient.
-@mixin shimmer($base: var(--hairline), $peak: var(--hairline-strong), $fill: null, $duration: 1.1s) {
+@mixin shimmer($base: var(--border-color), $peak: var(--border-color-hover), $fill: null, $duration: 1.1s) {
     background: linear-gradient(90deg, $base 0%, $peak 50%, $base 100%);
     @if $fill {
         background-color: $fill;

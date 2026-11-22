@@ -84,7 +84,7 @@ const sides = campaign_sides(parties).filter((side) => !compact || side.parties.
     }
 
     [data-side='ally'] .campaign-side-label {
-        color: color-mix(in srgb, var(--alliance-blue) 55%, var(--highlight));
+        color: var(--alliance-blue-300);
     }
 
     [data-side='third_party'] .campaign-side-label {
@@ -109,7 +109,7 @@ const sides = campaign_sides(parties).filter((side) => !compact || side.parties.
         gap: var(--space-3xs);
         height: 2.25rem;
         padding-inline: var(--space-3xs) var(--space-2xs);
-        background: var(--hairline);
+        background: var(--border-color);
         color: var(--highlight);
         font-weight: 700;
         font-size: var(--step--1);

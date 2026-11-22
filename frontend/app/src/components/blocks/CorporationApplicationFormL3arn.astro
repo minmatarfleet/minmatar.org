@@ -70,7 +70,7 @@ const { include_field_names = false, alliance_corporations } = Astro.props;
 
     .alpha-warning {
         padding: var(--space-s) var(--space-m);
-        border: 1px solid color-mix(in srgb, var(--fleet-red) 35%, transparent);
+        border: 1px solid color-mix(in srgb, var(--fleet-red) var(--tint-medium), transparent);
         border-left: 4px solid var(--fleet-red);
         background: color-mix(in srgb, var(--fleet-red) 8%, var(--component-background));
         font-size: var(--step--1);
@@ -85,9 +85,9 @@ const { include_field_names = false, alliance_corporations } = Astro.props;
 
     .draft-notice {
         padding: var(--space-s) var(--space-m);
-        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
         border-left: 4px solid var(--alliance-blue);
-        background: color-mix(in srgb, var(--component-background) 70%, transparent);
+        background: color-mix(in srgb, var(--component-background) var(--tint-heavy), transparent);
 
         p {
             margin: 0;

@@ -357,13 +357,13 @@ if (order.status === 'cancelled')
         margin: 0;
         padding: var(--space-s) var(--space-m);
         border: 1px solid var(--green);
-        background-color: color-mix(in srgb, var(--green) 14%, transparent);
+        background-color: color-mix(in srgb, var(--green) var(--tint-soft), transparent);
         color: var(--highlight);
     }
 
     .loyalty-tracker__error {
         border-color: var(--fleet-red);
-        background-color: color-mix(in srgb, var(--fleet-red) 14%, transparent);
+        background-color: color-mix(in srgb, var(--fleet-red) var(--tint-soft), transparent);
     }
 
     .loyalty-tracker__header {
@@ -384,7 +384,7 @@ if (order.status === 'cancelled')
         img {
             width: var(--space-l);
             height: var(--space-l);
-            border: 1px solid color-mix(in srgb, var(--fleet-yellow) 35%, transparent);
+            border: 1px solid color-mix(in srgb, var(--fleet-yellow) var(--tint-medium), transparent);
             background-color: var(--background);
         }
     }
@@ -443,7 +443,7 @@ if (order.status === 'cancelled')
     }
 
     .loyalty-tracker__move {
-        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
         background-color: var(--component-background);
 
         h2 {

@@ -359,7 +359,7 @@ const detail_id = `loyalty-offer-detail-${offer.offer_id}`
         border-bottom: solid 1px var(--border-color);
 
         &.is-open {
-            background: color-mix(in srgb, var(--highlight) 4%, transparent);
+            background: color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent);
         }
     }
 
@@ -376,7 +376,7 @@ const detail_id = `loyalty-offer-detail-${offer.offer_id}`
 
         @media (hover: hover) {
             &:hover {
-                background: color-mix(in srgb, var(--highlight) 6%, transparent);
+                background: color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent);
             }
         }
     }
@@ -494,7 +494,7 @@ const detail_id = `loyalty-offer-detail-${offer.offer_id}`
         position: relative;
         flex: 1 1 auto;
         height: var(--space-2xs);
-        background: color-mix(in srgb, var(--foreground) 10%, transparent);
+        background: color-mix(in srgb, var(--foreground) var(--tint-subtle), transparent);
     }
 
     .loyalty-offer-item__fill {
@@ -502,7 +502,7 @@ const detail_id = `loyalty-offer-detail-${offer.offer_id}`
         inset-block: 0;
         inset-inline-start: 0;
         width: var(--fill);
-        background: color-mix(in srgb, var(--foreground) 55%, transparent);
+        background: color-mix(in srgb, var(--foreground) var(--tint-bold), transparent);
     }
 
     .loyalty-offer-item__bar--beats .loyalty-offer-item__fill {
@@ -530,7 +530,7 @@ const detail_id = `loyalty-offer-detail-${offer.offer_id}`
         [data-tippy-content],
         &[data-tippy-content] {
             cursor: help;
-            text-decoration: underline dotted color-mix(in srgb, currentColor 35%, transparent);
+            text-decoration: underline dotted color-mix(in srgb, currentColor var(--tint-medium), transparent);
             text-underline-offset: 0.2em;
         }
     }
@@ -594,11 +594,11 @@ const detail_id = `loyalty-offer-detail-${offer.offer_id}`
         inset-block: 0;
         inset-inline-start: var(--start);
         width: var(--size);
-        background: color-mix(in srgb, var(--fleet-red) 75%, transparent);
+        background: color-mix(in srgb, var(--fleet-red) var(--tint-heavy), transparent);
     }
 
     .loyalty-offer-item__step--gross .loyalty-offer-item__step-bar {
-        background: color-mix(in srgb, var(--foreground) 55%, transparent);
+        background: color-mix(in srgb, var(--foreground) var(--tint-bold), transparent);
     }
 
     .loyalty-offer-item__step--net {

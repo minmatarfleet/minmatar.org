@@ -103,7 +103,7 @@ const item_class = [
         &:is(a, button):hover,
         &:is(a, button):focus-visible {
             color: var(--foreground);
-            background: color-mix(in srgb, var(--foreground) 8%, transparent);
+            background: color-mix(in srgb, var(--foreground) var(--tint-subtle), transparent);
         }
 
         &:disabled {
@@ -121,7 +121,7 @@ const item_class = [
 
         &--success:is(a, button):hover,
         &--success:is(a, button):focus-visible {
-            background: color-mix(in srgb, var(--green) 25%, transparent);
+            background: color-mix(in srgb, var(--green) var(--tint-medium), transparent);
             color: var(--highlight);
         }
 
@@ -132,7 +132,7 @@ const item_class = [
         }
 
         &--muted {
-            color: color-mix(in srgb, var(--highlight) 65%, transparent);
+            color: color-mix(in srgb, var(--highlight) var(--tint-bold), transparent);
         }
 
         &--text {

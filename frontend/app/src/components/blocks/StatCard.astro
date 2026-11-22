@@ -117,7 +117,7 @@ const has_hint = Boolean(hint) || Astro.slots.has('hint')
 
     .stat-card__bar {
         block-size: var(--space-3xs);
-        background: color-mix(in srgb, var(--foreground) 12%, transparent);
+        background: color-mix(in srgb, var(--foreground) var(--tint-soft), transparent);
 
         &::after {
             content: '';

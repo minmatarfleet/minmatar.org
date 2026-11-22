@@ -216,8 +216,6 @@ import Button from '@components/blocks/Button.astro'
 
 <style lang="scss">
     .member-insights {
-        --insights_good: color-mix(in srgb, var(--green) 60%, var(--highlight));
-        --insights_warn: color-mix(in srgb, var(--fleet-red) 45%, var(--fleet-yellow));
     }
 
     .member-insights__grid {
@@ -233,7 +231,7 @@ import Button from '@components/blocks/Button.astro'
         min-width: 0;
         padding: var(--space-s);
         background: var(--surface-sunken);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
     }
 
     .member-insights__eyebrow {
@@ -243,7 +241,7 @@ import Button from '@components/blocks/Button.astro'
         font-weight: normal;
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .member-insights__trial {
@@ -252,7 +250,7 @@ import Button from '@components/blocks/Button.astro'
         gap: var(--space-3xs);
         padding-block-end: var(--space-2xs);
         margin-block-end: var(--space-3xs);
-        border-bottom: 1px solid var(--hairline);
+        border-bottom: 1px solid var(--border-color);
     }
 
     .member-insights__trial-head {
@@ -276,7 +274,7 @@ import Button from '@components/blocks/Button.astro'
         margin: 0;
         margin-inline-end: auto;
         font-size: var(--step--1);
-        color: var(--insights_warn);
+        color: var(--fleet-yellow);
     }
 
     .member-insights__strong {
@@ -287,15 +285,15 @@ import Button from '@components/blocks/Button.astro'
     .member-insights__muted {
         margin: 0;
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .member-insights__pace {
         font-size: var(--step--1);
         font-weight: 600;
 
-        &.insights-good { color: var(--insights_good); }
-        &.insights-warn { color: var(--insights_warn); }
+        &.insights-good { color: var(--green-text); }
+        &.insights-warn { color: var(--fleet-yellow); }
     }
 
     .member-insights__line {
@@ -306,8 +304,8 @@ import Button from '@components/blocks/Button.astro'
     .member-insights__count {
         font-weight: 600;
 
-        &.insights-good { color: var(--insights_good); }
-        &.insights-warn { color: var(--insights_warn); }
+        &.insights-good { color: var(--green-text); }
+        &.insights-warn { color: var(--fleet-yellow); }
     }
 
     .member-insights__list {
@@ -344,12 +342,12 @@ import Button from '@components/blocks/Button.astro'
         flex: none;
         padding: 0 var(--space-2xs);
         font-weight: 600;
-        color: var(--text-muted);
-        background: var(--hairline);
+        color: var(--faded);
+        background: var(--border-color);
 
         &.insights-warn {
-            color: var(--insights_warn);
-            background: color-mix(in srgb, var(--insights_warn) 12%, transparent);
+            color: var(--fleet-yellow);
+            background: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
         }
     }
 
@@ -361,7 +359,7 @@ import Button from '@components/blocks/Button.astro'
         font-size: var(--step--1);
 
         dt {
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         dd {

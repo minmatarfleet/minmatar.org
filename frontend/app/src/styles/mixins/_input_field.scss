@@ -36,7 +36,7 @@
         color: var(--form-color);
         background-color: transparent;
         border: solid 1px var(--border-color);
-        background-color: rgba(85, 85, 85, 0.1);
+        background-color: color-mix(in srgb, var(--neutral-600) var(--tint-subtle), transparent);
         transition: var(--fast-transition);
         width: 100%;
         backdrop-filter: blur(var(--input-backdrop-blur));
@@ -82,7 +82,7 @@
             /* Keyboard focus ring, as on links (_global.scss). */
             outline-color: var(--highlight);
             outline-style: double;
-            background-color: rgba(85, 85, 85, 0.2);
+            background-color: color-mix(in srgb, var(--neutral-600) var(--tint-soft), transparent);
         }
 
         &.collapsible {

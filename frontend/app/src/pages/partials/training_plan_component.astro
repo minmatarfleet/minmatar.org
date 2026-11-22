@@ -286,7 +286,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
     }
 
     .training-muted {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .training-plan__error {
@@ -307,7 +307,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         font-weight: 600;
         letter-spacing: 0.06em;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .training-plan__options {
@@ -322,7 +322,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         align-items: center;
         gap: var(--space-xs);
         padding: var(--space-2xs) var(--space-s);
-        border: 1px solid var(--hairline);
+        border: 1px solid var(--border-color);
         border-radius: var(--space-3xs);
         background: none;
         color: var(--highlight);
@@ -335,7 +335,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 
         &:hover,
         &:focus-visible {
-            border-color: var(--hairline-strong);
+            border-color: var(--border-color-hover);
         }
 
         &.selected:hover {
@@ -389,7 +389,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
             margin: 0;
             padding: 0;
             list-style: none;
-            border-top: 1px solid var(--hairline);
+            border-top: 1px solid var(--border-color);
         }
 
         li {
@@ -398,7 +398,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
             grid-template-columns: 2rem minmax(0, 1fr) auto;
             gap: var(--space-xs);
             padding-block: var(--space-2xs);
-            border-bottom: 1px solid var(--hairline);
+            border-bottom: 1px solid var(--border-color);
 
             > :last-child {
                 white-space: nowrap;
@@ -418,7 +418,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         justify-content: space-between;
         gap: var(--space-s);
         padding: var(--space-xs) var(--space-s);
-        border: 1px solid var(--hairline);
+        border: 1px solid var(--border-color);
         border-radius: var(--space-3xs);
     }
 

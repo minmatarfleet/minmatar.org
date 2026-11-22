@@ -29,7 +29,7 @@ const { diagram } = Astro.props
         gap: var(--space-xs);
         margin: 0;
         padding: var(--space-s);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
         background: var(--surface-sunken);
 
         svg {
@@ -49,7 +49,7 @@ const { diagram } = Astro.props
         figcaption {
             max-width: var(--max-text-width);
             font-size: var(--step--1);
-            color: var(--text-muted);
+            color: var(--faded);
 
             strong {
                 color: var(--highlight);
@@ -58,10 +58,10 @@ const { diagram } = Astro.props
 
         .rd-text { fill: var(--foreground); }
         .rd-strong { fill: var(--highlight); font-weight: 600; }
-        .rd-muted { fill: var(--text-muted); }
-        .rd-grid { stroke: var(--hairline-strong); fill: none; }
-        .rd-faint { stroke: var(--hairline); fill: none; }
-        .rd-track { fill: var(--hairline); }
+        .rd-muted { fill: var(--faded); }
+        .rd-grid { stroke: var(--border-color-hover); fill: none; }
+        .rd-faint { stroke: var(--border-color); fill: none; }
+        .rd-track { fill: var(--border-color); }
         .rd-yellow { fill: var(--fleet-yellow); }
         .rd-yellow-stroke { stroke: var(--fleet-yellow); fill: none; }
         .rd-red { fill: var(--fleet-red); }
@@ -70,8 +70,8 @@ const { diagram } = Astro.props
         .rd-green-stroke { stroke: var(--green); fill: none; }
         .rd-blue { fill: var(--alliance-blue); }
         .rd-blue-stroke { stroke: var(--alliance-blue); fill: none; }
-        .rd-zone { fill: color-mix(in srgb, var(--fleet-yellow) 10%, transparent); }
-        .rd-zone-red { fill: color-mix(in srgb, var(--fleet-red) 12%, transparent); }
-        .rd-zone-green { fill: color-mix(in srgb, var(--green) 12%, transparent); }
+        .rd-zone { fill: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent); }
+        .rd-zone-red { fill: color-mix(in srgb, var(--fleet-red) var(--tint-soft), transparent); }
+        .rd-zone-green { fill: color-mix(in srgb, var(--green) var(--tint-soft), transparent); }
     }
 </style>

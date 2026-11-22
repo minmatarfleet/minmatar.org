@@ -302,7 +302,7 @@ const max_catchment = Math.max(...issue.catchment.rows.map((row) => row.ships), 
         }
 
         tbody tr:hover td {
-            background: color-mix(in srgb, var(--highlight) 2.5%, transparent);
+            background: color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent);
         }
 
         td:first-child {

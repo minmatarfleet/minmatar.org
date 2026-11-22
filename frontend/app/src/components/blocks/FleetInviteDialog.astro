@@ -381,7 +381,7 @@ import Textarea from '@components/blocks/Textarea.astro'
         font-family: var(--default-font);
         font-size: var(--step--1);
         font-weight: 600;
-        color: var(--text-muted);
+        color: var(--faded);
         text-transform: uppercase;
         letter-spacing: 0.06em;
     }
@@ -402,7 +402,7 @@ import Textarea from '@components/blocks/Textarea.astro'
         gap: var(--space-2xs);
         min-height: var(--space-xl);
         padding: 0 var(--space-xs);
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
         color: var(--highlight);
         font-size: var(--step--1);
         cursor: pointer;
@@ -463,8 +463,8 @@ import Textarea from '@components/blocks/Textarea.astro'
 
     .invite-dialog__pick-tz {
         padding: 0 var(--space-3xs);
-        border: 1px solid var(--hairline-strong);
-        color: var(--text-muted);
+        border: 1px solid var(--border-color-hover);
+        color: var(--faded);
         font-size: var(--step--2);
         font-weight: 600;
         letter-spacing: 0.04em;
@@ -477,7 +477,7 @@ import Textarea from '@components/blocks/Textarea.astro'
 
     .invite-dialog__modes {
         display: inline-flex;
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
 
         button {
             padding: var(--space-3xs) var(--space-xs);
@@ -501,7 +501,7 @@ import Textarea from '@components/blocks/Textarea.astro'
         align-items: center;
         gap: var(--space-s);
         padding: var(--space-xs) var(--space-s);
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
         cursor: pointer;
 
         &:has(input:checked) {
@@ -560,15 +560,15 @@ import Textarea from '@components/blocks/Textarea.astro'
             align-items: center;
             gap: var(--space-3xs);
             padding-left: var(--space-xs);
-            border: 1px solid var(--hairline-strong);
+            border: 1px solid var(--border-color-hover);
             color: var(--highlight);
             font-size: var(--step--1);
         }
 
         li.is-skipped {
             border-style: dashed;
-            border-color: color-mix(in srgb, var(--fleet-red-blind) 55%, transparent);
-            color: var(--text-muted);
+            border-color: color-mix(in srgb, var(--fleet-red-blind) var(--tint-bold), transparent);
+            color: var(--faded);
         }
 
         button {
@@ -576,7 +576,7 @@ import Textarea from '@components/blocks/Textarea.astro'
             min-height: var(--space-l);
             background: transparent;
             border: 0;
-            color: var(--text-muted);
+            color: var(--faded);
             font: inherit;
             cursor: pointer;
         }
@@ -623,7 +623,7 @@ import Textarea from '@components/blocks/Textarea.astro'
 
     .invite-dialog__fake-button {
         padding: var(--space-3xs) var(--space-xs);
-        background-color: var(--hairline-strong);
+        background-color: var(--border-color-hover);
         color: var(--highlight);
     }
 

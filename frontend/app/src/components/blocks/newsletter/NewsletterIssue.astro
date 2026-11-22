@@ -415,7 +415,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
 
     .nl-fine {
         font-size: var(--step--2);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     /* Video blocks */
@@ -425,7 +425,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
         gap: var(--space-l);
         align-items: center;
         padding-block: var(--space-l);
-        border-bottom: 1px solid var(--hairline-strong);
+        border-bottom: 1px solid var(--border-color-hover);
     }
 
     .nl-watch--inline {
@@ -437,7 +437,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
         position: relative;
         display: block;
         overflow: hidden;
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
     }
 
     .nl-watch__thumb--placeholder {
@@ -469,7 +469,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
         width: var(--space-2xl);
         height: var(--space-2xl);
         border-radius: 50%;
-        background: color-mix(in srgb, var(--black) 62%, transparent);
+        background: color-mix(in srgb, var(--black) var(--tint-bold), transparent);
         display: grid;
         place-items: center;
         transition: transform var(--fast-transition);
@@ -517,7 +517,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
         flex-wrap: wrap;
         gap: var(--space-2xs);
         padding-block: var(--space-s);
-        border-bottom: 1px solid var(--hairline);
+        border-bottom: 1px solid var(--border-color);
 
         a {
             font-size: var(--step--2);
@@ -526,7 +526,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
             text-decoration: none;
             color: var(--foreground);
             padding: var(--space-3xs) var(--space-xs);
-            border: 1px solid var(--hairline-strong);
+            border: 1px solid var(--border-color-hover);
             transition: color var(--fast-transition), border-color var(--fast-transition);
         }
 
@@ -546,7 +546,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
     }
 
     .nl-section + .nl-section {
-        border-top: 2px solid var(--hairline-strong);
+        border-top: 2px solid var(--border-color-hover);
     }
 
     .nl-panel {
@@ -616,7 +616,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
 
         span {
             font-size: var(--step--2);
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
@@ -645,7 +645,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
         max-width: var(--max-landing-width);
         padding: var(--space-xs) var(--space-s);
         border-left: 4px solid var(--fleet-red);
-        background: color-mix(in srgb, var(--fleet-red) 14%, transparent);
+        background: color-mix(in srgb, var(--fleet-red) var(--tint-soft), transparent);
 
         b {
             color: var(--highlight);
@@ -665,12 +665,12 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
             height: auto;
             padding: var(--space-2xs);
             background: var(--component-background);
-            border: 1px solid var(--hairline-strong);
+            border: 1px solid var(--border-color-hover);
         }
 
         figcaption {
             font-size: var(--step--2);
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
@@ -716,7 +716,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
         gap: var(--space-3xs);
         align-content: start;
         padding-top: var(--space-s);
-        border-top: 1px solid var(--hairline-strong);
+        border-top: 1px solid var(--border-color-hover);
     }
 
     .nl-split__list b {
@@ -799,7 +799,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
 
     .nl-cta__note {
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
         flex: 1 1 18rem;
     }
 
@@ -817,7 +817,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
             align-content: start;
             gap: var(--space-3xs);
             padding-block: var(--space-s);
-            border-top: 1px solid var(--hairline-strong);
+            border-top: 1px solid var(--border-color-hover);
             min-width: 0;
         }
 
@@ -838,11 +838,11 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
         gap: var(--space-2xs);
         margin-top: var(--space-2xs);
         font-size: var(--step--2);
-        color: var(--text-muted);
+        color: var(--faded);
 
         img {
             border-radius: 50%;
-            border: 1px solid var(--hairline-strong);
+            border: 1px solid var(--border-color-hover);
         }
 
         b {
@@ -854,7 +854,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
     .nl-stats {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        border-block: 1px solid var(--hairline-strong);
+        border-block: 1px solid var(--border-color-hover);
     }
 
     .nl-stat {
@@ -864,7 +864,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
 
         & + & {
             padding-left: var(--space-s);
-            border-left: 1px solid var(--hairline-strong);
+            border-left: 1px solid var(--border-color-hover);
         }
 
         b {
@@ -890,7 +890,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
         }
 
         .nl-stat:nth-child(n + 3) {
-            border-top: 1px solid var(--hairline-strong);
+            border-top: 1px solid var(--border-color-hover);
         }
     }
 
@@ -905,14 +905,14 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
             gap: var(--space-3xs) var(--space-s);
             align-items: baseline;
             padding-block: var(--space-xs);
-            border-top: 1px solid var(--hairline-strong);
+            border-top: 1px solid var(--border-color-hover);
         }
     }
 
     .nl-nights__when {
         font-size: var(--step--2);
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .nl-nights__what {
@@ -924,7 +924,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
 
         span {
             font-size: var(--step--2);
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
@@ -945,7 +945,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
         justify-items: end;
         font-size: var(--step--1);
         font-variant-numeric: tabular-nums;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .nl-kill {
@@ -1029,7 +1029,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
 
         p {
             font-size: var(--step--2);
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
@@ -1058,7 +1058,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
         span {
             margin-left: var(--space-3xs);
             font-size: var(--step--2);
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
@@ -1104,7 +1104,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
 
     .nl-bar {
         height: 6px;
-        background: var(--hairline-strong);
+        background: var(--border-color-hover);
         overflow: hidden;
 
         i {
@@ -1131,7 +1131,7 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
         code {
             padding: var(--space-3xs) var(--space-xs);
             background: var(--component-background);
-            border: 1px solid var(--hairline-strong);
+            border: 1px solid var(--border-color-hover);
             color: var(--highlight);
             user-select: all;
         }
@@ -1171,8 +1171,8 @@ const lead_video: NewsletterVideo | undefined = issue.lead_video
         display: grid;
         gap: var(--space-xs);
         padding-block: var(--space-l);
-        border-top: 2px solid var(--hairline-strong);
-        color: var(--text-muted);
+        border-top: 2px solid var(--border-color-hover);
+        color: var(--faded);
     }
 
     .nl-footer__sign {

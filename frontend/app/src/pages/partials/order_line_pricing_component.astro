@@ -184,7 +184,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
     }
 
     .order-line-pricing__cost {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .order-line-pricing__controls {
@@ -200,7 +200,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         grid-template-columns: repeat(4, minmax(0, 1fr));
         margin: 0;
         padding: 0;
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
         min-width: 0;
 
         @media (max-width: 30rem) {
@@ -216,7 +216,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         justify-content: center;
         min-height: 3rem;
         padding-inline: var(--space-s);
-        border-right: 1px solid var(--hairline-medium);
+        border-right: 1px solid var(--border-color);
         color: var(--foreground);
         cursor: pointer;
         transition: background-color var(--fast-transition);
@@ -243,7 +243,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 
         @media (hover: hover) {
             &:not(.is-unavailable):not(:has(input:checked)):hover {
-                background-color: var(--hairline-medium);
+                background-color: var(--border-color);
             }
         }
     }
@@ -271,7 +271,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         }
 
         small {
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
@@ -279,13 +279,13 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         display: flex;
         align-items: center;
         gap: var(--space-2xs);
-        color: var(--text-muted);
+        color: var(--faded);
 
         input {
             width: 6rem;
             padding: var(--space-3xs) var(--space-2xs);
             background-color: var(--surface-sunken);
-            border: 1px solid var(--hairline-strong);
+            border: 1px solid var(--border-color-hover);
             color: var(--highlight);
             font: inherit;
         }
@@ -294,7 +294,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
     .order-line-pricing__bar {
         position: relative;
         height: var(--space-2xs);
-        background-color: var(--hairline);
+        background-color: var(--border-color);
 
         span {
             position: absolute;
@@ -331,11 +331,11 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
     }
 
     .order-line-pricing__earns {
-        color: color-mix(in srgb, var(--green) 55%, var(--highlight));
+        color: var(--green-300);
     }
 
     .order-line-pricing__saving {
-        color: color-mix(in srgb, var(--alliance-blue) 45%, var(--highlight));
+        color: var(--alliance-blue-300);
 
         &.is-costlier {
             color: var(--fleet-red-blind);

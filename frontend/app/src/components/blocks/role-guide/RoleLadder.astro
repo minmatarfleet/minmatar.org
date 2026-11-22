@@ -138,7 +138,7 @@ function state(type_id: number) {
         display: flex;
         flex-direction: column;
         min-width: 0;
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
         background: var(--surface-sunken);
         overflow: hidden;
     }
@@ -166,7 +166,7 @@ function state(type_id: number) {
         font-size: var(--step--2);
         letter-spacing: 0.06em;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .role-ladder__body {
@@ -187,7 +187,7 @@ function state(type_id: number) {
     .role-ladder__note {
         margin: 0;
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .role-ladder__job {
@@ -207,7 +207,7 @@ function state(type_id: number) {
             font-size: var(--step--2);
             letter-spacing: 0.04em;
             text-transform: uppercase;
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         dd {
@@ -230,22 +230,22 @@ function state(type_id: number) {
 
         small {
             font-weight: 400;
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
     .role-ladder__state--ready {
-        background: color-mix(in srgb, var(--green) 22%, transparent);
+        background: color-mix(in srgb, var(--green) var(--tint-soft), transparent);
     }
 
     .role-ladder__state--training {
-        background: color-mix(in srgb, var(--fleet-yellow) 14%, transparent);
+        background: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
         color: var(--fleet-yellow);
     }
 
     .role-ladder__state--none {
-        background: var(--hairline);
-        color: var(--text-muted);
+        background: var(--border-color);
+        color: var(--faded);
     }
 
     .role-ladder__fit {

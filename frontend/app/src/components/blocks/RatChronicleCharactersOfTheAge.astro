@@ -54,7 +54,7 @@ const { charactersOfTheAge } = Astro.props
     .chronicle-closing {
         margin-top: var(--space-2xl);
         padding-top: var(--space-xl);
-        border-top: 1px solid color-mix(in srgb, var(--fleet-yellow) 15%, transparent);
+        border-top: 1px solid color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
     }
 
     .chronicle-closing__kicker {
@@ -64,7 +64,7 @@ const { charactersOfTheAge } = Astro.props
         letter-spacing: 0.16em;
         text-align: center;
         text-transform: uppercase;
-        color: color-mix(in srgb, var(--foreground) 65%, transparent);
+        color: color-mix(in srgb, var(--foreground) var(--tint-bold), transparent);
     }
 
     .chronicle-closing__group {
@@ -107,7 +107,7 @@ const { charactersOfTheAge } = Astro.props
     }
 
     .chronicle-closing__pilot :global(img) {
-        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 25%, transparent);
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) var(--tint-medium), transparent);
     }
 
     .chronicle-closing__pilot-text {
@@ -140,7 +140,7 @@ const { charactersOfTheAge } = Astro.props
         font-size: var(--step--1);
         font-style: italic;
         line-height: 1.5;
-        color: color-mix(in srgb, var(--foreground) 85%, transparent);
+        color: color-mix(in srgb, var(--foreground) var(--tint-dense), transparent);
     }
 
     @media (max-width: 40rem) {

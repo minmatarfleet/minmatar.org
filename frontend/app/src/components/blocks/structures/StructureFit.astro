@@ -47,13 +47,13 @@ delete attributes.class
         font-weight: 600;
         white-space: nowrap;
         color: var(--highlight);
-        background-color: color-mix(in srgb, var(--green) 22%, transparent);
-        border: 1px solid color-mix(in srgb, var(--green) 60%, transparent);
+        background-color: color-mix(in srgb, var(--green) var(--tint-soft), transparent);
+        border: 1px solid color-mix(in srgb, var(--green) var(--tint-bold), transparent);
 
         b {
             padding: 0.2em 0.45em;
             color: var(--background);
-            background-color: color-mix(in srgb, var(--green) 70%, var(--highlight));
+            background-color: var(--green-400);
         }
 
         span {
@@ -69,11 +69,11 @@ delete attributes.class
         font-weight: 600;
         white-space: nowrap;
         color: var(--highlight);
-        background-color: color-mix(in srgb, var(--highlight) 8%, transparent);
-        border: 1px solid var(--hairline-strong);
+        background-color: color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent);
+        border: 1px solid var(--border-color-hover);
 
         &.none {
-            color: var(--text-muted);
+            color: var(--faded);
             background: none;
             border-style: dashed;
         }

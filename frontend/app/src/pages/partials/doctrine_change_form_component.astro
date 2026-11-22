@@ -208,7 +208,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
         align-items: center;
         gap: var(--space-xs);
         min-height: 3.25rem;
-        border-top: 1px solid var(--hairline);
+        border-top: 1px solid var(--border-color);
 
         img,
         .doctrine-review__spacer {
@@ -226,7 +226,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
     .doctrine-review__what {
         flex: none;
         font-weight: 600;
-        color: var(--text-muted);
+        color: var(--faded);
 
         &[data-kind="added"] {
             color: var(--green);
@@ -238,7 +238,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
     }
 
     .doctrine-review__muted {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .doctrine-review__note {
@@ -253,7 +253,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
         min-height: 2.75rem;
         background: none;
         border: 0;
-        color: var(--text-muted);
+        color: var(--faded);
         font-size: var(--step--1);
         text-decoration: underline;
         cursor: pointer;

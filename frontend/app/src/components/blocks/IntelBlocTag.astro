@@ -53,13 +53,13 @@ const title = likely ? `${bloc.name} (${t('intel.affiliations.likely')})` : bloc
         white-space: nowrap;
         color: var(--fleet-yellow);
         text-decoration: none;
-        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
 
         small {
             font-size: inherit;
             letter-spacing: 0.04em;
             text-transform: uppercase;
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
@@ -70,7 +70,7 @@ const title = likely ? `${bloc.name} (${t('intel.affiliations.likely')})` : bloc
 
     .intel-bloc-tag--likely {
         border-style: dashed;
-        color: color-mix(in srgb, var(--fleet-yellow) 80%, transparent);
+        color: color-mix(in srgb, var(--fleet-yellow) var(--tint-heavy), transparent);
     }
 
     a.intel-bloc-tag:hover,

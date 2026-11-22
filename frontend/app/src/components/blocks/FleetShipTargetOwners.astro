@@ -110,7 +110,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         align-items: baseline;
         gap: var(--space-2xs) var(--space-s);
         padding: var(--space-s) var(--space-m);
-        border-bottom: 1px solid var(--hairline);
+        border-bottom: 1px solid var(--border-color);
 
         h2 {
             font-size: var(--step-1);
@@ -135,7 +135,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         border: 1px solid var(--border-color);
 
         li + li {
-            border-top: 1px solid var(--hairline);
+            border-top: 1px solid var(--border-color);
         }
 
         label {
@@ -179,7 +179,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
     }
 
     .target-owners__muted {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .target-owners__link {
@@ -199,7 +199,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         justify-content: flex-end;
         gap: var(--space-xs);
         padding: var(--space-s) var(--space-m);
-        border-top: 1px solid var(--hairline);
+        border-top: 1px solid var(--border-color);
     }
 
     [x-cloak] {

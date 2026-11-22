@@ -1005,7 +1005,7 @@ import Switch from '@components/blocks/Switch.astro'
     }
 
     .campaign-systems__row.is-new > td {
-        background: color-mix(in srgb, var(--fleet-yellow) 5%, transparent);
+        background: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
     }
 
     .campaign-systems__action {
@@ -1062,7 +1062,7 @@ import Switch from '@components/blocks/Switch.astro'
         align-items: center;
         gap: var(--space-s);
         padding-block: var(--space-2xs);
-        border-block-end: 1px solid var(--hairline);
+        border-block-end: 1px solid var(--border-color);
     }
 
     .campaign-list__name {
@@ -1092,7 +1092,7 @@ import Switch from '@components/blocks/Switch.astro'
     }
 
     [data-side='enemy'] > .campaign-sides-col__label { color: var(--fleet-red); }
-    [data-side='ally'] > .campaign-sides-col__label { color: color-mix(in srgb, var(--alliance-blue) 55%, var(--highlight)); }
+    [data-side='ally'] > .campaign-sides-col__label { color: var(--alliance-blue-300); }
     [data-side='third_party'] > .campaign-sides-col__label { color: var(--fleet-yellow); }
 
     .campaign-sides-add {
@@ -1111,7 +1111,7 @@ import Switch from '@components/blocks/Switch.astro'
         flex: none;
         background: none;
         border: 0;
-        color: var(--text-muted);
+        color: var(--faded);
         cursor: pointer;
 
         @media (hover: hover) {
@@ -1144,9 +1144,9 @@ import Switch from '@components/blocks/Switch.astro'
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.06em;
-        color: var(--text-muted);
+        color: var(--faded);
         background: none;
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
         cursor: pointer;
 
         &[aria-pressed='true'] {
@@ -1178,14 +1178,14 @@ import Switch from '@components/blocks/Switch.astro'
         align-items: center;
         gap: var(--space-3xs);
         padding-inline-start: var(--space-xs);
-        background: var(--hairline-medium);
+        background: var(--border-color);
         color: var(--highlight);
         font-weight: 700;
     }
 
     .campaign-coordinator__state {
         flex: 0 0 14rem;
-        color: var(--text-muted);
+        color: var(--faded);
 
         &.is-on { color: var(--green); }
     }

@@ -232,7 +232,7 @@ const matrix_option_color = (kind: string, choices: string[], choice: string, in
         transition: var(--fast-transition);
         user-select: none;
     }
-    .scale-chip:hover .chip { background: color-mix(in srgb, var(--c) 18%, transparent); }
+    .scale-chip:hover .chip { background: color-mix(in srgb, var(--c) var(--tint-soft), transparent); }
     .scale-chip input:checked + .chip { background: var(--c); color: #0d0d0d; font-weight: 600; }
     .scale-chip input:focus-visible + .chip { outline: 2px solid var(--highlight); outline-offset: 2px; }
     .scale-legend { display: flex; justify-content: space-between; width: 100%; color: var(--foreground); opacity: 0.6; }

@@ -117,7 +117,7 @@ const character_count = overview.accounts.reduce((total, account) => total + acc
         font-family: var(--heading-font);
         font-size: var(--step--1);
         letter-spacing: 0.06em;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .training-list__head {
@@ -125,12 +125,12 @@ const character_count = overview.accounts.reduce((total, account) => total + acc
         grid-template-columns: var(--training-columns);
         gap: var(--space-m);
         padding: var(--space-xs) var(--space-s);
-        border-bottom: 1px solid var(--hairline);
+        border-bottom: 1px solid var(--border-color);
         font-size: var(--step--2);
         font-weight: 600;
         letter-spacing: 0.06em;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .training-list__account {
@@ -140,7 +140,7 @@ const character_count = overview.accounts.reduce((total, account) => total + acc
         padding: var(--space-xs) var(--space-s);
 
         & + & {
-            border-top: 1px solid var(--hairline);
+            border-top: 1px solid var(--border-color);
         }
     }
 

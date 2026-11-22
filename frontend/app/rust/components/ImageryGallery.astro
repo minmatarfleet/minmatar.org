@@ -63,7 +63,7 @@ const label = (key: string) => key.split('/').pop()!.replace(/[-_]+/g, ' ')
             color: var(--highlight);
 
             small {
-                color: var(--text-muted);
+                color: var(--faded);
                 font-size: var(--step--1);
             }
         }
@@ -71,7 +71,7 @@ const label = (key: string) => key.split('/').pop()!.replace(/[-_]+/g, ' ')
         p {
             margin: 0;
             font-size: var(--step--1);
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         code {
@@ -99,7 +99,7 @@ const label = (key: string) => key.split('/').pop()!.replace(/[-_]+/g, ' ')
         margin: 0;
         display: flex;
         flex-direction: column;
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
         background: var(--component-background);
         block-size: 100%;
     }
@@ -136,7 +136,7 @@ const label = (key: string) => key.split('/').pop()!.replace(/[-_]+/g, ' ')
         flex-direction: column;
         gap: var(--space-3xs);
         padding: var(--space-2xs) var(--space-xs);
-        border-block-start: 1px solid var(--hairline);
+        border-block-start: 1px solid var(--border-color);
     }
 
     .url {
@@ -152,9 +152,9 @@ const label = (key: string) => key.split('/').pop()!.replace(/[-_]+/g, ' ')
 
         span {
             font-size: var(--step--2);
-            color: var(--text-muted);
+            color: var(--faded);
             padding: 0 var(--space-3xs);
-            border: 1px solid var(--hairline);
+            border: 1px solid var(--border-color);
         }
     }
 </style>

@@ -95,7 +95,7 @@ const panel_id = (i: number) => `${id_prefix}-module-panel-${i}`
         flex-direction: column;
         gap: var(--space-m);
         padding: var(--space-m);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
         background: var(--surface-sunken);
 
         [x-cloak] {
@@ -126,7 +126,7 @@ const panel_id = (i: number) => `${id_prefix}-module-panel-${i}`
         p {
             margin: 0;
             font-size: var(--step--1);
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
@@ -139,7 +139,7 @@ const panel_id = (i: number) => `${id_prefix}-module-panel-${i}`
 
     .role-modules__learn {
         padding: var(--space-2xs) var(--space-s);
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
         font-size: var(--step--1);
         color: var(--foreground);
         text-decoration: none;
@@ -160,7 +160,7 @@ const panel_id = (i: number) => `${id_prefix}-module-panel-${i}`
 
         @media (hover: hover) {
             &:hover {
-                background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+                background: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
             }
         }
     }
@@ -182,7 +182,7 @@ const panel_id = (i: number) => `${id_prefix}-module-panel-${i}`
             flex-direction: column;
             gap: var(--space-2xs);
             padding: var(--space-s);
-            border: 1px solid var(--hairline-medium);
+            border: 1px solid var(--border-color);
             background: var(--background);
             font-size: var(--step--1);
         }
@@ -202,7 +202,7 @@ const panel_id = (i: number) => `${id_prefix}-module-panel-${i}`
 
     .role-modules__scroll {
         padding-top: var(--space-s);
-        border-top: 1px solid var(--hairline);
+        border-top: 1px solid var(--border-color);
     }
 
     .role-modules__tabs {
@@ -217,9 +217,9 @@ const panel_id = (i: number) => `${id_prefix}-module-panel-${i}`
         align-items: center;
         gap: var(--space-3xs);
         padding: var(--space-2xs);
-        border: 1px solid var(--hairline);
+        border: 1px solid var(--border-color);
         background: var(--background);
-        color: var(--text-muted);
+        color: var(--faded);
         font: inherit;
         font-size: var(--step--2);
         cursor: pointer;
@@ -231,7 +231,7 @@ const panel_id = (i: number) => `${id_prefix}-module-panel-${i}`
 
         &[aria-selected='true'] {
             border-color: var(--fleet-yellow);
-            background: color-mix(in srgb, var(--fleet-yellow) 10%, transparent);
+            background: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
             color: var(--highlight);
         }
 
@@ -242,7 +242,7 @@ const panel_id = (i: number) => `${id_prefix}-module-panel-${i}`
 
         @media (hover: hover) {
             &:hover {
-                border-color: var(--hairline-strong);
+                border-color: var(--border-color-hover);
             }
         }
     }

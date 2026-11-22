@@ -245,7 +245,7 @@ const caption = spans.length > 0
         display: block;
         height: var(--space-m);
         border-radius: 2px;
-        background: color-mix(in srgb, var(--highlight) 6%, transparent);
+        background: color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent);
     }
 
     .cell[data-level='1'] { background: color-mix(in srgb, var(--fleet-red) 35%, var(--background)); }
@@ -265,7 +265,7 @@ const caption = spans.length > 0
         color: var(--foreground);
     }
 
-    .local-tick[data-part='night'] { color: color-mix(in srgb, var(--alliance-blue) 50%, var(--highlight)); }
+    .local-tick[data-part='night'] { color: var(--alliance-blue-300); }
     .local-tick[data-part='day'] { color: var(--foreground); }
     .local-tick[data-part='evening'] { color: color-mix(in srgb, var(--fleet-red) 40%, var(--fleet-yellow)); }
 

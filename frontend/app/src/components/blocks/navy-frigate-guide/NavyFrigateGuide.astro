@@ -185,8 +185,8 @@ try {
 
     .nfg-panel {
         padding: var(--nfg-panel-padding-block) var(--nfg-panel-padding-inline);
-        background: color-mix(in srgb, var(--component-background) 72%, transparent);
-        border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+        background: color-mix(in srgb, var(--component-background) var(--tint-heavy), transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
         min-width: 0;
     }
 
@@ -209,7 +209,7 @@ try {
     .nfg-section__title {
         margin: 0 0 var(--space-m);
         padding-bottom: var(--space-s);
-        border-bottom: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+        border-bottom: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
         font-family: var(--nfg-display-font);
         font-size: clamp(var(--step-1), 2.5vw, var(--step-2));
         letter-spacing: 0.08em;
@@ -256,7 +256,7 @@ try {
     .nfg-section__figure-image {
         display: block;
         width: 100%;
-        border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
     }
 
     .nfg-section__figure {
@@ -274,7 +274,7 @@ try {
     .nfg-guide__link {
         color: var(--highlight);
         text-decoration: underline;
-        text-decoration-color: color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
+        text-decoration-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
         text-underline-offset: 0.15em;
 
         &:hover,
@@ -293,8 +293,8 @@ try {
 
     .nfg-summary-card {
         padding: var(--component-padding-block) var(--space-m);
-        background: color-mix(in srgb, var(--component-background) 82%, transparent);
-        border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+        background: color-mix(in srgb, var(--component-background) var(--tint-heavy), transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
     }
 
     .nfg-summary-card__title {
@@ -318,8 +318,8 @@ try {
         gap: var(--space-xs);
         margin-bottom: var(--space-l);
         padding: var(--space-s);
-        background: color-mix(in srgb, var(--component-background) 55%, transparent);
-        border: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+        background: color-mix(in srgb, var(--component-background) var(--tint-bold), transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
     }
 
     .nfg-legend__item {
@@ -327,8 +327,8 @@ try {
         align-items: center;
         gap: var(--space-xs);
         padding: var(--space-xs) var(--space-s);
-        background: color-mix(in srgb, var(--component-background) 78%, transparent);
-        border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
+        background: color-mix(in srgb, var(--component-background) var(--tint-heavy), transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
     }
 
     .nfg-legend__symbol {
@@ -343,12 +343,12 @@ try {
         font-weight: 700;
     }
 
-    .nfg-legend__symbol--plusplus { background: color-mix(in srgb, #2ecc71 22%, transparent); color: #7dffb0; }
-    .nfg-legend__symbol--plus { background: color-mix(in srgb, #58d68d 18%, transparent); color: #9ef0b8; }
-    .nfg-legend__symbol--even { background: color-mix(in srgb, #5dade2 18%, transparent); color: #a8d8ff; }
-    .nfg-legend__symbol--minus { background: color-mix(in srgb, #e74c3c 16%, transparent); color: #ff9f96; }
-    .nfg-legend__symbol--minusminus { background: color-mix(in srgb, #c0392b 20%, transparent); color: #ff8a80; }
-    .nfg-legend__symbol--unknown { background: color-mix(in srgb, var(--faded) 18%, transparent); color: var(--text-color-secondary, var(--faded)); }
+    .nfg-legend__symbol--plusplus { background: color-mix(in srgb, var(--green) var(--tint-strong), transparent); color: var(--green-text); }
+    .nfg-legend__symbol--plus { background: color-mix(in srgb, var(--green) var(--tint-soft), transparent); color: var(--green-text); }
+    .nfg-legend__symbol--even { background: color-mix(in srgb, var(--alliance-blue) var(--tint-soft), transparent); color: var(--alliance-blue-text); }
+    .nfg-legend__symbol--minus { background: color-mix(in srgb, var(--fleet-red) var(--tint-soft), transparent); color: var(--fleet-red-text); }
+    .nfg-legend__symbol--minusminus { background: color-mix(in srgb, var(--fleet-red) var(--tint-strong), transparent); color: var(--fleet-red-text); }
+    .nfg-legend__symbol--unknown { background: color-mix(in srgb, var(--faded) var(--tint-soft), transparent); color: var(--text-color-secondary, var(--faded)); }
 
     .nfg-legend__label {
         display: flex;
@@ -381,8 +381,8 @@ try {
     .nfg-charts-mobile-note {
         margin: 0;
         padding: var(--space-s);
-        border: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
-        background: color-mix(in srgb, var(--component-background) 55%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
+        background: color-mix(in srgb, var(--component-background) var(--tint-bold), transparent);
         font-size: var(--step--1);
         line-height: 1.55;
         color: var(--text-color-secondary, var(--faded));

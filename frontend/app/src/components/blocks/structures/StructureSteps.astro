@@ -59,7 +59,7 @@ delete attributes.class
         margin: 0;
         padding: var(--space-s) 0;
         list-style: none;
-        border-block: 1px solid var(--hairline-medium);
+        border-block: 1px solid var(--border-color);
 
         li {
             position: relative;
@@ -76,7 +76,7 @@ delete attributes.class
                 left: -50%;
                 width: 100%;
                 height: 3px;
-                background-color: var(--hairline-strong);
+                background-color: var(--border-color-hover);
             }
 
             &:first-child::before {
@@ -100,9 +100,9 @@ delete attributes.class
         height: 2.4rem;
         border-radius: 50%;
         font-weight: 700;
-        color: var(--text-muted);
+        color: var(--faded);
         background-color: var(--component-background);
-        border: 2px solid var(--hairline-strong);
+        border: 2px solid var(--border-color-hover);
 
         svg {
             width: 1.2rem;
@@ -122,13 +122,13 @@ delete attributes.class
             color: var(--background);
             background-color: var(--fleet-yellow);
             border-color: var(--fleet-yellow);
-            box-shadow: 0 0 0 5px color-mix(in srgb, var(--fleet-yellow) 18%, transparent);
+            box-shadow: 0 0 0 5px color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
         }
     }
 
     .structure-steps__t {
         font-weight: 700;
-        color: var(--text-muted);
+        color: var(--faded);
 
         .done &,
         .now & {
@@ -154,7 +154,7 @@ delete attributes.class
         gap: var(--space-xs);
         padding: var(--space-xs) var(--space-s);
         background-color: var(--surface-sunken);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
 
         b {
             display: block;
@@ -162,7 +162,7 @@ delete attributes.class
         }
 
         small {
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
@@ -182,10 +182,10 @@ delete attributes.class
         padding: var(--space-m);
         text-align: center;
         background-color: var(--surface-sunken);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
 
         p {
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 </style>

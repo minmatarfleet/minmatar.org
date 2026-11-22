@@ -661,13 +661,13 @@ const initial_showing_after = fill_showing_part(
     .ops-sell-gaps__showing {
         margin: 0;
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .ops-sell-gaps__term {
         color: var(--highlight);
         cursor: help;
-        border-bottom: 1px dotted color-mix(in srgb, var(--highlight) 55%, transparent);
+        border-bottom: 1px dotted color-mix(in srgb, var(--highlight) var(--tint-bold), transparent);
     }
 
     .ops-sell-gaps__list {
@@ -710,7 +710,7 @@ const initial_showing_after = fill_showing_part(
         appearance: none;
         margin: 0;
         padding: var(--space-3xs) var(--space-xs);
-        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 40%, transparent);
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
         background: transparent;
         color: var(--fleet-yellow);
         font-family: var(--button-font);
@@ -724,7 +724,7 @@ const initial_showing_after = fill_showing_part(
         @media (hover: hover) {
             &:hover {
                 border-color: var(--fleet-yellow);
-                background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+                background: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
             }
         }
 
@@ -742,7 +742,7 @@ const initial_showing_after = fill_showing_part(
     .ops-sell-gaps__empty {
         margin: 0;
         padding-block: var(--space-m);
-        color: var(--text-muted);
+        color: var(--faded);
         font-size: var(--step--1);
     }
 
@@ -793,7 +793,7 @@ const initial_showing_after = fill_showing_part(
         align-items: baseline;
         gap: 0.15rem 0.45rem;
         padding: 0.12rem var(--space-s);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
         background: rgba(0, 0, 0, 0.16);
         line-height: 1.2;
     }

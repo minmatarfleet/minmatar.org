@@ -99,7 +99,7 @@ const has_slot = Astro.slots.has('default')
         display: flex;
         flex-direction: column;
         background-color: var(--component-background);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
         border-radius: var(--space-3xs);
     }
 
@@ -130,7 +130,7 @@ const has_slot = Astro.slots.has('default')
         flex: none;
         padding: var(--space-3xs) var(--space-xs);
         border-radius: 999px;
-        background-color: color-mix(in srgb, var(--fleet-yellow) 10%, transparent);
+        background-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
         color: var(--fleet-yellow);
         font-size: var(--step--1);
         font-weight: 600;
@@ -141,7 +141,7 @@ const has_slot = Astro.slots.has('default')
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         margin: 0;
-        border-top: 1px solid var(--hairline-medium);
+        border-top: 1px solid var(--border-color);
 
         > div {
             display: flex;
@@ -152,7 +152,7 @@ const has_slot = Astro.slots.has('default')
         }
 
         > div + div {
-            border-left: 1px solid var(--hairline-medium);
+            border-left: 1px solid var(--border-color);
         }
 
         dd {
@@ -163,6 +163,6 @@ const has_slot = Astro.slots.has('default')
     }
 
     .rsvp-when__rows > * {
-        border-top: 1px solid var(--hairline-medium);
+        border-top: 1px solid var(--border-color);
     }
 </style>

@@ -295,7 +295,7 @@ const who = (value: string, kind: string) => kind === 'prime_time'
         gap: var(--space-s);
         align-items: center;
         min-height: var(--space-xl);
-        border-top: solid 1px var(--hairline);
+        border-top: solid 1px var(--border-color);
 
         @media (max-width: 56rem) {
             grid-template-columns: minmax(0, 1fr) auto auto;
@@ -317,7 +317,7 @@ const who = (value: string, kind: string) => kind === 'prime_time'
         font-size: var(--step--2);
         font-weight: 600;
         letter-spacing: 0.04em;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .corp-req__rule {
@@ -334,7 +334,7 @@ const who = (value: string, kind: string) => kind === 'prime_time'
         font-weight: 600;
         letter-spacing: 0.06em;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .corp-req__text {
@@ -344,7 +344,7 @@ const who = (value: string, kind: string) => kind === 'prime_time'
 
     .corp-req__who {
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .corp-req__num {
@@ -354,19 +354,19 @@ const who = (value: string, kind: string) => kind === 'prime_time'
         color: var(--highlight);
 
         &.is-attention {
-            color: var(--attention);
+            color: var(--fleet-yellow);
         }
     }
 
     .corp-req__row--head .corp-req__num {
         font-weight: 600;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .corp-req__toggle {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        border: solid 1px var(--hairline-strong);
+        border: solid 1px var(--border-color-hover);
 
         button {
             min-height: var(--space-l);
@@ -375,7 +375,7 @@ const who = (value: string, kind: string) => kind === 'prime_time'
             border: 0;
             font: inherit;
             font-size: var(--step--1);
-            color: var(--text-muted);
+            color: var(--faded);
             cursor: pointer;
         }
 
@@ -394,7 +394,7 @@ const who = (value: string, kind: string) => kind === 'prime_time'
         height: var(--space-xl);
         background: none;
         border: 0;
-        color: var(--text-muted);
+        color: var(--faded);
         cursor: pointer;
 
         &:hover {
@@ -406,7 +406,7 @@ const who = (value: string, kind: string) => kind === 'prime_time'
         margin: 0 0 var(--space-xs);
         padding-inline-start: calc(6rem + var(--space-s));
         font-size: var(--step--1);
-        color: var(--attention);
+        color: var(--fleet-yellow);
     }
 
     .corp-req__editor {
@@ -414,7 +414,7 @@ const who = (value: string, kind: string) => kind === 'prime_time'
     }
 
     .corp-req__muted {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .corp-req__topics {
@@ -428,7 +428,7 @@ const who = (value: string, kind: string) => kind === 'prime_time'
             justify-content: space-between;
             gap: var(--space-s);
             min-height: var(--space-xl);
-            border-top: solid 1px var(--hairline);
+            border-top: solid 1px var(--border-color);
             color: var(--highlight);
         }
     }

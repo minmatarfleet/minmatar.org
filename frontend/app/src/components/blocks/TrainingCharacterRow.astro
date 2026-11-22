@@ -221,7 +221,7 @@ const more_ready = character.ready.length - shown_ready.length
     }
 
     .training-row__muted {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .training-row__done {
@@ -251,7 +251,7 @@ const more_ready = character.ready.length - shown_ready.length
         gap: var(--space-xs);
         min-height: 2.75rem;
         padding-inline: var(--space-3xs) var(--space-xs);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
         border-radius: var(--space-3xs);
         background: none;
         color: var(--highlight);
@@ -275,10 +275,10 @@ const more_ready = character.ready.length - shown_ready.length
         flex-shrink: 0;
         width: 2.75rem;
         padding: 0;
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
         border-radius: var(--space-3xs);
         background: none;
-        color: var(--text-muted);
+        color: var(--faded);
         cursor: pointer;
         transition: var(--fast-transition);
 
@@ -330,7 +330,7 @@ const more_ready = character.ready.length - shown_ready.length
 
         img {
             border-radius: var(--space-3xs);
-            outline: 1px solid color-mix(in srgb, var(--green) 60%, transparent);
+            outline: 1px solid color-mix(in srgb, var(--green) var(--tint-bold), transparent);
             outline-offset: 1px;
         }
     }
@@ -339,7 +339,7 @@ const more_ready = character.ready.length - shown_ready.length
         min-width: 2.75rem;
         min-height: 2rem;
         padding-inline: var(--space-3xs);
-        border: 1px solid color-mix(in srgb, var(--green) 60%, transparent);
+        border: 1px solid color-mix(in srgb, var(--green) var(--tint-bold), transparent);
         border-radius: var(--space-3xs);
         background: none;
         color: var(--green);
@@ -371,7 +371,7 @@ const more_ready = character.ready.length - shown_ready.length
 
         .training-row + .training-row {
             padding-block-start: var(--space-xs);
-            border-top: 1px solid var(--hairline);
+            border-top: 1px solid var(--border-color);
         }
     }
 </style>

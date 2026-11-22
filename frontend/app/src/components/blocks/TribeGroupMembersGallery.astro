@@ -282,7 +282,7 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
         appearance: none;
         margin: 0;
         padding: var(--space-3xs) var(--space-2xs);
-        border: 1px solid color-mix(in srgb, var(--foreground) 18%, transparent);
+        border: 1px solid color-mix(in srgb, var(--foreground) var(--tint-soft), transparent);
         background: transparent;
         color: var(--highlight);
         font-family: var(--button-font);
@@ -308,7 +308,7 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
 
         @media (hover: hover) {
             &:hover:not(.is-active) {
-                background: color-mix(in srgb, var(--highlight) 12%, transparent);
+                background: color-mix(in srgb, var(--highlight) var(--tint-soft), transparent);
             }
         }
     }
@@ -331,7 +331,7 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
         color: var(--highlight);
 
         small {
-            color: color-mix(in srgb, var(--highlight) 65%, transparent);
+            color: color-mix(in srgb, var(--highlight) var(--tint-bold), transparent);
             font-size: var(--step--1);
             font-weight: 400;
         }

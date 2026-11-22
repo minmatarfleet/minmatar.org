@@ -658,7 +658,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
         appearance: none;
         margin: 0;
         padding: var(--space-3xs) var(--space-xs);
-        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 40%, transparent);
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
         background: transparent;
         color: var(--fleet-yellow);
         font-family: var(--button-font);
@@ -672,7 +672,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
         @media (hover: hover) {
             &:hover {
                 border-color: var(--fleet-yellow);
-                background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+                background: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
             }
         }
 
@@ -694,19 +694,19 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 
     .ops-contracts-list__empty {
         margin: 0;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .ops-contracts-list__showing {
         margin: 0;
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .ops-contracts-list__term {
         color: var(--highlight);
         cursor: help;
-        border-bottom: 1px dotted color-mix(in srgb, var(--highlight) 55%, transparent);
+        border-bottom: 1px dotted color-mix(in srgb, var(--highlight) var(--tint-bold), transparent);
     }
 
     .market-contracts-table {
@@ -777,7 +777,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
         align-items: baseline;
         gap: var(--space-2xs) var(--space-m);
         padding: calc(0.12rem * 1.15) var(--space-s);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
         background: rgba(0, 0, 0, 0.16);
         line-height: 1.2;
     }
@@ -788,7 +788,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
         height: calc(var(--step--2) * 1.15);
         border-radius: 2px;
         vertical-align: baseline;
-        @include skeleton.pulse(color-mix(in srgb, var(--foreground) 12%, transparent), $duration: 1.1s);
+        @include skeleton.pulse(color-mix(in srgb, var(--foreground) var(--tint-soft), transparent), $duration: 1.1s);
     }
 
     :global(.market-contracts-card__metric) {

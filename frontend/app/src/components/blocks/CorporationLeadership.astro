@@ -142,13 +142,13 @@ function role_label(role: LeadershipRole) {
         min-width: 0;
         padding: var(--space-xs) var(--space-s);
         border: solid 1px var(--border-color);
-        background: color-mix(in srgb, var(--highlight) 2%, transparent);
+        background: color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent);
         transition: border-color var(--fast-transition), background-color var(--fast-transition);
 
         @media (hover: hover) {
             &:hover {
                 border-color: var(--border-color-hover);
-                background: color-mix(in srgb, var(--highlight) 5%, transparent);
+                background: color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent);
             }
         }
     }

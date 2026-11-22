@@ -134,7 +134,17 @@ describe('convention rule matchers', () => {
         expect(count('alpha_literal', astro(`<div style="color: rgb(255 255 255 / 0.5)"></div>`))).toBe(1)
         expect(count('alpha_literal', astro(`<style>.a { color: var(--border-color, rgba(255, 255, 255, 0.1)); mask: linear-gradient(rgb(0,0,0) 0%, transparent); background: rgba(85, 85, 85, 0.1) }</style>`))).toBe(0)
         expect(count('alpha_literal', astro(`---\n---\n<script>chart.color = 'rgba(255, 255, 255, 0.5)'</script>`))).toBe(0)
-        expect(count('alpha_literal', { path: 'src/styles/properties/_colors.scss', text: ':root { --hairline: rgba(255, 255, 255, 0.06); }' })).toBe(0)
+        expect(count('alpha_literal', { path: 'src/styles/properties/_colors.scss', text: ':root { --border-color: rgba(255, 255, 255, 0.06); }' })).toBe(0)
+    })
+
+    it('tint_off_ladder: literal percentages over transparent, not the ladder or other mixes', () => {
+        expect(count('tint_off_ladder', astro(`<style>.a { background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent); border-color: color-mix(in srgb, var(--faded, #666) 55%, transparent) }</style>`))).toBe(2)
+        expect(count('tint_off_ladder', astro(`<style>.a { background: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent); color: color-mix(in srgb, var(--green) 60%, var(--highlight)) }</style>`))).toBe(0)
+    })
+
+    it('retired_token: the retired custom properties, not class names', () => {
+        expect(count('retired_token', astro(`<style>.a { color: var(--text-muted); border: 1px solid var(--hairline-strong); filter: drop-shadow(0 0 3px var(--glow)); background: var(--attention) }</style>`))).toBe(4)
+        expect(count('retired_token', astro(`<style>.section-tab__meta--attention { color: var(--fleet-yellow); } .a { color: var(--attention-ish) }</style>`))).toBe(0)
     })
 
     it('skeleton_keyframes: per-component skeleton keyframes, not the shared ones', () => {

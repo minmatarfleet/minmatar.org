@@ -318,7 +318,7 @@ delete attributes.class
     }
 
     .pilot-list__muted {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .pilot-list__attention {
@@ -346,7 +346,7 @@ delete attributes.class
         font-size: var(--step--2);
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .pilot-list__who {
@@ -382,7 +382,7 @@ delete attributes.class
 
     .pilot-list__main {
         padding: 0 var(--space-3xs);
-        border: 1px solid color-mix(in srgb, var(--foreground) 55%, transparent);
+        border: 1px solid color-mix(in srgb, var(--foreground) var(--tint-bold), transparent);
         font-size: var(--step--2);
         font-weight: 600;
         white-space: nowrap;

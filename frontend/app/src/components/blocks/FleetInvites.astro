@@ -333,7 +333,7 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
     .fleet-invites__section + .fleet-invites__section {
         margin-top: var(--space-l);
         padding-top: var(--space-l);
-        border-top: 1px solid var(--hairline-medium);
+        border-top: 1px solid var(--border-color);
     }
 
     .fleet-invites__tiles > div {
@@ -342,7 +342,7 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
 
     .fleet-invites__tiles :global(.fleet-invites__secondary) {
         flex: 1;
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
     }
 
     .fleet-invites__push {
@@ -389,7 +389,7 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
     .fleet-invites__bar {
         display: block;
         height: var(--space-3xs);
-        background-color: var(--hairline-medium);
+        background-color: var(--border-color);
 
         > span {
             display: block;
@@ -437,15 +437,15 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
 
     .fleet-invites__split > .is-out,
     .fleet-invites__dot.is-out {
-        background-color: var(--text-muted);
+        background-color: var(--faded);
     }
 
     .fleet-invites__split > .is-pending {
-        background-color: var(--hairline-strong);
+        background-color: var(--border-color-hover);
     }
 
     .fleet-invites__dot.is-pending {
-        box-shadow: inset 0 0 0 2px var(--text-muted);
+        box-shadow: inset 0 0 0 2px var(--faded);
     }
 
     .fleet-invites__split > .is-failed,
@@ -516,7 +516,7 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
 
         @media (hover: hover) {
             &:hover {
-                border-color: var(--hairline-strong);
+                border-color: var(--border-color-hover);
             }
         }
     }
@@ -528,15 +528,15 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
         th,
         td {
             padding: var(--space-2xs) var(--space-xs);
-            border-bottom: 1px solid var(--hairline);
+            border-bottom: 1px solid var(--border-color);
             text-align: left;
             white-space: nowrap;
             vertical-align: middle;
         }
 
         thead th {
-            border-bottom-color: var(--hairline-strong);
-            color: var(--text-muted);
+            border-bottom-color: var(--border-color-hover);
+            color: var(--faded);
             font-size: var(--step--1);
             font-weight: 600;
             text-transform: uppercase;
@@ -569,7 +569,7 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
         }
 
         &.is-out {
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
@@ -579,8 +579,10 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
         white-space: normal;
 
         &.is-no-ship {
-            /* The attention orange, as on SectionTabs. */
-            color: var(--security-status-point-4);
+            /* A yellow tag with dark text, as on SectionTabs. */
+            padding-inline: var(--space-3xs);
+            background-color: var(--fleet-yellow);
+            color: var(--background);
             font-weight: 600;
         }
     }
@@ -595,7 +597,7 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
                 display: grid;
                 grid-template-columns: minmax(0, 1fr) auto;
                 padding: var(--space-2xs) 0;
-                border-bottom: 1px solid var(--hairline);
+                border-bottom: 1px solid var(--border-color);
             }
 
             th,
@@ -606,7 +608,7 @@ import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
 
             .fleet-invites__ships {
                 grid-column: 1 / -1;
-                color: var(--text-muted);
+                color: var(--faded);
                 font-size: var(--step--1);
             }
 

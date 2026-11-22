@@ -194,15 +194,15 @@ import CampaignSides from '@components/blocks/CampaignSides.astro'
         }
 
         h3 {
-            color: color-mix(in srgb, var(--foreground) 80%, transparent);
+            color: color-mix(in srgb, var(--foreground) var(--tint-heavy), transparent);
         }
 
         .campaign-card-tagline {
-            color: color-mix(in srgb, var(--foreground) 60%, transparent);
+            color: color-mix(in srgb, var(--foreground) var(--tint-bold), transparent);
         }
 
         .campaign-card-countdown {
-            color: color-mix(in srgb, var(--highlight) 70%, transparent);
+            color: color-mix(in srgb, var(--highlight) var(--tint-heavy), transparent);
         }
     }
 </style>

@@ -273,11 +273,11 @@ import GroupLogos from '@components/blocks/GroupLogos.astro'
     }
 
     .fleet-fights__kill {
-        color: color-mix(in srgb, var(--alliance-blue) 55%, white);
+        color: var(--alliance-blue-300);
     }
 
     .fleet-fights__loss {
-        color: color-mix(in srgb, var(--fleet-red) 70%, white);
+        color: var(--fleet-red-text);
     }
 
     .fleet-fights__label {
@@ -285,7 +285,7 @@ import GroupLogos from '@components/blocks/GroupLogos.astro'
         font-weight: 700;
         letter-spacing: 0.12em;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .fleet-fights__behind {
@@ -294,8 +294,8 @@ import GroupLogos from '@components/blocks/GroupLogos.astro'
         gap: var(--space-3xs) var(--space-s);
         margin: 0;
         padding: var(--space-s) var(--space-m);
-        background-color: color-mix(in srgb, var(--tech-ii) 15%, transparent);
-        border: 1px solid var(--tech-ii);
+        background-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
+        border: 1px solid var(--fleet-yellow);
 
         b {
             color: var(--highlight);
@@ -329,7 +329,7 @@ import GroupLogos from '@components/blocks/GroupLogos.astro'
     }
 
     .fleet-fights__now--fighting {
-        border-color: color-mix(in srgb, var(--fleet-red) 60%, transparent);
+        border-color: color-mix(in srgb, var(--fleet-red) var(--tint-bold), transparent);
     }
 
     .fleet-fights__now-side {
@@ -344,11 +344,11 @@ import GroupLogos from '@components/blocks/GroupLogos.astro'
         font-weight: 700;
         letter-spacing: 0.1em;
         text-transform: uppercase;
-        color: color-mix(in srgb, var(--fleet-red) 70%, white);
+        color: var(--fleet-red-text);
     }
 
     .fleet-fights__now:not(.fleet-fights__now--fighting) .fleet-fights__state {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .fleet-fights__dot {
@@ -377,7 +377,7 @@ import GroupLogos from '@components/blocks/GroupLogos.astro'
             font-weight: 700;
             letter-spacing: 0.12em;
             text-transform: uppercase;
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         dd {
@@ -439,7 +439,7 @@ import GroupLogos from '@components/blocks/GroupLogos.astro'
 
     .fleet-fights__mini-up {
         align-items: flex-end;
-        border-bottom: 1px solid var(--hairline-strong);
+        border-bottom: 1px solid var(--border-color-hover);
 
         span { background-color: var(--alliance-blue); }
     }
@@ -507,7 +507,7 @@ import GroupLogos from '@components/blocks/GroupLogos.astro'
             align-items: center;
             min-height: 2.75rem;
             padding: 0 var(--space-s);
-            border: 1px solid var(--hairline-strong);
+            border: 1px solid var(--border-color-hover);
             color: var(--foreground);
             font-weight: 700;
             text-decoration: none;
@@ -523,7 +523,7 @@ import GroupLogos from '@components/blocks/GroupLogos.astro'
         min-height: 2.75rem;
         padding: 0 var(--space-s);
         background: transparent;
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
         color: var(--foreground);
         font: inherit;
         font-weight: 700;
@@ -549,7 +549,7 @@ import GroupLogos from '@components/blocks/GroupLogos.astro'
             align-items: baseline;
             gap: var(--space-3xs) var(--space-s);
             padding: var(--space-2xs) var(--space-m);
-            background-color: color-mix(in srgb, var(--component-background) 50%, transparent);
+            background-color: color-mix(in srgb, var(--component-background) var(--tint-strong), transparent);
             cursor: pointer;
 
             b {
