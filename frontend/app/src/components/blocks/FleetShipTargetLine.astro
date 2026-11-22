@@ -64,7 +64,6 @@ const options = [
     ...hulls.map(hull => ({ kind: 'type' as const, id: hull.type_id, name: hull.name, line: line_for_type(hull.type_id)?.name })),
 ]
 
-const ICON_URL = 'https://images.evetech.net/types/'
 const js = (value:unknown) => JSON.stringify(value)
 
 import Button from '@components/blocks/Button.astro'
@@ -110,7 +109,7 @@ import Button from '@components/blocks/Button.astro'
                 <ul class="[ target-line__chips ]">
                     <template x-for="(item, index) in picked" x-bind:key="item.kind + item.id">
                         <li>
-                            <img x-show="item.kind === 'type'" x-bind:src={`'${ICON_URL}' + item.id + '/icon?size=32'`} alt="" width="28" height="28" />
+                            <img x-show="item.kind === 'type'" x-bind:src="get_item_icon(item.id, 32)" alt="" width="28" height="28" />
                             <span x-text="item.name"></span>
                             <button type="button" x-on:click="remove(index)" x-bind:aria-label={`${js(t('fleets.targets.remove'))}.replace('{name}', item.name)`}>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>

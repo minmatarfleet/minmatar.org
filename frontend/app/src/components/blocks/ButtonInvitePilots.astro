@@ -85,7 +85,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
                     <template x-for="pilot in picked" x-bind:key="pilot.user_id">
                         <span class="[ invite-pick ]">
                             <img
-                                x-bind:src="`https://images.evetech.net/characters/${pilot.character_id}/portrait?size=64`"
+                                x-bind:src="get_player_icon(pilot.character_id, 64)"
                                 alt=""
                                 width="28"
                                 height="28"
