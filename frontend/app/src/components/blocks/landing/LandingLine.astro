@@ -9,6 +9,8 @@ import { character_portrait, event_who, subject_icon } from '@helpers/landing'
  * One feed line on one row: portrait, "<pilot> <verb> [icon] <subject> <tail>".
  * The icon is the ship or ore, or the logo of the side we fought (round).
  * A subject with `detail` ("4 ores") shows it on hover or focus.
+ * Mining names the pilot's main: a line mined on an alt says so on hover over
+ * the name, and one outside high sec is undisclosed (no name, no portrait).
  */
 interface Props {
     event:          LandingEvent;
@@ -23,13 +25,21 @@ const { event, size = 'sm', wrap = false, ...attributes } = Astro.props
 delete attributes.class
 
 const icon = subject_icon(event, 32)
-const who = event_who(event, t('landing_new.and_others'), t('landing_new.and_other'))
+const who = event.undisclosed
+    ? t('landing_new.undisclosed_character')
+    : event_who(event, t('landing_new.and_others'), t('landing_new.and_other'))
 ---
 
 <span class:list={['[ landing-line ]', `landing-line--${size}`, { 'landing-line--wrap': wrap }, Astro.props.class]} {...attributes}>
-    <img class="[ landing-line__portrait ]" src={character_portrait(event.character_id, 64)} alt="" loading="lazy" />
+    {event.undisclosed
+        ? <span class="[ landing-line__portrait landing-line__portrait--none ]" aria-hidden="true" />
+        : <img class="[ landing-line__portrait ]" src={character_portrait(event.character_id, 64)} alt="" loading="lazy" />
+    }
     <span class="[ landing-line__text ]">
-        <strong>{who}</strong>{' '}{event.verb || event.action}
+        {event.on_alt
+            ? <strong class="[ landing-line__more ]" data-tippy-content={t('landing_new.mined_on_alt')} tabindex="0">{who}</strong>
+            : <strong>{who}</strong>
+        }{' '}{event.verb || event.action}
         {event.subject &&
             <>
                 {' '}
@@ -88,6 +98,11 @@ const who = event_who(event, t('landing_new.and_others'), t('landing_new.and_oth
         flex-shrink: 0;
         object-fit: cover;
         background: var(--surface-sunken);
+    }
+
+    // Keeps an undisclosed line's text level with the others.
+    .landing-line__portrait--none {
+        background: none;
     }
 
     .landing-line__text {

@@ -67,6 +67,12 @@ class LandingEvent(Schema):
     # m³ for a mining line, ISK destroyed for a fight, LP for a warzone
     # site; 0 otherwise.
     amount: int = 0
+    # A mining line names the pilot's main; true when another of their
+    # characters did the mining (which one is not public).
+    on_alt: bool = False
+    # A mining line outside high sec: no pilot (character_id 0, name
+    # "Undisclosed Character"), so the page shows no portrait.
+    undisclosed: bool = False
 
 
 class LandingPulseResponse(Schema):

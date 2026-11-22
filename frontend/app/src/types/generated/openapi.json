@@ -27734,6 +27734,11 @@
             "title": "Occurred At",
             "type": "string"
           },
+          "on_alt": {
+            "default": false,
+            "title": "On Alt",
+            "type": "boolean"
+          },
           "others": {
             "title": "Others",
             "type": "integer"
@@ -27761,6 +27766,11 @@
             "default": "",
             "title": "Tail",
             "type": "string"
+          },
+          "undisclosed": {
+            "default": false,
+            "title": "Undisclosed",
+            "type": "boolean"
           },
           "verb": {
             "default": "",

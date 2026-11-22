@@ -22736,6 +22736,11 @@ export interface components {
              * Format: date-time
              */
             occurred_at: string;
+            /**
+             * On Alt
+             * @default false
+             */
+            on_alt?: boolean;
             /** Others */
             others: number;
             /** Region */
@@ -22760,6 +22765,11 @@ export interface components {
              * @default
              */
             tail?: string;
+            /**
+             * Undisclosed
+             * @default false
+             */
+            undisclosed?: boolean;
             /**
              * Verb
              * @default
