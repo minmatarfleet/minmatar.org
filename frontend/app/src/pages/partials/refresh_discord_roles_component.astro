@@ -44,6 +44,7 @@ const ROLES_UPDATED_LABEL_TIME_MS = 2000
 import Button from '@components/blocks/Button.astro';
 ---
 
+{/* no-error-refetch: a failed sync opens the alert dialog from the button's init */}
 <Button
     size='sm'
     type="button"

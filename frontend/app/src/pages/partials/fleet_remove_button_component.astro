@@ -42,6 +42,7 @@ import RemoveFleetButton from '@components/blocks/RemoveFleetButton.astro';
 import ShowAlert from '@components/blocks/ShowAlert.astro'
 ---
 
+{/* no-error-refetch: a failed delete opens the alert dialog */}
 {redirect &&
     <script define:vars={{ redirect }} is:inline>
         if (redirect) navigate(redirect)

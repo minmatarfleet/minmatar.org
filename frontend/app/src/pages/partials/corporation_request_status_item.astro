@@ -98,6 +98,7 @@ if (create_corporation_application_error) {
 import CorporationStatus from '@components/blocks/CorporationStatus.astro';
 ---
 
+{/* no-error-refetch: a failed application opens the alert dialog from the status card */}
 <CorporationStatus
     corporation={corporation as CorporationObject }
     is_user_corporation={false}

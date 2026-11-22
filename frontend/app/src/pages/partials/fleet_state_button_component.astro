@@ -54,6 +54,7 @@ import CancelFleetButton from '@components/blocks/CancelFleetButton.astro';
 import ShowAlert from '@components/blocks/ShowAlert.astro'
 ---
 
+{/* no-error-refetch: a failed cancel opens the alert dialog */}
 {redirect &&
     <script define:vars={{ redirect }} is:inline>
         if (redirect) navigate(redirect)
