@@ -255,14 +255,14 @@ Replace AAR rows when a new mega-fight AAR posts, and video rows when a newer
 video does the same job. URLs also live in `config.json` (`proof_videos`,
 `proof_aars`, `proof_pages`).
 
-**Video shelf** (one per r/evejobs and forum reply; last refreshed 2026-11-14):
+**Video shelf** (one per r/evejobs and forum reply; last refreshed 2026-11-22):
 
 | Video | Published | URL | Pick it when the post… |
 |-------|-----------|-----|------------------------|
+| The Cope: The Imperium Retreats (Faye Vaelent) | 2026-11-15 | `https://youtu.be/6rqoUHCj5P0` | comes from nullsec or a bloc and doubts lowsec has fights at their scale. Newer than the 1 Nov "declares war" episode, which it replaces. |
 | Minmatar Fleet Alliance YC128 In Review (Faye Vaelent, 5 min) | 2026-11-14 | `https://youtu.be/Vu7IXZd80bQ` | is thin or general, or asks what we actually do. The year in one video. |
 | The Cope: The Battle of Amamake II (Faye Vaelent, 1.5 min) | 2026-11-07 | `https://youtu.be/ORIlXO7iw-8` | asks where the action is, or is a veteran coming back to shoot. The newest big fight. Part I is `https://youtu.be/8EPWdoXpu5s`. |
 | Minmatar Fleet Town Hall #38 highlights (official, 16 min) | 2026-11-07 | `https://youtu.be/qZwMM5xm7c0` | asks how the alliance is run or whether it is active, wants a job (FC, capitals, industry, PI, freight, black ops), or is a corp looking for an alliance. It has census, tribes and the war plan. |
-| The Cope: The Imperium declares war on LOWSEC (Faye Vaelent, 2 min) | 2026-11-01 | `https://youtu.be/FQf0IybswYU` | comes from nullsec or a bloc and doubts lowsec has fights at their scale. |
 | Short: Minmatar tackles a DREADNOUGHT. Lasts two seconds. (official) | 2026-09-09 | `https://youtu.be/AUL2zM8Igrc` | is from a brand-new pilot afraid of being useless or of dying. |
 | AT XXII Super Feeders (official, 4 min) | 2026-09-02 | `https://youtu.be/09-PtM6K3Xs` | wants laid-back people, jokes about their own killboard, or is done with sweaty groups. A skit, not footage. |
 | Rock Hoppin' (official, Minmatar Extraction Company, 1 min) | 2026-07-31 | `https://youtu.be/XCApG7Pt6m4` | is about mining or industry: Extraction, MFA rock fleets, highsec bulwark miners, a corp-merge industry crew. |
