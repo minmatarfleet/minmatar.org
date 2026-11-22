@@ -15,6 +15,8 @@ interface Props {
     tooltip?:           string;
     mask?:              boolean;
     inert?:             boolean;
+    /** Sits inside a button or link: the click still opens the modal, but no interactive role nests (the outer control is the keyboard target). */
+    nested?:            boolean;
     centered?:          boolean;
     quantity?:          number;
     tag_color?:         BadgeColors;
@@ -33,6 +35,7 @@ const {
     tooltip,
     mask = false,
     inert = false,
+    nested = false,
     centered = false,
     quantity,
     tag_color,
@@ -73,8 +76,8 @@ delete attributes.class
     target={{
         tag: Target,
         attrs: clickable ? {
-            role: 'button',
-            tabindex: '0',
+            role: nested ? undefined : 'button',
+            tabindex: nested ? undefined : '0',
             'x-data': `{
                 show_character_modal() {
                     if (!${x_character_id} && ${character_id} == 0)
@@ -86,8 +89,8 @@ delete attributes.class
                 }
             }`,
             'x-on:click.stop.prevent': 'show_character_modal()',
-            'x-on:keydown.enter.stop.prevent': 'show_character_modal()',
-            'x-on:keydown.space.stop.prevent': 'show_character_modal()',
+            'x-on:keydown.enter.stop.prevent': nested ? undefined : 'show_character_modal()',
+            'x-on:keydown.space.stop.prevent': nested ? undefined : 'show_character_modal()',
         } : {},
     }}
     img_attrs={{

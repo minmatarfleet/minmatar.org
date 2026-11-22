@@ -11,6 +11,8 @@ interface Props {
     size?:          ImageSize;
     icon_quality?:  EvEImageServiceSize;
     inert?:         boolean;
+    /** Sits inside a button or link (see CharacterPicture). */
+    nested?:        boolean;
     heading?:       boolean;
     centered?:      boolean;
     [propName: string]: any;
@@ -23,6 +25,7 @@ const {
     size = 64,
     icon_quality = 64,
     inert = false,
+    nested = false,
     heading = false,
     centered = false,
     ...attributes
@@ -59,6 +62,7 @@ delete attributes.class
         size={size}
         icon_quality={icon_quality}
         centered={centered}
+        nested={nested}
     />
     <VerticalCenter>
         <Flexblock gap={heading || corporation ? 'var(--space-3xs)' : '0'} class="[ w-full ]">

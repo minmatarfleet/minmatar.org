@@ -88,6 +88,7 @@ const initial = {
         placeholder={placeholder ?? t('manage.kit.picker_placeholder')}
         required={required}
         pick_first={true}
+        form_validation={false}
         class="[ manage-picker__combobox ]"
         x-bind:class="{ 'has-icon': icon }"
         x-on:input="icon = ''"

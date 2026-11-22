@@ -159,7 +159,7 @@ import SystemsEvEIcon from '@components/icons/SystemsEvEIcon.astro';
                     <StylessButton x-on:click="show_pages_finder()" data-tippy-content={t('quick_navigation')} aria-label={t('quick_navigation')}>
                         <SystemsEvEIcon />
                     </StylessButton>
-                    <nav aria-label={t('breadcrumb')}>
+                    <nav aria-label={t('breadcrumb.site')}>
                     <ol class="[ crumbs ]">
                         {breadcrumbs.map(({ accumulated_path, page_title, exists = true }, crumb_index) => {
                             const is_current = crumb_index === breadcrumbs.length - 1

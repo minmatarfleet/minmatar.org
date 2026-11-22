@@ -103,7 +103,7 @@ export const DeepTrail = {
 export const Semantics = {
     name: 'Nav landmark, ordered list, current page',
     play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
-        const nav = within(canvasElement).getByRole('navigation', { name: 'Breadcrumb' })
+        const nav = within(canvasElement).getByRole('navigation', { name: 'Site breadcrumb' })
         const list = nav.querySelector('ol') as HTMLElement
         await expect(list).not.toBeNull()
         await expect(list.querySelectorAll(':scope > li')).toHaveLength(3)

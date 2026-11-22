@@ -38,7 +38,24 @@ const CLIPS: Partial<Record<StructureHowToTopic, { src: string, width: number, h
 {topics.length > 0 &&
     <div class:list={['[ structure-howto ]', { 'structure-howto--single': topics.length === 1 }, Astro.props.class]} {...attributes}>
         <span class="[ manage-field__label ]">{t('structures.guide.title')}</span>
-        <SectionTabs
+        {/* A single topic needs no tab (and no tab role) to pick it. */}
+        {topics.length === 1
+            ? <Fragment>{topics.map((topic) => {
+                const clip = CLIPS[topic]
+                return (
+                    <div class:list={['[ structure-howto__panel ]', { 'no-clip': !clip }]}>
+                        {clip &&
+                            <figure class="[ structure-howto__clip ]">
+                                <img src={clip.src} width={clip.width} height={clip.height} loading="lazy" alt={t(t_key('structures.guide.clip_', topic))} />
+                            </figure>
+                        }
+                        <ol class="[ structure-howto__how ]">
+                            {[1, 2, 3].map((n) => <li>{t(t_key('structures.guide.', `${topic}_${n}`))}</li>)}
+                        </ol>
+                    </div>
+                )
+            })}</Fragment>
+            : <SectionTabs
             variant="pills"
             sync_hash={false}
             aria_label={t('structures.guide.title')}
@@ -62,7 +79,7 @@ const CLIPS: Partial<Record<StructureHowToTopic, { src: string, width: number, h
                     </SectionTabPanel>
                 )
             })}
-        </SectionTabs>
+        </SectionTabs>}
     </div>
 }
 
@@ -71,11 +88,6 @@ const CLIPS: Partial<Record<StructureHowToTopic, { src: string, width: number, h
         display: flex;
         flex-direction: column;
         gap: var(--space-xs);
-
-        // A single topic needs no tab to pick it.
-        &.structure-howto--single .section-tabs-list {
-            display: none;
-        }
     }
 
     .structure-howto__panel {

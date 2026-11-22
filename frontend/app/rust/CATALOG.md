@@ -211,7 +211,7 @@ An inline keyboard-key chip for shortcut hints ("press Esc to close").
 A search-as-you-type picker for a value the browser cannot list up front (pilots, items, systems).
 
 - Import: `import Combobox from '@components/blocks/Combobox.astro'`
-- Props: `name: string`, `label: string`, `hidden_label?: boolean = false`, `search_url: string`, `value?: string = ''`, `value_label?: string = ''`, `placeholder?: string`, `min_chars?: number = 2`, `debounce_ms?: number = 300`, `allow_clear?: boolean = false`, `size?: 'lg' | 'sm' = 'lg'`, `required?: boolean = false`, `pick_first?: boolean = false`
+- Props: `name: string`, `label: string`, `hidden_label?: boolean = false`, `search_url: string`, `value?: string = ''`, `value_label?: string = ''`, `placeholder?: string`, `min_chars?: number = 2`, `debounce_ms?: number = 300`, `allow_clear?: boolean = false`, `size?: 'lg' | 'sm' = 'lg'`, `required?: boolean = false`, `pick_first?: boolean = false`, `form_validation?: boolean = true`
 - Slots: `field_start`
 - Stories (12): `frontend/app/rust/stories/components/forms/Combobox.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-combobox--docs: Default, Keyboard Navigation, Select dispatches combobox:select, pick_first: Enter picks the first option, Enter without a highlighted option picks nothing, Escape inside a dialog keeps the dialog open, Click Outside Closes List, Empty Results, Already picked, with Clear, Hidden Label, Type, swap results, pick, Under min_chars asks nothing
 
@@ -652,7 +652,7 @@ A generic lazy-loaded `<picture>` + `<img>` for any image URL (posts, doctrine r
 A pilot portrait from the EVE image server.
 
 - Import: `import CharacterPicture from '@components/blocks/CharacterPicture.astro'`
-- Props: `character_id: number`, `character_name?: string`, `x_character_id?: string | false = false`, `x_character_name?: string | false = false`, `size?: ImageSize = 64`, `narrow?: boolean = false`, `icon_quality?: EvEImageServiceSize = 64`, `tooltip?: string`, `mask?: boolean = false`, `inert?: boolean = false`, `centered?: boolean = false`, `quantity?: number`, `tag_color?: BadgeColors`, `height?: number = 412`
+- Props: `character_id: number`, `character_name?: string`, `x_character_id?: string | false = false`, `x_character_name?: string | false = false`, `size?: ImageSize = 64`, `narrow?: boolean = false`, `icon_quality?: EvEImageServiceSize = 64`, `tooltip?: string`, `mask?: boolean = false`, `inert?: boolean = false`, `nested?: boolean = false`, `centered?: boolean = false`, `quantity?: number`, `tag_color?: BadgeColors`, `height?: number = 412`
 - Stories (9): `frontend/app/rust/stories/eve/CharacterPicture.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-characterpicture--docs: Default, Large Portrait, Small, Inert, With Quantity, Masked, Unknown Character, With Tooltip, Zero quantity shows no badge
 
 ### CorporationPicture
@@ -694,7 +694,7 @@ Alliance logo with its name beside it; the default slot renders under the name a
 A pilot portrait with the name beside it, optionally with the pilot's corporation underneath.
 
 - Import: `import PilotBadge from '@components/blocks/PilotBadge.astro'`
-- Props: `character_id: number`, `character_name: string`, `corporation?: CorporationBasic | false = false`, `size?: ImageSize = 64`, `icon_quality?: EvEImageServiceSize = 64`, `inert?: boolean = false`, `heading?: boolean = false`, `centered?: boolean = false`
+- Props: `character_id: number`, `character_name: string`, `corporation?: CorporationBasic | false = false`, `size?: ImageSize = 64`, `icon_quality?: EvEImageServiceSize = 64`, `inert?: boolean = false`, `nested?: boolean = false`, `heading?: boolean = false`, `centered?: boolean = false`
 - Slots: `title`, `default`
 - Stories (7): `frontend/app/rust/stories/eve/PilotBadge.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-pilotbadge--docs: Default, With Corporation, With Title And Slot, Heading, Small, Inert, Unknown Pilot
 
