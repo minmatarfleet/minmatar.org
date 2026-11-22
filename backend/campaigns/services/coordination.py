@@ -2,7 +2,8 @@
 
 A campaign is coordinated from our own server unless an admin links it to
 another server the bot has been added to as administrator. The admin picks
-a timers channel and a fleet pings channel there. Only servers the bot is
+the intel, timerboard, fleet schedule and fleet pings channels there
+(``services.discord_posts`` says what goes in each). Only servers the bot is
 in (``discord.DiscordGuild``, kept by the guild sync) can be picked.
 """
 
@@ -23,6 +24,9 @@ FEATURE = "campaigns.coordination"
 # Discord's Administrator permission bit (the invite asks for it).
 ADMINISTRATOR = 8
 TEXT_CHANNEL_TYPES = ("text",)
+# The channels picked per server, as <slot>_channel_id on links and
+# coordination_<slot>_channel_id on the campaign.
+CHANNEL_SLOTS = ("timers", "fleets", "intel", "schedule")
 
 
 def servers() -> list[dict]:
@@ -124,16 +128,18 @@ def link_out(link, with_channels: bool = True) -> dict:
         "id": link.id,
         "guild_id": str(link.guild_id),
         "guild_name": link.guild_name,
-        "timers_channel_id": (
-            str(link.timers_channel_id) if link.timers_channel_id else None
-        ),
-        "fleets_channel_id": (
-            str(link.fleets_channel_id) if link.fleets_channel_id else None
-        ),
+        **{
+            f"{slot}_channel_id": _id(getattr(link, f"{slot}_channel_id"))
+            for slot in CHANNEL_SLOTS
+        },
         "linked_by": _linker_name(link),
         "channels": channels or [],
         "channels_unavailable": channels is None,
     }
+
+
+def _id(value) -> str | None:
+    return str(value) if value else None
 
 
 def _linker_name(link) -> str:
@@ -164,16 +170,14 @@ def coordination_out(campaign: Campaign, server_id: int | None = None) -> dict:
         "guild_id": str(selected) if selected else None,
         "guild_name": known.get(str(selected), "") if selected else "",
         "is_default": not campaign.coordination_guild_id,
-        "timers_channel_id": (
-            str(campaign.coordination_timers_channel_id)
-            if same_server and campaign.coordination_timers_channel_id
-            else None
-        ),
-        "fleets_channel_id": (
-            str(campaign.coordination_fleets_channel_id)
-            if same_server and campaign.coordination_fleets_channel_id
-            else None
-        ),
+        **{
+            f"{slot}_channel_id": (
+                _id(getattr(campaign, f"coordination_{slot}_channel_id"))
+                if same_server
+                else None
+            )
+            for slot in CHANNEL_SLOTS
+        },
         "servers": servers(),
         "channels": channels or [],
         "channels_unavailable": channels is None,

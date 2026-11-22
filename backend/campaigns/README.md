@@ -56,10 +56,40 @@ Coordinators (`CampaignCoordinator`) are EVE characters invited by name, in
 the alliance or not; whoever owns the character on the site gets the
 coordinator view. They read only the parts in `coordinator_scopes` (sides,
 structures, timers, fleets, fittings) and can link their own Discord server
-(`CampaignDiscordLink`) with a timers and a fleet pings channel. Adding the
-bot goes through Discord's OAuth2 code grant
-(`DISCORD_CAMPAIGN_BOT_REDIRECT_URL`), for our server and theirs. Nothing
-posts to those channels yet; they are configuration for the ping fan-out.
+(`CampaignDiscordLink`). Adding the bot goes through Discord's OAuth2 code
+grant (`DISCORD_CAMPAIGN_BOT_REDIRECT_URL`), for our server and theirs.
+Inviting a coordinator DMs the character's owner (notification type
+`campaigns.coordinator_invited`) with a link to the campaign page; a
+character nobody owns yet gets it when someone signs in with it
+(`CampaignCoordinator.invite_notified_at`).
+
+## Campaign Discord
+
+The bot posts to four channels, picked on the coordination server
+(`Campaign.coordination_<slot>_channel_id`) and on every coordinator's
+linked server (`CampaignDiscordLink.<slot>_channel_id`). The code is
+`services/discord_posts.py`.
+
+| Slot | What | Ping | When |
+| --- | --- | --- | --- |
+| `intel` | One embed per new structure and per new timer: type render, owner logo, side colour, corp/alliance, status, reinforce hour, fitting, recorded by | none | `attach_structure` creates a row; `attach_timer` links a timer for the first time (one timer line, no structure line) |
+| `timers` | One timerboard message: upcoming timers by Enemy / Friendly / Other | none | Edited in place on timer changes and every 15 minutes |
+| `schedule` | One fleet schedule message in the alliance #schedule format (by formup, emoji, EVE + local time, FC), with forming-now fleets marked | none | Edited in place on fleet changes and every 15 minutes |
+| `fleets` | The alliance start ping (`fleets.notifications`) with the campaign as audience | `@everyone` | A campaign fleet's status turns `active` (it started) |
+
+- A linked server gets only what coordinators may see
+  (`coordinator_scopes`): `structures` for structure intel, `timers` for
+  timer intel and the timerboard, `fleets` for the schedule and pings. Its
+  ping links to the campaign page, ours to the fleet page.
+- Private fleets, standing fleets and gangs never show or ping.
+- Completed and archived campaigns post nothing and keep their last boards.
+- Board messages are stored in `CampaignDiscordBoard`; an unchanged board
+  is not edited, a deleted message is posted again, and a channel that is
+  no longer picked loses its message.
+- Single posts go through `discord.outbox` after commit; boards refresh in
+  `tasks.refresh_campaign_board` (fast lane) and the 15-minute
+  `refresh_campaign_boards` beat.
+- Dev seed commands attach structures with `announce=False`.
 
 Doctrines attach with `CampaignDoctrine` and bring their fittings in as
 `CampaignFitting` rows; `CampaignFitting.enabled` hides one from the page.

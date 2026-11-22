@@ -9,9 +9,16 @@ from __future__ import annotations
 
 import logging
 
+from django.utils import timezone
+
 from campaigns.models import Campaign, CampaignCoordinator
 from eveonline.client import EsiClient
-from eveonline.models import EveAlliance, EveCharacter, EveCorporation
+from eveonline.models import (
+    EveAlliance,
+    EveCharacter,
+    EveCorporation,
+    EvePlayer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -115,4 +122,79 @@ def invite(campaign: Campaign, name: str, user) -> CampaignCoordinator:
         getattr(user, "id", None),
         found["character_id"],
     )
+    notify(coordinator)
     return coordinator
+
+
+def _owner(character_id: int):
+    character = (
+        EveCharacter.objects.filter(
+            character_id=character_id, user__isnull=False
+        )
+        .select_related("user")
+        .first()
+    )
+    return character.user if character else None
+
+
+def _inviter_name(user) -> str:
+    if user is None:
+        return ""
+    player = (
+        EvePlayer.objects.filter(user=user)
+        .select_related("primary_character")
+        .first()
+    )
+    if player and player.primary_character:
+        return player.primary_character.character_name
+    return user.username
+
+
+def notify(coordinator: CampaignCoordinator) -> bool:
+    """DM the character's owner that they coordinate the campaign, once.
+
+    Nobody to tell until someone owns the character on the site; the
+    character signal (``campaigns.signals``) tries again then.
+    """
+    # pylint: disable=import-outside-toplevel
+    from campaigns.services.discord_posts import (
+        POSTING_STATUSES,
+        campaign_url,
+    )
+    from notifications.service import notify_user
+    from notifications.types.campaigns import (
+        CAMPAIGN_COORDINATOR_INVITED_KEY,
+    )
+
+    if coordinator.invite_notified_at is not None:
+        return False
+    campaign = coordinator.campaign
+    if campaign.status not in POSTING_STATUSES:
+        return False
+    user = _owner(coordinator.character_id)
+    if user is None:
+        return False
+    notify_user(
+        user,
+        CAMPAIGN_COORDINATOR_INVITED_KEY,
+        {
+            "campaign_name": campaign.name,
+            "character_name": coordinator.character_name,
+            "inviter": _inviter_name(coordinator.invited_by),
+            "url": campaign_url(campaign),
+        },
+        idempotency_key=(
+            f"{CAMPAIGN_COORDINATOR_INVITED_KEY}:{coordinator.id}"
+        ),
+    )
+    coordinator.invite_notified_at = timezone.now()
+    coordinator.save(update_fields=["invite_notified_at"])
+    return True
+
+
+def notify_pending(character) -> int:
+    """Send the invite DMs a newly owned character was waiting for."""
+    pending = CampaignCoordinator.objects.filter(
+        character_id=character.character_id, invite_notified_at__isnull=True
+    ).select_related("campaign", "invited_by")
+    return sum(1 for coordinator in pending if notify(coordinator))

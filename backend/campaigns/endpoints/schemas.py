@@ -272,6 +272,8 @@ class CampaignDiscordLinkOut(Schema):
     guild_name: str = ""
     timers_channel_id: str | None = None
     fleets_channel_id: str | None = None
+    intel_channel_id: str | None = None
+    schedule_channel_id: str | None = None
     linked_by: str = ""
     channels: list[CoordinationChannelOut] = []
     channels_unavailable: bool = False
@@ -286,6 +288,8 @@ class CampaignCoordinationOut(Schema):
     is_default: bool = True
     timers_channel_id: str | None = None
     fleets_channel_id: str | None = None
+    intel_channel_id: str | None = None
+    schedule_channel_id: str | None = None
     servers: list[CoordinationServerOut] = []
     channels: list[CoordinationChannelOut] = []
     channels_unavailable: bool = False
@@ -297,13 +301,19 @@ class CampaignCoordinationOut(Schema):
 
 class CampaignCoordinationRequest(Schema):
     guild_id: str | None = None
+    # timers: the timerboard message; fleets: @everyone fleet pings;
+    # intel: new structures and timers; schedule: the fleet schedule.
     timers_channel_id: str | None = None
     fleets_channel_id: str | None = None
+    intel_channel_id: str | None = None
+    schedule_channel_id: str | None = None
 
 
 class CampaignDiscordLinkRequest(Schema):
     timers_channel_id: str | None = None
     fleets_channel_id: str | None = None
+    intel_channel_id: str | None = None
+    schedule_channel_id: str | None = None
 
 
 class CampaignCoordinatorOut(Schema):

@@ -13,7 +13,7 @@ from campaigns.endpoints import schemas
 from campaigns.endpoints.base import router
 from campaigns.endpoints.manage import _can_manage, _denied
 from campaigns.models import Campaign
-from campaigns.services import coordination
+from campaigns.services import coordination, discord_posts
 
 
 def _snowflake(value: str | None) -> int | None:
@@ -33,8 +33,9 @@ def _snowflake(value: str | None) -> int | None:
 def put_coordination(
     request, slug: str, payload: schemas.CampaignCoordinationRequest
 ):
-    """Link the campaign to a server the bot is in, and pick its timers and
-    fleet pings channels there. Admins only."""
+    """Link the campaign to a server the bot is in, and pick its intel,
+    timerboard, fleet schedule and fleet pings channels there. Admins
+    only."""
     denied = require_feature(request.user, coordination.FEATURE)
     if denied:
         return denied
@@ -46,11 +47,8 @@ def put_coordination(
     if not server_id or not coordination.is_bot_server(server_id):
         return 400, {"detail": "The bot is not in that server."}
     channel_ids = {
-        name: _snowflake(value)
-        for name, value in (
-            ("timers", payload.timers_channel_id),
-            ("fleets", payload.fleets_channel_id),
-        )
+        slot: _snowflake(getattr(payload, f"{slot}_channel_id"))
+        for slot in coordination.CHANNEL_SLOTS
     }
     if any(channel_ids.values()):
         channels = coordination.text_channels(server_id)
@@ -64,13 +62,11 @@ def put_coordination(
 
     ours = int(settings.DISCORD_GUILD_ID or 0)
     campaign.coordination_guild_id = None if server_id == ours else server_id
-    campaign.coordination_timers_channel_id = channel_ids["timers"]
-    campaign.coordination_fleets_channel_id = channel_ids["fleets"]
+    for slot, channel_id in channel_ids.items():
+        setattr(campaign, f"coordination_{slot}_channel_id", channel_id)
     campaign.save(
-        update_fields=[
-            "coordination_guild_id",
-            "coordination_timers_channel_id",
-            "coordination_fleets_channel_id",
-        ]
+        update_fields=["coordination_guild_id"]
+        + [f"coordination_{slot}_channel_id" for slot in channel_ids]
     )
+    discord_posts.queue_all_board_refreshes(campaign.id)
     return coordination.coordination_out(campaign)

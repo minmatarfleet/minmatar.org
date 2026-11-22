@@ -12,6 +12,7 @@ from campaigns.endpoints.base import router
 from campaigns.endpoints.coordinator_helpers import _managed
 from campaigns.endpoints.settings_helpers import coordinators_out
 from campaigns.models import CampaignCoordinator
+from campaigns.services import discord_posts
 from eveonline.models import EveCharacter
 
 
@@ -40,4 +41,5 @@ def remove_coordinator(request, slug: str, coordinator_id: int):
     with transaction.atomic():
         campaign.discord_links.filter(linked_by_id__in=owners).delete()
         coordinator.delete()
+    discord_posts.queue_all_board_refreshes(campaign.id)
     return coordinators_out(campaign)

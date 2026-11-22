@@ -95,3 +95,22 @@ export function refusal_text(error: unknown, fallback: string): string {
     const message = error instanceof Error && error.message ? error.message : fallback
     return message.replace(/^Error [^:]{1,60}: /, '')
 }
+
+/**
+ * The channels the campaign bot posts to, in the order the forms show them.
+ * Each is `<slot>_channel_id` on the coordination server and on a linked
+ * server (backend `campaigns/services/discord_posts.py`).
+ */
+export const DISCORD_CHANNEL_SLOTS = ['intel', 'timers', 'schedule', 'fleets'] as const
+export type DiscordChannelSlot = typeof DISCORD_CHANNEL_SLOTS[number]
+
+export function discord_channel_label_key<S extends DiscordChannelSlot>(slot: S): `campaigns.manage.coordination_${S}` {
+    return `campaigns.manage.coordination_${slot}`
+}
+
+/** `{ intel_channel_id, timers_channel_id, ... }` from a value per slot. */
+export function discord_channel_body(value: (slot: DiscordChannelSlot) => string): Record<`${DiscordChannelSlot}_channel_id`, string | null> {
+    return Object.fromEntries(
+        DISCORD_CHANNEL_SLOTS.map((slot) => [`${slot}_channel_id`, value(slot) || null])
+    ) as Record<`${DiscordChannelSlot}_channel_id`, string | null>
+}

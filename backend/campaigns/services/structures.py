@@ -282,8 +282,12 @@ def attach_structure(
     eve_structure_id: int | None = None,
     fitting: str = "",
     reinforce_hour: int | None = None,
+    announce: bool = True,
 ) -> CampaignStructure:
-    """Upsert a CampaignStructure and grow the theater around it."""
+    """Upsert a CampaignStructure and grow the theater around it.
+
+    A new structure is posted to the campaign's intel channels unless
+    ``announce`` is off (a timer posts its own line)."""
     solar_system_id, system_name = _resolve_attach_system(
         solar_system_id, system_name
     )
@@ -341,6 +345,11 @@ def attach_structure(
     )
     if not created:
         _apply_structure_updates(structure, defaults)
+    elif announce:
+        # pylint: disable-next=import-outside-toplevel
+        from campaigns.services import discord_posts
+
+        discord_posts.announce_structure(structure)
 
     return structure
 
@@ -356,7 +365,16 @@ def attach_timer(
     related_alliance_name: str = "",
     related_alliance_id: int | None = None,
 ) -> CampaignStructure:
-    """Link an EveStructureTimer to a campaign and upsert recon."""
+    """Link an EveStructureTimer to a campaign and upsert recon.
+
+    The first time a timer is linked it is posted to the campaign's intel
+    channels, and the timerboards are refreshed either way."""
+    # pylint: disable-next=import-outside-toplevel
+    from campaigns.services import discord_posts
+
+    is_new = not CampaignStructure.objects.filter(
+        campaign=campaign, timer=timer
+    ).exists()
     timer.campaign = campaign
     timer.save(update_fields=["campaign"])
 
@@ -364,7 +382,7 @@ def attach_timer(
     if timer.state in ("anchoring", "unanchoring"):
         status = StructureStatus.ANCHORED
 
-    return attach_structure(
+    structure = attach_structure(
         campaign,
         name=timer.name,
         structure_type=timer.type,
@@ -380,7 +398,13 @@ def attach_timer(
         reinforce_hour=reinforce_hour,
         related_alliance_name=related_alliance_name,
         related_alliance_id=related_alliance_id,
+        announce=False,
     )
+    if is_new:
+        discord_posts.announce_timer(campaign, timer)
+    if discord_posts.has_board(campaign, discord_posts.TIMERS):
+        discord_posts.queue_board_refresh(campaign.id, discord_posts.TIMERS)
+    return structure
 
 
 def match_structure_for_killmail(
