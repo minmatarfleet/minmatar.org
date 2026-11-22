@@ -2,6 +2,7 @@ import type { ChronicleChapter } from './types'
 
 export const chapter9: ChronicleChapter = {
     id: 'chapter-9',
+    era: 'vard',
     number: 9,
     title: 'The Waifu Wars',
     dateRange: 'June – August',

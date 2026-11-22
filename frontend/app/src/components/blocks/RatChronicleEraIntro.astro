@@ -1,0 +1,69 @@
+---
+import type { ChronicleEra } from '@/data/rat-chronicle'
+import RatChronicleSection from '@components/blocks/RatChronicleSection.astro'
+
+/**
+ * Opens an era of the Rat Chronicle: where the alliance lived and why it moved
+ * there. Shown before the era's first chapter.
+ */
+interface Props {
+    era: ChronicleEra
+}
+
+const { era } = Astro.props
+---
+
+<section class="chronicle-era" aria-labelledby={`chronicle-era-${era.id}`}>
+    <p class="chronicle-era__kicker">{era.dateRange}</p>
+    <h2 class="chronicle-era__title" id={`chronicle-era-${era.id}`}>{era.name}</h2>
+    <p class="chronicle-era__home">{era.home}</p>
+    <div class="chronicle-era__body">
+        <RatChronicleSection blocks={era.intro} />
+    </div>
+</section>
+
+<style lang="scss">
+    .chronicle-era {
+        margin: 0 auto var(--space-3xl);
+        padding: var(--space-xl) var(--space-l-xl);
+        max-width: 52rem;
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
+        background: color-mix(in srgb, var(--component-background) var(--tint-strong), transparent);
+        text-align: center;
+    }
+
+    .chronicle-era__kicker {
+        margin: 0 0 var(--space-xs);
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-color-secondary, var(--faded));
+    }
+
+    .chronicle-era__title {
+        margin: 0;
+        font-size: clamp(var(--step-1), 3vw, var(--step-3));
+        line-height: 1.1;
+        color: var(--fleet-yellow);
+    }
+
+    .chronicle-era__home {
+        margin: var(--space-xs) 0 0;
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--fleet-red);
+    }
+
+    .chronicle-era__body {
+        margin-top: var(--space-l);
+        text-align: start;
+    }
+
+    @media (max-width: 48rem) {
+        .chronicle-era {
+            padding: var(--space-l) var(--space-s);
+        }
+    }
+</style>

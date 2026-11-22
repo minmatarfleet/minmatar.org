@@ -2,6 +2,7 @@ import type { ChronicleChapter } from './types'
 
 export const chapter8: ChronicleChapter = {
     id: 'chapter-8',
+    era: 'sosala',
     number: 8,
     title: 'The Siege of Aldodan',
     dateRange: 'April – May',

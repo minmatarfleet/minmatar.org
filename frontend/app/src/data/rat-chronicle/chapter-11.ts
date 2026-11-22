@@ -2,6 +2,7 @@ import type { ChronicleChapter } from './types'
 
 export const chapter11: ChronicleChapter = {
     id: 'chapter-11',
+    era: 'amamake',
     number: 11,
     title: 'The DRL Reckoning & Dronelands',
     dateRange: 'January – March',

@@ -2,6 +2,7 @@ import type { ChronicleChapter } from './types'
 
 export const chapter5: ChronicleChapter = {
     id: 'chapter-5',
+    era: 'sosala',
     number: 5,
     title: 'The Providence War',
     dateRange: 'January – April',

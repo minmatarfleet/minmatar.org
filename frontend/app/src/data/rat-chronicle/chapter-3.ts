@@ -2,6 +2,7 @@ import type { ChronicleChapter } from './types'
 
 export const chapter3: ChronicleChapter = {
     id: 'chapter-3',
+    era: 'auga',
     number: 3,
     title: 'The Hek Affair',
     dateRange: 'October – December',

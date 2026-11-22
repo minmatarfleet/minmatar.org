@@ -1,0 +1,46 @@
+---
+import type { ChroniclePiece } from '@/data/rat-chronicle'
+import { post_page_path } from '@helpers/content_viewer'
+import ContentViewerLink from '@components/blocks/ContentViewerLink.astro'
+
+/**
+ * A link from the Rat Chronicle to something it draws on. A post on this site
+ * opens in the page's ContentViewer; an outside battle report opens in a new tab.
+ */
+interface Props {
+    piece: ChroniclePiece
+    [propName: string]: any
+}
+
+const { piece, ...attributes } = Astro.props
+delete attributes.class
+
+const is_post = piece.post_id !== undefined
+const href = is_post
+    ? post_page_path({ post_id: piece.post_id as number, slug: piece.post_slug })
+    : piece.href
+---
+
+{is_post ? (
+    <ContentViewerLink
+        href={href as string}
+        post={piece.post_id}
+        title={piece.title}
+        class:list={['chronicle-piece-link', Astro.props.class]}
+        {...attributes}
+    >
+        <slot>{piece.title}</slot>
+    </ContentViewerLink>
+) : href ? (
+    <a
+        href={href}
+        class:list={['chronicle-piece-link', Astro.props.class]}
+        target="_blank"
+        rel="noopener noreferrer"
+        {...attributes}
+    >
+        <slot>{piece.title}</slot>
+    </a>
+) : (
+    <span class:list={['chronicle-piece-link', Astro.props.class]} {...attributes}><slot>{piece.title}</slot></span>
+)}

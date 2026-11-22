@@ -10,7 +10,8 @@ import { chapter8 } from './chapter-8'
 import { chapter9 } from './chapter-9'
 import { chapter10 } from './chapter-10'
 import { chapter11 } from './chapter-11'
-import type { ChronicleChapter, ChronicleSection } from './types'
+import { ratChronicleEras } from './eras'
+import type { ChronicleChapter, ChronicleEra, ChronicleEraId, ChronicleSection } from './types'
 
 export const ratChronicleChapters: ChronicleChapter[] = [
     chapter1,
@@ -28,6 +29,38 @@ export const ratChronicleChapters: ChronicleChapter[] = [
 
 export function getChronicleChapterById(chapter_id: string): ChronicleChapter | undefined {
     return ratChronicleChapters.find((chapter) => chapter.id === chapter_id)
+}
+
+/**
+ * Addresses the chronicle used before it was regrouped under eras, and the
+ * chapter each one's content now lives in. Old links keep working: the page
+ * redirects them.
+ */
+export const legacyChronicleChapterIds: Record<string, string> = {}
+
+/** The current chapter id for an address: itself, or where a retired one moved to. */
+export function resolveChronicleChapterId(chapter_id: string): string | undefined {
+    if (getChronicleChapterById(chapter_id)) return chapter_id
+    const moved = legacyChronicleChapterIds[chapter_id]
+    return moved && getChronicleChapterById(moved) ? moved : undefined
+}
+
+export { ratChronicleEras }
+
+export function getChronicleEraById(era_id: ChronicleEraId): ChronicleEra {
+    return ratChronicleEras.find((era) => era.id === era_id) ?? ratChronicleEras[0]
+}
+
+/** The eras in order, each with its chapters. An era with no chapter yet is left out. */
+export function getChronicleErasWithChapters(): { era: ChronicleEra; chapters: ChronicleChapter[] }[] {
+    return ratChronicleEras
+        .map((era) => ({ era, chapters: ratChronicleChapters.filter((chapter) => chapter.era === era.id) }))
+        .filter((group) => group.chapters.length > 0)
+}
+
+/** True when the chapter is the first of its era, which is where the era's intro is shown. */
+export function isFirstChapterOfEra(chapter: ChronicleChapter): boolean {
+    return ratChronicleChapters.find((entry) => entry.era === chapter.era)?.id === chapter.id
 }
 
 export const defaultChronicleChapterId = ratChronicleChapters[0]?.id ?? 'chapter-1'
@@ -61,5 +94,15 @@ export function getChronicleProgressSections(): { id: string; title: string; cha
     return sections
 }
 
-export type { ChronicleBlock, ChronicleCharacter, ChronicleCharacterOfTheAge, ChronicleCharactersOfTheAge, ChronicleChapter, ChronicleSection } from './types'
+export type {
+    ChronicleBlock,
+    ChronicleCharacter,
+    ChronicleCharacterOfTheAge,
+    ChronicleCharactersOfTheAge,
+    ChronicleChapter,
+    ChronicleEra,
+    ChronicleEraId,
+    ChroniclePiece,
+    ChronicleSection,
+} from './types'
 export { formatChronicleDescription, formatChronicleText } from './format-text'
