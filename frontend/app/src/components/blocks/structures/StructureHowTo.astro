@@ -38,12 +38,12 @@ const CLIPS: Partial<Record<StructureHowToTopic, { src: string, width: number, h
 {topics.length > 0 &&
     <div class:list={['[ structure-howto ]', { 'structure-howto--single': topics.length === 1 }, Astro.props.class]} {...attributes}>
         <span class="[ manage-field__label ]">{t('structures.guide.title')}</span>
-        {/* A single topic needs no tab (and no tab role) to pick it. */}
+        {/* A single topic needs no tab (and no tab role) to pick it; main still marked its panel role=tabpanel, so it stays. */}
         {topics.length === 1
             ? <Fragment>{topics.map((topic) => {
                 const clip = CLIPS[topic]
                 return (
-                    <div class:list={['[ structure-howto__panel ]', { 'no-clip': !clip }]}>
+                    <div class:list={['[ structure-howto__panel ]', { 'no-clip': !clip }]} role="tabpanel">
                         {clip &&
                             <figure class="[ structure-howto__clip ]">
                                 <img src={clip.src} width={clip.width} height={clip.height} loading="lazy" alt={t(t_key('structures.guide.clip_', topic))} />

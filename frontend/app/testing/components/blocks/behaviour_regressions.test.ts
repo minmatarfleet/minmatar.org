@@ -31,6 +31,7 @@ test("StructureHowTo renders no tab role for a single topic", async () => {
   const one = await container.renderToString(StructureHowTo, { props: { topics: ["name"] } });
   const two = await container.renderToString(StructureHowTo, { props: { topics: ["name", "owner"] } });
   expect(one).not.toContain('role="tab"');
+  expect(one).toContain('role="tabpanel"');
   expect(two).toContain('role="tab"');
 });
 
