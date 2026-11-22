@@ -13,6 +13,8 @@ interface Props {
     icon_quality?:          EvEImageServiceSize;
     quantity?:              number;
     tag_color?:             BadgeColors;
+    /** Sits inside a link or button: render a span role="link" that navigates, never a nested <a>. */
+    nested?:                boolean;
     [propName: string]: any;
 }
 
@@ -25,6 +27,7 @@ const {
     icon_quality = 64,
     quantity,
     tag_color,
+    nested = false,
     ...attributes
 } = Astro.props
 
@@ -35,7 +38,12 @@ import { get_corporation_logo } from '@helpers/eve_image'
 const corporations_path = translatePath('/alliance/corporations/')
 const static_href = !x_corporation_id && corporation_id != 0 ? `${corporations_path}${corporation_id}/` : undefined
 const linked = !!static_href || !!x_corporation_id
-const Target = linked ? 'a' : 'span'
+const Target = linked && !nested ? 'a' : 'span'
+const nested_link = linked && nested
+// Without an anchor the click navigates itself (the stop keeps the parent's handler quiet).
+const nested_go = nested_link
+    ? `const id = ${x_corporation_id ? x_corporation_id : `'${corporation_id}'`}; if (id && String(id) !== '0') window.location.assign('${corporations_path}' + id + '/')`
+    : undefined
 
 import Picture from '@components/blocks/Picture.astro'
 
@@ -55,9 +63,12 @@ delete attributes.class
     target={{
         tag: Target,
         attrs: {
-            href: static_href,
-            'x-bind:href': x_corporation_id ? `${x_corporation_id} && String(${x_corporation_id}) !== '0' ? '${corporations_path}' + ${x_corporation_id} + '/' : false` : undefined,
-            'x-on:click.stop': linked ? '' : undefined,
+            href: nested_link ? undefined : static_href,
+            role: nested_link ? 'link' : undefined,
+            tabindex: nested_link ? '0' : undefined,
+            'x-on:keydown.enter.stop.prevent': nested_link ? nested_go : undefined,
+            'x-bind:href': nested_link ? undefined : x_corporation_id ? `${x_corporation_id} && String(${x_corporation_id}) !== '0' ? '${corporations_path}' + ${x_corporation_id} + '/' : false` : undefined,
+            'x-on:click.stop': nested_link ? nested_go : linked ? '' : undefined,
         },
     }}
     img_attrs={{

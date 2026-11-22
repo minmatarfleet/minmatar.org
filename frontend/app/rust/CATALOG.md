@@ -659,7 +659,7 @@ A pilot portrait from the EVE image server.
 A corporation logo from the EVE image server.
 
 - Import: `import CorporationPicture from '@components/blocks/CorporationPicture.astro'`
-- Props: `corporation_id: number`, `corporation_name?: string`, `x_corporation_id?: string | false = false`, `x_corporation_name?: string | false = false`, `size?: ImageSize = 64`, `icon_quality?: EvEImageServiceSize = 64`, `quantity?: number`, `tag_color?: BadgeColors`
+- Props: `corporation_id: number`, `corporation_name?: string`, `x_corporation_id?: string | false = false`, `x_corporation_name?: string | false = false`, `size?: ImageSize = 64`, `icon_quality?: EvEImageServiceSize = 64`, `quantity?: number`, `tag_color?: BadgeColors`, `nested?: boolean = false`
 - Stories (8): `frontend/app/rust/stories/eve/CorporationPicture.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-corporationpicture--docs: Default, Large, Small, With Quantity, Different Corporation, Unknown Corporation, Zero quantity shows no badge, Reactive id binds the link
 
 ### ItemPicture
