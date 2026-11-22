@@ -23,7 +23,7 @@ test("external Button looks up show_alert_dialog on body and passes accept_href"
   });
 
   expect(result).toContain("Alpine.$data(document.body)");
-  expect(result).toContain("accept_href: 'https://discord.com/invite/3hZfahmkFx'");
+  expect(result).toContain('accept_href: &#34;https://discord.com/invite/3hZfahmkFx&#34;');
   expect(result).toContain("root_data.show_alert_dialog");
   expect(result).not.toMatch(/[^.]show_alert_dialog\(\{/);
 });
