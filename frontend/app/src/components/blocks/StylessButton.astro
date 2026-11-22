@@ -40,6 +40,7 @@ const Element = href ? 'a' : 'button';
 <Element
     href={ href }
     {...attributes}
+    class:list={['styless-button', Astro.props.class]}
     rel={external ? 'nofollow noopener noreferrer' : undefined }
     x-data={nested_x_data}
     x-on:click.prevent={external_link ? external_link.x_on_click_prevent : x_on}
@@ -48,8 +49,8 @@ const Element = href ? 'a' : 'button';
 </Element>
 
 <style lang="scss">
-    a,
-    button {
+    /* Zero specificity (:where), so any caller class wins exactly as on a raw <button>. */
+    :global(:where(a.styless-button, button.styless-button)) {
         border: none;
         padding: 0;
         text-align: left;
