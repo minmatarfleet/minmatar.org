@@ -238,7 +238,11 @@ def _defuse_fences(text: str) -> str:
 
 
 def _chunks(text: str, limit: int) -> list[str]:
-    """Split on line breaks where possible so each piece fits `limit`."""
+    """Split on line breaks where possible so each piece fits `limit`.
+
+    Trailing newlines stay on the chunk. Stripping them drops the blank
+    line at a split, so pasting the messages back together loses a paragraph.
+    """
     chunks = []
     current = ""
     for line in text.splitlines(keepends=True):
@@ -248,13 +252,13 @@ def _chunks(text: str, limit: int) -> list[str]:
                 current = ""
             chunks.append(line[:limit])
             line = line[limit:]
-        if len(current) + len(line) > limit:
+        if current and len(current) + len(line) > limit:
             chunks.append(current)
             current = ""
         current += line
-    if current.strip():
+    if current:
         chunks.append(current)
-    return [chunk.rstrip("\n") for chunk in chunks] or [""]
+    return chunks or [""]
 
 
 def send_reminder(

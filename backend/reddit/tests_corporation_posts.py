@@ -292,6 +292,19 @@ class ReminderMessageTestCase(CorporationPostTestCase):
         joined = "".join(m.strip("`\n") for m in messages[1:])
         self.assertIn("Line 99", joined)
 
+    def test_split_reminder_pastes_back_to_the_post(self):
+        body = "\n\n".join(f"Paragraph {i} " + "x" * 80 for i in range(40))
+        post = self.make_post(content=body)
+        messages = reminder_messages(post, NOT_APPROVED)
+        self.assertGreater(len(messages), 2)
+        parts = []
+        for message in messages[1:]:
+            self.assertLessEqual(len(message), DISCORD_MESSAGE_LIMIT)
+            self.assertTrue(message.startswith("```\n"), message)
+            self.assertTrue(message.endswith("\n```"), message)
+            parts.append(message[4:-4])
+        self.assertEqual(body, "".join(parts))
+
     def test_code_fences_in_body_do_not_break_the_message(self):
         post = self.make_post(content="```\ncode\n```")
         body = reminder_messages(post)[1]

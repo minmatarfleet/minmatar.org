@@ -217,6 +217,40 @@ class FittingBuyPlanTestCase(TestCase):
         item = self.order.items.get(eve_type_id=self.mod_a.id)
         self.assertEqual(item.unit_price, Decimal("12345.67"))
 
+    def test_wallet_and_spreadsheet_pastes_set_unit_prices(self):
+        sync_order_items(self.order)
+        wallet = (
+            "2026.11.18 20:15:02\tDamage Control II\t10\t1,234.50 ISK\t"
+            "12,345.00 ISK\tSeller\tJita IV - Moon 4"
+        )
+        updated, unresolved = apply_landed_prices(self.order, wallet)
+        self.assertEqual(updated, 1)
+        self.assertEqual(unresolved, [])
+        self.assertEqual(
+            self.order.items.get(eve_type=self.mod_a).unit_price,
+            Decimal("1234.50"),
+        )
+
+        sentence = (
+            "Bought 10 units of 1MN Afterburner II for 20.500.000,00 ISK"
+        )
+        updated, unresolved = apply_landed_prices(self.order, sentence)
+        self.assertEqual(updated, 1)
+        self.assertEqual(unresolved, [])
+        self.assertEqual(
+            self.order.items.get(eve_type=self.mod_b).unit_price,
+            Decimal("2050000.00"),
+        )
+
+    def test_plain_multibuy_does_not_set_landed_prices(self):
+        sync_order_items(self.order)
+        updated, unresolved = apply_landed_prices(
+            self.order, f"{self.mod_a.name} 10\n{self.mod_b.name} 10"
+        )
+        self.assertEqual(updated, 0)
+        self.assertEqual(unresolved, [])
+        self.assertIsNone(self.order.items.get(eve_type=self.mod_a).unit_price)
+
 
 class PastedPriceNormalizationTestCase(TestCase):
     def test_parse_qty_and_total_columns(self):
@@ -282,6 +316,72 @@ class PastedPriceNormalizationTestCase(TestCase):
     def test_no_signal_keeps_unit_prices(self):
         rows = [PriceRow(price=Decimal("3000"), buy_qty=3, jita_unit=None)]
         self.assertFalse(pasted_prices_are_totals(rows))
+
+    def test_isk_suffix_and_eu_grouping(self):
+        parsed = parse_price_paste(
+            "Damage Control II\t1,234.50 ISK\n"
+            "1MN Afterburner II\t3\t3.060.000,00"
+        )
+        self.assertEqual(parsed["Damage Control II"].price, Decimal("1234.50"))
+        self.assertIsNone(parsed["Damage Control II"].quantity)
+        self.assertEqual(parsed["1MN Afterburner II"].quantity, 3)
+        self.assertEqual(
+            parsed["1MN Afterburner II"].price, Decimal("3060000.00")
+        )
+
+    def test_single_space_qty_and_total(self):
+        parsed = parse_price_paste("Damage Control II 3 3,060,000.00")
+        self.assertEqual(parsed["Damage Control II"].quantity, 3)
+        self.assertEqual(
+            parsed["Damage Control II"].price, Decimal("3060000.00")
+        )
+
+    def test_multibuy_quantity_alone_is_not_a_price(self):
+        self.assertEqual(parse_price_paste("Damage Control II 10"), {})
+
+    def test_semicolon_and_comma_spreadsheet(self):
+        parsed = parse_price_paste(
+            "Item;Quantity;Price\n"
+            "Damage Control II;3;3.060.000,00\n"
+            "1MN Afterburner II, 2, 2,050,000.00"
+        )
+        self.assertEqual(parsed["Damage Control II"].quantity, 3)
+        self.assertEqual(
+            parsed["Damage Control II"].price, Decimal("3060000.00")
+        )
+        self.assertEqual(parsed["1MN Afterburner II"].quantity, 2)
+        self.assertEqual(
+            parsed["1MN Afterburner II"].price, Decimal("2050000.00")
+        )
+
+    def test_qty_stuck_on_the_item_name(self):
+        parsed = parse_price_paste("Damage Control II 10\t12345.67")
+        self.assertEqual(list(parsed), ["Damage Control II"])
+        self.assertEqual(parsed["Damage Control II"].quantity, 10)
+        self.assertEqual(
+            parsed["Damage Control II"].price, Decimal("12345.67")
+        )
+
+    def test_wallet_row_finds_the_item_after_the_date(self):
+        parsed = parse_price_paste(
+            "2026.11.18 20:15:02\tDamage Control II\t10\t1,234.50 ISK\t"
+            "12,345.00 ISK\tSeller\tJita IV - Moon 4",
+            known_names=["Damage Control II", "1MN Afterburner II"],
+        )
+        self.assertEqual(list(parsed), ["Damage Control II"])
+        self.assertEqual(parsed["Damage Control II"].price, Decimal("1234.50"))
+        self.assertNotIn("2026.11.18 20:15:02", parsed)
+
+    def test_bought_sentence_is_qty_and_total(self):
+        parsed = parse_price_paste(
+            "2026.11.18\tMarket\t-12.345,00 ISK\t999.999,00 ISK\t"
+            "Bought 10 units of Damage Control II for 12.345,00 ISK",
+            known_names=["Damage Control II"],
+        )
+        self.assertEqual(parsed["Damage Control II"].quantity, 10)
+        self.assertEqual(
+            parsed["Damage Control II"].price, Decimal("12345.00")
+        )
 
 
 class BandedJitaSellDepthTestCase(TestCase):
