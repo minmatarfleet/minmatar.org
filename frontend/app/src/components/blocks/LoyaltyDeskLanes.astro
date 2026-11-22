@@ -18,6 +18,7 @@ import {
     type LoyaltyLaneKey,
 } from '@helpers/loyalty_desk'
 import EmptyState from '@components/blocks/EmptyState.astro'
+import Tag from '@components/blocks/Tag.astro'
 import LoyaltyOrderActions from '@components/blocks/LoyaltyOrderActions.astro'
 
 import StylessButton from '@components/blocks/StylessButton.astro'
@@ -50,6 +51,14 @@ const LANES: { key: LoyaltyLaneKey, title: string, note?: string }[] = [
 ]
 
 type Chip = { text: string, tone: 'neutral' | 'late' | 'express' | 'good' }
+
+// How each lane chip tone is drawn as a Tag.
+const CHIP_TAGS: Record<Chip['tone'], { variant?: 'outline', color?: string }> = {
+    neutral: { variant: 'outline' },
+    late: { variant: 'outline', color: 'fleet-red' },
+    express: { color: 'fleet-yellow' },
+    good: { variant: 'outline', color: 'green' },
+}
 
 const chip_for = (order: LoyaltyMarketOrder, lane: LoyaltyLaneKey): Chip => {
     if (order.express_due_at && order.status !== 'completed') {
@@ -94,7 +103,7 @@ const chip_for = (order: LoyaltyMarketOrder, lane: LoyaltyLaneKey): Chip => {
                         style={index >= VISIBLE_CARDS ? 'display: none' : undefined}
                     >
                         <div class="[ loyalty-lanes__row ]">
-                            <span class:list={['loyalty-lanes__chip', `is-${chip.tone}`]}>{chip.text}</span>
+                            <Tag text={chip.text} {...CHIP_TAGS[chip.tone]} />
                             <a href={translatePath(`/industry/loyalty/orders/${order.id}/`)}>#{order.id}</a>
                         </div>
                         <div class="[ loyalty-lanes__row tabular-nums ]">
@@ -245,32 +254,6 @@ const chip_for = (order: LoyaltyMarketOrder, lane: LoyaltyLaneKey): Chip => {
     .loyalty-lanes__isk {
         font-weight: 600;
         color: var(--fleet-yellow);
-    }
-
-    .loyalty-lanes__chip {
-        padding: var(--space-3xs) var(--space-2xs);
-        font-size: var(--step--2);
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        border: 1px solid var(--border-color-hover);
-        color: var(--foreground);
-
-        &.is-late {
-            border-color: var(--fleet-red);
-            color: var(--fleet-red);
-        }
-
-        &.is-express {
-            border-color: var(--fleet-yellow);
-            background-color: var(--fleet-yellow);
-            color: var(--background);
-        }
-
-        &.is-good {
-            border-color: var(--green);
-            color: var(--green);
-        }
     }
 
     .loyalty-lanes__people {

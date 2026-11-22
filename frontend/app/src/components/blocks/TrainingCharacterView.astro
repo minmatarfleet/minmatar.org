@@ -221,10 +221,9 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                             <td>
                                 <span class="[ training-roles__ships ]">
                                     {role.ready.map(ship =>
-                                        <span class="[ training-chip ]">
-                                            <img src={get_item_icon(ship.ship_type_id, 64)} alt="" width="28" height="28" loading="lazy" />
-                                            {ship.name}
-                                        </span>
+                                        <Tag variant="outline" text={ship.name}>
+                                            <img slot="icon" src={get_item_icon(ship.ship_type_id, 64)} alt="" width="28" height="28" loading="lazy" />
+                                        </Tag>
                                     )}
                                     {role.ready.length === 0 && <span class="[ training-muted ]">{t('training.none_ready')}</span>}
                                 </span>
@@ -349,21 +348,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         display: flex;
         flex-wrap: wrap;
         gap: var(--space-3xs);
-    }
-
-    .training-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-2xs);
-        padding: var(--space-3xs) var(--space-xs) var(--space-3xs) var(--space-3xs);
-        border: 1px solid var(--border-color);
-        border-radius: var(--space-3xs);
-        font-size: var(--step--1);
-        font-weight: 600;
-
-        img {
-            border-radius: var(--space-3xs);
-        }
     }
 
     @media (max-width: 48rem) {

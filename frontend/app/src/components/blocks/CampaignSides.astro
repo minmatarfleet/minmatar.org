@@ -4,6 +4,7 @@ const { t } = i18n(Astro.url)
 
 import type { CampaignParty } from '@dtypes/api.minmatar.org'
 import { campaign_sides, party_label, party_logo } from '@helpers/campaign_sides'
+import Tag from '@components/blocks/Tag.astro'
 
 interface Props {
     parties:            CampaignParty[];
@@ -37,14 +38,17 @@ const sides = campaign_sides(parties).filter((side) => !compact || side.parties.
                     {t(side.label_key)}{!compact && ` · ${side.parties.length}`}
                 </small>
                 {side.parties.length > 0 &&
-                    <ul class="[ campaign-side-chips ]" role="list">
+                    <ul class="[ campaign-side-list ]" role="list">
                         {side.parties.map((party) =>
-                            <li class="[ campaign-side-chip ]" title={party.name}>
-                                {party_logo(party) &&
-                                    <img src={party_logo(party)} alt="" width="28" height="28" loading="lazy" />
-                                }
-                                {!compact && <span>{party_label(party)}</span>}
-                                {compact && <span class="[ visually-hidden ]">{party.name}</span>}
+                            <li title={party.name}>
+                                <Tag variant="outline" class="[ campaign-side-tag ]" text={compact ? '' : party_label(party)}>
+                                    <Fragment slot="icon">
+                                        {party_logo(party) &&
+                                            <img src={party_logo(party)} alt="" width="28" height="28" loading="lazy" />
+                                        }
+                                        {compact && <span class="[ visually-hidden ]">{party.name}</span>}
+                                    </Fragment>
+                                </Tag>
                             </li>
                         )}
                     </ul>
@@ -91,7 +95,7 @@ const sides = campaign_sides(parties).filter((side) => !compact || side.parties.
         color: var(--fleet-yellow);
     }
 
-    .campaign-side-chips {
+    .campaign-side-list {
         display: flex;
         flex-wrap: wrap;
         gap: var(--space-3xs);
@@ -103,24 +107,12 @@ const sides = campaign_sides(parties).filter((side) => !compact || side.parties.
         overflow: hidden;
     }
 
-    .campaign-side-chip {
-        display: flex;
-        align-items: center;
-        gap: var(--space-3xs);
+    .campaign-side-list .campaign-side-tag {
         height: 2.25rem;
         padding-inline: var(--space-3xs) var(--space-2xs);
-        background: var(--border-color);
-        color: var(--highlight);
-        font-weight: 700;
-        font-size: var(--step--1);
-        letter-spacing: 0.04em;
         max-width: 16rem;
-
-        span {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .campaign-sides-all {
@@ -146,14 +138,14 @@ const sides = campaign_sides(parties).filter((side) => !compact || side.parties.
             min-width: 4.5em;
         }
 
-        .campaign-side-chips {
+        .campaign-side-list {
             max-height: 1.75rem;
         }
 
-        .campaign-side-chip {
+        .campaign-side-list .campaign-side-tag {
             height: 1.75rem;
             padding: 0;
-            background: none;
+            border: 0;
         }
     }
 </style>

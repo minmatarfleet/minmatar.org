@@ -18,6 +18,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
 import Select from '@components/blocks/Select.astro'
 import Switch from '@components/blocks/Switch.astro'
 import OptionCard from '@components/blocks/OptionCard.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import DataGrid from '@components/blocks/DataGrid.astro'
 
 import StylessButton from '@components/blocks/StylessButton.astro'
@@ -403,14 +404,15 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
                 <label class="[ server-access__label ]" for="member-access-exemptions">{t('corporations.discord.members_exemptions')}</label>
                 <div>
                     <input type="hidden" name="member_exemptions" value={exemptions.join(',')} x-bind:value="names.join(',')" />
-                    <div class="[ server-access__chips ]">
+                    <div class="[ server-access__tag-input ]">
                         <template x-for="name in names" x-bind:key="name">
-                            <span class="[ server-access__chip ]">
-                                <span x-text="name"></span>
-                                <button type="button" x-bind:aria-label={`'${t('corporations.discord.members_exemption_drop')}'.replace('{name}', name)`} x-on:click="drop_name(name)">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-                                </button>
-                            </span>
+                            <FilterChip
+                                removable={true}
+                                remove_attributes={{
+                                    'x-bind:aria-label': `'${t('corporations.discord.members_exemption_drop')}'.replace('{name}', name)`,
+                                    'x-on:click': 'drop_name(name)',
+                                }}
+                            ><span x-text="name"></span></FilterChip>
                         </template>
                         <input
                             id="member-access-exemptions"
@@ -811,7 +813,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         color: var(--faded);
     }
 
-    .server-access__chips {
+    .server-access__tag-input {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
@@ -824,27 +826,6 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
 
         &:focus-within {
             border-color: var(--foreground);
-        }
-    }
-
-    .server-access__chip {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-3xs);
-        padding: var(--space-3xs) var(--space-3xs) var(--space-3xs) var(--space-2xs);
-        border-radius: var(--space-s);
-        background-color: var(--border-color-hover);
-        font-size: var(--step--1);
-        color: var(--highlight);
-
-        button {
-            display: grid;
-            place-items: center;
-            border: none;
-            border-radius: 50%;
-            background: none;
-            color: var(--faded);
-            cursor: pointer;
         }
     }
 
