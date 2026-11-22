@@ -334,8 +334,12 @@ const RULE_DEFINITIONS: ConventionRule[] = [
     },
     {
         id: 'hand_rolled_tablist',
-        kind: 'ratchet',
+        kind: 'absolute',
         why: 'Tab strips are <SectionTabs> (keyboard, aria and the hash-linked active tab), not a hand-written role="tablist".',
+        exempt: {
+            'src/components/blocks/role-guide/RoleAmmoChart.astro': 'icon-image tabs placed below their chart with arrow-key roving; SectionTabs is a text strip above hash-linked panels',
+            'src/components/blocks/role-guide/RoleModulePanel.astro': 'icon-image tabs placed below their panel with arrow-key roving; SectionTabs is a text strip above hash-linked panels',
+        },
         find: (file) => {
             if (!is_astro(file) || file.path === 'src/components/blocks/SectionTabs.astro') return []
             return hits_in(file, [astro_template(file.text)], ROLE_TABLIST)

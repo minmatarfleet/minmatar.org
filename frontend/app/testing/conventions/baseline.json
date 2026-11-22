@@ -94,10 +94,6 @@
     },
     "overflow_x_scroll": {},
     "direct_tippy": {},
-    "hand_rolled_tablist": {
-        "src/components/blocks/role-guide/RoleAmmoChart.astro": 1,
-        "src/components/blocks/role-guide/RoleModulePanel.astro": 1
-    },
     "hand_rolled_popover": {
         "src/components/blocks/ActionMenuItem.astro": 1,
         "src/components/blocks/FleetInvites.astro": 1,
