@@ -457,8 +457,14 @@ const RULE_DEFINITIONS: ConventionRule[] = [
     },
     {
         id: 'component_font',
-        kind: 'ratchet',
+        kind: 'absolute',
         why: 'Fonts load once from src/styles/_fonts.scss and are used through the font tokens (var(--heading-font), var(--default-font), var(--button-font)); a Google Fonts link or a literal font-family bypasses them.',
+        exempt: {
+            'src/components/blocks/FleetList.astro': "swiper's own icon font (swiper-icons) for the carousel arrow glyph; it is an icon font, not a text face",
+            'src/pages/index.astro': 'in-flight landing work (owner: keep untouched)',
+            'src/pages/index2.astro': 'in-flight landing work (owner: keep untouched)',
+            'src/pages/list_data.astro': 'in-flight landing work (owner: keep untouched)',
+        },
         find: (file) => {
             if (file.path === 'src/styles/_fonts.scss' || file.path.startsWith('src/styles/properties/')) return []
             const links = hits_in(file, [{ text: file.text, offset: 0 }], GOOGLE_FONTS)

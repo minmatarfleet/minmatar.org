@@ -79,14 +79,5 @@
     "overflow_x_scroll": {},
     "direct_tippy": {},
     "hand_rolled_pager": {},
-    "component_font": {
-        "src/components/blocks/ChangeDiff.astro": 1,
-        "src/components/blocks/FleetList.astro": 1,
-        "src/pages/dscan/index.astro": 1,
-        "src/pages/index.astro": 1,
-        "src/pages/index2.astro": 1,
-        "src/pages/industry/orders/planner.astro": 1,
-        "src/pages/list_data.astro": 1
-    },
     "local_semantic_colour": {}
 }

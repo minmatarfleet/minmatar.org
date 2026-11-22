@@ -9,6 +9,9 @@
     --guide-body-font: 'Source Sans 3', var(--default-font);
     --long-read-font: 'Lora', 'Georgia', 'Times New Roman', serif;
 
+    /* Fixed-width text: d-scan pastes, diffs, TSV exports. */
+    --mono-font: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
     --heading-font: var(--minmatar);
     --button-font: var(--montserrat);
     --badge-font: var(--minmatar);
