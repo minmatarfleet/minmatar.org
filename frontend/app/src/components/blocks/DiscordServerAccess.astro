@@ -19,6 +19,7 @@ import Select from '@components/blocks/Select.astro'
 import Switch from '@components/blocks/Switch.astro'
 import DataGrid from '@components/blocks/DataGrid.astro'
 
+import StylessButton from '@components/blocks/StylessButton.astro'
 /**
  * A corporation's Discord, in the order a CEO decides it: who can join,
  * the roles that choice makes sense of, then what happens to everyone
@@ -214,14 +215,14 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
                                     ))}
                                 </Select>
                                 {row.optional ?
-                                    <button
+                                    <StylessButton
                                         type="button"
                                         class="[ server-access__icon-button ]"
                                         aria-label={t('corporations.discord.role_drop').replace('{role}', t(ROLE_KEYS[row.state].title))}
                                         x-on:click={`drop(${row.json})`}
                                     >
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-                                    </button>
+                                    </StylessButton>
                                     :
                                     <span></span>
                                 }

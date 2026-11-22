@@ -37,6 +37,7 @@ const {
 delete attributes.class
 
 const chip_class = ['[ filter-chip ]', { 'is-active': active }, Astro.props.class]
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {type ?
@@ -55,12 +56,12 @@ const chip_class = ['[ filter-chip ]', { 'is-active': active }, Astro.props.clas
         {...attributes}
     ><slot /></a>
     :
-    <button
+    <StylessButton
         type="button"
         class:list={chip_class}
         aria-pressed={active ? 'true' : 'false'}
         {...attributes}
-    ><slot /></button>
+    ><slot /></StylessButton>
 }
 
 <style lang="scss">

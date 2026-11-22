@@ -95,6 +95,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
 import FleetInviteDialog from '@components/blocks/FleetInviteDialog.astro'
 import Input from '@components/blocks/Input.astro'
 import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 const invite_columns = [
     { key: 'pilot', label: t('fleets.private.col_pilot') },
     ...(show_invited_as ? [{ key: 'invited_as', label: t('fleets.invites.col_invited_as'), class: 'fleet-invites__source' }] : []),
@@ -232,7 +233,7 @@ const invite_columns = [
 
                         <div class="[ fleet-invites__tiles ]" role="group" aria-label={t('fleets.private.filter_label')}>
                             {STATUSES.map(row =>
-                                <button
+                                <StylessButton
                                     type="button"
                                     class={`[ fleet-invites__tile ] [ is-${row.status} ]`}
                                     style={`grid-area: ${row.status}`}
@@ -241,7 +242,7 @@ const invite_columns = [
                                 >
                                     <span><i class={`[ fleet-invites__dot is-${row.status} ]`}></i>{row.label}</span>
                                     <b>{counts[row.status]}</b>
-                                </button>
+                                </StylessButton>
                             )}
                             <div style="grid-area: reping">
                                 {data.can_reping && (reping_waiting ?

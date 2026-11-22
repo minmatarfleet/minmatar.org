@@ -19,6 +19,7 @@ import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 import CaretIcon from '@components/icons/CaretIcon.astro'
 
+import StylessButton from '@components/blocks/StylessButton.astro'
 const FACTION_ORDER: readonly number[] = [
     1000182, // TLIB
     1000179, // 24th
@@ -211,7 +212,7 @@ const hx_include_filters =
             @mousedown.outside="open && close()"
             @htmx:before-request="close()"
         >
-            <button
+            <StylessButton
                 type="button"
                 class="[ loyalty-offers-filters__currency-trigger ]"
                 @click.prevent="toggle()"
@@ -235,7 +236,7 @@ const hx_include_filters =
                         ?? t('industry.loyalty.offers.currency_label')}
                 </span>
                 <CaretIcon class="[ loyalty-offers-filters__currency-caret ]" />
-            </button>
+            </StylessButton>
 
             <ul
                 id="loyalty-offers-currency-options"
@@ -247,7 +248,7 @@ const hx_include_filters =
             >
                 {sorted_currencies.map((c) => (
                     <li role="presentation">
-                        <button
+                        <StylessButton
                             type="button"
                             role="option"
                             class:list={[
@@ -277,7 +278,7 @@ const hx_include_filters =
                                 loading="lazy"
                             />
                             <span>{c.name}</span>
-                        </button>
+                        </StylessButton>
                     </li>
                 ))}
             </ul>

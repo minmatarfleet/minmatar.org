@@ -9,6 +9,7 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import DataTable from '@components/blocks/DataTable.astro'
 
+import StylessButton from '@components/blocks/StylessButton.astro'
 /**
  * "What you can bring": one row per doctrine, one cell per role. A pilot with
  * two or more seats (accounts, or characters on no account) sees how many
@@ -105,7 +106,7 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
                                             {cell.state === 'none' ?
                                                 <span class="[ training-bring__none ]" aria-label={t('training.cell_none')}>—</span>
                                                 :
-                                                <button
+                                                <StylessButton
                                                     type="button"
                                                     class:list={['[ training-bring__cell ]', { wait: cell.seats === 0 }]}
                                                     aria-label={cell_label(doctrine, cell)}
@@ -113,7 +114,7 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
                                                     x-on:click={open_cell(doctrine, cell.column)}
                                                 >
                                                     {cell_text(cell)}
-                                                </button>
+                                                </StylessButton>
                                             }
                                         </td>
                                     )}
@@ -139,14 +140,14 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
                                 <ul role="list">
                                     {roles(doctrine).map(cell =>
                                         <li>
-                                            <button
+                                            <StylessButton
                                                 type="button"
                                                 aria-label={cell_label(doctrine, cell)}
                                                 x-on:click={open_cell(doctrine, cell.column)}
                                             >
                                                 <span>{cell.column}</span>
                                                 <span class:list={['[ training-bring__cell ]', { wait: cell.seats === 0 }]}>{cell_text(cell)}</span>
-                                            </button>
+                                            </StylessButton>
                                         </li>
                                     )}
                                 </ul>

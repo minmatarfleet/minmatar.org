@@ -9,6 +9,7 @@ import FluidFixed from '@components/compositions/FluidFixed.astro'
 import Button from '@components/blocks/Button.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 
+import StylessButton from '@components/blocks/StylessButton.astro'
 const { t } = i18n(Astro.url)
 
 interface Props {
@@ -115,35 +116,35 @@ const within_day_note = week_stats && week_stats.completed > 0
                     <span id="loyalty-quote-amount-label" class="[ loyalty-quote__label ]">{t('industry.loyalty.quote.amount')}</span>
                     <div class="[ loyalty-quote__amount-row ]">
                         <div class="[ loyalty-quote__stepper ]">
-                            <button
+                            <StylessButton
                                 type="button"
                                 class="[ loyalty-quote__step ]"
                                 aria-label={t('industry.loyalty.quote.less')}
                                 x-on:click={`nudge(-${SELL_LP_STEP})`}
-                            >−</button>
+                            >−</StylessButton>
                             <output
                                 class="[ loyalty-quote__amount tabular-nums ]"
                                 aria-labelledby="loyalty-quote-amount-label"
                                 aria-live="polite"
                                 x-text="fmt(amount)"
                             >1,000,000</output>
-                            <button
+                            <StylessButton
                                 type="button"
                                 class="[ loyalty-quote__step ]"
                                 aria-label={t('industry.loyalty.quote.more')}
                                 x-on:click={`nudge(${SELL_LP_STEP})`}
-                            >+</button>
+                            >+</StylessButton>
                         </div>
                         <div class="[ loyalty-quote__chips ]">
                             {chips.map((chip) => (
-                                <button
+                                <StylessButton
                                     type="button"
                                     class="[ loyalty-quote__chip ]"
                                     x-bind:aria-pressed={`amount === ${chip.value}`}
                                     x-on:click={`amount = ${chip.value}`}
                                 >
                                     {chip.label}
-                                </button>
+                                </StylessButton>
                             ))}
                         </div>
                     </div>
@@ -154,7 +155,7 @@ const within_day_note = week_stats && week_stats.completed > 0
                     <span class="[ loyalty-quote__label ]">{t('industry.loyalty.quote.speed')}</span>
                     <div class="[ loyalty-quote__tiers ]">
                         {tiers.map((tier) => (
-                            <button
+                            <StylessButton
                                 type="button"
                                 class="[ loyalty-quote__tier ]"
                                 disabled={tier.disabled}
@@ -171,7 +172,7 @@ const within_day_note = week_stats && week_stats.completed > 0
                                 {tier.rate > 0 && (
                                     <span class="[ loyalty-quote__tier-payout tabular-nums ]" x-text={`fmt(payout('${tier.key}')) + ' ISK'`}></span>
                                 )}
-                            </button>
+                            </StylessButton>
                         ))}
                     </div>
                 </div>
@@ -267,6 +268,8 @@ const within_day_note = week_stats && week_stats.completed > 0
     }
 
     .loyalty-quote__step {
+        padding: 1px 6px;
+        text-align: center;
         min-width: var(--space-xl);
         border: 0;
         background: transparent;

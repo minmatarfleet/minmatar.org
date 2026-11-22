@@ -127,7 +127,7 @@ import Textarea from '@components/blocks/Textarea.astro'
             <small class="[ fleet-ship-row__refit ]" title={`${t('refit_label')}: ${refit_text(refit)}${refit.notes ? ` — ${refit.notes}` : ''}`}>
                 <span class="[ fleet-ship-row__refit-text ]">{t('refit_label')}: {refit_text(refit)}</span>
                 {can_manage && !readonly &&
-                    <button
+                    <StylessButton
                         type="button"
                         class="[ fleet-ship-row__inline-remove ]"
                         title={t('remove')}
@@ -135,7 +135,7 @@ import Textarea from '@components/blocks/Textarea.astro'
                         hx-target={`#${id}`}
                         hx-indicator=".loader"
                         hx-swap='outerHTML transition:true'
-                    >✕</button>
+                    >✕</StylessButton>
                 }
             </small>
         )}
@@ -172,7 +172,7 @@ import Textarea from '@components/blocks/Textarea.astro'
 
     {show_volunteers &&
     <div class="[ fleet-ship-row__count-cell ]">
-        <button
+        <StylessButton
             type="button"
             class:list={[ 'fleet-ship-row__count', { 'fleet-ship-row__count--empty': volunteers.length === 0 } ]}
             x-on:click="open = !open"
@@ -186,7 +186,7 @@ import Textarea from '@components/blocks/Textarea.astro'
             <span class="[ fleet-ship-row__caret ]" x-bind:class="{ 'is-open': open }" aria-hidden="true">
                 <CaretIcon />
             </span>
-        </button>
+        </StylessButton>
     </div>
     }
 

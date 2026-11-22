@@ -105,6 +105,7 @@ const chip_kills = (count: number) => count === 1 ? t('fleets.after.chip_kill') 
 
 import EmptyState from '@components/blocks/EmptyState.astro'
 import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <section id="fleet-pilots" class="[ fleet-pilots ]" aria-labelledby="fleet-pilots-title">
@@ -143,7 +144,7 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
                         <span class="[ fleet-pilots__grid ]" style={`top: ${line.top}%`} aria-hidden="true"><small>{line.value}</small></span>
                     )}
                     {bands.map(band =>
-                        <button
+                        <StylessButton
                             type="button"
                             tabindex="-1"
                             aria-hidden="true"
@@ -153,7 +154,7 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
                             hx-get={PARTIAL_URL(band.position === participants.engagement ? null : band.position)}
                             hx-target="#fleet-pilots"
                             hx-swap="outerHTML"
-                        ><span>{band.label}</span></button>
+                        ><span>{band.label}</span></StylessButton>
                     )}
                     {markers.map(marker =>
                         <span class="[ fleet-pilots__event-line ]" style={`left: ${marker.left}%`} aria-hidden="true" />
@@ -188,7 +189,7 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
         <XFadeScroll>
         <div class="[ fleet-pilots__pills ]" role="group" aria-label={t('fleets.killfeed.engagement')}>
             {pills.map(pill =>
-                <button
+                <StylessButton
                     type="button"
                     class:list={['[ fleet-pilots__pill ]', { 'fleet-pilots__pill--minor': !pill.round }]}
                     aria-pressed={pill.position === participants.engagement ? 'true' : 'false'}
@@ -196,7 +197,7 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
                     hx-target="#fleet-pilots"
                     hx-swap="outerHTML"
                     hx-disabled-elt="this"
-                >{pill.label}{pill.meta && <small>{pill.meta}</small>}</button>
+                >{pill.label}{pill.meta && <small>{pill.meta}</small>}</StylessButton>
             )}
         </div>
         </XFadeScroll>
@@ -255,13 +256,13 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
                     <div class="[ fleet-pilots__order ]" role="group" aria-label={t('fleets.after.order')}>
                         <small>{t('fleets.after.order')}</small>
                         {([['joined', t('fleets.after.order_joined')], ...(kills_known ? [['kills', t('fleets.after.order_kills')]] : []), ['ship', t('fleets.after.order_ship')]] as [string, string][]).map(([id, label]) =>
-                            <button
+                            <StylessButton
                                 type="button"
                                 class="[ fleet-pilots__pill ]"
                                 aria-pressed={id === 'joined' ? 'true' : 'false'}
                                 x-bind:aria-pressed={`order === '${id}' ? 'true' : 'false'`}
                                 x-on:click={`order = '${id}'`}
-                            >{label}</button>
+                            >{label}</StylessButton>
                         )}
                     </div>
                 }
@@ -304,14 +305,14 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
                                                     <b>{character.character_name}</b>
                                                     {lead && !person.registered && <span class="[ fleet-pilots__tag ]">{t('fleets.after.no_account')}</span>}
                                                     {lead && alts > 0 &&
-                                                        <button
+                                                        <StylessButton
                                                             type="button"
                                                             class="[ fleet-pilots__alts ]"
                                                             aria-expanded="false"
                                                             x-bind:aria-expanded="open ? 'true' : 'false'"
                                                             x-on:click="open = !open"
                                                             x-text={`open ? ${JSON.stringify(t('fleets.after.fold_alts'))} : ${JSON.stringify(alts_text(alts))}`}
-                                                        >{alts_text(alts)}</button>
+                                                        >{alts_text(alts)}</StylessButton>
                                                     }
                                                 </span>
                                                 <small>{ship_sequence(character).join(' → ')}</small>
@@ -355,12 +356,12 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
                 </div>
             }
             {roster.length > PEOPLE_SHOWN &&
-                <button
+                <StylessButton
                     type="button"
                     class="[ fleet-pilots__more ]"
                     x-on:click="all = !all"
                     x-text={`all ? ${JSON.stringify(t('fleets.after.show_fewer'))} : ${JSON.stringify(t('fleets.after.show_all_pilots').replace('{count}', roster.length.toString()))}`}
-                >{t('fleets.after.show_all_pilots').replace('{count}', roster.length.toString())}</button>
+                >{t('fleets.after.show_all_pilots').replace('{count}', roster.length.toString())}</StylessButton>
             }
             {participants.hidden_pilots > 0 && <small>{t('fleets.after.hidden_pilots').replace('{count}', participants.hidden_pilots.toString())}</small>}
             {roster.length > 0 &&
