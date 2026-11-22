@@ -9,7 +9,7 @@ export default {
             description: {
                 component: [
                     'A square-knob toggle with a highlighted title and a small description beside it, for settings that need explaining (account preferences, dialog opt-outs).',
-                    'Like `Switch`, extra attributes (`name`, `x-model`, `disabled`) go to the native checkbox. Gotcha: the same attributes are also spread onto the description `<small>`, so avoid `id` and use `name`/`x-model`.',
+                    'Like `Switch`, extra attributes (`name`, `x-model`, `disabled`) go to the native checkbox. They are not repeated on the description, so an `id` is unique.',
                     'The input has no `aria-label`; its accessible name comes from the surrounding label, i.e. the title plus description.',
                 ].join('\n\n'),
             },
@@ -19,7 +19,7 @@ export default {
         checked: { control: 'boolean', description: 'Initial state of the checkbox.' },
         label: { control: 'text', description: 'Highlighted title. `false` hides it.' },
         description: { control: 'text', description: 'Small text under the title. `false` hides it.' },
-        name: { control: 'text', description: 'Passed to the input (and the description element).' },
+        name: { control: 'text', description: 'Passed to the input.' },
         disabled: { control: 'boolean', description: 'Passed to the input.' },
     },
     args: {
@@ -69,7 +69,7 @@ export const LabelOnly = {
     play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
         const canvas = within(canvasElement)
         await expect(canvas.getByText('Show my fleet history')).toBeVisible()
-        await expect(canvasElement.querySelector('small')?.textContent?.trim() ?? '').toBe('')
+        await expect(canvasElement.querySelector('small')).toBeNull()
     },
 }
 
@@ -88,5 +88,14 @@ export const Disabled = {
         const toggle = within(canvasElement).getByRole('checkbox')
         await expect(toggle).toBeDisabled()
         await expect(toggle).toBeChecked()
+    },
+}
+
+export const AttributesOnInputOnly = {
+    args: { id: 'create_timer_toggle', name: 'create_timer' },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        await expect(canvasElement.querySelectorAll('#create_timer_toggle')).toHaveLength(1)
+        await expect(canvasElement.querySelector('#create_timer_toggle')?.tagName).toBe('INPUT')
+        await expect(canvasElement.querySelector('small')).not.toHaveAttribute('name')
     },
 }

@@ -44,7 +44,7 @@ import NotificationBadge from '@components/blocks/NotificationBadge.astro';
         src={blueprint ? get_bpc_icon(item_id, blueprint.is_copy, icon_quality ?? size) : get_item_icon(item_id, icon_quality ?? size)}
         alt={item_name ?? t('item_picture')}
     />
-    {quantity &&
+    {quantity != null && quantity > 0 &&
         <NotificationBadge class="[ quantity-badge ]" number={quantity} />
     }
 </picture>

@@ -20,8 +20,6 @@ export default {
     argTypes: {
         element: { control: 'text', description: 'HTML tag used for the trigger wrapper.' },
         partial: { control: 'text', description: 'Component route to load into the tooltip with htmx on first show. Omit for a static tooltip.' },
-        height: { control: 'text', description: 'Reserved height of the tooltip (currently unused by the component).' },
-        width: { control: 'text', description: 'Reserved width of the tooltip (currently unused by the component).' },
         show_delay: { control: 'number', description: 'Milliseconds before the tooltip shows (partial mode).' },
         hide_delay: { control: 'number', description: 'Milliseconds before the tooltip hides (partial mode).' },
     },

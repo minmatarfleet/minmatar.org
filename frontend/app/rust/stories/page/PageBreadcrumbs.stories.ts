@@ -61,6 +61,14 @@ export const QuickNavigationButton = {
     },
 }
 
+export const QuickNavigationHasAccessibleName = {
+    name: 'Quick navigation button has an accessible name',
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        // The button is an icon only: its name comes from aria-label.
+        await expect(within(canvasElement).getByRole('button', { name: 'Quick navigation' })).toBeInTheDocument()
+    },
+}
+
 export const SingleLevel = {
     args: { breadcrumbs: [{ accumulated_path: '/doctrines/', page_title: 'Doctrines' }] },
     play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {

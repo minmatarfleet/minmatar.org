@@ -34,6 +34,7 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
 <div>
     <div
         role="dialog"
+        aria-modal="true"
         class:list={[
             'dialog',
             { breakout: breakout },
@@ -57,7 +58,9 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
                 ]}
                 centered={true}
             >
+                <slot name="header" />
                 <slot />
+                <slot name="footer" />
             </Wrapper>
             :
             <Wrapper

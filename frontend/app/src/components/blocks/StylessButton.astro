@@ -1,6 +1,7 @@
 ---
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
+import { external_link_attributes } from '@helpers/external_link'
 
 interface Props {
     href?:              string;
@@ -14,9 +15,24 @@ const {
     ...attributes
 } = Astro.props;
 
-const x_data = attributes['x-data'] ?? ''
-const x_data_elements = x_data ? x_data.slice(1, -1) : ''
+// A bare `x-data` is the boolean true; only the string form has inner expressions to keep.
+const raw_x_data = attributes['x-data']
+const wants_alpine_scope = raw_x_data === true || typeof raw_x_data === 'string'
+const x_data_elements = typeof raw_x_data === 'string' ? raw_x_data.slice(1, -1) : ''
 const x_on = attributes['x-on:click.prevent'] ?? undefined
+
+delete attributes['x-data']
+delete attributes['x-on:click.prevent']
+
+const external_link = external ? external_link_attributes({
+    href: href ?? '',
+    title: t('leaving_website'),
+    partial: translatePath('/partials/external_link_disclaimer_dialog/'),
+    x_data_elements,
+}) : undefined
+const nested_x_data = external_link ? external_link.x_data : (wants_alpine_scope ? (x_data_elements.trim() ? `{
+        ${x_data_elements.trim()}
+    }` : '{}') : undefined)
 
 const Element = href ? 'a' : 'button';
 ---
@@ -25,24 +41,8 @@ const Element = href ? 'a' : 'button';
     href={ href }
     {...attributes}
     rel={external ? 'nofollow noopener noreferrer' : undefined }
-    x-data={external ? `{
-        hide_external_link_disclaimer: $persist(false),
-        show_external_link_disclaimer() {
-            show_alert_dialog({
-                title: '${t('leaving_website')}',
-                partial: '${translatePath('/partials/external_link_disclaimer_dialog/')}',
-            }).then(accepted => {
-                if (accepted) window.open('${href}', '_blank')
-            })
-        },
-        ${x_data_elements}
-    }` : x_data_elements ? `{
-        ${x_data_elements}
-    }` : undefined}
-    x-on:click.prevent={external ?
-        `hide_external_link_disclaimer ? window.open('${href}', '_blank') : show_external_link_disclaimer()` :
-        x_on
-    }
+    x-data={nested_x_data}
+    x-on:click.prevent={external_link ? external_link.x_on_click_prevent : x_on}
 >
     <slot />
 </Element>

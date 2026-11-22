@@ -99,7 +99,9 @@ const button_color = (color !== 'transparent' ? 'var(--button-color)' : 'var(--h
             }
 
             &:focus-visible {
-                outline: none;
+                /* Keyboard focus ring, as on links (_global.scss). */
+                outline-color: var(--highlight);
+                outline-style: double;
             }
 
             /* Desktop */

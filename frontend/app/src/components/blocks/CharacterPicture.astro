@@ -40,6 +40,11 @@ const {
 
 import { get_player_icon } from '@helpers/eve_image_server'
 
+// The click opens the character modal, so it belongs on a real button. A static
+// character 0 has nothing to open: the picture stays plain.
+const clickable = !inert && (character_id != 0 || !!x_character_id)
+const Target = clickable ? 'button' : 'span'
+
 import NotificationBadge from '@components/blocks/NotificationBadge.astro';
 ---
 
@@ -48,16 +53,10 @@ import NotificationBadge from '@components/blocks/NotificationBadge.astro';
     data-tippy-content={tooltip ? tooltip : undefined}
     x-init={tooltip ? 'tippy($el, tippy_options)' : undefined}
 >
-    <img
-        class:list={{ mask }}
-        loading="lazy"
-        height={narrow ? height : size}
-        width={size}
-        src={get_player_icon(character_id, icon_quality ?? size)}
-        x-bind:src={`${x_character_id} ? get_player_icon(${x_character_id}) : '${get_player_icon(character_id, icon_quality ?? size)}'`}
-        alt={`${t('profile_picture_of')} ${character_name ?? t('unknown_character')}`}
-        x-bind:alt={`\`${t('profile_picture_of')} \${(${x_character_name} ? ${x_character_name} : "${character_name ?? t('unknown_character')}")}\``}
-        x-data={`{
+    <Target
+        class="[ picture-target ]"
+        type={clickable ? 'button' : undefined}
+        x-data={clickable ? `{
             show_character_modal() {
                 if (!${x_character_id} && ${character_id} == 0)
                     return
@@ -66,11 +65,22 @@ import NotificationBadge from '@components/blocks/NotificationBadge.astro';
                     partial: '${translatePath('/partials/character_modal_component/')}?character_id='+(${x_character_id} ? ${x_character_id} : '${character_id.toString()}'),
                 })
             }
-        }`}
-        x-on:click.stop.prevent={inert ? undefined : 'show_character_modal()'}
-    />
+        }` : undefined}
+        x-on:click.stop.prevent={clickable ? 'show_character_modal()' : undefined}
+    >
+        <img
+            class:list={{ mask }}
+            loading="lazy"
+            height={narrow ? height : size}
+            width={size}
+            src={get_player_icon(character_id, icon_quality ?? size)}
+            x-bind:src={`${x_character_id} ? get_player_icon(${x_character_id}) : '${get_player_icon(character_id, icon_quality ?? size)}'`}
+            alt={`${t('profile_picture_of')} ${character_name ?? t('unknown_character')}`}
+            x-bind:alt={`\`${t('profile_picture_of')} \${(${x_character_name} ? ${x_character_name} : "${character_name ?? t('unknown_character')}")}\``}
+        />
+    </Target>
     
-    {quantity &&
+    {quantity != null && quantity > 0 &&
         <NotificationBadge
             class="[ quantity-badge ]"
             color={tag_color ?? 'fleet-red'}
@@ -91,6 +101,26 @@ import NotificationBadge from '@components/blocks/NotificationBadge.astro';
         }
     }
     
+    .picture-target {
+        display: flex;
+        width: 100%;
+        padding: 0;
+        border: 0;
+        background: none;
+        font: inherit;
+        color: inherit;
+        text-align: inherit;
+
+        &:focus-visible {
+            outline-color: var(--highlight);
+            outline-style: double;
+        }
+    }
+
+    button.picture-target {
+        cursor: pointer;
+    }
+
     img {
         transition: var(--slowest-transition);
         filter: brightness(1);

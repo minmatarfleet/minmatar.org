@@ -45,7 +45,16 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
         max-height: 60vh;
         overflow: hidden;
 
-        &:hover {
+        /* Mouse: reveal on hover. Keyboard: reveal when focus is inside the card. */
+        @media (hover: hover) {
+            &:hover {
+                .card-actions {
+                    opacity: 1;
+                }
+            }
+        }
+
+        &:focus-within {
             .card-actions {
                 opacity: 1;
             }
@@ -69,6 +78,11 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
             top: 0;
             right: 0;
             opacity: 0;
+
+            /* Touch cannot hover, so the actions are always there. */
+            @media (hover: none) {
+                opacity: 1;
+            }
         }
 
         .visible-actions {

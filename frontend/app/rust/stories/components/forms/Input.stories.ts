@@ -129,3 +129,16 @@ export const NarrowWidth = {
         await expect(within(canvasElement).getByPlaceholderText('Ticker')).toBeVisible()
     },
 }
+
+export const FocusRing = {
+    name: 'Keyboard focus ring',
+    tags: ['browser'], // asserts the computed style from the component's CSS
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const field = canvasElement.querySelector("input") as HTMLElement
+        await expect(getComputedStyle(field).outlineStyle).toBe('none')
+        field.focus()
+        // Same double highlight outline as links (`a:focus-visible` in _global.scss).
+        await expect(getComputedStyle(field).outlineStyle).toBe('double')
+        await expect(getComputedStyle(field).outlineColor).not.toBe('rgba(0, 0, 0, 0)')
+    },
+}

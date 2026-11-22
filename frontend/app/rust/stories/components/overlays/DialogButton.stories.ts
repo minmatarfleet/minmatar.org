@@ -216,3 +216,12 @@ export const LazyContent = {
         await expect((window as any).__rust_htmx_requests.length).toBeGreaterThan(0)
     },
 }
+
+export const NonCenteredFollowsProp = {
+    name: 'non_centered is passed once and follows the prop',
+    args: { non_centered: false },
+    play: async () => {
+        // `non_centered` used to be passed twice (true, then the prop); the prop is the single source.
+        await expect(attr(dialog(), 'class')).not.toContain('non-centered')
+    },
+}

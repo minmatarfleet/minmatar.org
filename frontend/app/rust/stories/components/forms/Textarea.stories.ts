@@ -17,7 +17,6 @@ export default {
         },
     },
     argTypes: {
-        width: { control: 'text', description: 'Accepted for symmetry with `Input`; the field is always 100% wide.' },
         name: { control: 'text', description: 'Passed to the `<textarea>`.' },
         id: { control: 'text', description: 'Passed to the `<textarea>`.' },
         rows: { control: 'number', description: 'Visible lines.' },
@@ -28,7 +27,6 @@ export default {
         readonly: { control: 'boolean', description: 'Passed to the `<textarea>`.' },
     },
     args: {
-        width: '100%',
         name: 'notes',
         id: 'notes',
         rows: 4,
@@ -89,5 +87,30 @@ export const ReadOnly = {
     play: async ({ canvasElement }: Ctx) => {
         const area = within(canvasElement).getByDisplayValue(/doctrine team/)
         await expect(area).toHaveAttribute('readonly')
+    },
+}
+
+export const FocusRing = {
+    name: 'Keyboard focus ring',
+    tags: ['browser'], // asserts the computed style from the component's CSS
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const field = canvasElement.querySelector("textarea") as HTMLElement
+        await expect(getComputedStyle(field).outlineStyle).toBe('none')
+        field.focus()
+        // Same double highlight outline as links (`a:focus-visible` in _global.scss).
+        await expect(getComputedStyle(field).outlineStyle).toBe('double')
+        await expect(getComputedStyle(field).outlineColor).not.toBe('rgba(0, 0, 0, 0)')
+    },
+}
+
+export const WidthComesFromCss = {
+    name: 'Always 100% wide, attributes reach the field',
+    args: { maxlength: 200, 'data-testid': 'reply-field' },
+    play: async ({ canvasElement }: Ctx) => {
+        const field = within(canvasElement).getByTestId('reply-field')
+        await expect(field.tagName).toBe('TEXTAREA')
+        await expect(field).toHaveAttribute('maxlength', '200')
+        // There is no `width` prop: the field is always as wide as its container.
+        await expect(field).not.toHaveAttribute('width')
     },
 }

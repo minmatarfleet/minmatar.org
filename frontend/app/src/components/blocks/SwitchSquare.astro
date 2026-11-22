@@ -25,7 +25,9 @@ const {
                 {label &&
                     <span class="[ text-[var(--highlight)] ]">{label}</span>
                 }
-                <small {...attributes}>{description}</small>
+                {description &&
+                    <small>{description}</small>
+                }
             </Flexblock>
         </div>
 

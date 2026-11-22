@@ -16,8 +16,8 @@ export default {
         docs: {
             description: {
                 component: [
-                    'A picture card built on `ComponentBlock`: a cover fills the card, the body text sits over its bottom edge, a header badge over the top-left, and `actions` fade in at the top-right on hover.',
-                    'Use `visible-actions` for controls that must always be reachable (touch devices cannot hover) and `actions` for secondary ones. For a plain picture with these same slots use `PictureCard`; for a bordered panel without a cover use `ComponentBlock`.',
+                    'A picture card built on `ComponentBlock`: a cover fills the card, the body text sits over its bottom edge, a header badge over the top-left, and `actions` fade in at the top-right on hover or keyboard focus (always shown on touch devices).',
+                    'Use `visible-actions` for controls that must always be reachable and `actions` for secondary ones; `actions` show on mouse hover, when focus is inside the card, and always on touch devices. For a plain picture with these same slots use `PictureCard`; for a bordered panel without a cover use `ComponentBlock`.',
                     'Card has no props of its own: everything else (class, `data-*`, Alpine or htmx attributes) passes through to the ComponentBlock. The card is capped at `60vh` tall and clips overflow.',
                 ].join('\n\n'),
             },
@@ -137,5 +137,25 @@ export const Passthrough = {
         const card = within(canvasElement).getByTestId('pilot-card')
         await expect(card).toHaveClass('card')
         await expect(card).toHaveAttribute('x-data', '{ open: false }')
+    },
+}
+
+export const FocusRevealsActions = {
+    name: 'Keyboard focus reveals actions',
+    tags: ['browser'],
+    args: {
+        slots: {
+            cover: portrait(EVE.character_id, EVE.character_name),
+            default: `<strong>${EVE.character_name}</strong>`,
+            actions: { component: Button, props: { size: 'sm', href: '/fleets/92221/' }, slots: { default: 'View fleet' } },
+        },
+    },
+    play: async ({ canvasElement }: Ctx) => {
+        const actions = canvasElement.querySelector('.card-actions') as HTMLElement
+        const link = within(actions).getByRole('link', { name: 'View fleet' })
+        // Hover-capable pointers start hidden; touch devices (hover: none) always show them.
+        if (window.matchMedia('(hover: hover)').matches) await expect(getComputedStyle(actions).opacity).toBe('0')
+        link.focus()
+        await expect(getComputedStyle(actions).opacity).toBe('1')
     },
 }

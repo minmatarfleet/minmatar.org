@@ -1,11 +1,9 @@
 ---
 interface Props {
-    width?: string;
     [propName: string]: any;
 }
 
 const {
-    width = '100%',
     ...attributes
 } = Astro.props
 
@@ -29,7 +27,9 @@ const TextareaElement = 'textarea';
         width: 100%;
 
         &:focus-visible {
-            outline: none;
+            /* Keyboard focus ring, as on links (_global.scss). */
+            outline-color: var(--highlight);
+            outline-style: double;
         }
 
         &.collapsible {

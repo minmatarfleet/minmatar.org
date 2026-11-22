@@ -158,7 +158,7 @@ import SystemsEvEIcon from '@components/icons/SystemsEvEIcon.astro';
         <div class="[ mobile-padding ]">
             <XFadeScroll flex>
                 <FixedFluid width='32px' gap='0' class="[ breadcrumbs ][ items-center! ]">
-                    <StylessButton x-on:click="show_pages_finder()" data-tippy-content={t('quick_navigation')}>
+                    <StylessButton x-on:click="show_pages_finder()" data-tippy-content={t('quick_navigation')} aria-label={t('quick_navigation')}>
                         <SystemsEvEIcon />
                     </StylessButton>
                     <FlexInline gap='0' class="[ flex-nowrap! ]">

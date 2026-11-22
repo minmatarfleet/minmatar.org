@@ -40,8 +40,6 @@ import Tippy from '@components/blocks/Tippy.astro';
 <Tippy
     data-tippy-placement={placement}
     partial={`${translatePath('/partials/order_item_tooltip')}?${query}`}
-    height={width}
-    width={height}
     element={htmltag}
 >
     <slot />

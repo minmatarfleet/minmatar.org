@@ -61,8 +61,6 @@ import RigSlotEveIcon from '@components/icons/RigSlotEveIcon.astro';
             <Tippy
                 data-tippy-placement={placement}
                 partial={`${MODULE_TIPPY_PARTIAL_URL}?${query_string({ module_name: ship_slot.name, })}`}
-                height='70px'
-                width='340px'
             >
                 <picture>
                     <img loading="lazy" src={get_item_icon(ship_slot.id)} height="64" width="64" />
