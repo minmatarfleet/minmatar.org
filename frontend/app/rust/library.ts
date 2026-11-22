@@ -35,7 +35,7 @@ export const RUST_LIBRARY = {
     ],
     'Components/Navigation': [
         'blocks/ActionMenu', 'blocks/ActionMenuItem', 'blocks/Dropdown', 'blocks/SectionTabs', 'blocks/SectionTabPanel',
-        'blocks/HtmxPager', 'blocks/FilterChip', 'blocks/ChipGroup', 'blocks/Breadcrumb', 'blocks/ExternalLink',
+        'blocks/HtmxPager', 'blocks/FilterChip', 'blocks/ChipGroup', 'blocks/ExternalLink',
     ],
     'Components/Overlays': [
         'blocks/Dialog', 'blocks/DialogBase', 'blocks/DialogButton', 'blocks/AlertDialog', 'blocks/ConfirmDialog', 'blocks/Modal', 'blocks/Tippy',
@@ -50,7 +50,7 @@ export const RUST_LIBRARY = {
         'blocks/sde/SolarSystemSearch',
     ],
     'Page': [
-        'page/PageTitle', 'page/PageSubheader', 'page/PageActions', 'page/PageBreadcrumbs', 'page/BreadcrumbLink',
+        'page/PageTitle', 'page/PageSubheader', 'page/PageActions', 'page/PageBreadcrumbs',
         'layout/TextBox', 'layout/Context',
     ],
 } as const

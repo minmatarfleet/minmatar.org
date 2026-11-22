@@ -128,11 +128,9 @@ const breadcrumbs:(BreadcrumbLinkProps & { exists?: boolean })[] = manual_breadc
     })
 )
 
-import BreadcrumbLink from '@components/page/BreadcrumbLink.astro';
 import BreadcrumbHub from '@components/page/BreadcrumbHub.astro';
 
 import FixedFluid from '@components/compositions/FixedFluid.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 import XFadeScroll from '@components/compositions/XFadeScroll.astro';
@@ -161,8 +159,10 @@ import SystemsEvEIcon from '@components/icons/SystemsEvEIcon.astro';
                     <StylessButton x-on:click="show_pages_finder()" data-tippy-content={t('quick_navigation')} aria-label={t('quick_navigation')}>
                         <SystemsEvEIcon />
                     </StylessButton>
-                    <FlexInline gap='0' class="[ flex-nowrap! ]">
-                        {breadcrumbs.map(({ accumulated_path, page_title, exists = true }) => {
+                    <nav aria-label={t('breadcrumb')}>
+                    <ol class="[ crumbs ]">
+                        {breadcrumbs.map(({ accumulated_path, page_title, exists = true }, crumb_index) => {
+                            const is_current = crumb_index === breadcrumbs.length - 1
                             const depth = accumulated_path.split('/').filter(segment => segment).length
 
                             const hub_links = pages
@@ -174,6 +174,7 @@ import SystemsEvEIcon from '@components/icons/SystemsEvEIcon.astro';
 
                             if (!links_only && hub_links.length > 0) {
                                 return (
+                                    <li aria-current={is_current ? 'page' : undefined}>
                                     <BreadcrumbHub {page_title} {hub_links}>
                                         <Flexblock gap='0'>
                                             {exists && <>
@@ -203,14 +204,24 @@ import SystemsEvEIcon from '@components/icons/SystemsEvEIcon.astro';
                                             )}
                                         </Flexblock>
                                     </BreadcrumbHub>
+                                    </li>
                                 )
                             } else if (exists) {
                                 return (
-                                    <BreadcrumbLink {accumulated_path} {page_title} />
+                                    <li>
+                                        <a
+                                            class="[ crumb-link ]"
+                                            href={translatePath(accumulated_path)}
+                                            aria-current={is_current ? 'page' : undefined}
+                                        >
+                                            <small class="[ inline-block ]">{page_title}</small>
+                                        </a>
+                                    </li>
                                 )
                             }
                         })}
-                    </FlexInline>
+                    </ol>
+                    </nav>
                 </FixedFluid>
             </XFadeScroll>
         </div>
@@ -219,6 +230,58 @@ import SystemsEvEIcon from '@components/icons/SystemsEvEIcon.astro';
 <style lang="scss">
     .breadcrumbs {
         width: fit-content;
+    }
+
+    /* The trail is a list (nav > ol > li) laid out as the flex row it always was. */
+    .crumbs {
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 0;
+        justify-content: flex-start;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: flex;
+        }
+    }
+
+    /* One arrow-shaped step, drawn with a clip-path over a --fleet-red background. */
+    .crumb-link {
+        display: inline-block;
+        background-color: var(--fleet-red);
+        color: var(--button-color);
+        text-decoration: none;
+        padding: 2px 20px 2px 20px;
+        text-wrap: nowrap;
+
+        clip-path: polygon(0 0,calc(100% - 10px) 0,100% 50%,calc(100% - 10px) 100%,0 100%,10px 50%);
+    }
+
+    .crumb-link:focus-within,
+    .crumb-link:focus-visible,
+    .crumb-link:hover {
+        outline: none;
+    }
+
+    /* Keyboard focus scales everywhere; hover and click focus only where the pointer can hover. */
+    .crumb-link:focus-visible small {
+        transform: scale(1.07);
+    }
+
+    @media (hover: hover) {
+        .crumb-link:focus-within small,
+        .crumb-link:hover small {
+            transform: scale(1.07);
+        }
+    }
+
+    @media (hover: none) {
+        .crumb-link:active small {
+            transform: scale(0.95);
+        }
     }
 
     .is-landing-page {

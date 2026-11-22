@@ -574,14 +574,6 @@ A labelled row of `FilterChip`s (`role="group"`).
 - Slots: `default`
 - Stories (7): `frontend/app/rust/stories/components/navigation/ChipGroup.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-chipgroup--docs: Default, Wrapping, Few chips, Scrolls in a narrow container, Link chips, Without aria_label, Alpine filter
 
-### Breadcrumb
-
-A trail of ancestors ending at the current page, as a `<nav aria-label="Breadcrumb">` around an ordered list.
-
-- Import: `import Breadcrumb from '@components/blocks/Breadcrumb.astro'`
-- Props: `items: BreadcrumbItem[]`
-- Stories (6): `frontend/app/rust/stories/components/navigation/Breadcrumb.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-breadcrumb--docs: Default, Single item, Current page with an href is not a link, Middle item without a link, Long trail wraps, Empty (renders nothing)
-
 ### ExternalLink
 
 A link to another website.
@@ -844,15 +836,7 @@ The breadcrumb bar under the site header: a quick-navigation button (opens the p
 
 - Import: `import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'`
 - Props: `breadcrumbs?: BreadcrumbLinkProps[]`, `breadcrumb_page_title?: string`, `path?: string`, `is_landing_page?: boolean = false`, `links_only?: boolean = false`
-- Stories (7): `frontend/app/rust/stories/page/PageBreadcrumbs.stories.ts`, https://my.minmatar.org/rust/?path=/docs/page-pagebreadcrumbs--docs: Default, Order Is Preserved, Quick Navigation Button, Quick navigation button has an accessible name, Single Level, Landing Page, Deep Trail
-
-### BreadcrumbLink
-
-One arrow-shaped step of the breadcrumb trail, drawn with a `clip-path` over a `--fleet-red` background.
-
-- Import: `import BreadcrumbLink from '@components/page/BreadcrumbLink.astro'`
-- Props: `accumulated_path: string`, `page_title: string`
-- Stories (4): `frontend/app/rust/stories/page/BreadcrumbLink.stories.ts`, https://my.minmatar.org/rust/?path=/docs/page-breadcrumblink--docs: Default, Nested, Numeric Segment, Long Title
+- Stories (8): `frontend/app/rust/stories/page/PageBreadcrumbs.stories.ts`, https://my.minmatar.org/rust/?path=/docs/page-pagebreadcrumbs--docs: Default, Order Is Preserved, Quick Navigation Button, Quick navigation button has an accessible name, Single Level, Landing Page, Deep Trail, Nav landmark, ordered list, current page
 
 ### TextBox
 
