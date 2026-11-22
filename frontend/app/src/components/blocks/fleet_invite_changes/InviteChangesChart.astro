@@ -1,4 +1,5 @@
 ---
+import DataTable from '@components/blocks/DataTable.astro'
 import type { InviteChangesChart } from '@/data/fleet_invite_changes'
 import { bar_percent, bar_tip } from '@/data/fleet_invite_changes'
 
@@ -25,20 +26,19 @@ const share = (count: number) => (chart.total ? Math.round((100 * count) / chart
             </li>
         )}
     </ul>
-    <!-- A table ignores width: 1px, so the wrapper is the visually hidden box. -->
-    <div class="[ visually-hidden ]">
-    <table>
-        <caption>{chart.title}</caption>
-        <thead>
-            <tr><th scope="col">Answer</th><th scope="col">Pilots</th><th scope="col">Share</th></tr>
-        </thead>
-        <tbody>
-            {chart.rows.map((row) =>
-                <tr><th scope="row">{row.label}</th><td>{row.count} of {chart.total}</td><td>{share(row.count)}%</td></tr>
-            )}
-        </tbody>
-    </table>
-    </div>
+    <DataTable
+        visually_hidden={true}
+        caption={chart.title}
+        columns={[
+            { key: 'answer', label: 'Answer' },
+            { key: 'pilots', label: 'Pilots' },
+            { key: 'share', label: 'Share' },
+        ]}
+    >
+        {chart.rows.map((row) =>
+            <tr><th scope="row">{row.label}</th><td>{row.count} of {chart.total}</td><td>{share(row.count)}%</td></tr>
+        )}
+    </DataTable>
 </figure>
 
 <style lang="scss">

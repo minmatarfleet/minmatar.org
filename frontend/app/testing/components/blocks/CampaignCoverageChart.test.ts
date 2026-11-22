@@ -14,7 +14,7 @@ describe('CampaignCoverageChart', () => {
         const html = await render({ coverage })
         expect(html).not.toContain('role="img"')
         expect(html).toMatch(/class="\[ campaign-coverage-chart \]"[^>]*aria-hidden="true"/)
-        expect(html).toContain('<caption>')
+        expect(html).toMatch(/<caption[ >]/)
         expect(html.match(/<th scope="row"/g)).toHaveLength(24)
         // 05:00 has 1 day of our activity and 2 of hostile activity.
         expect(html).toMatch(/<th scope="row"[^>]*>05:00 UTC<\/th>\s*<td[^>]*>1<\/td>\s*<td[^>]*>2<\/td>/)

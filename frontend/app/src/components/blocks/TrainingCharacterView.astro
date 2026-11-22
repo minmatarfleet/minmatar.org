@@ -17,6 +17,7 @@ import {
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import { FLEET_ROLES_LISTED, fleet_role_for_capability } from '@/data/fleet-roles'
 import { guidePath } from '@/data/guides/urls'
+import DataTable from '@components/blocks/DataTable.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import Tag from '@components/blocks/Tag.astro'
@@ -195,15 +196,16 @@ const training_id = character.training?.fitting_id
     <section aria-labelledby="training-roles">
         <h3 id="training-roles">{t('training.ready_by_role')}</h3>
         <ComponentBlock padding_block="0" padding_inline="0">
-            <table class="[ training-roles ]">
-                <thead>
-                    <tr>
-                        <th scope="col">{t('training.col_role')}</th>
-                        <th scope="col">{t('training.col_ready_ships')}</th>
-                        <th scope="col">{t('training.col_fleets')}</th>
-                    </tr>
-                </thead>
-                <tbody>
+            <DataTable
+                class="[ training-roles ]"
+                density="dense"
+                borders="none"
+                columns={[
+                    { key: 'role', label: t('training.col_role') },
+                    { key: 'ready', label: t('training.col_ready_ships') },
+                    { key: 'fleets', label: t('training.col_fleets'), numeric: true },
+                ]}
+            >
                     {character.roles.map(role =>
                         <tr>
                             <th scope="row">
@@ -226,11 +228,10 @@ const training_id = character.training?.fitting_id
                                     {role.ready.length === 0 && <span class="[ training-muted ]">{t('training.none_ready')}</span>}
                                 </span>
                             </td>
-                            <td>{role.fleets_365d}</td>
+                            <td class="data-table__numeric">{role.fleets_365d}</td>
                         </tr>
                     )}
-                </tbody>
-            </table>
+            </DataTable>
         </ComponentBlock>
     </section>
 </Flexblock>
@@ -334,34 +335,6 @@ const training_id = character.training?.fitting_id
         display: flex;
         gap: var(--space-xs);
         justify-content: flex-end;
-    }
-
-    .training-roles {
-        width: 100%;
-        border-collapse: collapse;
-
-        th,
-        td {
-            padding: var(--space-xs) var(--space-s);
-            text-align: start;
-            vertical-align: middle;
-        }
-
-        thead th {
-            font-size: var(--step--2);
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            color: var(--faded);
-        }
-
-        th:last-child,
-        td:last-child {
-            text-align: end;
-        }
-
-        tbody tr {
-            border-top: 1px solid var(--border-color);
-        }
     }
 
     .training-roles__guide {
