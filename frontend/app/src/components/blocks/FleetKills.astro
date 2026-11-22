@@ -79,6 +79,7 @@ const sides = [
 import Flexblock from '@components/compositions/Flexblock.astro'
 import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 import FleetSrpLosses from '@components/blocks/FleetSrpLosses.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <Flexblock
@@ -212,7 +213,7 @@ import FleetSrpLosses from '@components/blocks/FleetSrpLosses.astro'
                                     )}
                                 </ul>
 
-                                <button type="button" class="[ fleet-kills__more ]" x-on:click="show_all = !show_all">
+                                <StylessButton type="button" class="[ fleet-kills__more ]" x-on:click="show_all = !show_all">
                                     <span x-show="!show_all">
                                         {s.hulls.length > HULLS_SHOWN ?
                                             t('fleets.kills.more_hulls').replace('{count}', (s.hulls.length - HULLS_SHOWN).toString()) :
@@ -220,7 +221,7 @@ import FleetSrpLosses from '@components/blocks/FleetSrpLosses.astro'
                                         }
                                     </span>
                                     <span x-show="show_all" x-cloak>{t('fleets.kills.by_hull')}</span>
-                                </button>
+                                </StylessButton>
                             </>
                         }
                     </div>

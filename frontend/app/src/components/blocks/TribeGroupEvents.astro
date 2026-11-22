@@ -75,6 +75,7 @@ import Tag from '@components/blocks/Tag.astro'
 import StageChannelIcon from '@components/icons/StageChannelIcon.astro'
 import VoiceChannelIcon from '@components/icons/VoiceChannelIcon.astro'
 import PlacePinIcon from '@components/icons/PlacePinIcon.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <div id={TRIBE_GROUP_EVENTS_ID} class:list={['[ tribe-group-events ]', Astro.props.class]} {...attributes}>
@@ -137,9 +138,9 @@ import PlacePinIcon from '@components/icons/PlacePinIcon.astro'
                     {next.can_manage &&
                         <span class="[ tribe-event-hero__manage ]">
                             <a href={edit_href(next)}>{t('tribes.group.events.edit')}</a>
-                            <button type="button" x-data x-on:click={cancel_dialog(next)}>
+                            <StylessButton type="button" x-data x-on:click={cancel_dialog(next)}>
                                 {t('tribes.group.events.cancel')}
-                            </button>
+                            </StylessButton>
                         </span>
                     }
                 </div>

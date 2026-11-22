@@ -100,12 +100,12 @@ const chip_class = [
         {...attributes}
     ><slot />{count !== undefined && <span class="[ filter-chip__count ]">{count}</span>}</a>
     :
-    <button
+    <StylessButton
         type="button"
         class:list={chip_class}
         aria-pressed={active ? 'true' : 'false'}
         {...attributes}
-    ><slot />{count !== undefined && <span class="[ filter-chip__count ]">{count}</span>}</button>
+    ><slot />{count !== undefined && <span class="[ filter-chip__count ]">{count}</span>}</StylessButton>
 }
 
 <style lang="scss">

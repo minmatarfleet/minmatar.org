@@ -86,6 +86,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <Flexblock gap="var(--space-l)" class:list={['[ scan-report ]', Astro.props.class]} {...attributes}>
@@ -108,14 +109,14 @@ import EmptyState from '@components/blocks/EmptyState.astro'
             {has_distances &&
                 <div class="[ scan-report__tabs ]" role="group" aria-label={t('dscan.distance')}>
                     {grid_tabs.map(tab =>
-                        <button
+                        <StylessButton
                             type="button"
                             x-on:click={`grid = '${tab.id}'`}
                             x-bind:class={`{ 'is-on': grid === '${tab.id}' }`}
                             x-bind:aria-pressed={`grid === '${tab.id}'`}
                             class:list={[{ 'is-on': tab.id === 'all' }]}
                             aria-pressed={tab.id === 'all' ? 'true' : 'false'}
-                        >{tab.label} <span>{tab.count}</span></button>
+                        >{tab.label} <span>{tab.count}</span></StylessButton>
                     )}
                 </div>
             }
@@ -131,7 +132,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                         </div>
                         <div class="[ scan-report__rows ]">
                             {hull_rows.map(hull =>
-                                <button
+                                <StylessButton
                                     type="button"
                                     class="[ scan-report__row ]"
                                     x-show={`n(${hull.count}, ${on(hull)}) > 0`}
@@ -141,7 +142,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                                     <img src={type_icon(hull.type_id)} alt="" width="28" height="28" loading="lazy" />
                                     <span class="[ scan-report__name ]">{hull.name}</span>
                                     <b x-text={`n(${hull.count}, ${on(hull)})`}>{hull.count}</b>
-                                </button>
+                                </StylessButton>
                             )}
                         </div>
                     </ComponentBlock>
@@ -153,7 +154,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                         </div>
                         <div class="[ scan-report__rows ]">
                             {class_rows.map(ship_class =>
-                                <button
+                                <StylessButton
                                     type="button"
                                     class="[ scan-report__row scan-report__row--plain ]"
                                     x-show={`n(${ship_class.count}, ${on(ship_class)}) > 0`}
@@ -162,7 +163,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                                 >
                                     <span class="[ scan-report__name ]">{ship_class.name}</span>
                                     <b x-text={`n(${ship_class.count}, ${on(ship_class)})`}>{ship_class.count}</b>
-                                </button>
+                                </StylessButton>
                             )}
                         </div>
                     </ComponentBlock>
@@ -239,7 +240,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                             {(local.alliances ?? []).map(alliance => {
                                 const key = ally_key(alliance.id)
                                 return (
-                                    <button
+                                    <StylessButton
                                         type="button"
                                         class="[ scan-report__row ]"
                                         x-bind:class={`{ 'is-hl': sel && ally_hl(${js(key)}), 'is-dim': sel && !ally_hl(${js(key)}) }`}
@@ -248,7 +249,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                                         {alliance.id ? <img src={alliance_logo(alliance.id)} alt="" width="28" height="28" loading="lazy" /> : <span class="[ scan-report__blank ]"></span>}
                                         <span class="[ scan-report__name ]">{alliance.name}</span>
                                         <span class="[ scan-report__count ]"><i class={`[ scan-report__square standing-${alliance.standing} ]`}></i><b>{alliance.count}</b></span>
-                                    </button>
+                                    </StylessButton>
                                 )
                             })}
                         </div>
@@ -264,7 +265,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                                         const hl = `bloc_hl(${bloc.id}, ${js(bloc.allies)}, ${js(bloc.corps)})`
                                         return (
                                             <div class="[ scan-report__bloc ]">
-                                                <button
+                                                <StylessButton
                                                     type="button"
                                                     class="[ scan-report__row ]"
                                                     x-bind:class={`{ 'is-hl': sel && ${hl}, 'is-dim': sel && !${hl} }`}
@@ -273,7 +274,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                                                     {first ? <img src={intel_entity_image(first.kind, first.id, 64)} alt="" width="28" height="28" loading="lazy" /> : <span class="[ scan-report__blank ]"></span>}
                                                     <span class="[ scan-report__name ]">{bloc.name}{bloc.likely && <small> · {t('dscan.likely')}</small>}</span>
                                                     <span class="[ scan-report__count ]"><b>{bloc.count}</b></span>
-                                                </button>
+                                                </StylessButton>
                                                 {link_blocs && <a class="[ scan-report__bloc-link ]" href={translatePath(intel_bloc_path(bloc.id))} aria-label={bloc.name}>↗</a>}
                                             </div>
                                         )
@@ -295,7 +296,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                                         const key = ally_key(corporation.alliance_id)
                                         const hl = `corp_hl(${corporation.id}, ${js(key)})`
                                         return (
-                                            <button
+                                            <StylessButton
                                                 type="button"
                                                 class="[ scan-report__row ]"
                                                 x-bind:class={`{ 'is-hl': sel && ${hl}, 'is-dim': sel && !${hl} }`}
@@ -305,7 +306,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                                                 <img src={corporation_logo(corporation.id)} alt="" width="28" height="28" loading="lazy" />
                                                 <span class="[ scan-report__name ]">{corporation.name}</span>
                                                 <span class="[ scan-report__count ]"><i class={`[ scan-report__square standing-${corporation.standing} ]`}></i><b>{corporation.count}</b></span>
-                                            </button>
+                                            </StylessButton>
                                         )
                                     })}
                                 </div>
@@ -322,7 +323,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                                         const corp = pilot.corporation_id ?? 0
                                         const hl = `pilot_hl(${js(pilot.name)}, ${corp}, ${js(key)})`
                                         return (
-                                            <button
+                                            <StylessButton
                                                 type="button"
                                                 class="[ scan-report__row scan-report__row--plain ]"
                                                 x-bind:class={`{ 'is-hl': sel && ${hl}, 'is-dim': sel && !${hl} }`}
@@ -331,7 +332,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                                             >
                                                 <span class="[ scan-report__name ]">{pilot.name}</span>
                                                 {pilot.standing ? <i class={`[ scan-report__square standing-${pilot.standing} ]`}></i> : <span></span>}
-                                            </button>
+                                            </StylessButton>
                                         )
                                     })}
                                 </div>

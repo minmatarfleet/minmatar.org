@@ -75,6 +75,7 @@ import Button from '@components/blocks/Button.astro'
 import DialogButton from '@components/blocks/DialogButton.astro'
 import Input from '@components/blocks/Input.astro'
 import Textarea from '@components/blocks/Textarea.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <DialogButton
@@ -175,22 +176,22 @@ import Textarea from '@components/blocks/Textarea.astro'
                             <h3 class="[ invite-dialog__label ]">{t('fleets.private.wave_who')}</h3>
                             <div class="[ invite-dialog__modes ]" role="group" aria-label={t('fleets.private.wave_search')}>
                                 {new_pilots &&
-                                    <button
+                                    <StylessButton
                                         type="button"
                                         x-on:click="add_mode = 'new'"
                                         x-bind:aria-pressed="add_mode === 'new'"
-                                    >{t('fleets.invites.mode_new_pilots')}</button>
+                                    >{t('fleets.invites.mode_new_pilots')}</StylessButton>
                                 }
-                                <button
+                                <StylessButton
                                     type="button"
                                     x-on:click="add_mode = 'search'"
                                     x-bind:aria-pressed="add_mode === 'search'"
-                                >{t('fleets.invites.mode_select')}</button>
-                                <button
+                                >{t('fleets.invites.mode_select')}</StylessButton>
+                                <StylessButton
                                     type="button"
                                     x-on:click="add_mode = 'paste'"
                                     x-bind:aria-pressed="add_mode === 'paste'"
-                                >{t('fleets.invites.mode_paste')}</button>
+                                >{t('fleets.invites.mode_paste')}</StylessButton>
                             </div>
                         </FlexInline>
 
@@ -285,11 +286,11 @@ import Textarea from '@components/blocks/Textarea.astro'
                                         >{no_tz_label}</span>
                                         <span class="[ invite-dialog__skipped ]" x-show="pick.skip">{t('fleets.invites.skipped')}</span>
                                         <input type="hidden" x-bind:name="pick.kind + '_ids'" x-bind:value="pick.id" />
-                                        <button
+                                        <StylessButton
                                             type="button"
                                             x-on:click="picks.splice(index, 1); $nextTick(() => htmx.trigger($refs.preview, 'refresh'))"
                                             x-bind:aria-label="'Remove ' + pick.name"
-                                        >×</button>
+                                        >×</StylessButton>
                                     </li>
                                 </template>
                             </ul>
@@ -572,6 +573,7 @@ import Textarea from '@components/blocks/Textarea.astro'
         }
 
         button {
+            text-align: center;
             min-width: var(--space-l);
             min-height: var(--space-l);
             background: transparent;

@@ -38,6 +38,7 @@ if (q.length >= 2) {
 
 import EmptyState from '@components/blocks/EmptyState.astro'
 import TimezoneTags from '@components/blocks/TimezoneTags.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {q.length >= 2 && (candidates.length === 0 ?
@@ -76,7 +77,7 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
                                 {blocked}
                                 {free_day && <Fragment><br />{t('fleets.invites.again_on').replace('{day}', free_day)}</Fragment>}
                             </small> :
-                            <button
+                            <StylessButton
                                 type="button"
                                 class="[ invite-candidates__invite ]"
                                 hx-post={INVITES_URL}
@@ -84,10 +85,10 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
                                 hx-target="#fleet-invites"
                                 hx-swap="outerHTML"
                                 hx-disabled-elt="this"
-                            >{t('fleets.invites.invite')}</button>
+                            >{t('fleets.invites.invite')}</StylessButton>
                         }
                     </div> :
-                    <button
+                    <StylessButton
                         type="button"
                         disabled={Boolean(blocked) && !skipped}
                         title={pick.skip || undefined}
@@ -95,7 +96,7 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
                     >
                         <b>{candidate.name} {candidate.kind === 'pilot' && <TimezoneTags timezone={candidate.timezone} />}</b>
                         <small>{skipped ? t('fleets.invites.will_be_skipped').replace('{reason}', blocked) : blocked || detail}</small>
-                    </button>
+                    </StylessButton>
                 }
             </li>
         })}

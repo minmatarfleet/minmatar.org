@@ -106,6 +106,7 @@ const chip_kills = (count: number) => count === 1 ? t('fleets.after.chip_kill') 
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ChipGroup from '@components/blocks/ChipGroup.astro'
 import FilterChip from '@components/blocks/FilterChip.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <section id="fleet-pilots" class="[ fleet-pilots ]" aria-labelledby="fleet-pilots-title">
@@ -144,7 +145,7 @@ import FilterChip from '@components/blocks/FilterChip.astro'
                         <span class="[ fleet-pilots__grid ]" style={`top: ${line.top}%`} aria-hidden="true"><small>{line.value}</small></span>
                     )}
                     {bands.map(band =>
-                        <button
+                        <StylessButton
                             type="button"
                             tabindex="-1"
                             aria-hidden="true"
@@ -154,7 +155,7 @@ import FilterChip from '@components/blocks/FilterChip.astro'
                             hx-get={PARTIAL_URL(band.position === participants.engagement ? null : band.position)}
                             hx-target="#fleet-pilots"
                             hx-swap="outerHTML"
-                        ><span>{band.label}</span></button>
+                        ><span>{band.label}</span></StylessButton>
                     )}
                     {markers.map(marker =>
                         <span class="[ fleet-pilots__event-line ]" style={`left: ${marker.left}%`} aria-hidden="true" />
@@ -300,14 +301,14 @@ import FilterChip from '@components/blocks/FilterChip.astro'
                                                     <b>{character.character_name}</b>
                                                     {lead && !person.registered && <span class="[ fleet-pilots__tag ]">{t('fleets.after.no_account')}</span>}
                                                     {lead && alts > 0 &&
-                                                        <button
+                                                        <StylessButton
                                                             type="button"
                                                             class="[ fleet-pilots__alts ]"
                                                             aria-expanded="false"
                                                             x-bind:aria-expanded="open ? 'true' : 'false'"
                                                             x-on:click="open = !open"
                                                             x-text={`open ? ${JSON.stringify(t('fleets.after.fold_alts'))} : ${JSON.stringify(alts_text(alts))}`}
-                                                        >{alts_text(alts)}</button>
+                                                        >{alts_text(alts)}</StylessButton>
                                                     }
                                                 </span>
                                                 <small>{ship_sequence(character).join(' → ')}</small>
@@ -351,12 +352,12 @@ import FilterChip from '@components/blocks/FilterChip.astro'
                 </div>
             }
             {roster.length > PEOPLE_SHOWN &&
-                <button
+                <StylessButton
                     type="button"
                     class="[ fleet-pilots__more ]"
                     x-on:click="all = !all"
                     x-text={`all ? ${JSON.stringify(t('fleets.after.show_fewer'))} : ${JSON.stringify(t('fleets.after.show_all_pilots').replace('{count}', roster.length.toString()))}`}
-                >{t('fleets.after.show_all_pilots').replace('{count}', roster.length.toString())}</button>
+                >{t('fleets.after.show_all_pilots').replace('{count}', roster.length.toString())}</StylessButton>
             }
             {participants.hidden_pilots > 0 && <small>{t('fleets.after.hidden_pilots').replace('{count}', participants.hidden_pilots.toString())}</small>}
             {roster.length > 0 &&

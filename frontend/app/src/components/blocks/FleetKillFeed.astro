@@ -8,6 +8,7 @@ import { get_item_icon } from '@helpers/eve_image'
 import { killmail_engagement } from '@helpers/fleet_fights'
 import Select from '@components/blocks/Select.astro'
 
+import StylessButton from '@components/blocks/StylessButton.astro'
 /**
  * The Kills tab: every killmail of a finished fleet, oldest first, filtered
  * to kills or losses and to one engagement over the rendered rows. Links to
@@ -78,12 +79,12 @@ const PUBLIC_URL = translatePath(`/fleets/${fleet_id}/kills`)
         <h2 id="kill-feed-title" class="visually-hidden">{t('fleets.tabs.kills')}</h2>
         <div class="[ kill-feed__filters ]" role="group" aria-label={t('fleets.killfeed.filter')}>
             {filters.map(filter =>
-                <button
+                <StylessButton
                     type="button"
                     x-on:click={`outcome = '${filter.key}'`}
                     x-bind:aria-pressed={`outcome === '${filter.key}'`}
                     aria-pressed={filter.key === 'all' ? 'true' : 'false'}
-                >{filter.label}</button>
+                >{filter.label}</StylessButton>
             )}
             {engagements.length > 1 &&
                 <label class="[ kill-feed__engagement ]">
@@ -98,10 +99,10 @@ const PUBLIC_URL = translatePath(`/fleets/${fleet_id}/kills`)
             }
         </div>
         <span class="[ kill-feed__share ]">
-            <button type="button" x-on:click="share()">
+            <StylessButton type="button" x-on:click="share()">
                 <span x-show="!copied">{t('fleets.killfeed.share')}</span>
                 <span x-show="copied" x-cloak>{t('fleets.killfeed.copied')}</span>
-            </button>
+            </StylessButton>
             {!public_view && <a href={PUBLIC_URL} target="_blank" rel="noopener noreferrer">{t('fleets.killfeed.public_page')} ↗</a>}
         </span>
     </header>
@@ -134,10 +135,10 @@ const PUBLIC_URL = translatePath(`/fleets/${fleet_id}/kills`)
     </ol>
 
     {killmails.length > ROWS_SHOWN &&
-        <button type="button" class="[ kill-feed__more ]" x-on:click="show_all = !show_all">
+        <StylessButton type="button" class="[ kill-feed__more ]" x-on:click="show_all = !show_all">
             <span x-show="!show_all">{t('fleets.killfeed.show_all').replace('{count}', killmails.length.toString())}</span>
             <span x-show="show_all" x-cloak>{t('fleets.after.show_fewer')}</span>
-        </button>
+        </StylessButton>
     }
 </section>
 

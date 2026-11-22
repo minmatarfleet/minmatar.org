@@ -11,6 +11,7 @@ import VerticalCenter from './VerticalCenter.astro';
 import { get_alliance_corporations_with_extraction } from '@helpers/fetching/corporations';
 import { get_corporation_logo } from '@helpers/eve_image';
 
+import StylessButton from '@components/blocks/StylessButton.astro'
 interface CorporationFinderItem {
     corporation_id: number;
     name: string;
@@ -63,7 +64,7 @@ try {
         <div class="[ relative ]">
             <Flexblock class="[ corporation-list ][ light-transparency w-full ]" gap='0'>
                 {corporations.map((corporation) =>
-                    <button
+                    <StylessButton
                         type="button"
                         corporation-finder-action="accept"
                         corporation-finder-data={JSON.stringify(corporation)}
@@ -80,7 +81,7 @@ try {
                                 </Flexblock>
                             </VerticalCenter>
                         </FixedFluid>
-                    </button>
+                    </StylessButton>
                 )}
             </Flexblock>
         </div>

@@ -13,6 +13,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import ActionMenu from '@components/blocks/ActionMenu.astro'
 import Button from '@components/blocks/Button.astro'
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 import ActionMenuItem from '@components/blocks/ActionMenuItem.astro'
 import { get_corporation_logo } from '@helpers/eve_image'
 
@@ -164,7 +165,7 @@ const page_title = 'Community Survey'
                             <input type="hidden" name="year" value={current_year} />
                             <input type="hidden" name="quarter" value={current_quarter} />
                             <FlexInline gap="var(--space-m)">
-                                <label class="[ check ]"><input type="checkbox" name="open_now" checked /> <span>Open immediately</span></label>
+                                <RadioCheckInput type="checkbox" name="open_now" checked={true} label="Open immediately" />
                                 <Button type="submit" size="sm" color="green" off_disable={true}>Create {current_year} Q{current_quarter} survey</Button>
                             </FlexInline>
                         </form>
@@ -375,5 +376,4 @@ const page_title = 'Community Survey'
     .cp-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--fleet-red), var(--green)); }
     .cp-count { font-size: 0.78em; font-variant-numeric: tabular-nums; opacity: 0.7; min-width: 3.5rem; text-align: right; }
     @media (max-width: 34rem) { .cp-name { flex-basis: 6rem; } }
-    .check { display: flex; align-items: center; gap: var(--space-3xs); }
 </style>

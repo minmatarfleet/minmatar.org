@@ -96,6 +96,7 @@ const initial_label = initial_count === 0 && !any_ship ? labels.pick :
     initial_count > 1 ? labels.count.replace('{label}', initial_verb).replace('{count}', String(initial_count)) : initial_verb
 
 const hidden = 'display: none'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <FleetRsvpShell
@@ -304,9 +305,9 @@ const hidden = 'display: none'
                 >
                     <span x-text="submit_label">{initial_label}</span>
                 </Button>
-                <button type="submit" name="intent" value="not_available" class="[ fleet-rsvp__text-button ]">
+                <StylessButton type="submit" name="intent" value="not_available" class="[ fleet-rsvp__text-button ]">
                     {t('fleets.rsvp.not_available')}
-                </button>
+                </StylessButton>
             </div>
         </div>
     </form>

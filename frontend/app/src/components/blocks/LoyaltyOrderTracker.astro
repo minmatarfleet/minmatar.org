@@ -22,6 +22,7 @@ import {
 import FluidFixed from '@components/compositions/FluidFixed.astro'
 import Button from '@components/blocks/Button.astro'
 
+import StylessButton from '@components/blocks/StylessButton.astro'
 const { t, lang, translatePath } = i18n(Astro.url)
 
 interface Props {
@@ -181,14 +182,14 @@ if (order.status === 'cancelled')
                             x-data="{ copied: false }"
                         >
                             <span>{destination.name}</span>
-                            <button
+                            <StylessButton
                                 type="button"
                                 x-on:click={`navigator.clipboard.writeText(${JSON.stringify(destination.name)}); copied = true; setTimeout(() => copied = false, 2000)`}
                             >
                                 <span x-text={`copied ? ${JSON.stringify(t('industry.loyalty.tracker.copied'))} : ${JSON.stringify(t('industry.loyalty.tracker.copy'))}`}>
                                     {t('industry.loyalty.tracker.copy')}
                                 </span>
-                            </button>
+                            </StylessButton>
                         </div>
                         <ol class="[ loyalty-tracker__how ]">
                             <li>{t('industry.loyalty.tracker.move_send_1').replace('{currency}', order.loyalty_point_name)}</li>

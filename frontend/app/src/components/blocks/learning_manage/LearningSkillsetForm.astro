@@ -89,9 +89,9 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                             <span class="[ skill-line__name ]">{skill.name}</span>
                             <label class="[ skill-line__level ]">
                                 <span>{t('learning_manage.skill_level')}</span>
-                                <select name="skill_level" aria-label={t('learning_admin.level_of').replace('~NAME', skill.name)} id={id(`level-${index}`)}>
+                                <Select size="sm" width="auto" name="skill_level" aria-label={t('learning_admin.level_of').replace('~NAME', skill.name)} id={id(`level-${index}`)}>
                                     {LEVELS.map((level) => <option value={String(level)} selected={skill.level === level}>{level}</option>)}
-                                </select>
+                                </Select>
                             </label>
                             <ManageSortControls event={SKILLSET_SKILLS_EVENT} name={skill.name} />
                             <StylessButton type="button" class="[ skill-line__remove ]" aria-label={t('learning_admin.remove_skill').replace('~NAME', skill.name)} x-on:click="$el.closest('li').remove()">×</StylessButton>
@@ -104,9 +104,9 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                         <span class="[ skill-line__name ]"></span>
                         <label class="[ skill-line__level ]">
                             <span>{t('learning_manage.skill_level')}</span>
-                            <select name="skill_level">
+                            <Select size="sm" width="auto" name="skill_level">
                                 {LEVELS.map((level) => <option value={String(level)}>{level}</option>)}
-                            </select>
+                            </Select>
                         </label>
                         <ManageSortControls event={SKILLSET_SKILLS_EVENT} name={t('learning_admin.this_skill')} />
                         <StylessButton type="button" class="[ skill-line__remove ]" aria-label={t('learning_admin.remove_skill').replace('~NAME', t('learning_admin.this_skill'))} x-on:click="$el.closest('li').remove()">×</StylessButton>
@@ -223,14 +223,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         gap: var(--space-2xs);
         font-size: var(--step--1);
         color: var(--faded);
-
-        select {
-            padding: var(--space-3xs) var(--space-2xs);
-            background-color: var(--surface-sunken);
-            border: 1px solid var(--border-color);
-            color: var(--highlight);
-            font: inherit;
-        }
     }
 
     .skill-line__remove {

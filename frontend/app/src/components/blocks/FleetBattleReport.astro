@@ -338,8 +338,10 @@ const team_class = (index: number) => `br-team-${Math.min(index, 2)}`
 const selected = (position: number) => `{ 'is-sel': team === ${position} }`
 
 import FleetBattlePilotRow from '@components/blocks/FleetBattlePilotRow.astro'
+import Input from '@components/blocks/Input.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <div
@@ -391,7 +393,7 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
                             {Object.entries(scope_params(scope)).map(([name, value]) =>
                                 <input type="hidden" name={name} value={value} />
                             )}
-                            <button type="submit" class="[ br__chip-x ]" aria-label={t('fleets.report.delete_segment').replace('{name}', chip.segment.name)}>✕</button>
+                            <StylessButton type="submit" class="[ br__chip-x ]" aria-label={t('fleets.report.delete_segment').replace('{name}', chip.segment.name)}>✕</StylessButton>
                         </form>
                     }
                 </span>
@@ -445,9 +447,9 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
                 <span set:html={t('fleets.report.selected').replace('{window}', window_label(report.window_start, report.window_end)).replace('{count}', report.killmails.length.toString())} />
                 <label>
                     <span class="[ br__cap ]">{t('fleets.report.segment_name')}</span>
-                    <input type="text" name="name" maxlength="64" placeholder={window_label(report.window_start, report.window_end)} />
+                    <Input type="text" name="name" size="sm" width="14rem" maxlength="64" placeholder={window_label(report.window_start, report.window_end)} />
                 </label>
-                <button type="submit" class="[ br__button br__button--primary ]">{t('fleets.report.save_segment')}</button>
+                <StylessButton type="submit" class="[ br__button br__button--primary ]">{t('fleets.report.save_segment')}</StylessButton>
             </form>
         }
     </section>
@@ -478,10 +480,10 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
         <>
             <div class="[ br__switch ]" role="group" aria-label={t('fleets.report.team_shown')}>
                 {teams.map(team =>
-                    <button type="button" x-bind:aria-pressed={`String(team === ${team.position})`} aria-pressed={team.position === 0 ? 'true' : 'false'} x-on:click={`team = ${team.position}`}>
+                    <StylessButton type="button" x-bind:aria-pressed={`String(team === ${team.position})`} aria-pressed={team.position === 0 ? 'true' : 'false'} x-on:click={`team = ${team.position}`}>
                         <span class:list={['[ br__badge br__badge--s ]', team_class(team.index)]}>{team.letter}</span>
                         <span>{team.pilots_text}</span>
-                    </button>
+                    </StylessButton>
                 )}
             </div>
 
@@ -526,10 +528,10 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
                                 )}
                             </ul>
                             {team.hidden_groups > 0 &&
-                                <button type="button" class="[ br__more ]" x-on:click="groups_open = !groups_open" x-bind:aria-expanded="String(groups_open)">
+                                <StylessButton type="button" class="[ br__more ]" x-on:click="groups_open = !groups_open" x-bind:aria-expanded="String(groups_open)">
                                     <span x-show="!groups_open">{t('fleets.report.more_groups').replace('{count}', team.hidden_groups.toString())}</span>
                                     <span x-show="groups_open" x-cloak>{t('fleets.report.fewer_groups')}</span>
-                                </button>
+                                </StylessButton>
                             }
                         </div>
                     </section>
@@ -965,6 +967,7 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
     }
 
     .br__chip-x {
+        text-align: center;
         min-width: 2rem;
         min-height: 2.25rem;
         background: transparent;
@@ -1083,16 +1086,6 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
             align-items: center;
             gap: var(--space-2xs);
             margin-left: auto;
-        }
-
-        input {
-            width: 14rem;
-            min-height: 2.25rem;
-            padding: 0 var(--space-xs);
-            background-color: var(--background);
-            border: 1px solid var(--border-color-hover);
-            color: var(--highlight);
-            font: inherit;
         }
     }
 
@@ -1800,11 +1793,6 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
         .br__save label {
             width: 100%;
             margin-left: 0;
-        }
-
-        .br__save input {
-            flex: 1;
-            width: auto;
         }
 
         .br__tab-list {

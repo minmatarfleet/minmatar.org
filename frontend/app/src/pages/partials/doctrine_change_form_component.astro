@@ -143,9 +143,11 @@ const reviewer_line = tier === 0
 const title = (rows.length === 1 ? t('doctrine_changes.send_title_one') : t('doctrine_changes.send_title'))
     .replace('{count}', String(rows.length))
 
+import Textarea from '@components/blocks/Textarea.astro'
 import Button from '@components/blocks/Button.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <Flexblock gap="var(--space-s)" class="[ doctrine-review ]">
@@ -154,7 +156,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
             <h2>{t('doctrine_changes.review_failed')}</h2>
             <p role="alert">{error_message}</p>
             <FlexInline justification="flex-end">
-                <button type="button" class="[ doctrine-review__link ]" x-on:click="close_dialog()">{t('doctrine_changes.keep_editing')}</button>
+                <StylessButton type="button" class="[ doctrine-review__link ]" x-on:click="close_dialog()">{t('doctrine_changes.keep_editing')}</StylessButton>
             </FlexInline>
         </Flexblock>
         :
@@ -176,11 +178,11 @@ import FlexInline from '@components/compositions/FlexInline.astro'
                 <label for="doctrine-review-note">
                     {t('doctrine_changes.note_label')} <small class="[ doctrine-review__muted ]">{t('doctrine_changes.optional')}</small>
                 </label>
-                <textarea id="doctrine-review-note" name="note" rows="3" class="[ doctrine-review__note ]"></textarea>
+                <Textarea id="doctrine-review-note" name="note" rows="3"></Textarea>
             </Flexblock>
             <small class="[ doctrine-review__muted ]">{reviewer_line}</small>
             <FlexInline justification="flex-end" gap="var(--space-s)">
-                <button type="button" class="[ doctrine-review__link ]" x-on:click="close_dialog()">{t('doctrine_changes.keep_editing')}</button>
+                <StylessButton type="button" class="[ doctrine-review__link ]" x-on:click="close_dialog()">{t('doctrine_changes.keep_editing')}</StylessButton>
                 <Button
                     type="button"
                     color="fleet-red"
@@ -239,14 +241,6 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 
     .doctrine-review__muted {
         color: var(--faded);
-    }
-
-    .doctrine-review__note {
-        padding: var(--space-2xs) var(--space-xs);
-        background: var(--surface-sunken);
-        border: 1px solid var(--border-color);
-        color: var(--highlight);
-        resize: vertical;
     }
 
     .doctrine-review__link {

@@ -34,6 +34,7 @@ const sorted = [...doctrines].sort((a, b) => a.name.localeCompare(b.name))
 const DOCTRINE_URL = `${translatePath('/partials/fleet_doctrine_component')}?${query_string({ fleet_id })}`
 const ADD_SHIPS_MODAL_URL = `${translatePath('/partials/fleet_add_ships_modal_component/')}?${query_string({ fleet_id })}`
 
+import Input from '@components/blocks/Input.astro'
 import Button from '@components/blocks/Button.astro'
 ---
 
@@ -53,12 +54,11 @@ import Button from '@components/blocks/Button.astro'
             <small>{t('fleets.ships_setup.doctrine_hint')}</small>
             <fieldset x-data="{ query: '' }">
                 <legend class="[ visually-hidden ]">{t('fleets.ships_setup.doctrine')}</legend>
-                <input
+                <Input
                     type="search"
                     x-model="query"
                     placeholder={t('search')}
                     aria-label={t('search')}
-                    class="[ fleet-ships-setup__search ]"
                 />
                 <div class="[ fleet-ships-setup__doctrines ]">
                     {sorted.map((doctrine, index) =>
@@ -148,15 +148,6 @@ import Button from '@components/blocks/Button.astro'
             padding: 0;
             border: 0;
         }
-    }
-
-    .fleet-ships-setup__search {
-        min-height: 2.75rem;
-        padding: 0 var(--space-xs);
-        background: var(--background);
-        border: 1px solid var(--border-color-hover);
-        color: var(--highlight);
-        font: inherit;
     }
 
     .fleet-ships-setup__doctrines {

@@ -99,6 +99,7 @@ if (partial_once) {
     // The partial has arrived: drop it, so reopening with the same one loads it again.
     content_attributes['x-on:htmx:after-swap'] = `if ($event.target === $el) { ${name}_partial = ''; ${name}_partial_params = '' }`
 }
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <div class:list={[ `[ ${css} dialog-base ]` ]} data-dialog-base>
@@ -134,7 +135,7 @@ if (partial_once) {
             :
             <>
                 <div id={content_id} class:list={[ `[ ${css}-content dialog-base-content ]` ]} {...content_attributes} />
-                <button {...{ [action]: 'cancel' }} aria-label={t('close')}><TrashIcon /></button>
+                <StylessButton {...{ [action]: 'cancel' }} aria-label={t('close')}><TrashIcon /></StylessButton>
                 <slot />
             </>
         }

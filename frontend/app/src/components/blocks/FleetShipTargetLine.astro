@@ -66,7 +66,9 @@ const options = [
 
 const js = (value:unknown) => JSON.stringify(value)
 
+import Input from '@components/blocks/Input.astro'
 import Button from '@components/blocks/Button.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <section id="fleet-ship-targets" class="[ target-line ]" aria-labelledby="target-line-title">
@@ -96,11 +98,11 @@ import Button from '@components/blocks/Button.astro'
             <div class="[ target-line__fields ]">
                 <label>
                     <span>{t('fleets.targets.line_name')}</span>
-                    <input type="text" name="name" value={target?.name ?? ''} maxlength="64" required />
+                    <Input type="text" name="name" value={target?.name ?? ''} maxlength="64" required />
                 </label>
                 <label>
                     <span>{t('fleets.targets.how_many')}</span>
-                    <input type="number" name="target" value={target?.target ?? ''} min="1" max="999" required />
+                    <Input type="number" name="target" value={target?.target ?? ''} min="1" max="999" required />
                 </label>
             </div>
 
@@ -111,16 +113,16 @@ import Button from '@components/blocks/Button.astro'
                         <li>
                             <img x-show="item.kind === 'type'" x-bind:src="get_item_icon(item.id, 32)" alt="" width="28" height="28" />
                             <span x-text="item.name"></span>
-                            <button type="button" x-on:click="remove(index)" x-bind:aria-label={`${js(t('fleets.targets.remove'))}.replace('{name}', item.name)`}>
+                            <StylessButton type="button" x-on:click="remove(index)" x-bind:aria-label={`${js(t('fleets.targets.remove'))}.replace('{name}', item.name)`}>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
-                            </button>
+                            </StylessButton>
                             <input type="hidden" x-bind:name="item.kind === 'type' ? 'type_ids' : 'group_ids'" x-bind:value="item.id" />
                         </li>
                     </template>
                 </ul>
                 <label class="[ target-line__search ]">
                     <span class="[ visually-hidden ]">{t('fleets.targets.search')}</span>
-                    <input type="search" x-model="q" placeholder={t('fleets.targets.search_placeholder')} autocomplete="off" x-on:keydown.enter.prevent="" />
+                    <Input type="search" x-model="q" placeholder={t('fleets.targets.search_placeholder')} autocomplete="off" x-on:keydown.enter.prevent="" />
                 </label>
                 <ul class="[ target-line__results ]" x-show="q.trim().length >= 2" x-cloak>
                     {options.map(option =>
@@ -130,9 +132,9 @@ import Button from '@components/blocks/Button.astro'
                                 {option.kind === 'group' && <span class="[ target-line__muted ]"> · {t('fleets.targets.group_meta')}</span>}
                                 {option.line && <span class="[ target-line__muted ]"> · {t('fleets.targets.on_line').replace('{name}', option.line)}</span>}
                             </span>
-                            <button type="button" x-on:click={`add('${option.kind}', ${option.id}, ${js(option.name)})`}>
+                            <StylessButton type="button" x-on:click={`add('${option.kind}', ${option.id}, ${js(option.name)})`}>
                                 {t(option.line ? 'fleets.targets.move_here' : 'fleets.targets.add')}
-                            </button>
+                            </StylessButton>
                         </li>
                     )}
                 </ul>
@@ -141,7 +143,7 @@ import Button from '@components/blocks/Button.astro'
 
         <footer class="[ target-line__footer ]">
             {target &&
-                <button
+                <StylessButton
                     type="button"
                     class="[ target-line__delete ]"
                     hx-post={DELETE_URL}
@@ -150,7 +152,7 @@ import Button from '@components/blocks/Button.astro'
                     hx-confirm={t('fleets.targets.delete_confirm').replace('{name}', target.name)}
                 >
                     {t('fleets.targets.delete_line')}
-                </button>
+                </StylessButton>
             }
             <span class="[ target-line__spacer ]"></span>
             <Button size="sm" type="button" color="transparent" hx-get={PARTIAL_URL} hx-target="#fleet-ship-targets" hx-swap="outerHTML">
@@ -165,20 +167,6 @@ import Button from '@components/blocks/Button.astro'
     .target-line {
         background-color: var(--component-background);
         border: 1px solid var(--border-color);
-
-        input {
-            width: 100%;
-            min-height: 2.75rem;
-            padding: var(--space-3xs) var(--space-2xs);
-            background-color: var(--surface-sunken);
-            border: 1px solid var(--border-color);
-            color: var(--highlight);
-            font: inherit;
-        }
-
-        input[type="number"] {
-            text-align: right;
-        }
     }
 
     .target-line__header {

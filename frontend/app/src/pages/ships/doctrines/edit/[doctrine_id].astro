@@ -244,6 +244,7 @@ import Textarea from '@components/blocks/Textarea.astro'
 
 const page_title = `${t('doctrine_changes.edit_doctrine')}${doctrine ? `: ${doctrine.name}` : ''}`
 const icon = (ship_id:number) => get_type_icon(ship_id, 64)
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <Viewport title={page_title}>
@@ -291,7 +292,7 @@ const icon = (ship_id:number) => get_type_icon(ship_id, 64)
                             <FlexInline gap="var(--space-s)">
                                 <a href={REVIEW_QUEUE_URL}>{t('doctrine_changes.open_request')}</a>
                                 {pending.can_cancel &&
-                                    <button
+                                    <StylessButton
                                         type="button"
                                         class="[ doctrine-link-button ]"
                                         hx-post={`${FORM_PARTIAL_URL}&intent=withdraw&request_id=${pending.id}`}
@@ -299,7 +300,7 @@ const icon = (ship_id:number) => get_type_icon(ship_id, 64)
                                         hx-swap="innerHTML"
                                     >
                                         {t('doctrine_changes.withdraw_to_edit')}
-                                    </button>
+                                    </StylessButton>
                                 }
                             </FlexInline>
                         </FlexInline>
@@ -423,7 +424,7 @@ const icon = (ship_id:number) => get_type_icon(ship_id, 64)
                                                     data-filters={fitting.filters}
                                                     x-show="matches($el)"
                                                 >
-                                                    <button
+                                                    <StylessButton
                                                         type="button"
                                                         role="option"
                                                         x-on:click={`add(${fitting.id})`}
@@ -438,7 +439,7 @@ const icon = (ship_id:number) => get_type_icon(ship_id, 64)
                                                             class="[ doctrine-result__end ]"
                                                             x-text={`anywhere(${fitting.id}) ? '${js(t('doctrine_changes.in_role'))}'.replace('{role}', in_role(${fitting.id})) : '${js(t('doctrine_changes.add'))}'`}
                                                         ></small>
-                                                    </button>
+                                                    </StylessButton>
                                                 </li>
                                             )}
                                         </ul>
@@ -471,29 +472,30 @@ const icon = (ship_id:number) => get_type_icon(ship_id, 64)
                                                     <template x-if={`removed('${role}', ${fitting.id})`}>
                                                         <span class="[ doctrine-row__actions ]">
                                                             <small class="[ doctrine-tag ]">{t('doctrine_changes.tag_removed')}</small>
-                                                            <button type="button" class="[ doctrine-link-button ]" x-on:click={`undo('${role}', ${fitting.id})`}>{t('doctrine_changes.undo')}</button>
+                                                            <StylessButton type="button" class="[ doctrine-link-button ]" x-on:click={`undo('${role}', ${fitting.id})`}>{t('doctrine_changes.undo')}</StylessButton>
                                                         </span>
                                                     </template>
                                                     <template x-if={`!removed('${role}', ${fitting.id})`}>
                                                         <span class="[ doctrine-row__actions ]">
                                                             <label class="[ visually-hidden ]" for={`role-${role}-${fitting.id}`}>{t('doctrine_changes.role_for').replace('{name}', fitting.name)}</label>
-                                                            <select
+                                                            <Select
                                                                 id={`role-${role}-${fitting.id}`}
-                                                                class="[ doctrine-role-select ]"
+                                                                size="sm"
+                                                                width="9rem"
                                                                 x-on:change={`set_role('${role}', ${fitting.id}, $event.target.value)`}
                                                             >
                                                                 {DOCTRINE_ROLES.map((option) =>
                                                                     <option value={option} selected={option === role}>{ROLE_LABELS[option]}</option>
                                                                 )}
-                                                            </select>
-                                                            <button
+                                                            </Select>
+                                                            <StylessButton
                                                                 type="button"
                                                                 class="[ doctrine-icon-button ]"
                                                                 aria-label={t('doctrine_changes.remove_named').replace('{name}', fitting.name)}
                                                                 x-on:click={`remove('${role}', ${fitting.id})`}
                                                             >
                                                                 <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
-                                                            </button>
+                                                            </StylessButton>
                                                         </span>
                                                     </template>
                                                 </li>
@@ -511,7 +513,7 @@ const icon = (ship_id:number) => get_type_icon(ship_id, 64)
                     <div class="[ doctrine-bar ]" x-show="change_count() > 0" x-cloak>
                         <strong x-text={`'${js(t('doctrine_changes.change_count'))}'.replace('{count}', change_count())`}></strong>
                         <FlexInline gap="var(--space-s)">
-                            <button type="button" class="[ doctrine-link-button ]" x-on:click="discard()">{t('doctrine_changes.discard')}</button>
+                            <StylessButton type="button" class="[ doctrine-link-button ]" x-on:click="discard()">{t('doctrine_changes.discard')}</StylessButton>
                             <Button type="button" color="fleet-red" x-on:click="open_review()">{t('doctrine_changes.review_and_send')}</Button>
                         </FlexInline>
                     </div>
@@ -760,10 +762,6 @@ const icon = (ship_id:number) => get_type_icon(ship_id, 64)
             justify-content: flex-end;
         }
 
-        .doctrine-role-select {
-            flex: 1 1 auto;
-        }
-
         .doctrine-search {
             flex: 1 1 100%;
         }
@@ -785,16 +783,6 @@ const icon = (ship_id:number) => get_type_icon(ship_id, 64)
 
     .doctrine-tag--moved {
         color: var(--fleet-yellow);
-    }
-
-    .doctrine-role-select {
-        width: 9rem;
-        min-height: 2.75rem;
-        padding: 0 var(--space-2xs);
-        background: var(--border-color);
-        border: 1px solid transparent;
-        color: var(--highlight);
-        font-size: var(--step--1);
     }
 
     .doctrine-icon-button {

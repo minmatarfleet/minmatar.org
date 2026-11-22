@@ -41,6 +41,7 @@ const assign_url = (system:sde_filtered_system) => `${FLEET_ROLES_PARTIAL_URL}?$
 })}`
 
 import Badge from '@components/blocks/Badge.astro';
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {/* close_dialog() empties this list; closing on the next tick lets htmx
@@ -51,7 +52,7 @@ import Badge from '@components/blocks/Badge.astro';
     </div>
     :
     systems.map((system) =>
-        <button
+        <StylessButton
             type="button"
             hx-patch={assign_url(system)}
             hx-target={`#${id}`}
@@ -66,6 +67,6 @@ import Badge from '@components/blocks/Badge.astro';
                 <span slot="title" class:list={[ sec_status_class(system.security.toFixed(1)) ]}>{system.security.toFixed(1)}</span>
                 <small>{system.constellation_name} ‹ {system.region_name}</small>
             </Badge>
-        </button>
+        </StylessButton>
     )
 }

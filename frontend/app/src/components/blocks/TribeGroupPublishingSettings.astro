@@ -1,4 +1,5 @@
 ---
+import StylessButton from '@components/blocks/StylessButton.astro'
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
@@ -129,11 +130,11 @@ import Flexblock from '@components/compositions/Flexblock.astro'
                                             disabled={!fieldset.chosen.includes(pilot.character_id)}
                                             x-bind:disabled={`!chosen.includes(${pilot.character_id})`}
                                         />
-                                        <button
+                                        <StylessButton
                                             type="button"
                                             aria-label={t('tribes.settings.publishers.remove').replace('{name}', pilot.character_name)}
                                             x-on:click={`chosen = chosen.filter((id) => id !== ${pilot.character_id})`}
-                                        >×</button>
+                                        >×</StylessButton>
                                     </li>
                                 )}
                             </ul>

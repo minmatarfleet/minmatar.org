@@ -79,19 +79,18 @@ const state = {
                 <Textarea id={id('summary')} name="summary" rows="3" x-model="summary">{values.summary}</Textarea>
             </ManageField>
             <ManageField label={t('learning_admin.page_address')} for={id('slug')} hint={t('learning_admin.page_address_hint')}>
-                <div class="[ guide-form__address ]">
-                    <span class="[ guide-form__prefix ]" x-show="kind === 'guide'">{GUIDE_PATH_PREFIX}</span>
-                    <input
-                        id={id('slug')}
-                        name="slug"
-                        value={values.slug}
-                        required
-                        pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                        autocomplete="off"
-                        x-model="slug"
-                        x-on:input="slug_edited = true"
-                    />
-                </div>
+                <Input
+                    id={id('slug')}
+                    name="slug"
+                    value={values.slug}
+                    required
+                    pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                    autocomplete="off"
+                    prefix={GUIDE_PATH_PREFIX}
+                    prefix_attributes={{ 'x-show': "kind === 'guide'" }}
+                    x-model="slug"
+                    x-on:input="slug_edited = true"
+                />
             </ManageField>
             <div class="[ manage-fields ]">
                 <ManageField label={t('learning_admin.kind')} for={id('kind')}>
@@ -163,34 +162,6 @@ const state = {
 
     .guide-form__preview > :global(button) {
         align-self: flex-start;
-    }
-
-    .guide-form__address {
-        display: flex;
-        align-items: center;
-        border: solid 1px var(--border-color);
-        background-color: var(--surface-sunken);
-        padding-inline: var(--space-s-m);
-
-        &:focus-within {
-            outline: 1px solid var(--highlight);
-        }
-
-        input {
-            flex: 1 1 auto;
-            min-width: 0;
-            padding: var(--space-s) 0;
-            border: 0;
-            background: none;
-            color: var(--form-color);
-            font: inherit;
-            outline: none;
-        }
-    }
-
-    .guide-form__prefix {
-        flex: 0 0 auto;
-        color: var(--faded);
     }
 
     .guide-card {

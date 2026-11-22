@@ -57,6 +57,7 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ManageField from '@components/blocks/manage/ManageField.astro'
 import Textarea from '@components/blocks/Textarea.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <section id="reddit-review-queue" class="[ reddit-review ]" aria-live="polite">
@@ -77,7 +78,7 @@ import Textarea from '@components/blocks/Textarea.astro'
                     <nav class="[ reddit-review__pager ]" aria-label={t('admin_content.reddit.pager')}>
                         <span class="[ manage-muted ]">{t('admin_content.reddit.position').replace('~N', String(index + 1)).replace('~TOTAL', String(items.length))}</span>
                         {next_item && next_index !== null &&
-                            <button
+                            <StylessButton
                                 type="button"
                                 class="[ reddit-review__next ]"
                                 hx-get={`${PARTIAL_URL}?view=queue&index=${next_index}`}
@@ -85,15 +86,15 @@ import Textarea from '@components/blocks/Textarea.astro'
                                 hx-swap="outerHTML"
                             >
                                 {t('admin_content.reddit.next').replace('~NAME', next_item.corporation_name)}
-                            </button>
+                            </StylessButton>
                         }
                     </nav>
                 </header>
 
                 {!item.first_approval &&
                     <div class="[ reddit-review__modes ]" role="group" aria-label={t('admin_content.reddit.view')}>
-                        <button type="button" x-on:click="mode = 'changes'" x-bind:aria-pressed="mode === 'changes'" aria-pressed="true">{t('admin_content.reddit.changes')}</button>
-                        <button type="button" x-on:click="mode = 'split'" x-bind:aria-pressed="mode === 'split'" aria-pressed="false">{t('admin_content.reddit.side_by_side')}</button>
+                        <StylessButton type="button" x-on:click="mode = 'changes'" x-bind:aria-pressed="mode === 'changes'" aria-pressed="true">{t('admin_content.reddit.changes')}</StylessButton>
+                        <StylessButton type="button" x-on:click="mode = 'split'" x-bind:aria-pressed="mode === 'split'" aria-pressed="false">{t('admin_content.reddit.side_by_side')}</StylessButton>
                     </div>
                 }
 

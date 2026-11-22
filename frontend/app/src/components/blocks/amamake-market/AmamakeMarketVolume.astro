@@ -26,6 +26,7 @@ import ItemPicture from '@components/blocks/ItemPicture.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 import DataTable from '@components/blocks/DataTable.astro'
 
+import StylessButton from '@components/blocks/StylessButton.astro'
 interface Props {
     issue: AmamakeMarketIssue
     page?: number
@@ -140,14 +141,14 @@ const hx_body = {
                 <p>Keep browsing — log in for more page flips and filters. First looks stay free.</p>
                 <FlexInline gap="var(--space-2xs)">
                     <ButtonAuth size="sm">Log in</ButtonAuth>
-                    <button
+                    <StylessButton
                         type="button"
                         class="[ mk-sold-chip ]"
                         hx-get={volume_partial({ page: 1, q: '' })}
                         {...hx_body}
                     >
                         Back to page 1
-                    </button>
+                    </StylessButton>
                 </FlexInline>
             </div>
         )}
@@ -168,14 +169,14 @@ const hx_body = {
                 {fetch_error && (
                     <p class="[ mk-volume__error ]">
                         All Items Sold table unavailable right now.{' '}
-                        <button
+                        <StylessButton
                             type="button"
                             class="[ mk-volume__retry ]"
                             hx-get={volume_partial({})}
                             {...hx_body}
                         >
                             Try again
-                        </button>
+                        </StylessButton>
                     </p>
                 )}
 
@@ -246,26 +247,26 @@ const hx_body = {
                             </p>
                             <FlexInline gap="var(--space-2xs)">
                                 {can_prev ? (
-                                    <button
+                                    <StylessButton
                                         type="button"
                                         class="[ mk-sold-chip ]"
                                         hx-get={volume_partial({ page: current_page - 1 })}
                                         {...hx_body}
                                     >
                                         ← Prev
-                                    </button>
+                                    </StylessButton>
                                 ) : (
                                     <span class="[ mk-sold-chip is-disabled ]" aria-disabled="true">← Prev</span>
                                 )}
                                 {can_next ? (
-                                    <button
+                                    <StylessButton
                                         type="button"
                                         class="[ mk-sold-chip ]"
                                         hx-get={volume_partial({ page: current_page + 1 })}
                                         {...hx_body}
                                     >
                                         Next →
-                                    </button>
+                                    </StylessButton>
                                 ) : (
                                     <span class="[ mk-sold-chip is-disabled ]" aria-disabled="true">Next →</span>
                                 )}
@@ -283,14 +284,14 @@ const hx_body = {
                 <p>Keep browsing — log in for more page flips and filters. First looks stay free.</p>
                 <FlexInline gap="var(--space-2xs)">
                     <ButtonAuth size="sm">Log in</ButtonAuth>
-                    <button
+                    <StylessButton
                         type="button"
                         class="[ mk-sold-chip ]"
                         hx-get={volume_partial({ page: 1, q: '' })}
                         {...hx_body}
                     >
                         Back to page 1
-                    </button>
+                    </StylessButton>
                 </FlexInline>
             </div>
         )}
@@ -343,14 +344,14 @@ const hx_body = {
                         {fetch_error && (
                             <p class="[ mk-volume__error ]">
                                 All Items Sold table unavailable right now.{' '}
-                                <button
+                                <StylessButton
                                     type="button"
                                     class="[ mk-volume__retry ]"
                                     hx-get={volume_partial({})}
                                     {...hx_body}
                                 >
                                     Try again
-                                </button>
+                                </StylessButton>
                             </p>
                         )}
 
@@ -421,26 +422,26 @@ const hx_body = {
                                     </p>
                                     <FlexInline gap="var(--space-2xs)">
                                         {can_prev ? (
-                                            <button
+                                            <StylessButton
                                                 type="button"
                                                 class="[ mk-sold-chip ]"
                                                 hx-get={volume_partial({ page: current_page - 1 })}
                                                 {...hx_body}
                                             >
                                                 ← Prev
-                                            </button>
+                                            </StylessButton>
                                         ) : (
                                             <span class="[ mk-sold-chip is-disabled ]" aria-disabled="true">← Prev</span>
                                         )}
                                         {can_next ? (
-                                            <button
+                                            <StylessButton
                                                 type="button"
                                                 class="[ mk-sold-chip ]"
                                                 hx-get={volume_partial({ page: current_page + 1 })}
                                                 {...hx_body}
                                             >
                                                 Next →
-                                            </button>
+                                            </StylessButton>
                                         ) : (
                                             <span class="[ mk-sold-chip is-disabled ]" aria-disabled="true">Next →</span>
                                         )}

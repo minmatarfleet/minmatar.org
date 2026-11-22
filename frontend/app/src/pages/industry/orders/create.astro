@@ -677,10 +677,11 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                                         class="[ create-order-form__qty-label ]"
                                                         x-text="quantity_label"
                                                     ></span>
-                                                    <input
-                                                        class="[ create-order-form__qty-input ]"
+                                                    <Input
                                                         type="number"
                                                         min="1"
+                                                        size="sm"
+                                                        width="3.5rem"
                                                         x-bind:name="`quantity_${line.eve_type_id}`"
                                                         x-bind:value="line.quantity"
                                                         x-on:change="set_qty(index, $event.target.value)"
@@ -827,36 +828,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         font-size: var(--step--2);
         color: var(--highlight);
         white-space: nowrap;
-    }
-
-    .create-order-form__qty-input {
-        width: 3.5rem;
-        background-color: color-mix(in srgb, var(--neutral-600) var(--tint-soft), transparent);
-        color: var(--foreground);
-        border: 1px solid var(--border-color-hover);
-        padding: var(--space-3xs) var(--space-2xs);
-        font-family: var(--default-font);
-        font-size: var(--step--1);
-        text-align: center;
-        appearance: textfield;
-        -moz-appearance: textfield;
-        transition: var(--fast-transition);
-
-        &::-webkit-outer-spin-button,
-        &::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-
-        &:hover {
-            border-color: var(--highlight);
-        }
-
-        &:focus-visible {
-            outline: 2px solid var(--highlight);
-            outline-offset: 2px;
-            background-color: color-mix(in srgb, var(--neutral-600) var(--tint-soft), transparent);
-        }
     }
 
     .create-order-form__remove {

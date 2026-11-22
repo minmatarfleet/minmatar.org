@@ -28,6 +28,7 @@ if (is_manage_entity_kind(kind) && query.length >= MIN_QUERY) {
         console.log(error)
     }
 }
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {query.length < MIN_QUERY
@@ -35,7 +36,7 @@ if (is_manage_entity_kind(kind) && query.length >= MIN_QUERY) {
     : matches.length === 0
         ? <p class="[ manage-picker__note ]">{t('manage.kit.picker_no_matches')}</p>
         : matches.map((match) => (
-            <button
+            <StylessButton
                 type="button"
                 class="[ manage-picker__option ]"
                 role="option"
@@ -46,6 +47,6 @@ if (is_manage_entity_kind(kind) && query.length >= MIN_QUERY) {
                 {match.icon_url && <img src={match.icon_url} alt="" width="32" height="32" loading="lazy" />}
                 <span>{match.name}</span>
                 {match.detail && <span class="[ manage-picker__detail ]">{match.detail}</span>}
-            </button>
+            </StylessButton>
         ))
 }
