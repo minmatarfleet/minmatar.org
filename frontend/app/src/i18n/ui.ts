@@ -645,6 +645,8 @@ export const ui = {
         'landing_new.ticker_label': 'Live',
         'landing_new.and_others': 'and {count} others',
         'landing_new.and_other': 'and {count} other',
+        'landing_new.undisclosed_character': 'Undisclosed Character',
+        'landing_new.mined_on_alt': 'Mined on one of their alts',
         'landing_new.live_hint': 'What the alliance is doing right now',
         'landing_new.view_all': 'View more activity ↓',
         'landing_new.week_eyebrow': 'The last 7 days',

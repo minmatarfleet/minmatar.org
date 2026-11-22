@@ -33,6 +33,9 @@ from eveonline.constants import (
     FL33T_MEMBER_ALLIANCE_IDS,
     MINMATAR_FACTION_ID,
 )
+from eveonline.helpers.characters.identity import (
+    primary_characters_for_characters,
+)
 from eveonline.models import (
     EveAlliance,
     EveCharacter,
@@ -51,6 +54,7 @@ from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
 logger = logging.getLogger(__name__)
 
 DELAY = timedelta(minutes=60)
+UNDISCLOSED = "Undisclosed Character"
 FAST = CachedRollup(
     key="alliance:landing_pulse:fast:v2",
     ttl=300,
@@ -110,6 +114,12 @@ class Event:
     # m³ for a mining line, ISK destroyed for a fight, LP paid for a
     # warzone site (the week table's last column).
     amount: int = 0
+    # A mining line names the owner's main; this is set when another of
+    # their characters did the mining (which one is never shown).
+    on_alt: bool = False
+    # A mining line outside high sec hides who mined (no name, no
+    # portrait): it would show where a pilot can be caught.
+    undisclosed: bool = False
 
     @property
     def action(self) -> str:
@@ -181,16 +191,37 @@ def _entity_names(alliance_ids, corporation_ids) -> dict[int, str]:
     return names
 
 
-def _region_names_for_systems(system_ids) -> dict[int, str]:
+# Wormhole regions (A-R00001 ... ) read as one place, "J-space".
+WORMHOLE_REGIONS = range(11000000, 12000000)
+J_SPACE = "J-space"
+# EVE shows security rounded to one place: 0.45 and up is high sec.
+HIGH_SEC_MIN = 0.45
+
+
+def _systems(system_ids) -> dict[int, tuple[str, bool]]:
+    """System id -> (region name, high sec?). Wormhole regions read
+    "J-space". A system not in the universe tables is left out."""
     ids = {int(s) for s in system_ids if s}
     if not ids:
         return {}
     return {
-        sid: region or ""
-        for sid, region in EveSolarSystem.objects.filter(
+        sid: (
+            J_SPACE if region_id in WORMHOLE_REGIONS else region or "",
+            (security or 0) >= HIGH_SEC_MIN,
+        )
+        for sid, region_id, region, security in EveSolarSystem.objects.filter(
             id__in=ids
-        ).values_list("id", "eve_constellation__eve_region__name")
+        ).values_list(
+            "id",
+            "eve_constellation__eve_region_id",
+            "eve_constellation__eve_region__name",
+            "security_status",
+        )
     }
+
+
+def _region_names_for_systems(system_ids) -> dict[int, str]:
+    return {sid: region for sid, (region, _) in _systems(system_ids).items()}
 
 
 def _type_names(type_ids) -> dict[int, str]:
@@ -749,7 +780,14 @@ def _ore_family(name: str) -> str:
 
 def _mining_events(start, end) -> list[Event]:
     """What each ledger sync saw a pilot mine: one line per pilot and sync,
-    the total m³ of one ore, or of "N ores" with the ores in ``detail``."""
+    the total m³ of one ore, or of "N ores" with the ores in ``detail``.
+
+    The line names the owner's main, never the character that mined: which
+    characters are someone's mining alts is not public. Each character
+    keeps its own line, marked ``on_alt`` when it is not the main.
+
+    Outside high sec (or in a system we can't place) the line is
+    ``undisclosed``: no pilot at all, only what was mined and where."""
     rows = list(
         EveCharacterMiningDelta.objects.filter(
             observed_at__gte=start, observed_at__lt=end
@@ -763,7 +801,13 @@ def _mining_events(start, end) -> list[Event]:
             "solar_system_id",
         )
     )
-    regions = _region_names_for_systems(r[6] for r in rows)
+    systems = _systems(r[6] for r in rows)
+    mains = {
+        character_id: int(main.character_id)
+        for character_id, main in primary_characters_for_characters(
+            r[1] for r in rows
+        ).items()
+    }
     batches: dict[tuple, dict] = {}
     for when, character_id, type_id, ore, volume, quantity, sid in rows:
         key = (character_id, when.replace(second=0, microsecond=0))
@@ -784,18 +828,22 @@ def _mining_events(start, end) -> list[Event]:
         named = [family for family, _ in families.most_common()]
         # One ore reads "of Veldspar"; several read "of 4 ores", with the
         # ores (biggest first) on hover, so the line stays on one row.
+        region, high_sec = systems.get(batch["sid"], ("", False))
+        main_id = mains.get(character_id, character_id) if high_sec else 0
         events.append(
             Event(
                 batch["when"],
                 "mining",
-                character_id,
+                main_id,
                 f"mined {round(m3):,} m³ of",
                 named[0] if len(named) == 1 else f"{len(named)} ores",
                 "type",
                 top_type,
-                region=regions.get(batch["sid"], ""),
+                region=region,
                 detail="" if len(named) == 1 else ", ".join(named),
                 amount=round(m3),
+                on_alt=high_sec and main_id != character_id,
+                undisclosed=not high_sec,
             )
         )
     return events
@@ -808,8 +856,10 @@ def event_rows(events: list[Event]) -> list[dict]:
             "occurred_at": e.occurred_at,
             "kind": e.kind,
             "character_id": e.character_id,
-            "character_name": names.get(
-                e.character_id, "A Minmatar Fleet pilot"
+            "character_name": (
+                UNDISCLOSED
+                if e.undisclosed
+                else names.get(e.character_id, "A Minmatar Fleet pilot")
             ),
             "others": e.others,
             "action": e.action,
@@ -821,6 +871,8 @@ def event_rows(events: list[Event]) -> list[dict]:
             "detail": e.detail,
             "region": e.region,
             "amount": e.amount,
+            "on_alt": e.on_alt,
+            "undisclosed": e.undisclosed,
         }
         for e in events
     ]
@@ -831,7 +883,7 @@ def _events(start, end) -> list[dict]:
     Large-fleet fights are left to the week table's Fleet activity tab."""
     events = [e for e in _combat_events(start, end) if not e.group]
     events += _site_events(start, end) + _mining_events(start, end)
-    events = [e for e in events if e.character_id]
+    events = [e for e in events if e.character_id or e.undisclosed]
     events.sort(key=lambda e: e.occurred_at, reverse=True)
     return event_rows(events[:MAX_EVENTS])
 

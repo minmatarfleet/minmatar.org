@@ -18,6 +18,8 @@ const event = (others: number): LandingEvent => ({
     tail: 'and won',
     detail: '',
     amount: 0,
+    on_alt: false,
+    undisclosed: false,
 })
 
 describe('landing helpers', () => {

@@ -26,13 +26,52 @@ from eveonline.models import (
     EveCharacterKillmailAttacker,
     EveCharacterMiningDelta,
 )
-from eveuniverse.models import EveCategory, EveGroup, EveMarketPrice, EveType
+from eveuniverse.models import (
+    EveCategory,
+    EveConstellation,
+    EveGroup,
+    EveMarketPrice,
+    EveRegion,
+    EveSolarSystem,
+    EveType,
+)
 from feed.models import FeedKillmail
 from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
 from fleets.tests import disconnect_fleet_signals
 
 ENEMY_ALLIANCE_ID = 99000001
 OTHER_ENEMY_ALLIANCE_ID = 99000002
+
+
+RENS = 30002510
+AMAMAKE = 30002537
+J_SYSTEM = 31000005
+
+
+def _system(system_id, name, security, region_id, region_name):
+    region, _ = EveRegion.objects.get_or_create(
+        id=region_id, defaults={"name": region_name}
+    )
+    constellation, _ = EveConstellation.objects.get_or_create(
+        id=region_id + 10000000,
+        defaults={
+            "name": region_name,
+            "eve_region": region,
+            "position_x": 0.0,
+            "position_y": 0.0,
+            "position_z": 0.0,
+        },
+    )
+    return EveSolarSystem.objects.create(
+        id=system_id,
+        name=name,
+        eve_constellation=constellation,
+        security_status=security,
+        position_x=0.0,
+        position_y=0.0,
+        position_z=0.0,
+        enabled_sections=0,
+    )
 
 
 class LandingPulseTestCase(TestCase):
@@ -50,6 +89,7 @@ class LandingPulseTestCase(TestCase):
             character_name="Ender Locke",
             alliance_id=MINMATAR_FLEET_ALLIANCE_ID,
         )
+        _system(RENS, "Rens", 0.9, 10000030, "Heimatar")
         EveAlliance.objects.create(
             alliance_id=ENEMY_ALLIANCE_ID, name="Snuffed Out"
         )
@@ -393,7 +433,7 @@ class LandingPulseTestCase(TestCase):
         EveCharacterMiningDelta.objects.create(
             character=self.pilot,
             eve_type=ore,
-            solar_system_id=30002537,
+            solar_system_id=RENS,
             quantity=420000,
             observed_at=self.now - timedelta(minutes=30),
         )
@@ -436,7 +476,7 @@ class LandingPulseTestCase(TestCase):
             EveCharacterMiningDelta.objects.create(
                 character=self.pilot,
                 eve_type=ore,
-                solar_system_id=30002537,
+                solar_system_id=RENS,
                 quantity=quantity,
                 observed_at=when,
             )
@@ -454,6 +494,83 @@ class LandingPulseTestCase(TestCase):
             rows[0]["detail"],
             "Veldspar, Scordite, Kernite, Plagioclase, Pyroxeres",
         )
+
+    def test_mining_names_the_main_and_marks_alt_lines(self):
+        ore = self._ore()
+        user = User.objects.create(username="miner")
+        main = EveCharacter.objects.create(
+            character_id=2003, character_name="Main Pilot", user=user
+        )
+        set_primary_character(user, main)
+        when = self.now - timedelta(minutes=30)
+        for character_id, quantity in ((2003, 500), (2004, 1000)):
+            if character_id != 2003:
+                EveCharacter.objects.create(
+                    character_id=character_id,
+                    character_name="Barge Alt",
+                    user=user,
+                )
+            EveCharacterMiningDelta.objects.create(
+                character_id=EveCharacter.objects.get(
+                    character_id=character_id
+                ).pk,
+                eve_type=ore,
+                solar_system_id=RENS,
+                quantity=quantity,
+                observed_at=when,
+            )
+
+        rows = build_week(self.now)["tabs"]["mining"]
+
+        # One line per character, both under the main; the alt's line is
+        # marked, and its name never shows.
+        self.assertEqual(
+            sorted(
+                (
+                    r["character_id"],
+                    r["character_name"],
+                    r["amount"],
+                    r["on_alt"],
+                )
+                for r in rows
+            ),
+            [(2003, "Main Pilot", 50, False), (2003, "Main Pilot", 100, True)],
+        )
+        self.assertNotIn("Barge Alt", str(build_fast(self.now)["events"]))
+
+    def test_mining_outside_high_sec_hides_the_pilot(self):
+        ore = self._ore()
+        _system(AMAMAKE, "Amamake", 0.4, 10000042, "Metropolis")
+        _system(J_SYSTEM, "J100820", -0.99, 11000001, "A-R00001")
+        when = self.now - timedelta(minutes=30)
+        for system_id, quantity in ((AMAMAKE, 1000), (J_SYSTEM, 2000)):
+            EveCharacterMiningDelta.objects.create(
+                character=self.pilot,
+                eve_type=ore,
+                solar_system_id=system_id,
+                quantity=quantity,
+                observed_at=when + timedelta(minutes=quantity // 1000),
+            )
+
+        rows = build_week(self.now)["tabs"]["mining"]
+
+        self.assertEqual(
+            [
+                (
+                    r["character_id"],
+                    r["character_name"],
+                    r["region"],
+                    r["undisclosed"],
+                    r["on_alt"],
+                )
+                for r in rows
+            ],
+            [
+                (0, "Undisclosed Character", "J-space", True, False),
+                (0, "Undisclosed Character", "Metropolis", True, False),
+            ],
+        )
+        self.assertNotIn("Orion", str(build_fast(self.now)["events"]))
 
     def _feed_mail(self, killmail_id, ago, attackers, victim):
         return FeedKillmail.objects.create(

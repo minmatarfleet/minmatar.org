@@ -241,7 +241,7 @@ def build_week(now=None) -> dict:
     }
     tabs = {}
     for tab, events in sources.items():
-        events = [e for e in events if e.character_id]
+        events = [e for e in events if e.character_id or e.undisclosed]
         events.sort(key=lambda e: e.occurred_at, reverse=True)
         tabs[tab] = event_rows(events)
     return {"generated_at": now, "tabs": tabs}
