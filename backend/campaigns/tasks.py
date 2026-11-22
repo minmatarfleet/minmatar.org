@@ -504,3 +504,43 @@ def refresh_campaign_boards() -> int:
             if discord_posts.has_board(campaign, kind):
                 changed += discord_posts.refresh_board(campaign, kind)
     return changed
+
+
+@app.task(expires=10 * 60, exclusive=10 * 60)
+def sync_campaign_roles(campaign_id: int) -> dict:
+    """Mirror one campaign's roles from its coordination Discord server
+    (``services.roles``)."""
+    # pylint: disable-next=import-outside-toplevel
+    from campaigns.services import roles
+
+    campaign = Campaign.objects.filter(id=campaign_id).first()
+    if campaign is None:
+        return {}
+    try:
+        return roles.sync(campaign)
+    except roles.RoleError as error:
+        logger.info("Campaign %s roles not synced: %s", campaign_id, error)
+        return {}
+
+
+@app.task(expires=15 * 60)
+def sync_all_campaign_roles() -> int:
+    """Queue a role sync for every unfinished campaign that has its own
+    coordination server or a role pointed at a Discord role."""
+    # pylint: disable-next=import-outside-toplevel
+    from django.db.models import Q
+
+    ids = list(
+        Campaign.objects.exclude(
+            status__in=[CampaignStatus.COMPLETED, CampaignStatus.ARCHIVED]
+        )
+        .filter(
+            Q(coordination_guild_id__isnull=False)
+            | Q(roles__discord_role_id__isnull=False)
+        )
+        .distinct()
+        .values_list("id", flat=True)
+    )
+    for campaign_id in ids:
+        sync_campaign_roles.delay(campaign_id)
+    return len(ids)

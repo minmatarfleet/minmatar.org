@@ -59,9 +59,21 @@ def _can_manage(user, campaign: Campaign) -> bool:
     )
 
 
-def _can_scout(user, campaign: Campaign) -> bool:
-    """Managers plus anyone who can submit structure timers (recon scouts)."""
+def _can_edit(user, campaign: Campaign, area: str) -> bool:
+    """Managers, plus holders of a campaign role that owns ``area``
+    (``services.roles.EDITS``): sides, structures, timers or roles."""
     if _can_manage(user, campaign):
+        return True
+    # pylint: disable-next=import-outside-toplevel
+    from campaigns.services import roles
+
+    return roles.may_edit(user, campaign, area)
+
+
+def _can_scout(user, campaign: Campaign) -> bool:
+    """Managers, Recon and Coordinator role holders, and anyone who can
+    submit structure timers (recon scouts)."""
+    if _can_edit(user, campaign, "structures"):
         return True
     return can_use_feature(user, SCOUT_FEATURE)
 
@@ -494,7 +506,7 @@ def attach_structure_timer(
 ):
     """Link an existing EveStructureTimer to this campaign."""
     campaign = get_object_or_404(Campaign, slug=slug)
-    if not _can_manage(request.user, campaign):
+    if not _can_edit(request.user, campaign, "timers"):
         return _denied()
 
     try:
@@ -535,7 +547,7 @@ def _known_ticker(payload) -> str:
 def attach_party(request, slug: str, payload: schemas.PartyAttachRequest):
     """Add an enemy or ally party (character, corp, alliance, or faction)."""
     campaign = get_object_or_404(Campaign, slug=slug)
-    if not _can_manage(request.user, campaign):
+    if not _can_edit(request.user, campaign, "sides"):
         return _denied()
 
     if payload.kind not in PartyKind.values:

@@ -1640,6 +1640,107 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/campaigns/{slug}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Roles
+         * @description The four campaign roles and who holds each.
+         */
+        get: operations["campaigns_endpoints_get_roles_get_roles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/campaigns/{slug}/roles/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync Roles
+         * @description Read the coordination server now instead of waiting for the beat.
+         */
+        post: operations["campaigns_endpoints_post_roles_sync_sync_roles"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/campaigns/{slug}/roles/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Map Role
+         * @description Point a campaign role at a role on the coordination server.
+         */
+        patch: operations["campaigns_endpoints_patch_role_map_role"];
+        trace?: never;
+    };
+    "/api/campaigns/{slug}/roles/{kind}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Role Member
+         * @description Add a role holder by exact character name. They get the Discord role
+         *     on the next sync once they have linked Discord.
+         */
+        post: operations["campaigns_endpoints_post_role_member_add_role_member"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/campaigns/{slug}/roles/{kind}/members/{member_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove Role Member
+         * @description Take the role away, here and on the coordination server.
+         */
+        delete: operations["campaigns_endpoints_delete_role_member_remove_role_member"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/campaigns/{slug}/roster": {
         parameters: {
             query?: never;
@@ -13141,6 +13242,11 @@ export interface components {
              */
             areas?: components["schemas"]["CampaignAreaOut"][];
             /**
+             * Can Edit
+             * @default []
+             */
+            can_edit?: string[];
+            /**
              * Characters Included
              * @default 0
              */
@@ -13278,6 +13384,11 @@ export interface components {
              * @default member
              */
             viewer_role?: string;
+            /**
+             * Viewer Roles
+             * @default []
+             */
+            viewer_roles?: string[];
         };
         /**
          * CampaignDiscordLinkOut
@@ -13830,6 +13941,108 @@ export interface components {
             tagline?: string | null;
             /** Undisclosed */
             undisclosed?: boolean | null;
+        };
+        /** CampaignRoleAdd */
+        CampaignRoleAdd: {
+            /** Character Name */
+            character_name: string;
+        };
+        /** CampaignRoleMap */
+        CampaignRoleMap: {
+            /** Discord Role Id */
+            discord_role_id?: string | null;
+        };
+        /** CampaignRoleMemberOut */
+        CampaignRoleMemberOut: {
+            /**
+             * Alliance Name
+             * @default
+             */
+            alliance_name?: string;
+            /** Character Id */
+            character_id?: number | null;
+            /**
+             * Character Name
+             * @default
+             */
+            character_name?: string;
+            /**
+             * Corporation Name
+             * @default
+             */
+            corporation_name?: string;
+            /**
+             * Discord Name
+             * @default
+             */
+            discord_name?: string;
+            /** Discord User Id */
+            discord_user_id?: string | null;
+            /** Id */
+            id: number;
+            /**
+             * Signed In
+             * @default false
+             */
+            signed_in?: boolean;
+            /** Source */
+            source: string;
+        };
+        /** CampaignRoleOut */
+        CampaignRoleOut: {
+            /** Discord Role Id */
+            discord_role_id?: string | null;
+            /**
+             * Discord Role Name
+             * @default
+             */
+            discord_role_name?: string;
+            /**
+             * Edits
+             * @default []
+             */
+            edits?: string[];
+            /** Kind */
+            kind: string;
+            /** Label */
+            label: string;
+            /**
+             * Members
+             * @default []
+             */
+            members?: components["schemas"]["CampaignRoleMemberOut"][];
+            /**
+             * Reads
+             * @default []
+             */
+            reads?: string[];
+            /**
+             * Sync Error
+             * @default
+             */
+            sync_error?: string;
+            /** Synced At */
+            synced_at?: string | null;
+        };
+        /** CampaignRolesOut */
+        CampaignRolesOut: {
+            /**
+             * Can Change
+             * @default false
+             */
+            can_change?: boolean;
+            /**
+             * Can Map
+             * @default false
+             */
+            can_map?: boolean;
+            /**
+             * Discord Roles
+             * @default []
+             */
+            discord_roles?: components["schemas"]["DiscordRoleOption"][];
+            /** Roles */
+            roles: components["schemas"]["CampaignRoleOut"][];
         };
         /** CampaignSchema */
         CampaignSchema: {
@@ -17019,6 +17232,13 @@ export interface components {
             mappings: components["schemas"]["DiscordRoleMappingRow"][];
             /** Strip On Leave */
             strip_on_leave?: boolean | null;
+        };
+        /** DiscordRoleOption */
+        DiscordRoleOption: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
         };
         /** DiscordRoleStripDone */
         DiscordRoleStripDone: {
@@ -37819,6 +38039,253 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    campaigns_endpoints_get_roles_get_roles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignRolesOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    campaigns_endpoints_post_roles_sync_sync_roles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignRolesOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    campaigns_endpoints_patch_role_map_role: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CampaignRoleMap"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignRolesOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    campaigns_endpoints_post_role_member_add_role_member: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CampaignRoleAdd"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignRolesOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    campaigns_endpoints_delete_role_member_remove_role_member: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                kind: string;
+                member_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignRolesOut"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
             /** @description Forbidden */
             403: {

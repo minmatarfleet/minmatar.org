@@ -1,4 +1,4 @@
-import type { CampaignChoices, CampaignCoordination, CampaignCoordinationPut, CampaignDestruction, CampaignDiscordLink, CampaignTimer } from '@dtypes/api.minmatar.org'
+import type { CampaignChoices, CampaignCoordination, CampaignCoordinationPut, CampaignDestruction, CampaignDiscordLink, CampaignRoles, CampaignTimer } from '@dtypes/api.minmatar.org'
 import type {
     CampaignListItem,
     CampaignDetail,
@@ -345,6 +345,13 @@ export function campaign_discord_bot_connect_url(api_url:string, slug:string, pu
 }
 
 /** The servers this viewer may edit: every one for managers, their own for a coordinator. */
+export async function get_campaign_roles(slug:string, access_token:string) {
+    return await api_request<CampaignRoles>(`${API_ENDPOINT}/${slug}/roles`, {
+        token: access_token,
+        error: 'Error fetching campaign roles',
+    })
+}
+
 export async function get_campaign_discord_links(slug:string, access_token:string) {
     return await api_request<CampaignDiscordLink[]>(`${API_ENDPOINT}/${slug}/discord-links`, {
         token: access_token,

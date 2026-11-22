@@ -409,6 +409,35 @@ class FleetRouterTestCase(TestCase):
         # logger.info("fleets v3 response = %s", fleets)
         self.assertEqual(2, len(fleets))
 
+    def test_get_fleets_v3_hides_an_undisclosed_campaigns_fleets(self):
+        # pylint: disable-next=import-outside-toplevel
+        from campaigns.tests.helpers import make_campaign
+
+        campaign = make_campaign(
+            slug="quiet-move",
+            short_code="QM",
+            name="Quiet move",
+            kind="strategic",
+            status="scheduled",
+            undisclosed=True,
+        )
+        fleet = make_test_fleet("Move op", self.user)
+        fleet.campaign = campaign
+        fleet.save()
+        url = f"{BASE_URL}/v3?fleet_filter=upcoming&campaign_id={campaign.id}"
+        response = self.client.get(
+            url, HTTP_AUTHORIZATION=f"Bearer {self.token}"
+        )
+        self.assertEqual(200, response.status_code)
+        self.assertEqual([], response.json())
+
+        campaign.undisclosed = False
+        campaign.save(update_fields=["undisclosed"])
+        response = self.client.get(
+            url, HTTP_AUTHORIZATION=f"Bearer {self.token}"
+        )
+        self.assertEqual(1, len(response.json()))
+
     def test_get_fleets_v3_includes_doctrine_id(self):
         doctrine = EveDoctrine.objects.create(
             name="Test Doctrine",
