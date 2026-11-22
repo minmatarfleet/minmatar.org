@@ -1,8 +1,7 @@
 import { slugifySectionId } from '@helpers/pageProgress'
 import { chapter1 } from './chapter-1'
 import { chapter2 } from './chapter-2'
-import { chapter3 } from './chapter-3'
-import { chapter4 } from './chapter-4'
+import { amarrCollapses } from './amarr-collapses'
 import { chapter5 } from './chapter-5'
 import { dronelands } from './dronelands'
 import { lettingThemGo } from './letting-them-go'
@@ -16,8 +15,7 @@ import type { ChronicleChapter, ChronicleChapterSource, ChronicleEra, ChronicleE
 const chapters_in_order: ChronicleChapterSource[] = [
     chapter1,
     chapter2,
-    chapter3,
-    chapter4,
+    amarrCollapses,
     chapter5,
     sosala,
     theSiegeOfAldodan,
@@ -41,6 +39,8 @@ export function getChronicleChapterById(chapter_id: string): ChronicleChapter | 
  * redirects them.
  */
 export const legacyChronicleChapterIds: Record<string, string> = {
+    'chapter-3': 'amarr-collapses',
+    'chapter-4': 'amarr-collapses',
     'chapter-6': 'sosala',
     'chapter-7': 'sosala',
     'chapter-8': 'the-siege-of-aldodan',

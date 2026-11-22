@@ -22,7 +22,7 @@ export const theSiegeOfAldodan: ChronicleChapterSource = {
                 },
                 {
                     type: 'paragraph',
-                    text: `Bear came back that month from two weeks away and formed a fleet of Abaddons, a battleship nobody flies, because it runs out of power every two minutes. He brought a freighter full of batteries to keep them firing. His own account records the fleet's opinion.`,
+                    text: `Bear came back that month from two weeks away and formed a fleet of Abaddons, a battleship nobody flies, because it runs out of power every two minutes. He brought a freighter full of batteries to keep them firing.`,
                 },
                 {
                     type: 'quote',
@@ -36,7 +36,7 @@ export const theSiegeOfAldodan: ChronicleChapterSource = {
                 },
                 {
                     type: 'paragraph',
-                    text: `They shot a Sedition moon drill for half an hour. Then Sedition undocked to defend it, and Bear thought he was looking at the wrong character. "I had to to do a double take, because they undocked in fucking *abaddons*. Who the hell has abaddons in their hangar?" The rats won. Bear's verdict on his invention was that it was terrible and should be thrown away.`,
+                    text: `They shot a Sedition moon drill for half an hour. Then Sedition undocked to defend it, and Bear thought he was looking at the wrong character. "I had to to do a double take, because they undocked in fucking *abaddons*. Who the hell has abaddons in their hangar?" They killed the Sedition fleet and looted the field for half an hour, and Bear ruled that the Abaddon was terrible and the ships should be thrown away.`,
                 },
             ],
         },
@@ -66,7 +66,7 @@ export const theSiegeOfAldodan: ChronicleChapterSource = {
                 },
                 {
                     type: 'paragraph',
-                    text: `With the map went the small fights that a lowsec alliance lives on. Then one day the rats chased a Sedition fleet into a backwater constellation called **Aldodan** and found it full of Fraternity structures. The farmers had moved up there, away from everyone, to work in peace. Bear gave the moment two words: "*It clicked.*"`,
+                    text: `With the map went the small fights that a lowsec alliance lives on. Then one day the rats chased a Sedition fleet into a backwater constellation called **Aldodan** and found it full of Fraternity structures. The farmers had moved up there, away from everyone, to work in peace. "*It clicked.*"`,
                 },
             ],
         },
@@ -80,7 +80,7 @@ export const theSiegeOfAldodan: ChronicleChapterSource = {
                 },
                 {
                     type: 'paragraph',
-                    text: `Then it caught. The alliance put money behind it. The militia joined. Rats sat in a standing fleet around the clock, twenty of them at hours when the alliance was usually asleep, and took the systems one at a time. Whenever the Fraternity came out it was met by small fast gangs it could not catch, and fed them cheap ships in waves until its pilots logged off. One afternoon the bait was a lone dreadnought, and what came to kill it was no farmer. "It was Faymm," Bear wrote, of a dreadnought brawler who turns up in this history again. The rats beat him as well.`,
+                    text: `Then it caught. The alliance put money behind it. The militia joined. Rats sat in a standing fleet around the clock, twenty of them at hours when the alliance was usually asleep, and took the systems one at a time. Whenever the Fraternity came out it was met by small fast gangs it could not catch, and fed them cheap ships in waves until its pilots logged off. `,
                 },
                 {
                     type: 'paragraph',
@@ -94,7 +94,7 @@ export const theSiegeOfAldodan: ChronicleChapterSource = {
             blocks: [
                 {
                     type: 'paragraph',
-                    text: `The same announcement carried a paragraph in italics, as an aside. The war on Providence, which the rats had been fighting for sixteen months, was over. The moon drills were sold or taken down. "We had gotten a little bit bigger than our britches, and we needed to streamline and refocus."`,
+                    text: `The same announcement carried a paragraph in italics, as an aside. The war on Providence, which the rats had been fighting for sixteen months and which had given them their first taste of nullsec, was over. They had not won it. The moon drills were sold or taken down. "We had gotten a little bit bigger than our britches, and we needed to streamline and refocus."`,
                 },
                 {
                     type: 'paragraph',
@@ -102,11 +102,11 @@ export const theSiegeOfAldodan: ChronicleChapterSource = {
                 },
                 {
                     type: 'paragraph',
-                    text: `Nobody came to Vard. Everybody came to Sedition's. The rats brought fifty battleships fitted with the wrong guns, were shot by Sedition and by a passing Goonswarm fleet at once, and retired to a station to think. When they came back the field was full of fleets circling each other, so Bear dropped his dreadnoughts in the middle of it "to start the party". Everyone present escalated on top of everyone else. Four hundred billion ISK was destroyed, and Bear, who had commanded with the flu, lost his voice ten minutes after it ended. He listed three lessons. The third was "A lot of people like shooting FL33T".`,
+                    text: `Nobody came to Vard. Everybody came to Sedition's. The rats brought fifty battleships fitted with the wrong guns, were shot by Sedition and by a passing Goonswarm fleet at once, and warped off to a station to regroup. When they came back the field was full of fleets circling each other, so Bear dropped his dreadnoughts in the middle of it "to start the party". Everyone present escalated on top of everyone else. Four hundred billion ISK was destroyed, and Bear, who had commanded with the flu, lost his voice ten minutes after it ended. His list of lessons ended with "A lot of people like shooting FL33T".`,
                 },
                 {
                     type: 'paragraph',
-                    text: `In the second week of May the alliance moved house. The Amarr took Sosala behind them. The Watermelon stayed where it was, in a system that now belonged to the enemy.`,
+                    text: `In the second week of May the alliance moved house. The Amarr took Sosala behind them. The Watermelon, home for sixteen months, stayed where it was, in a system that now belonged to the enemy.`,
                 },
             ],
         },
@@ -135,7 +135,7 @@ export const theSiegeOfAldodan: ChronicleChapterSource = {
                 },
                 {
                     type: 'paragraph',
-                    text: `There was a next time every week. By the start of June the rats in their new home were being jumped by five alliances whenever they committed anything large, and Bear told them that brawling was over unless it was on their terms. The reason he gave was "we're the hot commodity".`,
+                    text: `By the start of June the rats in their new home were being jumped by five alliances whenever they committed anything large. "Dreads are a non-starter," Bear told them, "we can't fight 5+ groups dogpiling us every time". Vard had put them in the middle of everything, as intended.`,
                 },
             ],
         },
