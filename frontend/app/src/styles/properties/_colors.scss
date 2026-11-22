@@ -161,6 +161,9 @@ body.color-blind-mode {
 
     // Readable text on the dark background: the 400 grade.
     --fleet-red-text:       var(--fleet-red-400);
-    --green-text:           var(--green-400);
+    // Success text is 60% green, not the 400 grade: at 70% it sits dE 19 from
+    // --fleet-red-text under deuteranopia (spec: 20). 60% is the original "good"
+    // colour these pages used before the palette pass.
+    --green-text:           color-mix(in srgb, var(--green) 60%, white);
     --alliance-blue-text:   var(--alliance-blue-400);
 }

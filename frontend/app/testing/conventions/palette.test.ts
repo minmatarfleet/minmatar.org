@@ -43,14 +43,22 @@ const BLIND = read('src/styles/_global.scss').match(/body\.color-blind-mode\s*\{
 // when the grade block is also declared on body.color-blind-mode.
 const GRADES_ON_BLIND_BODY = /:root,\s*body\.color-blind-mode\s*\{[^}]*--fleet-red-50:/.test(colors)
 const text_alias = (name: string) => colors.match(new RegExp(`--${name}-text:\\s*var\\(--${name}-(\\d+)\\)`))?.[1]
+/** A text token is a grade alias or a direct mix of its base with white. */
+const text_of = (brand: (typeof BRANDS)[number], blind: boolean): RGB => {
+    const grade = text_alias(brand)
+    if (grade) return grade_of(brand, grade, blind)
+    const m = colors.match(new RegExp(`--${brand}-text:\\s*color-mix\\(in srgb, var\\(--${brand}\\) (\\d+)%, white\\)`))
+    if (!m) throw new Error(`--${brand}-text is neither a grade alias nor a mix with white`)
+    return mix(base_of(brand, blind), Number(m[1]) / 100, WHITE)
+}
 
 const MODES = ['normal', 'colour-blind'] as const
 const tokens_in = (mode: (typeof MODES)[number]) => {
     const blind = mode === 'colour-blind'
     return {
-        'fleet-red-text': grade_of('fleet-red', text_alias('fleet-red') ?? '', blind),
-        'green-text': grade_of('green', text_alias('green') ?? '', blind),
-        'alliance-blue-text': grade_of('alliance-blue', text_alias('alliance-blue') ?? '', blind),
+        'fleet-red-text': text_of('fleet-red', blind),
+        'green-text': text_of('green', blind),
+        'alliance-blue-text': text_of('alliance-blue', blind),
         'fleet-yellow': hex('fleet-yellow'),
     }
 }
@@ -103,8 +111,9 @@ describe('palette (VC50)', () => {
         expect(BLIND).toContain('--green:')
     })
 
-    it('text aliases point at the 400 grade', () => {
-        for (const name of ['fleet-red', 'green', 'alliance-blue']) expect(text_alias(name)).toBe('400')
+    it('danger and info text alias the 400 grade; success text is the 60% mix that keeps it apart from danger under deuteranopia', () => {
+        for (const name of ['fleet-red', 'alliance-blue']) expect(text_alias(name)).toBe('400')
+        expect(colors).toMatch(/--green-text:\s*color-mix\(in srgb, var\(--green\) 60%, white\)/)
     })
 
     for (const mode of MODES) {
@@ -137,11 +146,8 @@ describe('palette (VC50)', () => {
                 it(`${a_name} and ${b_name} are at least dE 20 apart`, () => {
                     expect(delta_e(a, b)).toBeGreaterThanOrEqual(20)
                 })
-                // Known gap: with --fleet-red-400 and --green-400 (70%) the normal-mode danger and
-                // success text are dE 19.0 apart under deuteranopia. Kept at 18 until the owner picks a fix.
-                const gap = mode === 'normal' && a_name === 'danger' && b_name === 'success'
-                it(`${a_name} and ${b_name} are at least dE ${gap ? '18 (known gap, spec 20)' : '20'} apart under deuteranopia`, () => {
-                    expect(delta_e(deuteranopia(a), deuteranopia(b))).toBeGreaterThanOrEqual(gap ? 18 : 20)
+                it(`${a_name} and ${b_name} are at least dE 20 apart under deuteranopia`, () => {
+                    expect(delta_e(deuteranopia(a), deuteranopia(b))).toBeGreaterThanOrEqual(20)
                 })
             }
         })
