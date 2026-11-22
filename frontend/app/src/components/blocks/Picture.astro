@@ -154,7 +154,7 @@ const img_props = {
     }
 
     /* The fade-out mask, defined once for every picture. */
-    .mask:not(.medium-zoom-image--opened) {
+    .mask:where(:not(.medium-zoom-image--opened)) {
         -webkit-mask-image: linear-gradient(to bottom,rgb(0,0,0) 0%,rgba(0,0,0,.9) 35%,rgba(0,0,0,.7) 50%,transparent 100%);
         mask-image: linear-gradient(to bottom,rgb(0,0,0) 0%,rgba(0,0,0,.9) 35%,rgba(0,0,0,.7) 50%,transparent 100%);
     }
