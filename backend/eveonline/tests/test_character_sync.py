@@ -19,7 +19,14 @@ from buyback.tasks import sync_buyback_contracts_task
 from eveonline import character_sync as sync
 from eveonline import esi_budget
 from eveonline.client import EsiResponse, _observed, record_esi_outcomes
-from eveonline.models import EveAlliance, EveCharacter, EveCharacterSyncState
+from eveonline.models import (
+    EveAlliance,
+    EveCharacter,
+    EveCharacterMiningDelta,
+    EveCharacterMiningEntry,
+    EveCharacterSkill,
+    EveCharacterSyncState,
+)
 from eveonline.tasks import character_sync as tasks
 from eveonline.tasks.corporations import sync_freight_contracts
 from eveonline.tasks.characters import (
@@ -105,10 +112,14 @@ class SyncTestCase(TestCase):
         by_name.start()
         self.addCleanup(by_name.stop)
         self.responses = {}
+        # Extra work a section does when it runs, by section name.
+        self.on_run = {}
 
     def _recorder(self, name):
         def run(character):
             self.runs.append((character.character_id, name))
+            if name in self.on_run:
+                self.on_run[name](character)
             code = self.responses.get(name, 0)
             if isinstance(code, BaseException):
                 raise code
@@ -189,6 +200,164 @@ class StampTests(TestCase):
         )
         self.assertEqual(self.row.next_due_at, self.now + timedelta(hours=4))
         self.assertEqual(self.row.last_error, "no_scope")
+
+
+class NextSlotTests(TestCase):
+    def test_slot_is_half_to_one_and_a_half_intervals_away(self):
+        now = timezone.now()
+        interval = timedelta(minutes=10)
+        for key in range(1000, 1200):
+            gap = sync.next_slot(now, interval, key) - now
+            self.assertTrue(interval / 2 <= gap <= interval * 1.5, gap)
+
+    def test_a_pilot_keeps_the_same_offset(self):
+        interval = timedelta(minutes=10)
+        now = timezone.now()
+        first = sync.next_slot(now, interval, 90000001)
+        later = sync.next_slot(
+            first + timedelta(seconds=1), interval, 90000001
+        )
+        self.assertEqual((later - first) % interval, timedelta(0))
+
+    def test_pilots_spread_over_the_interval(self):
+        now = timezone.now()
+        interval = timedelta(minutes=10)
+        minutes = {
+            int(
+                (sync.next_slot(now, interval, key) - now).total_seconds()
+                // 60
+            )
+            for key in range(90000000, 90000050)
+        }
+        # 50 pilots land in every minute of the ten, not in one burst.
+        self.assertGreaterEqual(len(minutes), 10)
+
+    def test_stamp_uses_the_slot_when_given_a_key(self):
+        now = timezone.now()
+        row = EveCharacterSyncState(section="mining", next_due_at=now)
+        interval = timedelta(minutes=10)
+        sync.stamp(row, sync.Outcome.OK, interval, now=now, slot_key=1234)
+        self.assertEqual(row.next_due_at, sync.next_slot(now, interval, 1234))
+
+
+class MiningTierTests(SyncTestCase):
+    def setUp(self):
+        super().setUp()
+        category = EveCategory.objects.create(
+            id=25, name="Asteroid", published=True
+        )
+        group = EveGroup.objects.create(
+            id=462, name="Veldspar", published=True, eve_category=category
+        )
+        self.veldspar = EveType.objects.create(
+            id=1230, name="Veldspar", published=True, eve_group=group
+        )
+
+    def _mined(self, character, days_ago):
+        EveCharacterMiningEntry.objects.create(
+            character=character,
+            eve_type=self.veldspar,
+            date=timezone.now().date() - timedelta(days=days_ago),
+            quantity=1000,
+            solar_system_id=30002537,
+        )
+
+    def _delta(self, character, minutes_ago):
+        EveCharacterMiningDelta.objects.create(
+            character=character,
+            eve_type=self.veldspar,
+            solar_system_id=30002537,
+            quantity=100,
+            observed_at=timezone.now() - timedelta(minutes=minutes_ago),
+        )
+
+    def _skill(self, character, skill_id):
+        EveCharacterSkill.objects.create(
+            character=character,
+            skill_id=skill_id,
+            skill_name="Skill",
+            skill_points=1,
+            skill_level=1,
+        )
+
+    def test_tiers_from_ledger_skills_and_recent_pulls(self):
+        hot = self.main
+        warm = self.alt
+        cool = make_character(1003, user=self.user)
+        able = make_character(1004, user=self.user)
+        unlikely = make_character(1005, user=self.user)
+        unknown = make_character(1006, user=self.user)
+        self._delta(hot, minutes_ago=5)
+        self._mined(warm, days_ago=1)
+        self._mined(cool, days_ago=20)
+        self._skill(able, 17940)  # Mining Barge
+        self._skill(unlikely, 3300)  # Gunnery
+        audiences = sync.load_audiences()
+        mining = sync.SECTIONS_BY_NAME["mining"]
+        self.assertEqual(
+            {
+                c.character_id: audiences.interval(mining, c.pk)
+                for c in (hot, warm, cool, able, unlikely, unknown)
+            },
+            {
+                1001: sync.MINING_HOT_INTERVAL,
+                1002: sync.MINING_WARM_INTERVAL,
+                1003: sync.MINING_COOL_INTERVAL,
+                1004: timedelta(hours=24),
+                1005: sync.MINING_UNLIKELY_INTERVAL,
+                # No skills synced: not known to be unable, so the default.
+                1006: timedelta(hours=24),
+            },
+        )
+
+    def test_hot_cools_off_after_the_window(self):
+        self._delta(self.main, minutes_ago=40)
+        audiences = sync.load_audiences()
+        mining = sync.SECTIONS_BY_NAME["mining"]
+        self.assertNotIn(self.main.pk, audiences.mining_hot)
+        self.assertEqual(
+            audiences.interval(mining, self.main.pk), timedelta(hours=24)
+        )
+
+    def test_hot_beats_fleet_and_on_leave_only_slows_non_miners(self):
+        a = sync.Audiences(
+            members={1, 2, 3},
+            fleet={1, 2},
+            mining_hot={1},
+            mining_warm={3},
+            on_leave={3},
+        )
+        mining = sync.SECTIONS_BY_NAME["mining"]
+        self.assertEqual(a.interval(mining, 1), sync.MINING_HOT_INTERVAL)
+        self.assertEqual(a.interval(mining, 2), sync.FLEET_INTERVAL)
+        self.assertEqual(a.interval(mining, 3), sync.MINING_WARM_INTERVAL)
+        idle_on_leave = sync.Audiences(members={4}, on_leave={4})
+        self.assertEqual(
+            idle_on_leave.interval(mining, 4), sync.ON_LEAVE_INTERVAL
+        )
+
+    def test_a_pull_that_finds_ore_makes_the_pilot_hot(self):
+        sync.run_character_sync(self.main)  # first run: every section
+        row = state(self.main, "mining")
+        self.assertGreater(
+            row.next_due_at - timezone.now(), timedelta(hours=10)
+        )
+        self.on_run["mining"] = lambda character: self._delta(character, 0)
+        sync.run_character_sync(self.main, sections=["mining"], force=True)
+        row.refresh_from_db()
+        gap = row.next_due_at - timezone.now()
+        self.assertLessEqual(gap, sync.MINING_HOT_INTERVAL * 1.5)
+        self.assertEqual(
+            row.next_due_at,
+            sync.next_slot(row.attempted_at, sync.MINING_HOT_INTERVAL, 1001),
+        )
+
+    def test_skill_sets_are_cached(self):
+        self._skill(self.main, 17940)
+        sync.load_audiences()
+        self._skill(self.alt, 3300)
+        # Cached for an hour: the new skill row isn't read yet.
+        self.assertNotIn(self.alt.pk, sync.load_audiences().mining_unlikely)
 
 
 class AudienceTests(SyncTestCase):
@@ -410,6 +579,12 @@ class SchedulerTests(SyncTestCase):
         )
         # Leased: the next tick picks nobody.
         self.assertEqual(self.tick().character_ids, [])
+
+    def test_tick_spends_its_share_of_the_five_minute_budget(self):
+        with override_settings(CHARACTER_SYNC_COST_PER_TICK=300):
+            self.assertEqual(tasks.tick_budget(), 60)
+        with override_settings(CHARACTER_SYNC_COST_PER_TICK=1):
+            self.assertEqual(tasks.tick_budget(), 1)
 
     def test_budget_limits_the_tick(self):
         with override_settings(CHARACTER_SYNC_COST_PER_TICK=1):

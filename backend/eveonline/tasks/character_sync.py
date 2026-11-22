@@ -20,7 +20,11 @@ from eveonline.utils import get_esi_downtime_countdown
 
 logger = logging.getLogger(__name__)
 
-TICK_SECONDS = 5 * 60
+TICK_SECONDS = 60
+# CHARACTER_SYNC_COST_PER_TICK is a budget per 5 minutes (it predates the
+# one-minute tick); each tick spends its share, so pulls run all the time
+# instead of in one burst every five minutes.
+BUDGET_SECONDS = 5 * 60
 # Due rows read per tick; far more than one tick's budget ever uses.
 DUE_ROW_LIMIT = 5000
 # Due rows for characters that left every audience are pushed this far out,
@@ -87,6 +91,11 @@ def queue_due_character_syncs() -> dict:
     return summary
 
 
+def tick_budget() -> int:
+    per_budget = getattr(settings, "CHARACTER_SYNC_COST_PER_TICK", 300)
+    return max(1, round(per_budget * TICK_SECONDS / BUDGET_SECONDS))
+
+
 class TickPlan:
     def __init__(self, budget: int):
         self.budget = budget
@@ -105,7 +114,7 @@ class TickPlan:
 def plan_tick(audiences: sync.Audiences, now=None) -> TickPlan:
     """Choose this tick's characters. Reads only; ``apply_plan`` writes."""
     now = now or timezone.now()
-    plan = TickPlan(getattr(settings, "CHARACTER_SYNC_COST_PER_TICK", 300))
+    plan = TickPlan(tick_budget())
     eligible = audiences.eligible()
     suspended = set(
         EveCharacter.objects.filter(
