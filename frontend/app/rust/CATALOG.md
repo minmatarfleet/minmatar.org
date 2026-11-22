@@ -400,9 +400,9 @@ A coloured strip that wraps an unexpected-error message in a partial, such as "n
 The standard bordered panel: a translucent card with the site's block padding.
 
 - Import: `import ComponentBlock from '@components/blocks/ComponentBlock.astro'`
-- Props: `padding_block?: string = 'var(--component-padding-block)'`, `padding_inline?: string = 'var(--space-l-xl)'`, `width?: 'narrow' | 'normal' | 'thin' = 'normal'`, `heavier?: boolean = false`
+- Props: `padding_block?: string = 'var(--component-padding-block)'`, `padding_inline?: string`, `width?: 'narrow' | 'normal' | 'thin' = 'normal'`, `heavier?: boolean = false`, `variant?: 'default' | 'guide' = 'default'`
 - Slots: `default`
-- Stories (6): `frontend/app/rust/stories/components/data-display/ComponentBlock.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-componentblock--docs: Default, Heavier, Narrow, Thin, Custom Padding, Passthrough attributes
+- Stories (7): `frontend/app/rust/stories/components/data-display/ComponentBlock.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-componentblock--docs: Default, Heavier, Narrow, Thin, Custom Padding, Passthrough attributes, Guide
 
 ### ComponentBlockHeader
 
