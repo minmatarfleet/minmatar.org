@@ -18,6 +18,7 @@ import { number_thousand_separator } from '@helpers/numbers'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
 
+import StylessButton from '@components/blocks/StylessButton.astro'
 interface Props {
     issue: AmamakeMarketIssue
     sold_class?: string
@@ -47,7 +48,7 @@ const chips = [
     <nav class="[ mk-sold-chips ]" aria-label="Filter Top Items Sold by class">
         <FlexInline gap="var(--space-2xs)">
             {chips.map((chip) => (
-                <button
+                <StylessButton
                     type="button"
                     class:list={['mk-sold-chip', chip.slug === resolved.slug && 'is-active']}
                     hx-get={sold_types_partial(chip.slug)}
@@ -56,7 +57,7 @@ const chips = [
                     aria-pressed={chip.slug === resolved.slug}
                 >
                     {chip.label}
-                </button>
+                </StylessButton>
             ))}
         </FlexInline>
     </nav>

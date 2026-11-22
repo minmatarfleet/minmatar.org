@@ -45,6 +45,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import Grid from '@components/compositions/Grid.astro'
 
 import PilotBadge from '@components/blocks/PilotBadge.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <section
@@ -99,7 +100,7 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
                 aria-label={t('corporation')}
             >
                 {corp_filters.map((filter) =>
-                    <button
+                    <StylessButton
                         type="button"
                         class="[ tribe-group-members__chip ]"
                         x-bind:class={`corp === ${JSON.stringify(filter.id)} && 'is-active'`}
@@ -118,7 +119,7 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
                         }
                         <span>{filter.label}</span>
                         <span class="[ tribe-group-members__chip-count ]">{filter.count}</span>
-                    </button>
+                    </StylessButton>
                 )}
             </FlexInline>
         }

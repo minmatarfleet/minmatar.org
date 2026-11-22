@@ -49,6 +49,7 @@ import Input from '@components/blocks/Input.astro'
 
 import MemberIcon from '@components/icons/MemberIcon.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <section
@@ -86,7 +87,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
             <XFadeScroll>
                 <FlexInline gap="var(--space-3xs)" class="[ tribes-groups-catalog__chips ]">
                     {filters.map((filter) => (
-                        <button
+                        <StylessButton
                             type="button"
                             class="[ tribes-groups-catalog__chip ]"
                             x-bind:class={`tribe === ${JSON.stringify(filter.id)} && 'is-active'`}
@@ -95,7 +96,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
                         >
                             {filter.label}
                             <span class="[ tribes-groups-catalog__chip-count ]">{filter.count}</span>
-                        </button>
+                        </StylessButton>
                     ))}
                 </FlexInline>
             </XFadeScroll>

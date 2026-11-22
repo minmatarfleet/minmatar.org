@@ -71,6 +71,7 @@ import Button from '@components/blocks/Button.astro'
 import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 import Select from '@components/blocks/Select.astro'
 import Switch from '@components/blocks/Switch.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <form
@@ -125,11 +126,11 @@ import Switch from '@components/blocks/Switch.astro'
                                     disabled={!fieldset.chosen.includes(pilot.character_id)}
                                     x-bind:disabled={`!chosen.includes(${pilot.character_id})`}
                                 />
-                                <button
+                                <StylessButton
                                     type="button"
                                     aria-label={t('tribes.settings.publishers.remove').replace('{name}', pilot.character_name)}
                                     x-on:click={`chosen = chosen.filter((id) => id !== ${pilot.character_id})`}
-                                >×</button>
+                                >×</StylessButton>
                             </li>
                         )}
                     </ul>
