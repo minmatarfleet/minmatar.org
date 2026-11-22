@@ -140,9 +140,9 @@ A small button that copies the text of a hidden, readonly `<textarea>` (rendered
 The site text field: a bordered, blurred-glass `<input>` inside an `.input-group`.
 
 - Import: `import Input from '@components/blocks/Input.astro'`
-- Props: `width?: string = '100%'`, `size?: 'lg' | 'sm' = 'lg'`
+- Props: `width?: string = '100%'`, `size?: 'lg' | 'sm' = 'lg'`, `prefix?: string`, `prefix_attributes?: Record<string, any> = {}`
 - Slots: `icon`
-- Stories (11): `frontend/app/rust/stories/components/forms/Input.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-input--docs: Default, Accepts Text, Named, Required, Disabled, Read Only, Small, With Icon, Number type, Narrow Width, Keyboard focus ring
+- Stories (13): `frontend/app/rust/stories/components/forms/Input.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-input--docs: Default, Accepts Text, Named, Required, Disabled, Read Only, Small, With Icon, With Prefix, Prefix is not part of the value, Number type, Narrow Width, Keyboard focus ring
 
 ### InputError
 

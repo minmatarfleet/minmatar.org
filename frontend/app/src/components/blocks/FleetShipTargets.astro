@@ -51,6 +51,8 @@ const unmatched_text = unmatched
 
 const SWAP = { 'hx-target': '#fleet-ship-targets', 'hx-swap': 'outerHTML' }
 
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
 import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
 import Button from '@components/blocks/Button.astro'
 import StylessButton from '@components/blocks/StylessButton.astro'
@@ -120,7 +122,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                 <li class="[ ship-targets__start-row ]">
                                     <label>
                                         <span class="[ visually-hidden ]">{t('fleets.targets.line_name')}</span>
-                                        <input type="text" name={`name_${index}`} value={line.name} maxlength="64" required />
+                                        <Input type="text" name={`name_${index}`} value={line.name} maxlength="64" required />
                                     </label>
                                     <span class="[ ship-targets__hulls ]">
                                         {line.ship_type_ids.map(type_id =>
@@ -130,7 +132,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                     <input type="hidden" name={`ships_${index}`} value={line.ship_type_ids.join(',')} />
                                     <label>
                                         <span class="[ visually-hidden ]">{t('fleets.targets.how_many_for').replace('{name}', line.name)}</span>
-                                        <input type="number" name={`target_${index}`} min="1" max="999" placeholder={t('fleets.targets.how_many')} />
+                                        <Input type="number" name={`target_${index}`} min="1" max="999" placeholder={t('fleets.targets.how_many')} />
                                     </label>
                                 </li>
                             )}
@@ -148,7 +150,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                         <form class="[ ship-targets__copy ]" hx-post={mode_url('copy')} {...SWAP}>
                             <label>
                                 <span>{t('fleets.targets.copy_from')}</span>
-                                <select name="from_fleet_id">
+                                <Select name="from_fleet_id" width="28rem">
                                     {past_fleets.map(fleet =>
                                         <option value={fleet.fleet_id}>
                                             {t('fleets.targets.copy_option')
@@ -157,7 +159,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                                                 .replace('{count}', fleet.lines.length.toString())}
                                         </option>
                                     )}
-                                </select>
+                                </Select>
                             </label>
                             <StylessButton type="submit" class="[ ship-targets__link ]">{t('fleets.targets.copy')}</StylessButton>
                         </form>
@@ -177,20 +179,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         flex-direction: column;
         background-color: var(--component-background);
         border: 1px solid var(--border-color);
-
-        input,
-        select {
-            min-height: 2.75rem;
-            padding: var(--space-3xs) var(--space-2xs);
-            background-color: var(--surface-sunken);
-            border: 1px solid var(--border-color);
-            color: var(--highlight);
-            font: inherit;
-        }
-
-        input[type="number"] {
-            text-align: right;
-        }
     }
 
     .ship-targets__header {
@@ -297,11 +285,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         grid-template-columns: minmax(8rem, 16rem) minmax(0, 1fr) 8rem;
         gap: var(--space-s);
         align-items: center;
-
-        input {
-            width: 100%;
-        }
-
         @media (max-width: 48rem) {
             grid-template-columns: minmax(0, 1fr) 6rem;
 
@@ -357,12 +340,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
 
         span {
             flex: none;
-        }
-
-        select {
-            flex: 1 1 auto;
-            min-width: 0;
-            max-width: 28rem;
         }
     }
 </style>

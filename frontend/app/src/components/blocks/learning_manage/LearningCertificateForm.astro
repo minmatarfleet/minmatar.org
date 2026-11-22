@@ -84,19 +84,17 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                 <Textarea id={id('summary')} name="summary" rows="3">{values.summary}</Textarea>
             </ManageField>
             <ManageField label={t('learning_admin.page_address')} for={id('slug')} hint={t('learning_admin.page_address_hint')}>
-                <div class="[ cert-form__address ]">
-                    <span class="[ cert-form__prefix ]">{CERTIFICATE_PATH_PREFIX}</span>
-                    <input
-                        id={id('slug')}
-                        name="slug"
-                        value={values.slug}
-                        required
-                        pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                        autocomplete="off"
-                        x-model="slug"
-                        x-on:input="slug_edited = true"
-                    />
-                </div>
+                <Input
+                    id={id('slug')}
+                    name="slug"
+                    value={values.slug}
+                    required
+                    pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                    autocomplete="off"
+                    prefix={CERTIFICATE_PATH_PREFIX}
+                    x-model="slug"
+                    x-on:input="slug_edited = true"
+                />
             </ManageField>
             <fieldset class="[ cert-form__personas ]">
                 <legend>{t('learning_admin.personas')}</legend>
@@ -170,34 +168,6 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         flex-direction: column;
         gap: var(--space-s);
         min-width: 0;
-    }
-
-    .cert-form__address {
-        display: flex;
-        align-items: center;
-        border: solid 1px var(--border-color);
-        background-color: var(--surface-sunken);
-        padding-inline: var(--space-s-m);
-
-        &:focus-within {
-            outline: 1px solid var(--highlight);
-        }
-
-        input {
-            flex: 1 1 auto;
-            min-width: 0;
-            padding: var(--space-s) 0;
-            border: 0;
-            background: none;
-            color: var(--form-color);
-            font: inherit;
-            outline: none;
-        }
-    }
-
-    .cert-form__prefix {
-        flex: 0 0 auto;
-        color: var(--faded);
     }
 
     .cert-form__personas {

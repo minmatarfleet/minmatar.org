@@ -66,6 +66,7 @@ const options = [
 
 const js = (value:unknown) => JSON.stringify(value)
 
+import Input from '@components/blocks/Input.astro'
 import Button from '@components/blocks/Button.astro'
 ---
 
@@ -96,11 +97,11 @@ import Button from '@components/blocks/Button.astro'
             <div class="[ target-line__fields ]">
                 <label>
                     <span>{t('fleets.targets.line_name')}</span>
-                    <input type="text" name="name" value={target?.name ?? ''} maxlength="64" required />
+                    <Input type="text" name="name" value={target?.name ?? ''} maxlength="64" required />
                 </label>
                 <label>
                     <span>{t('fleets.targets.how_many')}</span>
-                    <input type="number" name="target" value={target?.target ?? ''} min="1" max="999" required />
+                    <Input type="number" name="target" value={target?.target ?? ''} min="1" max="999" required />
                 </label>
             </div>
 
@@ -120,7 +121,7 @@ import Button from '@components/blocks/Button.astro'
                 </ul>
                 <label class="[ target-line__search ]">
                     <span class="[ visually-hidden ]">{t('fleets.targets.search')}</span>
-                    <input type="search" x-model="q" placeholder={t('fleets.targets.search_placeholder')} autocomplete="off" x-on:keydown.enter.prevent="" />
+                    <Input type="search" x-model="q" placeholder={t('fleets.targets.search_placeholder')} autocomplete="off" x-on:keydown.enter.prevent="" />
                 </label>
                 <ul class="[ target-line__results ]" x-show="q.trim().length >= 2" x-cloak>
                     {options.map(option =>
@@ -165,20 +166,6 @@ import Button from '@components/blocks/Button.astro'
     .target-line {
         background-color: var(--component-background);
         border: 1px solid var(--border-color);
-
-        input {
-            width: 100%;
-            min-height: 2.75rem;
-            padding: var(--space-3xs) var(--space-2xs);
-            background-color: var(--surface-sunken);
-            border: 1px solid var(--border-color);
-            color: var(--highlight);
-            font: inherit;
-        }
-
-        input[type="number"] {
-            text-align: right;
-        }
     }
 
     .target-line__header {
