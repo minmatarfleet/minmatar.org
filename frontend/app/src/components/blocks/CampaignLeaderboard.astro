@@ -43,6 +43,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
 import DataGrid from '@components/blocks/DataGrid.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 ---
 
 <Flexblock
@@ -145,16 +146,12 @@ import DataGrid from '@components/blocks/DataGrid.astro'
         </DataGrid>
     }
 
-    {rows.length > 0 && <small class="[ campaign-leaderboard-empty ]" x-show="matches === 0" x-cloak>{t('campaigns.leaderboard.no_match')}</small>}
+    {rows.length > 0 && <EmptyState title={t('campaigns.leaderboard.no_match')} x-show="matches === 0" x-cloak />}
 </Flexblock>
 
 <style lang="scss">
     .campaign-leaderboard :global(.data-grid-row[hidden]) {
         display: none;
-    }
-
-    .campaign-leaderboard-empty {
-        color: var(--foreground);
     }
 
     .campaign-segmented {

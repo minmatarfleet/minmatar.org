@@ -264,7 +264,7 @@ const hidden = 'display: none'
                                                 <img
                                                     class="[ fleet-rsvp__ship-icon ]"
                                                     src={rsvp_ship_icon(row.ship_id)}
-                                                    x-bind:src="'https://images.evetech.net/types/' + ship + '/icon?size=64'"
+                                                    x-bind:src="get_item_icon(ship, 64)"
                                                     alt=""
                                                     width="40"
                                                     height="40"

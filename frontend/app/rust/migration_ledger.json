@@ -1,0 +1,65 @@
+[
+  {
+    "file": "src/components/blocks/FleetKills.astro",
+    "selector": ".fleet-kills__chart",
+    "path": "converge",
+    "pattern": "scroll-fade",
+    "note": "The scroller is a bordered panel; XFadeScroll's edge mask now fades the border and background at the scrolling edges too."
+  },
+  {
+    "file": "src/pages/partials/character_finder_list_component.astro",
+    "selector": "(partial root)",
+    "path": "converge",
+    "pattern": "error-block",
+    "note": "A failed alliance-members fetch used to show 'no characters'; it now shows ErrorRefetch (message plus self-retry)."
+  },
+  {
+    "file": "src/components/blocks/CampaignObjectivesTable.astro",
+    "selector": ".empty-state",
+    "path": "converge",
+    "pattern": "empty-state",
+    "note": "Was --foreground at --step-0; now the library's faded --step--1 line."
+  },
+  {
+    "file": "src/components/blocks/CampaignLeaderboard.astro",
+    "selector": ".empty-state",
+    "path": "converge",
+    "pattern": "empty-state",
+    "note": "Was a --foreground <small>; now the library's faded --step--1 <p>. x-show/x-cloak pass through."
+  },
+  {
+    "file": "src/components/blocks/navy-frigate-guide/NavyFrigateGuide.astro",
+    "selector": ".nfg-section > .component-block--guide",
+    "path": "variant",
+    "pattern": "guide-panel",
+    "note": "Was .nfg-panel (flat bordered translucent panel); now ComponentBlock variant=\"guide\" inside the <section>. The h3 summary-card titles keep their own styling through a doubled selector."
+  },
+  {
+    "file": "src/components/blocks/navy-destroyer-metagame/NavyDestroyerMetagame.astro",
+    "selector": ".ndm-section > .component-block--guide",
+    "path": "variant",
+    "pattern": "guide-panel",
+    "note": "Was .ndm-panel (flat bordered translucent panel); now ComponentBlock variant=\"guide\" inside the <section>. The h3 summary-card titles keep their own styling through a doubled selector."
+  },
+  {
+    "file": "src/components/blocks/faction-warfare-cruiser-guide/FactionWarfareCruiserGuide.astro",
+    "selector": ".fwc-section > .component-block--guide",
+    "path": "variant",
+    "pattern": "guide-panel",
+    "note": "Was .fwc-panel (flat bordered translucent panel); now ComponentBlock variant=\"guide\" inside the <section>. The h3 summary-card titles keep their own styling through a doubled selector."
+  },
+  {
+    "file": "src/components/blocks/LoyaltyQuote.astro",
+    "selector": ".loyalty-quote",
+    "path": "converge",
+    "pattern": "component-block",
+    "note": "Flat component-background panel became the glass ComponentBlock (padding kept at --space-m via props). ComponentBlock's .component class sets p/li to --step--1, so .loyalty-quote__paused is now --step--1."
+  },
+  {
+    "file": "src/components/blocks/FleetFormUp.astro",
+    "selector": ".fleet-formup",
+    "path": "converge",
+    "pattern": "component-block",
+    "note": "Flat component-background panel became the glass ComponentBlock with a Flexblock inside (padding kept at --space-m). The .component class sets p/li/h4 to --step--1 and h2 to --step-1, so the swapped-in pilot list rows are now --step--1."
+  }
+]

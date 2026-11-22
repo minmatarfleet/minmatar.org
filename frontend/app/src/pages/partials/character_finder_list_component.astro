@@ -11,22 +11,36 @@ import type { CharacterBasic } from '@dtypes/layout_components'
 
 const character_name = Astro.url.searchParams.get('character_name') as string
 
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
 let members:CharacterBasic[] = []
-let get_groups_members_error:string | false = false
+let get_groups_members_error:Error | false = false
 try {
     members = ((character_name?.length ?? 0) > 2 && auth_token && user ? await get_all_alliance_members(auth_token) : [])
     console.log(character_name)
     members = members.filter(member => member.character_name.toLowerCase().includes(character_name.toLowerCase()))
     members.sort((a, b) => a.character_name.localeCompare(b.character_name))
 } catch (error) {
-    get_groups_members_error = error.message
+    get_groups_members_error = error
 }
+
+const CHARACTER_FINDER_PARTIAL_URL = translatePath(`/partials/character_finder_list_component?character_name=${encodeURIComponent(character_name ?? '')}`)
 
 import PilotBadge from '@components/blocks/PilotBadge.astro';
 import StylessButton from '@components/blocks/StylessButton.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
-{(character_name?.length > 2 && members.length === 0) ?
+{get_groups_members_error ?
+    <ErrorRefetch
+        args={{
+            partial: CHARACTER_FINDER_PARTIAL_URL,
+            error: get_groups_members_error,
+            delay: delay,
+        }}
+    />
+    :
+    (character_name?.length > 2 && members.length === 0) ?
     <div class="[ py-[var(--space-2xs)] px-[var(--space-2xs)] ]">
         <span>{t('no_characters')}</span>
     </div>

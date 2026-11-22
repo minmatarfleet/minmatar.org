@@ -16,6 +16,7 @@ import {
 } from '@/data/navy-destroyer-metagame'
 
 import GuideContentsLayout from '@components/blocks/GuideContentsLayout.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import GuideShell from '@components/blocks/GuideShell.astro'
 import GuideMatchupChart from '@components/blocks/ship-guide/GuideMatchupChart.astro'
 import GuideShipSection from '@components/blocks/ship-guide/GuideShipSection.astro'
@@ -38,86 +39,96 @@ try {
 >
     <div class="ndm-guide">
     <GuideContentsLayout sections={guideSections}>
-            <section id="introduction" data-section-id="introduction" class="ndm-section ndm-panel" aria-labelledby="ndm-intro-title">
-                <h2 id="ndm-intro-title" class="ndm-section__title">Introduction</h2>
-                {
-                    introduction.map((paragraph) => (
-                        <p class="ndm-section__paragraph" set:html={paragraph} />
-                    ))
-                }
-            </section>
-
-            <section id="considerations" data-section-id="considerations" class="ndm-section ndm-panel" aria-labelledby="ndm-considerations-title">
-                <h2 id="ndm-considerations-title" class="ndm-section__title">Considerations of the Metagame</h2>
-                {
-                    considerations.map((paragraph) => (
-                        <p class="ndm-section__paragraph">{paragraph}</p>
-                    ))
-                }
-                <ul class="ndm-section__list">
+            <section id="introduction" data-section-id="introduction" class="ndm-section" aria-labelledby="ndm-intro-title">
+                <ComponentBlock variant="guide">
+                    <h2 id="ndm-intro-title">Introduction</h2>
                     {
-                        considerationBullets.map((bullet) => (
-                            <li>{bullet}</li>
+                        introduction.map((paragraph) => (
+                            <p class="ndm-section__paragraph" set:html={paragraph} />
                         ))
                     }
-                </ul>
+                </ComponentBlock>
             </section>
 
-            <section id="disclaimers" data-section-id="disclaimers" class="ndm-section ndm-panel" aria-labelledby="ndm-disclaimers-title">
-                <h2 id="ndm-disclaimers-title" class="ndm-section__title">Disclaimers</h2>
-                {
-                    disclaimers.map((paragraph) => (
-                        <p class="ndm-section__paragraph">{paragraph}</p>
-                    ))
-                }
-            </section>
-
-            <section id="summary" data-section-id="summary" class="ndm-section ndm-panel" aria-labelledby="ndm-summary-title">
-                <h2 id="ndm-summary-title" class="ndm-section__title">Summary of the Metagame</h2>
-                <div class="ndm-summary-grid">
+            <section id="considerations" data-section-id="considerations" class="ndm-section" aria-labelledby="ndm-considerations-title">
+                <ComponentBlock variant="guide">
+                    <h2 id="ndm-considerations-title">Considerations of the Metagame</h2>
                     {
-                        metagameSummary.map((entry) => (
-                            <article class="ndm-summary-card">
-                                <h3 class="ndm-summary-card__title">{entry.archetype}</h3>
-                                <p class="ndm-summary-card__text">{entry.text}</p>
-                            </article>
+                        considerations.map((paragraph) => (
+                            <p class="ndm-section__paragraph">{paragraph}</p>
                         ))
                     }
-                </div>
-            </section>
-
-            <section id="matchups" data-section-id="matchups" class="ndm-section ndm-panel" aria-labelledby="ndm-matchups-title">
-                <h2 id="ndm-matchups-title" class="ndm-section__title">Matchup Charts</h2>
-
-                <p class="ndm-charts-mobile-note">
-                    Matchup charts are available on desktop.
-                </p>
-
-                <div class="ndm-charts-desktop">
-                    <div class="ndm-legend" aria-label="Matchup rating legend">
+                    <ul class="ndm-section__list">
                         {
-                            matchupLegend.map((item) => (
-                                <div class="ndm-legend__item">
-                                    <span class:list={['ndm-legend__symbol', `ndm-legend__symbol--${item.rating === '?' ? 'unknown' : item.rating.replace(/\+/g, 'plus').replace(/-/g, 'minus').replace(/=/g, 'even')}`]}>
-                                        {item.rating}
-                                    </span>
-                                    <span class="ndm-legend__label">
-                                        <strong>{item.label}</strong>
-                                        <span>{item.description}</span>
-                                    </span>
-                                </div>
+                            considerationBullets.map((bullet) => (
+                                <li>{bullet}</li>
+                            ))
+                        }
+                    </ul>
+                </ComponentBlock>
+            </section>
+
+            <section id="disclaimers" data-section-id="disclaimers" class="ndm-section" aria-labelledby="ndm-disclaimers-title">
+                <ComponentBlock variant="guide">
+                    <h2 id="ndm-disclaimers-title">Disclaimers</h2>
+                    {
+                        disclaimers.map((paragraph) => (
+                            <p class="ndm-section__paragraph">{paragraph}</p>
+                        ))
+                    }
+                </ComponentBlock>
+            </section>
+
+            <section id="summary" data-section-id="summary" class="ndm-section" aria-labelledby="ndm-summary-title">
+                <ComponentBlock variant="guide">
+                    <h2 id="ndm-summary-title">Summary of the Metagame</h2>
+                    <div class="ndm-summary-grid">
+                        {
+                            metagameSummary.map((entry) => (
+                                <article class="ndm-summary-card">
+                                    <h3 class="ndm-summary-card__title">{entry.archetype}</h3>
+                                    <p class="ndm-summary-card__text">{entry.text}</p>
+                                </article>
                             ))
                         }
                     </div>
+                </ComponentBlock>
+            </section>
 
-                    <div class="ndm-charts-grid">
-                        {
-                            matchupCharts.map((chart) => (
-                                <GuideMatchupChart chart={chart} />
-                            ))
-                        }
+            <section id="matchups" data-section-id="matchups" class="ndm-section" aria-labelledby="ndm-matchups-title">
+                <ComponentBlock variant="guide">
+                    <h2 id="ndm-matchups-title">Matchup Charts</h2>
+
+                    <p class="ndm-charts-mobile-note">
+                        Matchup charts are available on desktop.
+                    </p>
+
+                    <div class="ndm-charts-desktop">
+                        <div class="ndm-legend" aria-label="Matchup rating legend">
+                            {
+                                matchupLegend.map((item) => (
+                                    <div class="ndm-legend__item">
+                                        <span class:list={['ndm-legend__symbol', `ndm-legend__symbol--${item.rating === '?' ? 'unknown' : item.rating.replace(/\+/g, 'plus').replace(/-/g, 'minus').replace(/=/g, 'even')}`]}>
+                                            {item.rating}
+                                        </span>
+                                        <span class="ndm-legend__label">
+                                            <strong>{item.label}</strong>
+                                            <span>{item.description}</span>
+                                        </span>
+                                    </div>
+                                ))
+                            }
+                        </div>
+
+                        <div class="ndm-charts-grid">
+                            {
+                                matchupCharts.map((chart) => (
+                                    <GuideMatchupChart chart={chart} />
+                                ))
+                            }
+                        </div>
                     </div>
-                </div>
+                </ComponentBlock>
             </section>
 
             <div class="ndm-guide__ships">
@@ -135,65 +146,69 @@ try {
                 }
             </div>
 
-            <section id="glossary" data-section-id="glossary" class="ndm-section ndm-panel" aria-labelledby="ndm-glossary-title">
-                <h2 id="ndm-glossary-title" class="ndm-section__title">Glossary</h2>
-                <dl class="ndm-glossary">
-                    {
-                        glossary.map((entry) => (
-                            <>
-                                <dt class="ndm-glossary__term">{entry.term}</dt>
-                                <dd class="ndm-glossary__definition">{entry.definition}</dd>
-                            </>
-                        ))
-                    }
-                </dl>
+            <section id="glossary" data-section-id="glossary" class="ndm-section" aria-labelledby="ndm-glossary-title">
+                <ComponentBlock variant="guide">
+                    <h2 id="ndm-glossary-title">Glossary</h2>
+                    <dl class="ndm-glossary">
+                        {
+                            glossary.map((entry) => (
+                                <>
+                                    <dt class="ndm-glossary__term">{entry.term}</dt>
+                                    <dd class="ndm-glossary__definition">{entry.definition}</dd>
+                                </>
+                            ))
+                        }
+                    </dl>
+                </ComponentBlock>
             </section>
 
-            <section id="resources" data-section-id="resources" class="ndm-section ndm-panel" aria-labelledby="ndm-resources-title">
-                <h2 id="ndm-resources-title" class="ndm-section__title">Additional Resources</h2>
-                <p class="ndm-section__paragraph">
-                    This web edition builds on Furl0w’s{' '}
-                    <a
-                        href={guideMeta.firstEditionUrl}
-                        target="_blank"
-                        rel="nofollow noopener noreferrer"
-                        class="ndm-guide__link"
-                    >
-                        {credits.firstEditionLabel}
-                    </a>
-                    . The links below go deeper—original source, yearly meta references, and related guides on this site.
-                </p>
+            <section id="resources" data-section-id="resources" class="ndm-section" aria-labelledby="ndm-resources-title">
+                <ComponentBlock variant="guide">
+                    <h2 id="ndm-resources-title">Additional Resources</h2>
+                    <p class="ndm-section__paragraph">
+                        This web edition builds on Furl0w’s{' '}
+                        <a
+                            href={guideMeta.firstEditionUrl}
+                            target="_blank"
+                            rel="nofollow noopener noreferrer"
+                            class="ndm-guide__link"
+                        >
+                            {credits.firstEditionLabel}
+                        </a>
+                        . The links below go deeper—original source, yearly meta references, and related guides on this site.
+                    </p>
 
-                <div class="ndm-credits__quotes" aria-label="Reader testimonials from the First Edition">
-                    {
-                        credits.quotes.map((quote) => (
-                            <blockquote class="ndm-credits__quote">
-                                <p>"{quote.text}"</p>
-                                <footer>- {quote.attribution}</footer>
-                            </blockquote>
-                        ))
-                    }
-                </div>
+                    <div class="ndm-credits__quotes" aria-label="Reader testimonials from the First Edition">
+                        {
+                            credits.quotes.map((quote) => (
+                                <blockquote class="ndm-credits__quote">
+                                    <p>"{quote.text}"</p>
+                                    <footer>- {quote.attribution}</footer>
+                                </blockquote>
+                            ))
+                        }
+                    </div>
 
-                <p class="ndm-credits__thanks">{credits.thanks}</p>
+                    <p class="ndm-credits__thanks">{credits.thanks}</p>
 
-                <ul class="ndm-resources">
-                    {
-                        additionalResources.map((resource) => (
-                            <li class="ndm-resources__item">
-                                <a
-                                    href={resource.href}
-                                    target={resource.href.startsWith('http') ? '_blank' : undefined}
-                                    rel={resource.href.startsWith('http') ? 'nofollow noopener noreferrer' : undefined}
-                                    class="ndm-guide__link"
-                                >
-                                    {resource.title}
-                                </a>
-                                <span class="ndm-resources__note">{resource.note}</span>
-                            </li>
-                        ))
-                    }
-                </ul>
+                    <ul class="ndm-resources">
+                        {
+                            additionalResources.map((resource) => (
+                                <li class="ndm-resources__item">
+                                    <a
+                                        href={resource.href}
+                                        target={resource.href.startsWith('http') ? '_blank' : undefined}
+                                        rel={resource.href.startsWith('http') ? 'nofollow noopener noreferrer' : undefined}
+                                        class="ndm-guide__link"
+                                    >
+                                        {resource.title}
+                                    </a>
+                                    <span class="ndm-resources__note">{resource.note}</span>
+                                </li>
+                            ))
+                        }
+                    </ul>
+                </ComponentBlock>
             </section>
     </GuideContentsLayout>
     </div>
@@ -202,23 +217,10 @@ try {
 <style lang="scss">
     .ndm-guide {
         --ndm-display-font: var(--guide-display-font);
-        --ndm-panel-padding-block: var(--component-padding-block);
-        --ndm-panel-padding-inline: var(--space-l-xl);
         font-family: inherit;
     }
 
-    .ndm-panel {
-        padding: var(--ndm-panel-padding-block) var(--ndm-panel-padding-inline);
-        background: color-mix(in srgb, var(--component-background) var(--tint-heavy), transparent);
-        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
-        min-width: 0;
-    }
 
-    @media (max-width: 48rem) {
-        .ndm-panel {
-            --ndm-panel-padding-inline: var(--space-s);
-        }
-    }
 
     .ndm-guide__ships {
         display: flex;
@@ -230,15 +232,6 @@ try {
         scroll-margin-top: calc(var(--header-height, 4rem) + var(--space-l));
     }
 
-    .ndm-section__title {
-        margin: 0 0 var(--space-m);
-        padding-bottom: var(--space-s);
-        border-bottom: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
-        font-family: var(--ndm-display-font);
-        font-size: clamp(var(--step-1), 2.5vw, var(--step-2));
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-    }
 
     .ndm-section__subtitle {
         margin: var(--space-l) 0 var(--space-m);
@@ -382,7 +375,7 @@ try {
         border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
     }
 
-    .ndm-summary-card__title {
+    .ndm-summary-card .ndm-summary-card__title {
         margin: 0 0 var(--space-s);
         font-family: var(--ndm-display-font);
         font-size: var(--step--1);

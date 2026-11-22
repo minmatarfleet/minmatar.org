@@ -16,6 +16,7 @@ import {
 } from '@/data/faction-warfare-cruiser-guide'
 
 import GuideContentsLayout from '@components/blocks/GuideContentsLayout.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import GuideShell from '@components/blocks/GuideShell.astro'
 import GuideMatchupChart from '@components/blocks/ship-guide/GuideMatchupChart.astro'
 import GuideShipSection from '@components/blocks/ship-guide/GuideShipSection.astro'
@@ -38,86 +39,96 @@ try {
 >
     <div class="fwc-guide">
     <GuideContentsLayout sections={guideSections}>
-            <section id="introduction" data-section-id="introduction" class="fwc-section fwc-panel" aria-labelledby="fwc-intro-title">
-                <h2 id="fwc-intro-title" class="fwc-section__title">Introduction</h2>
-                {
-                    introduction.map((paragraph) => (
-                        <p class="fwc-section__paragraph" set:html={paragraph} />
-                    ))
-                }
-            </section>
-
-            <section id="considerations" data-section-id="considerations" class="fwc-section fwc-panel" aria-labelledby="fwc-considerations-title">
-                <h2 id="fwc-considerations-title" class="fwc-section__title">Considerations of the Metagame</h2>
-                {
-                    considerations.map((paragraph) => (
-                        <p class="fwc-section__paragraph">{paragraph}</p>
-                    ))
-                }
-                <ul class="fwc-section__list">
+            <section id="introduction" data-section-id="introduction" class="fwc-section" aria-labelledby="fwc-intro-title">
+                <ComponentBlock variant="guide">
+                    <h2 id="fwc-intro-title">Introduction</h2>
                     {
-                        considerationBullets.map((bullet) => (
-                            <li>{bullet}</li>
+                        introduction.map((paragraph) => (
+                            <p class="fwc-section__paragraph" set:html={paragraph} />
                         ))
                     }
-                </ul>
+                </ComponentBlock>
             </section>
 
-            <section id="disclaimers" data-section-id="disclaimers" class="fwc-section fwc-panel" aria-labelledby="fwc-disclaimers-title">
-                <h2 id="fwc-disclaimers-title" class="fwc-section__title">Disclaimers</h2>
-                {
-                    disclaimers.map((paragraph) => (
-                        <p class="fwc-section__paragraph">{paragraph}</p>
-                    ))
-                }
-            </section>
-
-            <section id="summary" data-section-id="summary" class="fwc-section fwc-panel" aria-labelledby="fwc-summary-title">
-                <h2 id="fwc-summary-title" class="fwc-section__title">Summary of the Metagame</h2>
-                <div class="fwc-summary-grid">
+            <section id="considerations" data-section-id="considerations" class="fwc-section" aria-labelledby="fwc-considerations-title">
+                <ComponentBlock variant="guide">
+                    <h2 id="fwc-considerations-title">Considerations of the Metagame</h2>
                     {
-                        metagameSummary.map((entry) => (
-                            <article class="fwc-summary-card">
-                                <h3 class="fwc-summary-card__title">{entry.archetype}</h3>
-                                <p class="fwc-summary-card__text">{entry.text}</p>
-                            </article>
+                        considerations.map((paragraph) => (
+                            <p class="fwc-section__paragraph">{paragraph}</p>
                         ))
                     }
-                </div>
-            </section>
-
-            <section id="matchups" data-section-id="matchups" class="fwc-section fwc-panel" aria-labelledby="fwc-matchups-title">
-                <h2 id="fwc-matchups-title" class="fwc-section__title">Matchup Charts</h2>
-
-                <p class="fwc-charts-mobile-note">
-                    Matchup charts are available on desktop.
-                </p>
-
-                <div class="fwc-charts-desktop">
-                    <div class="fwc-legend" aria-label="Matchup rating legend">
+                    <ul class="fwc-section__list">
                         {
-                            matchupLegend.map((item) => (
-                                <div class="fwc-legend__item">
-                                    <span class:list={['fwc-legend__symbol', `fwc-legend__symbol--${item.rating === '?' ? 'unknown' : item.rating.replace(/\+/g, 'plus').replace(/-/g, 'minus').replace(/=/g, 'even')}`]}>
-                                        {item.rating}
-                                    </span>
-                                    <span class="fwc-legend__label">
-                                        <strong>{item.label}</strong>
-                                        <span>{item.description}</span>
-                                    </span>
-                                </div>
+                            considerationBullets.map((bullet) => (
+                                <li>{bullet}</li>
+                            ))
+                        }
+                    </ul>
+                </ComponentBlock>
+            </section>
+
+            <section id="disclaimers" data-section-id="disclaimers" class="fwc-section" aria-labelledby="fwc-disclaimers-title">
+                <ComponentBlock variant="guide">
+                    <h2 id="fwc-disclaimers-title">Disclaimers</h2>
+                    {
+                        disclaimers.map((paragraph) => (
+                            <p class="fwc-section__paragraph">{paragraph}</p>
+                        ))
+                    }
+                </ComponentBlock>
+            </section>
+
+            <section id="summary" data-section-id="summary" class="fwc-section" aria-labelledby="fwc-summary-title">
+                <ComponentBlock variant="guide">
+                    <h2 id="fwc-summary-title">Summary of the Metagame</h2>
+                    <div class="fwc-summary-grid">
+                        {
+                            metagameSummary.map((entry) => (
+                                <article class="fwc-summary-card">
+                                    <h3 class="fwc-summary-card__title">{entry.archetype}</h3>
+                                    <p class="fwc-summary-card__text">{entry.text}</p>
+                                </article>
                             ))
                         }
                     </div>
+                </ComponentBlock>
+            </section>
 
-                    <div class="fwc-charts-grid">
-                        {
-                            matchupCharts.map((chart) => (
-                                <GuideMatchupChart chart={chart} />
-                            ))
-                        }
+            <section id="matchups" data-section-id="matchups" class="fwc-section" aria-labelledby="fwc-matchups-title">
+                <ComponentBlock variant="guide">
+                    <h2 id="fwc-matchups-title">Matchup Charts</h2>
+
+                    <p class="fwc-charts-mobile-note">
+                        Matchup charts are available on desktop.
+                    </p>
+
+                    <div class="fwc-charts-desktop">
+                        <div class="fwc-legend" aria-label="Matchup rating legend">
+                            {
+                                matchupLegend.map((item) => (
+                                    <div class="fwc-legend__item">
+                                        <span class:list={['fwc-legend__symbol', `fwc-legend__symbol--${item.rating === '?' ? 'unknown' : item.rating.replace(/\+/g, 'plus').replace(/-/g, 'minus').replace(/=/g, 'even')}`]}>
+                                            {item.rating}
+                                        </span>
+                                        <span class="fwc-legend__label">
+                                            <strong>{item.label}</strong>
+                                            <span>{item.description}</span>
+                                        </span>
+                                    </div>
+                                ))
+                            }
+                        </div>
+
+                        <div class="fwc-charts-grid">
+                            {
+                                matchupCharts.map((chart) => (
+                                    <GuideMatchupChart chart={chart} />
+                                ))
+                            }
+                        </div>
                     </div>
-                </div>
+                </ComponentBlock>
             </section>
 
             <div class="fwc-guide__ships">
@@ -136,42 +147,46 @@ try {
                 }
             </div>
 
-            <section id="glossary" data-section-id="glossary" class="fwc-section fwc-panel" aria-labelledby="fwc-glossary-title">
-                <h2 id="fwc-glossary-title" class="fwc-section__title">Glossary</h2>
-                <dl class="fwc-glossary">
-                    {
-                        glossary.map((entry) => (
-                            <>
-                                <dt class="fwc-glossary__term">{entry.term}</dt>
-                                <dd class="fwc-glossary__definition">{entry.definition}</dd>
-                            </>
-                        ))
-                    }
-                </dl>
+            <section id="glossary" data-section-id="glossary" class="fwc-section" aria-labelledby="fwc-glossary-title">
+                <ComponentBlock variant="guide">
+                    <h2 id="fwc-glossary-title">Glossary</h2>
+                    <dl class="fwc-glossary">
+                        {
+                            glossary.map((entry) => (
+                                <>
+                                    <dt class="fwc-glossary__term">{entry.term}</dt>
+                                    <dd class="fwc-glossary__definition">{entry.definition}</dd>
+                                </>
+                            ))
+                        }
+                    </dl>
+                </ComponentBlock>
             </section>
 
-            <section id="resources" data-section-id="resources" class="fwc-section fwc-panel" aria-labelledby="fwc-resources-title">
-                <h2 id="fwc-resources-title" class="fwc-section__title">Additional Resources</h2>
-                <p class="fwc-section__paragraph">
-                    Written by {credits.author}. The links below cover sibling hull guides, plex fundamentals, and deeper yearly data when you want another angle.
-                </p>
-                <ul class="fwc-resources">
-                    {
-                        additionalResources.map((resource) => (
-                            <li class="fwc-resources__item">
-                                <a
-                                    href={resource.href}
-                                    target={resource.href.startsWith('http') ? '_blank' : undefined}
-                                    rel={resource.href.startsWith('http') ? 'nofollow noopener noreferrer' : undefined}
-                                    class="fwc-guide__link"
-                                >
-                                    {resource.title}
-                                </a>
-                                <span class="fwc-resources__note">{resource.note}</span>
-                            </li>
-                        ))
-                    }
-                </ul>
+            <section id="resources" data-section-id="resources" class="fwc-section" aria-labelledby="fwc-resources-title">
+                <ComponentBlock variant="guide">
+                    <h2 id="fwc-resources-title">Additional Resources</h2>
+                    <p class="fwc-section__paragraph">
+                        Written by {credits.author}. The links below cover sibling hull guides, plex fundamentals, and deeper yearly data when you want another angle.
+                    </p>
+                    <ul class="fwc-resources">
+                        {
+                            additionalResources.map((resource) => (
+                                <li class="fwc-resources__item">
+                                    <a
+                                        href={resource.href}
+                                        target={resource.href.startsWith('http') ? '_blank' : undefined}
+                                        rel={resource.href.startsWith('http') ? 'nofollow noopener noreferrer' : undefined}
+                                        class="fwc-guide__link"
+                                    >
+                                        {resource.title}
+                                    </a>
+                                    <span class="fwc-resources__note">{resource.note}</span>
+                                </li>
+                            ))
+                        }
+                    </ul>
+                </ComponentBlock>
             </section>
     </GuideContentsLayout>
     </div>
@@ -180,23 +195,10 @@ try {
 <style lang="scss">
     .fwc-guide {
         --fwc-display-font: var(--guide-display-font);
-        --fwc-panel-padding-block: var(--component-padding-block);
-        --fwc-panel-padding-inline: var(--space-l-xl);
         font-family: inherit;
     }
 
-    .fwc-panel {
-        padding: var(--fwc-panel-padding-block) var(--fwc-panel-padding-inline);
-        background: color-mix(in srgb, var(--component-background) var(--tint-heavy), transparent);
-        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
-        min-width: 0;
-    }
 
-    @media (max-width: 48rem) {
-        .fwc-panel {
-            --fwc-panel-padding-inline: var(--space-s);
-        }
-    }
 
     .fwc-guide__ships {
         display: flex;
@@ -208,15 +210,6 @@ try {
         scroll-margin-top: calc(var(--header-height, 4rem) + var(--space-l));
     }
 
-    .fwc-section__title {
-        margin: 0 0 var(--space-m);
-        padding-bottom: var(--space-s);
-        border-bottom: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
-        font-family: var(--fwc-display-font);
-        font-size: clamp(var(--step-1), 2.5vw, var(--step-2));
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-    }
 
     .fwc-section__subtitle {
         margin: var(--space-l) 0 var(--space-m);
@@ -321,7 +314,7 @@ try {
         border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
     }
 
-    .fwc-summary-card__title {
+    .fwc-summary-card .fwc-summary-card__title {
         margin: 0 0 var(--space-s);
         font-family: var(--fwc-display-font);
         font-size: var(--step--1);
