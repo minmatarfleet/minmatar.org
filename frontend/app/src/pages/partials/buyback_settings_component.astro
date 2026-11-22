@@ -46,6 +46,7 @@ import ViewChips from '@components/blocks/manage/ViewChips.astro'
 import ManageSearch from '@components/blocks/manage/ManageSearch.astro'
 import HtmxPager from '@components/blocks/HtmxPager.astro'
 import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import RowSwapFrame from '@components/blocks/manage/RowSwapFrame.astro'
 import EntityPicker from '@components/blocks/manage/EntityPicker.astro'
 import SectionSummary from '@components/blocks/manage/SectionSummary.astro'
 import BuybackItemRow from '@components/blocks/market_settings/BuybackItemRow.astro'
@@ -278,12 +279,12 @@ const columns = [
     : part === 'item'
         ? (
             <Fragment>
-                {/* The row goes back inside a <table>; the request picks it with hx-select. */}
-                <table>
+                {/* The row goes back inside a swap frame; the request picks it with hx-select. */}
+                <RowSwapFrame>
                     {removed_item
                         ? <BuybackItemRow item={removed_item} removed={true} />
                         : item && <BuybackItemRow item={item} />}
-                </table>
+                </RowSwapFrame>
                 <SectionSummary section_id="bb-items" text={summaries.items} />
             </Fragment>
         )

@@ -27,6 +27,16 @@ const {
 
 delete attributes.class
 
+const timer_columns = [
+    t('campaigns.timers.col.stage'),
+    t('campaigns.timers.col.structure'),
+    t('campaigns.timers.col.eve_time'),
+    t('campaigns.timers.col.system'),
+    t('campaigns.timers.col.alliance'),
+    ...(campaigns ? [t('universe.timers.col.campaign')] : []),
+    t('campaigns.timers.col.starts_in'),
+]
+
 const upcoming = timers.filter((timer) => !timer.done)
 const done = timers.filter((timer) => timer.done)
 
@@ -41,6 +51,7 @@ const local_init = `tip = ${JSON.stringify(t('campaigns.timers.your_time'))}.rep
 
 import CampaignTimerStage from '@components/blocks/CampaignTimerStage.astro'
 import Countdown from '@components/blocks/Countdown.astro'
+import DataGrid from '@components/blocks/DataGrid.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import StylessButton from '@components/blocks/StylessButton.astro'
 ---
@@ -48,16 +59,18 @@ import StylessButton from '@components/blocks/StylessButton.astro'
 {timers.length === 0 ?
     <EmptyState title={t('campaigns.timers.none')} />
     :
-    <div class:list={['[ campaign-timers ]', { 'has-campaigns': campaigns }, Astro.props.class]} role="table" aria-label={t('campaigns.timers.title')} {...attributes}>
-        <div class="[ campaign-timers-head ]" role="row">
-            <span role="columnheader">{t('campaigns.timers.col.stage')}</span>
-            <span role="columnheader">{t('campaigns.timers.col.structure')}</span>
-            <span role="columnheader">{t('campaigns.timers.col.eve_time')}</span>
-            <span role="columnheader">{t('campaigns.timers.col.system')}</span>
-            <span role="columnheader">{t('campaigns.timers.col.alliance')}</span>
-            {campaigns && <span role="columnheader">{t('universe.timers.col.campaign')}</span>}
-            <span role="columnheader">{t('campaigns.timers.col.starts_in')}</span>
-        </div>
+    <DataGrid
+        variant="ledger"
+        stack={true}
+        min_width="0"
+        template={campaigns
+            ? '3.5rem minmax(0, 1.6fr) minmax(0, 0.9fr) minmax(0, 0.8fr) minmax(0, 0.7fr) minmax(0, 1fr) minmax(0, 1fr)'
+            : '3.5rem minmax(0, 1.6fr) minmax(0, 0.9fr) minmax(0, 0.8fr) minmax(0, 0.9fr) minmax(0, 1fr)'}
+        columns={timer_columns}
+        aria-label={t('campaigns.timers.title')}
+        class={['[ campaign-timers ]', Astro.props.class].filter(Boolean).join(' ')}
+        {...attributes}
+    >
         {[upcoming, done].map((group, index) =>
             <Fragment>
                 {index === 1 && group.length > 0 &&
@@ -66,7 +79,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                     </div>
                 }
                 {group.map((timer) =>
-                    <div class:list={['[ campaign-timers-row ]', { 'is-done': timer.done }]} role="row">
+                    <div class:list={['[ campaign-timers-row data-grid-row ]', { 'is-done': timer.done }]} role="row">
                         <span role="cell"><CampaignTimerStage stage={timer.stage} final={timer.final} /></span>
                         <span role="cell">
                             <StylessButton
@@ -108,32 +121,13 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                 )}
             </Fragment>
         )}
-    </div>
+    </DataGrid>
 }
 
 <style lang="scss">
-    .campaign-timers-head,
     .campaign-timers-row {
-        display: grid;
-        grid-template-columns: 3.5rem minmax(0, 1.6fr) minmax(0, 0.9fr) minmax(0, 0.8fr) minmax(0, 0.9fr) minmax(0, 1fr);
-        gap: var(--space-s);
-        align-items: center;
         font-size: var(--step--1);
         white-space: nowrap;
-    }
-
-    .has-campaigns .campaign-timers-head,
-    .has-campaigns .campaign-timers-row {
-        grid-template-columns: 3.5rem minmax(0, 1.6fr) minmax(0, 0.9fr) minmax(0, 0.8fr) minmax(0, 0.7fr) minmax(0, 1fr) minmax(0, 1fr);
-    }
-
-    .campaign-timers-head {
-        color: var(--highlight);
-        border-bottom: solid 1px var(--border-color);
-        padding-block-end: var(--space-3xs);
-    }
-
-    .campaign-timers-row {
         padding-block: var(--space-3xs);
 
         > * {
@@ -200,11 +194,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         color: var(--faded);
     }
 
-    @media (max-width: 720px) {
-        .campaign-timers-head {
-            display: none;
-        }
-
+    @media (max-width: 48rem) {
         .campaign-timers-row {
             grid-template-columns: 3.5rem 1fr 1fr;
             gap: var(--space-3xs);

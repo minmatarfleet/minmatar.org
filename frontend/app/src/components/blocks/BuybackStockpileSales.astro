@@ -4,6 +4,7 @@ import type { BuybackLedgerEntry } from '@dtypes/api.minmatar.org'
 import { aggregate_stockpile_sales } from '@helpers/buyback_stockpile_sales'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
+import DataGrid from '@components/blocks/DataGrid.astro'
 import BuybackStockpileSaleItem from '@components/blocks/BuybackStockpileSaleItem.astro'
 
 interface Props {
@@ -35,25 +36,28 @@ function reason_label(reason: string): string {
         ) : sale_rows.length === 0 ? (
             <p class="[ buyback-stockpile-sales__empty ]">{t('buyback.ledger.empty')}</p>
         ) : (
-            <div class="[ buyback-stockpile-sales__scroll ]">
-                <div class="[ buyback-stockpile-sales__grid ]" role="table" aria-label={t('buyback.ledger.title')}>
-                    <div class="[ buyback-stockpile-sales__header ]" role="row">
-                        <div role="columnheader">{t('buyback.ledger.col.date')}</div>
-                        <div role="columnheader">{t('buyback.ledger.col.item')}</div>
-                        <div role="columnheader">{t('buyback.ledger.col.quantity')}</div>
-                        <div role="columnheader">{t('buyback.ledger.col.total')}</div>
-                        <div role="columnheader">{t('buyback.ledger.col.via')}</div>
-                        <div role="columnheader">{t('buyback.ledger.col.buyers')}</div>
-                    </div>
-
-                    {sale_rows.map((row) =>
-                        <BuybackStockpileSaleItem
-                            row={row}
-                            reason_label={reason_label(row.reason)}
-                        />
-                    )}
-                </div>
-            </div>
+            <DataGrid
+                variant="ledger"
+                stack={true}
+                min_width="70rem"
+                aria-label={t('buyback.ledger.title')}
+                template="minmax(6.5rem, 0.8fr) minmax(12rem, 1.5fr) minmax(6rem, 0.8fr) minmax(7rem, 1fr) minmax(6rem, 0.8fr) minmax(7rem, 1fr)"
+                columns={[
+                    t('buyback.ledger.col.date'),
+                    t('buyback.ledger.col.item'),
+                    t('buyback.ledger.col.quantity'),
+                    t('buyback.ledger.col.total'),
+                    t('buyback.ledger.col.via'),
+                    t('buyback.ledger.col.buyers'),
+                ]}
+            >
+                {sale_rows.map((row) =>
+                    <BuybackStockpileSaleItem
+                        row={row}
+                        reason_label={reason_label(row.reason)}
+                    />
+                )}
+            </DataGrid>
         )}
     </Flexblock>
 </section>
@@ -74,44 +78,5 @@ function reason_label(reason: string): string {
         margin: 0;
         font-size: var(--step--1);
         color: var(--highlight);
-    }
-
-    .buyback-stockpile-sales__scroll {
-        overflow-x: auto;
-        mask-image: linear-gradient(to right, black 90%, transparent);
-    }
-
-    .buyback-stockpile-sales__grid {
-        min-width: 70rem;
-    }
-
-    .buyback-stockpile-sales__header {
-        display: grid;
-        grid-template-columns: minmax(6.5rem, 0.8fr) minmax(12rem, 1.5fr) minmax(6rem, 0.8fr) minmax(7rem, 1fr) minmax(6rem, 0.8fr) minmax(7rem, 1fr);
-        gap: var(--space-s);
-        align-items: end;
-        padding-block: var(--space-2xs);
-        padding-inline: var(--space-2xs);
-        border-bottom: solid 1px var(--border-color);
-        color: var(--highlight);
-        font-size: var(--step--1);
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.02em;
-    }
-
-    @media (max-width: 48rem) {
-        .buyback-stockpile-sales__scroll {
-            overflow-x: visible;
-            mask-image: none;
-        }
-
-        .buyback-stockpile-sales__grid {
-            min-width: 0;
-        }
-
-        .buyback-stockpile-sales__header {
-            display: none;
-        }
     }
 </style>
