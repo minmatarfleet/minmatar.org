@@ -12,6 +12,8 @@ import Select from '@components/blocks/Select.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import FleetRsvpShell from '@components/blocks/fleet_rsvp/FleetRsvpShell.astro'
 import FleetRsvpWhen from '@components/blocks/fleet_rsvp/FleetRsvpWhen.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 
 /**
  * The sign-up picker behind the I'm available link: how sure the pilot is,
@@ -96,6 +98,7 @@ const initial_label = initial_count === 0 && !any_ship ? labels.pick :
     initial_count > 1 ? labels.count.replace('{label}', initial_verb).replace('{count}', String(initial_count)) : initial_verb
 
 const hidden = 'display: none'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <FleetRsvpShell
@@ -161,21 +164,17 @@ const hidden = 'display: none'
 
                         <fieldset class="[ rsvp-form__sure ]">
                             <legend class="[ fleet-rsvp__label ]">{t('fleets.rsvp.how_sure')}</legend>
-                            <div class="[ rsvp-switch ]">
+                            <ChipGroup wrap={true} role="none">
                                 {sure_options.map((option) =>
-                                    <label class="[ rsvp-switch__option ]" x-bind:class={`{ 'is-on': confidence === '${option.value}' }`} class:list={[{ 'is-on': option.value === confidence }]}>
-                                        <input
-                                            type="radio"
-                                            class="[ visually-hidden ]"
-                                            name="confidence"
-                                            value={option.value}
-                                            checked={option.value === confidence}
-                                            x-model="confidence"
-                                        />
-                                        {option.label}
-                                    </label>
+                                    <FilterChip
+                                        type="radio"
+                                        name="confidence"
+                                        value={option.value}
+                                        checked={option.value === confidence}
+                                        input_attributes={{ 'x-model': 'confidence' }}
+                                    >{option.label}</FilterChip>
                                 )}
-                            </div>
+                            </ChipGroup>
                             {sure_options.map((option) =>
                                 <div
                                     class="[ fleet-rsvp__muted ]"
@@ -264,7 +263,7 @@ const hidden = 'display: none'
                                                 <img
                                                     class="[ fleet-rsvp__ship-icon ]"
                                                     src={rsvp_ship_icon(row.ship_id)}
-                                                    x-bind:src="'https://images.evetech.net/types/' + ship + '/icon?size=64'"
+                                                    x-bind:src="get_item_icon(ship, 64)"
                                                     alt=""
                                                     width="40"
                                                     height="40"
@@ -304,9 +303,9 @@ const hidden = 'display: none'
                 >
                     <span x-text="submit_label">{initial_label}</span>
                 </Button>
-                <button type="submit" name="intent" value="not_available" class="[ fleet-rsvp__text-button ]">
+                <StylessButton type="submit" name="intent" value="not_available" class="[ fleet-rsvp__text-button ]">
                     {t('fleets.rsvp.not_available')}
-                </button>
+                </StylessButton>
             </div>
         </div>
     </form>
@@ -346,7 +345,7 @@ const hidden = 'display: none'
     .rsvp-form__error {
         padding: var(--space-xs) var(--space-s);
         border: 1px solid var(--fleet-red);
-        background-color: color-mix(in srgb, var(--fleet-red) 15%, transparent);
+        background-color: color-mix(in srgb, var(--fleet-red) var(--tint-soft), transparent);
     }
 
     .rsvp-form__sure {
@@ -361,41 +360,6 @@ const hidden = 'display: none'
         legend {
             margin-bottom: var(--space-2xs);
             padding: 0;
-        }
-    }
-
-    .rsvp-switch {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: var(--space-3xs);
-        padding: var(--space-3xs);
-        background-color: var(--component-background);
-        border: 1px solid var(--hairline-medium);
-        border-radius: var(--space-3xs);
-
-        &:has(:focus-visible) {
-            outline: 2px solid var(--fleet-yellow);
-            outline-offset: 2px;
-        }
-    }
-
-    .rsvp-switch__option {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-block-size: var(--space-xl);
-        padding: var(--space-3xs);
-        border-radius: var(--space-3xs);
-        font-size: var(--step--1);
-        font-weight: 600;
-        text-align: center;
-        color: var(--highlight);
-        cursor: pointer;
-        transition: background-color var(--fast-transition);
-
-        &.is-on {
-            background-color: var(--fleet-yellow);
-            color: var(--background);
         }
     }
 
@@ -424,7 +388,7 @@ const hidden = 'display: none'
         display: flex;
         flex-direction: column;
         background-color: var(--component-background);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
         border-radius: var(--space-3xs);
         overflow: hidden;
 
@@ -434,7 +398,7 @@ const hidden = 'display: none'
         }
 
         &.is-clash {
-            border-color: color-mix(in srgb, var(--attention) 60%, transparent);
+            border-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-bold), transparent);
         }
     }
 
@@ -454,13 +418,13 @@ const hidden = 'display: none'
 
         @media (hover: hover) {
             &:hover {
-                background-color: color-mix(in srgb, var(--fleet-yellow) 5%, transparent);
+                background-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
             }
         }
 
         @media (hover: none) {
             &:active {
-                background-color: color-mix(in srgb, var(--fleet-yellow) 10%, transparent);
+                background-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
             }
         }
     }
@@ -481,7 +445,7 @@ const hidden = 'display: none'
 
     .rsvp-row__warning {
         font-size: var(--step--1);
-        color: var(--attention);
+        color: var(--fleet-yellow);
     }
 
     /* Round tick: on the right on phones, first on wide screens (DesktopPick). */
@@ -516,13 +480,13 @@ const hidden = 'display: none'
         margin: 0 var(--space-xs) var(--space-3xs);
         padding: var(--space-2xs) var(--space-xs);
         border-radius: var(--space-3xs);
-        background-color: color-mix(in srgb, var(--attention) 10%, transparent);
+        background-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
         font-size: var(--step--1);
     }
 
     .rsvp-row__ship {
         padding: var(--space-xs) var(--space-xs) var(--space-s);
-        border-top: 1px solid var(--hairline-medium);
+        border-top: 1px solid var(--border-color);
     }
 
     .rsvp-row__ship-pick {

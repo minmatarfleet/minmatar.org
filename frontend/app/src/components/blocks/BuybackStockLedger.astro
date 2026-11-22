@@ -61,6 +61,7 @@ function variants_tip_html(variants: Array<{ name: string; quantity: number; isk
     ]
     return lines.join('<br>')
 }
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <section class="[ buyback-stock-ledger ]">
@@ -114,16 +115,12 @@ function variants_tip_html(variants: Array<{ name: string; quantity: number; isk
                                                 >
                                                     <span class="[ buyback-stock-ledger__name ]">{group.label}</span>
                                                     {show_variants &&
-                                                        <button
+                                                        <StylessButton
                                                             type="button"
                                                             class="[ buyback-stock-ledger__variants ]"
                                                             aria-label={t('buyback.info.ore_variants')}
-                                                            x-init={`tippy($el, {
-                                                                content: ${JSON.stringify(variants_tip_html(group.variants))},
-                                                                allowHTML: true,
-                                                                delay: [100, 200],
-                                                                arrow: true,
-                                                            })`}
+                                                            data-tippy-content={variants_tip_html(group.variants)}
+                                                            data-tippy-allowHTML="true"
                                                         >
                                                             <span aria-hidden="true">i</span>
                                                             <span class="[ buyback-stock-ledger__variants-count ]">
@@ -132,7 +129,7 @@ function variants_tip_html(variants: Array<{ name: string; quantity: number; isk
                                                                     String(group.variants.length),
                                                                 )}
                                                             </span>
-                                                        </button>
+                                                        </StylessButton>
                                                     }
                                                     <BuybackRateBadge in_demand={group.in_demand} />
                                                 </FlexInline>
@@ -162,7 +159,8 @@ function variants_tip_html(variants: Array<{ name: string; quantity: number; isk
         letter-spacing: 0.03em;
     }
 
-    .buyback-stock-ledger__stock-list {
+    /* Doubled class: it must outrank the Flexblock gap margin whatever the stylesheet order. */
+    .buyback-stock-ledger__stock-list.buyback-stock-ledger__stock-list {
         list-style: none;
         margin: 0;
         padding: 0;

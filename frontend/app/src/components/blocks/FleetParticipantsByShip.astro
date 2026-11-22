@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import type { FleetParticipants } from '@helpers/api.minmatar.org/fleets'
-import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
+import { get_item_icon, get_player_icon } from '@helpers/eve_image'
 import { eve_clock } from '@helpers/fleet_fights'
 
 /**
@@ -25,6 +25,8 @@ const phase_title = (index: number) =>
         t('fleets.after.phase_from').replace('{time}', eve_clock(phases[index].start))
 
 import EmptyState from '@components/blocks/EmptyState.astro'
+import Tag from '@components/blocks/Tag.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
 ---
 
 <section class="[ fleet-by-ship ]" aria-labelledby="fleet-by-ship-title">
@@ -54,12 +56,12 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                             <img src={get_item_icon(hull.ship_type_id, 64)} alt="" width="40" height="40" loading="lazy" />
                             <b>{hull.ship_name}</b>
                             <b class="[ fleet-by-ship__num ]">{hull.count}</b>
-                            <span class="[ fleet-by-ship__chips ]">
+                            <FlexInline gap="var(--space-3xs) var(--space-2xs)" class="[ fleet-by-ship__pilots ]">
                                 {hull.pilots.map(pilot =>
-                                    <span class="[ fleet-by-ship__chip ]"><img src={get_player_icon(pilot.character_id, 32)} alt="" width="24" height="24" loading="lazy" />{pilot.character_name}</span>
+                                    <Tag variant="outline" text={pilot.character_name}><img slot="icon" src={get_player_icon(pilot.character_id, 32)} alt="" width="24" height="24" loading="lazy" /></Tag>
                                 )}
                                 {hull.count > hull.pilots.length && <small>{t('fleets.after.unnamed').replace('{count}', (hull.count - hull.pilots.length).toString())}</small>}
-                            </span>
+                            </FlexInline>
                         </li>
                     )}
                 </ul>
@@ -91,7 +93,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
     }
 
     .fleet-by-ship__muted {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .fleet-by-ship__phase {
@@ -135,28 +137,11 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         font-variant-numeric: tabular-nums;
     }
 
-    .fleet-by-ship__chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-3xs) var(--space-2xs);
-        align-items: center;
-    }
-
-    .fleet-by-ship__chip {
-        display: inline-flex;
-        gap: var(--space-3xs);
-        align-items: center;
-        padding: 2px var(--space-2xs) 2px 2px;
-        border: 1px solid var(--border-color-hover);
-        font-size: var(--step--1);
-        color: var(--highlight);
-    }
-
     @media screen and (max-width: 48rem) {
         .fleet-by-ship__hulls li {
             grid-template-columns: 40px minmax(0, 1fr) auto;
 
-            .fleet-by-ship__chips {
+            .fleet-by-ship__pilots {
                 grid-column: 1 / -1;
             }
         }

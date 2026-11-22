@@ -13,6 +13,11 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import ClipboardButton from '@components/blocks/ClipboardButton.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
+import Select from '@components/blocks/Select.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
 
 interface Props {
     rows: FittingBuyContractPrice[]
@@ -109,6 +114,7 @@ const hull_source_label = (row: FittingBuyContractPrice) => {
 
 const copy_label = t('fitting_buy.contract_copy_price')
 const settings_disabled = !is_owner
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <ComponentBlock
@@ -130,28 +136,25 @@ const settings_disabled = !is_owner
             <input type="hidden" name="action" value="contract_settings" />
             <fieldset class="[ contract-settings__group ]" disabled={settings_disabled}>
                 <legend class="[ contract-settings__legend ]">{t('fitting_buy.contract_markup')}</legend>
-                <div class="[ contract-segments ]" role="radiogroup" aria-label={t('fitting_buy.contract_markup')}>
+                <ChipGroup wrap={true} role="radiogroup" aria_label={t('fitting_buy.contract_markup')}>
                     {presets.map((preset) => (
-                        <label class="[ contract-segment ]">
-                            <input
-                                type="radio"
-                                name="contract_markup_pct"
-                                value={String(preset)}
-                                checked={!is_custom_markup && preset === markup_value}
-                                x-on:change="custom = false"
-                            />
-                            <span class="[ contract-segment__label ]">+{preset}%</span>
-                        </label>
-                    ))}
-                    <label class="[ contract-segment contract-segment--custom ]" x-bind:data-active="custom">
-                        <input
+                        <FilterChip
                             type="radio"
                             name="contract_markup_pct"
-                            value="custom"
-                            checked={is_custom_markup}
-                            x-on:change="custom = true; $nextTick(() => $refs.custom_markup.focus())"
-                        />
-                        <span class="[ contract-segment__label ]">{t('fitting_buy.contract_markup_custom')}</span>
+                            value={String(preset)}
+                            checked={!is_custom_markup && preset === markup_value}
+                            input_attributes={{ 'x-on:change': 'custom = false' }}
+                        >+{preset}%</FilterChip>
+                    ))}
+                    <FilterChip
+                        type="radio"
+                        name="contract_markup_pct"
+                        value="custom"
+                        checked={is_custom_markup}
+                        x-bind:class="{ 'is-active': custom }"
+                        input_attributes={{ 'x-on:change': 'custom = true; $nextTick(() => $refs.custom_markup.focus())' }}
+                    >
+                        {t('fitting_buy.contract_markup_custom')}
                         <span class="[ contract-segment__custom ]">
                             <input
                                 x-ref="custom_markup"
@@ -169,34 +172,26 @@ const settings_disabled = !is_owner
                             />
                             <span aria-hidden="true">%</span>
                         </span>
-                    </label>
-                </div>
+                    </FilterChip>
+                </ChipGroup>
             </fieldset>
 
             <fieldset class="[ contract-settings__group ]" disabled={settings_disabled}>
                 <legend class="[ contract-settings__legend ]">{t('fitting_buy.contract_type')}</legend>
-                <div class="[ contract-segments ]" role="radiogroup" aria-label={t('fitting_buy.contract_type')}>
-                    <label class="[ contract-segment contract-segment--stacked ]">
-                        <input
-                            type="radio"
-                            name="contract_type"
-                            value="alliance"
-                            checked={contract_type !== 'public'}
-                        />
-                        <span class="[ contract-segment__label ]">{t('fitting_buy.contract_type_alliance')}</span>
-                        <small class="[ contract-segment__sub ]">{alliance_fee_summary}</small>
-                    </label>
-                    <label class="[ contract-segment contract-segment--stacked ]">
-                        <input
-                            type="radio"
-                            name="contract_type"
-                            value="public"
-                            checked={contract_type === 'public'}
-                        />
-                        <span class="[ contract-segment__label ]">{t('fitting_buy.contract_type_public')}</span>
-                        <small class="[ contract-segment__sub ]">{public_fee_summary}</small>
-                    </label>
-                </div>
+                <FlexInline gap="var(--space-2xs)" role="radiogroup" aria-label={t('fitting_buy.contract_type')}>
+                    <OptionCard name="contract_type" value="alliance" checked={contract_type !== 'public'}>
+                        <span class="[ contract-segment__text ]">
+                            <span class="[ contract-segment__label ]">{t('fitting_buy.contract_type_alliance')}</span>
+                            <small class="[ contract-segment__sub ]">{alliance_fee_summary}</small>
+                        </span>
+                    </OptionCard>
+                    <OptionCard name="contract_type" value="public" checked={contract_type === 'public'}>
+                        <span class="[ contract-segment__text ]">
+                            <span class="[ contract-segment__label ]">{t('fitting_buy.contract_type_public')}</span>
+                            <small class="[ contract-segment__sub ]">{public_fee_summary}</small>
+                        </span>
+                    </OptionCard>
+                </FlexInline>
             </fieldset>
         </form>
 
@@ -280,7 +275,9 @@ const settings_disabled = !is_owner
                                                     <label class="[ visually-hidden ]" for={`hull-source-${row.line_id}-${row_index}`}>
                                                         {t('fitting_buy.hull_source_prompt')}
                                                     </label>
-                                                    <select
+                                                    <Select
+                                                        size="sm"
+                                                        width="16rem"
                                                         id={`hull-source-${row.line_id}-${row_index}`}
                                                         name="hull_industry_order_id"
                                                     >
@@ -304,7 +301,7 @@ const settings_disabled = !is_owner
                                                         <option value="0" selected={!row.hull_source_needed && row.hull_cost_source === 'jita'}>
                                                             {t('fitting_buy.hull_source_jita')}
                                                         </option>
-                                                    </select>
+                                                    </Select>
                                                 </form>
                                             )}
                                         </dd>
@@ -349,7 +346,7 @@ const settings_disabled = !is_owner
                                 </span>
                                 {has_price ? (
                                     <div class="[ contract-price__action ]">
-                                        <button
+                                        <StylessButton
                                             type="button"
                                             class="[ contract-price__copy ]"
                                             title={`${copy_label}: ${fmt_full(row.contract_price)}`}
@@ -371,8 +368,8 @@ const settings_disabled = !is_owner
                                             <span class="[ contract-price__hint ]" x-show="!copied">
                                                 {t('fitting_buy.contract_click_to_copy')}
                                             </span>
-                                        </button>
-                                        <textarea class="[ hidden ]" id={copy_id} readonly>{row.contract_price}</textarea>
+                                        </StylessButton>
+                                        <Textarea class="[ hidden ]" id={copy_id} readonly>{row.contract_price}</Textarea>
                                     </div>
                                 ) : (
                                     <span class="[ contract-price__value is-missing ]">—</span>
@@ -439,10 +436,6 @@ const settings_disabled = !is_owner
         padding: 0;
         border: 0;
         min-width: 0;
-
-        &[disabled] .contract-segment {
-            cursor: default;
-        }
     }
 
     .contract-settings__legend {
@@ -454,61 +447,9 @@ const settings_disabled = !is_owner
         text-transform: uppercase;
     }
 
-    .contract-segments {
-        display: inline-flex;
-        flex-wrap: wrap;
-        max-width: 100%;
-        border: 1px solid var(--border-color-hover);
-        background: color-mix(in srgb, var(--background) 45%, transparent);
-    }
-
-    .contract-segment {
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-2xs);
-        min-height: var(--space-xl);
-        padding: var(--space-2xs) var(--space-s);
-        color: var(--highlight);
-        font-size: var(--step--1);
-        cursor: pointer;
-        transition: var(--fast-transition);
-
-        & + & {
-            border-inline-start: 1px solid var(--border-color-hover);
-        }
-
-        input[type='radio'] {
-            position: absolute;
-            inset: 0;
-            margin: 0;
-            opacity: 0;
-            cursor: inherit;
-        }
-
-        &:has(input[type='radio']:checked),
-        &[data-active='true'] {
-            background: color-mix(in srgb, var(--fleet-yellow) 16%, transparent);
-            color: var(--fleet-yellow);
-            box-shadow: inset 0 -2px 0 var(--fleet-yellow);
-        }
-
-        &:has(input[type='radio']:focus-visible) {
-            outline: 1px solid var(--foreground);
-            outline-offset: -3px;
-        }
-
-        @media (hover: hover) {
-            &:hover {
-                color: var(--fleet-yellow);
-            }
-        }
-    }
-
-    .contract-segment--stacked {
+    .contract-segment__text {
+        display: flex;
         flex-direction: column;
-        align-items: flex-start;
-        justify-content: center;
         gap: 2px;
     }
 
@@ -531,10 +472,6 @@ const settings_disabled = !is_owner
         }
     }
 
-    .contract-segment:has(input[type='radio']:checked) .contract-segment__sub {
-        color: var(--highlight);
-    }
-
     .contract-segment__custom {
         position: relative;
         z-index: 1;
@@ -550,7 +487,7 @@ const settings_disabled = !is_owner
             border: 0;
             border-bottom: 1px solid var(--border-color-hover);
             background: transparent;
-            color: var(--fleet-yellow);
+            color: inherit;
             font: inherit;
             font-variant-numeric: tabular-nums;
             text-align: right;
@@ -588,7 +525,7 @@ const settings_disabled = !is_owner
         gap: var(--space-s) var(--space-m);
         padding: var(--space-s) var(--space-s-m);
         border: 1px solid var(--border-color-hover);
-        background: color-mix(in srgb, var(--background) 35%, transparent);
+        background: color-mix(in srgb, var(--background) var(--tint-medium), transparent);
 
         @media (min-width: 60rem) {
             grid-template-columns: minmax(0, 1.7fr) minmax(19rem, 1fr);
@@ -643,18 +580,6 @@ const settings_disabled = !is_owner
         color: var(--fleet-yellow);
     }
 
-    .hull-source select {
-        width: 100%;
-        max-width: 16rem;
-        margin-top: var(--space-3xs);
-        padding: var(--space-3xs) var(--space-2xs);
-        font-family: var(--default-font);
-        font-size: var(--step--1);
-        color: var(--foreground);
-        background: var(--background);
-        border: 1px solid var(--border-color-hover);
-    }
-
     .contract-fit__copy-fit {
         margin-inline-start: auto;
         flex-shrink: 0;
@@ -677,7 +602,7 @@ const settings_disabled = !is_owner
         min-width: 0;
         padding: var(--space-xs) var(--space-s);
         border: 1px solid var(--border-color);
-        background: color-mix(in srgb, var(--background) 45%, transparent);
+        background: color-mix(in srgb, var(--background) var(--tint-strong), transparent);
 
         dt {
             color: var(--highlight);
@@ -693,7 +618,7 @@ const settings_disabled = !is_owner
 
         &.is-total {
             border-color: color-mix(in srgb, var(--fleet-yellow) 35%, var(--border-color-hover));
-            background: color-mix(in srgb, var(--fleet-yellow) 6%, transparent);
+            background: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
         }
     }
 
@@ -827,7 +752,7 @@ const settings_disabled = !is_owner
         @media (hover: hover) {
             &:hover {
                 border-color: var(--border-color-hover);
-                background: color-mix(in srgb, var(--fleet-yellow) 8%, transparent);
+                background: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
             }
 
             &:hover .contract-price__hint {
@@ -925,14 +850,6 @@ const settings_disabled = !is_owner
             padding-inline: var(--space-s);
         }
 
-        .contract-segments {
-            display: flex;
-        }
-
-        .contract-segment {
-            flex: 1 1 auto;
-        }
-
         .contract-segment__sub {
             white-space: normal;
         }
@@ -978,12 +895,6 @@ const settings_disabled = !is_owner
 
         .contract-cost {
             padding-inline: var(--space-xs);
-        }
-
-        .hull-source select {
-            max-width: none;
-            min-height: var(--space-xl);
-            font-size: var(--step-0);
         }
     }
 </style>

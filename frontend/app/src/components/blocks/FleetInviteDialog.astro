@@ -72,9 +72,15 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import FluidFixed from '@components/compositions/FluidFixed.astro'
 
 import Button from '@components/blocks/Button.astro'
+import Dropdown from '@components/blocks/Dropdown.astro'
 import DialogButton from '@components/blocks/DialogButton.astro'
 import Input from '@components/blocks/Input.astro'
 import Textarea from '@components/blocks/Textarea.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 ---
 
 <DialogButton
@@ -90,7 +96,7 @@ import Textarea from '@components/blocks/Textarea.astro'
         hx-post={`${PARTIAL_URL}&action=wave`}
         hx-target="#fleet-invites"
         hx-swap="outerHTML"
-        x-data={`{ picks: [], onboarding: [], add_mode: '${start_mode}', query: '', paste_text: '', note: '', reach: null, timezones: ${JSON.stringify(fleet_timezones)}, any_timezone: false, timezones_open: false, pick_counts: {}, bucket_counts: ${JSON.stringify(bucket_counts)}, refresh() { $nextTick(() => htmx.trigger($refs.preview, 'refresh')) }, plays_now(pick) { return this.any_timezone || !pick.tz || pick.tz.length === 0 || pick.tz.some(code => this.timezones.includes(code)) } }`}
+        x-data={`{ picks: [], onboarding: [], add_mode: '${start_mode}', query: '', paste_text: '', note: '', reach: null, timezones: ${JSON.stringify(fleet_timezones)}, any_timezone: false, pick_counts: {}, bucket_counts: ${JSON.stringify(bucket_counts)}, refresh() { $nextTick(() => htmx.trigger($refs.preview, 'refresh')) }, plays_now(pick) { return this.any_timezone || !pick.tz || pick.tz.length === 0 || pick.tz.some(code => this.timezones.includes(code)) } }`}
         x-on:invite-reach="reach = $event.detail.new; pick_counts = $event.detail.picks || {}; if ($event.detail.onboarding) bucket_counts = $event.detail.onboarding"
         x-on:pick-candidate="query = ''; if (!picks.some(p => p.kind === $event.detail.kind && p.id === $event.detail.id)) { picks.push($event.detail); $nextTick(() => htmx.trigger($refs.preview, 'refresh')) }"
     >
@@ -110,51 +116,42 @@ import Textarea from '@components/blocks/Textarea.astro'
                                 <template x-for="code in timezones" x-bind:key="code">
                                     <span class="[ invite-dialog__tz is-fixed ]" x-show="!any_timezone" x-text="code"></span>
                                 </template>
-                                <div class="[ invite-dialog__tz-menu ]">
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        color="transparent"
-                                        x-on:click="timezones_open = !timezones_open"
-                                        x-bind:aria-expanded="timezones_open"
-                                    >
-                                        {t('fleets.invites.timezone_change')}
-                                    </Button>
-                                    <div class="[ invite-dialog__tz-options ]" x-show="timezones_open" x-cloak x-on:click.outside="timezones_open = false">
-                                        <label>
-                                            <input type="checkbox" x-model="any_timezone" x-on:change="refresh()" />
+                                <Dropdown variant="button" color="transparent" size="sm">
+                                    <Fragment slot="button">{t('fleets.invites.timezone_change')}</Fragment>
+                                    <div class="[ invite-dialog__tz-options ]">
+                                        <RadioCheckInput type="checkbox" x-model="any_timezone" x-on:change="refresh()">
                                             <span>{t('fleets.invites.timezone_any')}</span>
-                                        </label>
+                                        </RadioCheckInput>
                                         {timezone_options.map(option =>
-                                            <label>
-                                                <input
-                                                    type="checkbox"
-                                                    value={option.code}
-                                                    x-model="timezones"
-                                                    x-bind:disabled={`any_timezone || (timezones.length === 1 && timezones[0] === '${option.code}')`}
-                                                    x-on:change="refresh()"
-                                                />
+                                            <RadioCheckInput
+                                                type="checkbox"
+                                                value={option.code}
+                                                x-model="timezones"
+                                                x-bind:disabled={`any_timezone || (timezones.length === 1 && timezones[0] === '${option.code}')`}
+                                                x-on:change="refresh()"
+                                            >
                                                 <span>{option.code}</span>
                                                 <small class="[ text-muted ]">{fleet_timezones.includes(option.code) ? t('fleets.invites.timezone_fleet') : option.description}</small>
-                                            </label>
+                                            </RadioCheckInput>
                                         )}
                                     </div>
-                                </div>
+                                </Dropdown>
                             </Fragment> :
                             fleet_timezones.length > 1 ?
                                 <div class="[ invite-dialog__tzs ]" role="group" aria-label={t('fleets.invites.timezone')}>
                                     {fleet_timezones.map(code =>
-                                        <label class="[ invite-dialog__tz ]">
-                                            <input
-                                                type="checkbox"
-                                                value={code}
-                                                x-model="timezones"
-                                                x-bind:disabled={`timezones.length === 1 && timezones[0] === '${code}'`}
-                                                x-on:change="refresh()"
-                                            />
+                                        <FilterChip
+                                            type="checkbox"
+                                            value={code}
+                                            input_attributes={{
+                                                'x-model': 'timezones',
+                                                'x-bind:disabled': `timezones.length === 1 && timezones[0] === '${code}'`,
+                                                'x-on:change': 'refresh()',
+                                            }}
+                                        >
                                             <span>{code}</span>
                                             <small class="[ text-muted ]">{timezone_description(code, t)}</small>
-                                        </label>
+                                        </FilterChip>
                                     )}
                                 </div> :
                                 fleet_timezones.map(code =>
@@ -173,44 +170,42 @@ import Textarea from '@components/blocks/Textarea.astro'
                     <Flexblock gap="var(--space-xs)">
                         <FlexInline gap="var(--space-s)">
                             <h3 class="[ invite-dialog__label ]">{t('fleets.private.wave_who')}</h3>
-                            <div class="[ invite-dialog__modes ]" role="group" aria-label={t('fleets.private.wave_search')}>
+                            <ChipGroup wrap={true} aria_label={t('fleets.private.wave_search')}>
                                 {new_pilots &&
-                                    <button
-                                        type="button"
+                                    <FilterChip
                                         x-on:click="add_mode = 'new'"
+                                        x-bind:class="{ 'is-active': add_mode === 'new' }"
                                         x-bind:aria-pressed="add_mode === 'new'"
-                                    >{t('fleets.invites.mode_new_pilots')}</button>
+                                    >{t('fleets.invites.mode_new_pilots')}</FilterChip>
                                 }
-                                <button
-                                    type="button"
+                                <FilterChip
                                     x-on:click="add_mode = 'search'"
+                                    x-bind:class="{ 'is-active': add_mode === 'search' }"
                                     x-bind:aria-pressed="add_mode === 'search'"
-                                >{t('fleets.invites.mode_select')}</button>
-                                <button
-                                    type="button"
+                                >{t('fleets.invites.mode_select')}</FilterChip>
+                                <FilterChip
                                     x-on:click="add_mode = 'paste'"
+                                    x-bind:class="{ 'is-active': add_mode === 'paste' }"
                                     x-bind:aria-pressed="add_mode === 'paste'"
-                                >{t('fleets.invites.mode_paste')}</button>
-                            </div>
+                                >{t('fleets.invites.mode_paste')}</FilterChip>
+                            </ChipGroup>
                         </FlexInline>
 
                         {new_pilots &&
                             <Flexblock gap="var(--space-2xs)" x-show="add_mode === 'new'" x-cloak={start_mode !== 'new' ? '' : undefined}>
                                 {BUCKETS.map(bucket =>
-                                    <label class="[ invite-dialog__bucket ]">
-                                        <input
-                                            type="checkbox"
-                                            name="onboarding"
-                                            value={bucket.key}
-                                            x-model="onboarding"
-                                            x-on:change="refresh()"
-                                        />
-                                        <span>
+                                    <OptionCard
+                                        type="checkbox"
+                                        name="onboarding"
+                                        value={bucket.key}
+                                        input_attributes={{ 'x-model': 'onboarding', 'x-on:change': 'refresh()' }}
+                                    >
+                                        <span class="[ invite-dialog__bucket-text ]">
                                             <b>{bucket.label}</b>
                                             <small class="[ text-muted ]">{bucket.hint}</small>
                                         </span>
                                         <span class="[ invite-dialog__bucket-count ]" x-text={`any_timezone || bucket_counts.${bucket.key}[0] === bucket_counts.${bucket.key}[1] ? bucket_counts.${bucket.key}[1] : ${of_label}.replace('{in}', bucket_counts.${bucket.key}[0]).replace('{total}', bucket_counts.${bucket.key}[1])`}>{bucket_counts[bucket.key as keyof typeof bucket_counts][0]}</span>
-                                    </label>
+                                    </OptionCard>
                                 )}
                             </Flexblock>
                         }
@@ -285,11 +280,11 @@ import Textarea from '@components/blocks/Textarea.astro'
                                         >{no_tz_label}</span>
                                         <span class="[ invite-dialog__skipped ]" x-show="pick.skip">{t('fleets.invites.skipped')}</span>
                                         <input type="hidden" x-bind:name="pick.kind + '_ids'" x-bind:value="pick.id" />
-                                        <button
+                                        <StylessButton
                                             type="button"
                                             x-on:click="picks.splice(index, 1); $nextTick(() => htmx.trigger($refs.preview, 'refresh'))"
                                             x-bind:aria-label="'Remove ' + pick.name"
-                                        >×</button>
+                                        >×</StylessButton>
                                     </li>
                                 </template>
                             </ul>
@@ -381,7 +376,7 @@ import Textarea from '@components/blocks/Textarea.astro'
         font-family: var(--default-font);
         font-size: var(--step--1);
         font-weight: 600;
-        color: var(--text-muted);
+        color: var(--faded);
         text-transform: uppercase;
         letter-spacing: 0.06em;
     }
@@ -402,7 +397,7 @@ import Textarea from '@components/blocks/Textarea.astro'
         gap: var(--space-2xs);
         min-height: var(--space-xl);
         padding: 0 var(--space-xs);
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
         color: var(--highlight);
         font-size: var(--step--1);
         cursor: pointer;
@@ -416,55 +411,24 @@ import Textarea from '@components/blocks/Textarea.astro'
             cursor: default;
         }
 
-        input {
-            width: var(--space-s);
-            height: var(--space-s);
-            margin: 0;
-            accent-color: var(--fleet-red);
-        }
-    }
-
-    .invite-dialog__tz-menu {
-        position: relative;
     }
 
     .invite-dialog__tz-options {
-        position: absolute;
-        top: calc(100% + var(--space-3xs));
-        left: 0;
-        z-index: var(--tooltips-z-index);
         display: flex;
         flex-direction: column;
+        gap: var(--space-2xs);
         min-width: 16rem;
         padding: var(--space-2xs);
-        background-color: var(--background);
-        border: 1px solid var(--border-color);
-
-        label {
-            display: flex;
-            align-items: center;
-            gap: var(--space-2xs);
-            min-height: var(--space-xl);
-            padding: 0 var(--space-2xs);
-            color: var(--highlight);
-            font-size: var(--step--1);
-            cursor: pointer;
-        }
 
         small {
-            margin-left: auto;
-        }
-
-        input {
-            margin: 0;
-            accent-color: var(--fleet-red);
+            margin-left: var(--space-xs);
         }
     }
 
     .invite-dialog__pick-tz {
         padding: 0 var(--space-3xs);
-        border: 1px solid var(--hairline-strong);
-        color: var(--text-muted);
+        border: 1px solid var(--border-color-hover);
+        color: var(--faded);
         font-size: var(--step--2);
         font-weight: 600;
         letter-spacing: 0.04em;
@@ -475,51 +439,10 @@ import Textarea from '@components/blocks/Textarea.astro'
         font-variant-numeric: tabular-nums;
     }
 
-    .invite-dialog__modes {
-        display: inline-flex;
-        border: 1px solid var(--hairline-strong);
-
-        button {
-            padding: var(--space-3xs) var(--space-xs);
-            background: transparent;
-            border: 0;
-            color: var(--foreground);
-            font: inherit;
-            font-size: var(--step--1);
-            cursor: pointer;
-
-            &[aria-pressed="true"] {
-                background-color: var(--foreground);
-                color: var(--background);
-                font-weight: 600;
-            }
-        }
-    }
-
-    .invite-dialog__bucket {
+    .invite-dialog__bucket-text {
         display: flex;
-        align-items: center;
-        gap: var(--space-s);
-        padding: var(--space-xs) var(--space-s);
-        border: 1px solid var(--hairline-strong);
-        cursor: pointer;
-
-        &:has(input:checked) {
-            border-color: var(--foreground);
-        }
-
-        input {
-            width: var(--space-s);
-            height: var(--space-s);
-            margin: 0;
-            accent-color: var(--fleet-red);
-        }
-
-        > span:nth-child(2) {
-            display: flex;
-            flex: 1;
-            flex-direction: column;
-        }
+        flex: 1;
+        flex-direction: column;
 
         b {
             color: var(--highlight);
@@ -560,23 +483,24 @@ import Textarea from '@components/blocks/Textarea.astro'
             align-items: center;
             gap: var(--space-3xs);
             padding-left: var(--space-xs);
-            border: 1px solid var(--hairline-strong);
+            border: 1px solid var(--border-color-hover);
             color: var(--highlight);
             font-size: var(--step--1);
         }
 
         li.is-skipped {
             border-style: dashed;
-            border-color: color-mix(in srgb, var(--fleet-red-blind) 55%, transparent);
-            color: var(--text-muted);
+            border-color: color-mix(in srgb, var(--fleet-red-blind) var(--tint-bold), transparent);
+            color: var(--faded);
         }
 
         button {
+            text-align: center;
             min-width: var(--space-l);
             min-height: var(--space-l);
             background: transparent;
             border: 0;
-            color: var(--text-muted);
+            color: var(--faded);
             font: inherit;
             cursor: pointer;
         }
@@ -623,7 +547,7 @@ import Textarea from '@components/blocks/Textarea.astro'
 
     .invite-dialog__fake-button {
         padding: var(--space-3xs) var(--space-xs);
-        background-color: var(--hairline-strong);
+        background-color: var(--border-color-hover);
         color: var(--highlight);
     }
 

@@ -11,7 +11,7 @@ import type { UniverseStructure } from '@dtypes/api.minmatar.org'
 import { get_request_user } from '@helpers/request_user'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 import { get_gates, can } from '@helpers/gates'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 import {
     get_universe_structures,
     confirm_universe_structure,
@@ -79,6 +79,8 @@ const VISIBILITY_VARIANT = { alliance: 'fill', corporation: 'fill', private: 'ou
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import DialogButton from '@components/blocks/DialogButton.astro'
@@ -90,6 +92,8 @@ import ManageSearch from '@components/blocks/manage/ManageSearch.astro'
 import ManageTable from '@components/blocks/manage/ManageTable.astro'
 import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
 import StructureReportDialog from '@components/blocks/structures/StructureReportDialog.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
 ---
 
 <div id="universe-structures" class="[ universe-structures ]" x-data="{ view: 'all', q: '' }">
@@ -98,14 +102,18 @@ import StructureReportDialog from '@components/blocks/structures/StructureReport
         :
         <Flexblock gap="var(--space-s)">
             <div class="[ manage-filters ]">
-                <div class="[ manage-chips ]" role="radiogroup" aria-label={t('universe.tab.structures')}>
+                <ChipGroup wrap={true} role="radiogroup" aria_label={t('universe.tab.structures')}>
                     {(['all', 'ours', 'reported', 'reinforced'] as const).map((name) => (
-                        <button type="button" role="radio" class="[ manage-chip ]" x-bind:class={`{ 'is-on': view === '${name}' }`} x-bind:aria-checked={`view === '${name}'`} x-on:click={`view = '${name}'`}>
-                            <span>{name === 'all' ? t('universe.view_all') : t(`universe.structures.view_${name}`)}</span>
-                            <span class="[ manage-chip__count ]">{counts[name]}</span>
-                        </button>
+                        <FilterChip
+                            type="radio"
+                            name="universe-structures-view"
+                            value={name}
+                            checked={name === 'all'}
+                            count={counts[name]}
+                            input_attributes={{ 'x-model': 'view' }}
+                        >{name === 'all' ? t('universe.view_all') : t(`universe.structures.view_${name}`)}</FilterChip>
                     ))}
-                </div>
+                </ChipGroup>
                 <FlexInline gap="var(--space-s)" class="[ universe-toolbar ]">
                     <ManageSearch id="universe-structures-search" label={t('universe.structures.search')} placeholder={t('universe.structures.search')} x-model="q" />
                     <StructureReportDialog />
@@ -128,13 +136,13 @@ import StructureReportDialog from '@components/blocks/structures/StructureReport
                                 x-show="$el.dataset.view.split(' ').includes(view) && (!q || $el.dataset.search.includes(q.toLowerCase()))"
                             >
                                 <td>
-                                    <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+                                    <StylessButton type="button" class="[ manage-who ]" x-on:click="open = !open">
                                         <img src={get_item_icon(row.type_id, 64)} alt="" width="40" height="40" loading="lazy" />
                                         <span class="[ manage-who__text ]">
                                             <span class="[ manage-who__name ]">{row.name}</span>
                                             <span class="[ manage-who__sub ]">{row.type_name} · {row.system_name}</span>
                                         </span>
-                                    </button>
+                                    </StylessButton>
                                 </td>
                                 <td class="[ is-wide ]">
                                     <span>{row.corporation_name || '—'}</span>
@@ -159,11 +167,11 @@ import StructureReportDialog from '@components/blocks/structures/StructureReport
                                         <FlexInline justification="space-between" class="[ items-center ]">
                                             <h4>{t('universe.structures.fitting')}</h4>
                                             {row.fitting &&
-                                                <button type="button" class="[ universe-copy ]" x-data="{ copied: false }"
+                                                <StylessButton type="button" class="[ universe-copy ]" x-data="{ copied: false }"
                                                     x-on:click="navigator.clipboard.writeText($el.closest('.universe-detail').querySelector('pre').textContent).then(() => { copied = true; setTimeout(() => copied = false, 1500) })"
                                                     x-text={`copied ? ${JSON.stringify(t('universe.structures.copied'))} : ${JSON.stringify(t('universe.structures.copy_pyfa'))}`}>
                                                     {t('universe.structures.copy_pyfa')}
-                                                </button>
+                                                </StylessButton>
                                             }
                                         </FlexInline>
                                         {row.fitting ? <pre>{row.fitting}</pre> : <p class="[ manage-muted ]">{t('universe.structures.no_fit')}</p>}
@@ -202,13 +210,12 @@ import StructureReportDialog from '@components/blocks/structures/StructureReport
                                                         <input type="hidden" name="structure_id" value={row.id} />
                                                         <input type="hidden" name="action" value="visibility" />
                                                         {(['alliance', 'corporation', 'private'] as const).map((level) => (
-                                                            <label class="[ universe-visibility__option ]">
-                                                                <input type="radio" name="visibility" value={level} checked={row.visibility === level} />
-                                                                <span>
+                                                            <OptionCard name="visibility" value={level} checked={row.visibility === level}>
+                                                                <span class="[ universe-visibility__text ]">
                                                                     <b>{t(`universe.visibility.${level}`)}</b>
                                                                     <small>{t(`universe.visibility.${level}_hint`).replace('~CORP', row.corporation_name)}</small>
                                                                 </span>
-                                                            </label>
+                                                            </OptionCard>
                                                         ))}
                                                         <div class="[ manage-actions ]">
                                                             <Button type="submit" size="sm" color="fleet-red">{t('universe.visibility.save')}</Button>
@@ -244,7 +251,9 @@ import StructureReportDialog from '@components/blocks/structures/StructureReport
     }
 
     .universe-attention {
-        color: var(--security-status-point-4);
+        padding-inline: var(--space-3xs);
+        background-color: var(--fleet-yellow);
+        color: var(--background);
     }
 
     .universe-detail {
@@ -297,7 +306,7 @@ import StructureReportDialog from '@components/blocks/structures/StructureReport
         font-size: var(--step--1);
 
         dt {
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         dd {
@@ -315,24 +324,10 @@ import StructureReportDialog from '@components/blocks/structures/StructureReport
         gap: var(--space-s);
     }
 
-    .universe-visibility__option {
+    .universe-visibility__text {
         display: flex;
-        gap: var(--space-s);
-        align-items: flex-start;
-        padding: var(--space-s);
-        border: 1px solid var(--border-color);
-        cursor: pointer;
-
-        &:has(input:checked) {
-            border-color: var(--fleet-yellow);
-            background: color-mix(in srgb, var(--fleet-yellow) 8%, transparent);
-        }
-
-        span {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-3xs);
-        }
+        flex-direction: column;
+        gap: var(--space-3xs);
 
         b {
             color: var(--highlight);

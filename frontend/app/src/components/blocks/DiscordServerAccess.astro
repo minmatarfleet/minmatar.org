@@ -17,8 +17,11 @@ import Button from '@components/blocks/Button.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import Select from '@components/blocks/Select.astro'
 import Switch from '@components/blocks/Switch.astro'
-import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
+import DataGrid from '@components/blocks/DataGrid.astro'
 
+import StylessButton from '@components/blocks/StylessButton.astro'
 /**
  * A corporation's Discord, in the order a CEO decides it: who can join,
  * the roles that choice makes sense of, then what happens to everyone
@@ -151,14 +154,12 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         <div class="[ server-access__body ]">
             <div class="[ server-access__options ]" role="radiogroup" aria-labelledby="server-access-policy">
                 {POLICIES.map((option) => (
-                    <label class="[ server-access__option ]">
-                        <input type="radio" name="member_policy" value={option.value} checked={policy === option.value} x-model="policy" />
-                        <span class="[ server-access__radio ]" aria-hidden="true"></span>
+                    <OptionCard name="member_policy" value={option.value} checked={policy === option.value} input_attributes={{ 'x-model': 'policy' }}>
                         <span>
                             <span class="[ server-access__option-title ]">{t(option.title)}</span>
                             <span class="[ server-access__option-sub ]">{t(option.sub)}</span>
                         </span>
-                    </label>
+                    </OptionCard>
                 ))}
             </div>
         </div>
@@ -214,14 +215,14 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
                                     ))}
                                 </Select>
                                 {row.optional ?
-                                    <button
+                                    <StylessButton
                                         type="button"
                                         class="[ server-access__icon-button ]"
                                         aria-label={t('corporations.discord.role_drop').replace('{role}', t(ROLE_KEYS[row.state].title))}
                                         x-on:click={`drop(${row.json})`}
                                     >
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-                                    </button>
+                                    </StylessButton>
                                     :
                                     <span></span>
                                 }
@@ -279,12 +280,15 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
                                     {t('corporations.discord.roles_strip_pending')}
                                     <span class="[ server-access__count ]"> · {role_sync.strip_pending_total}</span>
                                 </h5>
-                                <XFadeScroll>
-                                    <div class="[ server-access__table server-access__strips ]" role="table">
-                                        <div class="[ server-access__thead ]" role="row">
-                                            <span role="columnheader">{t('corporations.discord.members_pilot')}</span>
-                                            <span role="columnheader">{t('corporations.discord.roles_strip_when')}</span>
-                                        </div>
+                                <DataGrid
+                                    class="[ server-access__table server-access__strips ]"
+                                    template="minmax(0, 1fr) minmax(0, 1fr)"
+                                    min_width="28rem"
+                                    columns={[
+                                        t('corporations.discord.members_pilot'),
+                                        t('corporations.discord.roles_strip_when'),
+                                    ]}
+                                >
                                         {role_sync.strip_pending.map((row) => {
                                             const eta = discord_removal_eta(row.strip_after)
                                             return (
@@ -299,8 +303,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
                                                 </div>
                                             )
                                         })}
-                                    </div>
-                                </XFadeScroll>
+                                </DataGrid>
                                 {strip_hidden > 0 &&
                                     <small class="[ server-access__sub ]">
                                         {t('corporations.discord.members_pending_more').replace('{count}', String(strip_hidden))}
@@ -312,12 +315,15 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
                             <div class="[ server-access__strip-list ]">
                                 <h5 class="[ server-access__option-title ]">{t('corporations.discord.roles_strip_recent')}</h5>
                                 <p class="[ server-access__sub ]">{t('corporations.discord.roles_strip_recent_help')}</p>
-                                <XFadeScroll>
-                                    <div class="[ server-access__table server-access__strips ]" role="table">
-                                        <div class="[ server-access__thead ]" role="row">
-                                            <span role="columnheader">{t('corporations.discord.members_pilot')}</span>
-                                            <span role="columnheader">{t('corporations.discord.roles_strip_removed')}</span>
-                                        </div>
+                                <DataGrid
+                                    class="[ server-access__table server-access__strips ]"
+                                    template="minmax(0, 1fr) minmax(0, 1fr)"
+                                    min_width="28rem"
+                                    columns={[
+                                        t('corporations.discord.members_pilot'),
+                                        t('corporations.discord.roles_strip_removed'),
+                                    ]}
+                                >
                                         {role_sync.strip_recent.map((row) => (
                                             <div class="[ server-access__row ]" role="row">
                                                 <span class="[ server-access__who ]" role="cell">
@@ -329,8 +335,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
                                                 </span>
                                             </div>
                                         ))}
-                                    </div>
-                                </XFadeScroll>
+                                </DataGrid>
                             </div>
                         }
                     </div>
@@ -358,9 +363,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         <div class="[ server-access__body ]" x-show="policy !== '' || strip" x-cloak={!cleanup_on ? true : undefined}>
             <div class="[ server-access__options ]" role="radiogroup" aria-labelledby="server-access-cleanup" x-show="policy !== ''" x-cloak={!policy ? true : undefined}>
                 {ACTIONS.map((option) => (
-                    <label class="[ server-access__option ]">
-                        <input type="radio" name="member_cleanup" value={option.value} checked={action === option.value} x-model="action" />
-                        <span class="[ server-access__radio ]" aria-hidden="true"></span>
+                    <OptionCard name="member_cleanup" value={option.value} checked={action === option.value} input_attributes={{ 'x-model': 'action' }}>
                         <span>
                             <span class="[ server-access__option-title ]">
                                 {t(option.title)}
@@ -368,7 +371,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
                             </span>
                             <span class="[ server-access__option-sub ]">{t(option.sub)}</span>
                         </span>
-                    </label>
+                    </OptionCard>
                 ))}
             </div>
 
@@ -401,14 +404,15 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
                 <label class="[ server-access__label ]" for="member-access-exemptions">{t('corporations.discord.members_exemptions')}</label>
                 <div>
                     <input type="hidden" name="member_exemptions" value={exemptions.join(',')} x-bind:value="names.join(',')" />
-                    <div class="[ server-access__chips ]">
+                    <div class="[ server-access__tag-input ]">
                         <template x-for="name in names" x-bind:key="name">
-                            <span class="[ server-access__chip ]">
-                                <span x-text="name"></span>
-                                <button type="button" x-bind:aria-label={`'${t('corporations.discord.members_exemption_drop')}'.replace('{name}', name)`} x-on:click="drop_name(name)">
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-                                </button>
-                            </span>
+                            <FilterChip
+                                removable={true}
+                                remove_attributes={{
+                                    'x-bind:aria-label': `'${t('corporations.discord.members_exemption_drop')}'.replace('{name}', name)`,
+                                    'x-on:click': 'drop_name(name)',
+                                }}
+                            ><span x-text="name"></span></FilterChip>
                         </template>
                         <input
                             id="member-access-exemptions"
@@ -459,14 +463,18 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
                 {access.pending.length === 0 ?
                     <EmptyState title={t('corporations.discord.members_pending_empty')} />
                     :
-                    <XFadeScroll>
-                        <div class="[ server-access__table server-access__list ]" role="table">
-                            <div class="[ server-access__thead ]" role="row">
-                                <span role="columnheader">{t('corporations.discord.members_pilot')}</span>
-                                <span role="columnheader">{t('corporations.discord.members_reason')}</span>
-                                <span role="columnheader">{t(notifies ? 'corporations.discord.members_notified_column' : 'corporations.discord.members_removed_column')}</span>
-                                <span role="columnheader"><span class="visually-hidden">{t('corporations.discord.members_keep')}</span></span>
-                            </div>
+                    <DataGrid
+                        class="[ server-access__table server-access__list ]"
+                        template="minmax(0, 1fr) 12rem 10rem 5rem"
+                        min_width="40rem"
+                        hidden_columns={[3]}
+                        columns={[
+                            t('corporations.discord.members_pilot'),
+                            t('corporations.discord.members_reason'),
+                            t(notifies ? 'corporations.discord.members_notified_column' : 'corporations.discord.members_removed_column'),
+                            t('corporations.discord.members_keep'),
+                        ]}
+                    >
                             {access.pending.map((row) => {
                                 const status = status_label(row)
                                 return (
@@ -485,8 +493,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
                                     </div>
                                 )
                             })}
-                        </div>
-                    </XFadeScroll>
+                    </DataGrid>
                 }
                 {hidden > 0 &&
                     <small class="[ server-access__sub ]">
@@ -522,7 +529,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
     }
 
     .server-access__panel {
-        border: solid 1px var(--hairline-medium);
+        border: solid 1px var(--border-color);
         border-radius: var(--space-3xs);
         background-color: var(--component-background);
         transition: opacity var(--fast-transition);
@@ -538,7 +545,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         align-items: start;
         gap: var(--space-2xs) var(--space-xs);
         padding: var(--space-s) var(--space-m);
-        border-bottom: solid 1px var(--hairline);
+        border-bottom: solid 1px var(--border-color);
 
         .is-off & {
             border-bottom: none;
@@ -552,7 +559,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         width: var(--space-m);
         height: var(--space-m);
         border-radius: 50%;
-        background-color: var(--hairline-strong);
+        background-color: var(--border-color-hover);
         color: var(--highlight);
         font-size: var(--step--2);
         font-weight: 700;
@@ -577,7 +584,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
     }
 
     .server-access__count {
-        color: var(--text-muted);
+        color: var(--faded);
         font-weight: 500;
     }
 
@@ -585,7 +592,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
     .server-access__muted {
         margin-block-start: var(--space-3xs);
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .server-access__muted {
@@ -604,7 +611,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         flex-direction: column;
         gap: var(--space-2xs);
         padding-top: var(--space-s);
-        border-top: solid 1px var(--hairline);
+        border-top: solid 1px var(--border-color);
 
         .server-access__option-title,
         .server-access__option-sub {
@@ -616,51 +623,6 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
         gap: var(--space-xs);
-    }
-
-    .server-access__option {
-        position: relative;
-        display: flex;
-        align-items: flex-start;
-        gap: var(--space-xs);
-        padding: var(--space-xs) var(--space-s);
-        border: solid 1px var(--hairline-strong);
-        border-radius: var(--space-3xs);
-        background-color: var(--surface-sunken);
-        cursor: pointer;
-        transition: border-color var(--fast-transition), background-color var(--fast-transition);
-
-        input {
-            position: absolute;
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        &:has(input:checked) {
-            border-color: var(--foreground);
-            background-color: color-mix(in srgb, var(--foreground) 6%, transparent);
-        }
-
-        &:has(input:focus-visible) {
-            outline: solid 2px var(--foreground);
-            outline-offset: 2px;
-        }
-    }
-
-    .server-access__radio {
-        flex: none;
-        box-sizing: border-box;
-        width: var(--space-s);
-        height: var(--space-s);
-        margin-block-start: var(--space-3xs);
-        border: solid 2px var(--faded);
-        border-radius: 50%;
-
-        :checked + & {
-            border-color: var(--foreground);
-            background-color: var(--foreground);
-            box-shadow: inset 0 0 0 3px var(--component-background);
-        }
     }
 
     .server-access__option-title {
@@ -679,19 +641,32 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         display: inline-block;
         margin-inline-start: var(--space-3xs);
         font-size: var(--step--2);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .server-access__option-sub {
         display: block;
         margin-block-start: var(--space-3xs);
         font-size: var(--step--2);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
-    .server-access__table {
-        border: solid 1px var(--hairline-medium);
+    :global(.server-access__table) {
+        border: solid 1px var(--border-color);
         border-radius: var(--space-3xs);
+    }
+
+    :global(.server-access__table .data-grid-head) {
+        min-height: var(--space-l);
+        padding: 0 var(--space-s);
+        gap: var(--space-2xs) var(--space-s);
+        border-bottom: none;
+        background-color: var(--surface-sunken);
+        font-family: inherit;
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        color: var(--faded);
     }
 
     .server-access__thead,
@@ -709,13 +684,13 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         font-weight: 600;
         letter-spacing: 0.06em;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .server-access__row {
         min-height: var(--space-xl);
         padding-block: var(--space-2xs);
-        border-top: solid 1px var(--hairline);
+        border-top: solid 1px var(--border-color);
         color: var(--highlight);
     }
 
@@ -751,10 +726,6 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         }
     }
 
-    .server-access__list {
-        min-width: 40rem;
-    }
-
     .server-access__strip-list {
         display: flex;
         flex-direction: column;
@@ -762,17 +733,11 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         padding-top: var(--space-2xs);
     }
 
-    .server-access__strips {
-        min-width: 28rem;
-    }
-
-    .server-access__strips .server-access__thead,
-    .server-access__strips .server-access__row {
+    :global(.server-access__strips) .server-access__row {
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     }
 
-    .server-access__list .server-access__thead,
-    .server-access__list .server-access__row {
+    :global(.server-access__list) .server-access__row {
         grid-template-columns: minmax(0, 1fr) 12rem 10rem 5rem;
     }
 
@@ -787,7 +752,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
 
         small {
             font-size: var(--step--2);
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
@@ -816,7 +781,7 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
     .server-access__status {
         font-size: var(--step--1);
         font-variant-numeric: tabular-nums;
-        color: var(--text-muted);
+        color: var(--faded);
 
         &.is-waiting {
             color: var(--fleet-yellow);
@@ -845,43 +810,22 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
     .server-access__help {
         margin-block-start: var(--space-3xs);
         font-size: var(--step--2);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
-    .server-access__chips {
+    .server-access__tag-input {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
         gap: var(--space-3xs);
         min-height: var(--space-xl);
         padding: var(--space-3xs) var(--space-2xs);
-        border: solid 1px var(--hairline-strong);
+        border: solid 1px var(--border-color-hover);
         border-radius: var(--space-3xs);
         background-color: var(--surface-sunken);
 
         &:focus-within {
             border-color: var(--foreground);
-        }
-    }
-
-    .server-access__chip {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-3xs);
-        padding: var(--space-3xs) var(--space-3xs) var(--space-3xs) var(--space-2xs);
-        border-radius: var(--space-s);
-        background-color: var(--hairline-strong);
-        font-size: var(--step--1);
-        color: var(--highlight);
-
-        button {
-            display: grid;
-            place-items: center;
-            border: none;
-            border-radius: 50%;
-            background: none;
-            color: var(--faded);
-            cursor: pointer;
         }
     }
 
@@ -906,9 +850,9 @@ function status_label(row: DiscordMemberAccess['pending'][number]): { text: stri
         align-items: center;
         gap: var(--space-xs) var(--space-s);
         padding: var(--space-xs) var(--space-s);
-        border: solid 1px color-mix(in srgb, var(--fleet-yellow) 30%, transparent);
+        border: solid 1px color-mix(in srgb, var(--fleet-yellow) var(--tint-medium), transparent);
         border-radius: var(--space-3xs);
-        background-color: color-mix(in srgb, var(--fleet-yellow) 8%, transparent);
+        background-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
         color: var(--fleet-yellow);
     }
 

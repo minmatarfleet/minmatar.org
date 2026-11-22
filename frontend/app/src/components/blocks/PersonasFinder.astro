@@ -11,8 +11,9 @@ import VerticalCenter from './VerticalCenter.astro';
 import personas from '@json/hosted/personas.json';
 import { semantic_list } from '@helpers/array';
 
-import { get_player_icon } from '@helpers/eve_image_server';
+import { get_player_icon } from '@helpers/eve_image';
 
+import StylessButton from '@components/blocks/StylessButton.astro'
 interface Props {
     [propName: string]: any;
 }
@@ -53,7 +54,7 @@ const translations = {
         <div class="[ relative ]">
             <Flexblock class="[ persona-list ][ light-transparency w-full ]" gap='0'>
                 {personas.map((persona) =>
-                    <button
+                    <StylessButton
                         type="button"
                         persona-finder-action="accept"
                         persona-finder-data={JSON.stringify(persona)}
@@ -71,7 +72,7 @@ const translations = {
                                 </Flexblock>
                             </VerticalCenter>
                         </FixedFluid>
-                    </button>
+                    </StylessButton>
                 )}
             </Flexblock>
         </div>
@@ -97,7 +98,7 @@ const translations = {
         position: absolute;
         overflow-y: auto;
         max-height: 320px;
-        background-color: #171616;
+        background-color: var(--neutral-900);
         border: solid 1px var(--border-color);
         border-top: none;
     }

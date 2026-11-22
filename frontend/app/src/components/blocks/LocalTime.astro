@@ -55,10 +55,6 @@ const HOUR_BANDS = local_hour_bands(t)
                 eve.toLocaleDateString('${lang}', { weekday: 'short' }) + ' ' + time :
                 time
         },
-        tippy_options: {
-            delay: [ 100, 200 ],
-            arrow: true,
-        },
         init() {
             this.set_time_class()
             this.set_local_time()
@@ -66,7 +62,6 @@ const HOUR_BANDS = local_hour_bands(t)
     }`}
     x-bind:class="time_class"
     x-bind:data-tippy-content="time_tooltip"
-    x-init="tippy($el, tippy_options)"
     {...attributes}
 >
     <span x-text="local_time"><span class="[ loading ]">{t('calculating')}</span></span>{show_label &&

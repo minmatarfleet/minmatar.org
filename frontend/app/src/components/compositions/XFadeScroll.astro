@@ -1,26 +1,40 @@
 ---
 interface Props {
-    flex?:      boolean;
-    fade_size?: string;
+    flex?:              boolean;
+    fade_size?:         string;
+    /** A width such as '48rem': scroll and fade only below it; at or above it the container is a plain block. */
+    below?:             string;
+    /** Let an open dropdown inside escape the scroller (it stops clipping while a `.button-dropdown.is-open` is inside). */
+    overflow_y_visible?: boolean;
     [propName: string]: any;
 }
 
 const {
     flex = false,
     fade_size = 'var(--space-s)',
+    below = '',
+    overflow_y_visible = false,
     ...attributes
 } = Astro.props;
 
 delete attributes.class;
+
+// Only a plain CSS length reaches the generated media query.
+const below_width = below && /^\d+(\.\d+)?(rem|em|px)$/.test(below) ? below : undefined
+const below_css = below_width
+    ? `@media (min-width: ${below_width}) { .xfade-scroll[data-below="${below_width}"] { overflow-x: visible; -webkit-mask-image: none; mask-image: none; } }`
+    : ''
 ---
 
 <div
-    class:list={['xfade-scroll', Astro.props.class, { flex }]}
+    class:list={['xfade-scroll', Astro.props.class, { flex, 'y-visible': overflow_y_visible }]}
     x-data="edge_fade()"
+    data-below={below_width}
     {...attributes}
 >
     <slot />
 </div>
+{below_css && <style is:inline set:html={below_css} />}
 
 <style lang="scss" define:vars={{
     xfade_size: fade_size
@@ -49,6 +63,14 @@ delete attributes.class;
 
         &.flex {
             display: flex;
+        }
+
+        // An open dropdown must not be clipped by the scroller (y can't stay
+        // visible while x scrolls, so scrolling pauses while one is open).
+        &.y-visible:has(.button-dropdown.is-open) {
+            overflow: visible;
+            -webkit-mask-image: none;
+            mask-image: none;
         }
     }
 </style>

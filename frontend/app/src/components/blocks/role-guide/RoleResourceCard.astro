@@ -84,14 +84,14 @@ const picture = youtube_id
         flex-direction: column;
         height: 100%;
         box-sizing: border-box;
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
         background: var(--surface-sunken);
         color: var(--foreground);
         text-decoration: none;
 
         @media (hover: hover) {
             &:hover {
-                border-color: var(--hairline-strong);
+                border-color: var(--border-color-hover);
 
                 img {
                     opacity: 1;
@@ -111,7 +111,7 @@ const picture = youtube_id
         place-items: center;
         aspect-ratio: 16 / 9;
         overflow: hidden;
-        border-bottom: 1px solid var(--hairline);
+        border-bottom: 1px solid var(--border-color);
         background: color-mix(in srgb, var(--fleet-yellow) 6%, var(--background));
 
         img {
@@ -138,7 +138,7 @@ const picture = youtube_id
     }
 
     .role-resource--wiki .role-resource__icon {
-        stroke: color-mix(in srgb, var(--alliance-blue) 40%, var(--highlight));
+        stroke: var(--alliance-blue-200);
     }
 
     .role-resource__play {
@@ -147,7 +147,7 @@ const picture = youtube_id
         height: auto;
         padding: var(--space-2xs);
         border-radius: 50%;
-        background: color-mix(in srgb, var(--background) 70%, transparent);
+        background: color-mix(in srgb, var(--background) var(--tint-heavy), transparent);
         fill: var(--highlight);
     }
 
@@ -163,7 +163,7 @@ const picture = youtube_id
         align-self: flex-start;
         margin-bottom: var(--space-3xs);
         padding: var(--space-3xs) var(--space-2xs);
-        background: var(--hairline);
+        background: var(--border-color);
         font-size: var(--step--2);
         font-weight: 600;
         letter-spacing: 0.04em;
@@ -171,12 +171,12 @@ const picture = youtube_id
     }
 
     .role-resource__kind--video {
-        color: color-mix(in srgb, var(--alliance-blue) 40%, var(--highlight));
+        color: var(--alliance-blue-200);
     }
 
     .role-resource__kind--guide {
         color: var(--fleet-yellow);
-        background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+        background: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
     }
 
     .role-resource__kind--sim {
@@ -190,6 +190,6 @@ const picture = youtube_id
     }
 
     .role-resource__source {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 </style>

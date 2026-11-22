@@ -4,7 +4,7 @@ import { i18n } from '@helpers/i18n'
 const { lang, t } = i18n(Astro.url)
 
 import type { CampaignDestructionRow } from '@dtypes/api.minmatar.org'
-import { get_alliance_logo, get_item_icon } from '@helpers/eve_image_server'
+import { get_alliance_logo, get_item_icon } from '@helpers/eve_image'
 import { eve_date_time } from '@helpers/campaign_manage'
 import { format_isk } from '@helpers/numbers'
 
@@ -20,21 +20,31 @@ const {
 
 delete attributes.class
 
+import DataGrid from '@components/blocks/DataGrid.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 ---
 
 {rows.length === 0 ?
     <EmptyState title={t('campaigns.destruction.none')} />
     :
-    <div class:list={['[ campaign-destruction ]', Astro.props.class]} role="table" aria-label={t('campaigns.destruction.title')} {...attributes}>
-        <div class="[ campaign-destruction-head ]" role="row">
-            <span role="columnheader">{t('campaigns.destruction.col.date')}</span>
-            <span role="columnheader">{t('campaigns.destruction.col.killed')}</span>
-            <span role="columnheader">{t('campaigns.destruction.col.owner')}</span>
-            <span role="columnheader" class="[ campaign-destruction-isk ]">{t('campaigns.destruction.col.isk')}</span>
-        </div>
+    <DataGrid
+        variant="ledger"
+        stack={true}
+        min_width="0"
+        template="minmax(0, 0.9fr) minmax(0, 2.5fr) minmax(0, 1fr) minmax(0, 0.9fr)"
+        columns={[
+            t('campaigns.destruction.col.date'),
+            t('campaigns.destruction.col.killed'),
+            t('campaigns.destruction.col.owner'),
+            t('campaigns.destruction.col.isk'),
+        ]}
+        numeric={[3]}
+        aria-label={t('campaigns.destruction.title')}
+        class={['[ campaign-destruction ]', Astro.props.class].filter(Boolean).join(' ')}
+        {...attributes}
+    >
         {rows.map((row) =>
-            <div class="[ campaign-destruction-row ]" role="row">
+            <div class="[ campaign-destruction-row data-grid-row ]" role="row">
                 <span role="cell" class="[ campaign-destruction-muted ]">{eve_date_time(lang, row.killmail_time)}</span>
                 <span role="cell" class="[ campaign-destruction-killed ]">
                     {row.type_id && <img src={get_item_icon(row.type_id, 32)} alt="" width="28" height="28" loading="lazy" />}
@@ -52,27 +62,13 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                 <span role="cell" class="[ campaign-destruction-isk ]">{format_isk(row.isk_value)}</span>
             </div>
         )}
-    </div>
+    </DataGrid>
 }
 
 <style lang="scss">
-    .campaign-destruction-head,
     .campaign-destruction-row {
-        display: grid;
-        grid-template-columns: minmax(0, 0.9fr) minmax(0, 2.5fr) minmax(0, 1fr) minmax(0, 0.9fr);
-        gap: var(--space-s);
-        align-items: center;
         font-size: var(--step--1);
         white-space: nowrap;
-    }
-
-    .campaign-destruction-head {
-        color: var(--highlight);
-        border-bottom: solid 1px var(--border-color);
-        padding-block-end: var(--space-3xs);
-    }
-
-    .campaign-destruction-row {
         padding-block: var(--space-3xs);
 
         > * {
@@ -104,14 +100,10 @@ import EmptyState from '@components/blocks/EmptyState.astro'
     }
 
     .campaign-destruction-muted {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
-    @media (max-width: 720px) {
-        .campaign-destruction-head {
-            display: none;
-        }
-
+    @media (max-width: 48rem) {
         .campaign-destruction-row {
             grid-template-columns: 1fr auto;
         }

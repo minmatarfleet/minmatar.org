@@ -30,7 +30,7 @@ import FixedFluid from '@components/compositions/FixedFluid.astro';
 
 import Input from '@components/blocks/Input.astro';
 import Markdown from '@components/blocks/Markdown.astro';
-import SwitchSquare from '@components/blocks/SwitchSquare.astro';
+import Switch from '@components/blocks/Switch.astro';
 import Button from '@components/blocks/Button.astro';
 
 import TutorialIcon from '@components/icons/TutorialIcon.astro';
@@ -104,7 +104,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
                 <input type="hidden" name="fleet_id" value={fleet_id} />
                 <input type="hidden" name="program" value={program} />
                 <input type="hidden" name="external_killmail_link" value={external_killmail_link} />
-                <SwitchSquare
+                <Switch shape="square"
                     class="[ w-full ]"
                     name="is_corp_ship"
                     label={t('corp_ship')}

@@ -15,6 +15,12 @@ export interface ConventionRule {
     /** What the rule protects and what to do instead; printed on failure. */
     why: string
     find: (file: SourceFile) => Hit[]
+    /**
+     * File path -> reason. An exempt file is never scanned by this rule. Use it only for code that
+     * legitimately cannot use the library (a `pre` block, a heatmap matrix, game data drawn in game
+     * colours); the reasons are printed in the test output. Keep each reason specific.
+     */
+    exempt?: Record<string, string>
 }
 
 const is_astro = (file: SourceFile) => file.path.endsWith('.astro')
@@ -38,6 +44,11 @@ const value_has_hex = (value: string) => [...value.replace(URL_FUNCTION, '').rep
 const ALPHA_LITERAL = /rgba?\(\s*(?:255[\s,]+255[\s,]+255|0[\s,]+0[\s,]+0)\s*[,/]\s*[\d.]+%?\s*\)/g
 /** `var(--token, rgba(...))`: the fallback never renders while the token exists. */
 const is_var_fallback = (m: RegExpMatchArray) => /var\(\s*--[\w-]+\s*,\s*$/.test((m.input ?? '').slice(Math.max(0, m.index! - 60), m.index!))
+
+/** `color-mix(in srgb, <colour> 45%, transparent)`: a literal percentage over transparent. */
+const TINT_LITERAL = /color-mix\(\s*in srgb\s*,(?:[^()]|\([^()]*\))*?\s[\d.]+%\s*,\s*transparent\s*\)/g
+/** The retired colour tokens as custom properties; `--attention` inside a class name (`meta--attention`) is not one. */
+const RETIRED_TOKEN = /(?<![\w-])--(?:attention|text-muted|hairline(?:-medium|-strong)?|glow)(?![\w-])/g
 
 // `none` and the translate(-50%) centring idiom position an element; they are not a hover effect.
 const MOTION_DECLARATION = /^(?:transform|scale|translate|rotate)\s*:(?!\s*(?:none\b|translate[XY]?\(\s*-50%[^)]*\)\s*(?:!important\s*)?$))/
@@ -91,7 +102,61 @@ const PINNED: Record<string, RegExp> = {
     'ajax.googleapis.com': /^https?:\/\/ajax\.googleapis\.com\/ajax\/libs\/[^/]+\/\d+\.\d+\.\d+\//,
 }
 
-export const RULES: ConventionRule[] = [
+/** Blank CSS comments in place (same length), so a commented-out declaration is not a hit. `https://` is kept. */
+const without_css_comments = (region: Region): Region => ({
+    text: region.text.replace(/\/\*[\s\S]*?\*\/|(?<![:\w(])\/\/[^\n]*/g, (m) => m.replace(/[^\n]/g, ' ')),
+    offset: region.offset,
+})
+
+/** Element start tag for `<table`/`<button`/`<select`, not `<tablet-x` or `<button-group`. */
+const RAW_TABLE = /<table(?=[\s>/])|\srole=["']table["']/g
+const RAW_STYLED_BUTTON = /<button(?=[\s>/])/g
+/** `<select`, `<textarea`, and `<input` unless its static type is hidden, submit or button. */
+const RAW_FORM_CONTROL = /<(?:select|textarea)(?=[\s>/])|<input(?=[\s/>])(?![^>]*?(?<![\w-])type\s*=\s*["']?(?:hidden|submit|button)(?=["'\s/>]))[^>]*>/g
+/** The element's own role, not `[role="tablist"]` in a selector. */
+const ROLE_TABLIST = /\srole=["']tablist["']/g
+const CLICK_OUTSIDE = /(?:x-on:|@)click\.outside(?![\w-])/g
+const DIRECT_TIPPY = /(?<![\w.$])tippy\s*\(/g
+const OVERFLOW_X_SCROLL_CSS = /(?<![\w-])overflow-x\s*:\s*(?:auto|scroll)(?![\w-])/g
+/**
+ * `<pre>` blocks come out of markdown (set:html), so they cannot be wrapped in XFadeScroll: a
+ * declaration inside a rule whose selector names `pre` is exempt. Walks back to the rule's `{`.
+ */
+const in_pre_rule = (text: string, index: number): boolean => {
+    let depth = 0
+    let open = -1
+    for (let i = index - 1; i >= 0; i--) {
+        if (text[i] === '}') depth++
+        else if (text[i] === '{') {
+            if (depth === 0) { open = i; break }
+            depth--
+        }
+    }
+    if (open < 0) return false
+    let start = open
+    while (start > 0 && !'{};'.includes(text[start - 1])) start--
+    return /(?<![\w-])pre(?![\w-])/.test(text.slice(start, open))
+}
+const OVERFLOW_X_SCROLL_CLASS = /(?<![\w-])overflow-x-(?:auto|scroll)(?![\w-])/g
+/** An hx-get attribute value: quoted, or an Astro expression. Captures the value in groups 1-3. */
+const HX_GET_VALUE = /<[a-zA-Z][^>]*?\shx-get=(?:"([^"]*)"|'([^']*)'|\{([^}]*)\})/g
+const PAGE_PARAM = /[?&]page(?:_num)?=/
+/** A class token ending in chip, pill or chips: `fleet-type-chip`, `chip`. Not `spill`, `chip-list` or `chip__label`. */
+const CHIP_TOKEN = /(?<![a-z0-9-])(?:[a-z0-9]+-)*(?:chips?|pills?)(?![\w-])/
+const GOOGLE_FONTS = /fonts\.googleapis\.com/g
+/** A font-family declaration that is not a `var(--token)` or `inherit`; `$font-family` SCSS variables are skipped. */
+const FONT_FAMILY_LITERAL = /(?<![\w$-])font-family\s*:(?!\s*(?:var\(|inherit\b))\s*[^;{}\s][^;{}\n]*/g
+/** Meta-group and security-status tokens carry a fixed meaning; only the components that draw them may use them. */
+const OFF_MEANING_TOKEN = /var\(\s*--(?:security-status-[\w-]+|tech-i{1,3}|storyline|faction|officer|deadspace|abyssal)(?![\w-])/g
+const TEXT_STATUS_BLOCK = /\.text-status-[\w-]+[^{]*\{[^}]*\}/g
+/** A custom-property definition named for a semantic meaning (`--hp-warn:`), not a token that holds a colour (`--fleet-red:`). */
+const LOCAL_SEMANTIC_DEFINITION = /(?<![\w-])--[\w-]*[_-](?:warn|good|bad|warning|success|danger)\s*:/g
+
+const EVE_IMAGE_HELPERS = ['src/helpers/eve_image.ts', 'src/helpers/landing.ts', 'src/helpers/fleet_rsvp.ts']
+const EVE_IMAGE_COMPONENTS = ['Picture', 'CharacterPicture', 'CorporationPicture', 'ItemPicture'].map((n) => `src/components/blocks/${n}.astro`)
+const COMPONENT_FILES = (...names: string[]) => names.map((n) => `src/components/${n}.astro`)
+
+const RULE_DEFINITIONS: ConventionRule[] = [
     {
         id: 'client_fetch',
         kind: 'ratchet',
@@ -132,11 +197,36 @@ export const RULES: ConventionRule[] = [
     {
         id: 'alpha_literal',
         kind: 'ratchet',
-        why: 'Rule 3: white/black alpha tints use the tokens in src/styles/properties/_colors.scss (var(--hairline), var(--hairline-strong), var(--text-muted), var(--surface-sunken), ...) or color-mix(in srgb, var(--highlight) N%, transparent), not rgba() literals.',
+        why: 'Rule 3: white/black alpha tints use the tokens in src/styles/properties/_colors.scss (var(--border-color), var(--border-color-hover), var(--faded), var(--surface-sunken), ...) or color-mix(in srgb, var(--highlight) N%, transparent), not rgba() literals.',
         find: (file) => {
             if (file.path.startsWith('src/styles/properties/')) return []
             return hits_in(file, css_regions(file), ALPHA_LITERAL, (m) => !is_var_fallback(m))
         },
+    },
+    {
+        id: 'tint_off_ladder',
+        kind: 'absolute',
+        why: 'Rule 3: a colour over transparent uses the tint ladder: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent) with --tint-subtle (8%), --tint-soft (15%), --tint-medium (30%), --tint-strong (45%), --tint-bold (60%), --tint-heavy (75%) or --tint-dense (90%), not a literal percentage.',
+        exempt: {
+            'src/components/blocks/landing/LandingLive.astro': 'in-flight landing work (owner: keep untouched)',
+            'src/components/blocks/landing/LandingReel.astro': 'in-flight landing work (owner: keep untouched)',
+        },
+        find: (file) => hits_in(file, [{ text: file.text, offset: 0 }], TINT_LITERAL),
+    },
+    {
+        id: 'retired_token',
+        kind: 'absolute',
+        why: 'Rule 3: --attention, --text-muted, --hairline, --hairline-medium, --hairline-strong and --glow are retired. Use --fleet-yellow, --faded, --border-color and --border-color-hover (see docs/frontend-design.md).',
+        exempt: {
+            'src/components/blocks/landing/LandingBars.astro': 'in-flight landing work (owner: keep untouched)',
+            'src/components/blocks/landing/LandingLine.astro': 'in-flight landing work (owner: keep untouched)',
+            'src/components/blocks/landing/LandingLive.astro': 'in-flight landing work (owner: keep untouched)',
+            'src/components/blocks/landing/LandingReel.astro': 'in-flight landing work (owner: keep untouched)',
+            'src/pages/landing-new.astro': 'in-flight landing work (owner: keep untouched)',
+            'src/pages/partials/landing_week_component.astro': 'in-flight landing work (owner: keep untouched)',
+            'src/styles/properties/_colors.scss': 'defines the retired tokens, kept at their original values only for the in-flight landing work',
+        },
+        find: (file) => hits_in(file, [{ text: file.text, offset: 0 }], RETIRED_TOKEN),
     },
     {
         id: 'skeleton_keyframes',
@@ -216,7 +306,218 @@ export const RULES: ConventionRule[] = [
                 return !PINNED[host].test(m[0])
             }),
     },
+    {
+        id: 'raw_eve_image',
+        kind: 'ratchet',
+        why: 'EVE image URLs come from @helpers/eve_image (get_item_icon, get_player_icon, get_corporation_logo, ...) or the Picture components (<ItemPicture>, <CharacterPicture>, <CorporationPicture>, <Picture>), which pick the size and the fallback. Do not write an images.evetech.net URL in markup or scripts.',
+        find: (file) => {
+            if (EVE_IMAGE_HELPERS.includes(file.path) || EVE_IMAGE_COMPONENTS.includes(file.path)) return []
+            return hits_in(file, [{ text: file.text, offset: 0 }], /(?:https?:)?\/\/images\.evetech\.net/g)
+        },
+    },
+    {
+        id: 'raw_table',
+        kind: 'absolute',
+        why: 'Tables are <DataGrid> (sortable, responsive) or <RowList> (the styled base); a hand-written <table> or role="table" skips both. Use the library table.',
+        exempt: {
+            'src/components/blocks/ship-guide/GuideMatchupChart.astro': 'heatmap matrix: ship-by-ship cells coloured by value, rows and columns are the data',
+            'src/components/blocks/structures/StructureRigChip.astro': 'tooltip table: a small key/value table inside a Tippy popover, styled by global popover rules',
+            'src/pages/list_data.astro': 'in-flight landing work (owner: keep untouched)',
+            'src/pages/partials/landing_week_component.astro': 'in-flight landing work (owner: keep untouched)',
+            'src/pages/partials/corporation_members_table_component.astro': 'bulk-select header is swapped by Alpine and column headers sort by htmx (hx-get on th); DataGrid owns neither',
+            'src/pages/partials/corporation_requirements_settings_component.astro': 'inline editor with row groups that expand into forms; not a plain data grid',
+        },
+        find: (file) => {
+            if (!is_astro(file) || COMPONENT_FILES('blocks/DataGrid', 'blocks/DataTable', 'blocks/RowList', 'blocks/campaigns/etherium-reach/CampaignDataTable', 'blocks/manage/ManageTable', 'blocks/manage/RowSwapFrame').includes(file.path)) return []
+            return hits_in(file, [astro_template(file.text)], RAW_TABLE)
+        },
+    },
+    {
+        id: 'overflow_x_scroll',
+        kind: 'ratchet',
+        why: 'Wide tables and chip rows scroll inside <XFadeScroll> (it adds the edge fades and the scroll affordance), not a hand-rolled overflow-x: auto/scroll. Rules for `pre` are exempt: markdown code blocks are set:html and cannot be wrapped.',
+        find: (file) => {
+            if (file.path === 'src/components/compositions/XFadeScroll.astro') return []
+            const css = hits_in(file, css_regions(file).map(without_css_comments), OVERFLOW_X_SCROLL_CSS, (m) => !in_pre_rule(m.input!, m.index!))
+            const tailwind = is_astro(file) ? hits_in(file, [astro_template(file.text)], OVERFLOW_X_SCROLL_CLASS) : []
+            return [...css, ...tailwind]
+        },
+    },
+    {
+        id: 'direct_tippy',
+        kind: 'ratchet',
+        why: 'Tooltips are <Tippy> (or the tippy_options on a swapped partial, initialised by swap_init.ts). A direct tippy(...) call is not re-initialised after an htmx swap.',
+        find: (file) => {
+            const exempt = ['src/helpers/swap_init.ts', 'src/components/blocks/Tippy.astro', 'src/components/partials/TippyBootstrap.astro']
+            if (exempt.includes(file.path)) return []
+            return hits_in(file, code_regions(file), DIRECT_TIPPY)
+        },
+    },
+    {
+        id: 'hand_rolled_tablist',
+        kind: 'absolute',
+        why: 'Tab strips are <SectionTabs> (keyboard, aria and the hash-linked active tab), not a hand-written role="tablist".',
+        exempt: {
+            'src/components/blocks/role-guide/RoleAmmoChart.astro': 'icon-image tabs placed below their chart with arrow-key roving; SectionTabs is a text strip above hash-linked panels',
+            'src/components/blocks/role-guide/RoleModulePanel.astro': 'icon-image tabs placed below their panel with arrow-key roving; SectionTabs is a text strip above hash-linked panels',
+        },
+        find: (file) => {
+            if (!is_astro(file) || file.path === 'src/components/blocks/SectionTabs.astro') return []
+            return hits_in(file, [astro_template(file.text)], ROLE_TABLIST)
+        },
+    },
+    {
+        id: 'hand_rolled_popover',
+        kind: 'absolute',
+        why: 'Click-away popups are <Dropdown>, <ActionMenu>, <Dialog>/<DialogButton> or <Modal> (focus, Escape and stacking handled); a bare @click.outside re-implements them.',
+        exempt: {
+            'src/components/blocks/ActionMenuItem.astro': 'two-step confirm inside an action menu: cancels the confirm state on click-away, it is not a popover',
+            'src/components/blocks/FleetInvites.astro': 'closes the typeahead result list of a search input; not a click-away popup',
+            'src/components/blocks/Neocom.astro': 'mobile navigation drawer: slides in from the edge and closes on click-away, not an anchored popover',
+            'src/components/page/partials/PageHeader.astro': 'collapsible subheader action bar on small screens (in-flow, not a floating popup)',
+            'src/pages/partials/fleet_pick_ships_modal_component.astro': 'ship picker listbox inside a modal row with a rich trigger; Dropdown cannot host the trigger',
+            'src/pages/ships/doctrines/edit/[doctrine_id].astro': 'closes the typeahead result list of the fitting search; not a click-away popup',
+        },
+        find: (file) => {
+            if (!is_astro(file)) return []
+            const exempt = COMPONENT_FILES(
+                'blocks/Dropdown', 'blocks/ActionMenu', 'blocks/Dialog', 'blocks/DialogButton', 'blocks/Modal',
+                'page/PageBreadcrumbs', 'page/BreadcrumbHub', 'blocks/Combobox',
+            )
+            if (exempt.includes(file.path)) return []
+            return hits_in(file, [astro_template(file.text)], CLICK_OUTSIDE)
+        },
+    },
+    {
+        id: 'raw_form_control',
+        kind: 'absolute',
+        why: 'Form controls are <Input>, <Select>, <Textarea>, <RadioCheckInput>, <Switch>, <FlatPicker> (labels, errors, the token styling); a raw <select>, <textarea> or non-hidden <input> bypasses them.',
+        exempt: {
+            'src/components/blocks/DiscordServerAccess.astro': 'borderless text input typed inside a chip tray (the tray draws the field border); Input would add a second shell',
+            'src/components/blocks/FittingBuyOrderContractPrices.astro': 'number field nested inside a segmented radio chip ("custom %"); Input is a block shell and would break the chip',
+            'src/components/blocks/fleet_rsvp/FleetRsvpForm.astro': 'visually hidden checkbox of a whole-row pilot card with a drawn tick; the card, not the input, is the control',
+            'src/components/blocks/FleetFightsEdit.astro': 'leading checkbox of a table-like fight row grid (label sits in the row grid, not beside the box)',
+            'src/components/blocks/FleetShipTargetOwners.astro': 'leading checkbox of a four-column owner row; the label owns the grid',
+            'src/components/blocks/manage/KitGrid.astro': 'amount cell with dirty-state styling (.manage-amount) inside a composite grid; Input shell breaks the cell',
+            'src/pages/partials/srp_programs_component.astro': 'amount cell with dirty-state styling (.manage-amount) inside a table row; Input shell breaks the cell',
+            'src/components/blocks/manage/ManageSwitch.astro': 'the manage-surface role=switch primitive: it is the library control for these forms',
+            'src/components/blocks/SelectFinder.astro': 'hidden <select> that Alpine keeps in sync with the searchable list; never shown',
+            'src/components/blocks/structures/StructureSettingsForm.astro': 'native multi-select listbox (size=8); Select draws a single-choice caret shell',
+            'src/pages/industry/orders/planner.astro': 'checkbox row inside an Alpine x-for template with a column layout owned by the label',
+            'src/pages/partials/campaign_settings_component.astro': 'visually hidden checkbox of a retire/undo text toggle (two labels swap on :checked)',
+            'src/pages/partials/corporation_members_table_component.astro': 'row-select and select-all checkboxes of the members table; header is Alpine-swapped and sorted by htmx (see raw_table)',
+            'src/pages/partials/order_line_pricing_component.astro': 'connected four-up segmented radio bar with one shared border; OptionCard draws separate cards',
+        },
+        find: (file) => {
+            if (!is_astro(file)) return []
+            const exempt = COMPONENT_FILES(
+                'blocks/Input', 'blocks/Select', 'blocks/Textarea', 'blocks/RadioCheckInput',
+                'blocks/Switch', 'blocks/FlatPicker', 'blocks/FilterChip', 'blocks/OptionCard', 'blocks/RadioCheckPill', 'blocks/RadioCheck',
+            )
+            if (exempt.includes(file.path)) return []
+            return hits_in(file, [astro_template(file.text)], RAW_FORM_CONTROL)
+        },
+    },
+    {
+        id: 'raw_styled_button',
+        kind: 'absolute',
+        why: 'Buttons are <Button> (variants, sizes, loading and focus states), <StylessButton> for a bare control, or <ButtonConfirm>/<ClipboardButton>/<CollapsableButton>; a raw <button> skips the styling.',
+        exempt: {
+            'src/components/blocks/landing/LandingReel.astro': 'in-flight landing work (owner: keep untouched)',
+            'src/components/blocks/SectionTabs.astro': 'the tab strip primitive itself: its tabs are the role=tab buttons that SectionTabs exists to render',
+        },
+        find: (file) => {
+            if (!is_astro(file)) return []
+            const exempt = COMPONENT_FILES('blocks/Button', 'blocks/StylessButton', 'blocks/ButtonConfirm', 'blocks/ClipboardButton', 'blocks/CollapsableButton')
+            if (exempt.includes(file.path)) return []
+            return hits_in(file, [astro_template(file.text)], RAW_STYLED_BUTTON)
+        },
+    },
+    {
+        id: 'raw_chip',
+        kind: 'absolute',
+        why: 'Filter and status chips are <FilterChip> or <ChipGroup>, and labels are <Tag>; a hand-styled *-chip / *-pill class re-creates them without their states.',
+        exempt: {
+            'src/components/blocks/amamake-market/AmamakeMarketVolumeSkeleton.astro': 'skeleton shimmer placeholder: chip-shaped blocks that stand in for content, not chips',
+            'src/components/blocks/FleetScheduleSkeleton.astro': 'skeleton shimmer placeholder: chip-shaped blocks that stand in for content, not chips',
+            'src/components/blocks/universe/UniverseSkeleton.astro': 'skeleton shimmer placeholder: chip-shaped blocks that stand in for content, not chips',
+            'src/components/blocks/capital-guide/CapitalGuideShipChip.astro': 'a hull tile (ship render above its name, linking to a fitting), not a filter or status chip',
+            'src/components/blocks/structures/StructureRigChip.astro': 'a rig tile: use icon, tier steps and a tooltip anchor, not a filter or status chip',
+            'src/components/blocks/TribeGroupChip.astro': 'a crest + group name link (Tag takes text only); a tribe identity badge, not a filter or status chip',
+            'src/components/blocks/FleetBattleReport.astro': 'saved-segment scope chip: a link plus its own delete form (hx-post with hidden fields), which FilterChip removable cannot express',
+            'src/components/blocks/FleetParticipantsPilots.astro': 'pilot roster entry (portrait, name, kill and loss badges), not a filter or status chip',
+        },
+        find: (file) => {
+            if (!is_astro(file)) return []
+            const exempt = COMPONENT_FILES('blocks/FilterChip', 'blocks/ChipGroup', 'blocks/Tag')
+            if (exempt.includes(file.path)) return []
+            // Quoted class values, or the string literals inside class:list={[...]} (a bare identifier is JS, not a class).
+            const has_chip = (m: RegExpMatchArray) => {
+                const value = m[1] ?? m[2] ?? [...(m[3] ?? '').matchAll(/(["'`])([^"'`]*)\1/g)].map((s) => s[2]).join(' ')
+                return CHIP_TOKEN.test(value)
+            }
+            return hits_in(file, [astro_template(file.text)], /\sclass(?::list)?=(?:"([^"]*)"|'([^']*)'|\{([^}]*)\})/g, has_chip)
+        },
+    },
+    {
+        id: 'hand_rolled_pager',
+        kind: 'ratchet',
+        why: 'Paged htmx lists are <HtmxPager> (page state, the swap target and the disabled ends), not an hx-get that builds its own ?page= link.',
+        find: (file) => {
+            if (!is_astro(file) || file.path === 'src/components/blocks/HtmxPager.astro') return []
+            return hits_in(file, [astro_template(file.text)], HX_GET_VALUE, (m) => PAGE_PARAM.test(m[1] ?? m[2] ?? m[3] ?? ''))
+        },
+    },
+    {
+        id: 'component_font',
+        kind: 'absolute',
+        why: 'Fonts load once from src/styles/_fonts.scss and are used through the font tokens (var(--heading-font), var(--default-font), var(--button-font)); a Google Fonts link or a literal font-family bypasses them.',
+        exempt: {
+            'src/components/blocks/FleetList.astro': "swiper's own icon font (swiper-icons) for the carousel arrow glyph; it is an icon font, not a text face",
+            'src/pages/index.astro': 'in-flight landing work (owner: keep untouched)',
+            'src/pages/index2.astro': 'in-flight landing work (owner: keep untouched)',
+            'src/pages/list_data.astro': 'in-flight landing work (owner: keep untouched)',
+        },
+        find: (file) => {
+            if (file.path === 'src/styles/_fonts.scss' || file.path.startsWith('src/styles/properties/')) return []
+            const links = hits_in(file, [{ text: file.text, offset: 0 }], GOOGLE_FONTS)
+            const literals = hits_in(file, css_regions(file).map(without_css_comments), FONT_FAMILY_LITERAL)
+            return [...links, ...literals]
+        },
+    },
+    {
+        id: 'palette_off_meaning',
+        kind: 'absolute',
+        why: 'Security-status and meta-group colours have one meaning each: draw them with <SecurityStatus> or <MetaGroupTag>, or the icons. Using these tokens anywhere else lends the colour a different meaning.',
+        exempt: {
+            'src/components/blocks/FittingSlot.astro': "draws a module's meta group (Tech I/II/III, Storyline, Faction, Officer, Deadspace, Abyssal) on a fitting slot: game data in the game's colours, not a UI meaning",
+        },
+        find: (file) => {
+            if (file.path.startsWith('src/components/icons/') || file.path.startsWith('src/styles/properties/')) return []
+            if (COMPONENT_FILES('blocks/sde/SecurityStatus', 'blocks/sde/MetaGroupTag').includes(file.path)) return []
+            // The .text-status-* definitions in _global.scss are the one place the security-status tokens are read directly.
+            const text = file.path === 'src/styles/_global.scss' ? file.text.replace(TEXT_STATUS_BLOCK, (m) => m.replace(/[^\n]/g, ' ')) : file.text
+            return hits_in(file, [{ text, offset: 0 }], OFF_MEANING_TOKEN)
+        },
+    },
+    {
+        id: 'local_semantic_colour',
+        kind: 'ratchet',
+        why: 'Semantic colours (warn, good, bad, success, danger) are defined once in src/styles/properties/_colors.scss; a component-local --x-warn definition forks that palette. Use the token it names.',
+        find: (file) => {
+            if (file.path === 'src/styles/properties/_colors.scss') return []
+            return hits_in(file, css_regions(file).map(without_css_comments), LOCAL_SEMANTIC_DEFINITION)
+        },
+    },
 ]
+
+/** Rules as enforced: a file in a rule's `exempt` map yields no hits. `RULE_DEFINITIONS` keeps the unfiltered matchers. */
+export const with_exemptions = (r: ConventionRule): ConventionRule =>
+    r.exempt ? { ...r, find: (file: SourceFile) => (Object.hasOwn(r.exempt!, file.path) ? [] : r.find(file)) } : r
+export const RULES: ConventionRule[] = RULE_DEFINITIONS.map(with_exemptions)
+
+/** Rules that carry exemptions, with the raw matcher, so a stale exemption (the file is gone or now clean) can be caught. */
+export const EXEMPTIONS = RULE_DEFINITIONS.filter((r) => r.exempt).map((r) => ({ id: r.id, exempt: r.exempt!, find: r.find }))
 
 export function rule(id: string): ConventionRule {
     const found = RULES.find((r) => r.id === id)

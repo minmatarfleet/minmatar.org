@@ -20,7 +20,7 @@ const {
 
 const MINMATAR_FLEET_ID = 99011978
 
-import { get_alliance_logo } from '@helpers/eve_image_server';
+import { get_alliance_logo } from '@helpers/eve_image';
 
 import FixedFluid from "@components/compositions/FixedFluid.astro"
 import Flexblock from "@components/compositions/Flexblock.astro"
@@ -115,7 +115,7 @@ import Wrapper from '@components/compositions/Wrapper.astro'
         transform: scale(0.85);
         height: 99%;
         opacity: 0;
-        filter: drop-shadow(0px 0px 3px var(--glow));
+        filter: drop-shadow(0px 0px 3px var(--highlight));
         mask-image: linear-gradient(to bottom, black 70%, transparent 95%);
 
         img {

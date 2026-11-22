@@ -40,10 +40,10 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 
 import Tile from '@components/blocks/Tile.astro';
 import ItemBadge from '@components/blocks/ItemBadge.astro';
-import BadgeSwiper from '@components/blocks/BadgeSwiper.astro';
+import Carousel from '@components/blocks/Carousel.astro';
 import ButtonAddKillmail from '@components/blocks/ButtonAddKillmail.astro';
 import ButtonAuth from '@components/blocks/ButtonAuth.astro';
-import SRPStat from '@components/blocks/SRPStat.astro';
+import StatCard from '@components/blocks/StatCard.astro';
 ---
 <Flexblock
     id={id}
@@ -58,8 +58,19 @@ import SRPStat from '@components/blocks/SRPStat.astro';
     >
         {stats_history &&
             <FlexInline slot="subtitle" gap='var(--space-xl)'>
-                <SRPStat value={stats_history?.approved} type='approved' />
-                <SRPStat value={stats_history?.rejected} type='rejected' />
+                {(['approved', 'rejected'] as const).map(type =>
+                    <StatCard variant="inline">
+                        <span
+                            slot="icon"
+                            class:list={[ 'membership-status', type === 'approved' ? 'text-green' : 'text-red' ]}
+                            color={type === 'approved' ? 'green' : 'fleet-red'}
+                            data-tippy-content={t(`${type}_last_90_days`)}
+                        >
+                            {type === 'approved' ? '▲' : '▼'}
+                        </span>
+                        <Fragment slot="value"><span data-tippy-content={number_name(stats_history[type], lang)}>{number_thousand_separator(stats_history[type])}</span>&nbsp;ISK</Fragment>
+                    </StatCard>
+                )}
             </FlexInline>
         }
     </Tile>
@@ -86,10 +97,17 @@ import SRPStat from '@components/blocks/SRPStat.astro';
                             class="[ swiper ][ w-full ]"
                             style={`--swiper-height: ${Math.min(SLIDES_PER_VIEW, values_sorted.length) * 64 + (Math.min(SLIDES_PER_VIEW, values_sorted.length) - 1) * 20}px`}
                         >
-                            <BadgeSwiper
-                                swiper_selector={`#${id}-swiper`}
+                            <Carousel
+                                selector={`#${id}-swiper`}
+                                class='[ w-full ]'
+                                direction='vertical'
                                 slides_per_view={SLIDES_PER_VIEW}
+                                space_between={20}
+                                initial_slide={1}
+                                loop={true}
+                                autoplay_ms={3000}
                                 mousewheel={values_sorted.length > SLIDES_PER_VIEW}
+                                navigation={false}
                             >
                                 {values_sorted.map(value =>
                                     <div class="swiper-slide"  style="margin-bottom: 20px">
@@ -107,7 +125,7 @@ import SRPStat from '@components/blocks/SRPStat.astro';
                                         </ItemBadge>
                                     </div>
                                 )}
-                            </BadgeSwiper>
+                            </Carousel>
                         </div>
                         <slot name="values-footer" />
                     }

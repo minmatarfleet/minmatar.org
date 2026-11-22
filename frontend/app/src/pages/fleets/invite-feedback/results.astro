@@ -132,7 +132,7 @@ import InviteChangesChart from '@components/blocks/fleet_invite_changes/InviteCh
 
     .intro {
         font-size: var(--step-0);
-        color: var(--glow);
+        color: var(--highlight);
         max-width: 42rem;
     }
 
@@ -150,7 +150,7 @@ import InviteChangesChart from '@components/blocks/fleet_invite_changes/InviteCh
     }
 
     .muted {
-        color: var(--glow);
+        color: var(--highlight);
     }
 
     .stats,
@@ -173,7 +173,7 @@ import InviteChangesChart from '@components/blocks/fleet_invite_changes/InviteCh
 
     .stat-suffix {
         font-size: var(--step-1);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .stat-label {
@@ -192,20 +192,20 @@ import InviteChangesChart from '@components/blocks/fleet_invite_changes/InviteCh
 
     .quote-by {
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .changes {
         list-style: none;
         margin: 0;
         padding: 0;
-        border-bottom: solid 1px var(--hairline-medium);
+        border-bottom: solid 1px var(--border-color);
 
         li {
             display: flex;
             gap: var(--space-s);
             padding-block: var(--space-s);
-            border-top: solid 1px var(--hairline-medium);
+            border-top: solid 1px var(--border-color);
         }
     }
 
@@ -230,7 +230,7 @@ import InviteChangesChart from '@components/blocks/fleet_invite_changes/InviteCh
     .later-card {
         flex: 1 1 20rem;
         padding: var(--space-m);
-        border: dashed 1px color-mix(in srgb, var(--highlight) 16%, transparent);
+        border: dashed 1px color-mix(in srgb, var(--highlight) var(--tint-soft), transparent);
         display: flex;
         flex-direction: column;
         gap: var(--space-2xs);

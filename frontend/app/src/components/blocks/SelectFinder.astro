@@ -230,14 +230,14 @@ import StylessButton from '@components/blocks/StylessButton.astro';
     }
 
     .input-wrapper {
-        background-color: #171616;
+        background-color: var(--neutral-900);
         z-index: 1;
     }
 
     .options-wrapper {
         margin-top: 2px;
         min-width: 360px;
-        background-color: #171616;
+        background-color: var(--neutral-900);
     }
 
     .options {
@@ -273,7 +273,7 @@ import StylessButton from '@components/blocks/StylessButton.astro';
         color: var(--form-color);
         background-color: transparent;
         border: solid 1px var(--border-color);
-        background-color: rgba(85, 85, 85, 0.1);
+        background-color: color-mix(in srgb, var(--neutral-600) var(--tint-subtle), transparent);
         transition: var(--fast-transition);
         position: relative;
         width: 100%;

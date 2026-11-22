@@ -28,7 +28,7 @@ const item = items[index] ?? null
 const next_index = items.length > 1 ? (index + 1) % items.length : null
 const next_item = next_index !== null ? items[next_index] : null
 
-import { get_corporation_logo } from '@helpers/eve_image_server'
+import { get_corporation_logo } from '@helpers/eve_image'
 import { age_parts } from '@helpers/manage'
 import { word_diff } from '@helpers/word_diff'
 
@@ -56,6 +56,8 @@ import Button from '@components/blocks/Button.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ManageField from '@components/blocks/manage/ManageField.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <section id="reddit-review-queue" class="[ reddit-review ]" aria-live="polite">
@@ -76,7 +78,7 @@ import ManageField from '@components/blocks/manage/ManageField.astro'
                     <nav class="[ reddit-review__pager ]" aria-label={t('admin_content.reddit.pager')}>
                         <span class="[ manage-muted ]">{t('admin_content.reddit.position').replace('~N', String(index + 1)).replace('~TOTAL', String(items.length))}</span>
                         {next_item && next_index !== null &&
-                            <button
+                            <StylessButton
                                 type="button"
                                 class="[ reddit-review__next ]"
                                 hx-get={`${PARTIAL_URL}?view=queue&index=${next_index}`}
@@ -84,15 +86,15 @@ import ManageField from '@components/blocks/manage/ManageField.astro'
                                 hx-swap="outerHTML"
                             >
                                 {t('admin_content.reddit.next').replace('~NAME', next_item.corporation_name)}
-                            </button>
+                            </StylessButton>
                         }
                     </nav>
                 </header>
 
                 {!item.first_approval &&
                     <div class="[ reddit-review__modes ]" role="group" aria-label={t('admin_content.reddit.view')}>
-                        <button type="button" x-on:click="mode = 'changes'" x-bind:aria-pressed="mode === 'changes'" aria-pressed="true">{t('admin_content.reddit.changes')}</button>
-                        <button type="button" x-on:click="mode = 'split'" x-bind:aria-pressed="mode === 'split'" aria-pressed="false">{t('admin_content.reddit.side_by_side')}</button>
+                        <StylessButton type="button" x-on:click="mode = 'changes'" x-bind:aria-pressed="mode === 'changes'" aria-pressed="true">{t('admin_content.reddit.changes')}</StylessButton>
+                        <StylessButton type="button" x-on:click="mode = 'split'" x-bind:aria-pressed="mode === 'split'" aria-pressed="false">{t('admin_content.reddit.side_by_side')}</StylessButton>
                     </div>
                 }
 
@@ -157,7 +159,7 @@ import ManageField from '@components/blocks/manage/ManageField.astro'
                         <input type="hidden" name="id" value={item.change_id} />
                         <input type="hidden" name="index" value={index} />
                         <ManageField label={t('reddit_review.queue.reason')} for={`reddit-reason-${item.change_id}`} hint={t('admin_content.reddit.reason_hint')}>
-                            <textarea
+                            <Textarea
                                 id={`reddit-reason-${item.change_id}`}
                                 name="note"
                                 rows="3"
@@ -165,7 +167,7 @@ import ManageField from '@components/blocks/manage/ManageField.astro'
                                 required
                                 x-ref="reason"
                                 class="[ reddit-review__reason ]"
-                            ></textarea>
+                            ></Textarea>
                         </ManageField>
                         <div class="[ manage-actions ]">
                             <Button type="submit" size="sm">{t('admin_content.reddit.send_rejection')}</Button>
@@ -251,7 +253,7 @@ import ManageField from '@components/blocks/manage/ManageField.astro'
     .reddit-review__modes {
         display: inline-flex;
         align-self: flex-start;
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
 
         button {
             padding: var(--space-3xs) var(--space-s);
@@ -259,12 +261,12 @@ import ManageField from '@components/blocks/manage/ManageField.astro'
             border: 0;
             font: inherit;
             font-size: var(--step--1);
-            color: var(--text-muted);
+            color: var(--faded);
             cursor: pointer;
         }
 
         button[aria-pressed='true'] {
-            background: var(--hairline-medium);
+            background: var(--border-color);
             color: var(--highlight);
         }
     }
@@ -304,12 +306,12 @@ import ManageField from '@components/blocks/manage/ManageField.astro'
     .reddit-review__text ins {
         text-decoration: none;
         color: var(--highlight);
-        background: color-mix(in srgb, var(--green) 30%, transparent);
+        background: color-mix(in srgb, var(--green) var(--tint-medium), transparent);
     }
 
     .reddit-review__text del {
-        color: var(--text-muted);
-        background: color-mix(in srgb, var(--fleet-red) 25%, transparent);
+        color: var(--faded);
+        background: color-mix(in srgb, var(--fleet-red) var(--tint-medium), transparent);
     }
 
     .reddit-review__note {
@@ -320,7 +322,7 @@ import ManageField from '@components/blocks/manage/ManageField.astro'
         width: 100%;
         padding: var(--space-2xs) var(--space-xs);
         background: var(--surface-sunken);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
         color: var(--foreground);
         font: inherit;
         resize: vertical;

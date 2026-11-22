@@ -43,18 +43,18 @@ delete attributes.class
 
     .change-diff__line {
         display: block;
-        font-family: monospace;
+        font-family: var(--mono-font);
         white-space: pre-wrap;
-        color: var(--text-muted);
+        color: var(--faded);
 
         &[data-kind="add"] {
             color: var(--green);
-            background-color: color-mix(in srgb, var(--green) 14%, transparent);
+            background-color: color-mix(in srgb, var(--green) var(--tint-soft), transparent);
         }
 
         &[data-kind="del"] {
             color: var(--fleet-red);
-            background-color: color-mix(in srgb, var(--fleet-red) 14%, transparent);
+            background-color: color-mix(in srgb, var(--fleet-red) var(--tint-soft), transparent);
         }
     }
 </style>

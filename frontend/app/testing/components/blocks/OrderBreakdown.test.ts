@@ -119,6 +119,6 @@ test("a blocked claim is a disabled item with the reason as its tooltip", async 
   });
 
   expect(result).toContain('data-tippy-content="Add your blueprints first"');
-  expect(result).toMatch(/<button[^>]*action-menu-item--success[^>]*disabled/);
+  expect(result).toMatch(/<button(?=[^>]*action-menu-item--success)[^>]*disabled/);
   expect(result.match(/\[ action-menu-item-host \]/g)).toHaveLength(1);
 });

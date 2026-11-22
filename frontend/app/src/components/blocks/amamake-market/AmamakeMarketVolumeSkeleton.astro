@@ -56,8 +56,8 @@ const { rows = 5 } = Astro.props
     .mk-volume-skeleton__num {
         border-radius: 2px;
         @include skeleton.shimmer(
-            color-mix(in srgb, var(--foreground) 6%, transparent),
-            color-mix(in srgb, var(--foreground) 12%, transparent)
+            color-mix(in srgb, var(--foreground) var(--tint-subtle), transparent),
+            color-mix(in srgb, var(--foreground) var(--tint-soft), transparent)
         );
     }
 

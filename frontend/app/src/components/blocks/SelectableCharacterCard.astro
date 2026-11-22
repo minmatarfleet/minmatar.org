@@ -12,10 +12,10 @@ const {
 } = Astro.props
 
 import CharacterCard from '@components/blocks/CharacterCard.astro'
-import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro'
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 ---
 
-<UnstyledRadioCheckButton {...attributes} class="[ selectable-character-card ]" type="checkbox" label={character_name}>
+<RadioCheckInput bare {...attributes} class="[ selectable-character-card ]" type="checkbox" label={character_name}>
     <CharacterCard
         character_id={character_id}
         character_name={character_name}
@@ -24,7 +24,7 @@ import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButto
     >
         <slot />
     </CharacterCard>
-</UnstyledRadioCheckButton>
+</RadioCheckInput>
 
 <style lang="scss" is:global>
     .selectable-character-card + *:before {

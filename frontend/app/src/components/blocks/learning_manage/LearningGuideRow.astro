@@ -36,15 +36,16 @@ const certificate = guide?.certificate_title
         : guide.certificate_title)
     : ''
 const more = Math.max(0, (guide?.certificate_count ?? 0) - 1)
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <ExpandRow id={row_id} colspan={4} label={t('learning_admin.open').replace('~NAME', title)} url={url} open={open}>
     <td>
-        <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+        <StylessButton type="button" class="[ manage-who ]" x-on:click="open = !open">
             <span class="[ manage-who__text ]">
                 <span class="[ manage-who__name ]">{title}</span>
             </span>
-        </button>
+        </StylessButton>
     </td>
     <td class="[ is-wide ]">
         {certificate

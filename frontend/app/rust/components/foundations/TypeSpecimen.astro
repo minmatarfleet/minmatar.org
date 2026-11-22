@@ -75,7 +75,7 @@ const steps = tokens_of('font-size').filter((t) => t.name.startsWith('--step-'))
 
         > li {
             padding: var(--space-s);
-            border: 1px solid var(--hairline-medium);
+            border: 1px solid var(--border-color);
             background: var(--component-background);
         }
     }
@@ -101,7 +101,7 @@ const steps = tokens_of('font-size').filter((t) => t.name.startsWith('--step-'))
     }
 
     dt {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     dd {
@@ -117,14 +117,14 @@ const steps = tokens_of('font-size').filter((t) => t.name.startsWith('--step-'))
 
         caption {
             text-align: start;
-            color: var(--text-muted);
+            color: var(--faded);
             padding-block-end: var(--space-xs);
         }
 
         th, td {
             text-align: start;
             padding: var(--space-3xs) var(--space-xs);
-            border-block-end: 1px solid var(--hairline);
+            border-block-end: 1px solid var(--border-color);
             font-weight: normal;
         }
 
@@ -136,7 +136,7 @@ const steps = tokens_of('font-size').filter((t) => t.name.startsWith('--step-'))
 
         td:last-child code {
             font-size: var(--step--2);
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 </style>

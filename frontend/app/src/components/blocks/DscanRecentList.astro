@@ -1,4 +1,5 @@
 ---
+import { get_corporation_logo, get_type_icon } from '@helpers/eve_image'
 import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
@@ -19,8 +20,8 @@ delete attributes.class
 const MAX_THUMBS = 4
 
 const image_url = (image: { kind: string; id: number }) => image.kind === 'type'
-    ? `https://images.evetech.net/types/${image.id}/icon?size=64`
-    : `https://images.evetech.net/corporations/${image.id}/logo?size=64`
+    ? get_type_icon(image.id, 64)
+    : get_corporation_logo(image.id, 64)
 
 const age = (iso: string) => {
     const minutes = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000))
@@ -61,6 +62,7 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <ComponentBlock
@@ -74,14 +76,14 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
         <h2 class="[ dscan-recent__title ]">{t('dscan.recent')}</h2>
         <div class="[ dscan-recent__filters ]" role="group" aria-label={t('dscan.filter')}>
             {filters.map(filter =>
-                <button
+                <StylessButton
                     type="button"
                     x-on:click={`filter = '${filter}'`}
                     x-bind:class={`{ 'is-on': filter === '${filter}' }`}
                     x-bind:aria-pressed={`filter === '${filter}'`}
                     class:list={[{ 'is-on': filter === 'all' }]}
                     aria-pressed={filter === 'all' ? 'true' : 'false'}
-                >{t(t_key('dscan.filter.', filter))}</button>
+                >{t(t_key('dscan.filter.', filter))}</StylessButton>
             )}
         </div>
     </FlexInline>
@@ -136,7 +138,7 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 
         button {
             padding: var(--space-3xs) var(--space-xs);
-            border: 1px solid var(--hairline-strong);
+            border: 1px solid var(--border-color-hover);
             background: none;
             color: var(--highlight);
             font-family: var(--button-font);
@@ -170,19 +172,19 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
         gap: var(--space-s);
         min-height: 3.25rem;
         padding: 0 var(--space-s);
-        border-top: 1px solid var(--hairline);
+        border-top: 1px solid var(--border-color);
         color: var(--foreground);
         text-decoration: none;
     }
 
     a.dscan-recent__row:hover {
-        background-color: var(--hairline);
+        background-color: var(--border-color);
         color: var(--foreground);
     }
 
     .dscan-recent__kind {
         font-family: var(--heading-font);
-        color: var(--text-muted);
+        color: var(--faded);
         text-transform: uppercase;
 
         &.is-ping {
@@ -208,7 +210,7 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
     .dscan-recent__more,
     .dscan-recent__source,
     .dscan-recent__age {
-        color: var(--text-muted);
+        color: var(--faded);
         font-size: var(--step--1);
     }
 

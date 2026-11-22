@@ -7,8 +7,9 @@ import { TRAINING_DOCTRINE_PARTIAL, time_label, training_url } from '@helpers/tr
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
-import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import DataTable from '@components/blocks/DataTable.astro'
 
+import StylessButton from '@components/blocks/StylessButton.astro'
 /**
  * "What you can bring": one row per doctrine, one cell per role. A pilot with
  * two or more seats (accounts, or characters on no account) sees how many
@@ -76,14 +77,17 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
         <EmptyState title={t('training.no_doctrines')} />
         :
         <>
-            <XFadeScroll class="[ training-bring__wide ]">
-                <table style={`--bring-columns: ${bring.columns.length}`}>
-                    <thead>
-                        <tr>
-                            <th scope="col">{t('training.col_doctrine')}</th>
-                            {bring.columns.map(column => <th scope="col">{column}</th>)}
-                        </tr>
-                    </thead>
+            <div class="[ training-bring__wide ]">
+                <DataTable
+                    bodies={true}
+                    density="dense"
+                    borders="none"
+                    style={`min-width: calc(16rem + ${bring.columns.length} * 7.5rem); table-layout: fixed`}
+                    columns={[
+                        { key: 'doctrine', label: t('training.col_doctrine'), width: '16rem' },
+                        ...bring.columns.map((column, index) => ({ key: `column_${index}`, label: column, align: 'center' as const })),
+                    ]}
+                >
                     {groups.map(group =>
                         <tbody>
                             <tr class="[ training-bring__group ]">
@@ -98,11 +102,11 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
                                         </span>
                                     </th>
                                     {doctrine.cells.map(cell =>
-                                        <td>
+                                        <td class="data-table__center">
                                             {cell.state === 'none' ?
                                                 <span class="[ training-bring__none ]" aria-label={t('training.cell_none')}>—</span>
                                                 :
-                                                <button
+                                                <StylessButton
                                                     type="button"
                                                     class:list={['[ training-bring__cell ]', { wait: cell.seats === 0 }]}
                                                     aria-label={cell_label(doctrine, cell)}
@@ -110,7 +114,7 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
                                                     x-on:click={open_cell(doctrine, cell.column)}
                                                 >
                                                     {cell_text(cell)}
-                                                </button>
+                                                </StylessButton>
                                             }
                                         </td>
                                     )}
@@ -118,8 +122,8 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
                             )}
                         </tbody>
                     )}
-                </table>
-            </XFadeScroll>
+                </DataTable>
+            </div>
 
             <div class="[ training-bring__narrow ]">
                 {groups.map(group =>
@@ -136,14 +140,14 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
                                 <ul role="list">
                                     {roles(doctrine).map(cell =>
                                         <li>
-                                            <button
+                                            <StylessButton
                                                 type="button"
                                                 aria-label={cell_label(doctrine, cell)}
                                                 x-on:click={open_cell(doctrine, cell.column)}
                                             >
                                                 <span>{cell.column}</span>
                                                 <span class:list={['[ training-bring__cell ]', { wait: cell.seats === 0 }]}>{cell_text(cell)}</span>
-                                            </button>
+                                            </StylessButton>
                                         </li>
                                     )}
                                 </ul>
@@ -157,44 +161,19 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
 </ComponentBlock>
 
 <style lang="scss">
-    table {
-        width: 100%;
-        min-width: calc(16rem + var(--bring-columns) * 7.5rem);
-        border-collapse: collapse;
-        table-layout: fixed;
-    }
-
-    thead th:first-child {
-        width: 16rem;
-    }
-
-    thead th {
-        padding: var(--space-xs) var(--space-s);
-        font-size: var(--step--2);
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: var(--text-muted);
-        text-align: center;
-
-        &:first-child {
-            text-align: start;
-        }
-    }
-
     .training-bring__group th {
         padding: var(--space-s) var(--space-s) var(--space-2xs);
-        border-top: 1px solid var(--hairline);
+        border-top: 1px solid var(--border-color);
         font-family: var(--heading-font);
         font-size: var(--step--1);
         font-weight: normal;
         letter-spacing: 0.06em;
-        color: var(--text-muted);
+        color: var(--faded);
         text-align: start;
     }
 
     .training-bring__row {
-        border-top: 1px solid var(--hairline);
+        border-top: 1px solid var(--border-color);
         transition: var(--fast-transition);
 
         &:hover {
@@ -205,10 +184,6 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
     tbody th[scope="row"],
     td {
         padding: var(--space-2xs) var(--space-s);
-    }
-
-    td {
-        text-align: center;
     }
 
     .training-bring__doctrine {
@@ -224,7 +199,7 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
         small {
             font-size: var(--step--2);
             font-weight: normal;
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
@@ -238,7 +213,7 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
         padding-inline: var(--space-2xs);
         border: 1px solid transparent;
         border-radius: var(--space-3xs);
-        background: color-mix(in srgb, var(--green) 30%, transparent);
+        background: color-mix(in srgb, var(--green) var(--tint-medium), transparent);
         color: var(--highlight);
         font-size: var(--step-0);
         font-weight: 700;
@@ -246,7 +221,7 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
         white-space: nowrap;
 
         &.wait {
-            border-color: color-mix(in srgb, var(--fleet-yellow) 35%, transparent);
+            border-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-medium), transparent);
             background: none;
             color: var(--fleet-yellow);
             font-size: var(--step--1);
@@ -259,13 +234,13 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
         transition: var(--fast-transition);
 
         &:hover {
-            outline: 2px solid var(--hairline-strong);
+            outline: 2px solid var(--border-color-hover);
             outline-offset: 1px;
         }
     }
 
     .training-bring__none {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .training-bring__narrow {
@@ -276,11 +251,11 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
             font-family: var(--heading-font);
             font-size: var(--step--1);
             letter-spacing: 0.06em;
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         details {
-            border-top: 1px solid var(--hairline);
+            border-top: 1px solid var(--border-color);
         }
 
         summary {
@@ -300,7 +275,7 @@ const cell_label = (doctrine:TrainingBringDoctrine, cell:Cell) => {
             &::after {
                 content: '›';
                 font-size: var(--step-1);
-                color: var(--text-muted);
+                color: var(--faded);
                 transition: var(--fast-transition);
             }
         }

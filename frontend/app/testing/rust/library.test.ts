@@ -3,8 +3,9 @@
 // show its props and a docs description.
 import { describe, expect, test } from 'vitest'
 import { existsSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { RUST_LIBRARY } from '../../rust/library'
+import { source_files } from '../conventions/scan'
 
 const sources = import.meta.glob<string>('../../rust/stories/**/*.stories.ts', { eager: true, query: '?raw', import: 'default' })
 
@@ -55,3 +56,60 @@ for (const [category, components] of Object.entries(RUST_LIBRARY)) {
         }
     })
 }
+
+// Every library component is imported by some file under src/ (its own file aside).
+// A component with no caller is retired or waiting for one: list it here with the
+// reason. Once it gains a caller, the test below fails until it is removed.
+const UNUSED_ALLOWLIST: Record<string, string> = {
+    'blocks/sde/TypeSearch': 'retired or given a caller in this PR (W5/W6)',
+    'blocks/sde/SolarSystemSearch': 'retired or given a caller in this PR (W5/W6)',
+    'blocks/sde/TypeResults': 'the search partials emit Combobox options now; read-only and linking result lists wait for a caller (W9)',
+    'blocks/sde/SolarSystemResults': 'the search partials emit Combobox options now; read-only and linking result lists wait for a caller (W9)',
+    // Not in the W2 brief's list: no src/ file references it on this branch. Confirm with the owner before W5/W6 land.
+    'blocks/InputError': 'no caller under src/ on feat/rust-library-alignment; confirm with the owner',
+}
+
+const COMPONENTS_DIR = 'src/components'
+const ENTRIES = Object.values(RUST_LIBRARY).flat()
+
+// `from '…'`, `import '…'` and `import('…')`, the same specifier forms the aliases and relative paths use.
+const IMPORT_SPECIFIER = /(?:^|[\s;])(?:import|from)\s*\(?\s*['"]([^'"\n]+)['"]/gm
+
+/** The component (src/components path, no extension) an import specifier names, or null. Resolves @components/ and relative paths. */
+function imported_component(specifier: string, importer: string): string | null {
+    const target = specifier.startsWith('@components/')
+        ? join(COMPONENTS_DIR, specifier.slice('@components/'.length))
+        : specifier.startsWith('.')
+          ? join(dirname(importer), specifier)
+          : null
+    return target?.startsWith(COMPONENTS_DIR + '/') ? target.replace(/\.astro$/, '') : null
+}
+
+const importers = new Map<string, Set<string>>()
+for (const file of source_files()) {
+    for (const match of file.text.matchAll(IMPORT_SPECIFIER)) {
+        const component = imported_component(match[1], file.path)
+        if (!component) continue
+        if (!importers.has(component)) importers.set(component, new Set())
+        importers.get(component)!.add(file.path)
+    }
+}
+
+describe('Rust library: every entry is used under src/', () => {
+    test('UNUSED_ALLOWLIST only names library entries', () => {
+        for (const entry of Object.keys(UNUSED_ALLOWLIST))
+            expect(ENTRIES, `${entry} is not in rust/library.ts`).toContain(entry)
+    })
+
+    for (const entry of ENTRIES) {
+        test(entry, () => {
+            const component = join(COMPONENTS_DIR, entry)
+            const callers = [...(importers.get(component) ?? [])].filter((path) => path !== `${component}.astro`)
+            if (entry in UNUSED_ALLOWLIST) {
+                expect(callers, `${entry} is in UNUSED_ALLOWLIST but now has a caller; remove it from the list`).toEqual([])
+                return
+            }
+            expect(callers, `${entry} is not imported under src/; use it, retire it, or add it to UNUSED_ALLOWLIST with a reason`).not.toEqual([])
+        })
+    }
+})

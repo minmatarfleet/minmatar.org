@@ -6,7 +6,7 @@
 import { i18n } from '@helpers/i18n'
 import type { LoyaltyMarketOrder } from '@dtypes/api.minmatar.org'
 import { format_number, number_thousand_separator } from '@helpers/numbers'
-import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
+import { get_corporation_logo, get_player_icon } from '@helpers/eve_image'
 import { express_hours_left, format_close_time } from '@helpers/loyalty_order_stats'
 import {
     desk_lanes,
@@ -17,8 +17,11 @@ import {
     send_lp_deadline,
     type LoyaltyLaneKey,
 } from '@helpers/loyalty_desk'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import Tag from '@components/blocks/Tag.astro'
 import LoyaltyOrderActions from '@components/blocks/LoyaltyOrderActions.astro'
 
+import StylessButton from '@components/blocks/StylessButton.astro'
 const { t, translatePath } = i18n(Astro.url)
 
 interface Props {
@@ -49,6 +52,14 @@ const LANES: { key: LoyaltyLaneKey, title: string, note?: string }[] = [
 
 type Chip = { text: string, tone: 'neutral' | 'late' | 'express' | 'good' }
 
+// How each lane chip tone is drawn as a Tag.
+const CHIP_TAGS: Record<Chip['tone'], { variant?: 'outline', color?: string }> = {
+    neutral: { variant: 'outline' },
+    late: { variant: 'outline', color: 'fleet-red' },
+    express: { color: 'fleet-yellow' },
+    good: { variant: 'outline', color: 'green' },
+}
+
 const chip_for = (order: LoyaltyMarketOrder, lane: LoyaltyLaneKey): Chip => {
     if (order.express_due_at && order.status !== 'completed') {
         const hours = express_hours_left(order.express_due_at, now)
@@ -78,7 +89,7 @@ const chip_for = (order: LoyaltyMarketOrder, lane: LoyaltyLaneKey): Chip => {
                 <span class="[ tabular-nums ]">{lanes[lane.key].length}</span>
             </div>
             {lanes[lane.key].length === 0 && (
-                <p class="[ loyalty-lanes__empty ]">{t('industry.loyalty.desk.lane.empty')}</p>
+                <EmptyState title={t('industry.loyalty.desk.lane.empty')} />
             )}
             {lanes[lane.key].map((order, index) => {
                 const chip = chip_for(order, lane.key)
@@ -92,7 +103,7 @@ const chip_for = (order: LoyaltyMarketOrder, lane: LoyaltyLaneKey): Chip => {
                         style={index >= VISIBLE_CARDS ? 'display: none' : undefined}
                     >
                         <div class="[ loyalty-lanes__row ]">
-                            <span class:list={['loyalty-lanes__chip', `is-${chip.tone}`]}>{chip.text}</span>
+                            <Tag text={chip.text} {...CHIP_TAGS[chip.tone]} />
                             <a href={translatePath(`/industry/loyalty/orders/${order.id}/`)}>#{order.id}</a>
                         </div>
                         <div class="[ loyalty-lanes__row tabular-nums ]">
@@ -136,12 +147,12 @@ const chip_for = (order: LoyaltyMarketOrder, lane: LoyaltyLaneKey): Chip => {
                 )
             })}
             {lanes[lane.key].length > VISIBLE_CARDS && (
-                <button type="button" class="[ loyalty-lanes__more ]" x-on:click="more = !more">
+                <StylessButton type="button" class="[ loyalty-lanes__more ]" x-on:click="more = !more">
                     <span x-show="!more">
                         {t('industry.loyalty.desk.lane.show_more').replace('{count}', String(lanes[lane.key].length - VISIBLE_CARDS))}
                     </span>
                     <span x-show="more" style="display: none">{t('industry.loyalty.desk.lane.show_fewer')}</span>
-                </button>
+                </StylessButton>
             )}
             {lane.note && <p class="[ loyalty-lanes__note ]">{lane.note}</p>}
         </section>
@@ -181,22 +192,19 @@ const chip_for = (order: LoyaltyMarketOrder, lane: LoyaltyLaneKey): Chip => {
         }
     }
 
-    .loyalty-lanes__empty,
     .loyalty-lanes__note {
         margin: 0;
         padding: var(--space-xs);
-        border: 1px dashed var(--border-color-hover);
+        border: 0;
+        padding-block: 0;
         font-size: var(--step--1);
         line-height: 1.5;
         color: var(--faded);
     }
 
-    .loyalty-lanes__note {
-        border: 0;
-        padding-block: 0;
-    }
-
     .loyalty-lanes__more {
+        padding: 1px 6px;
+        text-align: center;
         min-height: var(--space-l);
         border: 1px dashed var(--border-color-hover);
         background: transparent;
@@ -222,7 +230,7 @@ const chip_for = (order: LoyaltyMarketOrder, lane: LoyaltyLaneKey): Chip => {
         background-color: var(--component-background);
 
         &.is-late {
-            border-color: color-mix(in srgb, var(--fleet-red) 60%, transparent);
+            border-color: color-mix(in srgb, var(--fleet-red) var(--tint-bold), transparent);
         }
     }
 
@@ -246,32 +254,6 @@ const chip_for = (order: LoyaltyMarketOrder, lane: LoyaltyLaneKey): Chip => {
     .loyalty-lanes__isk {
         font-weight: 600;
         color: var(--fleet-yellow);
-    }
-
-    .loyalty-lanes__chip {
-        padding: var(--space-3xs) var(--space-2xs);
-        font-size: var(--step--2);
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        border: 1px solid var(--border-color-hover);
-        color: var(--foreground);
-
-        &.is-late {
-            border-color: var(--fleet-red);
-            color: var(--fleet-red);
-        }
-
-        &.is-express {
-            border-color: var(--fleet-yellow);
-            background-color: var(--fleet-yellow);
-            color: var(--background);
-        }
-
-        &.is-good {
-            border-color: var(--green);
-            color: var(--green);
-        }
     }
 
     .loyalty-lanes__people {

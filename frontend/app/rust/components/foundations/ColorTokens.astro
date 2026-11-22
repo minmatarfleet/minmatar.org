@@ -12,6 +12,17 @@ const { family, show_values = true } = Astro.props
 
 const overrides = new Map(read_theme_overrides().flatMap((o) => o.tokens.map((t) => [t.name, o.selector] as const)))
 const tokens = read_tokens().filter((t) => t.kind === 'color')
+const GRADE_FAMILIES = ['Brand grades', 'Neutral grade']
+// A grade family draws one row of swatches per colour: --fleet-red-50 ... --fleet-red-950.
+const rows = (tokens: typeof all_tokens) => {
+    const by_colour = new Map<string, typeof all_tokens>()
+    for (const t of tokens) {
+        const colour = t.name.replace(/-\d+$/, '')
+        by_colour.set(colour, [...(by_colour.get(colour) ?? []), t])
+    }
+    return [...by_colour.entries()]
+}
+const all_tokens = read_tokens().filter((t) => t.kind === 'color')
 const families = COLOR_FAMILIES.filter((f) => !family || f === family)
     .map((name) => ({ name, tokens: tokens.filter((t) => color_family(t) === name) }))
     .filter((f) => f.tokens.length)
@@ -21,7 +32,16 @@ const families = COLOR_FAMILIES.filter((f) => !family || f === family)
     {families.map((f) => (
         <section class="family" data-family={f.name}>
             <h3>{f.name} <small>{f.tokens.length}</small></h3>
-            <ul role="list">
+            {GRADE_FAMILIES.includes(f.name) ? rows(f.tokens).map(([colour, steps]) => (
+                <ul role="list" class="grade-row" aria-label={colour}>
+                    {steps.map((token) => (
+                        <li data-token={token.name} data-tier={token.tier}>
+                            <span class="swatch" style={`background: var(${token.name})`} aria-hidden="true" />
+                            <code class="step">{token.name.slice(colour.length + 1)}</code>
+                        </li>
+                    ))}
+                </ul>
+            )) : <ul role="list">
                 {f.tokens.map((token) => (
                     <li data-token={token.name} data-tier={token.tier}>
                         <span class="swatch" style={`background: var(${token.name})`} aria-hidden="true" />
@@ -33,7 +53,7 @@ const families = COLOR_FAMILIES.filter((f) => !family || f === family)
                         </span>
                     </li>
                 ))}
-            </ul>
+            </ul>}
         </section>
     ))}
 </div>
@@ -51,7 +71,7 @@ const families = COLOR_FAMILIES.filter((f) => !family || f === family)
         margin: 0 0 var(--space-s);
 
         small {
-            color: var(--text-muted);
+            color: var(--faded);
             font-size: var(--step--1);
         }
     }
@@ -72,16 +92,41 @@ const families = COLOR_FAMILIES.filter((f) => !family || f === family)
         column-gap: var(--space-xs);
         align-items: center;
         padding: var(--space-2xs);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
         background: var(--component-background);
+    }
+
+    .grade-row {
+        grid-template-columns: repeat(11, minmax(0, 1fr));
+        gap: 0;
+        margin-block-end: var(--space-2xs);
+
+        li {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto auto;
+            padding: 0;
+            border: 0;
+            background: none;
+            text-align: center;
+        }
+
+        .swatch {
+            grid-row: auto;
+            border-radius: 0;
+        }
+
+        .step {
+            color: var(--faded);
+            font-size: var(--step--2);
+        }
     }
 
     .swatch {
         grid-row: 1 / 4;
         block-size: var(--space-xl);
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
         // Checkerboard under translucent tokens.
-        background-image: linear-gradient(45deg, var(--hairline) 25%, transparent 25%, transparent 75%, var(--hairline) 75%);
+        background-image: linear-gradient(45deg, var(--border-color) 25%, transparent 25%, transparent 75%, var(--border-color) 75%);
     }
 
     .name {
@@ -91,7 +136,7 @@ const families = COLOR_FAMILIES.filter((f) => !family || f === family)
     }
 
     .value {
-        color: var(--text-muted);
+        color: var(--faded);
         font-size: var(--step--2);
         word-break: break-all;
     }
@@ -101,7 +146,7 @@ const families = COLOR_FAMILIES.filter((f) => !family || f === family)
         gap: var(--space-3xs);
         font-size: var(--step--2);
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .override {

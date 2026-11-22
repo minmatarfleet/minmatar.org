@@ -29,11 +29,13 @@ const {
 delete attributes.class
 
 import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <div>
     <div
         role="dialog"
+        aria-modal="true"
         class:list={[
             'dialog',
             { breakout: breakout },
@@ -45,7 +47,7 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
         ]}
         {...attributes}
     >
-        {close_button && <button class="[ dialog-close ]" x-on:click="close_dialog()"><TrashIcon /></button>}
+        {close_button && <StylessButton class="[ dialog-close ]" x-on:click="close_dialog()"><TrashIcon /></StylessButton>}
         {thin ?
             <Wrapper
                 padding_block='var(--space-3xs)'
@@ -57,7 +59,9 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
                 ]}
                 centered={true}
             >
+                <slot name="header" />
                 <slot />
+                <slot name="footer" />
             </Wrapper>
             :
             <Wrapper

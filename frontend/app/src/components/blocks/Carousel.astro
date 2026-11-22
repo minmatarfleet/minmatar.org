@@ -1,0 +1,219 @@
+---
+/**
+ * A Swiper carousel: the reel markup the site's Swiper blocks repeat. A
+ * relatively positioned wrapper holds the `.swiper` with its `.swiper-wrapper`
+ * track (the default slot: callers wrap each slide in `<div class="swiper-slide">`),
+ * optional pagination bullets, and the prev/next arrows as siblings of the
+ * `.swiper`, so the arrows appear once Swiper has initialised and hide when
+ * there is nothing further to scroll to.
+ *
+ * Uses the global `Swiper` from HeadScripts, started after the 100 ms the
+ * reels have always waited for hidden or swapped-in markup, and destroyed when
+ * the carousel is removed. A carousel that does not own its reel (`selector`)
+ * renders only the track and bullets inside the caller's own `.swiper`, so the
+ * caller keeps its element, id and CSS. `nav_tone` picks the arrow colour: `highlight`
+ * (white) or `fleet-yellow`. Arrows are labelled `Previous slide` and
+ * `Next slide`, and reachable by keyboard.
+ */
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+interface Breakpoint {
+    slides_per_view:    number | 'auto';
+    space_between?:     number;
+}
+
+interface Props {
+    slides_per_view?:   number | 'auto';
+    /** Min viewport widths in px, each with the slide count from there up. */
+    breakpoints?:       Record<number, Breakpoint>;
+    space_between?:     number;
+    loop?:              boolean;
+    /** Advance on its own every this many ms; 0 is off. */
+    autoplay_ms?:       number;
+    navigation?:        boolean;
+    pagination?:        boolean;
+    /** Arrow colour: today's reels split between the two. */
+    nav_tone?:          'highlight' | 'fleet-yellow';
+    /** Distance of the arrows from the edge, a CSS length (negative sits outside the reel). */
+    nav_offset?:        string;
+    /** Hide the arrows below the `lg` breakpoint, as touch has swipe. */
+    hide_nav_on_mobile?: boolean;
+    /** Vertical alignment of slides in the track. */
+    align?:             'start' | 'center' | 'end' | 'stretch';
+    initial_slide?:     number;
+    /** Slides stack vertically; give the `.swiper` a height. */
+    direction?:         'horizontal' | 'vertical';
+    /** `fade` cross-fades between slides (one visible at a time). */
+    effect?:            'slide' | 'fade';
+    /** Scroll with the wheel; `{ forceToAxis: true }` only when it moves along the carousel. */
+    mousewheel?:        boolean | { forceToAxis?: boolean };
+    /** Jump back to the first slide after the last (and the reverse) without looping slides. */
+    rewind?:            boolean;
+    /** Nested in another Swiper: touches belong to the innermost. */
+    nested?:            boolean;
+    /** Off, the reel moves only by the arrows, bullets and `go_slide`. */
+    allow_touch_move?:  boolean;
+    /** Keep the slide in the URL hash (`data-hash` on each slide). */
+    hash_navigation?:   boolean;
+    /** Measure `breakpoints` against the carousel's own width, not the viewport's. */
+    breakpoints_base?:  'window' | 'container';
+    /**
+     * The caller's own `.swiper` (a selector for it or an ancestor of the
+     * carousel). The carousel then renders only its track and bullets.
+     */
+    selector?:          string;
+    /** Selectors of arrows the caller placed itself (with `selector`). */
+    prev_el?:           string;
+    next_el?:           string;
+    /** Class for the bullets container, for callers that style it. */
+    pagination_class?:  string;
+    /** Names this carousel for the `carousel:go` / `carousel:next` window events. */
+    control_id?:        string;
+    [propName: string]: any;
+}
+
+const {
+    slides_per_view = 1,
+    breakpoints,
+    space_between = 0,
+    loop = false,
+    autoplay_ms = 0,
+    navigation = true,
+    pagination = false,
+    nav_tone = 'highlight',
+    nav_offset = '-46px',
+    hide_nav_on_mobile = true,
+    align = 'start',
+    initial_slide = 0,
+    direction = 'horizontal',
+    effect = 'slide',
+    mousewheel = false,
+    rewind = false,
+    nested = false,
+    allow_touch_move = true,
+    hash_navigation = false,
+    breakpoints_base = 'window',
+    selector,
+    prev_el,
+    next_el,
+    pagination_class,
+    control_id,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const swiper_breakpoints = breakpoints
+    ? Object.fromEntries(Object.entries(breakpoints).map(([width, point]) => [width, {
+        slidesPerView: point.slides_per_view,
+        ...(point.space_between !== undefined && { spaceBetween: point.space_between }),
+    }]))
+    : undefined
+
+const swiper_options = {
+    initialSlide: initial_slide,
+    slidesPerView: slides_per_view,
+    spaceBetween: space_between,
+    loop,
+    ...(swiper_breakpoints && { breakpoints: swiper_breakpoints }),
+    ...(autoplay_ms > 0 && { autoplay: { delay: autoplay_ms } }),
+    pagination: pagination ? { clickable: true, dynamicBullets: true } : false,
+    ...(direction === 'vertical' && { direction }),
+    ...(effect === 'fade' && { effect, fadeEffect: { crossFade: true } }),
+    ...(mousewheel && { mousewheel }),
+    ...(rewind && { rewind }),
+    ...(nested && { nested }),
+    ...(!allow_touch_move && { allowTouchMove: false, simulateTouch: false }),
+    ...(hash_navigation && { hashNavigation: true }),
+    ...(breakpoints_base === 'container' && { breakpointsBase: 'container' }),
+    a11y: { prevSlideMessage: t('carousel.previous'), nextSlideMessage: t('carousel.next') },
+}
+
+const own_arrows = navigation && !selector
+const arrow_els = selector && (prev_el || next_el)
+    ? `navigation: { nextEl: ${JSON.stringify(next_el ?? null)}, prevEl: ${JSON.stringify(prev_el ?? null)} },`
+    : own_arrows ? "navigation: { nextEl: host.parentElement.querySelector('.swiper-button-next'), prevEl: host.parentElement.querySelector('.swiper-button-prev') }," : ''
+
+// The Alpine scope: starts Swiper, and gives the slides `go_slide` / `next_slide` / `prev_slide`.
+const x_data = `{
+    swiper: null,
+    next_slide() { this.swiper?.slideNext() },
+    prev_slide() { this.swiper?.slidePrev() },
+    go_slide(index) { this.swiper?.slideTo(index) },
+    init() {
+        const INIT_WORKAROUND_TIMER_MS = 100
+        setTimeout(() => {
+            if (!window.Swiper || !this.$el.isConnected) return
+            const host = ${selector ? `this.$el.closest(${JSON.stringify(selector)}) || document.querySelector(${JSON.stringify(selector)})` : 'this.$el'}
+            if (!host) return
+            if (this.swiper) this.swiper.destroy(true, true)
+            this.swiper = new Swiper(host, {
+                ...${JSON.stringify(swiper_options)},
+                ${pagination ? "pagination: { clickable: true, dynamicBullets: true, el: host.querySelector('.swiper-pagination') }," : ''}
+                ${arrow_els}
+            })
+        }, INIT_WORKAROUND_TIMER_MS)
+    },
+    destroy() {
+        if (this.swiper) this.swiper.destroy(true, true)
+        this.swiper = null
+    },
+}`
+
+import Wrapper from '@components/compositions/Wrapper.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+---
+
+{selector ?
+    <>
+        <FlexInline
+            class:list={['swiper-wrapper select-none !flex-nowrap', `!items-${align}`, Astro.props.class]}
+            gap='0'
+            x-data={x_data}
+            x-on:carousel:go.window={`if (!$event.detail?.id || $event.detail.id === ${JSON.stringify(control_id ?? null)}) go_slide($event.detail?.index ?? 0)`}
+            x-on:carousel:next.window={`if (!$event.detail?.id || $event.detail.id === ${JSON.stringify(control_id ?? null)}) next_slide()`}
+            {...attributes}
+        >
+            <slot />
+        </FlexInline>
+        {pagination && <div class:list={['swiper-pagination', pagination_class]}></div>}
+    </>
+    :
+    <Wrapper
+        class:list={['[ carousel ]', `carousel--${nav_tone}`, Astro.props.class]}
+        padding_block='0'
+        padding_inline='0'
+        max_width='100%'
+        style={`--carousel-nav-offset: ${nav_offset}`}
+        {...attributes}
+    >
+        <div
+            class="[ swiper ][ w-full ]"
+            x-data={x_data}
+            x-on:carousel:go.window={`if (!$event.detail?.id || $event.detail.id === ${JSON.stringify(control_id ?? null)}) go_slide($event.detail?.index ?? 0)`}
+            x-on:carousel:next.window={`if (!$event.detail?.id || $event.detail.id === ${JSON.stringify(control_id ?? null)}) next_slide()`}
+        >
+            <FlexInline class:list={['swiper-wrapper select-none !flex-nowrap', `!items-${align}`]} gap='0'>
+                <slot />
+            </FlexInline>
+            {pagination && <div class="swiper-pagination"></div>}
+        </div>
+
+        {navigation && <>
+            <div
+                class:list={['swiper-button-prev', { 'hidden! lg:block!': hide_nav_on_mobile }]}
+                role="button"
+                tabindex="0"
+                aria-label={t('carousel.previous')}
+            ></div>
+            <div
+                class:list={['swiper-button-next', { 'hidden! lg:block!': hide_nav_on_mobile }]}
+                role="button"
+                tabindex="0"
+                aria-label={t('carousel.next')}
+            ></div>
+        </>}
+    </Wrapper>
+}
+

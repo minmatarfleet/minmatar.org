@@ -90,10 +90,10 @@ const aria = [
         flex-direction: column;
         gap: var(--space-3xs);
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
 
         &.is-on-pace {
-            --trial_bar_color: color-mix(in srgb, var(--green) 60%, var(--highlight));
+            --trial_bar_color: var(--green-300);
         }
     }
 
@@ -106,7 +106,7 @@ const aria = [
     .trial-bar__track {
         position: relative;
         height: var(--space-xs);
-        background: var(--hairline-medium);
+        background: var(--border-color);
     }
 
     .is-compact .trial-bar__track {
@@ -127,7 +127,7 @@ const aria = [
         background: var(--highlight);
 
         &.is-soft {
-            background: var(--hairline-strong);
+            background: var(--border-color-hover);
         }
     }
 

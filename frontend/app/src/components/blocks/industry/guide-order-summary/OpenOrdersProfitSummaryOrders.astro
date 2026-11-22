@@ -1,6 +1,6 @@
 ---
 import type { OrdersProfitSummary } from '@dtypes/api.minmatar.org'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
@@ -13,6 +13,7 @@ interface Props {
 const { orders, selected_order_ids } = Astro.props
 const selected_set = new Set(selected_order_ids)
 const MAX_ICONS = 12
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {
@@ -21,20 +22,20 @@ const MAX_ICONS = 12
             <FlexInline justification="space-between" class="[ w-full ]">
                 <strong>Orders in range</strong>
                 <FlexInline gap="var(--space-s)">
-                    <button
+                    <StylessButton
                         type="button"
                         class="[ filter-action ]"
                         data-order-select="all"
                     >
                         Select all
-                    </button>
-                    <button
+                    </StylessButton>
+                    <StylessButton
                         type="button"
                         class="[ filter-action ]"
                         data-order-select="none"
                     >
                         Select none
-                    </button>
+                    </StylessButton>
                 </FlexInline>
             </FlexInline>
             <div class="[ order-checklist ]">
@@ -99,8 +100,8 @@ const MAX_ICONS = 12
         max-height: 16rem;
         overflow: auto;
         padding: var(--space-s);
-        border: 1px solid var(--hairline-medium);
-        background-color: rgba(85, 85, 85, 0.1);
+        border: 1px solid var(--border-color);
+        background-color: color-mix(in srgb, var(--neutral-600) var(--tint-subtle), transparent);
         backdrop-filter: blur(var(--input-backdrop-blur));
 
         :global(label) {

@@ -9,7 +9,7 @@ const { translatePath } = i18n(Astro.url)
 
 import type { FleetRoleGuide } from '@/data/fleet-roles'
 import { guidePath } from '@/data/guides/urls'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 
 interface Props {
     guide: FleetRoleGuide
@@ -37,7 +37,7 @@ delete attributes.class
         height: 100%;
         aspect-ratio: 2 / 1;
         overflow: hidden;
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
         background: var(--background);
         color: var(--foreground);
         text-decoration: none;
@@ -62,7 +62,7 @@ delete attributes.class
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(to top, color-mix(in srgb, var(--background) 92%, transparent) 0%, color-mix(in srgb, var(--background) 40%, transparent) 45%, transparent 75%);
+            background: linear-gradient(to top, color-mix(in srgb, var(--background) var(--tint-dense), transparent) 0%, color-mix(in srgb, var(--background) var(--tint-strong), transparent) 45%, transparent 75%);
         }
 
         @media (hover: hover) {

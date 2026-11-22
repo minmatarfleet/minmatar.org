@@ -4,7 +4,7 @@ const { t, translatePath } = i18n(Astro.url)
 
 import type { ShipTargetProgress, TargetLineOwner } from '@helpers/api.minmatar.org/fleets'
 import { query_string } from '@helpers/string'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 
 /**
  * Find pilots for a short ship target line on a private fleet: alliance
@@ -37,6 +37,7 @@ const FIRST = 8
 
 import Button from '@components/blocks/Button.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <section id="fleet-ship-targets" class="[ target-owners ]" aria-labelledby="target-owners-title">
@@ -75,9 +76,9 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                         )}
                     </ul>
                     {owners.length > FIRST &&
-                        <button type="button" class="[ target-owners__link ]" x-show="!show_all" x-on:click="show_all = true">
+                        <StylessButton type="button" class="[ target-owners__link ]" x-show="!show_all" x-on:click="show_all = true">
                             {t('fleets.targets.show_more').replace('{count}', (owners.length - FIRST).toString())}
-                        </button>
+                        </StylessButton>
                     }
                 </Fragment>
                 :
@@ -110,7 +111,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         align-items: baseline;
         gap: var(--space-2xs) var(--space-s);
         padding: var(--space-s) var(--space-m);
-        border-bottom: 1px solid var(--hairline);
+        border-bottom: 1px solid var(--border-color);
 
         h2 {
             font-size: var(--step-1);
@@ -135,7 +136,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         border: 1px solid var(--border-color);
 
         li + li {
-            border-top: 1px solid var(--hairline);
+            border-top: 1px solid var(--border-color);
         }
 
         label {
@@ -179,7 +180,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
     }
 
     .target-owners__muted {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .target-owners__link {
@@ -199,7 +200,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         justify-content: flex-end;
         gap: var(--space-xs);
         padding: var(--space-s) var(--space-m);
-        border-top: 1px solid var(--hairline);
+        border-top: 1px solid var(--border-color);
     }
 
     [x-cloak] {

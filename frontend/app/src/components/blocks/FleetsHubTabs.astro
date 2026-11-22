@@ -3,6 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { get_gates, can } from '@helpers/gates'
+import SectionTabs from '@components/blocks/SectionTabs.astro'
 
 /**
  * The Fleets hub tabs. Each is its own URL (/fleets/upcoming/,
@@ -27,60 +28,4 @@ const tabs = [
 ]
 ---
 
-<nav class="[ fleets-hub-tabs ]" aria-label={t('fleets.hub.label')}>
-    {tabs.map(tab =>
-        <a
-            href={tab.href}
-            class:list={['[ fleets-hub-tab ]', { 'is-active': tab.id === active }]}
-            aria-current={tab.id === active ? 'page' : undefined}
-        >
-            {tab.label}
-        </a>
-    )}
-</nav>
-
-<style lang="scss">
-    .fleets-hub-tabs {
-        display: flex;
-        gap: var(--space-2xs);
-        border-bottom: solid 1px var(--border-color-hover);
-        overflow-x: auto;
-        scrollbar-width: none;
-    }
-
-    .fleets-hub-tab {
-        border-bottom: 3px solid transparent;
-        margin-block-end: -1px;
-        padding: var(--space-2xs) var(--space-s);
-        font-family: var(--heading-font);
-        font-size: var(--step-1);
-        text-transform: uppercase;
-        letter-spacing: 0.02em;
-        color: var(--foreground);
-
-        &.is-active {
-            color: var(--highlight);
-            border-bottom-color: var(--fleet-red);
-        }
-
-        &:focus-visible {
-            outline: solid 2px var(--fleet-yellow);
-            outline-offset: -2px;
-        }
-    }
-
-    @media (hover: hover) {
-        .fleets-hub-tab:hover {
-            color: var(--highlight);
-        }
-    }
-
-    @media screen and (max-width: 767px) {
-        .fleets-hub-tab {
-            flex: 1 0 auto;
-            white-space: nowrap;
-            text-align: center;
-            font-size: var(--step-0);
-        }
-    }
-</style>
+<SectionTabs tabs={tabs} aria_label={t('fleets.hub.label')} id_prefix="fleets-hub" active_tab={active} />

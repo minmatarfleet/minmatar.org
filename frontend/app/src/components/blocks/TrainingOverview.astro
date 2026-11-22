@@ -31,6 +31,7 @@ const move_picker = (account:number) =>
     `show_modal({ partial: '${translatePath(training_url(TRAINING_MOVE_PARTIAL, { account }))}' })`
 
 const character_count = overview.accounts.reduce((total, account) => total + account.characters.length, 0) + overview.unplaced.length
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <Flexblock gap="var(--space-l)" class:list={['[ training-overview ]', Astro.props.class]} {...attributes}>
@@ -56,9 +57,9 @@ const character_count = overview.accounts.reduce((total, account) => total + acc
                         <div class="[ training-list__account ]">
                             <div class="[ training-list__account-head ]">
                                 <h3>{t('training.account').replace('{number}', account.number.toString())}</h3>
-                                <button type="button" class="[ training-link ]" x-on:click={move_picker(account.number)}>
+                                <StylessButton type="button" class="[ training-link ]" x-on:click={move_picker(account.number)}>
                                     {t('training.move_a_character')}
-                                </button>
+                                </StylessButton>
                             </div>
                             {account.characters.map(character =>
                                 <TrainingCharacterRow character={character} />
@@ -78,7 +79,7 @@ const character_count = overview.accounts.reduce((total, account) => total + acc
                                 <h3>
                                     {t('training.not_on_account')} · {t('training.characters_count').replace('{count}', overview.unplaced.length.toString())}
                                 </h3>
-                                <button
+                                <StylessButton
                                     type="button"
                                     class="[ training-link ]"
                                     x-on:click="open = !open"
@@ -86,7 +87,7 @@ const character_count = overview.accounts.reduce((total, account) => total + acc
                                     x-text={`open ? '${t('training.hide')}' : '${t('training.show')}'`}
                                 >
                                     {t('training.show')}
-                                </button>
+                                </StylessButton>
                             </div>
                             <div x-show="open" x-cloak>
                                 {overview.unplaced.map(character =>
@@ -117,7 +118,7 @@ const character_count = overview.accounts.reduce((total, account) => total + acc
         font-family: var(--heading-font);
         font-size: var(--step--1);
         letter-spacing: 0.06em;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .training-list__head {
@@ -125,12 +126,12 @@ const character_count = overview.accounts.reduce((total, account) => total + acc
         grid-template-columns: var(--training-columns);
         gap: var(--space-m);
         padding: var(--space-xs) var(--space-s);
-        border-bottom: 1px solid var(--hairline);
+        border-bottom: 1px solid var(--border-color);
         font-size: var(--step--2);
         font-weight: 600;
         letter-spacing: 0.06em;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .training-list__account {
@@ -140,7 +141,7 @@ const character_count = overview.accounts.reduce((total, account) => total + acc
         padding: var(--space-xs) var(--space-s);
 
         & + & {
-            border-top: 1px solid var(--hairline);
+            border-top: 1px solid var(--border-color);
         }
     }
 

@@ -94,3 +94,13 @@ function confirm_slot(label: string) {
         slots: { default: label },
     }
 }
+
+export const PassesAttributesThrough = {
+    name: 'Extra attributes and classes reach the root',
+    args: { class: 'ml-auto', 'data-testid': 'confirm-root' },
+    play: async ({ canvasElement }: Ctx) => {
+        const root = within(canvasElement).getByTestId('confirm-root')
+        await expect(root).toHaveClass('confirm-button')
+        await expect(root).toHaveClass('ml-auto')
+    },
+}

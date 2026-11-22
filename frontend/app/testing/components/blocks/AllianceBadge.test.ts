@@ -4,10 +4,10 @@ import { expect, test, vi } from "vitest";
 import AllianceBadge from "@components/blocks/AllianceBadge.astro";
 
 import { get_alliance_by_id } from "@helpers/api.eveonline/alliances";
-import { get_alliance_logo } from "@helpers/eve_image_server";
+import { get_alliance_logo } from "@helpers/eve_image";
 
 vi.mock("@helpers/api.eveonline/alliances");
-vi.mock("@helpers/eve_image_server");
+vi.mock("@helpers/eve_image");
 
 test("AllianceBadge defaults", async () => {
   vi.mocked(get_alliance_by_id).mockImplementation(async (id) => {

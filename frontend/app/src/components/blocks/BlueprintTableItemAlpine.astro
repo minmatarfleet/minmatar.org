@@ -36,7 +36,6 @@ import CargoIcon from '@components/icons/CargoIcon.astro';
                 <picture
                     x-bind:class="{ 'in-job': blueprint.in_job }"
                     x-bind:data-tippy-content={`blueprint.in_job ? '${t('currently_busy')}' : undefined`}
-                    x-init='tippy($el, tippy_options)'
                 >
                     <img
                         loading="lazy"
@@ -58,7 +57,6 @@ import CargoIcon from '@components/icons/CargoIcon.astro';
                     <div
                         class="[ text-highlight h-[16px] ]"
                         data-tippy-content={t('material_efficiency')}
-                        x-init='tippy($el, tippy_options)'
                     >
                         <MaterialEfficiencyIcon size={16} xlink='#material_efficiency_icon' />
                     </div>
@@ -78,7 +76,6 @@ import CargoIcon from '@components/icons/CargoIcon.astro';
                     <div
                         class="[ text-highlight h-[16px] ]"
                         data-tippy-content={t('time_efficiency')}
-                        x-init='tippy($el, tippy_options)'
                     >
                         <TimeEfficiencyIcon size={16} xlink='#time_efficiency_icon' />
                     </div>
@@ -125,7 +122,6 @@ import CargoIcon from '@components/icons/CargoIcon.astro';
                 <div
                     class="[ text-highlight h-[32px] ]"
                     data-tippy-content={t('location')}
-                    x-init='tippy($el, tippy_options)'
                 >
                     <CargoIcon size={32} xlink='#cargo_icon' />
                 </div>

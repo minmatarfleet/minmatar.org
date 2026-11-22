@@ -8,7 +8,7 @@ import LazyPartial from '@components/blocks/LazyPartial.astro'
 import RoleDiagram from '@components/blocks/role-diagrams/RoleDiagram.astro'
 import RoleModulePanel from '@components/blocks/role-guide/RoleModulePanel.astro'
 import YTVideoWidget from '@components/blocks/YTVideoWidget.astro'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 
 interface Props {
     lesson: Lesson
@@ -169,13 +169,13 @@ const heading_id = `${id_prefix}-lesson-${lesson.id}`
         video {
             width: 100%;
             max-width: 48rem;
-            border: 1px solid var(--hairline-medium);
+            border: 1px solid var(--border-color);
             background: var(--background);
         }
 
         figcaption {
             font-size: var(--step--1);
-            color: var(--text-muted);
+            color: var(--faded);
 
             a {
                 color: var(--highlight);
@@ -267,7 +267,7 @@ const heading_id = `${id_prefix}-lesson-${lesson.id}`
             height: 100%;
             box-sizing: border-box;
             padding: var(--space-s);
-            border: 1px solid var(--hairline-medium);
+            border: 1px solid var(--border-color);
             background: var(--surface-sunken);
             color: var(--foreground);
             font-size: var(--step--1);
@@ -288,7 +288,7 @@ const heading_id = `${id_prefix}-lesson-${lesson.id}`
     }
 
     .role-lesson__link-source {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .role-lesson {
@@ -296,7 +296,7 @@ const heading_id = `${id_prefix}-lesson-${lesson.id}`
         flex-direction: column;
         gap: var(--space-s);
         padding-top: var(--space-m);
-        border-top: 1px solid var(--hairline);
+        border-top: 1px solid var(--border-color);
         scroll-margin-top: calc(var(--header-height, 4rem) + var(--space-l));
     }
 
@@ -310,7 +310,7 @@ const heading_id = `${id_prefix}-lesson-${lesson.id}`
     .role-lesson__number {
         font-family: var(--heading-font);
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .role-lesson__title {
@@ -322,7 +322,7 @@ const heading_id = `${id_prefix}-lesson-${lesson.id}`
 
     .role-lesson__format {
         padding: var(--space-3xs) var(--space-2xs);
-        background: var(--hairline);
+        background: var(--border-color);
         font-size: var(--step--2);
         font-weight: 600;
         letter-spacing: 0.04em;
@@ -352,12 +352,12 @@ const heading_id = `${id_prefix}-lesson-${lesson.id}`
         img {
             width: 100%;
             height: auto;
-            border: 1px solid var(--hairline-medium);
+            border: 1px solid var(--border-color);
         }
 
         figcaption {
             font-size: var(--step--1);
-            color: var(--text-muted);
+            color: var(--faded);
 
             :global(a) {
                 color: var(--highlight);
@@ -374,7 +374,7 @@ const heading_id = `${id_prefix}-lesson-${lesson.id}`
 
         figcaption {
             font-size: var(--step--1);
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 </style>

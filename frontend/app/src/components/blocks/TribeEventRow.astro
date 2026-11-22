@@ -79,7 +79,7 @@ import PlacePinIcon from '@components/icons/PlacePinIcon.astro'
         <span class="[ tribe-event-row__heading ]">
             <b class="[ tribe-event-row__title ]">{event.title}</b>
             {event.recurrence_label && <Tag variant="outline" text={event.recurrence_label} />}
-            {cancelled && <Tag variant="outline" color="fleet-red" text_color="color-mix(in srgb, var(--fleet-red) 60%, var(--highlight))" text={t('cancelled')} />}
+            {cancelled && <Tag variant="outline" color="fleet-red" text_color="var(--fleet-red-300)" text={t('cancelled')} />}
             {completed && <Tag variant="outline" text={t('tribes.publishing.event.completed')} />}
         </span>
         <span class="[ tribe-event-row__facts ]">
@@ -121,7 +121,7 @@ import PlacePinIcon from '@components/icons/PlacePinIcon.astro'
         gap: var(--space-s);
         padding: var(--space-2xs) var(--space-s) var(--space-2xs) var(--space-2xs);
         background-color: var(--component-background);
-        border: 1px solid var(--hairline);
+        border: 1px solid var(--border-color);
 
         &.is-cancelled .tribe-event-row__date,
         &.is-cancelled .tribe-event-row__cover,
@@ -145,7 +145,7 @@ import PlacePinIcon from '@components/icons/PlacePinIcon.astro'
         align-self: stretch;
         min-height: 5.5rem;
         background-color: var(--surface-sunken);
-        border: 1px solid var(--hairline);
+        border: 1px solid var(--border-color);
 
         b {
             font-family: var(--heading-font);
@@ -179,7 +179,7 @@ import PlacePinIcon from '@components/icons/PlacePinIcon.astro'
             align-items: center;
             justify-content: center;
             background-color: var(--surface-sunken);
-            border: 1px solid var(--hairline);
+            border: 1px solid var(--border-color);
 
             :global(img) {
                 width: 2rem;
@@ -273,7 +273,7 @@ import PlacePinIcon from '@components/icons/PlacePinIcon.astro'
 
     .tribe-event-row__edit {
         font-size: var(--step--2);
-        color: var(--text-muted);
+        color: var(--faded);
         text-decoration: underline;
 
         &:focus-visible {

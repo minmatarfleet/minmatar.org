@@ -148,8 +148,8 @@ const verdict_labels: Record<MatchupVerdict, string> = {
         min-width: 0;
         overflow-x: clip;
         padding: var(--component-padding-block) var(--space-l-xl);
-        background: color-mix(in srgb, var(--component-background) 72%, transparent);
-        border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+        background: color-mix(in srgb, var(--component-background) var(--tint-heavy), transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
     }
 
     @media (max-width: 48rem) {
@@ -163,7 +163,7 @@ const verdict_labels: Record<MatchupVerdict, string> = {
         gap: var(--space-l);
         margin-bottom: var(--space-l);
         padding-bottom: var(--space-l);
-        border-bottom: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+        border-bottom: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
         align-items: stretch;
     }
 
@@ -180,9 +180,9 @@ const verdict_labels: Record<MatchupVerdict, string> = {
         overflow: hidden;
         padding: var(--component-padding-block);
         background:
-            radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--fleet-red) 12%, transparent), transparent 70%),
-            color-mix(in srgb, var(--component-background) 80%, transparent);
-        border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+            radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--fleet-red) var(--tint-soft), transparent), transparent 70%),
+            color-mix(in srgb, var(--component-background) var(--tint-heavy), transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
 
         :global(picture) {
             width: min(100%, 512px);
@@ -198,8 +198,8 @@ const verdict_labels: Record<MatchupVerdict, string> = {
     .guide-ship__stats {
         min-width: 0;
         padding: var(--component-padding-block) var(--space-m);
-        background: color-mix(in srgb, var(--component-background) 92%, transparent);
-        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        background: color-mix(in srgb, var(--component-background) var(--tint-dense), transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
     }
 
     .guide-ship__stats-kicker {
@@ -275,7 +275,7 @@ const verdict_labels: Record<MatchupVerdict, string> = {
         flex-direction: column;
         gap: var(--space-s);
         padding-bottom: var(--space-m);
-        border-bottom: 1px solid color-mix(in srgb, var(--border-color) 45%, transparent);
+        border-bottom: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
     }
 
     .guide-ship__topic-title {
@@ -313,7 +313,7 @@ const verdict_labels: Record<MatchupVerdict, string> = {
     .guide-ship__section-title {
         margin: 0 0 var(--space-s);
         padding-bottom: var(--space-2xs);
-        border-bottom: 1px solid color-mix(in srgb, var(--border-color) 50%, transparent);
+        border-bottom: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
         font-family: var(--heading-font);
         letter-spacing: 0.06em;
         text-transform: uppercase;

@@ -85,26 +85,9 @@ A vertical list where every child is full width and rows are separated by `gap` 
 A horizontal scroll container that fades its left and right edges when there is more content that way.
 
 - Import: `import XFadeScroll from '@components/compositions/XFadeScroll.astro'`
-- Props: `flex?: boolean = false`, `fade_size?: string = 'var(--space-s)'`
+- Props: `flex?: boolean = false`, `fade_size?: string = 'var(--space-s)'`, `below?: string = ''`, `overflow_y_visible?: boolean = false`
 - Slots: `default`
-- Stories (7): `frontend/app/rust/stories/layout/XFadeScroll.stories.ts`, https://my.minmatar.org/rust/?path=/docs/layout-xfadescroll--docs: Default, Chip row fades at the end, Scrolled: fades both sides, Scrolled to the end: fades the start only, Wide table, Big Fade, Fits: no fade
-
-### Cover
-
-A full-height column with an optional `header` slot at the top, an optional `footer` slot at the bottom, and the default slot vertically centered between them.
-
-- Import: `import Cover from '@components/compositions/Cover.astro'`
-- Props: `space?: string = 'var(--space-2xl-3xl)'`, `minHeight?: string`, `noPad?: boolean`, `neocom?: boolean = true`
-- Slots: `header`, `default`, `footer`
-- Stories (6): `frontend/app/rust/stories/layout/Cover.stories.ts`, https://my.minmatar.org/rust/?path=/docs/layout-cover--docs: Default, Without Neocom, Body Only, Header And Body, Footer And Body, Fills the viewport height
-
-### Center
-
-Centers its content on both axes with flexbox.
-
-- Import: `import Center from '@components/compositions/Center.astro'`
-- Slots: `default`
-- Stories (5): `frontend/app/rust/stories/layout/Center.stories.ts`, https://my.minmatar.org/rust/?path=/docs/layout-center--docs: Default, Text, With Button, Passes attributes through, Centers on both axes
+- Stories (11): `frontend/app/rust/stories/layout/XFadeScroll.stories.ts`, https://my.minmatar.org/rust/?path=/docs/layout-xfadescroll--docs: Default, Chip row fades at the end, Scrolled: fades both sides, Scrolled to the end: fades the start only, Wide table, Big Fade, Fits: no fade, Below a width: scrolls on phones only, Below: only a plain length is accepted, Open dropdown: stops clipping, No open dropdown: keeps scrolling
 
 ## Components/Forms
 
@@ -115,7 +98,7 @@ The primary call to action.
 - Import: `import Button from '@components/blocks/Button.astro'`
 - Props: `color?: ButtonColors = 'fleet-red'`, `new_tab?: boolean = false`, `external?: boolean = false`, `href?: string`, `size?: ButtonSizes = 'lg'`, `narrow?: boolean = false`, `centered?: boolean = true`, `off_disable?: boolean = false`, `disabled?: boolean = false`
 - Slots: `icon`, `default`
-- Stories (11): `frontend/app/rust/stories/components/forms/Button.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-button--docs: Default, Colors, Transparent, Small, Narrow, With Icon, Link, New Tab, External, Disabled, Enabled without Alpine (off_disable)
+- Stories (12): `frontend/app/rust/stories/components/forms/Button.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-button--docs: Default, Colors, Transparent, Small, Narrow, With Icon, Link, New Tab, External, Disabled, Enabled without Alpine (off_disable), Keyboard focus ring
 
 ### StylessButton
 
@@ -124,7 +107,7 @@ A button or link with the browser chrome stripped: no border, padding or backgro
 - Import: `import StylessButton from '@components/blocks/StylessButton.astro'`
 - Props: `href?: string`, `external?: boolean = false`
 - Slots: `default`
-- Stories (5): `frontend/app/rust/stories/components/forms/StylessButton.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-stylessbutton--docs: Default, Link, External, With Click Handler, Wrapping Content
+- Stories (8): `frontend/app/rust/stories/components/forms/StylessButton.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-stylessbutton--docs: Default, Link, External, With Click Handler, Wrapping Content, Bare XData, External Href With Quote, Caller Class Wins
 
 ### ButtonStack
 
@@ -141,7 +124,7 @@ A two-step button for destructive or irreversible actions.
 - Import: `import ButtonConfirm from '@components/blocks/ButtonConfirm.astro'`
 - Props: `label: string`, `color?: ButtonColors = 'fleet-red'`, `size?: ButtonSizes = 'lg'`, `narrow?: boolean = false`, `centered?: boolean = true`, `off_disable?: boolean = false`
 - Slots: `default`
-- Stories (5): `frontend/app/rust/stories/components/forms/ButtonConfirm.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-buttonconfirm--docs: Default, Two-step confirm flow, Small Narrow, Alliance Blue, Enabled without Alpine (off_disable)
+- Stories (6): `frontend/app/rust/stories/components/forms/ButtonConfirm.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-buttonconfirm--docs: Default, Two-step confirm flow, Small Narrow, Alliance Blue, Enabled without Alpine (off_disable), Extra attributes and classes reach the root
 
 ### ClipboardButton
 
@@ -157,9 +140,9 @@ A small button that copies the text of a hidden, readonly `<textarea>` (rendered
 The site text field: a bordered, blurred-glass `<input>` inside an `.input-group`.
 
 - Import: `import Input from '@components/blocks/Input.astro'`
-- Props: `width?: string = '100%'`, `size?: 'lg' | 'sm' = 'lg'`
+- Props: `width?: string = '100%'`, `size?: 'lg' | 'sm' = 'lg'`, `prefix?: string`, `prefix_attributes?: Record<string, any> = {}`
 - Slots: `icon`
-- Stories (10): `frontend/app/rust/stories/components/forms/Input.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-input--docs: Default, Accepts Text, Named, Required, Disabled, Read Only, Small, With Icon, Number type, Narrow Width
+- Stories (13): `frontend/app/rust/stories/components/forms/Input.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-input--docs: Default, Accepts Text, Named, Required, Disabled, Read Only, Small, With Icon, With Prefix, Prefix is not part of the value, Number type, Narrow Width, Keyboard focus ring
 
 ### InputError
 
@@ -177,60 +160,34 @@ The site dropdown: a native `<select>` styled like `Input`, with a caret icon.
 - Import: `import Select from '@components/blocks/Select.astro'`
 - Props: `width?: string = '100%'`, `size?: 'lg' | 'sm' = 'lg'`
 - Slots: `default`
-- Stories (8): `frontend/app/rust/stories/components/forms/Select.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-select--docs: Default, Selected Value, Change Selection, Small, Required, Disabled, Grouped, Narrow Width
+- Stories (9): `frontend/app/rust/stories/components/forms/Select.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-select--docs: Default, Selected Value, Change Selection, Small, Required, Disabled, Grouped, Narrow Width, Keyboard focus ring
 
 ### Textarea
 
 The site multi-line field, styled like `Input`: bordered glass, vertical resize only.
 
 - Import: `import Textarea from '@components/blocks/Textarea.astro'`
-- Props: `width?: string = '100%'`
+- Props: `variant?: 'default' | 'bare' = 'default'`
 - Slots: `default`
-- Stories (7): `frontend/app/rust/stories/components/forms/Textarea.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-textarea--docs: Default, Accepts Text, With Content, Required, Limited, Disabled, Read Only
-
-### StylessTextArea
-
-A borderless, transparent `<textarea>` that grows with its content (`field-sizing: content`) up to about 132px, then scrolls.
-
-- Import: `import StylessTextArea from '@components/blocks/StylessTextArea.astro'`
-- Props: `width?: string = '100%'`
-- Slots: `default`
-- Stories (6): `frontend/app/rust/stories/components/forms/StylessTextArea.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-stylesstextarea--docs: Default, Accepts Text, With Content, Multi Line, Limited, Disabled
+- Stories (17): `frontend/app/rust/stories/components/forms/Textarea.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-textarea--docs: Default, Accepts Text, With Content, Required, Limited, Disabled, Read Only, Keyboard focus ring, Always 100% wide, attributes reach the field, Bare, Bare Accepts Text, Bare With Content, Bare Multi Line, Bare Limited, Bare Disabled, Bare: keyboard focus ring, Bare: always 100% wide, attributes reach the field
 
 ### RadioCheckInput
 
 A styled checkbox or radio: the native input is hidden by the stylesheet and a `.box` element draws the state.
 
 - Import: `import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'`
-- Props: `label?: string`, `type: 'checkbox' | 'radio'`
+- Props: `label?: string`, `type: 'checkbox' | 'radio'`, `bare?: boolean = false`
 - Slots: `default`
-- Stories (6): `frontend/app/rust/stories/components/forms/RadioCheckInput.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-radiocheckinput--docs: Default, Checkbox toggles, Radio, Checked, Disabled, Custom label (default slot)
-
-### UnstyledRadioCheckButton
-
-A bare label wrapping a native radio or checkbox plus a `<small>` label, with no drawn box.
-
-- Import: `import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro'`
-- Props: `label: string`, `type: 'checkbox' | 'radio'`
-- Slots: `default`
-- Stories (5): `frontend/app/rust/stories/components/forms/UnstyledRadioCheckButton.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-unstyledradiocheckbutton--docs: Default, Selecting, Checked, Checkbox, Disabled
+- Stories (12): `frontend/app/rust/stories/components/forms/RadioCheckInput.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-radiocheckinput--docs: Default, Checkbox toggles, Radio, Checked, Disabled, Custom label (default slot), Checked label turns bold, Bare Default, Bare Selecting, Bare Checked, Bare Checkbox, Bare Disabled
 
 ### Switch
 
 A toggle switch around a native `<input type="checkbox">`: the default slot is the label, to the left of the slider.
 
 - Import: `import Switch from '@components/blocks/Switch.astro'`
-- Props: `checked?: boolean`
+- Props: `checked?: boolean = false`, `shape?: 'round' | 'square' = 'round'`, `label?: false | string = false`, `description?: false | string = false`
 - Slots: `default`
-- Stories (6): `frontend/app/rust/stories/components/forms/Switch.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-switch--docs: Default, Checked, Toggling, Clicking the label text, Disabled, Bound with x-model
-
-### SwitchSquare
-
-A square-knob toggle with a highlighted title and a small description beside it, for settings that need explaining (account preferences, dialog opt-outs).
-
-- Import: `import SwitchSquare from '@components/blocks/SwitchSquare.astro'`
-- Props: `checked?: boolean = false`, `label?: false | string = false`, `description?: false | string = false`
-- Stories (6): `frontend/app/rust/stories/components/forms/SwitchSquare.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-switchsquare--docs: Default, Checked, Toggling, Label Only, Description Only, Disabled
+- Stories (13): `frontend/app/rust/stories/components/forms/Switch.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-switch--docs: Default, Checked, Toggling, Clicking the label text, Disabled, Bound with x-model, Square, Square Checked, Square Toggling, Square Label Only, Square Description Only, Square Disabled, Square Attributes On Input Only
 
 ### FlatPicker
 
@@ -248,6 +205,15 @@ An inline keyboard-key chip for shortcut hints ("press Esc to close").
 - Import: `import Kbd from '@components/blocks/Kbd.astro'`
 - Slots: `default`
 - Stories (4): `frontend/app/rust/stories/components/forms/Kbd.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-kbd--docs: Default, Modifier, Long Label, Symbol
+
+### Combobox
+
+A search-as-you-type picker for a value the browser cannot list up front (pilots, items, systems).
+
+- Import: `import Combobox from '@components/blocks/Combobox.astro'`
+- Props: `name: string`, `label: string`, `hidden_label?: boolean = false`, `search_url: string`, `value?: string = ''`, `value_label?: string = ''`, `placeholder?: string`, `min_chars?: number = 2`, `debounce_ms?: number = 300`, `allow_clear?: boolean = false`, `size?: 'lg' | 'sm' = 'lg'`, `required?: boolean = false`, `pick_first?: boolean = false`, `form_validation?: boolean = true`
+- Slots: `field_start`
+- Stories (12): `frontend/app/rust/stories/components/forms/Combobox.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-combobox--docs: Default, Keyboard Navigation, Select dispatches combobox:select, pick_first: Enter picks the first option, Enter without a highlighted option picks nothing, Escape inside a dialog keeps the dialog open, Click Outside Closes List, Empty Results, Already picked, with Clear, Hidden Label, Type, swap results, pick, Under min_chars asks nothing
 
 ## Components/Feedback
 
@@ -284,20 +250,13 @@ A thin glowing `<progress>` bar.
 - Slots: `default`
 - Stories (7): `frontend/app/rust/stories/components/feedback/Progress.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-feedback-progress--docs: Default, Complete, Warning, Danger, Disabled, Custom max (3 of 5 fleets), Empty
 
-### PageProgress
-
-Drop-in "how much of this page have you read" bar for long guides.
-
-- Import: `import PageProgress from '@components/blocks/PageProgress.astro'`
-- Stories (5): `frontend/app/rust/stories/components/feedback/PageProgress.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-feedback-pageprogress--docs: Default, Without Acknowledgement, With Acknowledgement, Single Section, No sections (renders nothing)
-
 ### Countdown
 
 A ticking `HH : MM : SS` timer to an EVE (UTC) time, such as fleet formup.
 
 - Import: `import Countdown from '@components/blocks/Countdown.astro'`
 - Props: `id: number`, `tag?: string = 'countdown'`, `date: Date | string`, `expired_text?: string`, `expired_class?: boolean = true`, `big_font?: boolean = false`
-- Stories (6): `frontend/app/rust/stories/components/feedback/Countdown.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-feedback-countdown--docs: Default, Expired, Expired without red (expired_class off), Expired Text, Big Font, Custom Tag
+- Stories (9): `frontend/app/rust/stories/components/feedback/Countdown.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-feedback-countdown--docs: Default, Expired, Expired without red (expired_class off), Expired Text, Big Font, Custom Tag, Expired text replaces the clock and stops it, Passes class and attributes through, Quotes in expired_text are escaped
 
 ### LocalTime
 
@@ -314,15 +273,6 @@ A number that counts up from 0 to `target` with an ease-out curve when it appear
 - Import: `import CountUpAnimation from '@components/blocks/CountUpAnimation.astro'`
 - Props: `target: number`, `duration?: number = 3000`, `element?: string = 'span'`
 - Stories (5): `frontend/app/rust/stories/components/feedback/CountUpAnimation.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-feedback-countupanimation--docs: Default, Fast, Heading, Strong, Large Number
-
-### StatusText
-
-A spaced-out heading label for the state of a fleet or timer: ACTIVE, COMPLETED, CANCELLED, EXPIRED.
-
-- Import: `import StatusText from '@components/blocks/StatusText.astro'`
-- Props: `tone?: 'highlight' | 'danger' = 'highlight'`, `blink?: boolean = false`
-- Slots: `default`
-- Stories (6): `frontend/app/rust/stories/components/feedback/StatusText.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-feedback-statustext--docs: Default, Danger, Expired, Blinking, Completed, Pass Through Attributes
 
 ### LazyPartial
 
@@ -349,7 +299,7 @@ A picture beside a title and optional subtitle: how pilots, corporations and all
 - Import: `import Badge from '@components/blocks/Badge.astro'`
 - Props: `title: string`, `subtitle?: string = false`, `image?: string`, `size?: number = 64`, `border?: boolean = false`, `highlight?: boolean = true`, `title_el?: string = 'span'`
 - Slots: `picture`, `title`, `default`
-- Stories (9): `frontend/app/rust/stories/components/data-display/Badge.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-badge--docs: Default, Small, Tiny, Large, Bordered, Without highlight, Heading Title, No Image, Title and subtitle slots
+- Stories (10): `frontend/app/rust/stories/components/data-display/Badge.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-badge--docs: Default, Small, Tiny, Large, Bordered, Without highlight, Heading Title, No Image, Title and subtitle slots, Image uses the title as alt text
 
 ### Tag
 
@@ -360,15 +310,6 @@ A small label for a category or state: a doctrine role, a fleet type, a security
 - Slots: `icon`
 - Stories (22): `frontend/app/rust/stories/components/data-display/Tag.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-tag--docs: Default, Alliance Blue, Militia Purple, Green, Fleet yellow (dark text), Security status 1.0, Security status 0.4, Security status null, Security status 0.9, Security status 0.8, Security status 0.7, Security status 0.6, Security status 0.5, Security status 0.3, Security status 0.2, Security status 0.1, Custom Text Color, Narrow, With Title, Outline, Outline Colored, Outline With Icon
 
-### TextBadge
-
-A heading with a short block of text under it, in a tight `Flexblock`.
-
-- Import: `import TextBadge from '@components/blocks/TextBadge.astro'`
-- Props: `title: string`
-- Slots: `default`
-- Stories (5): `frontend/app/rust/stories/components/data-display/TextBadge.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-textbadge--docs: Default, Surplus, Rich Body, Long Text, Title Only
-
 ### NotificationBadge
 
 A small square count bubble for a menu item or tab: unread alerts, open orders, pending applications.
@@ -378,14 +319,6 @@ A small square count bubble for a menu item or tab: unread alerts, open orders, 
 - Slots: `default`
 - Stories (9): `frontend/app/rust/stories/components/data-display/NotificationBadge.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-notificationbadge--docs: Default, Alliance Blue, Militia Purple, Green, Yellow (red text), Custom Text Color, Large number (compact), Zero, Slot Override
 
-### VisibilityTag
-
-Who can see a tribe group item: a lock and "Members only" in yellow, or a globe and "Open to the alliance" in neutral.
-
-- Import: `import VisibilityTag from '@components/blocks/VisibilityTag.astro'`
-- Props: `visibility: TribeVisibility = == 'members_only'`, `size?: 'sm' | 'md' = 'md'`
-- Stories (5): `frontend/app/rust/stories/components/data-display/VisibilityTag.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-visibilitytag--docs: Default, Open, Small Members Only, Small Open, Pass Through Attributes
-
 ### DebugTag
 
 A coloured strip that wraps an unexpected-error message in a partial, such as "no order found" when the API returned something the page cannot explain.
@@ -393,16 +326,16 @@ A coloured strip that wraps an unexpected-error message in a partial, such as "n
 - Import: `import DebugTag from '@components/blocks/DebugTag.astro'`
 - Props: `color?: TagColors | string = 'fleet-red'`
 - Slots: `default`
-- Stories (6): `frontend/app/rust/stories/components/data-display/DebugTag.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-debugtag--docs: Default, Yellow, Blue, Green, Security Color, Multiple Children
+- Stories (7): `frontend/app/rust/stories/components/data-display/DebugTag.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-debugtag--docs: Default, Yellow, Blue, Green, Security Color, Multiple Children, Extra attributes and classes reach the root
 
 ### ComponentBlock
 
 The standard bordered panel: a translucent card with the site's block padding.
 
 - Import: `import ComponentBlock from '@components/blocks/ComponentBlock.astro'`
-- Props: `padding_block?: string = 'var(--component-padding-block)'`, `padding_inline?: string = 'var(--space-l-xl)'`, `width?: 'narrow' | 'normal' | 'thin' = 'normal'`, `heavier?: boolean = false`
+- Props: `padding_block?: string = 'var(--component-padding-block)'`, `padding_inline?: string`, `width?: 'narrow' | 'normal' | 'thin' = 'normal'`, `heavier?: boolean = false`, `variant?: 'default' | 'guide' = 'default'`
 - Slots: `default`
-- Stories (6): `frontend/app/rust/stories/components/data-display/ComponentBlock.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-componentblock--docs: Default, Heavier, Narrow, Thin, Custom Padding, Passthrough attributes
+- Stories (7): `frontend/app/rust/stories/components/data-display/ComponentBlock.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-componentblock--docs: Default, Heavier, Narrow, Thin, Custom Padding, Passthrough attributes, Guide
 
 ### ComponentBlockHeader
 
@@ -420,7 +353,7 @@ A section with a chevron header that shows or hides its body.
 - Import: `import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro'`
 - Props: `padding_inline?: string = 'var(--space-3xs)'`, `gap?: spaces = 'var(--space-3xs)'`, `expanded?: boolean = false`, `id?: string`, `pre_chevron?: boolean = false`
 - Slots: `head`, `default`
-- Stories (6): `frontend/app/rust/stories/components/data-display/CollapsibleBlock.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-collapsibleblock--docs: Collapsed, Expanded, Toggle with click, Click reveals the body (browser), Pre-chevron, With id (linkable)
+- Stories (7): `frontend/app/rust/stories/components/data-display/CollapsibleBlock.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-collapsibleblock--docs: Collapsed, Expanded, Toggle with click, Click reveals the body (browser), Pre-chevron, With id (linkable), Extra attributes and classes reach the root
 
 ### CollapsableButton
 
@@ -429,43 +362,69 @@ The header button behind CollapsibleBlock: a label with a caret that rotates wit
 - Import: `import CollapsableButton from '@components/blocks/CollapsableButton.astro'`
 - Props: `pre_chevron?: boolean = false`, `appearance?: 'plain' | 'button' = 'plain'`, `color?: ButtonColors = 'fleet-red'`, `size?: ButtonSizes = 'sm'`
 - Slots: `default`
-- Stories (5): `frontend/app/rust/stories/components/data-display/CollapsableButton.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-collapsablebutton--docs: Default, As button, Transparent button, Pre-chevron, Click toggles the caret (Alpine)
+- Stories (6): `frontend/app/rust/stories/components/data-display/CollapsableButton.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-collapsablebutton--docs: Default, As button, Transparent button, Pre-chevron, Click toggles the caret (Alpine), Keyboard focus ring
 
 ### StatCard
 
 A big-number card: an uppercase label, the value in the heading font, and an optional hint line.
 
 - Import: `import StatCard from '@components/blocks/StatCard.astro'`
-- Props: `label: string`, `value?: string | number`, `hint?: string`, `coming_soon?: boolean = false`
-- Slots: `value`, `hint`
-- Stories (5): `frontend/app/rust/stories/components/data-display/StatCard.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-statcard--docs: Default, Without hint, Coming soon, Slotted value and hint, Long label and text value
+- Props: `label?: string`, `value?: string | number`, `hint?: string`, `coming_soon?: boolean = false`, `variant?: 'default' | 'compact' | 'bar' | 'glass' | 'inline' | 'cell' = 'default'`, `bar_value?: number = 0`, `tone?: 'fleet-red' | 'green' | 'alliance-blue' | 'fleet-yellow' | 'info' | 'success' | 'danger' | 'minmatar' | 'amarr' | 'angel'`, `coming_soon_label?: string`, `href?: string`
+- Slots: `icon`, `value`, `default`, `hint`
+- Stories (15): `frontend/app/rust/stories/components/data-display/StatCard.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-statcard--docs: Default, Without hint, Coming soon, Slotted value and hint, Long label and text value, Compact, Bar (progress), Bar value is clamped to 0-1, Toned, Link (whole card), Coming soon with a custom label, Glass, Glass, faction tone, Inline, Cell
 
-### Table
+### RowList
 
 A list-based "table": a `role="list"` BlockList wrapped in an edge-fading horizontal scroller.
 
-- Import: `import Table from '@components/blocks/Table.astro'`
+- Import: `import RowList from '@components/blocks/RowList.astro'`
 - Props: `gap?: string`, `responsive?: boolean = true`, `width?: string = '70rem'`
 - Slots: `default`
-- Stories (5): `frontend/app/rust/stories/components/data-display/Table.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-table--docs: Default, Not responsive (full width), Wide (scrolls sideways), Single row, Passthrough attributes
+- Stories (5): `frontend/app/rust/stories/components/data-display/RowList.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-rowlist--docs: Default, Not responsive (full width), Wide (scrolls sideways), Single row, Passthrough attributes
 
 ### DataGrid
 
 A grid-based table with a real header row (`role="table"`, `columnheader`, `row`, `cell`).
 
 - Import: `import DataGrid from '@components/blocks/DataGrid.astro'`
-- Props: `columns: string[]`, `template: string`, `numeric?: number[] = []`, `min_width?: string = '38rem'`, `variant?: 'compact' | 'ledger' = 'compact'`, `stack?: boolean = false`
+- Props: `columns: string[]`, `template: string`, `numeric?: number[] = []`, `hidden_columns?: number[] = []`, `min_width?: string = '38rem'`, `variant?: 'compact' | 'ledger' = 'compact'`, `stack?: boolean = false`
+- Slots: `header`, `default`
+- Stories (8): `frontend/app/rust/stories/components/data-display/DataGrid.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-datagrid--docs: Default, Ledger, Stacked on phones (stack), Icon column with a hidden label (hidden_columns), Own header cells (header slot), Media cells (portraits and icons), Empty grid, Narrow viewport scrolls (min_width)
+
+### DataTable
+
+Semantic tabular data: a real `<table>` with a `<thead>` built from `columns`, in an edge-fading horizontal scroller.
+
+- Import: `import DataTable from '@components/blocks/DataTable.astro'`
+- Props: `columns: DataTableColumn[]`, `caption?: string`, `density?: 'default' | 'dense' = 'default'`, `borders?: 'rows' | 'grid' | 'none' = 'rows'`, `striped?: boolean = false`, `sticky_header?: boolean = false`, `empty_title?: string`, `is_empty?: boolean = false`, `variant?: 'default' | 'report' | 'cards' = "report"` is the editorial report look (collapsed hairline rows`, `cards?: boolean = false`, `bodies?: boolean = false`, `caption_visible?: boolean = false`, `visually_hidden?: boolean = false`
+- Slots: `default`, `footer`
+- Stories (15): `frontend/app/rust/stories/components/data-display/DataTable.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-datatable--docs: Default, Sorting (text, numeric and data-sort), aria-sort follows the sorted column, Only sortable columns are buttons, Empty, Dense, Sticky header (many rows), No borders, no sorting, Row headers and a footer, Own row groups (bodies), Narrow-hidden column, Report variant with a bar column, Cards below 48rem, Screen-reader-only table, Visible Caption
+
+### Chart
+
+A Chart.js chart in the site's colours.
+
+- Import: `import Chart from '@components/blocks/Chart.astro'`
+- Props: `type: ChartKind`, `labels: (string | number)[]`, `datasets: ChartDataset[]`, `options?: Record<string, any>`, `height?: string = 'calc(var(--space-3xl) * 2.5)'`, `aria_label: string`, `legend?: boolean`, `tick_suffix?: string`, `plugins?: ChartPluginSpec[]`, `empty_title?: string`
+- Stories (11): `frontend/app/rust/stories/components/data-display/Chart.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-chart--docs: Line, Bar, Doughnut, Pie, Radar, Options and height, Missing data, Missing data: every point null, Tones, Gradient, suffix and ringed points, Droplines, band and markers
+
+### Carousel
+
+A Swiper carousel with the prev/next markup and styling the site's reels share: a relatively positioned wrapper, the `.swiper` with its `.swiper-wrapper` track, optional pagination bullets, and the arrows as siblings of the `.swiper`, so they appear once Swiper has initialised and hide when there is nothing further to scroll to.
+
+- Import: `import Carousel from '@components/blocks/Carousel.astro'`
+- Props: `slides_per_view?: number | 'auto' = 1`, `breakpoints?: Record<number, Breakpoint>`, `space_between?: number = 0`, `loop?: boolean = false`, `autoplay_ms?: number = 0`, `navigation?: boolean = true`, `pagination?: boolean = false`, `nav_tone?: 'highlight' | 'fleet-yellow' = 'highlight'`, `nav_offset?: string = '-46px'`, `hide_nav_on_mobile?: boolean = true`, `align?: 'start' | 'center' | 'end' | 'stretch' = 'start'`, `initial_slide?: number = 0`, `direction?: 'horizontal' | 'vertical' = 'horizontal'`, `effect?: 'slide' | 'fade' = 'slide'`, `mousewheel?: boolean | { forceToAxis?: boolean } = false`, `rewind?: boolean = false`, `nested?: boolean = false`, `allow_touch_move?: boolean = true`, `hash_navigation?: boolean = false`, `breakpoints_base?: 'window' | 'container' = 'window'`, `selector?: string`, `prev_el?: string`, `next_el?: string`, `pagination_class?: string`, `control_id?: string`
 - Slots: `default`
-- Stories (6): `frontend/app/rust/stories/components/data-display/DataGrid.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-datagrid--docs: Default, Ledger, Stacked on phones (stack), Media cells (portraits and icons), Empty grid, Narrow viewport scrolls (min_width)
+- Stories (11): `frontend/app/rust/stories/components/data-display/Carousel.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-carousel--docs: Default, Yellow Arrows, With Pagination, Responsive Breakpoints, Autoplay And Loop, Without Navigation, Arrows kept below the lg breakpoint, Vertical with mousewheel, Fade, no touch, rewind, Caller keeps its .swiper (selector), Controlled from outside
 
 ### TextGroup
 
 A heading plus a paragraph stacked with a tight gap.
 
 - Import: `import TextGroup from '@components/blocks/TextGroup.astro'`
-- Props: `title?: false | string = false`, `gap?: spaces = 'var(--space-3xs)'`, `full?: boolean = false`
+- Props: `title?: false | string = false`, `gap?: spaces = 'var(--space-3xs)'`, `full?: boolean = false`, `root_class?: string = undefined`
 - Slots: `outside`, `default`
-- Stories (5): `frontend/app/rust/stories/components/data-display/TextGroup.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-textgroup--docs: Default, Without title, Full, Outside slot (custom body), Passthrough attributes on the paragraph
+- Stories (6): `frontend/app/rust/stories/components/data-display/TextGroup.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-textgroup--docs: Default, Without title, Full, Outside slot (custom body), Passthrough attributes on the paragraph, Root Class
 
 ### Square
 
@@ -515,7 +474,7 @@ A cover-image panel for landing pages and catalogues: the picture fills the tile
 - Import: `import Tile from '@components/blocks/Tile.astro'`
 - Props: `title: string`, `description?: string`, `cover: string`, `alt?: string`, `transparent?: boolean = false`, `soft?: boolean = true`, `optimize?: boolean`, `width?: number = '512'`, `height?: number = '512'`, `gap?: string = 'var(--space-s)'`, `min_height?: string = '420px'`
 - Slots: `cover`, `icon`, `subtitle`, `default`
-- Stories (7): `frontend/app/rust/stories/components/data-display/Tile.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-tile--docs: Default, Markdown Description, Transparent, Not soft, With icon, subtitle and several actions, No actions, Custom Alt
+- Stories (8): `frontend/app/rust/stories/components/data-display/Tile.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-tile--docs: Default, Markdown Description, Transparent, Not soft, With icon, subtitle and several actions, No actions, Custom Alt, Attributes reach the root
 
 ### OptionCard
 
@@ -526,17 +485,9 @@ One choice of a radio group (or a pick-many group with `type="checkbox"`), drawn
 - Slots: `default`
 - Stories (7): `frontend/app/rust/stories/components/data-display/OptionCard.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-optioncard--docs: Default, Checked, Checkbox (pick many), Rich content with hint, Disabled, Alpine x-model, Attributes and class on the label
 
-### Card
-
-A picture card built on `ComponentBlock`: a cover fills the card, the body text sits over its bottom edge, a header badge over the top-left, and `actions` fade in at the top-right on hover.
-
-- Import: `import Card from '@components/blocks/Card.astro'`
-- Slots: `cover`, `default`, `header`, `actions`, `visible-actions`
-- Stories (7): `frontend/app/rust/stories/components/data-display/Card.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-card--docs: Default, With Header, Hover actions, Always-visible actions, All slots, No cover (text only), Attributes pass through
-
 ### PictureCard
 
-A `Card` whose cover is a masked `Picture` at 256px: portraits, ship renders, screenshots.
+A picture card (the internal `Card` on `ComponentBlock`, not a library component of its own) whose cover is a masked `Picture` at 256px: portraits, ship renders, screenshots.
 
 - Import: `import PictureCard from '@components/blocks/PictureCard.astro'`
 - Props: `src: string`, `alt?: string`, `narrow?: boolean = false`, `zoomable?: boolean = false`, `thumbnail?: boolean = false`, `astro_image?: AstroImageOptions`
@@ -570,16 +521,16 @@ The generic popover: a trigger (`button` slot) that toggles a panel (default slo
 - Import: `import Dropdown from '@components/blocks/Dropdown.astro'`
 - Props: `variant?: 'default' | 'button' = 'default'`, `color?: ButtonColors = 'fleet-red'`, `size?: ButtonSizes = 'sm'`, `trigger_label?: string`
 - Slots: `button`, `default`
-- Stories (6): `frontend/app/rust/stories/components/navigation/Dropdown.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-dropdown--docs: Default, Button Variant, Escape closes the panel, Outside click closes the panel, Labelled Trigger, Panel with controls
+- Stories (7): `frontend/app/rust/stories/components/navigation/Dropdown.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-dropdown--docs: Default, Button Variant, Escape closes the panel, Escape closes only the panel, not a surrounding dialog, Outside click closes the panel, Labelled Trigger, Panel with controls
 
 ### SectionTabs
 
 Page-section tabs: a `tablist` of buttons plus `SectionTabPanel` children (one per tab id).
 
 - Import: `import SectionTabs from '@components/blocks/SectionTabs.astro'`
-- Props: `tabs: SectionTab[]`, `aria_label: string`, `id_prefix: string`, `hash_aliases?: Record<string, string> = {}`, `default_tab?: string = requested_default && tab_ids.includes(requested_default) ? requested_default : (tab_ids[0] ?? '')`, `variant?: 'tabs' | 'pills' = 'tabs'`, `sync_hash?: boolean = true`
+- Props: `tabs: SectionTab[]`, `aria_label: string`, `id_prefix: string`, `hash_aliases?: Record<string, string> = {}`, `default_tab?: string = requested_default && tab_ids.includes(requested_default) ? requested_default : (tab_ids[0] ?? '')`, `variant?: 'tabs' | 'pills' | 'compact' = 'tabs'`, `active_tab?: string`, `sync_hash?: boolean = true`
 - Slots: `default`
-- Stories (9): `frontend/app/rust/stories/components/navigation/SectionTabs.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-sectiontabs--docs: Default, Click through three tabs, Keyboard Navigation, aria-selected and roving tabindex follow the tab, Counts, flags and icon tab, Non-first default tab, Pills, Tab and panel ids are wired, Inside a row: no URL hash
+- Stories (13): `frontend/app/rust/stories/components/navigation/SectionTabs.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-sectiontabs--docs: Default, Click through three tabs, Keyboard Navigation, aria-selected and roving tabindex follow the tab, Counts, flags and icon tab, Non-first default tab, Pills, Tab and panel ids are wired, Compact (in-card toggle), sync_hash off: the URL stays clean, Link mode: active by path prefix, Link mode: active_tab wins, Link mode: compact
 
 ### SectionTabPanel
 
@@ -604,26 +555,18 @@ Pager for a list fed by an htmx partial: each button requests another page and s
 A pill-shaped toggle for filtering a list.
 
 - Import: `import FilterChip from '@components/blocks/FilterChip.astro'`
-- Props: `active?: boolean = false`, `href?: string`
+- Props: `active?: boolean = false`, `href?: string`, `type?: 'radio' | 'checkbox' = "radio"` or `type="checkbox"` it is a real (visually hidden)`, `name?: string`, `value?: string`, `checked?: boolean = false`, `input_attributes?: Record<string, any> = {}`, `tone?: 'yellow' | 'red' | 'green' | 'blue' | 'purple' = 'yellow'`, `count?: number | string`, `removable?: boolean = false`, `remove_label?: string`, `remove_attributes?: Record<string, any> = {}`, `as?: 'span' | 'li' = "li"` makes the`
 - Slots: `default`
-- Stories (6): `frontend/app/rust/stories/components/navigation/FilterChip.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-filterchip--docs: Default, Active, Alpine toggle, Link to a filtered view, Current link chip, Attributes pass through
+- Stories (16): `frontend/app/rust/stories/components/navigation/FilterChip.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-filterchip--docs: Default, Active, Alpine toggle, Link to a filtered view, Current link chip, Attributes pass through, Radio chip (form filter), Checkbox chip, Input attributes (x-model), Tone: red, selected, Tone: purple, not selected, Tone: yellow adds no class, Tone on a radio chip, With a count, Removable tag, Removable tag as a list item, with tone
 
 ### ChipGroup
 
 A labelled row of `FilterChip`s (`role="group"`).
 
 - Import: `import ChipGroup from '@components/blocks/ChipGroup.astro'`
-- Props: `aria_label?: string`, `wrap?: boolean = false`
+- Props: `aria_label?: string`, `wrap?: boolean = false`, `scroll_below?: string = ''`
 - Slots: `default`
-- Stories (7): `frontend/app/rust/stories/components/navigation/ChipGroup.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-chipgroup--docs: Default, Wrapping, Few chips, Scrolls in a narrow container, Link chips, Without aria_label, Alpine filter
-
-### Breadcrumb
-
-A trail of ancestors ending at the current page, as a `<nav aria-label="Breadcrumb">` around an ordered list.
-
-- Import: `import Breadcrumb from '@components/blocks/Breadcrumb.astro'`
-- Props: `items: BreadcrumbItem[]`
-- Stories (6): `frontend/app/rust/stories/components/navigation/Breadcrumb.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-breadcrumb--docs: Default, Single item, Current page with an href is not a link, Middle item without a link, Long trail wraps, Empty (renders nothing)
+- Stories (8): `frontend/app/rust/stories/components/navigation/ChipGroup.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-chipgroup--docs: Default, Wrapping, Few chips, Scrolls in a narrow container, Link chips, Without aria_label, Alpine filter, Wraps on desktop, scrolls on phone
 
 ### ExternalLink
 
@@ -642,8 +585,17 @@ The dialog surface: panel, padding, close button and header/body/footer slots.
 
 - Import: `import Dialog from '@components/blocks/Dialog.astro'`
 - Props: `breakout?: boolean = false`, `fixed?: boolean = true`, `thin?: boolean = false`, `non_centered?: boolean = true`, `body_full_h?: boolean = false`, `full_screen?: boolean = false`, `close_button?: boolean = true`, `transparent?: boolean = false`
-- Slots: `default`, `header`, `footer`
-- Stories (7): `frontend/app/rust/stories/components/overlays/Dialog.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-dialog--docs: Default, Without Close Button, Thin, Fixed, Transparent, Full Screen, Centered
+- Slots: `header`, `default`, `footer`
+- Stories (9): `frontend/app/rust/stories/components/overlays/Dialog.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-dialog--docs: Default, Without Close Button, Thin, Fixed, Transparent, Full Screen, Centered, Announced as a modal, Thin keeps header and footer
+
+### DialogBase
+
+The base under `AlertDialog`, `ConfirmDialog` and `Modal`: the backdrop, Escape, the focus trap (focus returns to the trigger), `role="dialog"` with `aria-modal`, the label and description wiring, the region a partial is swapped into and closing.
+
+- Import: `import DialogBase from '@components/blocks/DialogBase.astro'`
+- Props: `name: 'alert_dialog' | 'confirm_dialog' | 'modal' | 'persistent_modal'`, `titled?: boolean = false`, `persistent?: boolean = false`, `backdrop_action?: 'close' | 'cancel' = 'cancel'`, `partial_once?: boolean = false`, `partial_params?: boolean = false`, `close_button?: boolean = true`, `thin?: boolean = false`, `max_width?: string`
+- Slots: `default`
+- Stories (3): `frontend/app/rust/stories/components/overlays/DialogBase.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-dialogbase--docs: Untitled, Titled, Persistent
 
 ### DialogButton
 
@@ -652,14 +604,14 @@ A button that opens its own dialog.
 - Import: `import DialogButton from '@components/blocks/DialogButton.astro'`
 - Props: `size?: ButtonSizes = 'lg'`, `color?: ButtonColors = 'green'`, `hidden?: boolean = false`, `narrow?: boolean = false`, `id?: string`, `max_width?: string = '700px'`, `inside_swiper?: boolean = false`, `thin_dialog?: boolean = false`, `disable_when_open?: boolean = false`, `non_centered?: boolean = true`, `close_button?: boolean = true`, `full_screen?: boolean = false`, `body_full_h?: boolean = false`, `styless?: boolean = false`, `transparent?: boolean = false`
 - Slots: `default`, `icon`, `header`, `dialog`, `footer`
-- Stories (11): `frontend/app/rust/stories/components/overlays/DialogButton.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-dialogbutton--docs: Default, Corner button closes, Escape closes, Without Close Button, Header And Footer, Thin Dialog, Disable When Open, Styless, Small Narrow Trigger, Missing dialog slot shows a debug message, Content loaded with htmx on open
+- Stories (12): `frontend/app/rust/stories/components/overlays/DialogButton.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-dialogbutton--docs: Default, Corner button closes, Escape closes, Without Close Button, Header And Footer, Thin Dialog, Disable When Open, Styless, Small Narrow Trigger, Missing dialog slot shows a debug message, Content loaded with htmx on open, non_centered is passed once and follows the prop
 
 ### AlertDialog
 
 The site-wide alert: one instance lives in the page layout and is driven from anywhere with `show_alert_dialog({ title, content, accept_label, cancel_label, show_cancel, accept_href, partial, hx })` on the body's Alpine scope.
 
 - Import: `import AlertDialog from '@components/blocks/AlertDialog.astro'`
-- Stories (6): `frontend/app/rust/stories/components/overlays/AlertDialog.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-alertdialog--docs: Default, OK closes the dialog and resolves true, Backdrop click dismisses (false), Accept and cancel labels, Accept as a new-tab link, Escape dismisses
+- Stories (7): `frontend/app/rust/stories/components/overlays/AlertDialog.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-alertdialog--docs: Default, OK closes the dialog and resolves true, Backdrop click dismisses (false), Accept and cancel labels, Accept as a new-tab link, Escape dismisses, Fallback labels are the translated strings
 
 ### ConfirmDialog
 
@@ -673,14 +625,15 @@ The site-wide yes/no question: one instance in the page layout, driven by `show_
 The site-wide content modal: one instance in the page layout, opened with `show_modal({ content })` for inline HTML or `show_modal({ partial, partial_params })` to load a server-rendered partial through htmx (`hx-trigger="intersect once"`, GET without params, POST with them).
 
 - Import: `import Modal from '@components/blocks/Modal.astro'`
-- Stories (5): `frontend/app/rust/stories/components/overlays/Modal.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-modal--docs: Default, Corner button closes, Backdrop click closes, Escape closes, Loads a partial through htmx
+- Props: `persistent?: boolean = false } = Astro.props`
+- Stories (8): `frontend/app/rust/stories/components/overlays/Modal.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-modal--docs: Default, Corner button closes, Backdrop click closes, Escape closes, Loads a partial through htmx, Persistent ignores backdrop clicks, Persistent closes from the corner button, Focus returns to the trigger
 
 ### Tippy
 
 A tooltip trigger.
 
 - Import: `import Tippy from '@components/blocks/Tippy.astro'`
-- Props: `element?: string = 'span'`, `partial?: string`, `height?: string = 'auto'`, `width?: string = 'auto'`, `show_delay?: number = '1000'`, `hide_delay?: number = '200'`
+- Props: `element?: string = 'span'`, `partial?: string`, `show_delay?: number = '1000'`, `hide_delay?: number = '200'`
 - Slots: `default`
 - Stories (7): `frontend/app/rust/stories/components/overlays/Tippy.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-overlays-tippy--docs: Default, Hover shows the tooltip, Custom wrapper element, Lazy partial tooltip, Default delays, Partial loads on hover, Inline in a row of triggers
 
@@ -691,24 +644,24 @@ A tooltip trigger.
 A generic lazy-loaded `<picture>` + `<img>` for any image URL (posts, doctrine renders, thumbnails).
 
 - Import: `import Picture from '@components/blocks/Picture.astro'`
-- Props: `src: string`, `alt?: string`, `size?: ImageSize = 64`, `narrow?: boolean = false`, `mask?: boolean = false`, `zoomable?: boolean = false`, `placeholder?: string`, `thumbnail?: boolean = false`, `astro_image?: AstroImageOptions`
-- Stories (8): `frontend/app/rust/stories/eve/Picture.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-picture--docs: Default, Large, Narrow, Masked, Thumbnail, Placeholder, Decorative, Zoomable
+- Props: `src: string = '${placeholder}';`, `alt?: string`, `size?: ImageSize = 64`, `narrow?: boolean = false`, `height?: number = 412`, `mask?: boolean = false`, `zoomable?: boolean = false`, `placeholder?: string`, `thumbnail?: boolean = false`, `astro_image?: AstroImageOptions`, `quantity?: number`, `tag_color?: BadgeColors`, `animated?: boolean = true`, `brighten?: boolean = false`, `target?: PictureTarget`, `img_attrs?: Record<string, any> = {}`
+- Stories (11): `frontend/app/rust/stories/eve/Picture.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-picture--docs: Default, Large, Narrow, Masked, Thumbnail, Placeholder, Decorative, Zoomable, With Quantity, No Badge Without Quantity, Wrapped in a link target
 
 ### CharacterPicture
 
 A pilot portrait from the EVE image server.
 
 - Import: `import CharacterPicture from '@components/blocks/CharacterPicture.astro'`
-- Props: `character_id: number`, `character_name?: string`, `x_character_id?: string | false = false`, `x_character_name?: string | false = false`, `size?: ImageSize = 64`, `narrow?: boolean = false`, `icon_quality?: EvEImageServiceSize = 64`, `tooltip?: string`, `mask?: boolean = false`, `inert?: boolean = false`, `centered?: boolean = false`, `quantity?: number`, `tag_color?: BadgeColors`, `height?: number = 412`
-- Stories (8): `frontend/app/rust/stories/eve/CharacterPicture.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-characterpicture--docs: Default, Large Portrait, Small, Inert, With Quantity, Masked, Unknown Character, With Tooltip
+- Props: `character_id: number`, `character_name?: string`, `x_character_id?: string | false = false`, `x_character_name?: string | false = false`, `size?: ImageSize = 64`, `narrow?: boolean = false`, `icon_quality?: EvEImageServiceSize = 64`, `tooltip?: string`, `mask?: boolean = false`, `inert?: boolean = false`, `nested?: boolean = false`, `centered?: boolean = false`, `quantity?: number`, `tag_color?: BadgeColors`, `height?: number = 412`
+- Stories (9): `frontend/app/rust/stories/eve/CharacterPicture.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-characterpicture--docs: Default, Large Portrait, Small, Inert, With Quantity, Masked, Unknown Character, With Tooltip, Zero quantity shows no badge
 
 ### CorporationPicture
 
 A corporation logo from the EVE image server.
 
 - Import: `import CorporationPicture from '@components/blocks/CorporationPicture.astro'`
-- Props: `corporation_id: number`, `corporation_name?: string`, `x_corporation_id?: string | false = false`, `x_corporation_name?: string | false = false`, `size?: ImageSize = 64`, `icon_quality?: EvEImageServiceSize = 64`, `quantity?: number`, `tag_color?: BadgeColors`
-- Stories (6): `frontend/app/rust/stories/eve/CorporationPicture.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-corporationpicture--docs: Default, Large, Small, With Quantity, Different Corporation, Unknown Corporation
+- Props: `corporation_id: number`, `corporation_name?: string`, `x_corporation_id?: string | false = false`, `x_corporation_name?: string | false = false`, `size?: ImageSize = 64`, `icon_quality?: EvEImageServiceSize = 64`, `quantity?: number`, `tag_color?: BadgeColors`, `nested?: boolean = false`
+- Stories (8): `frontend/app/rust/stories/eve/CorporationPicture.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-corporationpicture--docs: Default, Large, Small, With Quantity, Different Corporation, Unknown Corporation, Zero quantity shows no badge, Reactive id binds the link
 
 ### ItemPicture
 
@@ -716,7 +669,7 @@ An EVE type icon (or, from 128px up, a ship render) from the image server.
 
 - Import: `import ItemPicture from '@components/blocks/ItemPicture.astro'`
 - Props: `item_id: number`, `item_name?: string`, `size?: ImageSize = 64`, `narrow?: boolean = false`, `icon_quality?: EvEImageServiceSize = 64`, `mask?: boolean = false`, `quantity?: number`, `blueprint?: BlueprintParam`
-- Stories (7): `frontend/app/rust/stories/eve/ItemPicture.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-itempicture--docs: Default, Ship Render, Blueprint Original, Blueprint Copy, With Quantity, Masked Narrow, No Name
+- Stories (8): `frontend/app/rust/stories/eve/ItemPicture.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-itempicture--docs: Default, Ship Render, Blueprint Original, Blueprint Copy, With Quantity, Masked Narrow, No Name, Zero quantity shows no badge
 
 ### CorporationBadge
 
@@ -741,7 +694,7 @@ Alliance logo with its name beside it; the default slot renders under the name a
 A pilot portrait with the name beside it, optionally with the pilot's corporation underneath.
 
 - Import: `import PilotBadge from '@components/blocks/PilotBadge.astro'`
-- Props: `character_id: number`, `character_name: string`, `corporation?: CorporationBasic | false = false`, `size?: ImageSize = 64`, `icon_quality?: EvEImageServiceSize = 64`, `inert?: boolean = false`, `heading?: boolean = false`, `centered?: boolean = false`
+- Props: `character_id: number`, `character_name: string`, `corporation?: CorporationBasic | false = false`, `size?: ImageSize = 64`, `icon_quality?: EvEImageServiceSize = 64`, `inert?: boolean = false`, `nested?: boolean = false`, `heading?: boolean = false`, `centered?: boolean = false`
 - Slots: `title`, `default`
 - Stories (7): `frontend/app/rust/stories/eve/PilotBadge.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-pilotbadge--docs: Default, With Corporation, With Title And Slot, Heading, Small, Inert, Unknown Pilot
 
@@ -829,19 +782,19 @@ A list of solar systems: the results SolarSystemSearch's partial renders, or any
 
 ### TypeSearch
 
-Search inventory types by name.
+Search inventory types by name: a preset over `Combobox`.
 
 - Import: `import TypeSearch from '@components/blocks/sde/TypeSearch.astro'`
-- Props: `id: string`, `name?: string`, `label?: string = t('sde.type_search.label')`, `placeholder?: string = t('sde.type_search.placeholder')`, `category_ids?: number[] = []`, `group_ids?: number[] = []`, `published?: boolean = true`, `limit?: number = String(limit)`, `href_template?: string`, `show_slots?: boolean = false`, `selected?: Pick<SdeType, 'type_id' | 'type_name'> | null = null`
-- Stories (7): `frontend/app/rust/stories/eve/sde/TypeSearch.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-sde-typesearch--docs: Default, Filtered: Minmatar frigates, Picks into a form field (name), Already picked (edit form), Results link to pages (href_template), Type, swap results, pick, Type, no match
+- Props: `name: string`, `label?: string = t('sde.type_search.label')`, `placeholder?: string = t('sde.type_search.placeholder')`, `category_ids?: number[] = []`, `group_ids?: number[] = []`, `published?: boolean = true`, `limit?: number = String(limit)`, `show_slots?: boolean = false`, `selected?: Pick<SdeType, 'type_id' | 'type_name'> | null = null`, `allow_clear?: boolean = true`
+- Stories (6): `frontend/app/rust/stories/eve/sde/TypeSearch.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-sde-typesearch--docs: Default, Filtered: Minmatar frigates, Includes Unpublished, Already picked (edit form), Type, swap results, pick, No Matches
 
 ### SolarSystemSearch
 
 Search solar systems by name: staging and home systems, cyno spots, timer locations.
 
 - Import: `import SolarSystemSearch from '@components/blocks/sde/SolarSystemSearch.astro'`
-- Props: `id: string`, `name?: string`, `label?: string = t('sde.system_search.label')`, `placeholder?: string = t('sde.system_search.placeholder')`, `region_ids?: number[] = []`, `security?: SystemSecurityFilter = 'any'`, `wormholes?: boolean = true`, `limit?: number = String(limit)`, `href_template?: string`, `selected?: Pick<SdeSolarSystem, 'system_id' | 'system_name'> | null = null`
-- Stories (6): `frontend/app/rust/stories/eve/sde/SolarSystemSearch.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-sde-solarsystemsearch--docs: Default, Filtered: Heimatar and Metropolis low-sec, K-space only, Already picked (edit form), Results link to pages (href_template), Type, swap results, pick
+- Props: `name: string`, `label?: string = t('sde.system_search.label')`, `placeholder?: string = t('sde.system_search.placeholder')`, `region_ids?: number[] = []`, `security?: SystemSecurityFilter = 'any'`, `wormholes?: boolean = true`, `limit?: number = String(limit)`, `selected?: Pick<SdeSolarSystem, 'system_id' | 'system_name'> | null = null`, `allow_clear?: boolean = true`
+- Stories (6): `frontend/app/rust/stories/eve/sde/SolarSystemSearch.stories.ts`, https://my.minmatar.org/rust/?path=/docs/eve-sde-solarsystemsearch--docs: Default, Filtered: Heimatar and Metropolis low-sec, K-space only, Already picked (edit form), Type, swap results, pick, No Matches
 
 ## Page
 
@@ -853,6 +806,15 @@ The `<h1>` at the top of a page, linked to the page itself by default (so reload
 - Props: `is_landing?: boolean = false`, `no_link?: boolean = false`, `path?: string`
 - Slots: `default`
 - Stories (6): `frontend/app/rust/stories/page/PageTitle.stories.ts`, https://my.minmatar.org/rust/?path=/docs/page-pagetitle--docs: Default, No Link, Landing, Custom Path, Long Title, With Attributes
+
+### Hero
+
+The page masthead: an image, the title as the landing heading, a meta row and actions on the right.
+
+- Import: `import Hero from '@components/blocks/Hero.astro'`
+- Props: `title: string = "LP desk" image={logo} eyebrow="Industry">`, `eyebrow?: string = "Industry">`, `image?: string = {logo} eyebrow="Industry">`, `image_alt?: string = ''`, `variant?: 'default' | 'compact' = "compact"` drops the title to page-title size and the image to a`, `path?: string`, `meta_gap?: string = 'var(--space-3xs) var(--space-xs)'`, `meta_size?: string = 'var(--step--1)'`, `actions_align?: 'center' | 'flex-start' = 'center'`, `actions_id?: string`
+- Slots: `meta`, `default`, `actions`
+- Stories (5): `frontend/app/rust/stories/page/Hero.stories.ts`, https://my.minmatar.org/rust/?path=/docs/page-hero--docs: Default, Compact, With Eyebrow And Body, Title Only, Actions with an anchor id, top-aligned
 
 ### PageSubheader
 
@@ -877,15 +839,7 @@ The breadcrumb bar under the site header: a quick-navigation button (opens the p
 
 - Import: `import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'`
 - Props: `breadcrumbs?: BreadcrumbLinkProps[]`, `breadcrumb_page_title?: string`, `path?: string`, `is_landing_page?: boolean = false`, `links_only?: boolean = false`
-- Stories (6): `frontend/app/rust/stories/page/PageBreadcrumbs.stories.ts`, https://my.minmatar.org/rust/?path=/docs/page-pagebreadcrumbs--docs: Default, Order Is Preserved, Quick Navigation Button, Single Level, Landing Page, Deep Trail
-
-### BreadcrumbLink
-
-One arrow-shaped step of the breadcrumb trail, drawn with a `clip-path` over a `--fleet-red` background.
-
-- Import: `import BreadcrumbLink from '@components/page/BreadcrumbLink.astro'`
-- Props: `accumulated_path: string`, `page_title: string`
-- Stories (4): `frontend/app/rust/stories/page/BreadcrumbLink.stories.ts`, https://my.minmatar.org/rust/?path=/docs/page-breadcrumblink--docs: Default, Nested, Numeric Segment, Long Title
+- Stories (8): `frontend/app/rust/stories/page/PageBreadcrumbs.stories.ts`, https://my.minmatar.org/rust/?path=/docs/page-pagebreadcrumbs--docs: Default, Order Is Preserved, Quick Navigation Button, Quick navigation button has an accessible name, Single Level, Landing Page, Deep Trail, Nav landmark, ordered list, current page
 
 ### TextBox
 
@@ -925,6 +879,7 @@ Not reusable components: the site's feature blocks rendered from typed fixtures,
 - **Content/HelpPanelPreview**: `frontend/app/rust/stories/features/content/HelpPanelPreview.stories.ts`, fixtures `frontend/app/rust/fixtures/features/content`. Scenarios: Full Panel, No Active Options, No Channel, Unsynced Channel, Out Of Band
 - **Content/LearningSkillsets**: `frontend/app/rust/stories/features/content/LearningSkillsets.stories.ts`, fixtures `frontend/app/rust/fixtures/features/content`. Scenarios: With Progress, Filter By Category, No Skillsets, Signed Out, Manager With Admin Link
 - **Content/NewsReel**: `frontend/app/rust/stories/features/content/NewsReel.stories.ts`, fixtures `frontend/app/rust/fixtures/features/content`. Scenarios: Few Posts, Scrolling, Empty
+- **Content/PageProgress**: `frontend/app/rust/stories/features/content/PageProgress.stories.ts`. Scenarios: Default, Without Acknowledgement, With Acknowledgement, Single Section, No sections (renders nothing)
 - **Content/PostItem**: `frontend/app/rust/stories/features/content/PostItem.stories.ts`, fixtures `frontend/app/rust/fixtures/features/content`. Scenarios: Character Post, Alliance Post, Group Post, Long Title, No Tags
 - **Content/PostsList**: `frontend/app/rust/stories/features/content/PostsList.stories.ts`, fixtures `frontend/app/rust/fixtures/features/content`. Scenarios: Typical, Busy, Last Page, Empty
 - **Content/PostTile**: `frontend/app/rust/stories/features/content/PostTile.stories.ts`, fixtures `frontend/app/rust/fixtures/features/content`. Scenarios: Crest Fallback, With Cover, Members Only, Tagged By Group, Long Text
@@ -939,6 +894,7 @@ Not reusable components: the site's feature blocks rendered from typed fixtures,
 - **Corporations and tribes/TrialProgressBar**: `frontend/app/rust/stories/features/corporations-and-tribes/TrialProgressBar.stories.ts`, fixtures `frontend/app/rust/fixtures/features/corporations-and-tribes`. Scenarios: On Pace, Behind Pace, Past The Scale, Alliance Average, No Average Yet, Compact
 - **Corporations and tribes/TribeEventRow**: `frontend/app/rust/stories/features/corporations-and-tribes/TribeEventRow.stories.ts`, fixtures `frontend/app/rust/fixtures/features/corporations-and-tribes`. Scenarios: Scheduled, Editable By Leader, Cancelled, Completed, No Date Not On Discord
 - **Corporations and tribes/TribeGroupChip**: `frontend/app/rust/stories/features/corporations-and-tribes/TribeGroupChip.stories.ts`, fixtures `frontend/app/rust/fixtures/features/corporations-and-tribes`. Scenarios: Linked, With Tribe Name, Inside Linked Row, Long Name Truncated
+- **Corporations and tribes/VisibilityTag**: `frontend/app/rust/stories/features/corporations-and-tribes/VisibilityTag.stories.ts`. Scenarios: Default, Open, Small Members Only, Small Open, Pass Through Attributes
 - **Fleets/CandidateFleetCard**: `frontend/app/rust/stories/features/fleets/CandidateFleetCard.stories.ts`, fixtures `frontend/app/rust/fixtures/features/fleets`. Scenarios: Strategic With Objective, Training Fleet, No Objective, Long Fc Name, Opens Srp Form
 - **Fleets/FleetBattlePilotRow**: `frontend/app/rust/stories/features/fleets/FleetBattlePilotRow.stories.ts`, fixtures `frontend/app/rust/fixtures/features/fleets`. Scenarios: Survivor, Lost Hull, Multi Hull With Pod, No Hull Icon, Long Name
 - **Fleets/FleetCombatLogCard**: `frontend/app/rust/stories/features/fleets/FleetCombatLogCard.stories.ts`, fixtures `frontend/app/rust/fixtures/features/fleets`. Scenarios: Typical, Unattributed, Long Name
@@ -957,6 +913,7 @@ Not reusable components: the site's feature blocks rendered from typed fixtures,
 - **Fleets/FleetStatus**: `frontend/app/rust/stories/features/fleets/FleetStatus.stories.ts`, fixtures `frontend/app/rust/fixtures/features/fleets`. Scenarios: Upcoming As Pilot, Fc Within Thirty Minutes, Fc On Time, Fc Too Early, Active As Fc, Active As Pilot, Just Started On An Alt, Completed, Cancelled
 - **Fleets/FleetTypeFlag**: `frontend/app/rust/stories/features/fleets/FleetTypeFlag.stories.ts`, fixtures `frontend/app/rust/fixtures/features/fleets`. Scenarios: Strategic, Non Strategic, Training, Npsi, Small, No Type
 - **Fleets/SRPTable**: `frontend/app/rust/stories/features/fleets/SRPTable.stories.ts`, fixtures `frontend/app/rust/fixtures/features/fleets`. Scenarios: Reviewer Queue, Alts Show Their Main, Empty, One Request, Busy Queue, Opening The Review Dialog, My Own Requests, Under AFleet, Fleetless Requests, Corp Ship And Long Name
+- **Fleets/StatusText**: `frontend/app/rust/stories/features/fleets/StatusText.stories.ts`. Scenarios: Default, Danger, Expired, Blinking, Completed, Pass Through Attributes
 - **Industry/BuybackContractsTable**: `frontend/app/rust/stories/features/industry/BuybackContractsTable.stories.ts`, fixtures `frontend/app/rust/fixtures/features/industry`. Scenarios: Mixed Statuses, Description Link And Blank, Empty, History
 - **Industry/CargoHold**: `frontend/app/rust/stories/features/industry/CargoHold.stories.ts`, fixtures `frontend/app/rust/fixtures/features/industry`. Scenarios: Fleet Fit Cargo, Expands On Click, Single Stack, Without Amounts
 - **Industry/FreightContractsTable**: `frontend/app/rust/stories/features/industry/FreightContractsTable.stories.ts`, fixtures `frontend/app/rust/fixtures/features/industry`. Scenarios: Mixed Statuses, Not Taken Until Accepted, Empty, History
@@ -974,6 +931,8 @@ Not reusable components: the site's feature blocks rendered from typed fixtures,
 - **Intel and combat/IntelEntitySearchResults**: `frontend/app/rust/stories/features/intel-and-combat/IntelEntitySearchResults.stories.ts`, fixtures `frontend/app/rust/fixtures/features/intel-and-combat`. Scenarios: Mixed Results, Bloc Tags Link And Likely, Single Result, No Matches, Query Too Short
 - **Intel and combat/IntelMembersTable**: `frontend/app/rust/stories/features/intel-and-combat/IntelMembersTable.stories.ts`, fixtures `frontend/app/rust/fixtures/features/intel-and-combat`. Scenarios: Typical, Alt Shows Main, Bloc And Group Links, Long Names, Empty
 - **Intel and combat/IntelPartnersTable**: `frontend/app/rust/stories/features/intel-and-combat/IntelPartnersTable.stories.ts`, fixtures `frontend/app/rust/fixtures/features/intel-and-combat`. Scenarios: Few Partners, Busy With Show All, Pilot Partners No Share, Bloc Likely And Missing
+- **Intel and combat/MoonMetenoxKills**: `frontend/app/rust/stories/features/intel-and-combat/MoonMetenoxKills.stories.ts`, fixtures `frontend/app/rust/fixtures/features/intel-and-combat`. Scenarios: Changed hands twice, Owner with no alliance, No kills
+- **Intel and combat/MoonProfitTable**: `frontend/app/rust/stories/features/intel-and-combat/MoonProfitTable.stories.ts`, fixtures `frontend/app/rust/fixtures/features/intel-and-combat`. Scenarios: Profitable, Fuel costs more than it makes, Not priced yet
 - **Intel and combat/RepairBadge**: `frontend/app/rust/stories/features/intel-and-combat/RepairBadge.stories.ts`, fixtures `frontend/app/rust/fixtures/features/intel-and-combat`. Scenarios: Armor Repairer, Shield Booster Overheal, Fully Effective Remote, All Wasted, Rep Type Icon
 - **Intel and combat/StructurePingsPanel**: `frontend/app/rust/stories/features/intel-and-combat/StructurePingsPanel.stories.ts`, fixtures `frontend/app/rust/fixtures/features/intel-and-combat`. Scenarios: All Pings, Failed View, Nothing Failed, No Pings, Busy History
 - **Intel and combat/StructureTimerList**: `frontend/app/rust/stories/features/intel-and-combat/StructureTimerList.stories.ts`, fixtures `frontend/app/rust/fixtures/features/intel-and-combat`. Scenarios: Typical, Expired Timer, Verifier View, Unknown Owner, Long Name, Busy, Empty

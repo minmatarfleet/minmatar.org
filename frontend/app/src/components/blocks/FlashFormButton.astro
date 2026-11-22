@@ -45,7 +45,7 @@ import Dialog from '@components/blocks/Dialog.astro';
 import LazyPartial from '@components/blocks/LazyPartial.astro';
 import Textarea from '@components/blocks/Textarea.astro';
 import Button from '@components/blocks/Button.astro';
-import SwitchSquare from '@components/blocks/SwitchSquare.astro';
+import Switch from '@components/blocks/Switch.astro';
 import Select from '@components/blocks/Select.astro';
 import Markdown from '@components/blocks/Markdown.astro';
 import StylessButton from '@components/blocks/StylessButton.astro';
@@ -161,7 +161,7 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
                                 <label for="description">{t('description')}</label>
                                 <Textarea id="description" name="description" x-model="description" rows="4" required></Textarea>
                             </Flexblock>
-                            <SwitchSquare
+                            <Switch shape="square"
                                 class="[ w-full ]"
                                 name="disable_motd"
                                 label={t('disable_motd')}

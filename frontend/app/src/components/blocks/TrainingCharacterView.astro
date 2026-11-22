@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { TrainingCharacter, TrainingShip } from '@dtypes/api.minmatar.org'
-import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
+import { get_item_icon, get_player_icon } from '@helpers/eve_image'
 import {
     TRAINING_MOVE_PARTIAL,
     TRAINING_PARTIAL,
@@ -17,6 +17,7 @@ import {
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import { FLEET_ROLES_LISTED, fleet_role_for_capability } from '@/data/fleet-roles'
 import { guidePath } from '@/data/guides/urls'
+import DataTable from '@components/blocks/DataTable.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import Tag from '@components/blocks/Tag.astro'
@@ -61,13 +62,14 @@ const account_line = character.account === null
         : t('training.account').replace('{number}', character.account.toString())
 
 const training_id = character.training?.fitting_id
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <Flexblock gap="var(--space-l)" class:list={['[ training-character ]', Astro.props.class]} {...attributes}>
     <div class="[ training-character__head ]">
         <img src={get_player_icon(id, 128)} alt="" width="80" height="80" />
         <div>
-            <button
+            <StylessButton
                 type="button"
                 class="[ training-link ]"
                 hx-get={partial({})}
@@ -75,13 +77,13 @@ const training_id = character.training?.fitting_id
                 hx-swap="outerHTML"
             >
                 {t('training.all_characters')}
-            </button>
+            </StylessButton>
             <h2>{character.name}</h2>
             <p class="[ training-muted ]">
                 {account_line} · {t('training.sp').replace('{sp}', short_skill_points(character.skill_points))}
-                <button type="button" class="[ training-link ]" x-on:click={modal(TRAINING_MOVE_PARTIAL, { character_id: id })}>
+                <StylessButton type="button" class="[ training-link ]" x-on:click={modal(TRAINING_MOVE_PARTIAL, { character_id: id })}>
                     {t('training.move_account')}
-                </button>
+                </StylessButton>
             </p>
         </div>
     </div>
@@ -89,9 +91,9 @@ const training_id = character.training?.fitting_id
     <section aria-labelledby="training-ships">
         <div class="[ training-character__title ]">
             <h3 id="training-ships">{t('training.ships_title')}</h3>
-            <button type="button" class="[ training-link ]" x-on:click={modal(TRAINING_SHIPS_PARTIAL, { character_id: id })}>
+            <StylessButton type="button" class="[ training-link ]" x-on:click={modal(TRAINING_SHIPS_PARTIAL, { character_id: id })}>
                 {t('training.add_ship').replace('+ ', '')}
-            </button>
+            </StylessButton>
         </div>
         <ComponentBlock padding_block="0" padding_inline="var(--space-s)">
             {character.goals.length === 0 ?
@@ -128,11 +130,11 @@ const training_id = character.training?.fitting_id
                                 </span>
                                 <span class="[ training-ship__actions ]">
                                     {now || goal.done ?
-                                        <button type="button" class="[ training-link ]" x-on:click={modal(TRAINING_PLAN_PARTIAL, { character_id: id, fitting_id: goal.fitting_id })}>
+                                        <StylessButton type="button" class="[ training-link ]" x-on:click={modal(TRAINING_PLAN_PARTIAL, { character_id: id, fitting_id: goal.fitting_id })}>
                                             {t('training.training_plan')}
-                                        </button>
+                                        </StylessButton>
                                         :
-                                        <button
+                                        <StylessButton
                                             type="button"
                                             class="[ training-link ]"
                                             hx-post={partial({ mode: 'first', view: 'character', character_id: id, fitting_id: goal.fitting_id })}
@@ -140,9 +142,9 @@ const training_id = character.training?.fitting_id
                                             hx-swap="outerHTML"
                                         >
                                             {t('training.train_first')}
-                                        </button>
+                                        </StylessButton>
                                     }
-                                    <button
+                                    <StylessButton
                                         type="button"
                                         class="[ training-link training-link--muted ]"
                                         hx-post={partial({ mode: 'remove_goal', view: 'character', character_id: id, fitting_id: goal.fitting_id })}
@@ -151,7 +153,7 @@ const training_id = character.training?.fitting_id
                                         hx-confirm={t('training.remove_confirm').replace('{name}', goal.name)}
                                     >
                                         {t('training.remove')}
-                                    </button>
+                                    </StylessButton>
                                 </span>
                             </li>
                         )
@@ -175,7 +177,7 @@ const training_id = character.training?.fitting_id
                             </span>
                             <strong class="[ training-ship__time ]">{time_label(t, ship.days)}</strong>
                             <span class="[ training-ship__actions ]">
-                                <button
+                                <StylessButton
                                     type="button"
                                     class="[ training-link ]"
                                     hx-post={partial({ mode: 'add_goal', view: 'character', character_id: id, fitting_id: ship.fitting_id })}
@@ -183,7 +185,7 @@ const training_id = character.training?.fitting_id
                                     hx-swap="outerHTML"
                                 >
                                     {t('training.add')}
-                                </button>
+                                </StylessButton>
                             </span>
                         </li>
                     )}
@@ -195,15 +197,16 @@ const training_id = character.training?.fitting_id
     <section aria-labelledby="training-roles">
         <h3 id="training-roles">{t('training.ready_by_role')}</h3>
         <ComponentBlock padding_block="0" padding_inline="0">
-            <table class="[ training-roles ]">
-                <thead>
-                    <tr>
-                        <th scope="col">{t('training.col_role')}</th>
-                        <th scope="col">{t('training.col_ready_ships')}</th>
-                        <th scope="col">{t('training.col_fleets')}</th>
-                    </tr>
-                </thead>
-                <tbody>
+            <DataTable
+                class="[ training-roles ]"
+                density="dense"
+                borders="none"
+                columns={[
+                    { key: 'role', label: t('training.col_role') },
+                    { key: 'ready', label: t('training.col_ready_ships') },
+                    { key: 'fleets', label: t('training.col_fleets'), numeric: true },
+                ]}
+            >
                     {character.roles.map(role =>
                         <tr>
                             <th scope="row">
@@ -218,19 +221,17 @@ const training_id = character.training?.fitting_id
                             <td>
                                 <span class="[ training-roles__ships ]">
                                     {role.ready.map(ship =>
-                                        <span class="[ training-chip ]">
-                                            <img src={get_item_icon(ship.ship_type_id, 64)} alt="" width="28" height="28" loading="lazy" />
-                                            {ship.name}
-                                        </span>
+                                        <Tag variant="outline" text={ship.name}>
+                                            <img slot="icon" src={get_item_icon(ship.ship_type_id, 64)} alt="" width="28" height="28" loading="lazy" />
+                                        </Tag>
                                     )}
                                     {role.ready.length === 0 && <span class="[ training-muted ]">{t('training.none_ready')}</span>}
                                 </span>
                             </td>
-                            <td>{role.fleets_365d}</td>
+                            <td class="data-table__numeric">{role.fleets_365d}</td>
                         </tr>
                     )}
-                </tbody>
-            </table>
+            </DataTable>
         </ComponentBlock>
     </section>
 </Flexblock>
@@ -266,7 +267,7 @@ const training_id = character.training?.fitting_id
     }
 
     .training-muted {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .training-link {
@@ -282,7 +283,7 @@ const training_id = character.training?.fitting_id
     }
 
     .training-link--muted {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .training-ship {
@@ -293,7 +294,7 @@ const training_id = character.training?.fitting_id
         padding-block: var(--space-xs);
 
         & + & {
-            border-top: 1px solid var(--hairline);
+            border-top: 1px solid var(--border-color);
         }
 
         img {
@@ -336,60 +337,17 @@ const training_id = character.training?.fitting_id
         justify-content: flex-end;
     }
 
-    .training-roles {
-        width: 100%;
-        border-collapse: collapse;
-
-        th,
-        td {
-            padding: var(--space-xs) var(--space-s);
-            text-align: start;
-            vertical-align: middle;
-        }
-
-        thead th {
-            font-size: var(--step--2);
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            color: var(--text-muted);
-        }
-
-        th:last-child,
-        td:last-child {
-            text-align: end;
-        }
-
-        tbody tr {
-            border-top: 1px solid var(--hairline);
-        }
-    }
-
     .training-roles__guide {
         display: block;
         font-size: var(--step--2);
         font-weight: 400;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .training-roles__ships {
         display: flex;
         flex-wrap: wrap;
         gap: var(--space-3xs);
-    }
-
-    .training-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-2xs);
-        padding: var(--space-3xs) var(--space-xs) var(--space-3xs) var(--space-3xs);
-        border: 1px solid var(--hairline-medium);
-        border-radius: var(--space-3xs);
-        font-size: var(--step--1);
-        font-weight: 600;
-
-        img {
-            border-radius: var(--space-3xs);
-        }
     }
 
     @media (max-width: 48rem) {

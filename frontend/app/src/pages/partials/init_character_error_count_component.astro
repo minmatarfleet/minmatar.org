@@ -31,5 +31,6 @@ try {
     console.log(error.message)
 }
 ---
+{/* no-error-refetch: an invisible badge-count sync: a failed read keeps the current count and shows nothing. */}
 
 <div x-init={`typeof set_character_errors_count === 'function' && set_character_errors_count(${character_errors_count}); $el.remove()`} />

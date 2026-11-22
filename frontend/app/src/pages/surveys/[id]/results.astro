@@ -17,7 +17,7 @@ if (!can(gates, 'surveys.results.view')) return HTTP_403_Forbidden()
 const campaign_id = parseInt(Astro.params.id as string)
 
 import { get_corp_report, get_report } from '@helpers/api.minmatar.org/surveys'
-import { get_player_icon, get_corporation_logo } from '@helpers/eve_image_server'
+import { get_player_icon, get_corporation_logo } from '@helpers/eve_image'
 let report: any = null
 let corp_report: any = null
 let data_fetching_error: any
@@ -243,7 +243,7 @@ const page_title = report ? `Results — ${report.title}` : 'Survey results'
         font-size: 0.72em;
         color: var(--fleet-yellow);
         opacity: 0.7;
-        background: color-mix(in srgb, var(--highlight) 5%, transparent);
+        background: color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent);
         padding: 1px 6px;
         border-radius: 3px;
     }
@@ -290,7 +290,7 @@ const page_title = report ? `Results — ${report.title}` : 'Survey results'
     .corp-row { display: grid; grid-template-columns: minmax(10rem, 1fr) 2fr auto; gap: var(--space-s); align-items: center; }
     @media (max-width: 40rem) { .corp-row { grid-template-columns: 1fr; } }
     .crow-label { font-size: 0.88em; }
-    .meter { height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--highlight) 8%, transparent); overflow: hidden; }
+    .meter { height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent); overflow: hidden; }
     .meter__fill { height: 100%; border-radius: 999px; }
     .crow-mean { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 3ch; text-align: right; }
 </style>

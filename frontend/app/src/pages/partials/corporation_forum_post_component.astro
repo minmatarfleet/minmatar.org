@@ -69,16 +69,28 @@ if (Astro.request.method === 'POST') {
     }
 }
 
-const post = await get_corporation_forum_post(auth_token, corporation_id) as CorporationForumPost | null
-if (!post) return HTTP_403_Forbidden()
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+let fetch_post_error: Error | false = false
+let post = null as CorporationForumPost | null
+try {
+    post = await get_corporation_forum_post(auth_token, corporation_id) as CorporationForumPost | null
+} catch (error) {
+    fetch_post_error = error
+}
+if (!fetch_post_error && !post) return HTTP_403_Forbidden()
 
-const url_value = draft_url ?? post.url ?? ''
-const summary = forum_post_section_summary(post, {
+const url_value = draft_url ?? post?.url ?? ''
+const summary = post ? forum_post_section_summary(post, {
     not_linked: t('corporations.forum_post.summary_not_linked'),
     linked: t('corporations.forum_post.summary_linked'),
-})
+}) : ''
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 ---
 
+{fetch_post_error || !post ?
+<ErrorRefetch args={{ partial: PARTIAL_URL, error: fetch_post_error as Error, delay: delay }} />
+:
+<>
 <span id={SUMMARY_ID} hx-swap-oob="true">{summary}</span>
 
 <div id={ROOT_ID} class="[ corp-forum-post ]">
@@ -170,6 +182,8 @@ const summary = forum_post_section_summary(post, {
         </form>
     </Flexblock>
 </div>
+</>
+}
 
 <style lang="scss">
     .corp-forum-post {

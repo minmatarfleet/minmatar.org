@@ -15,10 +15,13 @@ interface Props {
     tooltip?:           string;
     mask?:              boolean;
     inert?:             boolean;
+    /** Sits inside a button or link: the click still opens the modal, but no interactive role nests (the outer control is the keyboard target). */
+    nested?:            boolean;
     centered?:          boolean;
     quantity?:          number;
     tag_color?:         BadgeColors;
     height?:            number;
+    [propName: string]: any;
 }
 
 const {
@@ -32,84 +35,66 @@ const {
     tooltip,
     mask = false,
     inert = false,
+    nested = false,
     centered = false,
     quantity,
     tag_color,
     height = 412,
+    ...attributes
 } = Astro.props
 
-import { get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image'
 
-import NotificationBadge from '@components/blocks/NotificationBadge.astro';
+// The click opens the character modal. It is a span with role="button", not a
+// <button>: pictures sit inside other buttons (CollapsableButton, the SRP card)
+// and the HTML parser closes the outer button at a nested <button>, which moves
+// the rest of the markup out of its Alpine x-data scope. A static character 0
+// has nothing to open: the picture stays plain.
+const clickable = !inert && (character_id != 0 || !!x_character_id)
+const Target = 'span'
+
+import Picture from '@components/blocks/Picture.astro';
+
+const extra_class = attributes.class
+delete attributes.class
 ---
 
-<picture
-    class:list={['flex', { animated: inert }, { 'items-center!': centered } ]}
+<Picture
+    src={get_player_icon(character_id, icon_quality ?? size)}
+    alt={`${t('profile_picture_of')} ${character_name ?? t('unknown_character')}`}
+    size={size}
+    narrow={narrow}
+    height={height}
+    mask={mask}
+    quantity={quantity}
+    tag_color={tag_color}
+    animated={inert}
+    brighten={!inert}
+    class:list={['flex', { 'items-center!': centered }, extra_class]}
+    {...attributes}
     data-tippy-content={tooltip ? tooltip : undefined}
-    x-init={tooltip ? 'tippy($el, tippy_options)' : undefined}
->
-    <img
-        class:list={{ mask }}
-        loading="lazy"
-        height={narrow ? height : size}
-        width={size}
-        src={get_player_icon(character_id, icon_quality ?? size)}
-        x-bind:src={`${x_character_id} ? get_player_icon(${x_character_id}) : '${get_player_icon(character_id, icon_quality ?? size)}'`}
-        alt={`${t('profile_picture_of')} ${character_name ?? t('unknown_character')}`}
-        x-bind:alt={`\`${t('profile_picture_of')} \${(${x_character_name} ? ${x_character_name} : "${character_name ?? t('unknown_character')}")}\``}
-        x-data={`{
-            show_character_modal() {
-                if (!${x_character_id} && ${character_id} == 0)
-                    return
+    target={{
+        tag: Target,
+        attrs: clickable ? {
+            role: nested ? undefined : 'button',
+            tabindex: nested ? undefined : '0',
+            'x-data': `{
+                show_character_modal() {
+                    if (!${x_character_id} && ${character_id} == 0)
+                        return
 
-                show_modal({
-                    partial: '${translatePath('/partials/character_modal_component/')}?character_id='+(${x_character_id} ? ${x_character_id} : '${character_id.toString()}'),
-                })
-            }
-        }`}
-        x-on:click.stop.prevent={inert ? undefined : 'show_character_modal()'}
-    />
-    
-    {quantity &&
-        <NotificationBadge
-            class="[ quantity-badge ]"
-            color={tag_color ?? 'fleet-red'}
-            number={quantity}
-        />
-    }
-</picture>
-
-<style lang="scss">
-    picture {
-        position: relative;
-
-        .quantity-badge {
-            position: absolute;
-            bottom: -5px;
-            right: -5px;
-            z-index: 1;
-        }
-    }
-    
-    img {
-        transition: var(--slowest-transition);
-        filter: brightness(1);
-        object-fit: cover;
-        width: 100%;
-    }
-
-    picture:not(.animated) {
-        img {
-            cursor: pointer;
-            
-            &:hover {
-                filter: brightness(1.3);
-            }
-        }
-    }
-
-    .mask {
-        -webkit-mask-image: linear-gradient(to bottom,rgb(0,0,0) 0%,rgba(0,0,0,.7) 50%,transparent 100%);
-        mask-image: linear-gradient(to bottom,rgb(0,0,0) 0%,rgba(0,0,0,.7) 50%,transparent 100%);
-    }
-</style>
+                    show_modal({
+                        partial: '${translatePath('/partials/character_modal_component/')}?character_id='+(${x_character_id} ? ${x_character_id} : '${character_id.toString()}'),
+                    })
+                }
+            }`,
+            'x-on:click.stop.prevent': 'show_character_modal()',
+            'x-on:keydown.enter.stop.prevent': nested ? undefined : 'show_character_modal()',
+            'x-on:keydown.space.stop.prevent': nested ? undefined : 'show_character_modal()',
+        } : {},
+    }}
+    img_attrs={{
+        'x-bind:src': `${x_character_id} ? get_player_icon(${x_character_id}) : '${get_player_icon(character_id, icon_quality ?? size)}'`,
+        'x-bind:alt': `\`${t('profile_picture_of')} \${(${x_character_name} ? ${x_character_name} : "${character_name ?? t('unknown_character')}")}\``,
+    }}
+/>

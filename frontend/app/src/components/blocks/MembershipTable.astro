@@ -17,14 +17,14 @@ const {
 import Flexblock from '@components/compositions/Flexblock.astro';
 
 import MembershipItem from '@components/blocks/MembershipItem.astro';
-import Table from '@components/blocks/Table.astro';
+import RowList from '@components/blocks/RowList.astro';
 ---
 
 {memberships.length > 0 &&
     <Flexblock gap='var(--space-l)'>
         <h4 class="[ group-title ]">{t('group_membership')}</h4>
         
-        <Table>
+        <RowList>
             {memberships.map(membership =>
                 <div x-show="show_item($el)">
                     <MembershipItem
@@ -34,7 +34,7 @@ import Table from '@components/blocks/Table.astro';
                 </div>
             )}
             <p class="[ no-result-text ]">{t('no_results')}</p>
-        </Table>
+        </RowList>
     </Flexblock>
 }
 

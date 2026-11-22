@@ -5,7 +5,7 @@ const { t } = i18n(Astro.url)
 import type { CorporationInfo } from '@dtypes/api.minmatar.org'
 import type { MixRow } from '@helpers/corporations/about'
 import { mix_rows, percent_of, ranked_mix_rows, tenure_parts } from '@helpers/corporations/about'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 
 interface Props {
     corporation: CorporationInfo
@@ -432,7 +432,7 @@ const hull_peak = Math.max(1, ...hulls.map((hull) => hull.pilots))
     .track {
         display: block;
         height: var(--space-3xs);
-        background: color-mix(in srgb, var(--highlight) 10%, transparent);
+        background: color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent);
 
         span {
             display: block;

@@ -4,7 +4,7 @@ const { t, lang } = i18n(Astro.url)
 
 import type { CorporationInfo } from '@dtypes/api.minmatar.org'
 import type { CorporationObject } from '@dtypes/layout_components'
-import { get_corporation_logo } from '@helpers/eve_image_server'
+import { get_corporation_logo } from '@helpers/eve_image'
 import { month_year } from '@helpers/corporations/about'
 import { CORPORATION_APPLY_ID } from '@helpers/corporations/detail'
 
@@ -22,8 +22,7 @@ const {
     is_user_corporation = false,
 } = Astro.props
 
-import FlexInline from '@components/compositions/FlexInline.astro'
-import PageTitle from '@components/page/PageTitle.astro'
+import Hero from '@components/blocks/Hero.astro'
 import Tag from '@components/blocks/Tag.astro'
 import Button from '@components/blocks/Button.astro'
 import CorporationApplyStatus from '@components/blocks/CorporationApplyStatus.astro'
@@ -38,24 +37,21 @@ const meta = [
 ].filter(Boolean)
 ---
 
-<div class="corp-masthead">
-    <img
-        class="corp-logo"
-        src={get_corporation_logo(corporation.corporation_id, 128)}
-        width="128"
-        height="128"
-        alt=""
-    />
-    <div class="masthead-copy">
-        <PageTitle is_landing={true}>{corporation.corporation_name}</PageTitle>
-        <FlexInline class="meta" gap="var(--space-3xs) var(--space-2xs)">
-            {corporation.ticker &&
-                <Tag color="alliance-blue" text={corporation.ticker} />
-            }
-            {meta.map((item) => <small class="meta-item">{item}</small>)}
-        </FlexInline>
-    </div>
-    <div class="actions" id={CORPORATION_APPLY_ID}>
+<Hero
+    title={corporation.corporation_name}
+    image={get_corporation_logo(corporation.corporation_id, 128)}
+    meta_gap="var(--space-3xs) var(--space-2xs)"
+    meta_size="inherit"
+    actions_align="flex-start"
+    actions_id={CORPORATION_APPLY_ID}
+>
+    <Fragment slot="meta">
+        {corporation.ticker &&
+            <Tag color="alliance-blue" text={corporation.ticker} />
+        }
+        {meta.map((item) => <small class="meta-item">{item}</small>)}
+    </Fragment>
+    <Fragment slot="actions">
         {corporation.discord_invite_url &&
             <Button
                 href={corporation.discord_invite_url}
@@ -70,41 +66,10 @@ const meta = [
             corporation={apply_corporation}
             is_user_corporation={is_user_corporation}
         />
-    </div>
-</div>
+    </Fragment>
+</Hero>
 
 <style lang="scss">
-    .corp-masthead {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: var(--space-s) var(--space-m);
-        width: 100%;
-    }
-
-    .corp-logo {
-        height: var(--step-5);
-        width: auto;
-        object-fit: contain;
-        flex: 0 0 auto;
-    }
-
-    .masthead-copy {
-        flex: 1 1 24rem;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-2xs);
-    }
-
-    .masthead-copy :global(.page-title h1.is-landing) {
-        line-height: 1;
-    }
-
-    .meta {
-        align-items: center;
-    }
-
     // The dot travels with the item after it, so a wrapped line never ends on one.
     .meta-item {
         white-space: nowrap;
@@ -114,20 +79,5 @@ const meta = [
         content: '·';
         margin-inline-end: var(--space-2xs);
         color: var(--faded);
-    }
-
-    .actions {
-        flex: 0 0 auto;
-        display: flex;
-        align-items: flex-start;
-        gap: var(--space-xs);
-        scroll-margin-block-start: var(--space-2xl);
-    }
-
-    @media (max-width: 48rem) {
-        .actions {
-            width: 100%;
-            flex-wrap: wrap;
-        }
     }
 </style>

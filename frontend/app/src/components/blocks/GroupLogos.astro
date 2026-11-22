@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import type { EvEImageServiceSize } from '@dtypes/layout_components'
-import { get_group_logo } from '@helpers/eve_image_server'
+import { get_group_logo } from '@helpers/eve_image'
 
 /**
  * Alliance and corporation logos in a row, biggest first, with "+N" for the
@@ -31,6 +31,7 @@ const unknown = groups.length - known.length
 const shown = known.slice(0, max)
 const rest = [...known.slice(max).map(group => group.name), ...(unknown > 0 ? [t('fleets.fights.unknown_groups')] : [])]
 const image_size = (size <= 32 ? 32 : 64) as EvEImageServiceSize
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <span class:list={['[ group-logos ]', Astro.props.class]} {...attributes}>
@@ -45,7 +46,7 @@ const image_size = (size <= 32 ? 32 : 64) as EvEImageServiceSize
         />
     )}
     {rest.length > 0 &&
-        <button
+        <StylessButton
             type="button"
             class="[ group-logos__more ]"
             data-tippy-content={rest.join(', ')}
@@ -55,7 +56,7 @@ const image_size = (size <= 32 ? 32 : 64) as EvEImageServiceSize
                 t('fleets.fights.others').replace('{count}', rest.length.toString()) :
                 rest.length === 1 ? rest[0] : t('fleets.fights.groups').replace('{count}', rest.length.toString())
             }
-        </button>
+        </StylessButton>
     }
 </span>
 
@@ -77,7 +78,7 @@ const image_size = (size <= 32 ? 32 : 64) as EvEImageServiceSize
         min-height: 1.75rem;
         padding: 0 var(--space-2xs);
         background: transparent;
-        border: 1px solid var(--hairline-strong);
+        border: 1px solid var(--border-color-hover);
         color: var(--foreground);
         font: inherit;
         font-size: var(--step--1);

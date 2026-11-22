@@ -317,6 +317,7 @@ const guide_steps = [
     { id: 'contract', label: t('fitting_buy.step_contract') },
 ] as const
 ---
+{/* no-error-refetch: polls while a Jita check runs and takes form POSTs: failures render inline as the order's error message. */}
 
 <>
 <div id="fitting-buy-order" class="[ fitting-buy-order ]" {...hx_attrs}>

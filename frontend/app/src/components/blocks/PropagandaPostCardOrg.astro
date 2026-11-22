@@ -19,7 +19,7 @@ const {
 // Remove extra amp; characters from the URI for reddit images
 const image_sanitized = post.image ? post.image.replaceAll('amp;', '') : undefined
 
-import { get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image'
 import { format_date } from '@helpers/date'
 
 import Flexblock from '@components/compositions/Flexblock.astro';

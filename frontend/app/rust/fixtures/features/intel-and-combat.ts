@@ -8,6 +8,8 @@ import type {
     IntelMemberCrosscheck,
     IntelPartner,
     IntelRecentItem,
+    MoonMetenoxKill,
+    MoonProfit,
     StructurePing,
 } from '@dtypes/api.minmatar.org'
 import type { FleetCombatLog, RepairsUI, StructureTimerUI } from '@dtypes/layout_components'
@@ -326,3 +328,61 @@ export function ensure_edge_fade() {
         },
     })
 }
+
+// ---- moons (Universe > Moons row tabs) ---------------------------------------------
+// An R16 moon priced on a Jita snapshot: 1.14b output, 365M fuel, 777M net.
+export const moon_profit_r16: MoonProfit = {
+    output: [
+        { name: 'Platinum', units: 93_312, price: 7_914, isk: 738_471_168 },
+        { name: 'Pyerite', units: 12_268_800, price: 17.71, isk: 217_280_448 },
+        { name: 'Mexallon', units: 1_831_680, price: 51.56, isk: 94_441_421 },
+        { name: 'Silicates', units: 196_560, price: 354.6, isk: 69_700_176 },
+        { name: 'Evaporite Deposits', units: 124_416, price: 183.3, isk: 22_805_453 },
+    ],
+    fuel: [
+        { name: 'Magmatic Gas', units: 144_000, price: 2_100, isk: 302_400_000 },
+        { name: 'Nitrogen Fuel Block', units: 3_600, price: 17_460, isk: 62_856_000 },
+    ],
+    priced_at: hours_ago(2),
+}
+export const moon_net_r16 = 777_442_666
+
+// An R4 moon whose fuel costs more than it makes.
+export const moon_profit_r4_loss: MoonProfit = {
+    output: [
+        { name: 'Pyerite', units: 3_456_000, price: 17.71, isk: 61_205_760 },
+        { name: 'Mexallon', units: 172_800, price: 51.56, isk: 8_909_568 },
+        { name: 'Atmospheric Gases', units: 5_616, price: 790, isk: 4_436_640 },
+    ],
+    fuel: moon_profit_r16.fuel,
+    priced_at: hours_ago(2),
+}
+export const moon_net_r4_loss = -290_903_032
+
+const day_ms = 24 * HOUR
+const days_ago = (n: number) => new Date(Date.now() - n * day_ms).toISOString()
+
+export const metenox_kills_two: MoonMetenoxKill[] = [
+    {
+        killmail_id: 131_204_118,
+        killed_at: days_ago(12),
+        owner_corporation_id: 98_000_101,
+        owner_corporation_name: 'Holder Corp B',
+        owner_alliance_id: 99_000_201,
+        owner_alliance_name: 'Holder Alliance B',
+        killer_id: 99_000_301,
+        killer_name: 'Attacker Alliance X',
+        attacker_count: 34,
+    },
+    {
+        killmail_id: 129_877_402,
+        killed_at: days_ago(93),
+        owner_corporation_id: 98_000_102,
+        owner_corporation_name: 'Holder Corp A',
+        owner_alliance_id: null,
+        owner_alliance_name: '',
+        killer_id: 99_000_201,
+        killer_name: 'Holder Alliance B',
+        attacker_count: 12,
+    },
+]

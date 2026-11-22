@@ -291,6 +291,7 @@ const breadcrumbs = [
     { page_title: t('industry.orders.page_title'), accumulated_path: '/industry/orders/' },
     { page_title: page_title, accumulated_path: Astro.url.pathname },
 ]
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <Viewport
@@ -613,7 +614,7 @@ const breadcrumbs = [
                                 >
                                     <template x-for="product in filtered" x-bind:key="product.type_id">
                                         <li>
-                                            <button
+                                            <StylessButton
                                                 type="button"
                                                 class="[ create-order-form__result ]"
                                                 x-on:click="pick_product(product)"
@@ -623,11 +624,11 @@ const breadcrumbs = [
                                                     width="32"
                                                     height="32"
                                                     loading="lazy"
-                                                    x-bind:src="`https://images.evetech.net/types/${product.type_id}/icon?size=32`"
+                                                    x-bind:src="get_item_icon(product.type_id, 32)"
                                                     x-bind:alt="product.name"
                                                 />
                                                 <span class="[ truncate ]" x-text="product.name"></span>
-                                            </button>
+                                            </StylessButton>
                                         </li>
                                     </template>
                                 </ul>
@@ -664,7 +665,7 @@ const breadcrumbs = [
                                                     width="32"
                                                     height="32"
                                                     loading="lazy"
-                                                    x-bind:src="`https://images.evetech.net/types/${line.eve_type_id}/icon?size=32`"
+                                                    x-bind:src="get_item_icon(line.eve_type_id, 32)"
                                                     x-bind:alt="line.name"
                                                 />
                                                 <span
@@ -676,22 +677,23 @@ const breadcrumbs = [
                                                         class="[ create-order-form__qty-label ]"
                                                         x-text="quantity_label"
                                                     ></span>
-                                                    <input
-                                                        class="[ create-order-form__qty-input ]"
+                                                    <Input
                                                         type="number"
                                                         min="1"
+                                                        size="sm"
+                                                        width="3.5rem"
                                                         x-bind:name="`quantity_${line.eve_type_id}`"
                                                         x-bind:value="line.quantity"
                                                         x-on:change="set_qty(index, $event.target.value)"
                                                         x-bind:aria-label="quantity_label"
                                                     />
                                                 </label>
-                                                <button
+                                                <StylessButton
                                                     type="button"
                                                     class="[ create-order-form__remove ]"
                                                     x-on:click="remove_line(index)"
                                                     x-text="remove_label"
-                                                ></button>
+                                                ></StylessButton>
                                             </div>
                                             <div
                                                 class="[ create-order-form__pricing ]"
@@ -804,7 +806,7 @@ const breadcrumbs = [
     }
 
     .create-order-form__pricing small {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .create-order-form__product-name {
@@ -826,36 +828,6 @@ const breadcrumbs = [
         font-size: var(--step--2);
         color: var(--highlight);
         white-space: nowrap;
-    }
-
-    .create-order-form__qty-input {
-        width: 3.5rem;
-        background-color: rgba(85, 85, 85, 0.15);
-        color: var(--foreground);
-        border: 1px solid var(--border-color-hover);
-        padding: var(--space-3xs) var(--space-2xs);
-        font-family: var(--default-font);
-        font-size: var(--step--1);
-        text-align: center;
-        appearance: textfield;
-        -moz-appearance: textfield;
-        transition: var(--fast-transition);
-
-        &::-webkit-outer-spin-button,
-        &::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-
-        &:hover {
-            border-color: var(--highlight);
-        }
-
-        &:focus-visible {
-            outline: 2px solid var(--highlight);
-            outline-offset: 2px;
-            background-color: rgba(85, 85, 85, 0.25);
-        }
     }
 
     .create-order-form__remove {

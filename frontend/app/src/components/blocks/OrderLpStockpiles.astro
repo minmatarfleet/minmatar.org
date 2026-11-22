@@ -2,9 +2,10 @@
 import { i18n } from '@helpers/i18n'
 import type { OrderLpStockpile } from '@dtypes/api.minmatar.org'
 import { number_thousand_separator } from '@helpers/numbers'
-import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
+import { get_corporation_logo, get_player_icon } from '@helpers/eve_image'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 
 const { t } = i18n(Astro.url)
@@ -103,15 +104,7 @@ const factions = group_stockpiles_by_faction(stockpiles)
         )}
 
         {factions.length === 0 ? (
-            <Flexblock
-                gap="var(--space-2xs)"
-                centered
-                class="[ order-lp-stockpiles__empty ]"
-            >
-                <p class="[ order-lp-stockpiles__empty-title ]">
-                    {empty_text}
-                </p>
-            </Flexblock>
+            <EmptyState title={empty_text} prominent />
         ) : (
             <Flexblock gap="var(--space-xs)" class="[ order-lp-stockpiles__factions ]">
                 {factions.map((faction) => (
@@ -205,18 +198,6 @@ const factions = group_stockpiles_by_faction(stockpiles)
 <style lang="scss">
     h3 {
         font-size: var(--step-1);
-    }
-
-    .order-lp-stockpiles__empty {
-        padding-block: var(--space-s);
-        text-align: center;
-    }
-
-    .order-lp-stockpiles__empty-title {
-        margin: 0;
-        font-size: var(--step-0);
-        color: var(--highlight);
-        line-height: 1.35;
     }
 
     .order-lp-stockpiles__logo,

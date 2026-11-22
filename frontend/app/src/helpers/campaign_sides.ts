@@ -1,6 +1,6 @@
 /** A campaign's parties grouped by side, for the header and the card. */
 import type { CampaignParty } from '@dtypes/api.minmatar.org'
-import { get_alliance_logo, get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
+import { get_alliance_logo, get_corporation_logo, get_player_icon } from '@helpers/eve_image'
 
 export type CampaignSide = 'enemy' | 'ally' | 'third_party'
 

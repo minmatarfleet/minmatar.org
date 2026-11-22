@@ -51,6 +51,8 @@ const rows = timers.map((timer) => ({
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import TimerAddDialog from '@components/blocks/structures/TimerAddDialog.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
@@ -64,14 +66,10 @@ import CampaignTimersTable from '@components/blocks/CampaignTimersTable.astro'
         :
         <Flexblock gap="var(--space-s)">
             <div class="[ manage-filters ]">
-                <div class="[ manage-chips ]" role="radiogroup" aria-label={t('universe.tab.timers')}>
-                    <button type="button" role="radio" class="[ manage-chip ]" x-bind:class="{ 'is-on': view === 'all' }" x-bind:aria-checked="view === 'all'" x-on:click="view = 'all'">
-                        <span>{t('universe.view_all')}</span><span class="[ manage-chip__count ]">{upcoming.length}</span>
-                    </button>
-                    <button type="button" role="radio" class="[ manage-chip ]" x-bind:class="{ 'is-on': view === 'soon' }" x-bind:aria-checked="view === 'soon'" x-on:click="view = 'soon'">
-                        <span>{t('universe.timers.view_soon')}</span><span class="[ manage-chip__count ]">{rows.filter((row) => view_of(row).includes('soon')).length}</span>
-                    </button>
-                </div>
+                <ChipGroup wrap={true} role="radiogroup" aria_label={t('universe.tab.timers')}>
+                    <FilterChip type="radio" name="universe-timers-view" value="all" checked={true} count={upcoming.length} input_attributes={{ 'x-model': 'view' }}>{t('universe.view_all')}</FilterChip>
+                    <FilterChip type="radio" name="universe-timers-view" value="soon" count={rows.filter((row) => view_of(row).includes('soon')).length} input_attributes={{ 'x-model': 'view' }}>{t('universe.timers.view_soon')}</FilterChip>
+                </ChipGroup>
                 <FlexInline gap="var(--space-s)" class="[ universe-toolbar ]">
                     <ManageSearch id="universe-timers-search" label={t('universe.timers.search')} placeholder={t('universe.timers.search')} x-model="q" />
                     {can_add && <TimerAddDialog label={t('universe.timers.add')} />}

@@ -11,7 +11,7 @@ import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { StructureLocationDocked, StructureLocationModule } from '@dtypes/api.minmatar.org'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 
 export interface StructureAddState {
     text:               string;
@@ -67,6 +67,8 @@ const hour = (value: number | null) => value === null ? '' : String(value)
 const go = (value: string) => JSON.stringify({ go: value })
 
 import Button from '@components/blocks/Button.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
 import Textarea from '@components/blocks/Textarea.astro'
@@ -74,6 +76,7 @@ import ManageField from '@components/blocks/manage/ManageField.astro'
 import StructureFit from '@components/blocks/structures/StructureFit.astro'
 import StructureSteps from '@components/blocks/structures/StructureSteps.astro'
 import StructureHowTo from '@components/blocks/structures/StructureHowTo.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <StructureSteps title={t('structures.add.title')} steps_label={t('structures.add.steps')} steps={steps} current={current}>
@@ -100,9 +103,9 @@ import StructureHowTo from '@components/blocks/structures/StructureHowTo.astro'
             <ManageField label={t('structures.add.paste_label')} for="structure-add-text">
                 <Textarea id="structure-add-text" name="text_input" rows="5" placeholder={t('structures.add.paste_placeholder')} x-ref="paste">{state.text}</Textarea>
             </ManageField>
-            <button type="button" class="[ structure-add__link ]" hx-post={URL} hx-vals={go('docked')} hx-target="#structure-add" hx-swap="innerHTML">
+            <StylessButton type="button" class="[ structure-add__link ]" hx-post={URL} hx-vals={go('docked')} hx-target="#structure-add" hx-swap="innerHTML">
                 {t('structures.add.use_docked')}
-            </button>
+            </StylessButton>
             <div class="[ manage-actions ]">
                 <Button type="button" size="sm" color="fleet-red" hx-post={URL} hx-vals={go('match')} hx-target="#structure-add" hx-swap="innerHTML" hx-disabled-elt="this">{t('structures.add.next')}</Button>
                 <Button type="button" size="sm" color="transparent" x-on:click="close_dialog()">{t('cancel')}</Button>
@@ -227,14 +230,15 @@ import StructureHowTo from '@components/blocks/structures/StructureHowTo.astro'
                     <option value="alliance">{t('structures.audience.alliance')}</option>
                 </Select>
             </ManageField>
-            <fieldset class="[ manage-chips ]">
+            <fieldset class="[ manage-fieldset ]">
                 <legend class="[ manage-field__label ]">{t('structures.add.good_for')}</legend>
-                {['industry', 'clones', 'logistics'].map((value) => (
-                    <label class="[ manage-chip ]">
-                        <input type="checkbox" name="good_for" value={value} checked={value === 'industry' && rigs.length > 0} />
-                        {t(t_key('structures.good_for.', value))}
-                    </label>
-                ))}
+                <ChipGroup wrap={true}>
+                    {['industry', 'clones', 'logistics'].map((value) => (
+                        <FilterChip type="checkbox" name="good_for" value={value} checked={value === 'industry' && rigs.length > 0}>
+                            {t(t_key('structures.good_for.', value))}
+                        </FilterChip>
+                    ))}
+                </ChipGroup>
             </fieldset>
             <ManageField label={t('structures.add.about')} for="structure-add-about">
                 <Textarea id="structure-add-about" name="description" rows="3" maxlength="4000" />
@@ -275,7 +279,7 @@ import StructureHowTo from '@components/blocks/structures/StructureHowTo.astro'
     .structure-add__status {
         font-size: var(--step--1);
         font-weight: 600;
-        color: var(--attention);
+        color: var(--fleet-yellow);
 
         &.found {
             color: var(--green);
@@ -288,7 +292,7 @@ import StructureHowTo from '@components/blocks/structures/StructureHowTo.astro'
         gap: var(--space-2xs);
         padding: var(--space-xs) var(--space-s);
         background-color: var(--surface-sunken);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
 
         ul {
             margin: 0;
@@ -307,7 +311,7 @@ import StructureHowTo from '@components/blocks/structures/StructureHowTo.astro'
         font-size: var(--step--1);
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .structure-add__docked {

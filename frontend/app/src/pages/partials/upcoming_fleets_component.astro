@@ -24,6 +24,7 @@ import { parse_host_filter } from '@helpers/fleet_hosts'
 
 let schedule: FleetScheduleData
 
+// no-error-refetch: this is the 240s refresh poll; a 500 makes htmx keep the schedule already on screen.
 try {
     schedule = await fetch_fleet_schedule(auth_token as string, parse_host_filter(Astro.url.searchParams.get('host')))
 } catch (error) {

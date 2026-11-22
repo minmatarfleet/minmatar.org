@@ -9,7 +9,7 @@ import {
     expand_useless_offer_excludes,
     useless_offer_exclude_toggle,
 } from '@helpers/loyalty_offers_metrics'
-import { get_corporation_logo } from '@helpers/eve_image_server'
+import { get_corporation_logo } from '@helpers/eve_image'
 import { query_string } from '@helpers/string'
 
 import Grid from '@components/compositions/Grid.astro'
@@ -19,6 +19,7 @@ import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 import CaretIcon from '@components/icons/CaretIcon.astro'
 
+import StylessButton from '@components/blocks/StylessButton.astro'
 const FACTION_ORDER: readonly number[] = [
     1000182, // TLIB
     1000179, // 24th
@@ -211,7 +212,7 @@ const hx_include_filters =
             @mousedown.outside="open && close()"
             @htmx:before-request="close()"
         >
-            <button
+            <StylessButton
                 type="button"
                 class="[ loyalty-offers-filters__currency-trigger ]"
                 @click.prevent="toggle()"
@@ -235,7 +236,7 @@ const hx_include_filters =
                         ?? t('industry.loyalty.offers.currency_label')}
                 </span>
                 <CaretIcon class="[ loyalty-offers-filters__currency-caret ]" />
-            </button>
+            </StylessButton>
 
             <ul
                 id="loyalty-offers-currency-options"
@@ -247,7 +248,7 @@ const hx_include_filters =
             >
                 {sorted_currencies.map((c) => (
                     <li role="presentation">
-                        <button
+                        <StylessButton
                             type="button"
                             role="option"
                             class:list={[
@@ -277,7 +278,7 @@ const hx_include_filters =
                                 loading="lazy"
                             />
                             <span>{c.name}</span>
-                        </button>
+                        </StylessButton>
                     </li>
                 ))}
             </ul>
@@ -431,7 +432,7 @@ const hx_include_filters =
         gap: var(--space-s);
         padding: var(--space-s);
         border: solid 1px var(--border-color);
-        background-color: color-mix(in srgb, var(--background) 35%, transparent);
+        background-color: color-mix(in srgb, var(--background) var(--tint-medium), transparent);
     }
 
     .loyalty-offers-filters__group {
@@ -477,7 +478,7 @@ const hx_include_filters =
         padding-block: var(--space-2xs);
         padding-inline: var(--space-xs-s) var(--space-m);
         border: solid 1px var(--border-color);
-        background-color: color-mix(in srgb, var(--faded) 10%, transparent);
+        background-color: color-mix(in srgb, var(--faded) var(--tint-subtle), transparent);
         color: var(--form-color);
         cursor: pointer;
         text-align: left;
@@ -553,13 +554,13 @@ const hx_include_filters =
 
         @media (hover: hover) {
             &:hover {
-                background-color: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+                background-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
                 color: var(--highlight);
             }
         }
 
         &--selected {
-            background-color: color-mix(in srgb, var(--fleet-red) 35%, transparent);
+            background-color: color-mix(in srgb, var(--fleet-red) var(--tint-medium), transparent);
             color: var(--highlight);
         }
 
@@ -575,7 +576,7 @@ const hx_include_filters =
 
     .loyalty-offers-filters :global(small[data-tippy-content]) {
         cursor: help;
-        text-decoration: underline dotted color-mix(in srgb, currentColor 35%, transparent);
+        text-decoration: underline dotted color-mix(in srgb, currentColor var(--tint-medium), transparent);
         text-underline-offset: 0.2em;
     }
 </style>

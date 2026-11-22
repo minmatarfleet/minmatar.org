@@ -51,6 +51,7 @@ import ActionMenuItem from '@components/blocks/ActionMenuItem.astro';
 import EmptyState from '@components/blocks/EmptyState.astro';
 
 delete attributes.class
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <DisableBlock
@@ -153,7 +154,7 @@ delete attributes.class
                         />
                         <Flexblock gap='0' class="[ min-w-0 ]">
                             <FlexInline gap='var(--space-2xs)' class="[ items-center ]">
-                                <button
+                                <StylessButton
                                     type="button"
                                     class="[ pilot-list__name ][ truncate ]"
                                     set:text={pilot.character_name}
@@ -318,11 +319,11 @@ delete attributes.class
     }
 
     .pilot-list__muted {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .pilot-list__attention {
-        color: var(--security-status-point-4);
+        color: var(--fleet-yellow);
     }
 
     .pilot-list__rows {
@@ -346,7 +347,7 @@ delete attributes.class
         font-size: var(--step--2);
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .pilot-list__who {
@@ -382,7 +383,7 @@ delete attributes.class
 
     .pilot-list__main {
         padding: 0 var(--space-3xs);
-        border: 1px solid color-mix(in srgb, var(--foreground) 55%, transparent);
+        border: 1px solid color-mix(in srgb, var(--foreground) var(--tint-bold), transparent);
         font-size: var(--step--2);
         font-weight: 600;
         white-space: nowrap;

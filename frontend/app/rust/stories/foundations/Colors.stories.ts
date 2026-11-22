@@ -1,7 +1,7 @@
 import { expect, within } from 'storybook/test'
 import ColorTokens from '../../components/foundations/ColorTokens.astro'
 
-const FAMILIES = ['Brand palette', 'Semantic', 'Alpha tints', 'Colour-blind mode', 'Glass (effects)', 'Item meta groups', 'Security status', 'Discord']
+const FAMILIES = ['Brand palette', 'Semantic', 'Alpha tints', 'Brand grades', 'Neutral grade', 'Colour-blind mode', 'Glass (effects)', 'Item meta groups', 'Security status', 'Discord']
 
 type Ctx = { canvasElement: HTMLElement }
 
@@ -16,7 +16,7 @@ export default {
                 component: [
                     'Every colour token in `src/styles/properties/`, read from the stylesheets when the page renders and drawn with the token itself, so this page cannot fall behind the CSS.',
                     '**Primitive** tokens hold a raw value (`--fleet-red: #b53620`); **semantic** tokens alias one for a purpose (`--foreground: var(--fleet-yellow)`). Components use semantic tokens where one exists. *Themed* marks a token that `body.color-blind-mode` redefines.',
-                    'For any other alpha, mix a token: `color-mix(in srgb, var(--highlight) 20%, transparent)`. Hand-written hex colours are listed under **Colours not yet tokens**.',
+                    'For any other alpha, mix a token: `color-mix(in srgb, var(--highlight) var(--tint-soft), transparent)`. Hand-written hex colours are listed under **Colours not yet tokens**.',
                 ].join('\n\n'),
             },
         },
@@ -65,7 +65,7 @@ export const AlphaTints = {
     name: 'Alpha tints',
     args: { family: 'Alpha tints' },
     play: async ({ canvasElement }: Ctx) => {
-        for (const name of ['--hairline', '--hairline-medium', '--hairline-strong', '--text-muted', '--surface-sunken'])
+        for (const name of ['--border-color', '--border-color-hover', '--faded', '--tint-soft', '--surface-sunken'])
             await expect(canvasElement.querySelector(`[data-token="${name}"]`)).not.toBeNull()
     },
 }
@@ -116,5 +116,18 @@ export const SwatchesOnly = {
     args: { show_values: false, family: 'Brand palette' },
     play: async ({ canvasElement }: Ctx) => {
         await expect(canvasElement.querySelector('.value')).toBeNull()
+    },
+}
+
+export const Grades = {
+    name: 'Brand and neutral grades',
+    play: async ({ canvasElement }: Ctx) => {
+        const grades = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950']
+        for (const brand of ['fleet-red', 'fleet-yellow', 'alliance-blue', 'militia-purple', 'green'])
+            for (const grade of grades)
+                await expect(canvasElement.querySelector(`[data-family="Brand grades"] [data-token="--${brand}-${grade}"]`)).not.toBeNull()
+        for (const grade of grades)
+            await expect(canvasElement.querySelector(`[data-family="Neutral grade"] [data-token="--neutral-${grade}"]`)).not.toBeNull()
+        await expect(canvasElement.querySelector('[data-token="--fleet-red-text"]')!.textContent).toContain('var(--fleet-red-400)')
     },
 }

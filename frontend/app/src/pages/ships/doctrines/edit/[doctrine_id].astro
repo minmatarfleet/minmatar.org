@@ -1,4 +1,5 @@
 ---
+import { get_type_icon } from '@helpers/eve_image'
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
@@ -231,6 +232,8 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 
 import Button from '@components/blocks/Button.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import ChangeDiff from '@components/blocks/ChangeDiff.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Dialog from '@components/blocks/Dialog.astro'
@@ -242,7 +245,8 @@ import Switch from '@components/blocks/Switch.astro'
 import Textarea from '@components/blocks/Textarea.astro'
 
 const page_title = `${t('doctrine_changes.edit_doctrine')}${doctrine ? `: ${doctrine.name}` : ''}`
-const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/icon?size=64`
+const icon = (ship_id:number) => get_type_icon(ship_id, 64)
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <Viewport title={page_title}>
@@ -290,7 +294,7 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
                             <FlexInline gap="var(--space-s)">
                                 <a href={REVIEW_QUEUE_URL}>{t('doctrine_changes.open_request')}</a>
                                 {pending.can_cancel &&
-                                    <button
+                                    <StylessButton
                                         type="button"
                                         class="[ doctrine-link-button ]"
                                         hx-post={`${FORM_PARTIAL_URL}&intent=withdraw&request_id=${pending.id}`}
@@ -298,7 +302,7 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
                                         hx-swap="innerHTML"
                                     >
                                         {t('doctrine_changes.withdraw_to_edit')}
-                                    </button>
+                                    </StylessButton>
                                 }
                             </FlexInline>
                         </FlexInline>
@@ -395,24 +399,23 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
                                     <div class="[ doctrine-popover ]" x-show="open" x-cloak>
                                         <div class="[ doctrine-popover__bar ]">
                                             <span class="[ doctrine-muted ]">{t('doctrine_changes.add_as')}</span>
-                                            <div class="[ doctrine-segments ]" role="group" aria-label={t('doctrine_changes.add_as')}>
+                                            <ChipGroup wrap={true} aria_label={t('doctrine_changes.add_as')}>
                                                 {DOCTRINE_ROLES.map((role) =>
-                                                    <button
-                                                        type="button"
+                                                    <FilterChip
                                                         x-on:click={`add_as = '${role}'`}
+                                                        x-bind:class={`{ 'is-active': add_as === '${role}' }`}
                                                         x-bind:aria-pressed={`add_as === '${role}'`}
-                                                    >{ROLE_LABELS[role]}</button>
+                                                    >{ROLE_LABELS[role]}</FilterChip>
                                                 )}
-                                            </div>
+                                            </ChipGroup>
                                         </div>
                                         <div class="[ doctrine-popover__filters ]" role="group" aria-label={t('doctrine_changes.hull_filter')}>
                                             {['all', ...HULL_FILTERS].map((filter) =>
-                                                <button
-                                                    type="button"
-                                                    class="[ doctrine-chip ]"
+                                                <FilterChip
                                                     x-on:click={`filter = '${filter}'`}
+                                                    x-bind:class={`{ 'is-active': filter === '${filter}' }`}
                                                     x-bind:aria-pressed={`filter === '${filter}'`}
-                                                >{FILTER_LABELS[filter]}</button>
+                                                >{FILTER_LABELS[filter]}</FilterChip>
                                             )}
                                         </div>
                                         <ul id="doctrine-add-results" class="[ doctrine-results ]" x-ref="results" role="listbox">
@@ -422,7 +425,7 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
                                                     data-filters={fitting.filters}
                                                     x-show="matches($el)"
                                                 >
-                                                    <button
+                                                    <StylessButton
                                                         type="button"
                                                         role="option"
                                                         x-on:click={`add(${fitting.id})`}
@@ -437,7 +440,7 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
                                                             class="[ doctrine-result__end ]"
                                                             x-text={`anywhere(${fitting.id}) ? '${js(t('doctrine_changes.in_role'))}'.replace('{role}', in_role(${fitting.id})) : '${js(t('doctrine_changes.add'))}'`}
                                                         ></small>
-                                                    </button>
+                                                    </StylessButton>
                                                 </li>
                                             )}
                                         </ul>
@@ -470,29 +473,30 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
                                                     <template x-if={`removed('${role}', ${fitting.id})`}>
                                                         <span class="[ doctrine-row__actions ]">
                                                             <small class="[ doctrine-tag ]">{t('doctrine_changes.tag_removed')}</small>
-                                                            <button type="button" class="[ doctrine-link-button ]" x-on:click={`undo('${role}', ${fitting.id})`}>{t('doctrine_changes.undo')}</button>
+                                                            <StylessButton type="button" class="[ doctrine-link-button ]" x-on:click={`undo('${role}', ${fitting.id})`}>{t('doctrine_changes.undo')}</StylessButton>
                                                         </span>
                                                     </template>
                                                     <template x-if={`!removed('${role}', ${fitting.id})`}>
                                                         <span class="[ doctrine-row__actions ]">
                                                             <label class="[ visually-hidden ]" for={`role-${role}-${fitting.id}`}>{t('doctrine_changes.role_for').replace('{name}', fitting.name)}</label>
-                                                            <select
+                                                            <Select
                                                                 id={`role-${role}-${fitting.id}`}
-                                                                class="[ doctrine-role-select ]"
+                                                                size="sm"
+                                                                width="9rem"
                                                                 x-on:change={`set_role('${role}', ${fitting.id}, $event.target.value)`}
                                                             >
                                                                 {DOCTRINE_ROLES.map((option) =>
                                                                     <option value={option} selected={option === role}>{ROLE_LABELS[option]}</option>
                                                                 )}
-                                                            </select>
-                                                            <button
+                                                            </Select>
+                                                            <StylessButton
                                                                 type="button"
                                                                 class="[ doctrine-icon-button ]"
                                                                 aria-label={t('doctrine_changes.remove_named').replace('{name}', fitting.name)}
                                                                 x-on:click={`remove('${role}', ${fitting.id})`}
                                                             >
                                                                 <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
-                                                            </button>
+                                                            </StylessButton>
                                                         </span>
                                                     </template>
                                                 </li>
@@ -510,7 +514,7 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
                     <div class="[ doctrine-bar ]" x-show="change_count() > 0" x-cloak>
                         <strong x-text={`'${js(t('doctrine_changes.change_count'))}'.replace('{count}', change_count())`}></strong>
                         <FlexInline gap="var(--space-s)">
-                            <button type="button" class="[ doctrine-link-button ]" x-on:click="discard()">{t('doctrine_changes.discard')}</button>
+                            <StylessButton type="button" class="[ doctrine-link-button ]" x-on:click="discard()">{t('doctrine_changes.discard')}</StylessButton>
                             <Button type="button" color="fleet-red" x-on:click="open_review()">{t('doctrine_changes.review_and_send')}</Button>
                         </FlexInline>
                     </div>
@@ -555,7 +559,7 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
     }
 
     .doctrine-muted {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .doctrine-ships-head {
@@ -578,7 +582,7 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
         width: min(36rem, 90vw);
         background: var(--background);
         border: 1px solid var(--border-color);
-        box-shadow: 0 var(--space-s) var(--space-l) color-mix(in srgb, var(--background) 80%, transparent);
+        box-shadow: 0 var(--space-s) var(--space-l) color-mix(in srgb, var(--background) var(--tint-heavy), transparent);
     }
 
     .doctrine-popover__bar,
@@ -591,45 +595,7 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
     }
 
     .doctrine-popover__bar {
-        border-bottom: 1px solid var(--hairline);
-    }
-
-    .doctrine-segments {
-        display: flex;
-        flex-wrap: wrap;
-
-        button {
-            min-height: 2.25rem;
-            padding: 0 var(--space-xs);
-            background: transparent;
-            border: 1px solid var(--hairline-medium);
-            color: var(--text-muted);
-            font-size: var(--step--1);
-            cursor: pointer;
-
-            & + button {
-                margin-inline-start: -1px;
-            }
-        }
-    }
-
-    .doctrine-chip {
-        min-height: 2rem;
-        padding: 0 var(--space-xs);
-        border-radius: var(--space-s);
-        background: transparent;
-        border: 1px solid var(--hairline-medium);
-        color: var(--text-muted);
-        font-size: var(--step--1);
-        cursor: pointer;
-    }
-
-    .doctrine-segments button[aria-pressed="true"],
-    .doctrine-chip[aria-pressed="true"] {
-        position: relative;
-        border-color: var(--highlight);
-        color: var(--foreground);
-        background: color-mix(in srgb, var(--highlight) 10%, transparent);
+        border-bottom: 1px solid var(--border-color);
     }
 
     .doctrine-results {
@@ -654,12 +620,12 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
 
             &:hover:not(:disabled),
             &:focus-visible {
-                background: var(--hairline);
+                background: var(--border-color);
             }
 
             &:disabled {
                 cursor: default;
-                color: var(--text-muted);
+                color: var(--faded);
 
                 img {
                     opacity: 0.45;
@@ -674,7 +640,7 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
     }
 
     button:disabled .doctrine-result__end {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .doctrine-role {
@@ -688,7 +654,7 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
 
         span,
         small {
-            color: var(--text-muted);
+            color: var(--faded);
             text-transform: none;
             letter-spacing: 0;
         }
@@ -706,7 +672,7 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
         gap: var(--space-xs);
         min-height: 3.5rem;
         padding-block: var(--space-3xs);
-        border-top: 1px solid var(--hairline);
+        border-top: 1px solid var(--border-color);
 
         img {
             flex: none;
@@ -722,14 +688,14 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
         min-width: 0;
 
         small {
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
     .doctrine-row--removed {
         .doctrine-row__text > span {
             text-decoration: line-through;
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         img {
@@ -759,10 +725,6 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
             justify-content: flex-end;
         }
 
-        .doctrine-role-select {
-            flex: 1 1 auto;
-        }
-
         .doctrine-search {
             flex: 1 1 100%;
         }
@@ -775,7 +737,7 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
     .doctrine-tag {
         flex: none;
         font-weight: 600;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .doctrine-tag--new {
@@ -786,16 +748,6 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
         color: var(--fleet-yellow);
     }
 
-    .doctrine-role-select {
-        width: 9rem;
-        min-height: 2.75rem;
-        padding: 0 var(--space-2xs);
-        background: var(--hairline);
-        border: 1px solid transparent;
-        color: var(--highlight);
-        font-size: var(--step--1);
-    }
-
     .doctrine-icon-button {
         display: inline-flex;
         align-items: center;
@@ -804,7 +756,7 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
         height: 2.75rem;
         background: transparent;
         border: 0;
-        color: var(--text-muted);
+        color: var(--faded);
         cursor: pointer;
 
         &:hover {
@@ -836,11 +788,11 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
         gap: var(--space-xs);
         padding: var(--space-xs) var(--space-s);
         background: var(--background);
-        border-top: 1px solid var(--hairline-strong);
+        border-top: 1px solid var(--border-color-hover);
     }
 
     .doctrine-pending {
-        border-color: color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
+        border-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
     }
 
     .doctrine-pending__title {
@@ -850,7 +802,7 @@ const icon = (ship_id:number) => `https://images.evetech.net/types/${ship_id}/ic
     .doctrine-note {
         margin: 0;
         padding-inline-start: var(--space-xs);
-        border-inline-start: 2px solid var(--hairline-strong);
+        border-inline-start: 2px solid var(--border-color-hover);
         color: var(--foreground);
         font-size: var(--step--1);
     }

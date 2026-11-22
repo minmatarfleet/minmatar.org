@@ -1,4 +1,5 @@
 ---
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
@@ -9,6 +10,7 @@ import { ISK_REPORT_MILLIONS, format_compact } from '@helpers/numbers'
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Button from '@components/blocks/Button.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Grid from '@components/compositions/Grid.astro'
@@ -16,11 +18,12 @@ import CharacterPicture from '@components/blocks/CharacterPicture.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
 import GuidePostCard from '@components/blocks/GuidePostCard.astro'
 import { getPublishedGuides } from '@/data/guides'
-import { get_alliance_logo, get_corporation_logo } from '@helpers/eve_image_server'
+import { get_alliance_logo, get_corporation_logo } from '@helpers/eve_image'
 import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { LEARNING_HUB_PATH } from '@/data/guides/urls'
 import { number_thousand_separator } from '@helpers/numbers'
+import DataTable from '@components/blocks/DataTable.astro'
 
 interface Props {
     issue: WarzoneIssue
@@ -286,11 +289,13 @@ const featured_guides = issue.get_involved.featured_guides
 
     </div>
 
-    <nav class="[ wz-jump ]" aria-label="Jump to section">
-        {SECTION_NAV.filter((section) => section.id !== 'focus' || focus).map((section) => (
-            <a class="[ wz-jump__link ]" href={`#${section.id}`}>{section.label}</a>
-        ))}
-    </nav>
+    <XFadeScroll below="45rem" class="[ wz-jump-scroll ]">
+        <nav class="[ wz-jump ]" aria-label="Jump to section">
+            {SECTION_NAV.filter((section) => section.id !== 'focus' || focus).map((section) => (
+                <a class="[ wz-jump__link ]" href={`#${section.id}`}>{section.label}</a>
+            ))}
+        </nav>
+    </XFadeScroll>
 
     <section id="scoreboard" class="[ wz-section ]">
         <header class="[ wz-section__head ]">
@@ -371,20 +376,22 @@ const featured_guides = issue.get_involved.featured_guides
                 <h3>Occupancy changes</h3>
             </div>
 
-            <div class="[ wz-table-wrap ]" tabindex="0" role="region" aria-label="Systems that changed hands">
-                <table class="[ wz-table wz-table--flips ]">
-                    <thead>
-                        <tr>
-                            <th scope="col">When</th>
-                            <th scope="col">System</th>
-                            <th scope="col">Previous owner</th>
-                            <th scope="col">New owner</th>
-                            <th scope="col" class="[ wz-table__num ]">Ships</th>
-                            {show_deltas && <th scope="col" class="[ wz-table__num ]">{vs_label}</th>}
-                            <th scope="col" class="[ wz-table__num ]">ISK</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <DataTable
+                variant="report"
+                cards={true}
+                class="[ wz-table--flips ]"
+                style="--data-table-card-columns: 3"
+                caption="Systems that changed hands"
+                columns={[
+                    { key: 'when', label: 'When' },
+                    { key: 'system', label: 'System' },
+                    { key: 'previous', label: 'Previous owner' },
+                    { key: 'new', label: 'New owner' },
+                    { key: 'ships', label: 'Ships', numeric: true },
+                    ...(show_deltas ? [{ key: 'vs', label: vs_label, numeric: true }] : []),
+                    { key: 'isk', label: 'ISK', numeric: true },
+                ]}
+            >
                         {occupancy_sorted.map((change) => {
                             const previous_owner = change.previous_owner ?? (change.taken_by === away.militia ? home.militia : away.militia)
                             const isk_trend = show_deltas ? isk_delta_trend(system_isk_delta(change.system, system_isk.get(change.system))) : null
@@ -431,9 +438,7 @@ const featured_guides = issue.get_involved.featured_guides
                                 </tr>
                             )
                         })}
-                    </tbody>
-                </table>
-            </div>
+            </DataTable>
         </Flexblock>
 
         <Flexblock gap="var(--space-m)">
@@ -441,17 +446,19 @@ const featured_guides = issue.get_involved.featured_guides
                 <h3>Where the ships died</h3>
                 <p>Ships destroyed per system this month.</p>
             </div>
-            <div class="[ wz-table-wrap ]" tabindex="0" role="region" aria-label="Ships destroyed by system">
-                <table class="[ wz-table wz-table--traffic ]">
-                    <thead>
-                        <tr>
-                            <th scope="col">System</th>
-                            <th scope="col" class="[ wz-table__bar-head ]">Ships destroyed</th>
-                            {show_deltas && <th scope="col" class="[ wz-table__num ]">{vs_label}</th>}
-                            <th scope="col" class="[ wz-table__num ]">ISK</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <DataTable
+                variant="report"
+                cards={true}
+                class="[ wz-table--traffic ]"
+                style="--data-table-card-columns: 2"
+                caption="Ships destroyed by system"
+                columns={[
+                    { key: 'system', label: 'System' },
+                    { key: 'ships', label: 'Ships destroyed', class: 'data-table__bar' },
+                    ...(show_deltas ? [{ key: 'vs', label: vs_label, numeric: true }] : []),
+                    { key: 'isk', label: 'ISK', numeric: true },
+                ]}
+            >
                         {issue.traffic.map((row) => {
                             const isk_trend = show_deltas ? isk_delta_trend(system_isk_delta(row.system, row.isk)) : null
                             return (
@@ -499,9 +506,7 @@ const featured_guides = issue.get_involved.featured_guides
                             </tr>
                             )
                         })}
-                    </tbody>
-                </table>
-            </div>
+            </DataTable>
         </Flexblock>
     </section>
 
@@ -731,7 +736,7 @@ const featured_guides = issue.get_involved.featured_guides
                                         ))}
                                     </ol>
                                 ) : (
-                                    <p class="[ wz-board__empty ]">Not in this month’s extract.</p>
+                                    <EmptyState title="Not in this month’s extract." />
                                 )}
                             </div>
                         ))}
@@ -787,7 +792,7 @@ const featured_guides = issue.get_involved.featured_guides
                                     ))}
                                 </ol>
                             ) : (
-                                <p class="[ wz-board__empty ]">Not in this month’s extract.</p>
+                                <EmptyState title="Not in this month’s extract." />
                             )}
                         </Flexblock>
                     </ComponentBlock>
@@ -802,19 +807,21 @@ const featured_guides = issue.get_involved.featured_guides
             <p class="[ wz-dek ]">The alliances and corporations that actually live in the warzone, ranked by killmails.</p>
         </header>
         {issue.groups.rows.length > 0 ? (
-            <div class="[ wz-table-wrap ]" tabindex="0" role="region" aria-label="Groups of the month">
-                <table class="[ wz-table wz-table--groups ]">
-                    <thead>
-                        <tr>
-                            <th scope="col">#</th>
-                            <th scope="col">Group</th>
-                            <th scope="col" class="[ wz-table__num ]">Killmails</th>
-                            <th scope="col" class="[ wz-table__num ]">ISK destroyed</th>
-                            <th scope="col" class="[ wz-table__num ]">Ships lost</th>
-                            <th scope="col" class="[ wz-table__num ]">In warzone</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <DataTable
+                variant="report"
+                cards={true}
+                class="[ wz-table--groups ]"
+                style="--data-table-card-columns: 3"
+                caption="Groups of the month"
+                columns={[
+                    { key: 'rank', label: '#' },
+                    { key: 'group', label: 'Group' },
+                    { key: 'killmails', label: 'Killmails', numeric: true },
+                    { key: 'isk', label: 'ISK destroyed', numeric: true },
+                    { key: 'ships_lost', label: 'Ships lost', numeric: true },
+                    { key: 'fw_share', label: 'In warzone', numeric: true },
+                ]}
+            >
                         {issue.groups.rows.map((group, index) => {
                             const prior = prior_groups.get(group.id)
                             const killmail_trend = show_deltas ? metric_trend(group.killmails_pct ?? null, 'percent') : null
@@ -898,11 +905,9 @@ const featured_guides = issue.get_involved.featured_guides
                             </tr>
                             )
                         })}
-                    </tbody>
-                </table>
-            </div>
+            </DataTable>
         ) : (
-            <p class="[ wz-board__empty ]">Not in this month’s extract.</p>
+            <EmptyState title="Not in this month’s extract." />
         )}
         <p class="[ wz-footnote ]">{issue.groups.scope}</p>
     </section>
@@ -1021,8 +1026,8 @@ const featured_guides = issue.get_involved.featured_guides
         --wz-minmatar: color-mix(in srgb, var(--fleet-red) 78%, white 22%);
         --wz-amarr: var(--fleet-yellow);
         --wz-other: color-mix(in srgb, var(--alliance-blue) 70%, white 30%);
-        --wz-track: var(--hairline);
-        --wz-rule: var(--hairline-medium);
+        --wz-track: var(--border-color);
+        --wz-rule: var(--border-color);
 
         display: flex;
         flex-direction: column;
@@ -1063,7 +1068,7 @@ const featured_guides = issue.get_involved.featured_guides
         a:not(.button) {
             color: var(--highlight);
             text-decoration: underline;
-            text-decoration-color: color-mix(in srgb, var(--highlight) 35%, transparent);
+            text-decoration-color: color-mix(in srgb, var(--highlight) var(--tint-medium), transparent);
             text-underline-offset: 0.15em;
 
             &:hover {
@@ -1175,6 +1180,8 @@ const featured_guides = issue.get_involved.featured_guides
         display: flex;
         flex-wrap: wrap;
         gap: var(--space-2xs);
+    }
+    .wz-jump-scroll {
         margin-bottom: var(--space-xl);
     }
     .wz-jump__link {
@@ -1198,10 +1205,11 @@ const featured_guides = issue.get_involved.featured_guides
     @media (max-width: 45rem) {
         .wz-jump {
             flex-wrap: nowrap;
-            overflow-x: auto;
+        }
+        .wz-jump-scroll {
             scrollbar-width: none;
         }
-        .wz-jump::-webkit-scrollbar {
+        .wz-jump-scroll::-webkit-scrollbar {
             display: none;
         }
     }
@@ -1369,7 +1377,7 @@ const featured_guides = issue.get_involved.featured_guides
     }
     .wz-group-pilots {
         margin-inline-start: var(--space-xs);
-        color: var(--text-muted);
+        color: var(--faded);
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
     }
@@ -1383,8 +1391,8 @@ const featured_guides = issue.get_involved.featured_guides
         letter-spacing: 0.06em;
         text-transform: uppercase;
         color: var(--green);
-        border: solid 1px color-mix(in srgb, var(--green) 45%, transparent);
-        background: color-mix(in srgb, var(--green) 14%, transparent);
+        border: solid 1px color-mix(in srgb, var(--green) var(--tint-strong), transparent);
+        background: color-mix(in srgb, var(--green) var(--tint-soft), transparent);
         vertical-align: middle;
         white-space: nowrap;
         align-self: flex-start;
@@ -1651,51 +1659,6 @@ const featured_guides = issue.get_involved.featured_guides
         }
     }
 
-    .wz-table-wrap {
-        overflow-x: auto;
-        min-width: 0;
-        width: 100%;
-    }
-
-    .wz-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: var(--step--1);
-
-        th,
-        td {
-            padding: var(--space-xs) var(--space-s);
-            text-align: left;
-            vertical-align: middle;
-            border-bottom: solid 1px var(--wz-rule);
-        }
-
-        th {
-            font-weight: 600;
-            color: var(--faded);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-size: var(--step--2);
-            white-space: nowrap;
-        }
-
-        tbody tr:hover td {
-            background: rgba(255, 255, 255, 0.025);
-        }
-
-        td:first-child {
-            white-space: nowrap;
-        }
-
-        @media screen and (max-width: 720px) {
-            th,
-            td {
-                padding: var(--space-xs) var(--space-2xs);
-            }
-
-        }
-    }
-
     .wz-table__rank {
         font-family: var(--heading-font);
         color: var(--faded);
@@ -1745,69 +1708,44 @@ const featured_guides = issue.get_involved.featured_guides
         height: 2rem;
     }
 
-    .wz-table--groups td .wz-table__num b,
-    .wz-table--groups td.wz-table__num b {
+    :global(.wz-table--groups) td .wz-table__num b,
+    :global(.wz-table--groups) td.wz-table__num b {
         color: var(--highlight);
     }
 
-    .wz-table--groups {
-        @media screen and (max-width: 720px) {
-            thead {
-                display: none;
-            }
+    @media (max-width: 48rem) {
+        :global(.wz-table--groups) tbody tr {
+            grid-template-columns: 1.75rem 1fr 1fr;
+            align-items: start;
+        }
 
-            tr {
-                display: grid;
-                grid-template-columns: 1.75rem 1fr 1fr;
-                gap: var(--space-2xs) var(--space-s);
-                padding-block: var(--space-s);
-                border-bottom: solid 1px var(--wz-rule);
-                align-items: start;
-            }
+        :global(.wz-table--groups) td {
+            white-space: normal !important;
+            text-align: left !important;
+        }
 
-            tbody tr:hover td {
-                background: none;
-            }
+        :global(.wz-table--groups) td.wz-table__rank {
+            grid-column: 1;
+            grid-row: 1;
+            align-self: center;
+        }
 
-            td {
-                padding: 0;
-                border: none;
-                white-space: normal !important;
-                text-align: left !important;
-            }
+        :global(.wz-table--groups) td.wz-table__group {
+            grid-column: 2 / -1;
+            grid-row: 1;
+        }
 
-            td.wz-table__rank {
-                grid-column: 1;
-                grid-row: 1;
-                align-self: center;
-            }
+        :global(.wz-table--groups) td[data-label="Killmails"],
+        :global(.wz-table--groups) td[data-label="Ships lost"] {
+            grid-column: 2;
+        }
 
-            td.wz-table__group {
-                grid-column: 2 / -1;
-                grid-row: 1;
-            }
-
-            td[data-label="Killmails"],
-            td[data-label="Ships lost"] {
-                grid-column: 2;
-            }
-
-            td[data-label="ISK destroyed"],
-            td[data-label="In warzone"] {
-                grid-column: 3;
-            }
-
-            td[data-label]::before {
-                content: attr(data-label);
-                display: block;
-                font-size: var(--step--2);
-                color: var(--faded);
-                text-transform: uppercase;
-                letter-spacing: 0.06em;
-                margin-bottom: 0.15em;
-            }
+        :global(.wz-table--groups) td[data-label="ISK destroyed"],
+        :global(.wz-table--groups) td[data-label="In warzone"] {
+            grid-column: 3;
         }
     }
+
 
     .wz-table__owner {
         display: flex;
@@ -1839,14 +1777,6 @@ const featured_guides = issue.get_involved.featured_guides
         text-align: right !important;
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
-    }
-
-    .wz-table__bar-head {
-        min-width: 14rem;
-
-        @media screen and (max-width: 720px) {
-            min-width: 9rem;
-        }
     }
 
     .wz-table__bar {
@@ -1887,135 +1817,73 @@ const featured_guides = issue.get_involved.featured_guides
 
 
 
-    .wz-table--flips {
-        td .wz-table__num b,
-        td.wz-table__num b {
-            color: var(--highlight);
+    :global(.wz-table--flips) td .wz-table__num b,
+    :global(.wz-table--flips) td.wz-table__num b {
+        color: var(--highlight);
+    }
+
+    @media (max-width: 48rem) {
+        :global(.wz-table--flips) td {
+            display: block;
+            white-space: normal !important;
+            text-align: left !important;
         }
 
-        @media screen and (max-width: 720px) {
-            thead {
-                display: none;
-            }
+        :global(.wz-table--flips) td.wz-table__when,
+        :global(.wz-table--flips) td.wz-table__flip-system {
+            grid-column: 1 / -1;
+        }
 
-            tr {
-                display: grid;
-                grid-template-columns: repeat(3, minmax(0, 1fr));
-                gap: var(--space-2xs) var(--space-s);
-                padding-block: var(--space-s);
-                border-bottom: solid 1px var(--wz-rule);
-            }
+        :global(.wz-table--flips) td.wz-table__flip-system {
+            min-width: 0;
+            max-width: none;
+            margin-bottom: var(--space-2xs);
+        }
 
-            tbody tr:hover td {
-                background: none;
-            }
-
-            td {
-                display: block;
-                padding: 0;
-                border: none;
-                background: transparent;
-                white-space: normal !important;
-                text-align: left !important;
-            }
-
-            td.wz-table__when,
-            td.wz-table__flip-system {
-                grid-column: 1 / -1;
-            }
-
-            td.wz-table__flip-system {
-                min-width: 0;
-                max-width: none;
-                margin-bottom: var(--space-2xs);
-            }
-
-            td[data-label]::before {
-                content: attr(data-label);
-                display: block;
-                font-size: var(--step--2);
-                color: var(--faded);
-                text-transform: uppercase;
-                letter-spacing: 0.06em;
-                margin-bottom: 0.15em;
-            }
-
-            td[data-label="Ships"] {
-                grid-column: 1;
-            }
+        :global(.wz-table--flips) td[data-label="Ships"] {
+            grid-column: 1;
         }
     }
 
-    /* Phones: stack each system as a card — name, bar, then the numbers with their labels. */
+
+    /* Phones: the cards layout comes from DataTable; the bar cell lays out its own label, bar and value. */
     @media (max-width: 48rem) {
-        .wz-table--traffic {
-            thead {
-                display: none;
+        :global(.wz-table--traffic) td {
+            display: block;
+            white-space: normal !important;
+            text-align: left !important;
+            min-width: 0;
+        }
+
+        :global(.wz-table--traffic) td:nth-child(1),
+        :global(.wz-table--traffic) td:nth-child(2) {
+            grid-column: 1 / -1;
+        }
+
+        :global(.wz-table--traffic) td.wz-table__bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0 var(--space-xs);
+            width: auto;
+
+            &::before {
+                flex-basis: 100%;
             }
 
-            tr {
-                display: grid;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                gap: var(--space-2xs) var(--space-s);
-                padding-block: var(--space-s);
-                border-bottom: solid 1px var(--wz-rule);
+            > .wz-bar {
+                flex: 1;
             }
 
-            tbody tr:hover td {
-                background: none;
-            }
-
-            td {
-                display: block;
-                padding: 0;
-                border: none;
-                background: transparent;
-                white-space: normal !important;
-                text-align: left !important;
-                min-width: 0;
-            }
-
-            td:nth-child(1),
-            td:nth-child(2) {
-                grid-column: 1 / -1;
-            }
-
-            td.wz-table__bar {
-                display: flex;
-                flex-wrap: wrap;
-                align-items: center;
-                gap: 0 var(--space-xs);
-                width: auto;
-                min-width: 0;
-
-                &::before {
-                    flex-basis: 100%;
-                }
-
-                > .wz-bar {
-                    flex: 1;
-                }
-
-                > b {
-                    margin-top: 0;
-                }
-            }
-
-            td[data-label]::before {
-                content: attr(data-label);
-                display: block;
-                font-size: var(--step--2);
-                color: var(--faded);
-                text-transform: uppercase;
-                letter-spacing: 0.06em;
-                margin-bottom: 0.15em;
+            > b {
+                margin-top: 0;
             }
         }
     }
 
     /* Phones: the stacked group cards read cleaner without the global table-cell tint. */
     @media (max-width: 48rem) {
-        .wz-table--groups td {
+        :global(.wz-table--groups) td {
             background: transparent;
         }
     }
@@ -2484,11 +2352,6 @@ const featured_guides = issue.get_involved.featured_guides
     .wz-board__kills {
         font-size: var(--step--1);
         color: var(--highlight);
-    }
-
-    .wz-board__empty {
-        font-size: var(--step--1);
-        color: var(--faded);
     }
 
     /* Get involved -------------------------------------------------------- */

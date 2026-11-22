@@ -1,0 +1,1757 @@
+[
+  {
+    "file": "src/components/blocks/FleetKills.astro",
+    "selector": ".fleet-kills__chart",
+    "path": "converge",
+    "pattern": "scroll-fade",
+    "note": "The scroller is a bordered panel; XFadeScroll's edge mask now fades the border and background at the scrolling edges too."
+  },
+  {
+    "file": "src/pages/partials/character_finder_list_component.astro",
+    "selector": "(partial root)",
+    "path": "converge",
+    "pattern": "error-block",
+    "note": "A failed alliance-members fetch used to show 'no characters'; it now shows ErrorRefetch (message plus self-retry)."
+  },
+  {
+    "file": "src/components/blocks/CampaignObjectivesTable.astro",
+    "selector": ".empty-state",
+    "path": "converge",
+    "pattern": "empty-state",
+    "note": "Was --foreground at --step-0; now the library's faded --step--1 line."
+  },
+  {
+    "file": "src/components/blocks/CampaignLeaderboard.astro",
+    "selector": ".empty-state",
+    "path": "converge",
+    "pattern": "empty-state",
+    "note": "Was a --foreground <small>; now the library's faded --step--1 <p>. x-show/x-cloak pass through."
+  },
+  {
+    "file": "src/components/blocks/ship-guide/ShipGuide.astro",
+    "selector": ".ship-guide__section > .component-block--guide",
+    "path": "variant",
+    "pattern": "guide-panel",
+    "note": "Was .nfg/.ndm/.fwc-panel (flat bordered translucent panel); now ComponentBlock variant=\"guide\" inside the <section>. One ShipGuide block renders all three guides, so the panel class prefixes are now ship-guide__. The h3 summary-card titles keep their own styling through a doubled selector."
+  },
+  {
+    "file": "src/components/blocks/LoyaltyQuote.astro",
+    "selector": ".loyalty-quote",
+    "path": "converge",
+    "pattern": "component-block",
+    "note": "Flat component-background panel became the glass ComponentBlock (padding kept at --space-m via props). ComponentBlock's .component class sets p/li to --step--1, so .loyalty-quote__paused is now --step--1."
+  },
+  {
+    "file": "src/components/blocks/FleetFormUp.astro",
+    "selector": ".fleet-formup",
+    "path": "converge",
+    "pattern": "component-block",
+    "note": "Flat component-background panel became the glass ComponentBlock with a Flexblock inside (padding kept at --space-m). The .component class sets p/li/h4 to --step--1 and h2 to --step-1, so the swapped-in pilot list rows are now --step--1."
+  },
+  {
+    "file": "src/components/blocks/ButtonViewHealthChartData.astro",
+    "selector": ".data-table-wrap",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Raw table inside RowList width 635px becomes DataTable: the dialog table now fills the dialog width, cells align to the top, and the header sits in a thead; fonts, borders and padding already matched the global table style."
+  },
+  {
+    "file": "src/pages/surveys/index.astro",
+    "selector": ".button[data-size=\"sm\"]",
+    "path": "converge",
+    "pattern": "button-primary",
+    "note": "Hand-styled .mbtn--go submit and anchor become Button color=green size=sm: 4px radius, 0.85em type and the inline-flex row give way to the library's padding, scale-on-hover and focus ring. The create form is a native POST, so the button keeps off_disable."
+  },
+  {
+    "file": "src/components/blocks/FleetKillFeed.astro",
+    "selector": ".kill-feed__engagement .select-group",
+    "path": "converge",
+    "pattern": "select-library",
+    "note": "The engagement select was a transparent 2.75rem box styled to match the filter buttons (scoped .kill-feed__engagement select). It becomes Select size=sm: the library field chrome and caret, wrapped in .select-group. The scoped select rules are removed because they no longer reach the select inside the component."
+  },
+  {
+    "file": "src/pages/partials/mentors_home_component.astro",
+    "selector": ".mentors-apply textarea",
+    "path": "converge",
+    "pattern": "textarea-library",
+    "note": "Raw textarea (browser default chrome) becomes Textarea, so the application note takes the library field look; it was already width 100%."
+  },
+  {
+    "file": "src/components/blocks/market_settings/FreightPricingFields.astro",
+    "selector": ".market-mode .filter-chip--input",
+    "path": "converge",
+    "pattern": "radio-chip",
+    "note": "Hand-rolled global .manage-chip radio chips (sentence case, --step--1, 2.75rem-ish row height) become FilterChip type=radio: uppercase tracked --step--2 chips with the yellow fill when checked. Inputs keep name, value, checked and x-model; the manage-chips fieldset flex row becomes a wrapping ChipGroup."
+  },
+  {
+    "file": "src/components/blocks/CampaignNewForm.astro",
+    "selector": ".campaign-new__kinds .filter-chip--input",
+    "path": "converge",
+    "pattern": "radio-chip",
+    "note": "Hand-rolled global .manage-chip radio chips (sentence case, --step--1, 2.75rem-ish row height) become FilterChip type=radio: uppercase tracked --step--2 chips with the yellow fill when checked. Inputs keep name, value, checked and x-model; the manage-chips fieldset flex row becomes a wrapping ChipGroup."
+  },
+  {
+    "file": "src/components/blocks/FleetShipsSetup.astro",
+    "selector": ".fleet-ships-setup__doctrine",
+    "path": "/fleets/ (ships setup)",
+    "pattern": "option-card",
+    "note": "Doctrine radios are OptionCards: no visible radio dot, selected card has a 2px yellow border and tinted fill (was a 1px border with a native radio).",
+    "batch": "residue"
+  },
+  {
+    "file": "src/pages/partials/tasks_assignees_component.astro",
+    "selector": ".task-person-option",
+    "path": "/tasks/new (assignee search)",
+    "pattern": "option-card",
+    "note": "Assignee radios are OptionCards: no native radio dot, 2px border, tinted selected fill.",
+    "batch": "residue"
+  },
+  {
+    "file": "src/components/blocks/FleetInviteDialog.astro",
+    "selector": ".invite-dialog__tzs, .invite-dialog__tz-options",
+    "path": "/fleets/<id> invite dialog",
+    "pattern": "filter-chip checkbox, radio-check-input",
+    "note": "Fleet timezone choices are FilterChip checkboxes (uppercase chip, no native box); the Change dropdown options are RadioCheckInput rows with the library box instead of a native checkbox.",
+    "batch": "residue"
+  },
+  {
+    "file": "src/pages/partials/universe_locations_component.astro",
+    "selector": ".structures-rigs__sections label",
+    "path": "/structures/",
+    "pattern": "radio-check-input",
+    "note": "Rig group filters use the library checkbox box instead of the native yellow-accent checkbox.",
+    "batch": "residue"
+  },
+  {
+    "file": "src/components/blocks/FleetOverview.astro, src/components/blocks/PilotsList.astro",
+    "selector": ".fleet-overview__card--attention, .pilot-list__attention",
+    "path": "/fleets/<id>",
+    "pattern": "warning colour",
+    "note": "Attention accent is --fleet-yellow (was security-status orange #df6a0d).",
+    "batch": "residue"
+  },
+  {
+    "file": "src/components/blocks/newsletter/NewsletterIssue.astro",
+    "selector": ".nl-kill",
+    "path": "/newsletter/",
+    "pattern": "kills blue",
+    "note": "Kill figures use --alliance-blue-text (grade 400, lighter) instead of the security-status blue #2e74de.",
+    "batch": "residue"
+  },
+  {
+    "file": "src/components/blocks/OurzadInfo.astro",
+    "selector": "h2 span",
+    "path": "neocom station info",
+    "pattern": "security status",
+    "note": "The 0.2 comes from SecurityStatus (same colour token; adds a screen-reader label).",
+    "batch": "residue"
+  },
+  {
+    "file": "src/components/blocks/campaigns/*",
+    "selector": ".campaign scrims",
+    "path": "/campaigns/*",
+    "pattern": "tint ladder",
+    "note": "Scrim base is --black (#0d0d0d) instead of hsl(0 0% 4%); transparent stops snap 58%->60% and 52%->45%.",
+    "batch": "residue"
+  },
+  {
+    "file": "src/components/blocks/capital-guide/CapitalGuideTierList.astro",
+    "selector": ".cap-tiers__badge--lc",
+    "path": "/ships/capital-guide/",
+    "pattern": "tint ladder",
+    "note": "Badge fill 55% -> 60% (--tint-bold) of --faded.",
+    "batch": "residue"
+  },
+  {
+    "file": "src/components/blocks/ChangeDiff.astro, src/pages/dscan/index.astro, src/pages/industry/orders/planner.astro",
+    "selector": "monospace blocks",
+    "path": "various",
+    "pattern": "--mono-font",
+    "note": "Fixed-width text uses one stack (ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace); ChangeDiff was bare monospace.",
+    "batch": "residue"
+  },
+  {
+    "file": "src/components/blocks/FleetFeed.astro",
+    "selector": ".fleet-feed .swiper-pagination",
+    "path": "/",
+    "pattern": "feed",
+    "note": "Bullets container class order is 'swiper-pagination feed-swiper-pagination' (was reversed); Swiper now starts after the 100 ms delay the other carousels use (was immediate).",
+    "batch": "w10a-carousel"
+  },
+  {
+    "file": "src/components/blocks/SRPTile.astro",
+    "selector": ".swiper",
+    "path": "/ships/srp/",
+    "pattern": "badge",
+    "note": "Swiper starts after 100 ms (was immediate); arrows/labels unchanged (none). Screenshots at 1440 and 390 identical bar clocks.",
+    "batch": "w10a-carousel"
+  },
+  {
+    "file": "src/components/blocks/campaigns/CampaignContentChart.astro",
+    "selector": "canvas",
+    "path": "",
+    "pattern": "chart",
+    "note": "Axis ticks, legend text and gridlines now use --faded/--border-color (were white and 5% white); tooltip panel is --component-background; points ringed with --component-background instead of off-palette #1a1a2e; highlight band is --component-background at 50% (was #1a1a2e 50%); fleet bars are the default 60% alliance-blue with 1px border (were 62%/28% alpha).",
+    "batch": "w10a"
+  },
+  {
+    "file": "src/components/blocks/campaigns/etherium-reach/EtheriumReachCampaign.astro",
+    "selector": "canvas",
+    "path": "",
+    "pattern": "chart",
+    "note": "Income chart: Exploration line is --highlight at full opacity (was white 50%); tick/legend/grid colours as above; line fill is a gradient per tone as before.",
+    "batch": "w10a"
+  },
+  {
+    "file": "src/components/blocks/campaigns/auga/AugaSiegeCampaign.astro",
+    "selector": "canvas",
+    "path": "",
+    "pattern": "chart",
+    "note": "Ships bars default 60% fill, 1px border in alliance-blue (were 72%/35% alpha); tooltip reads 'Ships destroyed: N ships' (was 'N ships'); y-axis ticks and legend text now --faded.",
+    "batch": "w10a"
+  },
+  {
+    "file": "src/components/blocks/industry/guide-order-summary/OpenOrdersProfitSummaryChart.astro",
+    "selector": "canvas",
+    "path": "",
+    "pattern": "chart",
+    "note": "Profit bars default 60% fill (was 75%); tooltip reads 'Order profit (M ISK): NM ISK' (was 'NM ISK'); height is token-based (about 28-35rem, was 440-520px).",
+    "batch": "w10a"
+  },
+  {
+    "file": "src/components/blocks/MarketHealthChart.astro",
+    "selector": "canvas",
+    "path": "",
+    "pattern": "market-health",
+    "note": "Entry slide-up animation dropped (lines now draw with the default animation); legend uses the 'line' point style (dash pattern no longer shown in legend); gradient is static at 35% top opacity (animated alpha removed); chart is a canvas labelled by the Chart block, not a <section aria-label>.",
+    "batch": "w10a"
+  },
+  {
+    "file": "src/components/blocks/CombatLogChart.astro",
+    "selector": "canvas",
+    "path": "",
+    "pattern": "combat-log",
+    "note": "Series colours come from fleet-red/alliance-blue/green tokens (same hues); dropline alpha 25% unchanged; tick/legend/axis-title text now --faded; set-axis button runs via Alpine x-on:click instead of querySelector listener.",
+    "batch": "w10a"
+  },
+  {
+    "file": "src/components/blocks/ship-guide/ShipGuide.astro",
+    "selector": ".ship-guide__resources-item",
+    "path": "converge",
+    "pattern": "ship-guide",
+    "note": "Navy Destroyer Metagame resource rows lost their own 1.5 line-height and take the frigate/cruiser guides' 1.55 (about 0.75px per row, 4px over the list at 1440, 6px at 390). Everything else on the three guides is pixel-identical.",
+    "batch": "w10b"
+  },
+  {
+    "file": "src/components/blocks/manage/ManageStatCard.astro",
+    "selector": ".manage-stat",
+    "path": "converge",
+    "pattern": "stat-card",
+    "note": "ManageStatCard (flat --component-background card, faded label, value scaled to the card with cqi, no border) became StatCard: bordered --surface-sunken card, yellow label, clamp(2rem,4.5vw,3rem) value, hint under it. warn tone is tone=fleet-yellow; link cards use the new StatCard href prop (hover tint). Callers: manage hub queues, task digest, task project, structure page, manage kit.",
+    "batch": "w10b"
+  },
+  {
+    "file": "src/components/blocks/StatCard.astro (SRPStat, CampaignStatBar cells, CampaignStat deleted)",
+    "selector": "-",
+    "path": "variant",
+    "pattern": "stat-card",
+    "note": "StatCard variants reproduce the old looks exactly: inline (SRPStat arrow + ISK figure, SRPTile x2), glass (CampaignStat icon-led translucent card, tones info/success/danger/minmatar/amarr/angel, Auga .card/.wrapper hooks kept; ~35 uses on 7 campaign/health/order pages), cell (CampaignStatBar value-over-label cell; the bar container stays a wrapper, 3 callers).",
+    "batch": "w10b"
+  },
+  {
+    "file": "src/components/blocks/BuybackPurchaseOrderBook.astro",
+    "selector": ".empty-state",
+    "path": "converge",
+    "pattern": "empty-state",
+    "note": "Was --highlight at --step--1 with margin 0; now the library's faded --step--1 line.",
+    "batch": "w7-empty-1"
+  },
+  {
+    "file": "src/components/blocks/CampaignEnlistBar.astro",
+    "selector": ".empty-state",
+    "path": "converge",
+    "pattern": "empty-state",
+    "note": "Was a --faded <small> at the browser small size; now the library's faded --step--1 <p>.",
+    "batch": "w7-empty-1"
+  },
+  {
+    "file": "src/components/blocks/LoyaltyOrderBook.astro",
+    "selector": ".empty-state",
+    "path": "converge",
+    "pattern": "empty-state",
+    "note": "Was --highlight at --step--1 with margin 0; now the library's faded --step--1 line.",
+    "batch": "w7-empty-1"
+  },
+  {
+    "file": "src/components/blocks/LoyaltyOrderHistory.astro",
+    "selector": ".empty-state",
+    "path": "converge",
+    "pattern": "empty-state",
+    "note": "Was --highlight at --step--1 with margin 0; now the library's faded --step--1 line.",
+    "batch": "w7-empty-1"
+  },
+  {
+    "file": "src/components/blocks/MarketHealthChart.astro",
+    "selector": ".empty-state",
+    "path": "converge",
+    "pattern": "empty-state",
+    "note": "Was a 70% --highlight/--faded color-mix at --step--1; now the library's faded --step--1 line.",
+    "batch": "w7-empty-1"
+  },
+  {
+    "file": "src/pages/partials/loyalty_offers_component.astro",
+    "selector": ".empty-state",
+    "path": "converge",
+    "pattern": "empty-state",
+    "note": "Was --foreground at --step-0; now the library's faded --step--1 line.",
+    "batch": "w7-empty-1"
+  },
+  {
+    "file": "src/components/blocks/MarketContractsTable.astro",
+    "selector": ".empty-state",
+    "path": "converge",
+    "pattern": "empty-state",
+    "note": "Was --faded with margin 0 at the inherited size; now the library's --step--1 line. x-show and style pass through.",
+    "batch": "w7-empty-1"
+  },
+  {
+    "file": "src/components/blocks/SellOrderGapsList.astro",
+    "selector": ".empty-state",
+    "path": "converge",
+    "pattern": "empty-state",
+    "note": "Was --faded at --step--1 with padding-block --space-m; now the library's line with no block padding. x-show and style pass through.",
+    "batch": "w7-empty-1"
+  },
+  {
+    "file": "src/components/blocks/BuybackStockpileSales.astro",
+    "selector": ".buyback-stockpile-sales__empty",
+    "path": "converge",
+    "pattern": "empty-state",
+    "note": "Empty ledger was --highlight coloured; now the muted EmptyState. The fetch-failed line keeps its highlight look under __error.",
+    "batch": "w7-misc-sonnet-1"
+  },
+  {
+    "file": "src/components/blocks/LoyaltyDeskLanes.astro",
+    "selector": ".loyalty-lanes__empty",
+    "path": "converge",
+    "pattern": "empty-state",
+    "note": "Empty lane was a dashed-border box; now the plain muted EmptyState line, no border or padding. __note keeps its rule.",
+    "batch": "w7-misc-sonnet-1"
+  },
+  {
+    "file": "src/components/blocks/LoyaltyOfferItem.astro",
+    "selector": ".loyalty-offer-item__detail-empty",
+    "path": "converge",
+    "pattern": "empty-state",
+    "note": "No-price line was --step--2; now --step--1.",
+    "batch": "w7-misc-sonnet-1"
+  },
+  {
+    "file": "src/components/blocks/OrderLpStockpiles.astro",
+    "selector": ".order-lp-stockpiles__empty",
+    "path": "converge",
+    "pattern": "empty-state",
+    "note": "Whole-panel empty was centred; now prominent EmptyState, left-aligned, max-width 26rem.",
+    "batch": "w7-misc-sonnet-1"
+  },
+  {
+    "file": "src/pages/market/fitting_orders/new.astro",
+    "selector": ".fitting-buy-cart-empty",
+    "path": "converge",
+    "pattern": "empty-state",
+    "note": "Empty cart is now prominent EmptyState (highlight title); the flex:1 fill is dropped (submit still pins with margin-block-start:auto).",
+    "batch": "w7-misc-sonnet-1"
+  },
+  {
+    "file": "src/components/blocks/LoyaltyDeskActivity.astro",
+    "selector": ".loyalty-activity",
+    "path": "converge",
+    "pattern": "component-block",
+    "note": "Was a flat --component-background panel with a 1px border-color edge and padding m; now the ComponentBlock glass panel (card border component light-transparency). No font-size shifts: its only p (.loyalty-activity__note) already set --step--1, and the h3 is not touched by the .component rules. Gap between children is the Flexblock gap m, unchanged.",
+    "batch": "w7-panel-1"
+  },
+  {
+    "file": "src/components/blocks/FleetSettings.astro",
+    "selector": ".fleet-settings__card",
+    "path": "converge",
+    "pattern": "component-block",
+    "note": "Both cards. Shrinks the two declassify <p> to --step--1. Flat --component-background becomes the glass ComponentBlock panel; .component shrinks p, li and h4 without their own font-size to --step--1 and sets h2 to --step-1.",
+    "batch": "w7-panel-sonnet-1"
+  },
+  {
+    "file": "src/components/blocks/TribeGroupDiscordSettings.astro",
+    "selector": ".tribe-settings-section",
+    "path": "converge",
+    "pattern": "component-block",
+    "note": "Shared is:global panel class moved to ComponentBlock in Discord, Publishing and Chief settings together; the mobile padding override (space-s) is gone. Shrinks .tribe-settings-section__value and __status <p> (single-class rules) to --step--1. Flat --component-background becomes the glass ComponentBlock panel; .component shrinks p, li and h4 without their own font-size to --step--1 and sets h2 to --step-1.",
+    "batch": "w7-panel-sonnet-1"
+  },
+  {
+    "file": "src/components/blocks/TribeGroupPublishingSettings.astro",
+    "selector": ".tribe-settings-section",
+    "path": "converge",
+    "pattern": "component-block",
+    "note": "Same shared panel move as TribeGroupDiscordSettings. Flat --component-background becomes the glass ComponentBlock panel; .component shrinks p, li and h4 without their own font-size to --step--1 and sets h2 to --step-1.",
+    "batch": "w7-panel-sonnet-1"
+  },
+  {
+    "file": "src/components/blocks/TribeGroupChiefSettings.astro",
+    "selector": ".tribe-settings-section",
+    "path": "converge",
+    "pattern": "component-block",
+    "note": "Same shared panel move as TribeGroupDiscordSettings. Flat --component-background becomes the glass ComponentBlock panel; .component shrinks p, li and h4 without their own font-size to --step--1 and sets h2 to --step-1.",
+    "batch": "w7-panel-sonnet-1"
+  },
+  {
+    "file": "src/components/blocks/PostPublishAs.astro",
+    "selector": ".post-publish-as",
+    "path": "converge",
+    "pattern": "component-block",
+    "note": "Section keeps width:100%; the panel is a ComponentBlock inside it (padding xs/s kept). The legend h2s keep their own size; <small> unaffected. Flat --component-background becomes the glass ComponentBlock panel; .component shrinks p, li and h4 without their own font-size to --step--1 and sets h2 to --step-1.",
+    "batch": "w7-panel-sonnet-1"
+  },
+  {
+    "file": "src/pages/partials/blueprints_component.astro",
+    "selector": "#blueprint-table > .error",
+    "path": "converge",
+    "pattern": "error-block",
+    "note": "Failure was a bold-less warning paragraph with the message; now ErrorRefetch with retry backoff targeting #blueprint-table.",
+    "batch": "w7-partials-sonnet-1"
+  },
+  {
+    "file": "src/pages/partials/fleet_refit_modal_component.astro",
+    "selector": "modal body",
+    "path": "converge",
+    "pattern": "error-block",
+    "note": "Failure was a bare <p> with the message; now ErrorRefetch retrying the modal URL. The not-in-composition case keeps its plain <p>.",
+    "batch": "w7-partials-sonnet-1"
+  },
+  {
+    "file": "src/pages/partials/fleet_add_ships_modal_component.astro",
+    "selector": "modal body",
+    "path": "converge",
+    "pattern": "error-block",
+    "note": "Failure was a bare <p> with the message; now ErrorRefetch retrying the modal URL.",
+    "batch": "w7-partials-sonnet-1"
+  },
+  {
+    "file": "src/pages/partials/fleet_add_ships_modal_component.astro",
+    "selector": ".add-ships__empty",
+    "path": "converge",
+    "pattern": "empty-state",
+    "note": "Search hint was centred, padded, opacity .7 with margin:auto; now the plain muted EmptyState line, left-aligned.",
+    "batch": "w7-partials-sonnet-1"
+  },
+  {
+    "file": "src/pages/partials/fleet_pick_ships_modal_component.astro",
+    "selector": "modal body",
+    "path": "converge",
+    "pattern": "error-block",
+    "note": "Failure was a bare <p> with the message; now ErrorRefetch retrying the modal URL (fleet_id, can_manage).",
+    "batch": "w7-partials-sonnet-1"
+  },
+  {
+    "file": "src/pages/partials/corporation_forum_post_component.astro",
+    "selector": "get_corporation_forum_post failure",
+    "path": "converge",
+    "pattern": "error-block",
+    "note": "A failed read was an unhandled 500 (loader stayed); now ErrorRefetch with retry. Null result is still a 403.",
+    "batch": "w7-partials-sonnet-1"
+  },
+  {
+    "file": "src/pages/partials/corporation_members_table_component.astro",
+    "selector": "get_corporation_members failure",
+    "path": "converge",
+    "pattern": "error-block",
+    "note": "A failed first load was a 500 (loader stayed); now ErrorRefetch inside #corporation-members-body. Filter/page requests (HX-Target = body) still return 500 so the table stays.",
+    "batch": "w7-partials-sonnet-1"
+  },
+  {
+    "file": "src/pages/partials/entity_search_component.astro",
+    "selector": ".entity-empty",
+    "path": "converge",
+    "pattern": "empty-state",
+    "note": "No-matches line was --highlight coloured; now the muted EmptyState line with the old padding kept on .entity-results .empty-state.",
+    "batch": "w7-partials-sonnet-1"
+  },
+  {
+    "file": "src/pages/partials/reddit_markdown_preview_component.astro",
+    "selector": ".reddit-preview__empty",
+    "path": "converge",
+    "pattern": "empty-state",
+    "note": "Two empty lines (no title, no body) become EmptyState: same faded colour, now --step--1 instead of the inherited size. The preview note keeps its look under .reddit-preview__note.",
+    "batch": "w7-partials-sonnet-1"
+  },
+  {
+    "file": "src/components/blocks/FleetFightsChart.astro",
+    "selector": ".fights-chart__scroll",
+    "path": "converge",
+    "pattern": "scroll-fade",
+    "note": "The scroller is a bordered, filled panel; XFadeScroll's edge mask now fades the border and background at the scrolling edges too.",
+    "batch": "w7-scroll-1"
+  },
+  {
+    "file": "src/pages/industry/loyalty/desk.astro",
+    "selector": ".loyalty-desk__table-wrap",
+    "path": "converge",
+    "pattern": "scroll-fade",
+    "note": "The scroller has its own border and component background; XFadeScroll's edge mask now fades both at the scrolling edges too.",
+    "batch": "w7-scroll-1"
+  },
+  {
+    "file": "src/components/blocks/ship-guide/GuideMatchupChart.astro",
+    "selector": ".guide-chart__scroll",
+    "path": "converge",
+    "pattern": "scroll-fade",
+    "note": "Scroller is a bordered, filled panel; it scrolled only under 40rem, now XFadeScroll always sets overflow-x: auto (no overflow on desktop) and its edge mask fades the border and background at scrolling edges.",
+    "batch": "w7-skips"
+  },
+  {
+    "file": "src/components/blocks/amamake-market/AmamakeMarketReportIssue.astro",
+    "selector": ".mk-jump",
+    "path": "converge",
+    "pattern": "scroll-fade",
+    "note": "Mobile jump row now scrolls in XFadeScroll below=45rem (edge fades appear on phones); scrollbar still hidden via .mk-jump-scroll.",
+    "batch": "w7-xfade-sonnet-b"
+  },
+  {
+    "file": "src/components/blocks/warzone/WarzoneReportIssue.astro",
+    "selector": ".wz-jump",
+    "path": "converge",
+    "pattern": "scroll-fade",
+    "note": "Mobile jump row now scrolls in XFadeScroll below=45rem (edge fades); margin-bottom moved to the wrapper; scrollbar still hidden.",
+    "batch": "w7-xfade-sonnet-b"
+  },
+  {
+    "file": "src/components/blocks/FleetSchedule.astro",
+    "selector": ".fleet-type-chips",
+    "path": "converge",
+    "pattern": "scroll-fade",
+    "note": "Three chip rows wrapped in XFadeScroll below=48rem: edge fades on phones; padding-bottom kept on the chips.",
+    "batch": "w7-xfade-sonnet-b"
+  },
+  {
+    "file": "src/components/blocks/newsletter/NewsletterIssue.astro",
+    "selector": ".nl-shot__frame",
+    "path": "converge",
+    "pattern": "scroll-fade",
+    "note": "Wide figures' frames scroll in XFadeScroll below=40rem (fade at the edges); non-wide frames stay plain divs. The split layout keeps its plain frame (its figure never carries nl-shot--wide).",
+    "batch": "w7-xfade-sonnet-b"
+  },
+  {
+    "file": "src/components/blocks/capital-guide/capital-guide.scss",
+    "selector": ".cap-guide .cap-table-wrap",
+    "path": "converge",
+    "pattern": "scroll-fade",
+    "note": "Three table wrappers (MetaBlocks, ClassGuide x2) are XFadeScroll; the wrapper's padding-bottom now fades with the mask.",
+    "batch": "w7-xfade-sonnet-b"
+  },
+  {
+    "file": "src/components/blocks/LoyaltyOrderList.astro",
+    "selector": ".loyalty-order-list",
+    "path": "converge",
+    "pattern": "scroll-fade",
+    "note": "Root is XFadeScroll below=48rem with overflow_y_visible: the :has dropdown override and the mobile overflow reset moved into the component.",
+    "batch": "w7-xfade-sonnet-b"
+  },
+  {
+    "file": "src/components/blocks/FittingBuyOrderShopping.astro",
+    "selector": ".fitting-buy-alloc-footer .fitting-buy-alloc-submit",
+    "path": "converge",
+    "pattern": "button-primary",
+    "note": "Allocate submit was a hand-rolled copy of the Button look (fleet-red fill, button-font, 600, same focus and hover scale). Now Button size=sm with off_disable (x-bind:disabled keeps control of the disabled state) and the .fitting-buy-alloc-submit rule is deleted. Small differences: padding comes from the sm size, the disabled state dims with Button's saturate filter instead of opacity 0.45, and the label is centred.",
+    "batch": "w8-buttons-1"
+  },
+  {
+    "file": "src/components/blocks/tasks/TaskNewDialog.astro",
+    "selector": "fieldset.manage-fieldset .filter-chip",
+    "path": "converge",
+    "pattern": "radio-chip",
+    "note": "The chips become uppercase tracked --step--2 filter chips with a --fleet-yellow checked fill (were --step--1 manage chips with a hairline outline); the group wraps with --space-3xs gaps and the legend sits above it as before.",
+    "batch": "w8-chips-1"
+  },
+  {
+    "file": "src/components/blocks/structures/StructureSettingsForm.astro",
+    "selector": ".chip-group .filter-chip",
+    "path": "converge",
+    "pattern": "radio-chip",
+    "note": "The chips become uppercase tracked --step--2 filter chips with a --fleet-yellow checked fill (were --step--1 manage chips with a hairline outline); the group wraps with --space-3xs gaps and the legend sits above it as before.",
+    "batch": "w8-chips-1"
+  },
+  {
+    "file": "src/components/blocks/structures/StructureAddSteps.astro",
+    "selector": "fieldset.manage-fieldset .filter-chip",
+    "path": "converge",
+    "pattern": "radio-chip",
+    "note": "The chips become uppercase tracked --step--2 filter chips with a --fleet-yellow checked fill (were --step--1 manage chips with a hairline outline); the group wraps with --space-3xs gaps and the legend sits above it as before.",
+    "batch": "w8-chips-1"
+  },
+  {
+    "file": "src/components/blocks/CampaignNewForm.astro",
+    "selector": "li.filter-chip--removable",
+    "path": "converge",
+    "pattern": "removable-chip",
+    "note": "The picked-system tags become removable filter chips: --step--2 uppercase tracked, --fleet-yellow outline (were --step--1 white text with a hairline outline); the × button keeps its handler and aria-label, with a muted glyph that turns white on hover.",
+    "batch": "w8-chips-skips"
+  },
+  {
+    "file": "src/pages/partials/universe_timers_component.astro",
+    "selector": ".chip-group .filter-chip",
+    "path": "converge",
+    "pattern": "radio-chip",
+    "note": "The view chips become real radio inputs in filter chips (x-model on the input; were role=radio buttons with aria-checked): uppercase tracked --step--2, --fleet-yellow fill when selected, muted count.",
+    "batch": "w8-chips-skips"
+  },
+  {
+    "file": "src/pages/partials/universe_structures_component.astro",
+    "selector": ".chip-group .filter-chip",
+    "path": "converge",
+    "pattern": "radio-chip",
+    "note": "The view chips become real radio inputs in filter chips (x-model on the input; were role=radio buttons with aria-checked): uppercase tracked --step--2, --fleet-yellow fill when selected, muted count.",
+    "batch": "w8-chips-skips"
+  },
+  {
+    "file": "src/components/blocks/manage/ViewChips.astro",
+    "selector": ".chip-group .filter-chip",
+    "path": "converge",
+    "pattern": "radio-chip",
+    "note": "The view chips and the needs-attention chips become filter chips with a muted count: uppercase tracked --step--2, --fleet-yellow fill when selected (were --step--1, selected fill in the chip colour). The good tone is now --green with white text when selected (was --green-text with dark text). The needs-attention group keeps its divider and legend through .manage-attention.",
+    "batch": "w8-chips-skips"
+  },
+  {
+    "file": "src/components/blocks/FittingBuyOrderStock.astro",
+    "selector": ".fitting-buy-textarea",
+    "path": "converge",
+    "pattern": "textarea-library",
+    "note": "Visible textarea now uses the Textarea library field chrome (border, tinted background, padding, focus ring) instead of the class's own border, background and padding; the class keeps its font and colour rules.",
+    "batch": "w8-forms-1"
+  },
+  {
+    "file": "src/components/blocks/FittingBuyOrderLanded.astro",
+    "selector": ".fitting-buy-textarea",
+    "path": "converge",
+    "pattern": "textarea-library",
+    "note": "Same change as the stock paste: the landed-prices textarea takes the library field chrome instead of the class's border, background and padding.",
+    "batch": "w8-forms-1"
+  },
+  {
+    "file": "src/components/blocks/RedditReviewQueue.astro",
+    "selector": ".reddit-review__reason",
+    "path": "converge",
+    "pattern": "textarea-library",
+    "note": "Rejection reason textarea takes the Textarea library chrome: the tinted neutral background and the library padding and focus ring replace the class's surface-sunken background and padding. Width, border, colour, font and vertical resize are the same tokens.",
+    "batch": "w8-forms-2"
+  },
+  {
+    "file": "src/components/blocks/FleetShipTargetLine.astro",
+    "selector": ".target-line input",
+    "path": "converge",
+    "pattern": "input-library",
+    "note": "Name, target-count and ship search fields take the Input library chrome instead of the shared sunken-fill rule; the right-aligned number is now left-aligned.",
+    "batch": "w8-forms-skips"
+  },
+  {
+    "file": "src/components/blocks/FleetShipTargets.astro",
+    "selector": ".ship-targets__start-row, .ship-targets__copy",
+    "path": "converge",
+    "pattern": "input-library",
+    "note": "Doctrine line name and count inputs take Input chrome and the copy-from select takes Select chrome (28rem max) instead of the shared sunken-fill rule; the number is no longer right-aligned.",
+    "batch": "w8-forms-skips"
+  },
+  {
+    "file": "src/components/blocks/FleetBattleReport.astro",
+    "selector": ".br__save input",
+    "path": "converge",
+    "pattern": "input-library",
+    "note": "Segment name field takes Input sm chrome at 14rem; on phones it no longer stretches to fill the row.",
+    "batch": "w8-forms-skips"
+  },
+  {
+    "file": "src/components/blocks/IntelAffiliationRow.astro",
+    "selector": ".intel-affiliation__select",
+    "path": "converge",
+    "pattern": "select-library",
+    "note": "Relation select takes the Select sm chrome with caret instead of the component-background fill.",
+    "batch": "w8-forms-skips"
+  },
+  {
+    "file": "src/components/blocks/learning_manage/LearningSkillsetForm.astro",
+    "selector": ".skill-line__level select",
+    "path": "converge",
+    "pattern": "select-library",
+    "note": "Skill level selects take the Select sm chrome with caret instead of the sunken fill.",
+    "batch": "w8-forms-skips"
+  },
+  {
+    "file": "src/components/blocks/learning_manage/LearningGuideForm.astro",
+    "selector": ".guide-form__address",
+    "path": "variant",
+    "pattern": "input-prefix",
+    "note": "The page-address field becomes Input with the new prefix prop (path text and input inside one shell); look is unchanged apart from the library's tinted background in place of the sunken fill.",
+    "batch": "w8-forms-skips"
+  },
+  {
+    "file": "src/components/blocks/learning_manage/LearningCertificateForm.astro",
+    "selector": ".cert-form__address",
+    "path": "variant",
+    "pattern": "input-prefix",
+    "note": "Same prefix Input as the guide form's page address.",
+    "batch": "w8-forms-skips"
+  },
+  {
+    "file": "src/components/blocks/ButtonInvitePilots.astro",
+    "selector": ".invite-pick__remove",
+    "path": "variant",
+    "pattern": "stylless-button",
+    "note": "Raw x button now StylessButton; .invite-pick__remove gets text-align: center so the glyph stays centred (UA centring replaced by StylessButton's left align).",
+    "batch": "w8-sonnet-buttons-1"
+  },
+  {
+    "file": "src/components/blocks/FleetBattleReport.astro",
+    "selector": ".br__chip-x",
+    "path": "variant",
+    "pattern": "stylless-button",
+    "note": "Segment delete x now StylessButton; text-align: center added to keep the glyph centred. UA 1px 6px padding is now 0, hidden by min-width/min-height.",
+    "batch": "w8-sonnet-buttons-1"
+  },
+  {
+    "file": "src/components/blocks/FleetBattleReport.astro",
+    "selector": ".br__tabs button (team toggles)",
+    "path": "variant",
+    "pattern": "stylless-button",
+    "note": "Team switcher buttons lose the UA 1px 6px padding; they are flex:1 and centred with min-height 2.75rem, so no visible change.",
+    "batch": "w8-sonnet-buttons-1"
+  },
+  {
+    "file": "src/components/blocks/FleetInviteDialog.astro",
+    "selector": ".invite-dialog__pick button",
+    "path": "variant",
+    "pattern": "stylless-button",
+    "note": "Pick remove x now StylessButton with text-align: center added; UA padding gone, hidden by min-width/min-height.",
+    "batch": "w8-sonnet-buttons-1"
+  },
+  {
+    "file": "src/components/blocks/LoyaltyQuote.astro",
+    "selector": ".loyalty-quote__step",
+    "path": "variant",
+    "pattern": "stylless-button",
+    "note": "Stepper buttons now StylessButton; padding: 1px 6px and text-align: center added to the class to keep the browser-default padding and centring.",
+    "batch": "w8-sonnet-buttons-2"
+  },
+  {
+    "file": "src/components/blocks/LoyaltyDeskLanes.astro",
+    "selector": ".loyalty-lanes__more",
+    "path": "variant",
+    "pattern": "stylless-button",
+    "note": "Show more button now StylessButton; padding: 1px 6px and text-align: center added to keep the browser-default look.",
+    "batch": "w8-sonnet-buttons-2"
+  },
+  {
+    "file": "src/components/blocks/fleet_rsvp/FleetRsvpForm.astro",
+    "selector": ".fleet-rsvp__text-button",
+    "path": "converge",
+    "pattern": "button-reset",
+    "note": "StylessButton drops the browser's 1px 6px button padding; class sets no padding.",
+    "batch": "w8-sonnet-buttons-4"
+  },
+  {
+    "file": "src/components/page/partials/PageHeader.astro",
+    "selector": ".subheader-bar-toggle",
+    "path": "converge",
+    "pattern": "button-reset",
+    "note": "StylessButton drops the browser's 1px 6px button padding; fixed-size flex box, no visible change expected.",
+    "batch": "w8-sonnet-buttons-4"
+  },
+  {
+    "file": "src/pages/partials/doctrine_change_form_component.astro",
+    "selector": ".doctrine-review__link",
+    "path": "converge",
+    "pattern": "button-reset",
+    "note": "Two Keep editing links lose the browser's 1px 6px button padding.",
+    "batch": "w8-sonnet-buttons-4"
+  },
+  {
+    "file": "src/components/blocks/CorporationRequirementForm.astro",
+    "selector": ".req-form .chip-group .filter-chip",
+    "path": "converge",
+    "pattern": "radio-chip",
+    "note": "The target, level, bracket, who and importance chips become uppercase tracked --step--2 filter chips with a --fleet-yellow checked fill (were --step--1 boxes with a foreground border when checked); the groups keep role radiogroup/group and wrap with --space-3xs gaps.",
+    "batch": "w8-sonnet-chips-1"
+  },
+  {
+    "file": "src/components/blocks/FleetSchedule.astro",
+    "selector": ".chip-group .filter-chip",
+    "path": "converge",
+    "pattern": "filter-chip",
+    "note": "The host, fleet-type and location filters become filter chips: uppercase tracked yellow outline with a --fleet-yellow fill when pressed (were a --foreground fill), no more 2.5rem min-height, the type icon sits in the chip. The fleet type chip with zero fleets keeps its 0.55 opacity. Alpine chips gain an x-bind:class is-active next to the unchanged x-bind:aria-pressed. Chips wrap on wide screens and scroll with an edge fade below 48rem (ChipGroup scroll_below).",
+    "batch": "w8-sonnet-chips-1"
+  },
+  {
+    "file": "src/components/blocks/FleetParticipantsPilots.astro",
+    "selector": ".chip-group .filter-chip",
+    "path": "converge",
+    "pattern": "filter-chip",
+    "note": "The engagement pills and the roster order pills become filter chips: --fleet-yellow outline and fill when pressed (were --highlight white fill), --step--2 uppercase tracked text, no 2.75rem min-height; minor rounds lose their lighter weight. Engagement chips wrap on wide screens and scroll below 48rem; the order pills keep their Alpine aria-pressed and gain x-bind:class is-active.",
+    "batch": "w8-sonnet-chips-1"
+  },
+  {
+    "file": "src/components/blocks/LoyaltyQuote.astro",
+    "selector": ".chip-group .filter-chip",
+    "path": "converge",
+    "pattern": "filter-chip",
+    "note": "The LP amount presets become filter chips: uppercase tracked --step--2, --fleet-yellow fill when selected (were --step--1, a 15% yellow tint when pressed); x-bind:aria-pressed is kept and an x-bind:class is-active is added.",
+    "batch": "w8-sonnet-chips-2"
+  },
+  {
+    "file": "src/components/blocks/TribeGroupMembersGallery.astro",
+    "selector": ".chip-group .filter-chip",
+    "path": "converge",
+    "pattern": "filter-chip",
+    "note": "The corporation filter chips become filter chips: uppercase tracked --step--2 with the corporation logo and a muted count (were --step--1 sentence case with a --foreground tint border).",
+    "batch": "w8-sonnet-chips-2"
+  },
+  {
+    "file": "src/components/blocks/TribesGroupsCatalog.astro",
+    "selector": ".chip-group .filter-chip",
+    "path": "converge",
+    "pattern": "filter-chip",
+    "note": "The tribe filter chips become filter chips (scrolling row with edge fade as before): --step--2 uppercase tracked, --space-3xs/--space-xs padding (were --step--1 with --space-2xs/--space-s padding).",
+    "batch": "w8-sonnet-chips-2"
+  },
+  {
+    "file": "src/components/blocks/amamake-market/AmamakeMarketSoldTypes.astro",
+    "selector": ".chip-group .filter-chip",
+    "path": "converge",
+    "pattern": "filter-chip",
+    "note": "The class filter pills become square filter chips: --fleet-yellow outline and fill when active (were rounded --border-color pills with a white active outline). The group is role=navigation with the same aria-label (was a nav).",
+    "batch": "w8-sonnet-chips-2"
+  },
+  {
+    "file": "src/components/blocks/amamake-market/AmamakeMarketVolume.astro",
+    "selector": ".chip-group .filter-chip",
+    "path": "converge",
+    "pattern": "filter-chip",
+    "note": "The sold-class filter pills become square yellow filter chips with a muted count, as in SoldTypes (were rounded --border-color pills with a white active outline). The Prev, Next and Back to page 1 buttons keep their pill class.",
+    "batch": "w8-sonnet-chips-2"
+  },
+  {
+    "file": "src/components/blocks/fleet_rsvp/FleetRsvpWhen.astro",
+    "selector": ".rsvp-when__top Tag",
+    "path": "converge",
+    "pattern": "tag-outline",
+    "note": "Countdown is a yellow outline Tag: square corners, no tinted fill, step--2 text.",
+    "batch": "w8-sonnet-chips-3"
+  },
+  {
+    "file": "src/components/blocks/mentors/MentorsNav.astro",
+    "selector": "nav chips",
+    "path": "converge",
+    "pattern": "filter-chip-link",
+    "note": "Mentors page links are FilterChip links in a wrapping ChipGroup: uppercase tracked step--2 text, active chip filled yellow; the red open-asks count stays inside the chip.",
+    "batch": "w8-sonnet-chips-3"
+  },
+  {
+    "file": "src/components/blocks/newsletter/NewsletterIssue.astro",
+    "selector": ".nl-order__head Tag",
+    "path": "converge",
+    "pattern": "tag-outline",
+    "note": "Order status is a Tag (filled foreground when delivered, red outline when in progress); no uppercase or letter-spacing.",
+    "batch": "w8-sonnet-chips-3"
+  },
+  {
+    "file": "src/components/blocks/survey/SurveyContextConfirm.astro",
+    "selector": ".profile Tag",
+    "path": "converge",
+    "pattern": "tag-outline",
+    "note": "Community status and tribe pills are outline Tags: square corners, no pill radius; tribe chief portrait sits in the Tag icon slot; on-leave status is full-strength foreground instead of 60% opacity.",
+    "batch": "w8-sonnet-chips-3"
+  },
+  {
+    "file": "src/components/blocks/survey/SurveyField.astro",
+    "selector": ".scale .filter-chip",
+    "path": "variant",
+    "pattern": "radio-chip",
+    "note": "Rating scale options are FilterChip radios drawn in each option's own colour via --chip_color/--chip_text on the label; chip text becomes uppercase tracked step--2 and loses the 4px radius.",
+    "batch": "w8-sonnet-chips-3"
+  },
+  {
+    "file": "src/pages/industry/products/[id].astro",
+    "selector": ".relations FilterChip",
+    "path": "converge",
+    "pattern": "filter-chip-link",
+    "note": "Made-from / used-in item cards become FilterChip links with the item icon in a wrapping ChipGroup instead of a 14rem card grid.",
+    "batch": "w8-sonnet-chips-3"
+  },
+  {
+    "file": "src/pages/partials/campaign_settings_component.astro",
+    "selector": ".campaign-scopes .filter-chip, .campaign-list__row .filter-chip",
+    "path": "converge",
+    "pattern": "filter-chip-toggle",
+    "note": "Coordinator scope toggles and fitting On/Off are green-tone FilterChip buttons (outline when off, green fill when on, aria-pressed) instead of a 4.5rem-wide grey box.",
+    "batch": "w8-sonnet-chips-4"
+  },
+  {
+    "file": "src/pages/partials/campaign_settings_component.astro",
+    "selector": ".campaign-doctrines .filter-chip--removable",
+    "path": "converge",
+    "pattern": "filter-chip-removable",
+    "note": "Attached doctrines are removable FilterChips (yellow outline, text x) instead of a grey filled pill with an svg x.",
+    "batch": "w8-sonnet-chips-4"
+  },
+  {
+    "file": "src/pages/partials/corporation_members_table_component.astro",
+    "selector": "#cm-views, #cm-attention",
+    "path": "converge",
+    "pattern": "radio-chip",
+    "note": "View chips are FilterChip radios in a wrapping ChipGroup: uppercase tracked step--2 text, outline in the chip's own tone.",
+    "batch": "w8-sonnet-chips-4"
+  },
+  {
+    "file": "src/pages/partials/esi_health_component.astro",
+    "selector": ".esi-detail fieldset",
+    "path": "converge",
+    "pattern": "radio-chip",
+    "note": "Ask-mode chips are FilterChip radios; selected fill now comes from :has(input:checked) instead of the Alpine is-on class.",
+    "batch": "w8-sonnet-chips-4"
+  },
+  {
+    "file": "src/pages/partials/srp_programs_component.astro",
+    "selector": ".manage-filters",
+    "path": "converge",
+    "pattern": "radio-chip",
+    "note": "Class chips and the Filed-old chip are FilterChip radios with counts.",
+    "batch": "w8-sonnet-chips-4"
+  },
+  {
+    "file": "src/pages/partials/tasks_projects_component.astro",
+    "selector": "nav chips",
+    "path": "converge",
+    "pattern": "filter-chip-toggle",
+    "note": "Project view chips are FilterChip buttons (aria-pressed plus the old aria-current) with counts.",
+    "batch": "w8-sonnet-chips-4"
+  },
+  {
+    "file": "src/pages/partials/tasks_team_component.astro",
+    "selector": "nav chips",
+    "path": "converge",
+    "pattern": "filter-chip-toggle",
+    "note": "Team chips are FilterChip buttons (aria-pressed plus the old aria-current).",
+    "batch": "w8-sonnet-chips-4"
+  },
+  {
+    "file": "src/pages/partials/universe_locations_component.astro",
+    "selector": "nav chips",
+    "path": "converge",
+    "pattern": "filter-chip-link",
+    "note": "View links are FilterChip links with counts; the count is muted tabular text.",
+    "batch": "w8-sonnet-chips-4"
+  },
+  {
+    "file": "src/pages/ships/doctrines/edit/[doctrine_id].astro",
+    "selector": ".doctrine-popover__filters .filter-chip",
+    "path": "converge",
+    "pattern": "filter-chip-toggle",
+    "note": "Hull filter chips are FilterChip buttons bound to Alpine filter; active chip fills yellow.",
+    "batch": "w8-sonnet-chips-4"
+  },
+  {
+    "file": "src/pages/tasks/projects/[id].astro",
+    "selector": ".manage-actions fieldset",
+    "path": "converge",
+    "pattern": "radio-chip",
+    "note": "Health chips are FilterChip radios.",
+    "batch": "w8-sonnet-chips-4"
+  },
+  {
+    "file": "src/pages/tasks/settings/rules.astro",
+    "selector": "audience chips",
+    "path": "converge",
+    "pattern": "radio-chip",
+    "note": "Audience chips are FilterChip radios with counts and x-model.",
+    "batch": "w8-sonnet-chips-4"
+  },
+  {
+    "file": "src/components/blocks/FittingBuyOrderContractPrices.astro",
+    "selector": ".hull-source select",
+    "path": "converge",
+    "pattern": "select-library",
+    "note": "Hull-source select takes the Select library chrome (caret, tinted background, sm padding, 16rem max width); the class's own font, border and background rules and the mobile 48px min-height override are dropped. The hidden copy textarea is now a Textarea (still display: hidden).",
+    "batch": "w8-sonnet-forms-1"
+  },
+  {
+    "file": "src/components/blocks/FleetSettings.astro",
+    "selector": ".fleet-settings__toggle",
+    "path": "converge",
+    "pattern": "switch-library",
+    "note": "The hide-volunteer-names checkbox becomes the Switch toggle with its label and hint, replacing the native red accent checkbox.",
+    "batch": "w8-sonnet-forms-1"
+  },
+  {
+    "file": "src/components/blocks/FleetShipsSetup.astro",
+    "selector": ".fleet-ships-setup__search",
+    "path": "converge",
+    "pattern": "input-library",
+    "note": "Doctrine search box takes the Input library field chrome instead of the class's solid background, 2.75rem height and border.",
+    "batch": "w8-sonnet-forms-1"
+  },
+  {
+    "file": "src/components/blocks/industry/OrderDetailHeader.astro",
+    "selector": ".order-manage-form",
+    "path": "converge",
+    "pattern": "radio-check-library",
+    "note": "The fulfilled checkbox becomes RadioCheckInput: the native checkbox is replaced by the library box and the label text becomes the small yellow label.",
+    "batch": "w8-sonnet-forms-2"
+  },
+  {
+    "file": "src/components/blocks/learning_manage/LearningCertificateForm.astro",
+    "selector": ".cert-form__personas",
+    "path": "converge",
+    "pattern": "radio-check-library",
+    "note": "Persona checkboxes become RadioCheckInput (library box, small yellow label) instead of native checkboxes with highlight-coloured text.",
+    "batch": "w8-sonnet-forms-2"
+  },
+  {
+    "file": "src/pages/industry/orders/planner.astro",
+    "selector": ".planner-tsv",
+    "path": "converge",
+    "pattern": "textarea-library",
+    "note": "Stock paste and materials TSV textareas take the Textarea library chrome (tinted background, library padding, border and focus ring) in place of the translucent black fill; the class keeps the monospace font, size and line height.",
+    "batch": "w8-sonnet-forms-3"
+  },
+  {
+    "file": "src/pages/market/fitting_orders/new.astro",
+    "selector": ".fitting-buy-qty",
+    "path": "converge",
+    "pattern": "input-library",
+    "note": "The three quantity number inputs (search result, cart row, custom fit) take the Input library field chrome at sm size and 4.5rem width instead of the transparent bordered box.",
+    "batch": "w8-sonnet-forms-3"
+  },
+  {
+    "file": "src/pages/industry/orders/create.astro",
+    "selector": ".create-order-form__qty-input",
+    "path": "converge",
+    "pattern": "input-library",
+    "note": "Line quantity input takes the Input library chrome at sm size and 3.5rem width; the centred text, hover border colour and custom yellow focus outline are replaced by the library styles.",
+    "batch": "w8-sonnet-forms-3"
+  },
+  {
+    "file": "src/pages/partials/order_line_pricing_component.astro",
+    "selector": ".order-line-pricing__margin",
+    "path": "converge",
+    "pattern": "input-library",
+    "note": "Margin percentage input takes the Input library chrome at sm size and 6rem width instead of the sunken fill with highlight text.",
+    "batch": "w8-sonnet-forms-3"
+  },
+  {
+    "file": "src/pages/intel/affiliations/index.astro",
+    "selector": "#intel-affiliation-search",
+    "path": "converge",
+    "pattern": "input-library",
+    "note": "Affiliation search box takes the Input library chrome at sm size instead of the sunken fill and yellow focus outline.",
+    "batch": "w8-sonnet-forms-3"
+  },
+  {
+    "file": "src/pages/partials/fleet_pick_ships_modal_component.astro",
+    "selector": ".pick-ships__search",
+    "path": "converge",
+    "pattern": "input-library",
+    "note": "Ship picker search input takes the Input library chrome at sm size instead of the 2.75rem sunken field.",
+    "batch": "w8-sonnet-forms-3"
+  },
+  {
+    "file": "src/pages/partials/doctrine_change_form_component.astro",
+    "selector": "#doctrine-review-note",
+    "path": "converge",
+    "pattern": "textarea-library",
+    "note": "Review note textarea takes the Textarea library chrome instead of the sunken fill and highlight text.",
+    "batch": "w8-sonnet-forms-3"
+  },
+  {
+    "file": "src/pages/partials/corporation_settings_component.astro",
+    "selector": "[name=paused]",
+    "path": "converge",
+    "pattern": "switch-library",
+    "note": "The pause-posting checkbox becomes the Switch toggle with the same label and help text.",
+    "batch": "w8-sonnet-forms-3"
+  },
+  {
+    "file": "src/pages/ships/doctrines/edit/[doctrine_id].astro",
+    "selector": ".doctrine-row__actions select",
+    "path": "converge",
+    "pattern": "select-library",
+    "note": "Per-fit role select takes the Select library chrome (caret, tinted background, sm padding, 9rem width) instead of the flat border-colour fill; the mobile flex-grow on the select is dropped.",
+    "batch": "w8-sonnet-forms-4"
+  },
+  {
+    "file": "src/pages/ships/fittings/edit/[fitting_id].astro",
+    "selector": "fieldset legend + tags",
+    "path": "converge",
+    "pattern": "radio-check-library",
+    "note": "Fitting tag checkboxes become RadioCheckInput (library box, small yellow label) instead of native checkboxes.",
+    "batch": "w8-sonnet-forms-4"
+  },
+  {
+    "file": "src/pages/surveys/[id]/edit.astro",
+    "selector": ".question-row, changelog form",
+    "path": "converge",
+    "pattern": "radio-check-library",
+    "note": "Required and Published checkboxes become RadioCheckInput; the choices and changelog body textareas take the Textarea library chrome.",
+    "batch": "w8-sonnet-forms-4"
+  },
+  {
+    "file": "src/pages/surveys/index.astro",
+    "selector": "form[method=POST]",
+    "path": "converge",
+    "pattern": "radio-check-library",
+    "note": "The open-immediately checkbox becomes RadioCheckInput (library box, small yellow label).",
+    "batch": "w8-sonnet-forms-4"
+  },
+  {
+    "file": "src/components/blocks/BuybackPurchaseOrderBook.astro",
+    "selector": ".buyback-purchase-orders .data-grid",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Order list header now comes from DataGrid ledger variant (same bold uppercase body-font header, same column template, 70rem min width, header hidden on phones). The scroller is DataGrid's XFadeScroll (edge fades instead of the fixed right-edge mask); the open-menu overflow override is kept.",
+    "batch": "w8-sonnet-tables-1"
+  },
+  {
+    "file": "src/components/blocks/BuybackStockpileSales.astro",
+    "selector": ".buyback-stockpile-sales .data-grid",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Sales ledger header now comes from DataGrid ledger variant (same column template, 70rem min width, header hidden on phones). Scroller is DataGrid's XFadeScroll with edge fades instead of the fixed right-edge mask.",
+    "batch": "w8-sonnet-tables-1"
+  },
+  {
+    "file": "src/components/blocks/CampaignDestructionTable.astro",
+    "selector": ".campaign-destruction",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Kill list header and column template come from DataGrid (ledger variant): bold highlight header with a rule under it, rows get the shared row divider and 2xs inline padding so columns line up with the header, table scrolls with edge fades below its content width. Phone card layout now switches at 48rem (was 720px) to match DataGrid's stack breakpoint.",
+    "batch": "w8-sonnet-tables-1"
+  },
+  {
+    "file": "src/components/blocks/CampaignTimersTable.astro",
+    "selector": ".campaign-timers",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Timerboard header and column template (with or without the Campaign column) come from DataGrid (ledger variant); rows get the shared divider and inline padding, Done separator unchanged. Phone card layout now switches at 48rem (was 720px).",
+    "batch": "w8-sonnet-tables-1"
+  },
+  {
+    "file": "src/components/blocks/FittingBuyOrderShopping.astro",
+    "selector": ".fitting-buy-table",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Shopping list now uses DataTable: header cells get the library chrome (boxed, 600 weight, transparency fill) and cells align to the top with library padding and boxed borders instead of bottom-rule-only rows. Column widths (36% item, 10.5% numbers), fixed layout, row tints (short/stocked) and the split-variant indent are unchanged; the table scrolls inside DataTable's XFadeScroll.",
+    "batch": "w8-sonnet-tables-1"
+  },
+  {
+    "file": "src/components/blocks/campaigns/auga/AugaSiegeCampaign.astro",
+    "selector": ".auga-pilot-table, .auga-alliance-table, .auga-ship-table, .auga-event-table",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Five hand-copied er-table tables now use DataTable (same boxed look, the copy was of the library style). Cells align to the top instead of the middle; the XFadeScroll wrappers are replaced by DataTable's own; aria-labels became captions.",
+    "batch": "w8-sonnet-tables-2"
+  },
+  {
+    "file": "src/pages/market/buyback/appraisal.astro",
+    "selector": ".buyback-appraisal-table",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Accepted and rejected line tables use DataTable (dense): boxed cells and library header chrome replace the bottom-rule rows and yellow small-caps header. Row hover, numeric/total emphasis and rejected dimming are kept.",
+    "batch": "w8-sonnet-tables-2"
+  },
+  {
+    "file": "src/pages/partials/campaign_settings_component.astro",
+    "selector": ".manage-table",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Systems and Targets tables use ManageTable, which adds the ComponentBlock frame around the same manage-table; columns, field names and row markup unchanged.",
+    "batch": "w8-sonnet-tables-2"
+  },
+  {
+    "file": "src/pages/partials/srp_recalculate_component.astro",
+    "selector": ".srp-recalc .manage-table-block",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Old-claims preview uses ManageTable (adds the ComponentBlock frame around the same manage-table); columns and cell markup unchanged.",
+    "batch": "w8-sonnet-tables-3"
+  },
+  {
+    "file": "src/components/blocks/brand/BrandAssets.astro",
+    "selector": ".brand-section .data-table",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Logo/mascot download table now uses DataTable: header cells get the library chrome (boxed, 600 weight, transparency fill) and the Description column is part of the header row. Body cell text, links, images and N/A placeholders are unchanged. Cells align to the top and left (was middle and centred text); the images stay centred because they are display:block with auto margins. The table scrolls inside DataTable's XFadeScroll, so the .table-container wrapper is removed.",
+    "batch": "w8-tables-1"
+  },
+  {
+    "file": "src/components/blocks/FleetInvites.astro",
+    "selector": ".fleet-invites__table",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "DataTable cards variant: header gets the library look; rows keep their phone card grid.",
+    "batch": "w8-tables-gaps"
+  },
+  {
+    "file": "src/components/blocks/TrainingCharacterView.astro",
+    "selector": ".training-roles",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Dense borderless DataTable; header cells take the library style, fleets column right-aligned.",
+    "batch": "w8-tables-gaps"
+  },
+  {
+    "file": "src/components/blocks/TrainingBring.astro",
+    "selector": ".training-bring__wide table",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "DataTable bodies mode; header and group rows take the library cell look, columns centred.",
+    "batch": "w8-tables-gaps"
+  },
+  {
+    "file": "src/components/blocks/ProductBuildMaterials.astro",
+    "selector": ".bom",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Dense DataTable with footer slot; price and source hide below 48rem as before.",
+    "batch": "w8-tables-gaps"
+  },
+  {
+    "file": "src/components/blocks/role-guide/RoleAmmoChart.astro",
+    "selector": ".role-ammo-chart__numbers table",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Dense DataTable inside the details; library cell borders and header style.",
+    "batch": "w8-tables-gaps"
+  },
+  {
+    "file": "src/components/blocks/capital-guide/CapitalClassGuide.astro",
+    "selector": ".cap-table",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "DataTable wraps the cap-guide table; the global cap-table CSS still applies.",
+    "batch": "w8-tables-gaps"
+  },
+  {
+    "file": "src/components/blocks/capital-guide/CapitalGuideMetaBlocks.astro",
+    "selector": ".cap-table",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Same as CapitalClassGuide.",
+    "batch": "w8-tables-gaps"
+  },
+  {
+    "file": "src/components/blocks/CampaignStructuresTable.astro",
+    "selector": ".campaign-structures-table",
+    "path": "converge",
+    "pattern": "data-grid",
+    "note": "DataGrid header: uppercase heading-font header row and a hairline under each row.",
+    "batch": "w8-tables-gaps"
+  },
+  {
+    "file": "src/components/blocks/LoyaltyOffersTable.astro",
+    "selector": ".loyalty-offers-table__grid",
+    "path": "converge",
+    "pattern": "data-grid",
+    "note": "DataGrid with a header slot; sort buttons unchanged, region wrapper replaced by DataGrid scroller.",
+    "batch": "w8-tables-gaps"
+  },
+  {
+    "file": "src/components/blocks/DiscordServerAccess.astro",
+    "selector": ".server-access__table",
+    "path": "converge",
+    "pattern": "data-grid",
+    "note": "Three tables on DataGrid; header row keeps the sunken style.",
+    "batch": "w8-tables-gaps"
+  },
+  {
+    "file": "src/components/blocks/amamake-market/AmamakeMarketDemand.astro",
+    "selector": ".mk-table--hulls, .mk-table--traffic",
+    "path": "variant",
+    "pattern": "data-table",
+    "note": "Report variant; phone cards switch at 48rem instead of 720px for the hulls table.",
+    "batch": "w8-tables-gaps"
+  },
+  {
+    "file": "src/components/blocks/amamake-market/AmamakeMarketVolume.astro",
+    "selector": ".mk-table--volume",
+    "path": "variant",
+    "pattern": "data-table",
+    "note": "Report variant with cards.",
+    "batch": "w8-tables-gaps"
+  },
+  {
+    "file": "src/components/blocks/amamake-market/AmamakeMarketReportIssue.astro",
+    "selector": ".mk-table--weeks",
+    "path": "variant",
+    "pattern": "data-table",
+    "note": "Report variant with cards; the wrapper no longer scrolls itself.",
+    "batch": "w8-tables-gaps"
+  },
+  {
+    "file": "src/components/blocks/warzone/WarzoneReportIssue.astro",
+    "selector": ".wz-table--flips, .wz-table--traffic, .wz-table--groups",
+    "path": "variant",
+    "pattern": "data-table",
+    "note": "Report variant with cards; phone cards switch at 48rem instead of 720px for flips and groups.",
+    "batch": "w8-tables-gaps"
+  },
+  {
+    "file": "src/pages/industry/loyalty/desk.astro",
+    "selector": ".loyalty-desk__table-wrap",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Dense DataTable; header uses the library style.",
+    "batch": "w8-tables-gaps"
+  },
+  {
+    "file": "src/pages/partials/mentors_metrics_component.astro",
+    "selector": ".mentors-table",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Two dense DataTables.",
+    "batch": "w8-tables-gaps"
+  },
+  {
+    "file": "src/pages/partials/planner_invention_component.astro",
+    "selector": ".invention-table",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Two dense DataTables; second keeps its caption visible.",
+    "batch": "w8-tables-gaps"
+  },
+  {
+    "file": "src/pages/partials/structure_holdings_component.astro",
+    "selector": ".structure-holdings__table",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Dense DataTable in an x-show wrapper.",
+    "batch": "w8-tables-gaps"
+  },
+  {
+    "file": "src/components/blocks/CampaignSides.astro",
+    "selector": ".campaign-side-list li",
+    "path": "converge",
+    "pattern": "tag-outline",
+    "note": "Party chips are outline Tags with the logo in the icon slot (compact: logo only, no border): no filled grey background.",
+    "batch": "w8-tags"
+  },
+  {
+    "file": "src/components/blocks/DiscordServerAccess.astro",
+    "selector": ".server-access__tag-input",
+    "path": "converge",
+    "pattern": "filter-chip-removable",
+    "note": "Exemption names are removable FilterChips (yellow outline, text x) inside the unchanged text-input shell instead of grey filled pills with an svg x.",
+    "batch": "w8-tags"
+  },
+  {
+    "file": "src/components/blocks/FleetHistoryGroupFilter.astro",
+    "selector": ".fleet-history-group-filter a",
+    "path": "converge",
+    "pattern": "filter-chip-link",
+    "note": "Applied group filter is an active FilterChip link (yellow fill) with crest and x; was a tinted yellow outline.",
+    "batch": "w8-tags"
+  },
+  {
+    "file": "src/components/blocks/FleetParticipantsByShip.astro",
+    "selector": ".fleet-by-ship__pilots Tag",
+    "path": "converge",
+    "pattern": "tag-outline",
+    "note": "Pilot names are outline Tags with the portrait in the icon slot; 1px grey border kept, padding from Tag.",
+    "batch": "w8-tags"
+  },
+  {
+    "file": "src/components/blocks/FleetParticipantsDone.astro",
+    "selector": ".fleet-after__pilots Tag",
+    "path": "converge",
+    "pattern": "tag-outline",
+    "note": "Pilot names are outline Tags with the portrait in the icon slot.",
+    "batch": "w8-tags"
+  },
+  {
+    "file": "src/components/blocks/FleetShipTargetLine.astro",
+    "selector": ".target-line__picked li",
+    "path": "converge",
+    "pattern": "filter-chip-removable",
+    "note": "Picked ships and groups are removable FilterChips (as li in a ChipGroup, hidden input kept inside) with a text x.",
+    "batch": "w8-tags"
+  },
+  {
+    "file": "src/components/blocks/LoyaltyDeskLanes.astro",
+    "selector": ".loyalty-lanes__row Tag",
+    "path": "converge",
+    "pattern": "tag-outline",
+    "note": "Lane chips are Tags: neutral/late/good outlines, express filled yellow; no uppercase or letter-spacing.",
+    "batch": "w8-tags"
+  },
+  {
+    "file": "src/components/blocks/TrainingCharacterView.astro",
+    "selector": ".training-roles__ships Tag",
+    "path": "converge",
+    "pattern": "tag-outline",
+    "note": "Ready ships are outline Tags with the ship icon in the icon slot; no icon radius or semibold text.",
+    "batch": "w8-tags"
+  },
+  {
+    "file": "src/components/blocks/amamake-market/AmamakeMarketVolume.astro",
+    "selector": ".mk-volume pager, .mk-volume__gate",
+    "path": "converge",
+    "pattern": "htmx-pager",
+    "note": "Prev/Next are HtmxPager buttons (text Previous/Next, transparent sm Button) with the page line in the status slot; the pager shows only when there is more than one page. Back to page 1 is a transparent sm Button.",
+    "batch": "w8-tags"
+  },
+  {
+    "file": "src/pages/industry/loyalty.astro",
+    "selector": ".loyalty-book chips",
+    "path": "converge",
+    "pattern": "filter-chip-toggle",
+    "note": "Open/History segmented tabs are FilterChip buttons bound to Alpine tab (aria-pressed kept): outlined chips instead of one bordered segment box.",
+    "batch": "w8-toggles"
+  },
+  {
+    "file": "src/pages/partials/mentors_metrics_component.astro",
+    "selector": "nav chips",
+    "path": "converge",
+    "pattern": "filter-chip-toggle",
+    "note": "Period buttons are FilterChip buttons with hx-get; active chip fills yellow.",
+    "batch": "w8-toggles"
+  },
+  {
+    "file": "src/pages/partials/corporation_requirements_settings_component.astro",
+    "selector": ".corp-req__row ChipGroup",
+    "path": "converge",
+    "pattern": "filter-chip-toggle",
+    "note": "Required/Preferred toggle is two FilterChip buttons (hx-post kept) instead of a two-column segment.",
+    "batch": "w8-toggles"
+  },
+  {
+    "file": "src/pages/partials/structure_holdings_component.astro",
+    "selector": ".structure-holdings header ChipGroup",
+    "path": "converge",
+    "pattern": "filter-chip-toggle",
+    "note": "By pilot / By item switch is two FilterChip buttons bound to Alpine by.",
+    "batch": "w8-toggles"
+  },
+  {
+    "file": "src/pages/ships/doctrines/edit/[doctrine_id].astro",
+    "selector": ".doctrine-popover__bar, .doctrine-popover__filters",
+    "path": "converge",
+    "pattern": "filter-chip-toggle",
+    "note": "Add-as segments are FilterChip buttons, like the hull filters.",
+    "batch": "w8-toggles"
+  },
+  {
+    "file": "src/pages/partials/training_plan_component.astro",
+    "selector": ".training-plan__options, .training-plan__finishes",
+    "path": "converge",
+    "pattern": "option-card",
+    "note": "Who trains and Train to are OptionCard radios (name training_who / training_finish) whose input carries the old hx-get/hx-post plus hx-params none, so the request is unchanged; selected card gets OptionCard border and tint.",
+    "batch": "w8-toggles"
+  },
+  {
+    "file": "src/components/blocks/DiscordServerAccess.astro",
+    "selector": ".server-access__options",
+    "path": "converge",
+    "pattern": "option-card",
+    "note": "Member policy and cleanup radios are OptionCards (x-model kept); the radio dot is replaced by the card's yellow selected border.",
+    "batch": "w8-toggles"
+  },
+  {
+    "file": "src/pages/partials/corporation_settings_component.astro",
+    "selector": ".corp-settings__delivery",
+    "path": "converge",
+    "pattern": "option-card",
+    "note": "Delivery method cards are OptionCards: 2px border and tint when selected, 12% yellow tint.",
+    "batch": "w8-toggles"
+  },
+  {
+    "file": "src/components/blocks/FittingBuyOrderContractPrices.astro",
+    "selector": ".contract-settings__group",
+    "path": "variant",
+    "pattern": "radio-chip",
+    "note": "Markup presets and Custom are FilterChip radios in a ChipGroup (Custom keeps its inline number input inside the chip, text colour inherits); contract type is two OptionCards with fee summaries; the bordered segment bar is gone.",
+    "batch": "w8-toggles"
+  },
+  {
+    "file": "src/components/blocks/fleet_rsvp/FleetRsvpForm.astro",
+    "selector": ".rsvp-form__sure",
+    "path": "converge",
+    "pattern": "radio-chip",
+    "note": "How sure is FilterChip radios (x-model kept) instead of a 3-column segment.",
+    "batch": "w8-toggles"
+  },
+  {
+    "file": "src/components/blocks/FleetInviteDialog.astro",
+    "selector": ".invite-dialog modes, buckets",
+    "path": "converge",
+    "pattern": "filter-chip-toggle",
+    "note": "Who-to-invite modes are FilterChip buttons; new-pilot buckets are OptionCard checkboxes (x-model and refresh() on the input).",
+    "batch": "w8-toggles"
+  },
+  {
+    "file": "src/components/blocks/LoyaltyOrderBook.astro",
+    "selector": ".loyalty-orders__tiers",
+    "path": "converge",
+    "pattern": "option-card",
+    "note": "Standard/express tier radios are OptionCards; express stays disabled and dimmed through is-disabled.",
+    "batch": "w8-toggles"
+  },
+  {
+    "file": "src/components/blocks/DscanPasteControls.astro",
+    "selector": ".dscan-controls__kinds",
+    "path": "converge",
+    "pattern": "radio-chip",
+    "note": "D-scan / Local picker is FilterChip radios (hx-post on change kept); selected chip is yellow instead of red.",
+    "batch": "w8-toggles"
+  },
+  {
+    "file": "src/components/blocks/structures/StructureSettingsForm.astro",
+    "selector": ".structure-settings__set",
+    "path": "converge",
+    "pattern": "option-card",
+    "note": "Audience radios are OptionCards instead of hairline-separated rows.",
+    "batch": "w8-toggles"
+  },
+  {
+    "file": "src/components/blocks/universe/UniverseReportSteps.astro",
+    "selector": ".universe-report__choices",
+    "path": "converge",
+    "pattern": "option-card",
+    "note": "Structure candidates and None are OptionCards with the picture inside; checked state is the OptionCard yellow border.",
+    "batch": "w8-toggles"
+  },
+  {
+    "file": "src/pages/partials/universe_structures_component.astro",
+    "selector": ".universe-visibility",
+    "path": "converge",
+    "pattern": "option-card",
+    "note": "Visibility radios are OptionCards.",
+    "batch": "w8-toggles"
+  },
+  {
+    "file": "src/pages/partials/training_move_component.astro",
+    "selector": "fieldset .training-move__choice--off",
+    "path": "converge",
+    "pattern": "option-card",
+    "note": "Account radios are OptionCards (x-model selected, disabled dimmed).",
+    "batch": "w8-toggles"
+  },
+  {
+    "file": "src/components/blocks/SectionTabs.astro",
+    "selector": "sync_hash prop",
+    "path": "converge",
+    "pattern": "SectionTabs",
+    "note": "New sync_hash prop (default true) keeps the active tab out of the URL for tabs in dialogs and cards; story and catalog added.",
+    "batch": "w9a-1"
+  },
+  {
+    "file": "src/components/blocks/FleetKills.astro",
+    "selector": "[role=tablist] kills/losses",
+    "path": "converge",
+    "pattern": "SectionTabs compact",
+    "note": "Kills/losses toggle is SectionTabs compact with sync_hash off; show_all resets on tab change via x-effect.",
+    "batch": "w9a-1"
+  },
+  {
+    "file": "src/components/blocks/Dropdown.astro",
+    "selector": "Escape handling",
+    "path": "converge",
+    "pattern": "Dropdown",
+    "note": "Escape closes the panel, returns focus to the trigger and holds back the keyup (data-combobox-escape) so keyup-closing dialogs stay open. Story added.",
+    "batch": "w9a-10"
+  },
+  {
+    "file": "src/components/blocks/FleetInviteDialog.astro",
+    "selector": ".invite-dialog__tz-options click.outside",
+    "path": "converge",
+    "pattern": "Dropdown",
+    "note": "Timezone Change menu is a Dropdown (button variant, transparent). Checkboxes keep x-model on the dialog's timezones/any_timezone and refresh(); timezones_open removed. Panel teleports to body so it clears the dialog.",
+    "batch": "w9a-11"
+  },
+  {
+    "file": "src/pages/partials/universe_locations_component.astro",
+    "selector": "details.structures-rigs",
+    "path": "variant",
+    "pattern": "Dropdown",
+    "note": "Rigs filter is a Dropdown (button variant) holding the same GET form. Active state is alliance-blue instead of yellow (ButtonColors has no yellow); the count stays in the label.",
+    "batch": "w9a-12"
+  },
+  {
+    "file": "src/components/blocks/Combobox.astro",
+    "selector": "new props",
+    "path": "converge",
+    "pattern": "Combobox",
+    "note": "Added size, required, pick_first (Enter picks first match and never submits), field_start slot, option data-* in the combobox:select detail (detail.data), and htmx 'unset' attributes so a surrounding form's settings are not inherited. Stories and catalog updated.",
+    "batch": "w9a-13"
+  },
+  {
+    "file": "src/components/blocks/manage/EntityPicker.astro",
+    "selector": "x-on:click.outside close()",
+    "path": "converge",
+    "pattern": "Combobox",
+    "note": "EntityPicker wraps Combobox (same search URL and ?kind, hidden input name/value, name_field hidden input, change event, manage-entity-picked event re-dispatched from combobox:select). Option partial now returns li role=option. Typing 1 character no longer shows the 'type more' note (Combobox asks nothing under min_chars).",
+    "batch": "w9a-13"
+  },
+  {
+    "file": "src/pages/partials/manage_entity_search_component.astro",
+    "selector": "button[role=option]",
+    "path": "converge",
+    "pattern": "Combobox option",
+    "note": "Options are li[role=option][data-value][data-label][data-icon].",
+    "batch": "w9a-13"
+  },
+  {
+    "file": "src/components/blocks/CampaignNewForm.astro",
+    "selector": "picker reset",
+    "path": "converge",
+    "pattern": "Combobox",
+    "note": "Resets the picker through Combobox clear() instead of EntityPicker's internal fields.",
+    "batch": "w9a-13"
+  },
+  {
+    "file": "src/components/blocks/manage/EntityPicker.astro",
+    "selector": "x-on:combobox:select",
+    "path": "identical",
+    "pattern": "Combobox",
+    "note": "Type fix: the handler attribute is spread as an object so astro check parses it. No behaviour change.",
+    "batch": "w9a-14"
+  },
+  {
+    "file": "src/pages/partials/corporation_settings_component.astro",
+    "selector": "[role=tablist] write/preview",
+    "path": "converge",
+    "pattern": "SectionTabs compact",
+    "note": "Write/preview is SectionTabs compact with sync_hash off; the preview still POSTs the form on opening (hx-trigger on the new section-tabs:change event) and inherits form values.",
+    "batch": "w9a-2"
+  },
+  {
+    "file": "src/components/blocks/SectionTabs.astro",
+    "selector": "section-tabs:change",
+    "path": "converge",
+    "pattern": "SectionTabs",
+    "note": "Dispatches a bubbling section-tabs:change event so htmx panels can load when their tab opens; story updated.",
+    "batch": "w9a-2"
+  },
+  {
+    "file": "src/pages/partials/fleet_add_ships_modal_component.astro",
+    "selector": "[role=tablist] radios",
+    "path": "identical",
+    "pattern": "radiogroup",
+    "note": "The source switch is two radio inputs, not tabs, and their mode state drives x-show on distant sections; role corrected to radiogroup with a label. No SectionTabs: nothing to convert.",
+    "batch": "w9a-3"
+  },
+  {
+    "file": "src/components/blocks/FleetBattleReport.astro",
+    "selector": "[role=tablist] .br__tab-list",
+    "path": "converge",
+    "pattern": "SectionTabs inside XFadeScroll",
+    "note": "View tabs are SectionTabs (hash sync off) in an XFadeScroll with a no-wrap list, so the mobile fade mask stays; x-effect mirrors tab into the report's view state that the grid sections read.",
+    "batch": "w9a-4"
+  },
+  {
+    "file": "src/components/blocks/OrderCoordinators.astro",
+    "selector": "[role=tablist] .order-coordinators__tabs",
+    "path": "converge",
+    "pattern": "SectionTabs compact",
+    "note": "Blueprints/Minerals/PI tabs are SectionTabs compact (hash sync off, default_tab=initial_tab). The stacked fixed-height panel grid is gone: hidden panels are display:none like every SectionTabPanel. activeTab had no readers.",
+    "batch": "w9a-5"
+  },
+  {
+    "file": "src/components/blocks/structures/StructureHowTo.astro",
+    "selector": "[role=tablist] .manage-chips",
+    "path": "converge",
+    "pattern": "SectionTabs pills",
+    "note": "Topic chips are SectionTabs pills (hash sync off, random id_prefix per instance); a single topic hides the pill row as before.",
+    "batch": "w9a-6"
+  },
+  {
+    "file": "src/components/blocks/LearningTabs.astro",
+    "selector": "nav.learning-tabs",
+    "path": "converge",
+    "pattern": "SectionTabs link mode",
+    "note": "Same four hrefs; active_tab passed explicitly because /learning/ is a prefix of the other three. The tabs wrap instead of scrolling sideways.",
+    "batch": "w9a-7"
+  },
+  {
+    "file": "src/components/blocks/FleetsHubTabs.astro",
+    "selector": "nav.fleets-hub-tabs",
+    "path": "converge",
+    "pattern": "SectionTabs link mode",
+    "note": "Same hrefs and campaigns gate; active_tab passed explicitly.",
+    "batch": "w9a-8"
+  },
+  {
+    "file": "src/components/blocks/mentors/MentorsNav.astro",
+    "selector": "nav.mentors-nav",
+    "path": "variant",
+    "pattern": "SectionTabs link mode pills",
+    "note": "Pills variant; the open-asks count is the attention-flagged meta (yellow dot badge instead of the red box).",
+    "batch": "w9a-9"
+  },
+  {
+    "file": "src/pages/ships/fittings/edit/[fitting_id].astro",
+    "selector": "fieldset tags",
+    "path": "converge",
+    "pattern": "radio-check-library",
+    "note": "Fitting tag checkboxes become RadioCheckInput (library box, small yellow label) instead of native checkboxes with white label text.",
+    "batch": "fix2"
+  },
+  {
+    "file": "src/components/blocks/ProductBuildMaterials.astro",
+    "selector": ".bom td, .bom th",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Cell and header text take the DataTable colours: cells inherit the page yellow instead of white, numeric headers are white instead of yellow.",
+    "batch": "fix2"
+  },
+  {
+    "file": "src/components/blocks/campaigns/auga/AugaSiegeCampaign.astro",
+    "selector": ".auga-pilot-table, .auga-alliance-table, .auga-ship-table, .auga-event-table",
+    "path": "converge",
+    "pattern": "data-table",
+    "note": "Numeric columns (the er-table__numeric class had no rule, so they were left-aligned) take DataTable's right alignment with tabular figures.",
+    "batch": "fix3"
+  },
+  {
+    "file": "src/components/blocks/RadioCheckInput.astro",
+    "selector": ":checked ~ small",
+    "path": "converge",
+    "pattern": "radio-check-library",
+    "note": "The checked-label rule was `:checked + small`, which never matched because the box sits between the input and the label text; it is now `:checked ~ small`, so a checked option's label is bold and full-strength white instead of staying yellow, on every RadioCheckInput.",
+    "batch": "fix4"
+  },
+  {
+    "file": "src/components/blocks/manage/EntityPicker.astro",
+    "selector": ".combobox label",
+    "path": "converge",
+    "pattern": "Combobox",
+    "note": "The picker's label is the Combobox label: full-strength white (was the muted manage-field label), 18px line instead of 17px, and a 10px gap to the field instead of 5px, so each picker is 6px taller.",
+    "batch": "fix4"
+  },
+  {
+    "file": "src/components/blocks/Picture.astro",
+    "selector": ".mask",
+    "path": "converge",
+    "pattern": "picture-mask",
+    "note": "ItemPicture and CharacterPicture masks now use Picture's fade (adds a 90% stop at 35%) instead of their own 0 / 70% at 50% / transparent gradient, so a masked ship or portrait stays slightly more opaque in its upper third.",
+    "batch": "fix4"
+  },
+  {
+    "file": "src/components/blocks/AllianceHealthPilotList.astro",
+    "selector": ".alliance-health-pilot-list__order FilterChip",
+    "path": "converge",
+    "pattern": "filter-chip-toggle",
+    "note": "The order-by pills are FilterChip buttons in a wrapping ChipGroup (aria-pressed added): library tracking and a 45% border instead of 40%, so each chip is 3-5px wider.",
+    "batch": "fix4"
+  },
+  {
+    "file": "src/components/blocks/SectionTabs.astro",
+    "selector": ".section-tab meta badge",
+    "path": "converge",
+    "pattern": "warning colour",
+    "note": "A tab's attention count (the account page's '2 to fix') is a yellow-filled badge with dark text and its own padding instead of orange text with a dot, so that tab is 10px wider.",
+    "batch": "fix4"
+  }
+]

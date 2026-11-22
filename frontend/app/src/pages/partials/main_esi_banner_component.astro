@@ -13,7 +13,7 @@ import { get_request_user } from '@helpers/request_user'
 import { get_account_characters } from '@helpers/fetching/characters'
 import { get_public_api_url, get_app_url } from '@helpers/env'
 import { account_user_id_query } from '@helpers/account_user_query'
-import { get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image'
 import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
 
 const { auth_token } = get_request_user(Astro)
@@ -31,6 +31,7 @@ const readd_url = main
     : ''
 
 import Button from '@components/blocks/Button.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {main
@@ -49,12 +50,12 @@ import Button from '@components/blocks/Button.astro'
             </div>
             <div class="[ main-esi__actions ]">
                 <Button size="sm" href={readd_url}>{t('account.readd_one').replace('~NAME', main.character_name)}</Button>
-                <button
+                <StylessButton
                     type="button"
                     class="[ main-esi__hide ]"
                     aria-label={t('main_esi_banner.hide')}
                     x-on:click="hidden_until = Date.now() + 7 * 86400000"
-                >×</button>
+                >×</StylessButton>
             </div>
         </section>
     )
@@ -68,8 +69,8 @@ import Button from '@components/blocks/Button.astro'
         align-items: center;
         gap: var(--space-xs) var(--space-m);
         padding: var(--space-s) var(--space-m);
-        background-color: color-mix(in srgb, var(--security-status-point-4) 10%, transparent);
-        border: 1px solid color-mix(in srgb, var(--security-status-point-4) 55%, transparent);
+        background-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
+        border: 1px solid var(--fleet-yellow);
     }
 
     .main-esi__text {
@@ -92,9 +93,10 @@ import Button from '@components/blocks/Button.astro'
     .main-esi__hide {
         min-width: 44px;
         min-height: 44px;
+        text-align: center;
         border: 0;
         background: none;
-        color: var(--text-muted);
+        color: var(--faded);
         font-size: var(--step-1);
         cursor: pointer;
 

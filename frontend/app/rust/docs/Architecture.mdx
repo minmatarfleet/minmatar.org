@@ -47,7 +47,7 @@ Tokens follow the three-tier convention, expressed with CSS custom properties:
 
 1. **Primitive** — a raw value with no opinion: `--fleet-red: #b53620`, `--space-s: clamp(...)`.
 2. **Semantic** — an alias that says what it is for: `--foreground: var(--fleet-yellow)`,
-   `--button-color`, `--hairline`. Components use these where one exists, and themes (colour-blind mode) work
+   `--button-color`, `--border-color`. Components use these where one exists, and themes (colour-blind mode) work
    by redefining them.
 3. **Component** — scoped to one component through `define:vars` (`--button_background_color`). They never leak
    into `:root`.

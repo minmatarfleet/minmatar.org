@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import type { FleetParticipants } from '@helpers/api.minmatar.org/fleets'
-import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
+import { get_item_icon, get_player_icon } from '@helpers/eve_image'
 
 /**
  * Participants after the fleet: the pilots in join order with their ships
@@ -42,6 +42,8 @@ import FleetParticipantsByShip from '@components/blocks/FleetParticipantsByShip.
 import SectionTabs from '@components/blocks/SectionTabs.astro'
 import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
+import Tag from '@components/blocks/Tag.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
 ---
 
 <SectionTabs
@@ -69,14 +71,14 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                 <li>
                     <img src={get_item_icon(26914, 64)} alt="" width="40" height="40" loading="lazy" />
                     <span class="[ fleet-after__role ]"><b>{t('fleets.after.logi_fc')}</b><small>{participants.logi_fc.length}</small></span>
-                    <span class="[ fleet-after__chips ]">
+                    <FlexInline gap="var(--space-3xs) var(--space-2xs)" class="[ fleet-after__pilots ]">
                         {participants.logi_fc.length === 0 ?
                             <small>{t('fleets.after.nobody')}</small> :
                             participants.logi_fc.map(pilot =>
-                                <span class="[ fleet-after__chip ]"><img src={get_player_icon(pilot.character_id, 32)} alt="" width="24" height="24" loading="lazy" />{pilot.character_name}</span>
+                                <Tag variant="outline" text={pilot.character_name}><img slot="icon" src={get_player_icon(pilot.character_id, 32)} alt="" width="24" height="24" loading="lazy" /></Tag>
                             )
                         }
-                    </span>
+                    </FlexInline>
                 </li>
                 {participants.roles_flown.map(role =>
                     <li>
@@ -85,12 +87,12 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                             <b>{role_label[role.role] ?? role.label}</b>
                             <small>{role.count > 0 ? role.hulls.map(hull => `${hull.count} ${hull.ship_name}`).join(', ') : t('fleets.after.none_flown')}</small>
                         </span>
-                        <span class="[ fleet-after__chips ]">
+                        <FlexInline gap="var(--space-3xs) var(--space-2xs)" class="[ fleet-after__pilots ]">
                             {role.pilots.slice(0, CHIPS_SHOWN).map(pilot =>
-                                <span class="[ fleet-after__chip ]"><img src={get_player_icon(pilot.character_id, 32)} alt="" width="24" height="24" loading="lazy" />{pilot.character_name}</span>
+                                <Tag variant="outline" text={pilot.character_name}><img slot="icon" src={get_player_icon(pilot.character_id, 32)} alt="" width="24" height="24" loading="lazy" /></Tag>
                             )}
                             {role.pilots.length > CHIPS_SHOWN && <small>{t('fleets.after.more').replace('{count}', (role.pilots.length - CHIPS_SHOWN).toString())}</small>}
-                        </span>
+                        </FlexInline>
                     </li>
                 )}
             </ul>
@@ -117,10 +119,10 @@ import EmptyState from '@components/blocks/EmptyState.astro'
                                 <li>
                                     <img src={get_player_icon(pilot.character_id, 64)} alt="" width="40" height="40" loading="lazy" />
                                     <span class="[ fleet-after__role ]"><b>{pilot.character_name}</b></span>
-                                    <span class="[ fleet-after__chips ]">
+                                    <FlexInline gap="var(--space-3xs) var(--space-2xs)" class="[ fleet-after__pilots ]">
                                         {pilot.ship_type_id && <img src={get_item_icon(pilot.ship_type_id, 32)} alt="" width="24" height="24" loading="lazy" />}
                                         {pilot.ship_name}
-                                    </span>
+                                    </FlexInline>
                                 </li>
                             )}
                         </ul>
@@ -167,7 +169,7 @@ import EmptyState from '@components/blocks/EmptyState.astro'
     }
 
     .fleet-after__opsec {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .fleet-after__role {
@@ -179,29 +181,12 @@ import EmptyState from '@components/blocks/EmptyState.astro'
         }
     }
 
-    .fleet-after__chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-3xs) var(--space-2xs);
-        align-items: center;
-    }
-
-    .fleet-after__chip {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-3xs);
-        padding: 2px var(--space-2xs) 2px 2px;
-        border: 1px solid var(--border-color-hover);
-        font-size: var(--step--1);
-        color: var(--highlight);
-    }
-
     @media screen and (max-width: 48rem) {
         .fleet-after__roles li {
             grid-template-columns: 40px minmax(0, 1fr);
         }
 
-        .fleet-after__chips {
+        .fleet-after__pilots {
             grid-column: 1 / -1;
         }
     }

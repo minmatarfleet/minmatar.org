@@ -14,7 +14,7 @@ import {
     STRUCTURES_CLEARED_FROM_TIMERS,
 } from '@/data/campaigns/hek'
 
-import { get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import TextBox from '@components/layout/TextBox.astro'
@@ -22,7 +22,7 @@ import Grid from '@components/compositions/Grid.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
-import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
+import StatCard from '@components/blocks/StatCard.astro'
 import CharacterCard from '@components/blocks/CharacterCard.astro'
 import CharacterPicture from '@components/blocks/CharacterPicture.astro'
 import CountUpAnimation from '@components/blocks/CountUpAnimation.astro'
@@ -75,7 +75,7 @@ import { number_name } from '@helpers/numbers'
             column_gap="var(--space-3xs)"
             min_item_width="300px"
         >
-            <CampaignStat
+            <StatCard variant="glass"
                 label="ISK destroyed"
                 tone="success"
             >
@@ -84,9 +84,9 @@ import { number_name } from '@helpers/numbers'
                     target={ISK_DESTROYED}
                     data-tippy-content={number_name(ISK_DESTROYED, lang)}
                 />
-            </CampaignStat>
+            </StatCard>
             
-            <CampaignStat
+            <StatCard variant="glass"
                 label="ISK lost"
                 tone='danger'
             >
@@ -95,9 +95,9 @@ import { number_name } from '@helpers/numbers'
                     target={ISK_LOST}
                     data-tippy-content={number_name(ISK_LOST, lang)}
                 />
-            </CampaignStat>
+            </StatCard>
 
-            <CampaignStat
+            <StatCard variant="glass"
                 label="Surrender ISK"
             >
                 <CountUpAnimation
@@ -105,7 +105,7 @@ import { number_name } from '@helpers/numbers'
                     target={SURRENDER_ISK}
                     data-tippy-content={number_name(SURRENDER_ISK, lang)}
                 />
-            </CampaignStat>
+            </StatCard>
         </Grid>
     </Flexblock>
 </TextBox>
@@ -265,7 +265,7 @@ import { number_name } from '@helpers/numbers'
         gap: var(--space-m);
         min-width: 0;
         padding-top: var(--space-l);
-        border-top: 1px solid color-mix(in srgb, var(--border-color) 45%, transparent);
+        border-top: 1px solid color-mix(in srgb, var(--border-color) var(--tint-strong), transparent);
     }
 
     .hek-campaign__meta {
@@ -298,8 +298,8 @@ import { number_name } from '@helpers/numbers'
         align-items: center;
         gap: var(--space-s);
         padding: var(--space-s);
-        background: color-mix(in srgb, var(--component-background) 80%, transparent);
-        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        background: color-mix(in srgb, var(--component-background) var(--tint-heavy), transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
         min-width: 0;
         text-align: center;
     }
@@ -341,7 +341,7 @@ import { number_name } from '@helpers/numbers'
         margin: 0;
         padding: 0;
         list-style: none;
-        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
     }
 
     .hek-campaign__timeline-item {
@@ -349,7 +349,7 @@ import { number_name } from '@helpers/numbers'
         grid-template-columns: 7.5rem minmax(0, 1fr);
         gap: var(--space-m);
         padding: var(--space-m) var(--space-l);
-        border-bottom: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
+        border-bottom: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
 
         &:last-child {
             border-bottom: none;
@@ -403,7 +403,7 @@ import { number_name } from '@helpers/numbers'
         overflow: hidden;
         text-decoration: none;
         color: inherit;
-        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
         border-left-width: 3px;
         transition:
             border-color 0.15s ease,
@@ -435,7 +435,7 @@ import { number_name } from '@helpers/numbers'
 
         &:hover,
         &:focus-visible {
-            border-color: color-mix(in srgb, var(--border-color-hover) 80%, transparent);
+            border-color: color-mix(in srgb, var(--border-color-hover) var(--tint-heavy), transparent);
         }
 
         &:focus-visible {
@@ -471,9 +471,9 @@ import { number_name } from '@helpers/numbers'
             background:
                 linear-gradient(
                     90deg,
-                    color-mix(in srgb, hsl(0 0% 4%) 94%, var(--fleet-red) 6%) 0%,
-                    color-mix(in srgb, hsl(0 0% 4%) 82%, var(--fleet-red) 5%) 42%,
-                    color-mix(in srgb, hsl(0 0% 4%) 58%, transparent) 100%
+                    color-mix(in srgb, var(--black) 94%, var(--fleet-red) 6%) 0%,
+                    color-mix(in srgb, var(--black) 82%, var(--fleet-red) 5%) 42%,
+                    color-mix(in srgb, var(--black) var(--tint-bold), transparent) 100%
                 );
         }
     }
@@ -485,9 +485,9 @@ import { number_name } from '@helpers/numbers'
             background:
                 linear-gradient(
                     90deg,
-                    color-mix(in srgb, hsl(0 0% 4%) 94%, var(--alliance-blue) 6%) 0%,
-                    color-mix(in srgb, hsl(0 0% 4%) 82%, var(--alliance-blue) 5%) 42%,
-                    color-mix(in srgb, hsl(0 0% 4%) 58%, transparent) 100%
+                    color-mix(in srgb, var(--black) 94%, var(--alliance-blue) 6%) 0%,
+                    color-mix(in srgb, var(--black) 82%, var(--alliance-blue) 5%) 42%,
+                    color-mix(in srgb, var(--black) var(--tint-bold), transparent) 100%
                 );
         }
     }
@@ -499,9 +499,9 @@ import { number_name } from '@helpers/numbers'
             background:
                 linear-gradient(
                     90deg,
-                    color-mix(in srgb, hsl(0 0% 4%) 94%, var(--fleet-red) 6%) 0%,
-                    color-mix(in srgb, hsl(0 0% 4%) 82%, var(--fleet-red) 5%) 42%,
-                    color-mix(in srgb, hsl(0 0% 4%) 58%, transparent) 100%
+                    color-mix(in srgb, var(--black) 94%, var(--fleet-red) 6%) 0%,
+                    color-mix(in srgb, var(--black) 82%, var(--fleet-red) 5%) 42%,
+                    color-mix(in srgb, var(--black) var(--tint-bold), transparent) 100%
                 );
         }
     }
@@ -536,21 +536,21 @@ import { number_name } from '@helpers/numbers'
         text-transform: uppercase;
         border: 1px solid transparent;
         line-height: 1.4;
-        color: color-mix(in srgb, var(--alliance-blue) 65%, white);
-        background: color-mix(in srgb, var(--alliance-blue) 18%, transparent);
-        border-color: color-mix(in srgb, var(--alliance-blue) 35%, transparent);
+        color: var(--alliance-blue-text);
+        background: color-mix(in srgb, var(--alliance-blue) var(--tint-soft), transparent);
+        border-color: color-mix(in srgb, var(--alliance-blue) var(--tint-medium), transparent);
     }
 
     .hek-headline-card--aar .hek-headline-card__tag {
         color: var(--fleet-yellow);
-        background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
-        border-color: color-mix(in srgb, var(--fleet-yellow) 28%, transparent);
+        background: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
+        border-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-medium), transparent);
     }
 
     .hek-headline-card--video .hek-headline-card__tag {
-        color: color-mix(in srgb, var(--fleet-red) 75%, white);
-        background: color-mix(in srgb, var(--fleet-red) 18%, transparent);
-        border-color: color-mix(in srgb, var(--fleet-red) 35%, transparent);
+        color: var(--fleet-red-text);
+        background: color-mix(in srgb, var(--fleet-red) var(--tint-soft), transparent);
+        border-color: color-mix(in srgb, var(--fleet-red) var(--tint-medium), transparent);
     }
 
     .hek-headline-card__title {

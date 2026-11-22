@@ -38,6 +38,7 @@ import Input from '@components/blocks/Input.astro';
 import Textarea from '@components/blocks/Textarea.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <DialogButton
@@ -85,18 +86,18 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
                     <template x-for="pilot in picked" x-bind:key="pilot.user_id">
                         <span class="[ invite-pick ]">
                             <img
-                                x-bind:src="`https://images.evetech.net/characters/${pilot.character_id}/portrait?size=64`"
+                                x-bind:src="get_player_icon(pilot.character_id, 64)"
                                 alt=""
                                 width="28"
                                 height="28"
                             />
                             <span x-text="pilot.name"></span>
-                            <button
+                            <StylessButton
                                 type="button"
                                 class="[ invite-pick__remove ]"
                                 x-bind:aria-label={`${remove_label}.replace('{name}', pilot.name)`}
                                 x-on:click="toggle_pick(pilot.user_id, pilot.name, pilot.character_id)"
-                            >×</button>
+                            >×</StylessButton>
                             <input type="hidden" name="user_ids" x-bind:value="pilot.user_id" />
                         </span>
                     </template>
@@ -184,9 +185,10 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
     }
 
     .invite-pick__remove {
+        text-align: center;
         min-width: var(--space-l);
         min-height: var(--space-l);
-        color: var(--text-muted);
+        color: var(--faded);
         background: transparent;
         border: none;
         cursor: pointer;

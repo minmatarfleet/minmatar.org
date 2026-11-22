@@ -6,16 +6,24 @@ interface Props {
     padding_inline?:    string;
     width?:             'narrow' | 'normal' | 'thin';
     heavier?:           boolean;
+    /** `guide`: the flat bordered panel the ship guides use, with a display-font heading. */
+    variant?:           'default' | 'guide';
     [propName: string]: any;
 }
 
 const {
+    variant = 'default',
+    ...props
+} = Astro.props
+const guide = variant === 'guide'
+
+const {
     padding_block = 'var(--component-padding-block)',
-    padding_inline = 'var(--space-l-xl)',
+    padding_inline = guide ? 'var(--guide-panel-padding-inline, var(--space-l-xl))' : 'var(--space-l-xl)',
     width = 'normal',
     heavier = false,
     ...attributes
-} = Astro.props
+} = props
 
 const effect = (heavier ? 'light-transparency-heavier' : 'light-transparency')
 
@@ -23,10 +31,42 @@ delete attributes.class
 ---
 
 <Wrapper
-    class:list={['[ card border component ]', Astro.props.class, effect]}
+    class:list={guide ? ['[ component-block--guide ]', Astro.props.class] : ['[ card border component ]', Astro.props.class, effect]}
     padding_block={padding_block}
     padding_inline={padding_inline}
     max_width={(width == 'narrow' ? 'var(--max-text-width)' : width == 'thin' ? '650px' : '100%')}
     {...attributes}>
     <slot />
 </Wrapper>
+
+<style lang="scss">
+    // The panel look of the ship guides: a flat, bordered, translucent panel with display-font headings.
+    :global(.component-block--guide) {
+        background: color-mix(in srgb, var(--component-background) var(--tint-heavy), transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
+        min-width: 0;
+
+        @media (max-width: 48rem) {
+            --guide-panel-padding-inline: var(--space-s);
+        }
+
+        :global(h2) {
+            margin: 0 0 var(--space-m);
+            padding-bottom: var(--space-s);
+            border-bottom: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
+            font-family: var(--guide-display-font, var(--heading-font));
+            font-size: clamp(var(--step-1), 2.5vw, var(--step-2));
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        :global(h3) {
+            margin: var(--space-l) 0 var(--space-m);
+            font-family: var(--guide-display-font, var(--heading-font));
+            font-size: var(--step-0);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--highlight);
+        }
+    }
+</style>

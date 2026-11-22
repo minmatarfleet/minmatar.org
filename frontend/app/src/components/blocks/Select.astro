@@ -13,7 +13,7 @@ const {
 } = Astro.props
 ---
 
-<div class="max-h-[66px] relative">
+<div class="[ select-group ][ max-h-[66px] relative ]">
     <select {...attributes} data-size={size}>
         <slot />
     </select>
@@ -28,6 +28,10 @@ const {
 </style>
 
 <style lang="scss">
+    /* The caret and listbox z-index values stay inside the field. */
+    .select-group {
+        isolation: isolate;
+    }
     svg {
         color: var(--highlight);
         position: absolute;
@@ -50,7 +54,7 @@ const {
         color: var(--form-color);
         background-color: transparent;
         border: solid 1px var(--border-color);
-        background-color: rgba(85, 85, 85, 0.1);
+        background-color: color-mix(in srgb, var(--neutral-600) var(--tint-subtle), transparent);
         transition: var(--fast-transition);
         position: relative;
         width: 100%;
@@ -68,7 +72,9 @@ const {
         }
 
         &:focus-visible {
-            outline: none;
+            /* Keyboard focus ring, as on links (_global.scss). */
+            outline-color: var(--highlight);
+            outline-style: double;
             background-color: var(--component-background);
         }
     }

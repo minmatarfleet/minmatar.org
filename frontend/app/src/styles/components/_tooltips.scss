@@ -1,6 +1,6 @@
 [data-tooltip] {
     --tooltip-background-color:     #212121;
-    --tooltip-border-color:         #333;
+    --tooltip-border-color:         var(--neutral-800);
     --tooltip-color:                var(--highlight);
     position:relative; /* making the [tooltip] span a container for the tooltip text */
     filter: drop-shadow(2px 4px 6px black);

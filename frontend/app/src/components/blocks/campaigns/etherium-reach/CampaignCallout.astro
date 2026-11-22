@@ -17,8 +17,8 @@ const { title, tone = 'neutral' } = Astro.props
 <style lang="scss">
     .er-callout {
         padding: var(--space-m) var(--space-l);
-        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
-        background: color-mix(in srgb, var(--component-background) 70%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
+        background: color-mix(in srgb, var(--component-background) var(--tint-heavy), transparent);
     }
 
     .er-callout--info {

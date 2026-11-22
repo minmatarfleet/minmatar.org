@@ -1,7 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap');
-
 .guide-shell {
-    --guide-shell-display-font: 'Orbitron', var(--heading-font);
+    --guide-shell-display-font: var(--guide-display-font);
     width: 100%;
     max-width: 100%;
     min-width: 0;
@@ -30,9 +28,7 @@
         .guide-contents__nav,
         .guide-md-panel,
         .cap-panel,
-        .fwc-panel,
-        .nfg-panel,
-        .ndm-panel,
+        .component-block--guide,
         .guide-ship
     ) {
         padding-inline: var(--space-xs);
@@ -44,9 +40,7 @@
 
     .guide-shell.card :is(
         .guide-ship__stats,
-        .fwc-summary-card,
-        .nfg-summary-card,
-        .ndm-summary-card
+        .ship-guide__summary-card
     ) {
         padding-inline: var(--space-s);
     }
@@ -56,7 +50,7 @@
     margin-bottom: var(--space-2xl);
     padding-bottom: var(--space-xl);
     text-align: center;
-    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color) var(--tint-bold), transparent);
 }
 
 .guide-shell__title {

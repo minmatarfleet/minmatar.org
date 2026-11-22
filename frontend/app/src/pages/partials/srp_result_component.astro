@@ -101,6 +101,7 @@ import FireworksPopup from '@components/blocks/FireworksPopup.astro'
 import SRPWizardActions from '@components/blocks/SRPWizardActions.astro'
 import Markdown from '@components/blocks/Markdown.astro'
 ---
+{/* no-error-refetch: only answers the SRP form POST: a failed submit renders in the result card, and a failed stats read falls back to 'not available'. */}
 
 {killmail_submitted &&
     <FireworksPopup

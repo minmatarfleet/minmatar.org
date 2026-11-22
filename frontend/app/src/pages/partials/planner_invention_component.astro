@@ -48,7 +48,7 @@ const headline = quote
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
-import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import DataTable from '@components/blocks/DataTable.astro'
 ---
 
 {fetching_error !== false || !quote ?
@@ -77,17 +77,7 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
                     .replace('{p90}', n(quote.attempts_p90))}
             </p>
 
-            <XFadeScroll>
-                <table class="[ invention-table ]">
-                    <thead>
-                        <tr>
-                            <th scope="col">{t('industry.orders.planner.invention_input')}</th>
-                            <th scope="col" class="[ num ]">{t('industry.orders.planner.invention_per_attempt')}</th>
-                            <th scope="col" class="[ num ]">{t('industry.orders.planner.invention_to_buy')}</th>
-                            <th scope="col" class="[ num ]">{t('industry.orders.planner.invention_unit_price')}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <DataTable class="[ invention-table ]" density="dense" columns={[{ key: 'c0', label: t('industry.orders.planner.invention_input') }, { key: 'c1', label: t('industry.orders.planner.invention_per_attempt'), numeric: true }, { key: 'c2', label: t('industry.orders.planner.invention_to_buy'), numeric: true }, { key: 'c3', label: t('industry.orders.planner.invention_unit_price'), numeric: true }]}>
                         {quote.inputs.map(input =>
                             <tr>
                                 <th scope="row">
@@ -96,33 +86,20 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
                                         <span>{input.name}</span>
                                     </span>
                                 </th>
-                                <td class="[ num ]">{n(input.quantity_per_attempt)}</td>
-                                <td class="[ num ]">{n(input.buy_quantity)}</td>
-                                <td class="[ num ]">{isk(input.unit_price)}</td>
+                                <td class="[ num data-table__numeric ]">{n(input.quantity_per_attempt)}</td>
+                                <td class="[ num data-table__numeric ]">{n(input.buy_quantity)}</td>
+                                <td class="[ num data-table__numeric ]">{isk(input.unit_price)}</td>
                             </tr>
                         )}
-                    </tbody>
-                </table>
-            </XFadeScroll>
+                </DataTable>
 
             {quote.alternatives.length > 0 &&
-                <XFadeScroll>
-                    <table class="[ invention-table ]">
-                        <caption>{t('industry.orders.planner.invention_compare')}</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col">{t('industry.orders.planner.decryptor')}</th>
-                                <th scope="col" class="[ num ]">{t('industry.orders.planner.invention_chance')}</th>
-                                <th scope="col" class="[ num ]">{t('industry.orders.planner.invention_copy_col')}</th>
-                                <th scope="col" class="[ num ]">{t('industry.orders.planner.invention_unit_cost')}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                <DataTable class="[ invention-table ]" density="dense" caption_visible={true} caption={t('industry.orders.planner.invention_compare')} columns={[{ key: 'c0', label: t('industry.orders.planner.decryptor') }, { key: 'c1', label: t('industry.orders.planner.invention_chance'), numeric: true }, { key: 'c2', label: t('industry.orders.planner.invention_copy_col'), numeric: true }, { key: 'c3', label: t('industry.orders.planner.invention_unit_cost'), numeric: true }]}>
                             <tr class="[ is-best ]">
                                 <th scope="row">{quote.decryptor_name}</th>
-                                <td class="[ num ]">{pct(quote.chance)}</td>
-                                <td class="[ num ]">{`${n(quote.runs_per_copy)} · ME ${n(quote.copy_me)}`}</td>
-                                <td class="[ num ]">{isk(quote.per_unit_isk)}</td>
+                                <td class="[ num data-table__numeric ]">{pct(quote.chance)}</td>
+                                <td class="[ num data-table__numeric ]">{`${n(quote.runs_per_copy)} · ME ${n(quote.copy_me)}`}</td>
+                                <td class="[ num data-table__numeric ]">{isk(quote.per_unit_isk)}</td>
                             </tr>
                             {quote.alternatives.map(option =>
                                 <tr>
@@ -132,14 +109,12 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
                                             <small>{option.source_name}</small>
                                         }
                                     </th>
-                                    <td class="[ num ]">{pct(option.chance)}</td>
-                                    <td class="[ num ]">{`${n(option.runs_per_copy)} · ME ${n(option.copy_me)}`}</td>
-                                    <td class="[ num ]">{isk(option.per_unit_isk)}</td>
+                                    <td class="[ num data-table__numeric ]">{pct(option.chance)}</td>
+                                    <td class="[ num data-table__numeric ]">{`${n(option.runs_per_copy)} · ME ${n(option.copy_me)}`}</td>
+                                    <td class="[ num data-table__numeric ]">{isk(option.per_unit_isk)}</td>
                                 </tr>
                             )}
-                        </tbody>
-                    </table>
-                </XFadeScroll>
+                    </DataTable>
             }
         </div>
     </details>
@@ -181,43 +156,18 @@ import XFadeScroll from '@components/compositions/XFadeScroll.astro'
         color: var(--foreground);
     }
 
-    .invention-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: var(--step--1);
+    tbody th small {
+        display: block;
+        color: var(--faded);
+    }
 
-        caption {
-            padding-block-end: var(--space-2xs);
-            text-align: start;
-            color: var(--foreground);
-        }
+    .num {
+        white-space: nowrap;
+    }
 
-        th,
-        td {
-            padding: var(--space-3xs) var(--space-2xs);
-            border-block-end: solid 1px var(--hairline);
-            text-align: start;
-            font-weight: normal;
-        }
-
-        thead th {
-            color: var(--foreground);
-        }
-
-        tbody th small {
-            display: block;
-            color: var(--text-muted);
-        }
-
-        .num {
-            text-align: end;
-            white-space: nowrap;
-        }
-
-        .is-best th,
-        .is-best td {
-            color: var(--highlight);
-        }
+    .is-best th,
+    .is-best td {
+        color: var(--highlight);
     }
 
     .item {

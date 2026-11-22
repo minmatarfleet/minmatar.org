@@ -4,7 +4,7 @@ const { t, translatePath } = i18n(Astro.url)
 
 import type { IntelMemberCrosscheck } from '@dtypes/api.minmatar.org'
 import { fill, format_month, intel_bloc_path, intel_entity_image, intel_entity_path } from '@helpers/intel_affiliations'
-import { get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image'
 
 /**
  * Our own pilots who keep turning up on another bloc's kills. Leads for the
@@ -82,7 +82,7 @@ import IntelBlocTag from '@components/blocks/IntelBlocTag.astro'
         margin: 0;
         max-width: var(--max-text-width);
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .intel-members__pilot {
@@ -92,7 +92,7 @@ import IntelBlocTag from '@components/blocks/IntelBlocTag.astro'
         small {
             display: block;
             font-size: var(--step--2);
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         &:hover > span,

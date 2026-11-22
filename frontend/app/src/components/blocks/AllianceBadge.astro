@@ -27,7 +27,7 @@ const alliance_name = alliance?.name ?? (alliance_eve?.name ?? get_eve_alliance_
 
 const { logo: logo_size, quality: logo_qlty, gap } = entity_badge_size(alliance?.size)
 
-import { get_alliance_logo } from '@helpers/eve_image_server';
+import { get_alliance_logo } from '@helpers/eve_image';
 import FixedFluid from '@components/compositions/FixedFluid.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 ---

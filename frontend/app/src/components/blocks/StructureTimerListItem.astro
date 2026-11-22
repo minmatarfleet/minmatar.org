@@ -20,7 +20,7 @@ const {
     ...attributes
 } = Astro.props
 
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 import { query_string } from '@helpers/string';
 
 const ITEM_ID = `structure-timer-${structure_timer.id}`
@@ -38,7 +38,7 @@ import Tag from '@components/blocks/Tag.astro';
 import LocalTimeGroup from '@components/blocks/LocalTimeGroup.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 import TimeAlternator from '@components/blocks/TimeAlternator.astro';
-import StatusText from '@components/blocks/StatusText.astro';
+import StatusText from '@components/blocks/fleets/StatusText.astro';
 
 const STRUCTURE_TIMER_LIST_ITEM_PARTIAL_URL = translatePath('/partials/structure_timer_list_item_component/')
 
@@ -170,7 +170,6 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                         })}`}
                         target="_blank"
                         rel="nofollow noopener noreferrer"
-                        x-init="tippy($el, tippy_options)"
                     >
                         {t('create_fleet')}
                     </Button>

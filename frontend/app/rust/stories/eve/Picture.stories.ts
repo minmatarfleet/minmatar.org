@@ -14,7 +14,8 @@ export default {
         docs: {
             description: {
                 component: [
-                    'A generic lazy-loaded `<picture>` + `<img>` for any image URL (posts, doctrine renders, thumbnails). For EVE portraits, logos and item icons use `CharacterPicture`, `CorporationPicture` and `ItemPicture`, which build the image-server URL from an id.',
+                    'A generic lazy-loaded `<picture>` + `<img>` for any image URL (posts, doctrine renders, thumbnails). For EVE portraits, logos and item icons use `CharacterPicture`, `CorporationPicture` and `ItemPicture`: they build the image-server URL from an id (`@helpers/eve_image`) and render through this component, so the mask and the quantity badge are defined once.',
+                    '`quantity` adds a count badge on the bottom-right corner (`tag_color` picks its colour); `target` wraps the image in a link, button or span (its `attrs` go on that element); `brighten` lights the image on hover; `img_attrs` adds attributes such as Alpine `x-bind:src` to the `<img>`. Other attributes go to the `<picture>`.',
                     '`size` sets the `width` attribute; `height` follows `size` unless `narrow` is set (then 412). `zoomable` swaps the `<img>` for `ZoomableImage` (medium-zoom lightbox). `thumbnail` crops to a shared 3:4 ratio so reels and cards line up. `placeholder` is swapped in through an inline `onerror` if the image fails.',
                 ].join('\n\n'),
             },
@@ -29,6 +30,9 @@ export default {
         zoomable: { control: 'boolean', description: 'Click to open the image in a zoom lightbox.' },
         placeholder: { control: 'text', description: 'URL swapped in when the image fails to load.' },
         thumbnail: { control: 'boolean', description: 'Crop to a shared 3:4 aspect ratio (`fixed-thumbnail`).' },
+        quantity: { control: 'number', description: 'Count shown in a badge on the picture.' },
+        tag_color: { control: 'text', description: 'Badge colour token (default `fleet-red`).' },
+        brighten: { control: 'boolean', description: 'Brighten the image on hover.' },
         astro_image: { control: 'object', description: 'Options forwarded to Astro `Image` when `zoomable`.' },
     },
     args: {
@@ -110,5 +114,32 @@ export const Zoomable = {
         const img = within(canvasElement).getByRole('img', { name: 'Zoomable Rifter render' })
         await expect(img.closest('figure')).toBeInTheDocument()
         await expect(img).toHaveAttribute('loading', 'lazy')
+    },
+}
+
+export const WithQuantity = {
+    args: { quantity: 12, size: 64 },
+    play: async ({ canvasElement }: Ctx) => {
+        const badge = canvasElement.querySelector('.quantity-badge') as HTMLElement
+        await expect(badge).toHaveTextContent('12')
+        await expect(badge.closest('picture')).not.toBeNull()
+    },
+}
+
+export const NoBadgeWithoutQuantity = {
+    args: { quantity: 0 },
+    play: async ({ canvasElement }: Ctx) => {
+        await expect(canvasElement.querySelector('.quantity-badge')).toBeNull()
+    },
+}
+
+export const LinkTarget = {
+    name: 'Wrapped in a link target',
+    args: { target: { tag: 'a', attrs: { href: '/alliance/corporations/1/' } }, brighten: true },
+    play: async ({ canvasElement }: Ctx) => {
+        const link = within(canvasElement).getByRole('link')
+        await expect(link).toHaveAttribute('href', '/alliance/corporations/1/')
+        await expect(link.querySelector('img')).not.toBeNull()
+        await expect(canvasElement.querySelector('picture')).toHaveClass('brighten')
     },
 }

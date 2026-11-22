@@ -3,7 +3,7 @@
  * Manage learning: Onboarding.
  *
  * part=list  the programs and how many pilots are on the current version (GET)
- * part=bump  bump a program's version (POST): the row, inside a <table>
+ * part=bump  bump a program's version (POST): the row, inside a RowSwapFrame
  *
  * Writes go through the learning manage API, which writes the audit log.
  */
@@ -21,6 +21,7 @@ import { query_string } from '@helpers/string'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import RowSwapFrame from '@components/blocks/manage/RowSwapFrame.astro'
 import LearningOnboardingRow from '@components/blocks/learning_manage/LearningOnboardingRow.astro'
 
 const { auth_token } = get_request_user(Astro)
@@ -75,8 +76,7 @@ const COLUMNS = [
 }
 
 {part === 'bump' && bumped &&
-    // Inside a <table>: htmx drops a bare <tbody> after Astro's leading styles.
-    <table>
+    <RowSwapFrame>
         <LearningOnboardingRow program={bumped} bump_url={bump_url} open={true} bumped={true} />
-    </table>
+    </RowSwapFrame>
 }

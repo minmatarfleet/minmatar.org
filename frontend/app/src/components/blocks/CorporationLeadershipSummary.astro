@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import type { CorporationLeadershipMember } from '@dtypes/api.minmatar.org'
-import { get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image'
 import { timezone_regions } from '@helpers/timezones'
 
 interface Props {
@@ -135,7 +135,7 @@ const directors = leadership.filter((member) => member.role === 'director')
     }
 
     .zone {
-        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
         padding: 0 var(--space-3xs);
         font-size: var(--step--2);
         font-weight: 600;

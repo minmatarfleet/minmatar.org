@@ -53,6 +53,8 @@ import type { TagColors } from '@dtypes/layout_components'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
 import UsefulForShips from '@components/blocks/UsefulForShips.astro'
@@ -61,6 +63,7 @@ import Tag from '@components/blocks/Tag.astro'
 import Input from '@components/blocks/Input.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 import SellOrderGapsSkeleton from '@components/blocks/SellOrderGapsSkeleton.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 
 const FLAG_META: Record<string, { label: string; color: TagColors; tip?: string }> = {
     out_of_stock: {
@@ -418,59 +421,55 @@ const initial_showing_after = fill_showing_part(
                     <Flexblock gap="var(--space-xs)">
                         <div class="[ ops-sell-gaps__filter-row ]">
                             <span class="[ ops-sell-gaps__filter-label ]">{t('ops_gap_filter_criteria')}</span>
-                            <div class="[ ops-sell-gaps__chips ]">
+                            <ChipGroup wrap={true}>
                                 {criteria_options.map(opt =>
-                                    <button
-                                        type="button"
-                                        class="[ ops-sell-gaps__chip ]"
+                                    <FilterChip
+                                        x-bind:aria-pressed={`criteria_active('${opt.id}')`}
                                         x-bind:class={`criteria_active('${opt.id}') && 'is-active'`}
                                         x-on:click={`toggle_criteria('${opt.id}')`}
                                         {...('tip' in opt && opt.tip
                                             ? { 'data-tippy-content': opt.tip }
                                             : {})}
-                                    >{opt.label}</button>
+                                    >{opt.label}</FilterChip>
                                 )}
-                            </div>
+                            </ChipGroup>
                         </div>
                         <div class="[ ops-sell-gaps__filter-row ]">
                             <span class="[ ops-sell-gaps__filter-label ]">{t('ops_gap_filter_type')}</span>
-                            <div class="[ ops-sell-gaps__chips ]">
+                            <ChipGroup wrap={true}>
                                 {type_options.map(opt =>
-                                    <button
-                                        type="button"
-                                        class="[ ops-sell-gaps__chip ]"
+                                    <FilterChip
+                                        x-bind:aria-pressed={`types_active('${opt.id}')`}
                                         x-bind:class={`types_active('${opt.id}') && 'is-active'`}
                                         x-on:click={`toggle_types('${opt.id}')`}
-                                    >{opt.label}</button>
+                                    >{opt.label}</FilterChip>
                                 )}
-                            </div>
+                            </ChipGroup>
                         </div>
                         <div class="[ ops-sell-gaps__filter-row ]">
                             <span class="[ ops-sell-gaps__filter-label ]">{t('ops_gap_filter_variant')}</span>
-                            <div class="[ ops-sell-gaps__chips ]">
+                            <ChipGroup wrap={true}>
                                 {variant_options.map(opt =>
-                                    <button
-                                        type="button"
-                                        class="[ ops-sell-gaps__chip ]"
+                                    <FilterChip
+                                        x-bind:aria-pressed={`variants_active('${opt.id}')`}
                                         x-bind:class={`variants_active('${opt.id}') && 'is-active'`}
                                         x-on:click={`toggle_variants('${opt.id}')`}
-                                    >{opt.label}</button>
+                                    >{opt.label}</FilterChip>
                                 )}
-                            </div>
+                            </ChipGroup>
                         </div>
                         <div class="[ ops-sell-gaps__filter-row ]">
                             <span class="[ ops-sell-gaps__filter-label ]">{t('ops_gap_order_by')}</span>
-                            <div class="[ ops-sell-gaps__chips ]">
+                            <ChipGroup wrap={true}>
                                 {order_by_options.map(opt =>
-                                    <button
-                                        type="button"
-                                        class="[ ops-sell-gaps__chip ]"
+                                    <FilterChip
+                                        x-bind:aria-pressed={`order_by === '${opt.id}'`}
                                         x-bind:class={`order_by === '${opt.id}' && 'is-active'`}
                                         x-on:click={`setOrderBy('${opt.id}')`}
                                         x-text={`orderLabel('${opt.id}', '${opt.label}')`}
-                                    >{opt.label}</button>
+                                    >{opt.label}</FilterChip>
                                 )}
-                            </div>
+                            </ChipGroup>
                         </div>
                     </Flexblock>
                 </ComponentBlock>
@@ -490,11 +489,11 @@ const initial_showing_after = fill_showing_part(
             </div>
 
             <div x-show="!filtering">
-                <p
-                    class="[ ops-sell-gaps__empty ]"
+                <EmptyState
+                    title={rows.length === 0 ? '—' : empty_label}
                     x-show="visibleCount === 0"
                     style={initial_visible_count > 0 ? 'display: none' : undefined}
-                >{rows.length === 0 ? '—' : empty_label}</p>
+                />
 
                 <Flexblock gap="var(--space-2xs)" class="[ ops-sell-gaps__list ]">
                     {rows.map((row, index) =>
@@ -661,13 +660,13 @@ const initial_showing_after = fill_showing_part(
     .ops-sell-gaps__showing {
         margin: 0;
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .ops-sell-gaps__term {
         color: var(--highlight);
         cursor: help;
-        border-bottom: 1px dotted color-mix(in srgb, var(--highlight) 55%, transparent);
+        border-bottom: 1px dotted color-mix(in srgb, var(--highlight) var(--tint-bold), transparent);
     }
 
     .ops-sell-gaps__list {
@@ -700,50 +699,8 @@ const initial_showing_after = fill_showing_part(
         color: var(--fleet-yellow);
     }
 
-    .ops-sell-gaps__chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-3xs);
-    }
-
-    .ops-sell-gaps__chip {
-        appearance: none;
-        margin: 0;
-        padding: var(--space-3xs) var(--space-xs);
-        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 40%, transparent);
-        background: transparent;
-        color: var(--fleet-yellow);
-        font-family: var(--button-font);
-        font-size: var(--step--2);
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        cursor: pointer;
-        transition: var(--fast-transition);
-
-        @media (hover: hover) {
-            &:hover {
-                border-color: var(--fleet-yellow);
-                background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
-            }
-        }
-
-        &.is-active {
-            border-color: var(--fleet-yellow);
-            background: var(--fleet-yellow);
-            color: var(--background);
-        }
-    }
-
     .ops-sell-gaps__results {
         min-height: min(28rem, 55vh);
-    }
-
-    .ops-sell-gaps__empty {
-        margin: 0;
-        padding-block: var(--space-m);
-        color: var(--text-muted);
-        font-size: var(--step--1);
     }
 
     .ops-sell-gap-card {
@@ -793,7 +750,7 @@ const initial_showing_after = fill_showing_part(
         align-items: baseline;
         gap: 0.15rem 0.45rem;
         padding: 0.12rem var(--space-s);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
         background: rgba(0, 0, 0, 0.16);
         line-height: 1.2;
     }

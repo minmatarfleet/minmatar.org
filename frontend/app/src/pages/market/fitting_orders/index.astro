@@ -45,7 +45,7 @@ import Button from '@components/blocks/Button.astro'
 import Input from '@components/blocks/Input.astro'
 import ChipGroup from '@components/blocks/ChipGroup.astro'
 import FilterChip from '@components/blocks/FilterChip.astro'
-import Table from '@components/blocks/Table.astro'
+import RowList from '@components/blocks/RowList.astro'
 import FittingBuyOrderItem from '@components/blocks/FittingBuyOrderItem.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 
@@ -165,14 +165,14 @@ const breadcrumbs = [
                             </Button>
                         </Flexblock>
                     ) : (
-                        <Table width="100%" responsive={false}>
+                        <RowList width="100%" responsive={false}>
                             {orders.map((order) => (
                                 <div class="[ fitting-buy-order-item ]" x-show="show_item($el)">
                                     <FittingBuyOrderItem order={order} />
                                 </div>
                             ))}
                             <p class="[ no-result-text ]">{t('no_results')}</p>
-                        </Table>
+                        </RowList>
                     )}
                 </Flexblock>
             )}

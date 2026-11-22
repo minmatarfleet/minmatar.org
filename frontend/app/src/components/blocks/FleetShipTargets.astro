@@ -4,7 +4,7 @@ const { t, translatePath } = i18n(Astro.url)
 
 import type { ShipTargetProgress, TargetSuggestions, UnmatchedHull } from '@helpers/api.minmatar.org/fleets'
 import { query_string } from '@helpers/string'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 
 /**
  * Ship targets on the Ships tab: each line says how many more are needed.
@@ -51,8 +51,11 @@ const unmatched_text = unmatched
 
 const SWAP = { 'hx-target': '#fleet-ship-targets', 'hx-swap': 'outerHTML' }
 
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
 import ShipTargetMeter from '@components/blocks/ShipTargetMeter.astro'
 import Button from '@components/blocks/Button.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {(can_manage || targets.length > 0) &&
@@ -66,9 +69,9 @@ import Button from '@components/blocks/Button.astro'
             }
             {status && <small role="status">{status}</small>}
             {can_manage && targets.length > 0 &&
-                <button type="button" class="[ ship-targets__link ]" hx-get={mode_url('edit', { target_id: 'new' })} {...SWAP}>
+                <StylessButton type="button" class="[ ship-targets__link ]" hx-get={mode_url('edit', { target_id: 'new' })} {...SWAP}>
                     {t('fleets.targets.add_line')}
-                </button>
+                </StylessButton>
             }
         </header>
 
@@ -82,11 +85,11 @@ import Button from '@components/blocks/Button.astro'
                         {can_manage &&
                             <span class="[ ship-targets__actions ]">
                                 {can_invite && target.short > 0 &&
-                                    <button type="button" class="[ ship-targets__link ]" hx-get={mode_url('find', { target_id: target.id })} {...SWAP}>
+                                    <StylessButton type="button" class="[ ship-targets__link ]" hx-get={mode_url('find', { target_id: target.id })} {...SWAP}>
                                         {t('fleets.targets.find_pilots')}
-                                    </button>
+                                    </StylessButton>
                                 }
-                                <button
+                                <StylessButton
                                     type="button"
                                     class="[ ship-targets__icon ]"
                                     aria-label={t('fleets.targets.edit_line_label').replace('{name}', target.name)}
@@ -94,7 +97,7 @@ import Button from '@components/blocks/Button.astro'
                                     {...SWAP}
                                 >
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg>
-                                </button>
+                                </StylessButton>
                             </span>
                         }
                     </li>
@@ -102,9 +105,9 @@ import Button from '@components/blocks/Button.astro'
                 {can_manage && unmatched.length > 0 &&
                     <li class="[ ship-targets__unmatched ]">
                         <span>{t('fleets.targets.unmatched').replace('{ships}', unmatched_text)}</span>
-                        <button type="button" class="[ ship-targets__link ]" hx-get={mode_url('edit', { target_id: 'new', add_type_id: unmatched[0].ship_type_id })} {...SWAP}>
+                        <StylessButton type="button" class="[ ship-targets__link ]" hx-get={mode_url('edit', { target_id: 'new', add_type_id: unmatched[0].ship_type_id })} {...SWAP}>
                             {t('fleets.targets.add_to_line')}
-                        </button>
+                        </StylessButton>
                     </li>
                 }
             </ul>
@@ -119,7 +122,7 @@ import Button from '@components/blocks/Button.astro'
                                 <li class="[ ship-targets__start-row ]">
                                     <label>
                                         <span class="[ visually-hidden ]">{t('fleets.targets.line_name')}</span>
-                                        <input type="text" name={`name_${index}`} value={line.name} maxlength="64" required />
+                                        <Input type="text" name={`name_${index}`} value={line.name} maxlength="64" required />
                                     </label>
                                     <span class="[ ship-targets__hulls ]">
                                         {line.ship_type_ids.map(type_id =>
@@ -129,7 +132,7 @@ import Button from '@components/blocks/Button.astro'
                                     <input type="hidden" name={`ships_${index}`} value={line.ship_type_ids.join(',')} />
                                     <label>
                                         <span class="[ visually-hidden ]">{t('fleets.targets.how_many_for').replace('{name}', line.name)}</span>
-                                        <input type="number" name={`target_${index}`} min="1" max="999" placeholder={t('fleets.targets.how_many')} />
+                                        <Input type="number" name={`target_${index}`} min="1" max="999" placeholder={t('fleets.targets.how_many')} />
                                     </label>
                                 </li>
                             )}
@@ -147,7 +150,7 @@ import Button from '@components/blocks/Button.astro'
                         <form class="[ ship-targets__copy ]" hx-post={mode_url('copy')} {...SWAP}>
                             <label>
                                 <span>{t('fleets.targets.copy_from')}</span>
-                                <select name="from_fleet_id">
+                                <Select name="from_fleet_id" width="28rem">
                                     {past_fleets.map(fleet =>
                                         <option value={fleet.fleet_id}>
                                             {t('fleets.targets.copy_option')
@@ -156,14 +159,14 @@ import Button from '@components/blocks/Button.astro'
                                                 .replace('{count}', fleet.lines.length.toString())}
                                         </option>
                                     )}
-                                </select>
+                                </Select>
                             </label>
-                            <button type="submit" class="[ ship-targets__link ]">{t('fleets.targets.copy')}</button>
+                            <StylessButton type="submit" class="[ ship-targets__link ]">{t('fleets.targets.copy')}</StylessButton>
                         </form>
                     }
-                    <button type="button" class="[ ship-targets__link ]" hx-get={mode_url('edit', { target_id: 'new' })} {...SWAP}>
+                    <StylessButton type="button" class="[ ship-targets__link ]" hx-get={mode_url('edit', { target_id: 'new' })} {...SWAP}>
                         {t('fleets.targets.start_blank')}
-                    </button>
+                    </StylessButton>
                 </div>
             </div>
         }
@@ -176,20 +179,6 @@ import Button from '@components/blocks/Button.astro'
         flex-direction: column;
         background-color: var(--component-background);
         border: 1px solid var(--border-color);
-
-        input,
-        select {
-            min-height: 2.75rem;
-            padding: var(--space-3xs) var(--space-2xs);
-            background-color: var(--surface-sunken);
-            border: 1px solid var(--border-color);
-            color: var(--highlight);
-            font: inherit;
-        }
-
-        input[type="number"] {
-            text-align: right;
-        }
     }
 
     .ship-targets__header {
@@ -209,7 +198,7 @@ import Button from '@components/blocks/Button.astro'
     }
 
     .ship-targets__muted {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .ship-targets__error {
@@ -226,7 +215,7 @@ import Button from '@components/blocks/Button.astro'
 
         > li {
             padding: var(--space-xs) var(--space-m);
-            border-top: 1px solid var(--hairline);
+            border-top: 1px solid var(--border-color);
         }
     }
 
@@ -263,7 +252,7 @@ import Button from '@components/blocks/Button.astro'
         padding: 0;
         background: none;
         border: 0;
-        color: var(--text-muted);
+        color: var(--faded);
         cursor: pointer;
 
         @media (hover: hover) {
@@ -278,7 +267,7 @@ import Button from '@components/blocks/Button.astro'
         flex-wrap: wrap;
         align-items: center;
         gap: 0 var(--space-xs);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .ship-targets__start {
@@ -296,11 +285,6 @@ import Button from '@components/blocks/Button.astro'
         grid-template-columns: minmax(8rem, 16rem) minmax(0, 1fr) 8rem;
         gap: var(--space-s);
         align-items: center;
-
-        input {
-            width: 100%;
-        }
-
         @media (max-width: 48rem) {
             grid-template-columns: minmax(0, 1fr) 6rem;
 
@@ -335,7 +319,7 @@ import Button from '@components/blocks/Button.astro'
         align-items: center;
         gap: var(--space-2xs) var(--space-m);
         padding: var(--space-s) var(--space-m);
-        border-top: 1px solid var(--hairline);
+        border-top: 1px solid var(--border-color);
     }
 
     .ship-targets__copy {
@@ -356,12 +340,6 @@ import Button from '@components/blocks/Button.astro'
 
         span {
             flex: none;
-        }
-
-        select {
-            flex: 1 1 auto;
-            min-width: 0;
-            max-width: 28rem;
         }
     }
 </style>

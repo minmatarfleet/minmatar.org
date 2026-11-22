@@ -28,15 +28,16 @@ import { distinct_skills } from '@helpers/learning_manage'
 import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
 
 const name = skillset?.name || t('learning_manage.skillsets_new')
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <ExpandRow id={row_id} colspan={4} label={t('learning_admin.open').replace('~NAME', name)} url={url} open={open}>
     <td>
-        <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+        <StylessButton type="button" class="[ manage-who ]" x-on:click="open = !open">
             <span class="[ manage-who__text ]">
                 <span class="[ manage-who__name ]">{name}</span>
             </span>
-        </button>
+        </StylessButton>
     </td>
     <td class="num">{skillset ? distinct_skills(skillset.skills).length : 0}</td>
     <td class="[ num is-wide ]">{skillset ? skillset.total_skill_points.toLocaleString('en-US') : '—'}</td>

@@ -13,6 +13,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Grid from '@components/compositions/Grid.astro'
 import Button from '@components/blocks/Button.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 import PilotReadinessBanner from '@components/blocks/PilotReadinessBanner.astro'
 import GuidesCatalog from '@components/blocks/GuidesCatalog.astro'
 import LearningSkillsets from '@components/blocks/LearningSkillsets.astro'
@@ -161,7 +162,7 @@ const progress_label = t('learning_center.certificate.progress')
                 min_item_width="220px"
             >
                 {personas.map((p) => (
-                    <button
+                    <StylessButton
                         type="button"
                         class="[ persona-card card border light-transparency ]"
                         data-persona={p.id}
@@ -175,7 +176,7 @@ const progress_label = t('learning_center.certificate.progress')
                                 <span class="[ badge ]">{t('learning_center.persona.recommended')}</span>
                             }
                         </Flexblock>
-                    </button>
+                    </StylessButton>
                 ))}
             </Grid>
 
@@ -339,13 +340,19 @@ const progress_label = t('learning_center.certificate.progress')
         letter-spacing: 0.04em;
     }
 
-    .learning-hub__muted {
+    /* Doubled class: the margin reset has to beat Flexblock's gap rule whichever stylesheet is emitted last. */
+    .learning-hub__muted.learning-hub__muted {
         margin: 0;
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
-    .learning-hub__roles {
+    /* The guide cards here keep their excerpt flush under the title; three classes beat Flexblock's gap rule. */
+    :global(.learning-center-hub .guide-card .guide-card__excerpt) {
+        margin: 0;
+    }
+
+    .learning-hub__roles.learning-hub__roles {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
         gap: var(--space-2xs);

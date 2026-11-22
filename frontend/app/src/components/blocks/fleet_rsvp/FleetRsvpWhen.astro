@@ -4,6 +4,7 @@ const { t } = i18n(Astro.url)
 
 import type { RsvpFleet } from '@dtypes/api.minmatar.org'
 import { countdown_text, eve_when_text } from '@helpers/fleet_rsvp'
+import Tag from '@components/blocks/Tag.astro'
 
 /**
  * When the fleet is: EVE time first and largest, then the viewer's local
@@ -76,7 +77,7 @@ const has_slot = Astro.slots.has('default')
                 <span x-text="local">{t('calculating')}</span>{variant === 'result' && formup_line && <span> · {formup_line}</span>}
             </span>
         </div>
-        <span class="[ rsvp-when__pill ]" x-text="countdown">{countdown}</span>
+        <Tag variant="outline" color="fleet-yellow" text={countdown} x-text="countdown" />
     </div>
     {variant === 'form' &&
         <dl class="[ rsvp-when__facts ]">
@@ -99,7 +100,7 @@ const has_slot = Astro.slots.has('default')
         display: flex;
         flex-direction: column;
         background-color: var(--component-background);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
         border-radius: var(--space-3xs);
     }
 
@@ -126,22 +127,11 @@ const has_slot = Astro.slots.has('default')
         color: var(--highlight);
     }
 
-    .rsvp-when__pill {
-        flex: none;
-        padding: var(--space-3xs) var(--space-xs);
-        border-radius: 999px;
-        background-color: color-mix(in srgb, var(--fleet-yellow) 10%, transparent);
-        color: var(--fleet-yellow);
-        font-size: var(--step--1);
-        font-weight: 600;
-        white-space: nowrap;
-    }
-
     .rsvp-when__facts {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         margin: 0;
-        border-top: 1px solid var(--hairline-medium);
+        border-top: 1px solid var(--border-color);
 
         > div {
             display: flex;
@@ -152,7 +142,7 @@ const has_slot = Astro.slots.has('default')
         }
 
         > div + div {
-            border-left: 1px solid var(--hairline-medium);
+            border-left: 1px solid var(--border-color);
         }
 
         dd {
@@ -163,6 +153,6 @@ const has_slot = Astro.slots.has('default')
     }
 
     .rsvp-when__rows > * {
-        border-top: 1px solid var(--hairline-medium);
+        border-top: 1px solid var(--border-color);
     }
 </style>

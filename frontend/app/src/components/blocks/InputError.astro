@@ -15,16 +15,6 @@ const {
     <span
         x-show={show_prop}
         x-bind:data-tippy-content={error_prop}
-        x-data={`{
-            tippy_instance: null,
-            init_tippy() {
-                if (this.tippy_instance)
-                    this.tippy_instance.destroy()
-
-                this.tippy_instance = tippy($el, tippy_options)
-            }
-        }`}
-        x-effect={`${error_prop} && init_tippy()`}
     >
         ⚠️
     </span>

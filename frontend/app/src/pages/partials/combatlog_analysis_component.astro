@@ -39,6 +39,7 @@ import CombatLogAnalysisComponent from '@components/blocks/CombatLogAnalysisComp
 import Markdown from '@components/blocks/Markdown.astro'
 ---
 
+{/* no-error-refetch: a failed analysis renders its message in place of the result */}
 {combatlog_analysis_error ?
     <Markdown markdown={combatlog_analysis_error.message} />
     :

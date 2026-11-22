@@ -28,14 +28,17 @@ if (query.length >= 2) {
         matches = []
     }
 }
+import StylessButton from '@components/blocks/StylessButton.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 ---
+{/* no-error-refetch: a failed lookup shows no matches, like an empty result. */}
 
 {query.length >= 2 && matches.length === 0 &&
-    <p class="entity-empty">{t('intel.add_structure.no_matches')}</p>
+    <EmptyState title={t('intel.add_structure.no_matches')} />
 }
 
 {matches.map((match) =>
-    <button
+    <StylessButton
         type="button"
         class="entity-option"
         data-input={input_id}
@@ -46,12 +49,15 @@ if (query.length >= 2) {
         onclick="pick_entity(this)"
     >
         {match.name}{match.ticker ? ` [${match.ticker}]` : ''}
-    </button>
+    </StylessButton>
 )}
 
 <style is:global>
-    .entity-results .entity-option,
-    .entity-results .entity-empty {
+    .entity-results .empty-state {
+        padding: var(--space-2xs) var(--space-s);
+    }
+
+    .entity-results .entity-option {
         display: block;
         width: 100%;
         margin: 0;
@@ -61,11 +67,6 @@ if (query.length >= 2) {
         background: transparent;
         border: 0;
         cursor: pointer;
-    }
-
-    .entity-results .entity-empty {
-        color: var(--highlight);
-        cursor: default;
     }
 
     .entity-results .entity-option:hover,

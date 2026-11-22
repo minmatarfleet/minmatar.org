@@ -12,7 +12,7 @@ if (!user)
 
 import type { TrainingDoctrineCell } from '@dtypes/api.minmatar.org'
 import { get_training_doctrine } from '@helpers/api.minmatar.org/training'
-import { get_item_icon, get_player_icon } from '@helpers/eve_image_server'
+import { get_item_icon, get_player_icon } from '@helpers/eve_image'
 import { TRAINING_DOCTRINE_PARTIAL, TRAINING_PARTIAL, time_label, training_url } from '@helpers/training'
 
 const doctrine_id = parseInt(Astro.url.searchParams.get('doctrine_id') ?? '0') || 0
@@ -37,6 +37,7 @@ const ready = cell ? cell.seats.filter(seat => seat.ready).length : 0
 import Button from '@components/blocks/Button.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {fetch_error ?
@@ -82,7 +83,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                             <span class="[ training-doctrine__closest ]">
                                 <strong>{time_label(t, seat.days)}</strong>
                                 {seat.fitting_id !== null &&
-                                    <button
+                                    <StylessButton
                                         type="button"
                                         class="[ training-doctrine__train ]"
                                         modal-action="accept"
@@ -91,7 +92,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                                         hx-swap="outerHTML"
                                     >
                                         {t('training.train')}
-                                    </button>
+                                    </StylessButton>
                                 }
                             </span>
                         }
@@ -129,7 +130,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
             gap: var(--space-s);
             min-height: 3.5rem;
             padding-block: var(--space-2xs);
-            border-top: 1px solid var(--hairline);
+            border-top: 1px solid var(--border-color);
 
             img {
                 border-radius: var(--space-3xs);
@@ -155,7 +156,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
     }
 
     .training-muted {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .training-doctrine__account {
@@ -163,7 +164,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         font-family: var(--heading-font);
         font-size: var(--step--1);
         letter-spacing: 0.06em;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .training-doctrine__name {

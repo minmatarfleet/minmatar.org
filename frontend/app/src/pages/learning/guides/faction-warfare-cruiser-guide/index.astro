@@ -2,6 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
+import { guide } from '@/data/faction-warfare-cruiser-guide/guide'
 import { guideMeta, credits, buildFactionWarfareCruiserGuideJsonLd, guideSections } from '@/data/faction-warfare-cruiser-guide'
 import { pageProgressFromSections } from '@helpers/pageProgress'
 import { get_site_origin } from '@helpers/seo'
@@ -13,8 +14,8 @@ import PageTitle from '@components/page/PageTitle.astro'
 import TextBox from '@components/layout/TextBox.astro'
 import Wrapper from '@components/compositions/Wrapper.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
-import FactionWarfareCruiserGuide from '@components/blocks/faction-warfare-cruiser-guide/FactionWarfareCruiserGuide.astro'
-import PageProgress from '@components/blocks/PageProgress.astro'
+import ShipGuide from '@components/blocks/ship-guide/ShipGuide.astro'
+import PageProgress from '@components/blocks/guides/PageProgress.astro'
 
 const page_title = t('ships.faction_warfare_cruiser_guide.page_title')
 const meta_title = t('ships.faction_warfare_cruiser_guide.meta_title')
@@ -96,7 +97,7 @@ const progress = pageProgressFromSections({
                 padding_inline="0"
                 padding_block="0"
             >
-                <FactionWarfareCruiserGuide />
+                <ShipGuide guide={guide} />
             </Wrapper>
         </Flexblock>
     </PageLanding>

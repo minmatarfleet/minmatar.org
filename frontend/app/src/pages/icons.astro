@@ -15,6 +15,7 @@ import Button from '@components/blocks/Button.astro';
 import ClipboardIcon from '@components/icons/buttons/ClipboardIcon.astro';
 
 import Input from '@components/blocks/Input.astro';
+import Textarea from '@components/blocks/Textarea.astro';
 
 const page_title = 'Icons';
 ---
@@ -30,7 +31,7 @@ const page_title = 'Icons';
                         <ClipboardIcon slot="icon" />
                         {t('copy_to_clipboard')}
                     </Button>
-                    <textarea id="player-clipboard" x-model="`https://image.eveonline.com/Render/${id}_256.png`"></textarea>
+                    <Textarea id="player-clipboard" x-model="`https://image.eveonline.com/Render/${id}_256.png`"></Textarea>
                 </Flexblock>
 
                 <div data-tippy-content="Lolai">
@@ -44,11 +45,11 @@ const page_title = 'Icons';
                         <ClipboardIcon slot="icon" />
                         {t('copy_to_clipboard')}
                     </Button>
-                    <textarea id="item-clipboard" x-model="`https://images.evetech.net/types/${item_id}/icon?size=64`"></textarea>
+                    <Textarea id="item-clipboard" x-bind:value="get_item_icon(item_id, 64)"></Textarea>
                 </Flexblock>
 
                 <div>
-                    <img loading="lazy" x-bind:src="`https://images.evetech.net/types/${item_id}/icon?size=64`" />
+                    <img loading="lazy" x-bind:src="get_item_icon(item_id, 64)" />
                 </div>
             </Flexblock>
 		</Wrapper>

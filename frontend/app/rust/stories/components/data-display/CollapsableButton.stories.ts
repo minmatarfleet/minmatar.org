@@ -87,3 +87,17 @@ export const ClickToggle = {
         await waitFor(() => expect(caret).toHaveClass('collapsed'))
     },
 }
+
+export const FocusRing = {
+    name: 'Keyboard focus ring',
+    tags: ['browser'],
+    args: { appearance: 'button' }, // asserts the computed style from the component's CSS
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const field = canvasElement.querySelector("button[data-appearance='button']") as HTMLElement
+        await expect(getComputedStyle(field).outlineStyle).toBe('none')
+        field.focus()
+        // Same double highlight outline as links (`a:focus-visible` in _global.scss).
+        await expect(getComputedStyle(field).outlineStyle).toBe('double')
+        await expect(getComputedStyle(field).outlineColor).not.toBe('rgba(0, 0, 0, 0)')
+    },
+}

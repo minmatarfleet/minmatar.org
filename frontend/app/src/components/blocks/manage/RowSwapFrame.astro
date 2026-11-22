@@ -1,0 +1,20 @@
+---
+/**
+ * The parse frame for a swapped manage-table row. A partial that answers
+ * with a row (an <ExpandRow>, one <tbody>) wraps it in this, because Astro
+ * starts a partial with <style>/<link> tags and, after those, htmx's parser
+ * drops a bare <tbody>. The request picks the row out with `hx-select`, so
+ * the frame itself is never swapped in or drawn.
+ *
+ *   <RowSwapFrame>
+ *       <MyRow thing={saved} open={true} />
+ *   </RowSwapFrame>
+ */
+interface Props {
+    [propName: string]: any;
+}
+
+const { ...attributes } = Astro.props
+---
+
+<table {...attributes}><slot /></table>

@@ -29,6 +29,7 @@ import HtmxPager from '@components/blocks/HtmxPager.astro'
 import ViewChips from '@components/blocks/manage/ViewChips.astro'
 import ManageSearch from '@components/blocks/manage/ManageSearch.astro'
 import ManageTable from '@components/blocks/manage/ManageTable.astro'
+import RowSwapFrame from '@components/blocks/manage/RowSwapFrame.astro'
 import LearningGuideRow from '@components/blocks/learning_manage/LearningGuideRow.astro'
 import LearningGuideForm from '@components/blocks/learning_manage/LearningGuideForm.astro'
 
@@ -183,9 +184,8 @@ const row_guide = saved_guide ?? (posted_original ? guides.find((guide) => guide
 )}
 
 {part === 'save' && posted &&
-    // Inside a <table>: htmx drops a bare <tbody> after Astro's leading styles.
     // The row keeps its id (a new guide stays "guide-new") so later saves find it.
-    <table>
+    <RowSwapFrame>
         <LearningGuideRow guide={row_guide} row_id={posted_row_id} open={true}>
             <LearningGuideForm
                 slot="detail"
@@ -197,5 +197,5 @@ const row_guide = saved_guide ?? (posted_original ? guides.find((guide) => guide
                 error={save_error}
             />
         </LearningGuideRow>
-    </table>
+    </RowSwapFrame>
 }

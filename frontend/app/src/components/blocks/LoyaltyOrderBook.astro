@@ -14,6 +14,7 @@ import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
 import { EXPRESS_SLA_HOURS, format_close_time } from '@helpers/loyalty_order_stats'
 import { SEND_LP_HOURS, initially_expanded } from '@helpers/loyalty_desk'
+import EmptyState from '@components/blocks/EmptyState.astro'
 
 const { t, translatePath } = i18n(Astro.url)
 
@@ -76,6 +77,8 @@ const claim_character_names = claim_characters.map((c) => c.character_name)
 const VISIBLE_ROWS = 20
 const rows_expanded = initially_expanded(orders, VISIBLE_ROWS, (order) => String(order.id) === highlight_order_id)
 
+import StylessButton from '@components/blocks/StylessButton.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
 ---
 
 <section
@@ -496,7 +499,7 @@ const rows_expanded = initially_expanded(orders, VISIBLE_ROWS, (order) => String
             {show_title && <h2>{t('industry.loyalty.orders.title')}</h2>}
 
             {orders.length === 0 ? (
-                <p class="[ loyalty-orders__empty ]">{t('industry.loyalty.orders.empty')}</p>
+                <EmptyState title={t('industry.loyalty.orders.empty')} />
             ) : (
                 <LoyaltyOrderList variant="book">
                     {orders.map((order, index) => (
@@ -519,14 +522,14 @@ const rows_expanded = initially_expanded(orders, VISIBLE_ROWS, (order) => String
                 </LoyaltyOrderList>
             )}
             {orders.length > VISIBLE_ROWS && (
-                <button
+                <StylessButton
                     type="button"
                     class="[ loyalty-orders__more ]"
                     x-show="!show_all_rows"
                     x-on:click="show_all_rows = true"
                 >
                     {t('industry.loyalty.book.show_all').replace('{count}', String(orders.length))}
-                </button>
+                </StylessButton>
             )}
         </Flexblock>
     )}
@@ -551,13 +554,7 @@ const rows_expanded = initially_expanded(orders, VISIBLE_ROWS, (order) => String
                     <Flexblock gap="var(--space-xs)" x-show="form_step === 'edit'">
                         <fieldset class="[ loyalty-orders__tiers ]">
                             <legend>{t('industry.loyalty.form.tier')}</legend>
-                            <label class="[ loyalty-orders__tier ]">
-                                <input
-                                    type="radio"
-                                    name="loyalty-post-tier"
-                                    value="standard"
-                                    x-model="form_tier"
-                                />
+                            <OptionCard name="loyalty-post-tier" value="standard" input_attributes={{ 'x-model': 'form_tier' }}>
                                 <span class="[ loyalty-orders__tier-text ]">
                                     <span class="[ loyalty-orders__tier-head ]">
                                         <b>{t('industry.loyalty.tier.standard')}</b>
@@ -567,18 +564,14 @@ const rows_expanded = initially_expanded(orders, VISIBLE_ROWS, (order) => String
                                     </span>
                                     <small>{t('industry.loyalty.tier.standard_description')}</small>
                                 </span>
-                            </label>
-                            <label
+                            </OptionCard>
+                            <OptionCard
+                                name="loyalty-post-tier"
+                                value="express"
                                 class="[ loyalty-orders__tier ]"
                                 x-bind:class="!express_available() && 'is-disabled'"
+                                input_attributes={{ 'x-model': 'form_tier', disabled: !tier_rates.express }}
                             >
-                                <input
-                                    type="radio"
-                                    name="loyalty-post-tier"
-                                    value="express"
-                                    x-model="form_tier"
-                                    disabled={!tier_rates.express}
-                                />
                                 <span class="[ loyalty-orders__tier-text ]">
                                     <span class="[ loyalty-orders__tier-head ]">
                                         <b>{t('industry.loyalty.tier.express')}</b>
@@ -590,7 +583,7 @@ const rows_expanded = initially_expanded(orders, VISIBLE_ROWS, (order) => String
                                     </span>
                                     <small>{express_hint}</small>
                                 </span>
-                            </label>
+                            </OptionCard>
                         </fieldset>
                         <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
                             <label for="loyalty-post-quantity">{t('industry.loyalty.form.quantity')}</label>
@@ -954,12 +947,6 @@ const rows_expanded = initially_expanded(orders, VISIBLE_ROWS, (order) => String
         }
     }
 
-    .loyalty-orders__empty {
-        margin: 0;
-        font-size: var(--step--1);
-        color: var(--highlight);
-    }
-
     .loyalty-orders__review {
         display: flex;
         flex-direction: column;
@@ -989,7 +976,7 @@ const rows_expanded = initially_expanded(orders, VISIBLE_ROWS, (order) => String
         }
 
         .is-total {
-            background-color: color-mix(in srgb, var(--fleet-yellow) 6%, transparent);
+            background-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
 
             dt {
                 color: var(--highlight);
@@ -1040,34 +1027,9 @@ const rows_expanded = initially_expanded(orders, VISIBLE_ROWS, (order) => String
         }
     }
 
-    .loyalty-orders__tier {
-        display: flex;
-        align-items: flex-start;
-        gap: var(--space-xs);
-        padding: var(--space-2xs) var(--space-xs);
-        border: solid 1px var(--border-color);
-        cursor: pointer;
-        transition: var(--fast-transition);
-
-        input {
-            margin-block-start: var(--space-3xs);
-            accent-color: var(--fleet-yellow);
-        }
-
-        &:has(input:checked) {
-            border-color: var(--fleet-yellow);
-            background: color-mix(in srgb, var(--fleet-yellow) 8%, transparent);
-        }
-
-        &:has(input:focus-visible) {
-            outline: 2px solid var(--highlight);
-            outline-offset: 2px;
-        }
-
-        &.is-disabled {
-            cursor: not-allowed;
-            opacity: 0.55;
-        }
+    .loyalty-orders__tier.is-disabled {
+        cursor: not-allowed;
+        opacity: 0.55;
     }
 
     .loyalty-orders__tier-text {

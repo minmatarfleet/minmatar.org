@@ -2,6 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
+import DataTable from '@components/blocks/DataTable.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
 import FittingLink from '@components/blocks/FittingLink.astro'
 import { primary_fitting_for_ship, type MetaBlock } from '@/data/capital-guide'
@@ -39,15 +40,10 @@ const no_fitting_label = t('ships.capital_guide.no_fitting')
     if (block.type === 'table') {
         return (
             <div class="cap-table-wrap">
-                <table class="cap-table">
-                    <thead>
-                        <tr>
-                            {block.headers.map((header) => (
-                                <th scope="col">{header}</th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
+                <DataTable
+                    class="cap-table"
+                    columns={block.headers.map((header, index) => ({ key: `column_${index}`, label: header }))}
+                >
                         {block.rows.map((row) => {
                             const primary =
                                 row.ship_id != null
@@ -90,8 +86,7 @@ const no_fitting_label = t('ships.capital_guide.no_fitting')
                                 </tr>
                             )
                         })}
-                    </tbody>
-                </table>
+                </DataTable>
             </div>
         )
     }

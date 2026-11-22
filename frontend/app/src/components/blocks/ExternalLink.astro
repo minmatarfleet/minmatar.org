@@ -1,6 +1,7 @@
 ---
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
+import { external_link_attributes } from '@helpers/external_link'
 
 interface Props {
     href:               string;
@@ -11,25 +12,20 @@ const {
     href,
     ...attributes
 } = Astro.props
+
+const external_link = external_link_attributes({
+    href,
+    title: t('leaving_website'),
+    partial: translatePath('/partials/external_link_disclaimer_dialog/'),
+})
 ---
 
 <a
     href={href}
     target="_blank"
     rel="nofollow noopener noreferrer"
-    x-data={`{
-        hide_external_link_disclaimer: $persist(false),
-        show_external_link_disclaimer() {
-            const root_data = Alpine.$data(document.body)
-            if (!root_data || !root_data.show_alert_dialog) return Promise.resolve(false)
-            return root_data.show_alert_dialog({
-                title: '${t('leaving_website').replace(/'/g, "\\'")}',
-                partial: '${translatePath('/partials/external_link_disclaimer_dialog/')}',
-                accept_href: '${href}',
-            })
-        }
-    }`}
-    x-on:click.prevent={`hide_external_link_disclaimer ? window.open('${href}', '_blank') : show_external_link_disclaimer()`}
+    x-data={external_link.x_data}
+    x-on:click.prevent={external_link.x_on_click_prevent}
     {...attributes}
 >
     <slot />

@@ -6,7 +6,7 @@ import type { TaskAssignees, TaskProjectDetail } from '@dtypes/api.minmatar.org'
 import { HTTP_404_Not_Found, login_redirect } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
 import { get_task_assignees, get_task_project } from '@helpers/api.minmatar.org/tasks'
-import { get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image'
 import { task_date } from '@helpers/tasks'
 
 const { auth_token, user } = get_request_user(Astro)
@@ -74,13 +74,15 @@ import PageLanding from '@components/page/PageLanding.astro'
 import PageBreadcrumbs from '@components/page/PageBreadcrumbs.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import SectionTabs from '@components/blocks/SectionTabs.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import Button from '@components/blocks/Button.astro'
 import Textarea from '@components/blocks/Textarea.astro'
 import ManageHero from '@components/blocks/manage/ManageHero.astro'
-import ManageStatCard from '@components/blocks/manage/ManageStatCard.astro'
+import StatCard from '@components/blocks/StatCard.astro'
 import ManageField from '@components/blocks/manage/ManageField.astro'
 import ConfirmAction from '@components/blocks/manage/ConfirmAction.astro'
 import ProjectTaskList from '@components/blocks/tasks/ProjectTaskList.astro'
@@ -146,26 +148,26 @@ import TaskNewDialog from '@components/blocks/tasks/TaskNewDialog.astro'
                     </ComponentBlock>
 
                     <div class="[ manage-stats ]">
-                        <ManageStatCard
+                        <StatCard
                             label={t('tasks.project.stat_done')}
                             value={project.tasks_done}
-                            detail={t('tasks.project.stat_of').replace('~N', String(project.tasks_total))}
+                            hint={t('tasks.project.stat_of').replace('~N', String(project.tasks_total))}
                         />
-                        <ManageStatCard
+                        <StatCard
                             label={t('tasks.project.stat_grabs')}
                             value={project.up_for_grabs}
                             href="#tasks"
                         />
-                        <ManageStatCard
+                        <StatCard
                             label={t('tasks.project.stat_longest')}
                             value={longest_waited ?? '—'}
-                            detail={longest_waited ? project.waiting_longest?.title : undefined}
-                            tone={longest_waited ? 'warn' : undefined}
+                            hint={longest_waited ? project.waiting_longest?.title : undefined}
+                            tone={longest_waited ? 'fleet-yellow' : undefined}
                         />
-                        <ManageStatCard
+                        <StatCard
                             label={t('tasks.project.stat_days_left')}
                             value={days_left ?? '—'}
-                            detail={project.starts_on ? t('tasks.project.stat_started').replace('~DATE', task_date(project.starts_on, lang)) : t('tasks.project.no_target')}
+                            hint={project.starts_on ? t('tasks.project.stat_started').replace('~DATE', task_date(project.starts_on, lang)) : t('tasks.project.no_target')}
                         />
                     </div>
 
@@ -226,14 +228,13 @@ import TaskNewDialog from '@components/blocks/tasks/TaskNewDialog.astro'
                                     <Textarea id="project-update-body" name="body" rows="4" maxlength="4000" required />
                                 </ManageField>
                                 <div class="[ manage-actions ]">
-                                    <fieldset class="[ manage-chips ]">
+                                    <fieldset class="[ manage-fieldset ]">
                                         <legend class="[ visually-hidden ]">{t('tasks.project.update_label')}</legend>
-                                        {(['on_track', 'at_risk', 'off_track'] as const).map((health) => (
-                                            <label class="[ manage-chip ]">
-                                                <input type="radio" name="health" value={health} checked={health === 'on_track'} />
-                                                {t(t_key('tasks.project.health_', health))}
-                                            </label>
-                                        ))}
+                                        <ChipGroup wrap={true} role="none">
+                                            {(['on_track', 'at_risk', 'off_track'] as const).map((health) => (
+                                                <FilterChip type="radio" name="health" value={health} checked={health === 'on_track'}>{t(t_key('tasks.project.health_', health))}</FilterChip>
+                                            ))}
+                                        </ChipGroup>
                                     </fieldset>
                                     <div class="[ manage-actions__end ]">
                                         <Button type="submit" size="sm" color="fleet-red" hx-disabled-elt="this">{t('tasks.project.post_update')}</Button>

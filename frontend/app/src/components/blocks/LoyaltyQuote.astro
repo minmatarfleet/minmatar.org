@@ -4,10 +4,14 @@ import type { LoyaltyCurrency, LoyaltyOrderStats } from '@dtypes/api.minmatar.or
 import { EXPRESS_SLA_HOURS, format_close_time } from '@helpers/loyalty_order_stats'
 import { MAX_SELL_LP, SELL_LP_STEP } from '@helpers/loyalty_desk'
 import { format_number } from '@helpers/numbers'
-import { get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image'
 import FluidFixed from '@components/compositions/FluidFixed.astro'
 import Button from '@components/blocks/Button.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 
+import StylessButton from '@components/blocks/StylessButton.astro'
 const { t } = i18n(Astro.url)
 
 interface Props {
@@ -107,128 +111,121 @@ const within_day_note = week_stats && week_stats.completed > 0
     }`}
     {...attributes}
 >
-    <FluidFixed width="24rem" gap="var(--space-l)" class="[ loyalty-quote__layout ]">
-        <div class="[ loyalty-quote__inputs ]">
-            <div class="[ loyalty-quote__field ]">
-                <span id="loyalty-quote-amount-label" class="[ loyalty-quote__label ]">{t('industry.loyalty.quote.amount')}</span>
-                <div class="[ loyalty-quote__amount-row ]">
-                    <div class="[ loyalty-quote__stepper ]">
-                        <button
-                            type="button"
-                            class="[ loyalty-quote__step ]"
-                            aria-label={t('industry.loyalty.quote.less')}
-                            x-on:click={`nudge(-${SELL_LP_STEP})`}
-                        >−</button>
-                        <output
-                            class="[ loyalty-quote__amount tabular-nums ]"
-                            aria-labelledby="loyalty-quote-amount-label"
-                            aria-live="polite"
-                            x-text="fmt(amount)"
-                        >1,000,000</output>
-                        <button
-                            type="button"
-                            class="[ loyalty-quote__step ]"
-                            aria-label={t('industry.loyalty.quote.more')}
-                            x-on:click={`nudge(${SELL_LP_STEP})`}
-                        >+</button>
-                    </div>
-                    <div class="[ loyalty-quote__chips ]">
-                        {chips.map((chip) => (
-                            <button
+    <ComponentBlock padding_block="var(--space-m)" padding_inline="var(--space-m)">
+        <FluidFixed width="24rem" gap="var(--space-l)" class="[ loyalty-quote__layout ]">
+            <div class="[ loyalty-quote__inputs ]">
+                <div class="[ loyalty-quote__field ]">
+                    <span id="loyalty-quote-amount-label" class="[ loyalty-quote__label ]">{t('industry.loyalty.quote.amount')}</span>
+                    <div class="[ loyalty-quote__amount-row ]">
+                        <div class="[ loyalty-quote__stepper ]">
+                            <StylessButton
                                 type="button"
-                                class="[ loyalty-quote__chip ]"
-                                x-bind:aria-pressed={`amount === ${chip.value}`}
-                                x-on:click={`amount = ${chip.value}`}
+                                class="[ loyalty-quote__step ]"
+                                aria-label={t('industry.loyalty.quote.less')}
+                                x-on:click={`nudge(-${SELL_LP_STEP})`}
+                            >−</StylessButton>
+                            <output
+                                class="[ loyalty-quote__amount tabular-nums ]"
+                                aria-labelledby="loyalty-quote-amount-label"
+                                aria-live="polite"
+                                x-text="fmt(amount)"
+                            >1,000,000</output>
+                            <StylessButton
+                                type="button"
+                                class="[ loyalty-quote__step ]"
+                                aria-label={t('industry.loyalty.quote.more')}
+                                x-on:click={`nudge(${SELL_LP_STEP})`}
+                            >+</StylessButton>
+                        </div>
+                        <ChipGroup wrap={true}>
+                            {chips.map((chip) => (
+                                <FilterChip
+                                    x-bind:aria-pressed={`amount === ${chip.value}`}
+                                    x-bind:class={`{ 'is-active': amount === ${chip.value} }`}
+                                    x-on:click={`amount = ${chip.value}`}
+                                >{chip.label}</FilterChip>
+                            ))}
+                        </ChipGroup>
+                    </div>
+                    <small class="[ loyalty-quote__hint ]">{t('industry.loyalty.quote.hint')}</small>
+                </div>
+
+                <div class="[ loyalty-quote__field ]">
+                    <span class="[ loyalty-quote__label ]">{t('industry.loyalty.quote.speed')}</span>
+                    <div class="[ loyalty-quote__tiers ]">
+                        {tiers.map((tier) => (
+                            <StylessButton
+                                type="button"
+                                class="[ loyalty-quote__tier ]"
+                                disabled={tier.disabled}
+                                x-bind:aria-pressed={`tier === '${tier.key}'`}
+                                x-on:click={`tier = '${tier.key}'`}
                             >
-                                {chip.label}
-                            </button>
+                                <span class="[ loyalty-quote__tier-head ]">
+                                    <strong>{tier.name}</strong>
+                                    {tier.rate > 0 && (
+                                        <span class="[ tabular-nums ]">{tier.rate.toLocaleString('en-US')} {t('industry.loyalty.rates.isk_per_lp')}</span>
+                                    )}
+                                </span>
+                                <span class="[ loyalty-quote__tier-blurb ]">{tier.blurb}</span>
+                                {tier.rate > 0 && (
+                                    <span class="[ loyalty-quote__tier-payout tabular-nums ]" x-text={`fmt(payout('${tier.key}')) + ' ISK'`}></span>
+                                )}
+                            </StylessButton>
                         ))}
                     </div>
                 </div>
-                <small class="[ loyalty-quote__hint ]">{t('industry.loyalty.quote.hint')}</small>
             </div>
 
-            <div class="[ loyalty-quote__field ]">
-                <span class="[ loyalty-quote__label ]">{t('industry.loyalty.quote.speed')}</span>
-                <div class="[ loyalty-quote__tiers ]">
-                    {tiers.map((tier) => (
-                        <button
-                            type="button"
-                            class="[ loyalty-quote__tier ]"
-                            disabled={tier.disabled}
-                            x-bind:aria-pressed={`tier === '${tier.key}'`}
-                            x-on:click={`tier = '${tier.key}'`}
-                        >
-                            <span class="[ loyalty-quote__tier-head ]">
-                                <strong>{tier.name}</strong>
-                                {tier.rate > 0 && (
-                                    <span class="[ tabular-nums ]">{tier.rate.toLocaleString('en-US')} {t('industry.loyalty.rates.isk_per_lp')}</span>
-                                )}
-                            </span>
-                            <span class="[ loyalty-quote__tier-blurb ]">{tier.blurb}</span>
-                            {tier.rate > 0 && (
-                                <span class="[ loyalty-quote__tier-payout tabular-nums ]" x-text={`fmt(payout('${tier.key}')) + ' ISK'`}></span>
-                            )}
-                        </button>
-                    ))}
+            <div class="[ loyalty-quote__total ]">
+                <div class="[ loyalty-quote__total-text ]">
+                    <span class="[ loyalty-quote__label ]">{t('industry.loyalty.quote.receive')}</span>
+                    <span class="[ loyalty-quote__payout tabular-nums ]"><span x-text="fmt(payout(tier))"></span> <small>ISK</small></span>
+                    {has_express && <small class="[ loyalty-quote__hint ]" x-text="tradeoff()"></small>}
                 </div>
-            </div>
-        </div>
+                {!can_sell ? (
+                    <p class="[ loyalty-quote__paused ]">{t('industry.loyalty.quote.paused')}</p>
+                ) : is_logged_in ? (
+                    <Button
+                        color="fleet-red"
+                        x-on:click="$dispatch('loyalty-open-sell', { quantity: amount, tier: tier })"
+                    >
+                        {t('industry.loyalty.quote.submit')}
+                    </Button>
+                ) : (
+                    <Button color="fleet-red" href={login_url}>
+                        {t('industry.loyalty.quote.login')}
+                    </Button>
+                )}
 
-        <div class="[ loyalty-quote__total ]">
-            <div class="[ loyalty-quote__total-text ]">
-                <span class="[ loyalty-quote__label ]">{t('industry.loyalty.quote.receive')}</span>
-                <span class="[ loyalty-quote__payout tabular-nums ]"><span x-text="fmt(payout(tier))"></span> <small>ISK</small></span>
-                {has_express && <small class="[ loyalty-quote__hint ]" x-text="tradeoff()"></small>}
+                {(paid_note || within_day_note) && (
+                    <div class="[ loyalty-quote__proof ]">
+                        {converters.length > 0 && (
+                            <ul class="[ loyalty-quote__faces ]" aria-label={t('industry.loyalty.quote.proof_converters')}>
+                                {converters.slice(0, 8).map((converter) => (
+                                    <li>
+                                        <img
+                                            src={get_player_icon(converter.character_id as number, 64)}
+                                            alt={converter.name}
+                                            title={converter.name}
+                                            width="32"
+                                            height="32"
+                                            loading="lazy"
+                                        />
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                        {paid_note && <p>{paid_note}</p>}
+                        {within_day_note && <p>{within_day_note}</p>}
+                    </div>
+                )}
             </div>
-            {!can_sell ? (
-                <p class="[ loyalty-quote__paused ]">{t('industry.loyalty.quote.paused')}</p>
-            ) : is_logged_in ? (
-                <Button
-                    color="fleet-red"
-                    x-on:click="$dispatch('loyalty-open-sell', { quantity: amount, tier: tier })"
-                >
-                    {t('industry.loyalty.quote.submit')}
-                </Button>
-            ) : (
-                <Button color="fleet-red" href={login_url}>
-                    {t('industry.loyalty.quote.login')}
-                </Button>
-            )}
-
-            {(paid_note || within_day_note) && (
-                <div class="[ loyalty-quote__proof ]">
-                    {converters.length > 0 && (
-                        <ul class="[ loyalty-quote__faces ]" aria-label={t('industry.loyalty.quote.proof_converters')}>
-                            {converters.slice(0, 8).map((converter) => (
-                                <li>
-                                    <img
-                                        src={get_player_icon(converter.character_id as number, 64)}
-                                        alt={converter.name}
-                                        title={converter.name}
-                                        width="32"
-                                        height="32"
-                                        loading="lazy"
-                                    />
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                    {paid_note && <p>{paid_note}</p>}
-                    {within_day_note && <p>{within_day_note}</p>}
-                </div>
-            )}
-        </div>
-    </FluidFixed>
+        </FluidFixed>
+    </ComponentBlock>
 </section>
 
 <style lang="scss">
-    .loyalty-quote {
-        padding: var(--space-m);
-        border: 1px solid var(--border-color);
-        background-color: var(--component-background);
-    }
-
     .loyalty-quote__inputs {
         display: flex;
         flex-direction: column;
@@ -270,6 +267,8 @@ const within_day_note = week_stats && week_stats.completed > 0
     }
 
     .loyalty-quote__step {
+        padding: 1px 6px;
+        text-align: center;
         min-width: var(--space-xl);
         border: 0;
         background: transparent;
@@ -293,30 +292,6 @@ const within_day_note = week_stats && week_stats.completed > 0
         font-size: var(--step-1);
         font-weight: 700;
         color: var(--highlight);
-    }
-
-    .loyalty-quote__chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-3xs);
-    }
-
-    .loyalty-quote__chip {
-        min-height: var(--space-l);
-        padding-inline: var(--space-xs);
-        border: 1px solid var(--border-color-hover);
-        background: transparent;
-        color: var(--foreground);
-        font-family: var(--button-font);
-        font-size: var(--step--1);
-        font-weight: 600;
-        cursor: pointer;
-
-        &[aria-pressed='true'] {
-            border-color: var(--fleet-yellow);
-            background-color: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
-            color: var(--fleet-yellow);
-        }
     }
 
     .loyalty-quote__tiers {

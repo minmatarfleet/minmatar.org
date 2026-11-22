@@ -64,5 +64,6 @@ if (!system)
 
 import CampaignSystemCard from '@components/blocks/CampaignSystemCard.astro'
 ---
+{/* no-error-refetch: failures render as a flash line on the system card, for the read and for the report POST. */}
 
 <CampaignSystemCard system={system} slug={slug} can_report={true} flash={flash} />

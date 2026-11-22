@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
-import { get_item_icon } from '@helpers/eve_image_server';
+import { get_item_icon } from '@helpers/eve_image';
 import type { Module, ShipsSlots } from '@dtypes/layout_components';
 
 interface Props {
@@ -27,7 +27,7 @@ const stroke = ship_slot?.meta_name == 'Tech I' ? 'var(--tech-i)' :
                 ship_slot?.meta_name == 'Officer' ? 'var(--officer)' :
                 ship_slot?.meta_name == 'Deadspace' ? 'var(--deadspace)' :
                 ship_slot?.meta_name == 'Abyssal' ? 'var(--abyssal)' :
-                '#666'
+                'var(--neutral-600)'
 
 import { query_string } from '@helpers/string';
 
@@ -61,8 +61,6 @@ import RigSlotEveIcon from '@components/icons/RigSlotEveIcon.astro';
             <Tippy
                 data-tippy-placement={placement}
                 partial={`${MODULE_TIPPY_PARTIAL_URL}?${query_string({ module_name: ship_slot.name, })}`}
-                height='70px'
-                width='340px'
             >
                 <picture>
                     <img loading="lazy" src={get_item_icon(ship_slot.id)} height="64" width="64" />
@@ -104,7 +102,7 @@ import RigSlotEveIcon from '@components/icons/RigSlotEveIcon.astro';
             align-items: center;
 
             &:before {
-                box-shadow: inset 0 0 13px 2px #666;
+                box-shadow: inset 0 0 13px 2px var(--neutral-600);
             }
         }
 

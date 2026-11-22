@@ -59,6 +59,7 @@ const add_skill = `
     $refs.skill.value = ''
     $refs.skill.focus()
 `
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <form
@@ -88,12 +89,12 @@ const add_skill = `
                             <span class="[ skill-line__name ]">{skill.name}</span>
                             <label class="[ skill-line__level ]">
                                 <span>{t('learning_manage.skill_level')}</span>
-                                <select name="skill_level" aria-label={t('learning_admin.level_of').replace('~NAME', skill.name)} id={id(`level-${index}`)}>
+                                <Select size="sm" width="auto" name="skill_level" aria-label={t('learning_admin.level_of').replace('~NAME', skill.name)} id={id(`level-${index}`)}>
                                     {LEVELS.map((level) => <option value={String(level)} selected={skill.level === level}>{level}</option>)}
-                                </select>
+                                </Select>
                             </label>
                             <ManageSortControls event={SKILLSET_SKILLS_EVENT} name={skill.name} />
-                            <button type="button" class="[ skill-line__remove ]" aria-label={t('learning_admin.remove_skill').replace('~NAME', skill.name)} x-on:click="$el.closest('li').remove()">×</button>
+                            <StylessButton type="button" class="[ skill-line__remove ]" aria-label={t('learning_admin.remove_skill').replace('~NAME', skill.name)} x-on:click="$el.closest('li').remove()">×</StylessButton>
                         </li>
                     ))}
                 </ol>
@@ -103,12 +104,12 @@ const add_skill = `
                         <span class="[ skill-line__name ]"></span>
                         <label class="[ skill-line__level ]">
                             <span>{t('learning_manage.skill_level')}</span>
-                            <select name="skill_level">
+                            <Select size="sm" width="auto" name="skill_level">
                                 {LEVELS.map((level) => <option value={String(level)}>{level}</option>)}
-                            </select>
+                            </Select>
                         </label>
                         <ManageSortControls event={SKILLSET_SKILLS_EVENT} name={t('learning_admin.this_skill')} />
-                        <button type="button" class="[ skill-line__remove ]" aria-label={t('learning_admin.remove_skill').replace('~NAME', t('learning_admin.this_skill'))} x-on:click="$el.closest('li').remove()">×</button>
+                        <StylessButton type="button" class="[ skill-line__remove ]" aria-label={t('learning_admin.remove_skill').replace('~NAME', t('learning_admin.this_skill'))} x-on:click="$el.closest('li').remove()">×</StylessButton>
                     </li>
                 </template>
             </div>
@@ -187,7 +188,7 @@ const add_skill = `
         margin: 0;
         padding: 0;
         list-style: none;
-        border: 1px solid var(--hairline);
+        border: 1px solid var(--border-color);
 
         &:empty {
             display: none;
@@ -202,7 +203,7 @@ const add_skill = `
         background-color: var(--surface-sunken);
 
         & + & {
-            border-top: 1px solid var(--hairline);
+            border-top: 1px solid var(--border-color);
         }
 
         &[draggable='true'] {
@@ -221,22 +222,14 @@ const add_skill = `
         align-items: center;
         gap: var(--space-2xs);
         font-size: var(--step--1);
-        color: var(--text-muted);
-
-        select {
-            padding: var(--space-3xs) var(--space-2xs);
-            background-color: var(--surface-sunken);
-            border: 1px solid var(--border-color);
-            color: var(--highlight);
-            font: inherit;
-        }
+        color: var(--faded);
     }
 
     .skill-line__remove {
         padding: 0 var(--space-2xs);
         background: none;
         border: 1px solid transparent;
-        color: var(--text-muted);
+        color: var(--faded);
         font-size: var(--step-1);
         line-height: 1;
         cursor: pointer;
@@ -244,7 +237,7 @@ const add_skill = `
         &:hover,
         &:focus-visible {
             color: var(--fleet-red);
-            border-color: var(--hairline-medium);
+            border-color: var(--border-color);
         }
     }
 </style>

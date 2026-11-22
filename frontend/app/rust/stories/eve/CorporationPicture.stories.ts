@@ -15,7 +15,7 @@ export default {
         docs: {
             description: {
                 component: [
-                    'A corporation logo from the EVE image server. Clicking it navigates to the corporation detail page (`/alliance/corporations/<id>/`); id 0 does nothing.',
+                    'A corporation logo from the EVE image server. The logo is a real link to the corporation detail page (`/alliance/corporations/<id>/`), so it can be opened with the keyboard and in a new tab; id 0 is not linked.',
                     'It is a bare image: for a logo with a name beside it use `CorporationBadge`. `size` is the rendered width and height; `icon_quality` the image-server size requested. `x_corporation_id` / `x_corporation_name` accept Alpine expressions for reactive pickers; leave them `false` otherwise.',
                 ].join('\n\n'),
             },
@@ -48,9 +48,11 @@ export const Default = {
         await expect(img).toHaveAttribute('width', '64')
         await expect(img).toHaveAttribute('height', '64')
         await expect(img).toHaveAttribute('loading', 'lazy')
-        // Clicking sends the pilot to the corporation page.
-        await expect(img.getAttribute('x-on:click.stop')).toContain(`/alliance/corporations/`)
-        await expect(img.getAttribute('x-on:click.stop')).toContain(`'${EVE.corporation_id}'`)
+        // The logo is a real link to the corporation page, not a click handler on the image.
+        const link = within(canvasElement).getByRole('link', { name: `Profile picture of ${EVE.corporation_name}` })
+        await expect(link).toHaveAttribute('href', `/alliance/corporations/${EVE.corporation_id}/`)
+        await expect(link).toContainElement(img)
+        await expect(img).not.toHaveAttribute('x-on:click.stop')
     },
 }
 
@@ -92,5 +94,28 @@ export const UnknownCorporation = {
     args: { corporation_id: 0, corporation_name: undefined },
     play: async ({ canvasElement }: Ctx) => {
         await expect(within(canvasElement).getByRole('img', { name: 'Profile picture of Unknown corporation' })).toBeVisible()
+        // Corporation 0 has no page: nothing to link to.
+        await expect(within(canvasElement).queryByRole('link')).toBeNull()
+    },
+}
+
+export const ZeroQuantity = {
+    name: 'Zero quantity shows no badge',
+    args: { quantity: 0 },
+    play: async ({ canvasElement }: Ctx) => {
+        // `{quantity && ...}` used to print a literal 0 beside the logo.
+        await expect(canvasElement.querySelector('.quantity-badge')).toBeNull()
+        await expect(canvasElement.querySelector('picture')?.textContent?.trim()).toBe('')
+    },
+}
+
+export const ReactiveLink = {
+    name: 'Reactive id binds the link',
+    args: { x_corporation_id: '1000115' },
+    play: async ({ canvasElement }: Ctx) => {
+        const link = canvasElement.querySelector('a.picture-target') as HTMLElement
+        await expect(link.getAttribute('x-bind:href')).toContain('/alliance/corporations/')
+        // Alpine fills the href from the expression.
+        await expect(link).toHaveAttribute('href', '/alliance/corporations/1000115/')
     },
 }

@@ -12,7 +12,7 @@ if (!user)
 
 import type { TrialReport } from '@dtypes/api.minmatar.org'
 import { get_my_trial } from '@helpers/api.minmatar.org/trial'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
@@ -152,8 +152,6 @@ import TierScale from '@components/blocks/TierScale.astro'
 
 <style lang="scss">
     .trial {
-        --trial_good: color-mix(in srgb, var(--green) 60%, var(--highlight));
-        --trial_warn: color-mix(in srgb, var(--fleet-red) 45%, var(--fleet-yellow));
     }
 
     .trial-section {
@@ -181,7 +179,7 @@ import TierScale from '@components/blocks/TierScale.astro'
     .trial-muted {
         margin: 0;
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .trial-pace,
@@ -193,8 +191,8 @@ import TierScale from '@components/blocks/TierScale.astro'
         font-size: var(--step--1);
         font-weight: 600;
         white-space: nowrap;
-        color: var(--text-muted);
-        background: var(--hairline);
+        color: var(--faded);
+        background: var(--border-color);
     }
 
     .trial-pace::before {
@@ -206,13 +204,13 @@ import TierScale from '@components/blocks/TierScale.astro'
     }
 
     .trial-good {
-        color: var(--trial_good);
-        background: color-mix(in srgb, var(--trial_good) 12%, transparent);
+        color: var(--green-text);
+        background: color-mix(in srgb, var(--green-text) var(--tint-soft), transparent);
     }
 
     .trial-warn {
-        color: var(--trial_warn);
-        background: color-mix(in srgb, var(--trial_warn) 12%, transparent);
+        color: var(--fleet-yellow);
+        background: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
     }
 
     .trial-rows {
@@ -222,7 +220,7 @@ import TierScale from '@components/blocks/TierScale.astro'
 
     .trial-row {
         padding-block: var(--space-xs);
-        border-top: 1px solid var(--hairline);
+        border-top: 1px solid var(--border-color);
     }
 
     .trial-link {
@@ -263,7 +261,7 @@ import TierScale from '@components/blocks/TierScale.astro'
         align-items: center;
         gap: var(--space-xs) var(--space-s);
         padding-block: var(--space-2xs);
-        border-top: 1px solid var(--hairline);
+        border-top: 1px solid var(--border-color);
 
         img {
             flex: none;

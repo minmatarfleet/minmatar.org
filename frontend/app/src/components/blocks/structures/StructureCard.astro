@@ -13,7 +13,7 @@ import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { StructureLocationCard } from '@dtypes/api.minmatar.org'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 import { FLAG_ICONS, percent, structure_flags, structure_banner, security_colour, security_label } from '@helpers/structure_locations'
 
 interface Props {
@@ -36,6 +36,7 @@ const costs = [
 ]
 
 import StructureRigChip from '@components/blocks/structures/StructureRigChip.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <article class:list={['[ structure-card ]', { 'no-art': !art }, banner && `is-${banner}`, Astro.props.class]} {...attributes}>
@@ -77,7 +78,7 @@ import StructureRigChip from '@components/blocks/structures/StructureRigChip.ast
             <h3 class="[ structure-card__name ]" title={card.short_name}>
                 <a href={href}>{card.short_name}</a>
             </h3>
-            <button type="button" class="[ structure-card__copy ]"
+            <StylessButton type="button" class="[ structure-card__copy ]"
                 data-name={card.name}
                 x-data="{ copied: false }"
                 x-on:click="navigator.clipboard.writeText($el.dataset.name).then(() => { copied = true; setTimeout(() => copied = false, 1500) })"
@@ -87,7 +88,7 @@ import StructureRigChip from '@components/blocks/structures/StructureRigChip.ast
                 <svg viewBox="0 0 24 24" aria-hidden="true" x-show="!copied"><rect x="9" y="9" width="12" height="12" /><path d="M5 15V3h12" /></svg>
                 <svg viewBox="0 0 24 24" aria-hidden="true" x-show="copied" x-cloak><path d="m5 12 5 5 9-10" /></svg>
                 <span class="[ structure-card__tip ]" role="status" x-show="copied" x-cloak>{t('structures.card.copied')}</span>
-            </button>
+            </StylessButton>
         </div>
         <p class="[ structure-card__sys ]">
             {card.security !== null && <b style={`color: ${security_colour(card.security)}`}>{security_label(card.security)}</b>}
@@ -133,7 +134,7 @@ import StructureRigChip from '@components/blocks/structures/StructureRigChip.ast
 
         &.no-art {
             background:
-                radial-gradient(circle at 70% 25%, color-mix(in srgb, var(--alliance-blue) 35%, transparent), transparent 60%),
+                radial-gradient(circle at 70% 25%, color-mix(in srgb, var(--alliance-blue) var(--tint-medium), transparent), transparent 60%),
                 var(--component-background);
         }
 
@@ -182,11 +183,11 @@ import StructureRigChip from '@components/blocks/structures/StructureRigChip.ast
         inset: 0;
         background: linear-gradient(
             180deg,
-            color-mix(in srgb, var(--background) 30%, transparent) 0%,
+            color-mix(in srgb, var(--background) var(--tint-medium), transparent) 0%,
             transparent 24%,
             transparent 38%,
-            color-mix(in srgb, var(--background) 90%, transparent) 62%,
-            color-mix(in srgb, var(--background) 97%, transparent) 100%
+            color-mix(in srgb, var(--background) var(--tint-dense), transparent) 62%,
+            color-mix(in srgb, var(--background) var(--tint-dense), transparent) 100%
         );
     }
 
@@ -245,8 +246,8 @@ import StructureRigChip from '@components/blocks/structures/StructureRigChip.ast
         block-size: 100%;
         margin: 0;
         padding-inline: var(--space-s);
-        background-color: color-mix(in srgb, var(--background) 78%, transparent);
-        border-bottom: 1px solid var(--hairline-strong);
+        background-color: color-mix(in srgb, var(--background) var(--tint-heavy), transparent);
+        border-bottom: 1px solid var(--border-color-hover);
 
         div {
             display: flex;
@@ -259,7 +260,7 @@ import StructureRigChip from '@components/blocks/structures/StructureRigChip.ast
             font-weight: 700;
             letter-spacing: 0.06em;
             text-transform: uppercase;
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         dd {
@@ -272,7 +273,7 @@ import StructureRigChip from '@components/blocks/structures/StructureRigChip.ast
 
             &.none {
                 font-weight: 500;
-                color: var(--text-muted);
+                color: var(--faded);
             }
         }
     }
@@ -296,8 +297,8 @@ import StructureRigChip from '@components/blocks/structures/StructureRigChip.ast
         justify-content: center;
         inline-size: 2rem;
         block-size: 2rem;
-        background-color: color-mix(in srgb, var(--background) 70%, transparent);
-        border: 1px solid var(--hairline-strong);
+        background-color: color-mix(in srgb, var(--background) var(--tint-heavy), transparent);
+        border: 1px solid var(--border-color-hover);
 
         img {
             inline-size: 1.65rem;
@@ -393,10 +394,10 @@ import StructureRigChip from '@components/blocks/structures/StructureRigChip.ast
         inline-size: 2.25rem;
         block-size: 2.25rem;
         padding: 0;
-        color: var(--text-muted);
+        color: var(--faded);
         cursor: pointer;
-        background-color: color-mix(in srgb, var(--background) 50%, transparent);
-        border: 1px solid var(--hairline-strong);
+        background-color: color-mix(in srgb, var(--background) var(--tint-strong), transparent);
+        border: 1px solid var(--border-color-hover);
 
         svg {
             inline-size: 1rem;
@@ -451,7 +452,7 @@ import StructureRigChip from '@components/blocks/structures/StructureRigChip.ast
     }
 
     .structure-card__type {
-        color: var(--text-muted);
+        color: var(--faded);
 
         &::before {
             content: "·";
@@ -509,6 +510,6 @@ import StructureRigChip from '@components/blocks/structures/StructureRigChip.ast
     .structure-card__unscanned {
         margin: 0;
         font-size: var(--step--2);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 </style>

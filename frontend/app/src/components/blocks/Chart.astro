@@ -1,0 +1,88 @@
+---
+/**
+ * A Chart.js chart that takes the site's colours from its tokens.
+ *
+ * Give it `type`, `labels` and `datasets`; each dataset names a `tone` (a
+ * colour token such as `fleet-red`, resolved from CSS at runtime, so
+ * color-blind mode and theme changes apply) and the grid, ticks and tooltip use
+ * `--faded`, `--border-color` and `--component-background`. Doughnut and pie
+ * datasets take `tones`, one per slice. `options` is deep-merged over the
+ * defaults.
+ *
+ * The chart is data on a `<canvas role="img" aria-label>`; a script charts every
+ * such canvas with the global `Chart` that FooterScripts loads, once, also
+ * after an htmx swap, and destroys the instance when the canvas is replaced.
+ * A dataset can carry a `suffix` for its tooltip (`' B'`), a `gradient` (its
+ * tone fading out under the line) and `ring` (points ringed in the panel
+ * colour); `tick_suffix` does the y axis, and `plugins` draws droplines, a
+ * shaded band or labelled markers under the axis. With nothing to plot it renders an EmptyState instead of an empty canvas.
+ */
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { has_plottable_data, type ChartDataset, type ChartKind, type ChartPluginSpec } from '@helpers/chart'
+
+interface Props {
+    type:               ChartKind;
+    labels:             (string | number)[];
+    datasets:           ChartDataset[];
+    /** Chart.js options, deep-merged over the defaults. */
+    options?:           Record<string, any>;
+    /** CSS height of the chart area. */
+    height?:            string;
+    /** What the chart shows, for screen readers. */
+    aria_label:         string;
+    /** Defaults to on for several datasets, doughnut and pie. */
+    legend?:            boolean;
+    /** Appended to the numbers on the y axis, as in `' B'`. */
+    tick_suffix?:       string;
+    /** Drawing beyond the chart itself: `stems`, `band`, `beats`. */
+    plugins?:           ChartPluginSpec[];
+    /** Replaces the "No data to chart" line. */
+    empty_title?:       string;
+    [propName: string]: any;
+}
+
+const {
+    type,
+    labels,
+    datasets,
+    options,
+    height = 'calc(var(--space-3xl) * 2.5)',
+    aria_label,
+    legend,
+    tick_suffix,
+    plugins,
+    empty_title,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const spec = { type, labels, datasets, options, legend, tick_suffix, plugins }
+const plottable = has_plottable_data(spec)
+
+import EmptyState from '@components/blocks/EmptyState.astro'
+---
+
+{plottable ?
+    <div class:list={['[ chart ]', Astro.props.class]} style={`--chart-height: ${height}`} {...attributes}>
+        <canvas role="img" aria-label={aria_label} data-chart={JSON.stringify(spec)}></canvas>
+    </div>
+    :
+    <EmptyState title={empty_title ?? t('chart.no_data')} class:list={['[ chart chart--empty ]', Astro.props.class]} {...attributes} />
+}
+
+<script>
+    import { bind_charts, type ChartWindow } from '@helpers/chart'
+
+    bind_charts(window as ChartWindow)
+</script>
+
+<style lang="scss">
+    .chart {
+        position: relative;
+        width: 100%;
+        height: var(--chart-height);
+    }
+</style>

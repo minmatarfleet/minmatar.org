@@ -5,7 +5,7 @@ const { t } = i18n(Astro.url)
 import type { AllianceHealthOverview } from '@dtypes/api.minmatar.org'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
-import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
+import StatCard from '@components/blocks/StatCard.astro'
 import CountUpAnimation from '@components/blocks/CountUpAnimation.astro'
 
 interface Props {
@@ -95,7 +95,7 @@ const cells: {
 
         <div class="[ alliance-health-summary__stats ]">
             {cells.map((cell) => (
-                <CampaignStat label={cell.label} tone={cell.tone}>
+                <StatCard variant="glass" label={cell.label} tone={cell.tone}>
                     <CountUpAnimation element="span" target={cell.value} />
                     {cell.delta ? (
                         <span
@@ -108,7 +108,7 @@ const cells: {
                             {format_delta(cell.delta)}
                         </span>
                     ) : null}
-                </CampaignStat>
+                </StatCard>
             ))}
         </div>
     </Flexblock>

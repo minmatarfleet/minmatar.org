@@ -28,7 +28,7 @@
     gap: var(--space-xs) var(--space-s);
     align-items: center;
     padding-block: var(--space-2xs);
-    border-bottom: solid 1px var(--hairline);
+    border-bottom: solid 1px var(--border-color);
 }
 
 .settings-editor .settings-editor__row.is-off {

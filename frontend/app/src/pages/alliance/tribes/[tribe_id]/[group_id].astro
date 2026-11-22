@@ -290,10 +290,9 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import Wrapper from '@components/compositions/Wrapper.astro'
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import CharacterPicture from '@components/blocks/CharacterPicture.astro'
 import TribalGroupRequirements from '@components/blocks/TribalGroupRequirements.astro'
-import RequirementSwiper from '@components/blocks/RequirementSwiper.astro'
+import Carousel from '@components/blocks/Carousel.astro'
 import NotificationBadge from '@components/blocks/NotificationBadge.astro'
 import TribeGroupActivity from '@components/blocks/TribeGroupActivity.astro'
 import TribeGroupAbout from '@components/blocks/tribe_about/TribeGroupAbout.astro'
@@ -470,11 +469,13 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
                                             max_width="100%"
                                         >
                                             <div id="tribe-group-requirements-reel" class="[ swiper ][ w-full ]">
-                                                <RequirementSwiper
-                                                    swiper_selector="#tribe-group-requirements-reel"
-                                                    pagination={false}
-                                                    gap={60}
-                                                    slides_per_view={1}
+                                                <Carousel
+                                                    selector="#tribe-group-requirements-reel"
+                                                    space_between={60}
+                                                    rewind={true}
+                                                    navigation={false}
+                                                    prev_el="#tribe-group-requirements-reel-button-prev"
+                                                    next_el="#tribe-group-requirements-reel-button-next"
                                                 >
                                                     {tribe_group.requirements.map((req, index) =>
                                                         <div class="[ swiper-slide ]">
@@ -491,7 +492,7 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
                                                             />
                                                         </div>
                                                     )}
-                                                </RequirementSwiper>
+                                                </Carousel>
                                             </div>
                                             {tribe_group.requirements.length > 1 &&
                                                 <>
@@ -667,13 +668,13 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
     }
 
     .tribe-chief-seat-label {
-        color: var(--text-muted);
+        color: var(--faded);
         text-align: center;
         font-size: var(--step--1);
     }
 
     .tribe-chief-interim-label {
-        color: var(--attention);
+        color: var(--fleet-yellow);
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.06em;
@@ -684,7 +685,7 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
         flex: 0 0 auto;
 
         &.is-interim {
-            outline: solid 2px var(--attention);
+            outline: solid 2px var(--fleet-yellow);
             outline-offset: -2px;
         }
 

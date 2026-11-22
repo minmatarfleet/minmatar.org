@@ -32,7 +32,7 @@ import FlexInline from "@components/compositions/FlexInline.astro";
 import Flexblock from "@components/compositions/Flexblock.astro";
 
 import Button from '@components/blocks/Button.astro';
-import SwitchSquare from '@components/blocks/SwitchSquare.astro';
+import Switch from '@components/blocks/Switch.astro';
 
 import RifterIcon from '@components/icons/RifterIcon.astro';
 ---
@@ -97,7 +97,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
         <template x-if="notifications_support">
             <div class="[ w-full ]">
                 <template x-if="notifications_permission === 'granted'">
-                    <SwitchSquare
+                    <Switch shape="square"
                         x-on:change="toogle_subscription()"
                         class="[ w-full ]"
                         checked={is_subscripted && subscription_id > 0}
@@ -138,7 +138,9 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
         align-items: center;
         gap: var(--space-3xs);
         font-weight: 600;
-        color: var(--security-status-point-4);
+        padding-inline: var(--space-2xs);
+        background-color: var(--fleet-yellow);
+        color: var(--background);
 
         &::before {
             content: '';
@@ -150,6 +152,8 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
     }
 
     .push-status--good {
-        color: var(--green);
+        padding-inline: 0;
+        background-color: transparent;
+        color: var(--green-text);
     }
 </style>

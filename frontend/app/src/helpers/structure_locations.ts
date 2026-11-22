@@ -1,5 +1,6 @@
+import { security_token } from '@helpers/sde/display'
 import type { StructureLocationCard, StructureLocationModule } from '@dtypes/api.minmatar.org'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 
 export type StructureView = 'all' | 'staging' | 'production' | 'reactions' | 'reprocessing'
 export const STRUCTURE_VIEWS: StructureView[] = ['all', 'staging', 'production', 'reactions', 'reprocessing']
@@ -161,11 +162,8 @@ export function in_view(card: StructureLocationCard, view: StructureView) {
 
 /** CSS colour token for a system's security status, as EVE colours it. */
 export function security_colour(security: number | null | undefined) {
-    if (security === null || security === undefined) return 'var(--text-muted)'
-    if (security >= 0.95) return 'var(--security-status-1)'
-    if (security <= 0) return 'var(--security-status-null)'
-    const step = Math.max(1, Math.min(9, Math.round(security * 10)))
-    return `var(--security-status-point-${step})`
+    if (security === null || security === undefined) return 'var(--faded)'
+    return `var(--${security_token(security)})`
 }
 
 export function security_label(security: number | null | undefined) {

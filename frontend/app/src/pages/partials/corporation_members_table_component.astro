@@ -3,9 +3,9 @@ import { i18n } from '@helpers/i18n'
 import { get_request_user } from '@helpers/request_user'
 const { t, translatePath, lang } = i18n(Astro.url)
 
-import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { HTTP_403_Forbidden, HTTP_500_Server_Error } from '@helpers/http_responses'
 import { get_corporation_members } from '@helpers/api.minmatar.org/corporations'
-import { get_player_icon } from '@helpers/eve_image_server'
+import { get_player_icon } from '@helpers/eve_image'
 import {
     MEMBER_ATTENTION_VIEWS,
     MEMBER_PAGE_SIZE,
@@ -37,6 +37,8 @@ import { query_string } from '@helpers/string'
 import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
 import Button from '@components/blocks/Button.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import HtmxPager from '@components/blocks/HtmxPager.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
@@ -56,10 +58,20 @@ const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id') ?? 
 if (!corporation_id) return HTTP_403_Forbidden()
 
 const params = parse_member_params(Astro.url.searchParams)
-const members_result = await get_corporation_members(auth_token, corporation_id)
-if (!members_result) return HTTP_403_Forbidden()
+let members_result: Awaited<ReturnType<typeof get_corporation_members>> = null
+let fetch_members_error: Error | false = false
+try {
+    members_result = await get_corporation_members(auth_token, corporation_id)
+} catch (error) {
+    fetch_members_error = error
+}
+// A failed filter or page request keeps the table on screen (htmx ignores the 500);
+// only the first load, which has no table yet, renders the retry block.
+if (fetch_members_error && Astro.request.headers.get('HX-Target') === BODY_ID) return HTTP_500_Server_Error()
+if (!fetch_members_error && !members_result) return HTTP_403_Forbidden()
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
-const grouped = group_corporation_members(members_result)
+const grouped = group_corporation_members(members_result ?? [])
 const roster = build_member_roster(grouped, { ...params, ids: [] })
 const pagination = paginate_corporation_member_rows(roster, params.page, MEMBER_PAGE_SIZE)
 const now = new Date()
@@ -233,8 +245,20 @@ const can_next = pagination.page < pagination.total_pages
 const range_start = pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.page_size + 1
 const range_end = Math.min(pagination.total, pagination.page * pagination.page_size)
 const selected_template = t('corporations.members.selected')
+import StylessButton from '@components/blocks/StylessButton.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 ---
 
+{fetch_members_error ?
+<div id={BODY_ID}>
+    <ErrorRefetch args={{
+        partial: partial_url(Object.fromEntries([...Astro.url.searchParams].filter(([key]) => key !== 'delay'))),
+        error: fetch_members_error,
+        delay: delay,
+        target: `#${BODY_ID}`,
+    }} />
+</div>
+:
 <div class="cm">
     <form
         id={FORM_ID}
@@ -248,25 +272,28 @@ const selected_template = t('corporations.members.selected')
         <input type="hidden" id="cm-sort" name="sort" value={params.sort} />
         <input type="hidden" id="cm-dir" name="dir" value={params.direction} />
         <div class="cm-filter-row">
-            <fieldset id="cm-views" class="cm-views">
+            <fieldset id="cm-views">
                 <legend class="visually-hidden">{t('corporations.members.views')}</legend>
-                {MEMBER_VIEWS.map((view) => (
-                    <label class:list={['cm-chip', { 'is-on': params.view === view }]}>
-                        <input class="visually-hidden" type="radio" name="view" value={view} checked={params.view === view} />
-                        <span>{view_label(view)}</span>
-                        <span class="cm-count">{count_with({ view })}</span>
-                    </label>
-                ))}
+                <ChipGroup wrap={true} role="none">
+                    {MEMBER_VIEWS.map((view) => (
+                        <FilterChip type="radio" name="view" value={view} checked={params.view === view} count={count_with({ view })}>{view_label(view)}</FilterChip>
+                    ))}
+                </ChipGroup>
             </fieldset>
             <fieldset id="cm-attention" class="cm-attention">
                 <legend class="cm-eyebrow">{t('corporations.members.needs_attention')}</legend>
-                {MEMBER_ATTENTION_VIEWS.map((view) => (
-                    <label class:list={['cm-chip', view === 'ready' ? 'is-good' : 'is-warn', { 'is-on': params.view === view }]}>
-                        <input class="visually-hidden" type="radio" name="view" value={view} checked={params.view === view} />
-                        <span>{view_label(view)}</span>
-                        <span class="cm-count">{count_with({ view })}</span>
-                    </label>
-                ))}
+                <ChipGroup wrap={true} role="none">
+                    {MEMBER_ATTENTION_VIEWS.map((view) => (
+                        <FilterChip
+                            type="radio"
+                            name="view"
+                            value={view}
+                            checked={params.view === view}
+                            count={count_with({ view })}
+                            tone={view === 'ready' ? 'green' : 'yellow'}
+                        >{view_label(view)}</FilterChip>
+                    ))}
+                </ChipGroup>
             </fieldset>
         </div>
         <div class="cm-toolbar">
@@ -349,7 +376,7 @@ const selected_template = t('corporations.members.selected')
                             </th>
                             {sort_headers.map((header) => (
                                 <th scope="col" class={header.css} aria-sort={aria_sort(header.key)}>
-                                    <button
+                                    <StylessButton
                                         type="button"
                                         class="cm-sort"
                                         hx-get={partial_url()}
@@ -361,7 +388,7 @@ const selected_template = t('corporations.members.selected')
                                             ? <><span class="cm-label-full">{header.label}</span><span class="cm-label-short">{header.short_label}</span></>
                                             : header.label}
                                         {params.sort === header.key && <span aria-hidden="true">{params.direction === 'asc' ? '▴' : '▾'}</span>}
-                                    </button>
+                                    </StylessButton>
                                 </th>
                             ))}
                             <th scope="col" class="col-chevron"></th>
@@ -418,7 +445,7 @@ const selected_template = t('corporations.members.selected')
                                         />
                                     </td>
                                     <td class="col-pilot">
-                                        <button type="button" class="cm-pilot" x-on:click="open = !open" x-bind:aria-expanded="open" aria-label={details_label}>
+                                        <StylessButton type="button" class="cm-pilot" x-on:click="open = !open" x-bind:aria-expanded="open" aria-label={details_label}>
                                             <img class="cm-portrait" src={get_player_icon(primary.character_id, 64)} alt="" width="36" height="36" loading="lazy" />
                                             <span class="cm-pilot__text">
                                                 <span class="cm-pilot__name">{primary.character_name}</span>
@@ -432,7 +459,7 @@ const selected_template = t('corporations.members.selected')
                                                     }
                                                 </span>
                                             </span>
-                                        </button>
+                                        </StylessButton>
                                     </td>
                                     <td class="col-status">
                                         <span class="cm-status" data-status={member.community_status ?? 'none'}>{status_label(member.community_status)}</span>
@@ -461,9 +488,9 @@ const selected_template = t('corporations.members.selected')
                                         }
                                     </td>
                                     <td class="col-chevron">
-                                        <button type="button" class="cm-chevron" x-on:click="open = !open" x-bind:aria-expanded="open" aria-label={details_label}>
+                                        <StylessButton type="button" class="cm-chevron" x-on:click="open = !open" x-bind:aria-expanded="open" aria-label={details_label}>
                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
-                                        </button>
+                                        </StylessButton>
                                     </td>
                                 </tr>
                                 <tr class="cm-detail" x-show="open" x-cloak>
@@ -591,12 +618,11 @@ const selected_template = t('corporations.members.selected')
     </HtmxPager>
 </div>
 </div>
+}
 
 <style lang="scss">
     .cm {
         // Trial bar met reads green; every other "needs attention" signal reads orange.
-        --cm_good: color-mix(in srgb, var(--green) 60%, var(--highlight));
-        --cm_warn: color-mix(in srgb, var(--fleet-red) 45%, var(--fleet-yellow));
 
         display: flex;
         flex-direction: column;
@@ -625,17 +651,9 @@ const selected_template = t('corporations.members.selected')
         min-width: 0;
     }
 
-    .cm-views,
-    .cm-attention {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: var(--space-2xs);
-    }
-
     .cm-attention {
         padding-inline-start: var(--space-s);
-        border-inline-start: 1px solid var(--hairline-strong);
+        border-inline-start: 1px solid var(--border-color-hover);
 
         legend {
             float: left;
@@ -650,62 +668,7 @@ const selected_template = t('corporations.members.selected')
         font-weight: normal;
         letter-spacing: 0.08em;
         text-transform: uppercase;
-        color: var(--text-muted);
-    }
-
-    .cm-chip {
-        --chip_color: var(--fleet-yellow);
-
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-2xs);
-        min-height: var(--space-l);
-        padding-inline: var(--space-xs);
-        border: 1px solid var(--hairline-strong);
-        color: var(--chip_color);
-        font-family: var(--button-font);
-        font-size: var(--step--1);
-        font-weight: 600;
-        white-space: nowrap;
-        cursor: pointer;
-        transition:
-            border-color var(--fast-transition),
-            background-color var(--fast-transition),
-            color var(--fast-transition);
-
-        &.is-good {
-            --chip_color: var(--cm_good);
-            border-color: color-mix(in srgb, var(--chip_color) 40%, transparent);
-        }
-
-        &.is-warn {
-            --chip_color: var(--cm_warn);
-            border-color: color-mix(in srgb, var(--chip_color) 40%, transparent);
-        }
-
-        &.is-on {
-            background: var(--chip_color);
-            border-color: var(--chip_color);
-            color: var(--background);
-        }
-
-        @media (hover: hover) {
-            &:not(.is-on):hover {
-                border-color: color-mix(in srgb, var(--chip_color) 60%, transparent);
-                color: var(--highlight);
-            }
-        }
-
-        &:has(input:focus-visible) {
-            outline: 2px solid var(--highlight);
-            outline-offset: 2px;
-        }
-    }
-
-    .cm-count {
-        font-weight: 500;
-        font-variant-numeric: tabular-nums;
-        opacity: 0.7;
+        color: var(--faded);
     }
 
     // Search and both dropdowns: one row of matching fields.
@@ -717,7 +680,7 @@ const selected_template = t('corporations.members.selected')
         :global(input),
         :global(select) {
             background-color: var(--component-background);
-            border-color: var(--hairline-strong);
+            border-color: var(--border-color-hover);
         }
 
         @media (max-width: 48rem) {
@@ -750,7 +713,7 @@ const selected_template = t('corporations.members.selected')
     .cm-panel {
         min-width: 0;
         background: var(--component-background);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
     }
 
     .cm-table {
@@ -778,9 +741,9 @@ const selected_template = t('corporations.members.selected')
             font-weight: normal;
             letter-spacing: 0.08em;
             text-transform: uppercase;
-            color: var(--text-muted);
+            color: var(--faded);
             white-space: nowrap;
-            border-bottom: 1px solid var(--hairline-strong);
+            border-bottom: 1px solid var(--border-color-hover);
         }
 
         .is-numeric {
@@ -788,7 +751,7 @@ const selected_template = t('corporations.members.selected')
         }
 
         tbody + tbody .cm-row td {
-            border-top: 1px solid var(--hairline);
+            border-top: 1px solid var(--border-color);
         }
     }
 
@@ -880,12 +843,12 @@ const selected_template = t('corporations.members.selected')
 
     @media (hover: hover) {
         .cm-row:hover {
-            background: var(--hairline);
+            background: var(--border-color);
         }
     }
 
     tbody.is-open .cm-row {
-        background: var(--hairline);
+        background: var(--border-color);
     }
 
     .cm-pilot {
@@ -937,7 +900,7 @@ const selected_template = t('corporations.members.selected')
     }
 
     .cm-muted {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .cm-strong {
@@ -968,11 +931,11 @@ const selected_template = t('corporations.members.selected')
         }
 
         &[data-status='trial'] {
-            color: var(--cm_warn);
+            color: var(--fleet-yellow);
         }
 
         &[data-status='on_leave'] {
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         &[data-status='none'] {
@@ -1010,20 +973,20 @@ const selected_template = t('corporations.members.selected')
         span {
             width: var(--space-3xs);
             min-height: 1px;
-            background: color-mix(in srgb, var(--fleet-yellow) 70%, transparent);
+            background: color-mix(in srgb, var(--fleet-yellow) var(--tint-heavy), transparent);
         }
     }
 
     .col-last.is-stale {
-        color: var(--cm_warn);
+        color: var(--fleet-yellow);
     }
 
     .cm-attention-text {
         font-weight: 600;
         white-space: nowrap;
 
-        &.is-good { color: var(--cm_good); }
-        &.is-warn { color: var(--cm_warn); }
+        &.is-good { color: var(--green-text); }
+        &.is-warn { color: var(--fleet-yellow); }
     }
 
     .cm-chevron {
@@ -1046,7 +1009,7 @@ const selected_template = t('corporations.members.selected')
 
         @media (hover: hover) {
             &:hover {
-                border-color: color-mix(in srgb, var(--fleet-yellow) 50%, transparent);
+                border-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
                 color: var(--highlight);
             }
         }
@@ -1058,7 +1021,7 @@ const selected_template = t('corporations.members.selected')
 
     .cm-table .cm-detail td {
         padding: 0 var(--space-s) var(--space-m) var(--space-2xl);
-        background: var(--hairline);
+        background: var(--border-color);
     }
 
     .cm-detail__body {
@@ -1091,7 +1054,7 @@ const selected_template = t('corporations.members.selected')
         min-width: 0;
         padding: var(--space-s);
         background: var(--surface-sunken);
-        border: 1px solid var(--hairline-medium);
+        border: 1px solid var(--border-color);
     }
 
     .cm-block__subhead {
@@ -1105,11 +1068,11 @@ const selected_template = t('corporations.members.selected')
         align-items: end;
         gap: 3px;
         height: var(--space-2xl);
-        border-bottom: 1px solid var(--hairline-strong);
+        border-bottom: 1px solid var(--border-color-hover);
 
         span {
             min-height: 2px;
-            background: color-mix(in srgb, var(--fleet-yellow) 70%, transparent);
+            background: color-mix(in srgb, var(--fleet-yellow) var(--tint-heavy), transparent);
         }
     }
 
@@ -1157,10 +1120,10 @@ const selected_template = t('corporations.members.selected')
     .cm-token {
         font-size: var(--step--2);
         font-weight: 600;
-        color: var(--text-muted);
+        color: var(--faded);
 
         &.is-warn {
-            color: var(--cm_warn);
+            color: var(--fleet-yellow);
         }
     }
 

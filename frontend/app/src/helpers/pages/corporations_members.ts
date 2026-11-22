@@ -4,7 +4,7 @@ import { prod_error_messages } from '@helpers/env'
 import type { CorporationMembers, SelectOptions, MemberStatus } from '@dtypes/layout_components'
 import { get_all_corporations_members } from '@helpers/fetching/corporations'
 
-import { get_corporation_logo } from '@helpers/eve_image_server';
+import { get_corporation_logo } from '@helpers/eve_image';
 
 export interface CorporationsMembersData {
     corporations_members?:          CorporationMembers[];

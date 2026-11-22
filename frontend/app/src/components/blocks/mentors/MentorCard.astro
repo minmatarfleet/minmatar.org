@@ -3,7 +3,7 @@ import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { MentorCard, MentorClassRef } from '@dtypes/api.minmatar.org'
-import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
+import { get_corporation_logo, get_player_icon } from '@helpers/eve_image'
 import { MENTOR_REQUEST_MODAL, MENTOR_SETTINGS_PATH, mentor_class_cover, mentor_class_path, mentors_url, modal_click } from '@helpers/mentors'
 
 /**
@@ -57,6 +57,7 @@ const weekend_timezone = { brackets: card.availability.weekend_brackets, source:
 import Button from '@components/blocks/Button.astro'
 import Tag from '@components/blocks/Tag.astro'
 import TimezoneTags from '@components/blocks/TimezoneTags.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <article class:list={['[ mentor-card ]', Astro.props.class]} {...attributes}>
@@ -137,10 +138,10 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
             )}
             {capped &&
                 <li x-bind:hidden="all">
-                    <button type="button" class="[ mentor-card__tile mentor-card__tile--more ]" x-on:click="all = true">
+                    <StylessButton type="button" class="[ mentor-card__tile mentor-card__tile--more ]" x-on:click="all = true">
                         <span class="[ mentor-card__more-count ]">{t('mentors.more_classes').replace('{count}', hidden.length.toString())}</span>
                         <span class="[ mentor-card__tile-meta ]">{t('mentors.see_all_classes')}</span>
-                    </button>
+                    </StylessButton>
                 </li>
             }
         </ul>
@@ -205,7 +206,7 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
         display: flex;
         align-items: center;
         gap: var(--space-3xs);
-        color: var(--text-muted);
+        color: var(--faded);
         font-size: var(--step--1);
     }
 
@@ -224,7 +225,7 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
         dt {
             flex-shrink: 0;
             width: 6em;
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         dd {
@@ -247,15 +248,15 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
         justify-content: center;
         width: var(--space-s);
         height: var(--space-s);
-        border: 1px dashed var(--hairline-strong);
-        color: var(--text-muted);
+        border: 1px dashed var(--border-color-hover);
+        color: var(--faded);
         font-size: var(--step--2);
         font-weight: 600;
     }
 
     .mentor-card__day--on {
-        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 50%, transparent);
-        background: color-mix(in srgb, var(--fleet-yellow) 16%, transparent);
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
+        background: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
         color: var(--fleet-yellow);
     }
 
@@ -283,9 +284,9 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
         height: 100%;
         min-block-size: var(--space-2xl);
         padding: var(--space-2xs);
-        border: solid 1px var(--hairline-strong);
+        border: solid 1px var(--border-color-hover);
         background-image:
-            linear-gradient(180deg, color-mix(in srgb, var(--black) 10%, transparent) 20%, color-mix(in srgb, var(--black) 85%, transparent) 100%),
+            linear-gradient(180deg, color-mix(in srgb, var(--black) var(--tint-subtle), transparent) 20%, color-mix(in srgb, var(--black) var(--tint-dense), transparent) 100%),
             var(--cover);
         background-position: center;
         background-size: cover;
@@ -298,7 +299,7 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
     .mentor-card__tile--more {
         align-items: center;
         justify-content: center;
-        background: var(--hairline);
+        background: var(--border-color);
         font: inherit;
         text-align: center;
         cursor: pointer;
@@ -318,12 +319,12 @@ import TimezoneTags from '@components/blocks/TimezoneTags.astro'
     }
 
     .mentor-card__tile-meta {
-        color: color-mix(in srgb, var(--highlight) 80%, transparent);
+        color: color-mix(in srgb, var(--highlight) var(--tint-heavy), transparent);
         font-size: var(--step--2);
     }
 
     .mentor-card__tile--more .mentor-card__tile-meta {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .mentor-card__foot {

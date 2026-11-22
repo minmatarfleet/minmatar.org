@@ -16,7 +16,7 @@ export default {
             description: {
                 component: [
                     'A pilot portrait from the EVE image server. Clicking it opens the character modal (`/partials/character_modal_component/`) unless `inert` is set; use `inert` inside links or cards that already own the click.',
-                    '`size` is the rendered width; `icon_quality` is the image-server size requested (defaults to 64, so pass 256/512 for large portraits to keep them sharp). `x_character_id` / `x_character_name` take Alpine expressions so the portrait can follow reactive state (the picker in a form); leave them `false` for static pages. Character id 0 renders the unknown-character alt and the click does nothing.',
+                    '`size` is the rendered width; `icon_quality` is the image-server size requested (defaults to 64, so pass 256/512 for large portraits to keep them sharp). `x_character_id` / `x_character_name` take Alpine expressions so the portrait can follow reactive state (the picker in a form); leave them `false` for static pages. Character id 0 renders the unknown-character alt and is not clickable. The clickable portrait is a `<button type="button">` around the image, so it can be reached and used with the keyboard.',
                 ].join('\n\n'),
             },
         },
@@ -58,9 +58,14 @@ export const Default = {
         await expect(img).toHaveAttribute('src', portrait(64))
         await expect(img).toHaveAttribute('width', '64')
         await expect(img).toHaveAttribute('height', '64')
-        // Clickable: Alpine opens the character modal.
-        await expect(img.getAttribute('x-on:click.stop.prevent')).toBe('show_character_modal()')
-        await expect(img.getAttribute('x-data')).toContain(`'${EVE.character_id}'`)
+        // Clickable: a real button, and Alpine opens the character modal from it.
+        const button = within(canvasElement).getByRole('button', { name: `Profile picture of ${EVE.character_name}` })
+        await expect(button.tagName).toBe('SPAN')
+        await expect(button).toHaveAttribute('tabindex', '0')
+        await expect(button).toContainElement(img)
+        await expect(button.getAttribute('x-on:click.stop.prevent')).toBe('show_character_modal()')
+        await expect(button.getAttribute('x-data')).toContain(`'${EVE.character_id}'`)
+        await expect(img).not.toHaveAttribute('x-on:click.stop.prevent')
         await expect(img.closest('picture')).not.toHaveClass('animated')
     },
 }
@@ -88,7 +93,7 @@ export const Inert = {
     play: async ({ canvasElement }: Ctx) => {
         const img = within(canvasElement).getByRole('img')
         await expect(img.closest('picture')).toHaveClass('animated')
-        await expect(img).not.toHaveAttribute('x-on:click.stop.prevent')
+        await expect(within(canvasElement).queryByRole('button')).toBeNull()
     },
 }
 
@@ -115,6 +120,7 @@ export const UnknownCharacter = {
     play: async ({ canvasElement }: Ctx) => {
         const img = within(canvasElement).getByRole('img', { name: 'Profile picture of Unknown character' })
         await expect(img.getAttribute('src')).toContain('/characters/0/portrait')
+        await expect(within(canvasElement).queryByRole('button')).toBeNull()
     },
 }
 
@@ -124,6 +130,17 @@ export const WithTooltip = {
     play: async ({ canvasElement }: Ctx) => {
         const picture = canvasElement.querySelector('picture') as HTMLElement
         await expect(picture).toHaveAttribute('data-tippy-content', 'FC for tonight')
-        await expect(picture).toHaveAttribute('x-init', 'tippy($el, tippy_options)')
+        // The global data-tippy-content delegate shows it: no per-instance x-init.
+        await expect(picture).not.toHaveAttribute('x-init')
+    },
+}
+
+export const ZeroQuantity = {
+    name: 'Zero quantity shows no badge',
+    args: { quantity: 0 },
+    play: async ({ canvasElement }: Ctx) => {
+        // `{quantity && ...}` used to print a literal 0 beside the portrait.
+        await expect(canvasElement.querySelector('.quantity-badge')).toBeNull()
+        await expect(canvasElement.querySelector('picture')?.textContent?.trim()).toBe('')
     },
 }

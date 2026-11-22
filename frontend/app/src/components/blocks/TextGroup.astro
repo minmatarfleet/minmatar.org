@@ -7,6 +7,7 @@ interface Props {
     title?:             false | string;
     gap?:               spaces;
     full?:              boolean;
+    root_class?:        string;
     [propName: string]: any;
 }
 
@@ -14,11 +15,12 @@ const {
     title = false,
     gap = 'var(--space-3xs)',
     full = false,
+    root_class = undefined,
     ...attributes
 } = Astro.props
 ---
 
-<Flexblock gap={gap} class:list={[ { 'w-full': full } ]}>
+<Flexblock gap={gap} class:list={[ { 'w-full': full }, root_class ]}>
     {title &&
         <h4>{title}</h4>
     }

@@ -7,6 +7,7 @@ interface Props {
     expanded?:          boolean;
     id?:                string;
     pre_chevron?:       boolean;
+    [propName: string]: any;
 }
 
 const {
@@ -15,7 +16,10 @@ const {
     expanded = false,
     id,
     pre_chevron = false,
+    ...attributes
 } = Astro.props
+
+delete attributes.class
 
 import Wrapper from '@components/compositions/Wrapper.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -24,6 +28,8 @@ import CollapsableButton from '@components/blocks/CollapsableButton.astro';
 ---
 
 <Flexblock
+    {...attributes}
+    class={Astro.props.class}
     id={id ? id : undefined}
     gap={gap}
     x-data={`{

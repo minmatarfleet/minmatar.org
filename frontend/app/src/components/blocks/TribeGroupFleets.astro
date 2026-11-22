@@ -53,7 +53,7 @@ const history_href = translatePath(`/fleets/history/?group=${group_id}`)
 import Flexblock from '@components/compositions/Flexblock.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import FleetScheduleRow from '@components/blocks/FleetScheduleRow.astro'
-import VisibilityTag from '@components/blocks/VisibilityTag.astro'
+import VisibilityTag from '@components/blocks/tribes/VisibilityTag.astro'
 import LockIcon from '@components/icons/LockIcon.astro'
 ---
 
@@ -103,7 +103,7 @@ import LockIcon from '@components/icons/LockIcon.astro'
         gap: var(--space-2xs);
         margin: 0;
         padding: var(--space-xs) var(--space-s);
-        border: 1px solid var(--hairline);
+        border: 1px solid var(--border-color);
         background-color: var(--surface-sunken);
         color: var(--foreground);
 
@@ -129,7 +129,7 @@ import LockIcon from '@components/icons/LockIcon.astro'
         gap: var(--space-2xs) var(--space-s);
         min-height: var(--space-xl);
         padding: var(--space-2xs) var(--space-s);
-        border: 1px dashed var(--hairline-strong);
+        border: 1px dashed var(--border-color-hover);
         color: var(--foreground);
         text-decoration: none;
         transition: border-color var(--fast-transition);

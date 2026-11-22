@@ -56,7 +56,7 @@ If data must change the DOM, use an **htmx partial + OOB swap** instead.
 Existing Alpine `fetch()` callers predate this rule and must be migrated to htmx partials opportunistically:
 
 - `src/components/blocks/LoyaltyOrderBook.astro`
-- `src/components/blocks/PageProgressTracker.astro`
+- `src/components/blocks/guides/PageProgressTracker.astro`
 - `src/components/blocks/PushNotifications.astro`
 - `src/components/partials/LearningAlpine.astro` (with `src/helpers/learning/localStore.ts`)
 - `src/components/partials/NotificationPreferencesAlpine.astro`
@@ -95,8 +95,11 @@ Never hardcode colors, spacing, type sizes, or fonts. Use the tokens below, whic
 - EVE meta groups: `--tech-i`, `--tech-ii`, `--storyline`, `--faction`, `--officer`, `--deadspace`, `--tech-iii`, `--abyssal`.
 - Security status: `--security-status-1` … `--security-status-null`.
 - Semantic: `--foreground` (default `--fleet-yellow`), `--background` (black), `--component-background` (`rgb(25,25,25)`), `--highlight` (white), `--faded`, `--button-color`, `--form-color`, `--border-color`, `--border-color-hover`.
-- Alpha tints (white or black at a fixed alpha): `--hairline` (white 0.06: faint rules, skeleton base), `--hairline-medium` (0.08: panel borders), `--hairline-strong` (0.12: stronger rules, skeleton highlight), `--text-muted` (0.55: secondary text), `--glow` (0.75: logo drop-shadows), `--surface-sunken` (black 0.22: stat tiles). `--border-color` (0.05), `--border-color-hover` (0.1) and `--faded` (0.5) cover the rest.
-- Any other alpha: mix a token instead of writing `rgba()`, e.g. `color-mix(in srgb, var(--highlight) 20%, transparent)` or `color-mix(in srgb, var(--fleet-yellow) 12%, transparent)`. The `alpha_literal` conventions ratchet fails on new white/black `rgba()` literals.
+- Text colours: `--fleet-red-text`, `--green-text`, `--alliance-blue-text` (the colour mixed with white: red 75%, green 65%, blue 70%, at least 4.5:1 on the dark background in both modes). Use them for coloured text; use the plain token for fills, borders and badges.
+- Alpha tints: `--border-color` (white 0.05: rules, panel borders), `--border-color-hover` (0.1: stronger rules), `--faded` (0.5: secondary text), `--surface-sunken` (black 0.22: stat tiles).
+- Tint ladder: a token over transparent uses `var(--tint-subtle)` 8%, `var(--tint-soft)` 15%, `var(--tint-medium)` 30%, `var(--tint-strong)` 45%, `var(--tint-bold)` 60%, `var(--tint-heavy)` 75% or `var(--tint-dense)` 90%, e.g. `color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent)`. The `tint_off_ladder` conventions rule fails on a literal percentage; `retired_token` fails on `--attention`, `--text-muted`, `--hairline*` and `--glow`.
+- Warnings are `--fleet-yellow` (a yellow Tag, Badge or border with dark text, never yellow body text); success is `--green-text`; danger is `--fleet-red-text`.
+- Any other alpha: mix a token instead of writing `rgba()`. The `alpha_literal` conventions ratchet fails on new white/black `rgba()` literals.
 
 ### Fonts (`_font-families.scss`, `_fonts.scss`)
 
@@ -158,8 +161,6 @@ Compose layout from the primitives in `src/components/compositions/` instead of 
 | `FlexInlineSiblings` | Two-child row that wraps: `shrinkable-sibbling` (`first` or `second`) shrinks down to `min-shink-width`, the other keeps its width; `gap` |
 | `BlockList` | Vertical stack of full-width children with a uniform `gap` |
 | `XFadeScroll` | Horizontal scroll region whose edges fade while there is more to scroll (`fade_size`, `flex`). Use it for wide tables and chip rows instead of a hand-rolled `overflow-x: auto` |
-| `Cover` | Full-height column (min-block-size 100vh) that vertically centers the body between `header`/`footer` slots. No page uses it today |
-| `Center` | Centering wrapper (flex, justify + align center). No page uses it today |
 
 Rules:
 
@@ -176,7 +177,7 @@ Reach for these before building a variant of your own (all in `src/components/bl
 | Block | Use it for |
 | --- | --- |
 | `DataGrid` | Grid "tables" of rows you render (`data-grid-row`, one child per column). Owns the header, the column template, sideways scroll and, with `stack`, the phone card captions (`data-label`). `variant`: `compact` (boards) or `ledger` (contract lists). |
-| `Table` | Older list-style rows (BlockList); not a column grid. |
+| `RowList` | Older list-style rows (BlockList); not a column grid. |
 | `campaigns/etherium-reach/CampaignDataTable` | Real `<table>` rendered from row data (CSV export, search); used by the war reports and Alliance Health. |
 | `StatCard` | Big-number stat: label, value, hint (`value`/`hint` slots for tooltips). |
 | `ActionMenu` + `ActionMenuItem` | Every action dropdown. Items can be links (`href`), submit buttons, status lines (`text_only`) or two-step confirms (`confirm_label`). |
@@ -239,7 +240,7 @@ Conventions:
 - Bracket notation groups classes for readability: `class:list={['[ button ]', { narrow: narrow }, Astro.props.class]}`.
 - `define:vars` maps props to **scoped** CSS custom properties (`lang="scss"`). Global/shared classes use `lang="scss" is:global` — reserve it for truly shared patterns.
 - Tailwind is used for utility classes only; reference tokens via arbitrary values (e.g. `top-[var(--space-2xs)]`, `min-w-[100px]`, `text-highlight`). No `@apply` for whole components; no hand-rolled color/space literals.
-- i18n: `import { i18n } from '@helpers/i18n'; const { t, translatePath } = i18n(Astro.url)`. User-visible strings go through `t(...)`; internal URLs through `translatePath(...)`. Keys built from data use `t(t_key('burst_kind_', kind))` (the prefix/suffix is type-checked against `ui.ts`) or, for a whole key from an API enum, `t(dynamic_key(state))`; never `t(x as any)`. Add a vitest that every value of a dynamic family has a key (see `testing/helpers/i18n_t_key.test.ts`). Exemption: editorial long-form content (the monthly reports in `components/blocks/warzone/` and `components/blocks/amamake-market/`, the guides in `components/blocks/*-guide/` and `navy-destroyer-metagame/`, and campaign write-ups in `components/blocks/campaigns/<campaign>/`) may keep its prose inline; page chrome around it (titles, buttons, labels, meta) still goes through `t()`.
+- i18n: `import { i18n } from '@helpers/i18n'; const { t, translatePath } = i18n(Astro.url)`. User-visible strings go through `t(...)`; internal URLs through `translatePath(...)`. Keys built from data use `t(t_key('burst_kind_', kind))` (the prefix/suffix is type-checked against `ui.ts`) or, for a whole key from an API enum, `t(dynamic_key(state))`; never `t(x as any)`. Add a vitest that every value of a dynamic family has a key (see `testing/helpers/i18n_t_key.test.ts`). Exemption: editorial long-form content (the monthly reports in `components/blocks/warzone/` and `components/blocks/amamake-market/`, the guides in `components/blocks/*-guide/` and the ship-guide content in `src/data/*-guide/guide.ts`, and campaign write-ups in `components/blocks/campaigns/<campaign>/`) may keep its prose inline; page chrome around it (titles, buttons, labels, meta) still goes through `t()`.
 - Shared UI types (colors, sizes, spaces) come from `@dtypes/layout_components` (`ButtonColors`, `ButtonSizes`, `TagColors`, `spaces`, `FlexInlineJustify`, `PageCoverOptions`, ...).
 - Alpine directives (`x-data`, `x-on`, `x-show`, `x-collapse`, `x-trap`, `x-bind`) are for local UI state only — see rule 1.
 - htmx attributes (`hx-*`) for anything that reads/writes server state.

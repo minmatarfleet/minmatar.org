@@ -4,7 +4,7 @@ const { t, translatePath } = i18n(Astro.url)
 
 import type { RequirementCheck } from '@dtypes/api.minmatar.org'
 import { check_status, check_tone, group_by_importance } from '@helpers/corporations/requirements'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 
 // Required / Nice to have groups of checked requirements. The applicant sees
 // ship icons and a training link; recruiters see the same rows without them.
@@ -106,8 +106,8 @@ function detail(check: RequirementCheck) {
         font-weight: 600;
         letter-spacing: 0.06em;
         text-transform: uppercase;
-        color: var(--text-muted);
-        border-bottom: solid 1px var(--hairline);
+        color: var(--faded);
+        border-bottom: solid 1px var(--border-color);
     }
 
     .requirement-checks__list {
@@ -123,7 +123,7 @@ function detail(check: RequirementCheck) {
         gap: var(--space-2xs) var(--space-s);
         min-height: var(--space-xl);
         padding-block: var(--space-3xs);
-        border-bottom: solid 1px var(--hairline);
+        border-bottom: solid 1px var(--border-color);
     }
 
     .requirement-check__icon {
@@ -131,7 +131,7 @@ function detail(check: RequirementCheck) {
         display: inline-flex;
         width: var(--space-m);
         height: var(--space-m);
-        color: var(--text-muted);
+        color: var(--faded);
 
         svg {
             width: 100%;
@@ -146,7 +146,7 @@ function detail(check: RequirementCheck) {
 
     .requirement-check[data-status='training'] .requirement-check__icon,
     .requirement-check[data-status='training'] .requirement-check__detail {
-        color: var(--attention);
+        color: var(--fleet-yellow);
     }
 
     .requirement-check__text {
@@ -179,7 +179,7 @@ function detail(check: RequirementCheck) {
     .requirement-check__detail {
         font-size: var(--step--1);
         font-weight: 600;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .requirement-check__plan {

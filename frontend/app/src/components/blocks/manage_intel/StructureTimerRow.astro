@@ -10,7 +10,7 @@ import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath, lang } = i18n(Astro.url)
 
 import type { StructureTimer } from '@dtypes/api.minmatar.org'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 import { get_structure_id } from '@helpers/eve'
 import { countdown_parts, eve_day_time, timer_owner, timer_row_id } from '@helpers/manage_intel'
 import { query_string } from '@helpers/string'
@@ -45,6 +45,7 @@ const detail_url = translatePath(`/partials/structure_timers_manage_component/?$
 
 import ExpandRow from '@components/blocks/manage/ExpandRow.astro'
 import StructureTimerForm from '@components/blocks/manage_intel/StructureTimerForm.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <ExpandRow
@@ -56,7 +57,7 @@ import StructureTimerForm from '@components/blocks/manage_intel/StructureTimerFo
     dim={deleted}
 >
     <td>
-        <button type="button" class="[ manage-who ]" x-on:click="open = !open">
+        <StylessButton type="button" class="[ manage-who ]" x-on:click="open = !open">
             {type_id && <img src={get_item_icon(type_id, 64)} alt="" width="40" height="40" loading="lazy" />}
             <span class="[ manage-who__text ]">
                 <span class="[ manage-who__name ]">{timer.name}</span>
@@ -65,7 +66,7 @@ import StructureTimerForm from '@components/blocks/manage_intel/StructureTimerFo
                     {deleted ? t('manage.timers.deleted') : `${state_label} · ${when.replace(/ \d\d \S+ /, ' ')}`}
                 </span>
             </span>
-        </button>
+        </StylessButton>
     </td>
     <td class="[ is-wide ]">
         <span class:list={[{ "manage-muted": !owner }]}>{owner ?? t('manage.timers.unknown_owner')}</span>

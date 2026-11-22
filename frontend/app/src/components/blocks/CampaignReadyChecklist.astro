@@ -104,13 +104,13 @@ import CampaignMeter from '@components/blocks/CampaignMeter.astro'
         align-items: center;
         gap: var(--space-s);
         padding-block: var(--space-2xs);
-        border-block-start: 1px solid var(--hairline);
+        border-block-start: 1px solid var(--border-color);
     }
 
     .campaign-ready__mark {
         inline-size: 1rem;
         block-size: 1rem;
-        border: 2px solid color-mix(in srgb, var(--fleet-yellow) 60%, transparent);
+        border: 2px solid color-mix(in srgb, var(--fleet-yellow) var(--tint-bold), transparent);
 
         &.is-done {
             inline-size: 1.375rem;
@@ -133,7 +133,7 @@ import CampaignMeter from '@components/blocks/CampaignMeter.astro'
 
     .campaign-ready__publish {
         padding-block-start: var(--space-s);
-        border-block-start: 1px solid var(--hairline);
+        border-block-start: 1px solid var(--border-color);
     }
 
     @media (max-width: 48rem) {

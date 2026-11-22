@@ -129,7 +129,7 @@ import Button from '@components/blocks/Button.astro'
 import SurveyContextConfirm from '@components/blocks/survey/SurveyContextConfirm.astro'
 import SurveyContextPanel from '@components/blocks/survey/SurveyContextPanel.astro'
 import SurveyField from '@components/blocks/survey/SurveyField.astro'
-import { get_player_icon, get_corporation_logo } from '@helpers/eve_image_server'
+import { get_player_icon, get_corporation_logo } from '@helpers/eve_image'
 
 const page_title = questions?.title ?? t('surveys.fill.default_title')
 const member_blocks = questions?.member_blocks ?? []
@@ -161,6 +161,7 @@ const OPEN_NUDGE = {
 }
 const STEP_OF = t('surveys.fill.step_of')
 const MINUTES_LEFT = t('surveys.fill.minutes_left')
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <Viewport title={page_title} components={{ alert_dialog: true }}>
@@ -329,7 +330,7 @@ const MINUTES_LEFT = t('surveys.fill.minutes_left')
                                 </Flexblock>
                             </ComponentBlock>
                             <FlexInline justification="flex-end">
-                                <button type="button" class="[ wizard-btn wizard-btn--submit ]" x-bind:disabled="!step_valid" x-on:click="next()">{t('surveys.fill.get_started')}</button>
+                                <StylessButton type="button" class="[ wizard-btn wizard-btn--submit ]" x-bind:disabled="!step_valid" x-on:click="next()">{t('surveys.fill.get_started')}</StylessButton>
                             </FlexInline>
                         </Flexblock>
                     </div>
@@ -397,11 +398,11 @@ const MINUTES_LEFT = t('surveys.fill.minutes_left')
                                 </ComponentBlock>
 
                                 <FlexInline justification="space-between">
-                                    <button type="button" class="[ wizard-btn wizard-btn--ghost ]" x-on:click="back()">{t('surveys.fill.back')}</button>
+                                    <StylessButton type="button" class="[ wizard-btn wizard-btn--ghost ]" x-on:click="back()">{t('surveys.fill.back')}</StylessButton>
                                     {bi + 1 < total_steps - 1 ? (
-                                        <button type="button" class="[ wizard-btn ]" x-bind:disabled="!step_valid" x-on:click="next()">{t('surveys.fill.next')}</button>
+                                        <StylessButton type="button" class="[ wizard-btn ]" x-bind:disabled="!step_valid" x-on:click="next()">{t('surveys.fill.next')}</StylessButton>
                                     ) : (
-                                        <button type="submit" class="[ wizard-btn wizard-btn--submit ]" x-bind:disabled="!step_valid">{t('surveys.fill.submit')}</button>
+                                        <StylessButton type="submit" class="[ wizard-btn wizard-btn--submit ]" x-bind:disabled="!step_valid">{t('surveys.fill.submit')}</StylessButton>
                                     )}
                                 </FlexInline>
                             </Flexblock>
@@ -426,7 +427,7 @@ const MINUTES_LEFT = t('surveys.fill.minutes_left')
         margin: 0;
         padding: var(--space-2xs) var(--space-s);
         border-left: 3px solid var(--fleet-yellow);
-        background: color-mix(in srgb, var(--highlight) 3%, transparent);
+        background: color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent);
         color: var(--foreground);
         font-size: 0.85em;
     }
@@ -436,7 +437,7 @@ const MINUTES_LEFT = t('surveys.fill.minutes_left')
     .wizard-progress {
         height: 6px;
         border-radius: 999px;
-        background: color-mix(in srgb, var(--highlight) 8%, transparent);
+        background: color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent);
         overflow: hidden;
     }
     .wizard-progress__bar {
@@ -484,7 +485,7 @@ const MINUTES_LEFT = t('surveys.fill.minutes_left')
         display: flex;
         flex-direction: column;
         gap: var(--space-m);
-        background: color-mix(in srgb, var(--highlight) 2%, transparent);
+        background: color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent);
     }
     .q-group__title { margin: 0; text-transform: uppercase; font-size: var(--step-0); }
 
@@ -497,7 +498,7 @@ const MINUTES_LEFT = t('surveys.fill.minutes_left')
         padding: var(--space-s) var(--space-m);
         border: 1px solid var(--border-color);
         border-radius: 6px;
-        background: color-mix(in srgb, var(--highlight) 3%, transparent);
+        background: color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent);
     }
     .corp-banner__side { display: flex; align-items: center; gap: var(--space-s); }
     .corp-banner__logo { border-radius: 4px; flex-shrink: 0; }

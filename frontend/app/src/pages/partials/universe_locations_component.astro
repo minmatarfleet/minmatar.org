@@ -7,7 +7,7 @@ import type { StructureLocationList } from '@dtypes/api.minmatar.org'
 import { get_request_user } from '@helpers/request_user'
 import { get_gates, can } from '@helpers/gates'
 import { get_structure_locations } from '@helpers/api.minmatar.org/structure_locations'
-import { get_item_icon } from '@helpers/eve_image_server'
+import { get_item_icon } from '@helpers/eve_image'
 import { in_view, has_rig_group, parse_rig_groups, parse_structure_view, rig_groups_of, RIG_GROUP_SECTIONS, STRUCTURE_VIEWS, type StructureView } from '@helpers/structure_locations'
 
 const { auth_token } = get_request_user(Astro)
@@ -46,6 +46,10 @@ function page_query(next_view: StructureView, rigs: string[]) {
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import Button from '@components/blocks/Button.astro'
+import Dropdown from '@components/blocks/Dropdown.astro'
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import Input from '@components/blocks/Input.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
@@ -60,11 +64,15 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
                 <label class="[ visually-hidden ]" for="structures-search">{t('structures.search')}</label>
                 <Input id="structures-search" type="search" placeholder={t('structures.search')} x-model="q"
                     x-on:input="document.querySelectorAll('[data-structure-name]').forEach((el) => el.hidden = q && !el.dataset.structureName.includes(q.toLowerCase()))" />
-                <details class="[ structures-rigs ]" x-data x-on:click.outside="$el.open = false" x-on:keydown.escape="$el.open = false">
-                    <summary class:list={['[ structures-rigs__toggle ]', { 'is-on': picked_rigs.length > 0 }]}>
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4" /></svg>
+                <Dropdown
+                    variant="button"
+                    color={picked_rigs.length > 0 ? 'alliance-blue' : 'transparent'}
+                    class="[ structures-rigs ]"
+                >
+                    <Fragment slot="button">
+                        <svg class="[ structures-rigs__icon ]" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4" /></svg>
                         {t('structures.rigs.button')}{picked_rigs.length > 0 && ` · ${picked_rigs.length}`}
-                    </summary>
+                    </Fragment>
                     <form class="[ structures-rigs__menu ]" method="get" aria-label={t('structures.rigs.label')}>
                         {view !== 'all' && <input type="hidden" name="view" value={view} />}
                         <div class="[ structures-rigs__sections ]">
@@ -72,11 +80,10 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
                                 <fieldset>
                                     <legend>{t(t_key('structures.rigs.section_', section.section))}</legend>
                                     {section.groups.map((group) => (
-                                        <label>
-                                            <input type="checkbox" name="rigs" value={group} checked={picked_rigs.includes(group)} />
+                                        <RadioCheckInput type="checkbox" name="rigs" value={group} checked={picked_rigs.includes(group)}>
                                             <span>{t(t_key('structures.rigs.group_', group))}</span>
                                             <span class="[ manage-muted ]">{rig_counts[group] ?? 0}</span>
-                                        </label>
+                                        </RadioCheckInput>
                                     ))}
                                 </fieldset>
                             ))}
@@ -86,15 +93,15 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
                             <Button type="submit" size="sm" color="transparent">{t('structures.rigs.apply')}</Button>
                         </div>
                     </form>
-                </details>
+                </Dropdown>
             </div>
             <div class="[ structures-controls__views ]">
-                <nav class="[ manage-chips ]" aria-label={t('structures.views')}>
-                    {STRUCTURE_VIEWS.map((name) => (
-                        <a class:list={['[ manage-chip ]', { 'is-on': name === view }]} href={page_query(name, picked_rigs)} aria-current={name === view ? 'page' : undefined}>
-                            {t(t_key('structures.view_', name))} <span class="[ manage-muted ]">{counts[name]}</span>
-                        </a>
-                    ))}
+                <nav aria-label={t('structures.views')}>
+                    <ChipGroup wrap={true}>
+                        {STRUCTURE_VIEWS.map((name) => (
+                            <FilterChip href={page_query(name, picked_rigs)} active={name === view} count={counts[name]}>{t(t_key('structures.view_', name))}</FilterChip>
+                        ))}
+                    </ChipGroup>
                 </nav>
                 {(can_manage || list?.can_add) &&
                     <div class="[ structures-controls__acts ]">
@@ -165,7 +172,7 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
         inset: 0;
         z-index: -1;
         background:
-            linear-gradient(90deg, var(--background) 0%, color-mix(in srgb, var(--background) 55%, transparent) 55%, color-mix(in srgb, var(--background) 35%, transparent) 100%),
+            linear-gradient(90deg, var(--background) 0%, color-mix(in srgb, var(--background) var(--tint-bold), transparent) 55%, color-mix(in srgb, var(--background) var(--tint-medium), transparent) 100%),
             linear-gradient(0deg, var(--background) 0%, transparent 45%);
     }
 
@@ -194,17 +201,6 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
         display: flex;
         flex-direction: column;
         gap: var(--space-s);
-
-        .manage-chip.is-on {
-            color: var(--background);
-            background-color: var(--fleet-yellow);
-            border-color: var(--fleet-yellow);
-
-            :global(.manage-muted) {
-                color: inherit;
-                opacity: 0.7;
-            }
-        }
     }
 
     .structures-controls__row {
@@ -221,55 +217,21 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
         flex: none;
     }
 
-    .structures-rigs__toggle {
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-2xs);
-        block-size: 100%;
-        min-block-size: 2.75rem;
-        padding-inline: var(--space-s);
-        font-family: var(--button-font);
-        font-size: var(--step--1);
-        font-weight: 600;
-        color: var(--highlight);
-        list-style: none;
-        cursor: pointer;
-        background-color: var(--component-background);
-        border: 1px solid var(--hairline-strong);
-
-        &::-webkit-details-marker {
-            display: none;
-        }
-
-        svg {
-            width: 1.2em;
-            height: 1.2em;
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 2;
-            stroke-linecap: round;
-        }
-
-        &.is-on {
-            color: var(--background);
-            background-color: var(--fleet-yellow);
-            border-color: var(--fleet-yellow);
-        }
+    .structures-rigs__icon {
+        width: 1.2em;
+        height: 1.2em;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
     }
 
     .structures-rigs__menu {
-        position: absolute;
-        inset-inline-end: 0;
-        z-index: var(--sticky-z-index);
         display: flex;
         flex-direction: column;
         gap: var(--space-m);
-        inline-size: min(100%, 40rem);
-        margin-top: var(--space-2xs);
-        padding: var(--space-m);
-        background-color: var(--component-background);
-        border: 1px solid var(--hairline-strong);
-        box-shadow: 0 var(--space-m) var(--space-l) color-mix(in srgb, var(--background) 60%, transparent);
+        inline-size: min(calc(100vw - var(--space-l)), 40rem);
+        padding: var(--space-xs);
     }
 
     .structures-rigs__sections {
@@ -292,25 +254,18 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
             color: var(--fleet-yellow);
         }
 
-        label {
+        :global(label) {
             display: flex;
             align-items: center;
             gap: var(--space-xs);
+            inline-size: 100%;
             min-block-size: 2.25rem;
             font-size: var(--step--1);
             color: var(--highlight);
-            cursor: pointer;
-
-            :global(.manage-muted) {
-                margin-inline-start: auto;
-            }
         }
 
-        input {
-            inline-size: 1.1rem;
-            block-size: 1.1rem;
-            margin: 0;
-            accent-color: var(--fleet-yellow);
+        .manage-muted {
+            margin-inline-start: auto;
         }
     }
 
@@ -319,7 +274,7 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
         align-items: center;
         justify-content: space-between;
         padding-top: var(--space-s);
-        border-top: 1px solid var(--hairline-strong);
+        border-top: 1px solid var(--border-color-hover);
 
         a {
             font-size: var(--step--1);
@@ -345,8 +300,8 @@ import StructureAddDialog from '@components/blocks/structures/StructureAddDialog
             font-size: var(--step--1);
             font-weight: 600;
             color: var(--highlight);
-            background-color: color-mix(in srgb, var(--green) 22%, transparent);
-            border: 1px solid color-mix(in srgb, var(--green) 60%, transparent);
+            background-color: color-mix(in srgb, var(--green) var(--tint-soft), transparent);
+            border: 1px solid color-mix(in srgb, var(--green) var(--tint-bold), transparent);
         }
 
         li a {

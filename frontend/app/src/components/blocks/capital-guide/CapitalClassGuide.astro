@@ -1,9 +1,16 @@
 ---
+import '@fontsource/orbitron/500.css'
+import '@fontsource/orbitron/600.css'
+import '@fontsource/orbitron/700.css'
+import '@fontsource/source-sans-3/400.css'
+import '@fontsource/source-sans-3/600.css'
+import '@fontsource/source-sans-3/400-italic.css'
 import GuideContentsLayout from '@components/blocks/GuideContentsLayout.astro'
 import GuideShell from '@components/blocks/GuideShell.astro'
 import CapitalGuideTierList from '@components/blocks/capital-guide/CapitalGuideTierList.astro'
 import CapitalGuideMetaBlocks from '@components/blocks/capital-guide/CapitalGuideMetaBlocks.astro'
 import CapitalGuideSkillPlan from '@components/blocks/capital-guide/CapitalGuideSkillPlan.astro'
+import DataTable from '@components/blocks/DataTable.astro'
 import PilotBadge from '@components/blocks/PilotBadge.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import type {
@@ -150,15 +157,10 @@ const reasons_list_class = guidance_reasons_ordered
                     <h2 id={`${id_prefix}-${table.id}-title`} class="cap-section__title">{table.title}</h2>
                     {table.lead && <p class="cap-section__paragraph" set:html={table.lead} />}
                     <div class="cap-table-wrap">
-                        <table class="cap-table">
-                            <thead>
-                                <tr>
-                                    {table.headers.map((header) => (
-                                        <th scope="col">{header}</th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
+                        <DataTable
+                            class="cap-table"
+                            columns={table.headers.map((header, index) => ({ key: `column_${index}`, label: header }))}
+                        >
                                 {table.rows.map((row) => (
                                     <tr>
                                         {row.map((cell, cell_index) =>
@@ -170,8 +172,7 @@ const reasons_list_class = guidance_reasons_ordered
                                         )}
                                     </tr>
                                 ))}
-                            </tbody>
-                        </table>
+                        </DataTable>
                     </div>
                 </section>
             ))}
@@ -222,22 +223,20 @@ const reasons_list_class = guidance_reasons_ordered
                     <h2 id={`${id_prefix}-crosstraining-title`} class="cap-section__title">Crosstraining</h2>
                     <p class="cap-section__paragraph">{crosstraining_lead}</p>
                     <div class="cap-table-wrap">
-                        <table class="cap-table">
-                            <thead>
-                                <tr>
-                                    <th scope="col">{crosstraining_column_header}</th>
-                                    <th scope="col">Useful subcapitals</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                        <DataTable
+                            class="cap-table"
+                            columns={[
+                                { key: 'capitals', label: crosstraining_column_header },
+                                { key: 'ships', label: 'Useful subcapitals' },
+                            ]}
+                        >
                                 {crosstraining_rows.map((row) => (
                                     <tr>
                                         <th scope="row">{row.capitals}</th>
                                         <td data-label="Useful subcapitals">{row.ships.join(', ')}</td>
                                     </tr>
                                 ))}
-                            </tbody>
-                        </table>
+                        </DataTable>
                     </div>
                 </section>
             )}
@@ -275,6 +274,5 @@ const reasons_list_class = guidance_reasons_ordered
 </GuideShell>
 
 <style lang="scss" is:global>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap');
     @import './capital-guide.scss';
 </style>

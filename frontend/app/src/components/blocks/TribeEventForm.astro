@@ -105,7 +105,7 @@ import FlatPicker from '@components/blocks/FlatPicker.astro'
 import Input from '@components/blocks/Input.astro'
 import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 import Select from '@components/blocks/Select.astro'
-import SwitchSquare from '@components/blocks/SwitchSquare.astro'
+import Switch from '@components/blocks/Switch.astro'
 import Textarea from '@components/blocks/Textarea.astro'
 ---
 
@@ -247,7 +247,7 @@ import Textarea from '@components/blocks/Textarea.astro'
         {mode === 'create' &&
             <div class="[ tribe-event-form__announce ]">
                 <span class="[ tribe-event-form__label ]">{t('tribes.event_form.announce')}</span>
-                <SwitchSquare
+                <Switch shape="square"
                     name="announce"
                     checked={values.announce && Boolean(channel_name)}
                     disabled={!channel_name}
@@ -318,7 +318,7 @@ import Textarea from '@components/blocks/Textarea.astro'
         gap: var(--space-s);
         padding: var(--space-s);
         background-color: var(--component-background);
-        border: 1px solid var(--hairline);
+        border: 1px solid var(--border-color);
         border-left: 3px solid var(--fleet-yellow);
     }
 
@@ -333,7 +333,7 @@ import Textarea from '@components/blocks/Textarea.astro'
         }
 
         small {
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
@@ -361,7 +361,7 @@ import Textarea from '@components/blocks/Textarea.astro'
         }
 
         small {
-            color: var(--text-muted);
+            color: var(--faded);
         }
 
         a {
@@ -377,7 +377,7 @@ import Textarea from '@components/blocks/Textarea.astro'
         min-width: 0;
 
         > small {
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 
@@ -401,7 +401,7 @@ import Textarea from '@components/blocks/Textarea.astro'
 
     .tribe-event-form__when-hint {
         grid-column: 1 / -1;
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .tribe-event-form__repeats {
@@ -419,7 +419,7 @@ import Textarea from '@components/blocks/Textarea.astro'
         width: 100%;
         aspect-ratio: 16 / 9;
         object-fit: cover;
-        border: 1px solid var(--hairline);
+        border: 1px solid var(--border-color);
     }
 
     .tribe-event-form__visibility,
@@ -430,11 +430,11 @@ import Textarea from '@components/blocks/Textarea.astro'
         min-width: 0;
         margin-inline: 0;
         padding: var(--space-s);
-        border: 1px solid var(--hairline);
+        border: 1px solid var(--border-color);
         background-color: var(--surface-sunken);
 
-        small {
-            color: var(--text-muted);
+        :global(small) {
+            color: var(--faded);
         }
     }
 
@@ -461,8 +461,8 @@ import Textarea from '@components/blocks/Textarea.astro'
     .tribe-event-form__preview :global(.tribe-event-form__preview-note) {
         margin: 0;
         padding: var(--space-s);
-        border: 1px dashed var(--hairline-strong);
-        color: var(--text-muted);
+        border: 1px dashed var(--border-color-hover);
+        color: var(--faded);
     }
 
     .tribe-event-form__shows {

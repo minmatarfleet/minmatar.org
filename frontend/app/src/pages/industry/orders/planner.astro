@@ -135,6 +135,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 
 import Button from '@components/blocks/Button.astro';
 import Input from '@components/blocks/Input.astro';
+import Textarea from '@components/blocks/Textarea.astro';
 import Select from '@components/blocks/Select.astro';
 import Switch from '@components/blocks/Switch.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
@@ -220,6 +221,7 @@ const planner_copy = JSON.stringify({
     step_build: t('industry.orders.planner.step_build'),
     step_inputs_note: t('industry.orders.planner.step_inputs_note'),
 })
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <Viewport
@@ -460,14 +462,6 @@ const planner_copy = JSON.stringify({
                                     .join('')
                                 return '<strong>' + name + '</strong>' + effects
                             },
-                            fittingTippy($el) {
-                                if (!$el || typeof tippy === 'undefined')
-                                    return
-                                const opts = (typeof tippy_options !== 'undefined')
-                                    ? Object.assign({}, tippy_options, { allowHTML: true })
-                                    : { delay: [100, 200], arrow: true, allowHTML: true }
-                                tippy($el, opts)
-                            },
                             formatIsk(v) {
                                 return Number(v || 0).toLocaleString()
                             },
@@ -540,25 +534,6 @@ const planner_copy = JSON.stringify({
                                     : this.copy.step_saving_total
                                 return template.replace('{isk}', this.formatIskShort(total))
                             },
-                            bindTip($el, content) {
-                                if (!$el || typeof tippy === 'undefined')
-                                    return
-                                if (!content) {
-                                    if ($el._tippy)
-                                        $el._tippy.destroy()
-                                    return
-                                }
-                                if ($el._tippy) {
-                                    $el._tippy.setContent(content)
-                                } else {
-                                    tippy($el, {
-                                        delay: [100, 200],
-                                        arrow: true,
-                                        allowHTML: true,
-                                        content,
-                                    })
-                                }
-                            },
                             costBreakdownTipHtml(mode) {
                                 const breakdown = this.cost_breakdown
                                 if (!breakdown || !breakdown.line_items)
@@ -628,41 +603,6 @@ const planner_copy = JSON.stringify({
                                     )
                                 }
                                 return lines.join('<br>')
-                            },
-                            bindCostTooltip() {
-                                this.$nextTick(() => {
-                                    if (typeof tippy === 'undefined')
-                                        return
-                                    const pairs = [
-                                        [
-                                            this.$refs.cost_total,
-                                            this.costBreakdownTipHtml('total'),
-                                        ],
-                                        [
-                                            this.$refs.cost_per_unit,
-                                            this.costBreakdownTipHtml('per_unit'),
-                                        ],
-                                    ]
-                                    for (const [el, content] of pairs) {
-                                        if (!el)
-                                            continue
-                                        if (!content) {
-                                            if (el._tippy)
-                                                el._tippy.destroy()
-                                            continue
-                                        }
-                                        if (el._tippy) {
-                                            el._tippy.setContent(content)
-                                        } else {
-                                            tippy(el, {
-                                                delay: [100, 200],
-                                                arrow: true,
-                                                allowHTML: true,
-                                                content,
-                                            })
-                                        }
-                                    }
-                                })
                             },
                             defaultBuildForBucket(_bucket) {
                                 // Intermediates default to buy/import (buy all).
@@ -818,7 +758,6 @@ const planner_copy = JSON.stringify({
                                     this.implant_status = ''
                                     this.ore_yields = []
                                     this.character_skills = null
-                                    this.bindRefineTooltip()
                                 } finally {
                                     this.rate_loading = false
                                 }
@@ -836,7 +775,6 @@ const planner_copy = JSON.stringify({
                                             '/Ore' + s.ore_processing_level)
                                         : ''
                                     this.implant_status = this.copy.implant_off
-                                    this.bindRefineTooltip()
                                     return
                                 }
                                 if (!s) {
@@ -844,7 +782,6 @@ const planner_copy = JSON.stringify({
                                     this.implant_status = (!this.character_id)
                                         ? this.copy.implant_assumed_max
                                         : ''
-                                    this.bindRefineTooltip()
                                     return
                                 }
                                 this.skill_summary =
@@ -862,7 +799,6 @@ const planner_copy = JSON.stringify({
                                     this.implant_status =
                                         this.copy.implant_assumed_max
                                 }
-                                this.bindRefineTooltip()
                             },
                             refineYieldTipHtml() {
                                 const lines = [
@@ -910,27 +846,6 @@ const planner_copy = JSON.stringify({
                                 if (this.implant_status)
                                     lines.push(this.escapeHtml(this.implant_status))
                                 return lines.join('<br>')
-                            },
-                            bindRefineTooltip() {
-                                this.$nextTick(() => {
-                                    if (typeof tippy === 'undefined')
-                                        return
-                                    const el = this.$refs.refine_yield
-                                    if (!el)
-                                        return
-                                    const content = this.refineYieldTipHtml()
-                                    el.setAttribute('data-tippy-content', content)
-                                    if (el._tippy) {
-                                        el._tippy.setContent(content)
-                                    } else {
-                                        tippy(el, {
-                                            delay: [100, 200],
-                                            arrow: true,
-                                            allowHTML: true,
-                                            content,
-                                        })
-                                    }
-                                })
                             },
                             async runPlan(gen) {
                                 if (gen === undefined)
@@ -1010,7 +925,6 @@ const planner_copy = JSON.stringify({
                                     this.materials_tsv = data.materials_tsv || ''
                                     this.stock_applied_count = (data.stock_applied || []).length
                                     this.stock_unresolved_count = (data.stock_unresolved || []).length
-                                    this.bindCostTooltip()
                                     if (data.compressed_ore) {
                                         this.effective_refine = data.compressed_ore.refine_rate
                                         this.refine_source = data.compressed_ore.refine_rate_source
@@ -1393,6 +1307,8 @@ const planner_copy = JSON.stringify({
                                             <span
                                                 class="[ planner-tip ]"
                                                 x-ref="refine_yield"
+                                                x-bind:data-tippy-content="refineYieldTipHtml()"
+                                                data-tippy-allowHTML="true"
                                                 x-text="(effective_refine * 100).toFixed(2) + '%' + (rate_loading ? ' …' : '')"
                                             ></span>
                                         </span>
@@ -1410,7 +1326,6 @@ const planner_copy = JSON.stringify({
                                                 <div
                                                     class="[ planner-stat planner-tip ]"
                                                     data-tippy-content={t('industry.orders.planner.cost_index_mfg_tip')}
-                                                    x-init="tippy($el, tippy_options)"
                                                 >
                                                     <TextGroup title={t('industry.orders.planner.cost_index_mfg')} gap='var(--space-3xs)'>
                                                         <span
@@ -1422,7 +1337,6 @@ const planner_copy = JSON.stringify({
                                                 <div
                                                     class="[ planner-stat planner-tip ]"
                                                     data-tippy-content={t('industry.orders.planner.cost_index_rxn_tip')}
-                                                    x-init="tippy($el, tippy_options)"
                                                 >
                                                     <TextGroup title={t('industry.orders.planner.cost_index_rxn')} gap='var(--space-3xs)'>
                                                         <span
@@ -1434,7 +1348,6 @@ const planner_copy = JSON.stringify({
                                                 <div
                                                     class="[ planner-stat planner-tip ]"
                                                     data-tippy-content={t('industry.orders.planner.facility_tax_tip')}
-                                                    x-init="tippy($el, tippy_options)"
                                                 >
                                                     <TextGroup title={t('industry.orders.planner.facility_tax')} gap='var(--space-3xs)'>
                                                         <span
@@ -1446,7 +1359,6 @@ const planner_copy = JSON.stringify({
                                                 <div
                                                     class="[ planner-stat planner-tip ]"
                                                     data-tippy-content={t('industry.orders.planner.scc_surcharge_tip')}
-                                                    x-init="tippy($el, tippy_options)"
                                                 >
                                                     <TextGroup title={t('industry.orders.planner.scc_surcharge')} gap='var(--space-3xs)'>
                                                         <span
@@ -1459,7 +1371,6 @@ const planner_copy = JSON.stringify({
                                                     class="[ planner-stat planner-tip ]"
                                                     data-tippy-content={t('industry.orders.planner.system_cost_bonus_tip')}
                                                     x-show="facility_detail.system_cost_bonus"
-                                                    x-init="tippy($el, tippy_options)"
                                                 >
                                                     <TextGroup title={t('industry.orders.planner.system_cost_bonus')} gap='var(--space-3xs)'>
                                                         <span
@@ -1471,7 +1382,6 @@ const planner_copy = JSON.stringify({
                                                 <div
                                                     class="[ planner-stat planner-tip ]"
                                                     data-tippy-content={t('industry.orders.planner.reprocessing_tax_tip')}
-                                                    x-init="tippy($el, tippy_options)"
                                                 >
                                                     <TextGroup title={t('industry.orders.planner.reprocessing_tax')} gap='var(--space-3xs)'>
                                                         <span
@@ -1488,12 +1398,11 @@ const planner_copy = JSON.stringify({
                                                 <div class="[ planner-fittings ]">
                                                     <template x-for="structure in (facility_detail.structures || [])" :key="structure.name">
                                                         <div class="[ planner-fitting-row ]">
-                                                            <button
+                                                            <StylessButton
                                                                 type="button"
                                                                 class="[ planner-fitting-piece planner-fitting-structure planner-tip ]"
                                                                 x-bind:data-tippy-content="fittingTooltip(structure)"
                                                                 data-tippy-allowhtml="true"
-                                                                x-init="fittingTippy($el)"
                                                             >
                                                                 <img
                                                                     loading="lazy"
@@ -1503,16 +1412,15 @@ const planner_copy = JSON.stringify({
                                                                     x-bind:alt="structure.name"
                                                                 />
                                                                 <small class="[ planner-tip__label ]" x-text="structure.kind"></small>
-                                                            </button>
+                                                            </StylessButton>
                                                             <div class="[ planner-fitting-rigs ]">
                                                                 <template x-for="rig in (structure.rigs || [])" :key="rig.type_id">
-                                                                    <button
+                                                                    <StylessButton
                                                                         type="button"
                                                                         class="[ planner-fitting-piece planner-tip ]"
                                                                         x-bind:data-tippy-content="fittingTooltip(rig)"
                                                                         data-tippy-allowhtml="true"
-                                                                        x-init="fittingTippy($el)"
-                                                                    >
+                                                                            >
                                                                         <img
                                                                             loading="lazy"
                                                                             width="40"
@@ -1524,7 +1432,7 @@ const planner_copy = JSON.stringify({
                                                                             class="[ planner-tip__label ]"
                                                                             x-text="rig.name"
                                                                         ></small>
-                                                                    </button>
+                                                                    </StylessButton>
                                                                 </template>
                                                             </div>
                                                         </div>
@@ -1546,7 +1454,8 @@ const planner_copy = JSON.stringify({
                                             x-cloak
                                             x-text="checkedStepSavingsText()"
                                             x-bind:class="(checkedStepSavings() ?? 0) < 0 ? 'planner-saving--loss' : 'planner-saving--gain'"
-                                            x-effect="bindTip($el, checkedStepSavingsText() ? copy.step_saving_total_tip : '')"
+                                            x-bind:data-tippy-content="checkedStepSavingsText() ? copy.step_saving_total_tip : ''"
+                                            data-tippy-allowHTML="true"
                                         ></span>
                                     </FlexInline>
                                     <p class="[ text-gray planner-section-hint ]">{t('industry.orders.planner.subitems_hint')}</p>
@@ -1555,18 +1464,18 @@ const planner_copy = JSON.stringify({
                                             <FlexInline justification='space-between' class="[ w-full flex-wrap ]">
                                                 <h4 x-text="group.label"></h4>
                                                 <FlexInline gap='var(--space-s)' class="[ planner-bucket-actions ]">
-                                                    <button
+                                                    <StylessButton
                                                         type="button"
                                                         class="[ planner-bucket-action ]"
                                                         x-on:click="selectBucketSubitems(group.key)"
                                                         x-bind:disabled="loading"
-                                                    >{t('industry.orders.planner.select_all')}</button>
-                                                    <button
+                                                    >{t('industry.orders.planner.select_all')}</StylessButton>
+                                                    <StylessButton
                                                         type="button"
                                                         class="[ planner-bucket-action ]"
                                                         x-on:click="deselectBucketSubitems(group.key)"
                                                         x-bind:disabled="loading"
-                                                    >{t('industry.orders.planner.deselect_all')}</button>
+                                                    >{t('industry.orders.planner.deselect_all')}</StylessButton>
                                                 </FlexInline>
                                             </FlexInline>
                                             <p
@@ -1604,7 +1513,8 @@ const planner_copy = JSON.stringify({
                                                             'planner-saving--gain': (stepSaving(job.product_type_id)?.saving_isk ?? 0) >= 0,
                                                             'planner-saving--off': !build_toggles[String(job.product_type_id)],
                                                         }"
-                                                        x-effect="bindTip($el, stepSavingTipHtml(job.product_type_id))"
+                                                        x-bind:data-tippy-content="stepSavingTipHtml(job.product_type_id)"
+                                                        data-tippy-allowHTML="true"
                                                     ></small>
                                                 </label>
                                             </template>
@@ -1621,13 +1531,13 @@ const planner_copy = JSON.stringify({
                                             {t('industry.orders.planner.stocks_tip')}
                                         </p>
                                     </Flexblock>
-                                    <textarea
+                                    <Textarea
                                         class="[ planner-tsv ]"
                                         rows="6"
                                         x-model="stock_paste"
                                         placeholder={t('industry.orders.planner.stocks_placeholder')}
                                         aria-label={t('industry.orders.planner.stocks')}
-                                    ></textarea>
+                                    ></Textarea>
                                     <p
                                         class="[ text-gray planner-section-hint ]"
                                         x-show="stockStatusText()"
@@ -1710,6 +1620,8 @@ const planner_copy = JSON.stringify({
                                                 <span
                                                     class="[ planner-tip ]"
                                                     x-ref="cost_total"
+                                                    x-bind:data-tippy-content="costBreakdownTipHtml('total')"
+                                                    data-tippy-allowHTML="true"
                                                     x-text="formatIsk(cost_breakdown?.grand_total_isk) + ' ISK'"
                                                 ></span>
                                             </TextGroup>
@@ -1717,6 +1629,8 @@ const planner_copy = JSON.stringify({
                                                 <span
                                                     class="[ planner-tip ]"
                                                     x-ref="cost_per_unit"
+                                                    x-bind:data-tippy-content="costBreakdownTipHtml('per_unit')"
+                                                    data-tippy-allowHTML="true"
                                                     x-text="formatIsk(Math.round(cost_breakdown?.per_unit_isk ?? 0)) + ' ISK'"
                                                 ></span>
                                             </TextGroup>
@@ -1787,13 +1701,13 @@ const planner_copy = JSON.stringify({
                                         </Fragment>
                                     }
 
-                                    <textarea
+                                    <Textarea
                                         class="[ planner-tsv ]"
                                         readonly
                                         rows="12"
                                         x-model="materials_tsv"
                                         x-show="materials_tsv"
-                                    ></textarea>
+                                    ></Textarea>
                                     </div>
                                 </Flexblock>
                             </ComponentBlock>
@@ -1856,7 +1770,7 @@ const planner_copy = JSON.stringify({
 <style lang="scss">
     .planner-beta {
         padding: var(--space-s) var(--space-m);
-        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) var(--tint-heavy), transparent);
         border-left: 4px solid var(--fleet-yellow, #c9a227);
         background: color-mix(in srgb, var(--fleet-yellow, #c9a227) 8%, var(--component-background));
         font-size: var(--step--1);
@@ -1881,16 +1795,9 @@ const planner_copy = JSON.stringify({
     }
 
     .planner-tsv {
-        width: 100%;
-        box-sizing: border-box;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-family: var(--mono-font);
         font-size: var(--step--1);
         line-height: 1.45;
-        padding: var(--space-s) var(--space-m);
-        background: rgba(0, 0, 0, 0.35);
-        border: 1px solid var(--border-color);
-        color: var(--highlight);
-        resize: vertical;
     }
 
     .planner-results {
@@ -1960,7 +1867,7 @@ const planner_copy = JSON.stringify({
     .planner-tip {
         cursor: help;
         color: var(--foreground);
-        border-bottom: dotted 2px color-mix(in srgb, currentColor 30%, transparent);
+        border-bottom: dotted 2px color-mix(in srgb, currentColor var(--tint-medium), transparent);
     }
 
     /* Block tip targets: underline the value / label, not the whole card */
@@ -1973,7 +1880,7 @@ const planner_copy = JSON.stringify({
     .planner-tip__mark,
     .planner-tip__label {
         color: var(--foreground);
-        border-bottom: dotted 2px color-mix(in srgb, currentColor 30%, transparent);
+        border-bottom: dotted 2px color-mix(in srgb, currentColor var(--tint-medium), transparent);
     }
 
     .planner-settings-row {
@@ -2138,7 +2045,7 @@ const planner_copy = JSON.stringify({
 
     .planner-bucket {
         padding-block: var(--space-2xs);
-        border-top: 1px solid var(--hairline-medium);
+        border-top: 1px solid var(--border-color);
     }
 
     .planner-bucket-action {
@@ -2235,7 +2142,6 @@ const planner_copy = JSON.stringify({
     @media (max-width: 48rem) {
         .planner-tsv {
             font-size: var(--step-0);
-            padding: var(--space-xs);
         }
 
         .planner-bucket-action {

@@ -42,7 +42,7 @@ export const Disclaimer = {
         const data = link.getAttribute('x-data') as string
         await expect(data).toContain('hide_external_link_disclaimer: $persist(false)')
         await expect(data).toContain('show_external_link_disclaimer')
-        await expect(data).toContain('accept_href: \'https://zkillboard.com/alliance/99011978/\'')
+        await expect(data).toContain('accept_href: "https://zkillboard.com/alliance/99011978/"')
         await expect(data).toContain('/partials/external_link_disclaimer_dialog/')
         await expect(link.getAttribute('x-on:click.prevent')).toContain('window.open(')
     },

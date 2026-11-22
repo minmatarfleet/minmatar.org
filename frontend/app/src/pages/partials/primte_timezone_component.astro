@@ -51,6 +51,7 @@ try {
 import PrimeTimezone from '@components/blocks/PrimeTimezone.astro'
 import ShowAlert from '@components/blocks/ShowAlert.astro'
 ---
+{/* no-error-refetch: only answers the PATCH form: a failed save opens the alert dialog, and a failed player read is a 500 the form never swaps in. */}
 
 {alert && <ShowAlert alert={alert} /> }
 

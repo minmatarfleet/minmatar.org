@@ -32,6 +32,7 @@ const stats = [
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FleetHistoryRow from '@components/blocks/FleetHistoryRow.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <Flexblock gap='var(--space-l)'>
@@ -72,7 +73,7 @@ import FleetHistoryRow from '@components/blocks/FleetHistoryRow.astro'
 
     {untracked.length > 0 &&
         <div x-data="{ show_untracked: false }">
-            <button
+            <StylessButton
                 type="button"
                 class="[ fleet-history-untracked ]"
                 x-bind:aria-expanded="show_untracked"
@@ -80,7 +81,7 @@ import FleetHistoryRow from '@components/blocks/FleetHistoryRow.astro'
             >
                 <span>{t('fleets.history.untracked').replace('{count}', untracked.length.toString())}</span>
                 <span x-text={`show_untracked ? '${t('fleets.history.hide')}' : '${t('fleets.history.show')}'`}>{t('fleets.history.show')}</span>
-            </button>
+            </StylessButton>
             <div role="list" x-show="show_untracked" x-cloak>
                 {untracked.map(fleet =>
                     <FleetHistoryRow

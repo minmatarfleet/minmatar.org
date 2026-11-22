@@ -11,7 +11,7 @@ const { t, translatePath } = i18n(Astro.url)
 import type { StructureLocationUsers } from '@dtypes/api.minmatar.org'
 import { get_request_user } from '@helpers/request_user'
 import { get_structure_users } from '@helpers/api.minmatar.org/structure_locations'
-import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
+import { get_corporation_logo, get_player_icon } from '@helpers/eve_image'
 
 const { auth_token } = get_request_user(Astro)
 
@@ -84,7 +84,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 
     .structure-users__lead {
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .structure-users__list {
@@ -129,7 +129,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 
         small {
             font-size: var(--step--1);
-            color: var(--text-muted);
+            color: var(--faded);
         }
     }
 </style>

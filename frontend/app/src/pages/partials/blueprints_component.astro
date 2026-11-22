@@ -6,15 +6,22 @@ const blueprint_query = Astro.url.searchParams.get('blueprint_query') as string
 const is_copy = Astro.url.searchParams.get('is_copy') ? JSON.parse(Astro.url.searchParams.get('is_copy') ?? 'false') : false
 
 let blueprints:Blueprint[] = []
-let fetching_error:string | false = false
+let fetching_error:Error | false = false
 
 try {
     blueprints = await fetch_blueprints(blueprint_query, is_copy)
 } catch (error) {
-    fetching_error = error.message
+    fetching_error = error
 }
 
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+const BLUEPRINTS_PARTIAL_URL = translatePath(`/partials/blueprints_component?blueprint_query=${encodeURIComponent(blueprint_query ?? '')}&is_copy=${is_copy}`)
+
 import BlueprintTableAlpine from '@components/blocks/BlueprintTableAlpine.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astro'
 ---
 
@@ -22,7 +29,7 @@ import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astr
     is_copy={is_copy}
 >
     {fetching_error &&
-        <p class="[ w-fit! animate-rubber-band ]">⚠️ {fetching_error}</p>
+        <ErrorRefetch args={{ partial: BLUEPRINTS_PARTIAL_URL, error: fetching_error, delay: delay, target: '#blueprint-table' }} />
     }
 </BlueprintTableAlpine>
 

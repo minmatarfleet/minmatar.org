@@ -16,12 +16,19 @@ import { query_string } from '@helpers/string'
 import { number_thousand_separator } from '@helpers/numbers'
 
 import AmamakeMarketVolumeSkeleton from '@components/blocks/amamake-market/AmamakeMarketVolumeSkeleton.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
 import ButtonAuth from '@components/blocks/ButtonAuth.astro'
+import Button from '@components/blocks/Button.astro'
+import HtmxPager from '@components/blocks/HtmxPager.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Input from '@components/blocks/Input.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
+import DataTable from '@components/blocks/DataTable.astro'
 
+import StylessButton from '@components/blocks/StylessButton.astro'
 interface Props {
     issue: AmamakeMarketIssue
     page?: number
@@ -117,8 +124,6 @@ const max_isk = Math.max(...rows.map((row) => row.isk), 1)
 const total_pages = volume?.total_pages ?? 1
 const total = volume?.total ?? 0
 const current_page = volume?.page ?? page
-const can_prev = current_page > 1
-const can_next = Boolean(volume) && current_page < total_pages
 const show_table = !login_required && !fetch_error && volume != null
 const search_url = volume_partial({ page: 1, q: '' })
 
@@ -136,75 +141,67 @@ const hx_body = {
                 <p>Keep browsing — log in for more page flips and filters. First looks stay free.</p>
                 <FlexInline gap="var(--space-2xs)">
                     <ButtonAuth size="sm">Log in</ButtonAuth>
-                    <button
+                    <Button
+                        size="sm"
+                        color="transparent"
                         type="button"
-                        class="[ mk-sold-chip ]"
+                        off_disable={true}
                         hx-get={volume_partial({ page: 1, q: '' })}
                         {...hx_body}
                     >
                         Back to page 1
-                    </button>
+                    </Button>
                 </FlexInline>
             </div>
         )}
 
         {!login_required && (
             <>
-                <nav class="[ mk-sold-chips ]" aria-label="Filter All Items Sold by class">
-                    <FlexInline gap="var(--space-2xs)">
-                        {chips.map((chip) => (
-                            <button
-                                type="button"
-                                class:list={['mk-sold-chip', chip.slug === sold_class && 'is-active']}
-                                hx-get={volume_partial({ page: 1, sold_class: chip.slug })}
-                                {...hx_body}
-                                aria-pressed={chip.slug === sold_class}
-                            >
-                                {chip.label}
-                                {chip.count != null && (
-                                    <span class="[ mk-sold-chip__count ]">{number_thousand_separator(chip.count)}</span>
-                                )}
-                            </button>
-                        ))}
-                    </FlexInline>
-                </nav>
+                <ChipGroup wrap={true} role="navigation" aria_label="Filter All Items Sold by class">
+                    {chips.map((chip) => (
+                        <FilterChip
+                            active={chip.slug === sold_class}
+                            count={chip.count != null ? number_thousand_separator(chip.count) : undefined}
+                            hx-get={volume_partial({ page: 1, sold_class: chip.slug })}
+                            {...hx_body}
+                        >{chip.label}</FilterChip>
+                    ))}
+                </ChipGroup>
 
                 {fetch_error && (
                     <p class="[ mk-volume__error ]">
                         All Items Sold table unavailable right now.{' '}
-                        <button
+                        <StylessButton
                             type="button"
                             class="[ mk-volume__retry ]"
                             hx-get={volume_partial({})}
                             {...hx_body}
                         >
                             Try again
-                        </button>
+                        </StylessButton>
                     </p>
                 )}
 
                 {show_table && rows.length === 0 && (
-                    <p class="[ mk-volume__empty ]">
-                        {q
-                            ? `No types match “${q}”.`
-                            : 'No types in this filter.'}
-                    </p>
+                    <EmptyState title={q ? `No types match “${q}”.` : 'No types in this filter.'} />
                 )}
 
                 {show_table && rows.length > 0 && (
                     <>
-                        <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Monthly sales by type">
-                            <table class="[ mk-table mk-table--volume ]">
-                                <thead>
-                                    <tr>
-                                        <th scope="col">Type</th>
-                                        <th scope="col" class="[ mk-table__bar-head ]">ISK sold</th>
-                                        <th scope="col" class="[ mk-table__num ]">Units</th>
-                                        <th scope="col" class="[ mk-table__num ]">Orders</th>
-                                        <th scope="col" class="[ mk-table__num ]">Markup</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                        <DataTable
+                            variant="report"
+                            cards={true}
+                            class="[ mk-table--volume ]"
+                            style="--data-table-card-columns: 3"
+                            caption="Monthly sales by type"
+                            columns={[
+                                { key: 'type', label: 'Type' },
+                                { key: 'isk', label: 'ISK sold', class: 'data-table__bar' },
+                                { key: 'units', label: 'Units', numeric: true },
+                                { key: 'orders', label: 'Orders', numeric: true },
+                                { key: 'markup', label: 'Markup', numeric: true },
+                            ]}
+                        >
                                     {rows.map((row) => (
                                         <tr>
                                             <td class="[ mk-table__hull ]">
@@ -242,43 +239,22 @@ const hx_body = {
                                             </td>
                                         </tr>
                                     ))}
-                                </tbody>
-                            </table>
-                        </div>
+                        </DataTable>
 
-                        <div class="[ mk-volume__pager ]">
-                            <p class="[ mk-volume__meta ]">
+                        <HtmxPager
+                            page={current_page}
+                            total_pages={total_pages}
+                            url_for={(to) => volume_partial({ page: to })}
+                            target="#mk-volume-body"
+                            swap="innerHTML"
+                            request={{ 'hx-indicator': hx_body['hx-indicator'] }}
+                        >
+                            <p slot="status" class="[ mk-volume__meta ]">
                                 Page {current_page} of {total_pages}
                                 {total > 0 && <> · {number_thousand_separator(total)} types</>}
                                 {q && <> · matching “{q}”</>}
                             </p>
-                            <FlexInline gap="var(--space-2xs)">
-                                {can_prev ? (
-                                    <button
-                                        type="button"
-                                        class="[ mk-sold-chip ]"
-                                        hx-get={volume_partial({ page: current_page - 1 })}
-                                        {...hx_body}
-                                    >
-                                        ← Prev
-                                    </button>
-                                ) : (
-                                    <span class="[ mk-sold-chip is-disabled ]" aria-disabled="true">← Prev</span>
-                                )}
-                                {can_next ? (
-                                    <button
-                                        type="button"
-                                        class="[ mk-sold-chip ]"
-                                        hx-get={volume_partial({ page: current_page + 1 })}
-                                        {...hx_body}
-                                    >
-                                        Next →
-                                    </button>
-                                ) : (
-                                    <span class="[ mk-sold-chip is-disabled ]" aria-disabled="true">Next →</span>
-                                )}
-                            </FlexInline>
-                        </div>
+                        </HtmxPager>
                     </>
                 )}
             </>
@@ -291,14 +267,16 @@ const hx_body = {
                 <p>Keep browsing — log in for more page flips and filters. First looks stay free.</p>
                 <FlexInline gap="var(--space-2xs)">
                     <ButtonAuth size="sm">Log in</ButtonAuth>
-                    <button
+                    <Button
+                        size="sm"
+                        color="transparent"
                         type="button"
-                        class="[ mk-sold-chip ]"
+                        off_disable={true}
                         hx-get={volume_partial({ page: 1, q: '' })}
                         {...hx_body}
                     >
                         Back to page 1
-                    </button>
+                    </Button>
                 </FlexInline>
             </div>
         )}
@@ -337,61 +315,51 @@ const hx_body = {
                         <AmamakeMarketVolumeSkeleton />
                     </div>
                     <div id="mk-volume-body" class="[ mk-volume__body ]" aria-live="polite">
-                        <nav class="[ mk-sold-chips ]" aria-label="Filter All Items Sold by class">
-                            <FlexInline gap="var(--space-2xs)">
-                                {chips.map((chip) => (
-                                    <button
-                                        type="button"
-                                        class:list={['mk-sold-chip', chip.slug === sold_class && 'is-active']}
-                                        hx-get={volume_partial({ page: 1, sold_class: chip.slug })}
-                                        {...hx_body}
-                                        aria-pressed={chip.slug === sold_class}
-                                    >
-                                        {chip.label}
-                                        {chip.count != null && (
-                                            <span class="[ mk-sold-chip__count ]">{number_thousand_separator(chip.count)}</span>
-                                        )}
-                                    </button>
-                                ))}
-                            </FlexInline>
-                        </nav>
+                        <ChipGroup wrap={true} role="navigation" aria_label="Filter All Items Sold by class">
+                            {chips.map((chip) => (
+                                <FilterChip
+                                    active={chip.slug === sold_class}
+                                    count={chip.count != null ? number_thousand_separator(chip.count) : undefined}
+                                    hx-get={volume_partial({ page: 1, sold_class: chip.slug })}
+                                    {...hx_body}
+                                >{chip.label}</FilterChip>
+                            ))}
+                        </ChipGroup>
 
                         {fetch_error && (
                             <p class="[ mk-volume__error ]">
                                 All Items Sold table unavailable right now.{' '}
-                                <button
+                                <StylessButton
                                     type="button"
                                     class="[ mk-volume__retry ]"
                                     hx-get={volume_partial({})}
                                     {...hx_body}
                                 >
                                     Try again
-                                </button>
+                                </StylessButton>
                             </p>
                         )}
 
                         {show_table && rows.length === 0 && (
-                            <p class="[ mk-volume__empty ]">
-                                {q
-                                    ? `No types match “${q}”.`
-                                    : 'No types in this filter.'}
-                            </p>
+                            <EmptyState title={q ? `No types match “${q}”.` : 'No types in this filter.'} />
                         )}
 
                         {show_table && rows.length > 0 && (
                             <>
-                                <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Monthly sales by type">
-                                    <table class="[ mk-table mk-table--volume ]">
-                                        <thead>
-                                            <tr>
-                                                <th scope="col">Type</th>
-                                                <th scope="col" class="[ mk-table__bar-head ]">ISK sold</th>
-                                                <th scope="col" class="[ mk-table__num ]">Units</th>
-                                                <th scope="col" class="[ mk-table__num ]">Orders</th>
-                                                <th scope="col" class="[ mk-table__num ]">Markup</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
+                                <DataTable
+                                    variant="report"
+                                    cards={true}
+                                    class="[ mk-table--volume ]"
+                                    style="--data-table-card-columns: 3"
+                                    caption="Monthly sales by type"
+                                    columns={[
+                                        { key: 'type', label: 'Type' },
+                                        { key: 'isk', label: 'ISK sold', class: 'data-table__bar' },
+                                        { key: 'units', label: 'Units', numeric: true },
+                                        { key: 'orders', label: 'Orders', numeric: true },
+                                        { key: 'markup', label: 'Markup', numeric: true },
+                                    ]}
+                                >
                                             {rows.map((row) => (
                                                 <tr>
                                                     <td class="[ mk-table__hull ]">
@@ -429,43 +397,22 @@ const hx_body = {
                                                     </td>
                                                 </tr>
                                             ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                </DataTable>
 
-                                <div class="[ mk-volume__pager ]">
-                                    <p class="[ mk-volume__meta ]">
+                                <HtmxPager
+                                    page={current_page}
+                                    total_pages={total_pages}
+                                    url_for={(to) => volume_partial({ page: to })}
+                                    target="#mk-volume-body"
+                                    swap="innerHTML"
+                                    request={{ 'hx-indicator': hx_body['hx-indicator'] }}
+                                >
+                                    <p slot="status" class="[ mk-volume__meta ]">
                                         Page {current_page} of {total_pages}
                                         {total > 0 && <> · {number_thousand_separator(total)} types</>}
                                         {q && <> · matching “{q}”</>}
                                     </p>
-                                    <FlexInline gap="var(--space-2xs)">
-                                        {can_prev ? (
-                                            <button
-                                                type="button"
-                                                class="[ mk-sold-chip ]"
-                                                hx-get={volume_partial({ page: current_page - 1 })}
-                                                {...hx_body}
-                                            >
-                                                ← Prev
-                                            </button>
-                                        ) : (
-                                            <span class="[ mk-sold-chip is-disabled ]" aria-disabled="true">← Prev</span>
-                                        )}
-                                        {can_next ? (
-                                            <button
-                                                type="button"
-                                                class="[ mk-sold-chip ]"
-                                                hx-get={volume_partial({ page: current_page + 1 })}
-                                                {...hx_body}
-                                            >
-                                                Next →
-                                            </button>
-                                        ) : (
-                                            <span class="[ mk-sold-chip is-disabled ]" aria-disabled="true">Next →</span>
-                                        )}
-                                    </FlexInline>
-                                </div>
+                                </HtmxPager>
                             </>
                         )}
                     </div>
@@ -485,8 +432,7 @@ const hx_body = {
 
     .mk-volume__error,
     .mk-volume__gate p,
-    .mk-volume__meta,
-    .mk-volume__empty {
+    .mk-volume__meta {
         margin: 0;
         color: var(--faded);
         font-size: var(--step--1);
@@ -544,7 +490,7 @@ const hx_body = {
         inset: 0;
         z-index: 1;
         padding-block: var(--space-3xs);
-        background: color-mix(in srgb, var(--background) 88%, transparent);
+        background: color-mix(in srgb, var(--background) var(--tint-dense), transparent);
     }
 
     .mk-volume__indicator.htmx-request {
@@ -581,99 +527,10 @@ const hx_body = {
         background: var(--light-transparency-background-mobile);
     }
 
-    .mk-volume__pager {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        align-items: center;
-        gap: var(--space-s);
-    }
-
-    .mk-sold-chips {
-        min-width: 0;
-    }
-
-    .mk-sold-chip {
-        padding: var(--space-3xs) var(--space-s);
-        border: solid 1px var(--border-color);
-        border-radius: var(--space-l);
-        background: transparent;
-        color: var(--foreground);
-        font-family: var(--default-font);
-        font-size: var(--step--1);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        white-space: nowrap;
-        cursor: pointer;
-        transition: border-color var(--fast-transition), color var(--fast-transition), background-color var(--fast-transition);
-
-        &:focus-visible {
-            outline: 2px solid var(--highlight);
-            outline-offset: 2px;
-        }
-
-        &.is-active {
-            border-color: var(--highlight);
-            color: var(--highlight);
-            background-color: var(--light-transparency-background-mobile);
-        }
-
-        &.is-disabled {
-            opacity: 0.4;
-            cursor: default;
-        }
-
-        @media (hover: hover) {
-            &:hover:not(.is-disabled) {
-                border-color: var(--highlight);
-                color: var(--highlight);
-            }
-        }
-    }
-
-    .mk-sold-chip__count {
-        margin-inline-start: var(--space-3xs);
-        color: var(--faded);
-        font-variant-numeric: tabular-nums;
-    }
-
-    .mk-table-wrap {
-        overflow-x: auto;
-        min-width: 0;
-        width: 100%;
-    }
-
-    .mk-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: var(--step--1);
-
-        th,
-        td {
-            padding: var(--space-xs) var(--space-s);
-            text-align: left;
-            vertical-align: middle;
-            border-bottom: solid 1px var(--mk-rule, var(--border-color));
-        }
-
-        th {
-            font-weight: 600;
-            color: var(--faded);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-size: var(--step--2);
-            white-space: nowrap;
-        }
-    }
-
     .mk-table__num {
         text-align: right !important;
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
-    }
-
-    .mk-table__bar-head {
-        min-width: 12rem;
     }
 
     .mk-table__bar {
@@ -722,7 +579,7 @@ const hx_body = {
     .mk-bar {
         width: 100%;
         height: 0.75rem;
-        background: var(--mk-track, color-mix(in srgb, var(--highlight) 6%, transparent));
+        background: var(--mk-track, color-mix(in srgb, var(--highlight) var(--tint-subtle), transparent));
     }
 
     .mk-bar__fill {
@@ -750,67 +607,33 @@ const hx_body = {
 
     /* Phones: stack each row as a card — name, bar, then the numbers with their column labels. */
     @media (max-width: 48rem) {
-        .mk-table--volume {
-            thead {
-                display: none;
+        td,
+        td.mk-table__num {
+            white-space: normal !important;
+            text-align: left !important;
+        }
+
+        td:nth-child(1),
+        td:nth-child(2) {
+            grid-column: 1 / -1;
+        }
+
+        td.mk-table__bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0 var(--space-xs);
+
+            &::before {
+                flex-basis: 100%;
             }
 
-            tr {
-                display: grid;
-                grid-template-columns: repeat(3, minmax(0, 1fr));
-                gap: var(--space-2xs) var(--space-s);
-                padding-block: var(--space-s);
-                border-bottom: solid 1px var(--mk-rule);
+            > .mk-bar {
+                flex: 1;
             }
 
-            tbody tr:hover td {
-                background: none;
-            }
-
-            td {
-                padding: 0;
-                border: none;
-                background: none;
-                white-space: normal !important;
-                text-align: left !important;
-                min-width: 0;
-                width: auto;
-            }
-
-            td:nth-child(1),
-            td:nth-child(2) {
-                grid-column: 1 / -1;
-            }
-
-            td.mk-table__bar {
-                display: flex;
-                flex-wrap: wrap;
-                align-items: center;
-                gap: 0 var(--space-xs);
-                width: auto;
-                min-width: 0;
-
-                &::before {
-                    flex-basis: 100%;
-                }
-
-                > .mk-bar {
-                    flex: 1;
-                }
-
-                > b {
-                    margin-top: 0;
-                }
-            }
-
-            td[data-label]::before {
-                content: attr(data-label);
-                display: block;
-                font-size: var(--step--2);
-                color: var(--faded);
-                text-transform: uppercase;
-                letter-spacing: 0.06em;
-                margin-bottom: 0.15em;
+            > b {
+                margin-top: 0;
             }
         }
     }

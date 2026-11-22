@@ -2,26 +2,49 @@
 /**
  * A row of FilterChips. By default one line that scrolls sideways with an
  * edge fade; `wrap` lets the chips wrap onto more lines instead.
+ * `scroll_below` (a width such as '48rem') wraps the chips at and above that
+ * width and scrolls them in one line below it.
  */
 interface Props {
     aria_label?:        string;
     wrap?:              boolean;
+    scroll_below?:      string;
     [propName: string]: any;
 }
 
 const {
     aria_label,
     wrap = false,
+    scroll_below = '',
     ...attributes
 } = Astro.props
 
 delete attributes.class
 
+// Only a plain CSS length reaches the generated media query.
+const below_width = scroll_below && /^\d+(\.\d+)?(rem|em|px)$/.test(scroll_below) ? scroll_below : undefined
+const below_css = below_width
+    ? `@media (max-width: calc(${below_width} - 0.02px)) { .chip-group.chip-group--wrap[data-scroll-below="${below_width}"] { flex-wrap: nowrap; padding-block: var(--space-3xs); } }`
+    : ''
+
 import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 ---
 
-{wrap ?
+{below_width ?
+    <XFadeScroll below={below_width}>
+        <FlexInline
+            gap="var(--space-3xs)"
+            class:list={['[ chip-group chip-group--wrap ]', Astro.props.class]}
+            data-scroll-below={below_width}
+            role="group"
+            aria-label={aria_label}
+            {...attributes}
+        >
+            <slot />
+        </FlexInline>
+    </XFadeScroll>
+    : wrap ?
     <FlexInline
         gap="var(--space-3xs)"
         class:list={['[ chip-group chip-group--wrap ]', Astro.props.class]}
@@ -44,6 +67,8 @@ import FlexInline from '@components/compositions/FlexInline.astro'
         </FlexInline>
     </XFadeScroll>
 }
+
+{below_css && <style is:inline set:html={below_css} />}
 
 <style lang="scss">
     .chip-group {

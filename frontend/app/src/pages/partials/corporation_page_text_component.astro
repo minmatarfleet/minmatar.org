@@ -79,6 +79,7 @@ const help: Record<PageTextField, string> = {
     activity_summary: t('corporations.page_text.activity_summary_help'),
 }
 const summary = page_text_summary(data.introduction, t('corporations.page_text.summary_empty'))
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 <span id={SUMMARY_ID} hx-swap-oob="innerHTML">{summary}</span>
@@ -135,9 +136,9 @@ const summary = page_text_summary(data.introduction, t('corporations.page_text.s
                 {error?.message}
                 {saved && <>
                     {t('corporations.page_text.saved')}
-                    <button type="button" class="[ corp-page-text__reload ]" x-data x-on:click="location.reload()">
+                    <StylessButton type="button" class="[ corp-page-text__reload ]" x-data x-on:click="location.reload()">
                         {t('corporations.page_text.reload')}
-                    </button>
+                    </StylessButton>
                 </>}
             </p>
         </FlexInline>
@@ -155,13 +156,13 @@ const summary = page_text_summary(data.introduction, t('corporations.page_text.s
     }
 
     .corp-page-text__muted {
-        color: var(--text-muted);
+        color: var(--faded);
     }
 
     .corp-page-text__status {
         margin: 0;
         font-size: var(--step--1);
-        color: var(--text-muted);
+        color: var(--faded);
 
         &.is-error {
             color: var(--fleet-red);
