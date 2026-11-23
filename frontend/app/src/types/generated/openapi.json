@@ -93976,8 +93976,20 @@
     },
     "/api/tribes/": {
       "get": {
+        "description": "archived=true needs tribes.structure.manage.",
         "operationId": "tribes_endpoints_tribes_get_tribes_get_tribes",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "archived",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Archived",
+              "type": "boolean"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -93992,9 +94004,26 @@
               }
             },
             "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
           }
         },
-        "summary": "List all active tribes.",
+        "security": [
+          {
+            "AuthOptional": []
+          }
+        ],
+        "summary": "List active tribes (archived=true: archived ones).",
         "tags": [
           "Tribes",
           "Tribes"
@@ -96256,6 +96285,7 @@
     },
     "/api/tribes/{tribe_id}/groups": {
       "get": {
+        "description": "archived=true needs tribes.structure.manage.",
         "operationId": "tribes_endpoints_groups_get_tribe_groups_get_tribe_groups",
         "parameters": [
           {
@@ -96265,6 +96295,16 @@
             "schema": {
               "title": "Tribe Id",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "archived",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Archived",
+              "type": "boolean"
             }
           }
         ],
@@ -96282,6 +96322,18 @@
               }
             },
             "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
           },
           "404": {
             "content": {
@@ -96301,7 +96353,7 @@
             "AuthOptional": []
           }
         ],
-        "summary": "List active groups in a tribe.",
+        "summary": "List active groups in a tribe (archived=true: archived ones).",
         "tags": [
           "Tribes - Groups",
           "Tribes - Groups"

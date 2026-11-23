@@ -10406,7 +10406,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List all active tribes. */
+        /**
+         * List active tribes (archived=true: archived ones).
+         * @description archived=true needs tribes.structure.manage.
+         */
         get: operations["tribes_endpoints_tribes_get_tribes_get_tribes"];
         put?: never;
         /**
@@ -10885,7 +10888,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List active groups in a tribe. */
+        /**
+         * List active groups in a tribe (archived=true: archived ones).
+         * @description archived=true needs tribes.structure.manage.
+         */
         get: operations["tribes_endpoints_groups_get_tribe_groups_get_tribe_groups"];
         put?: never;
         /**
@@ -59474,7 +59480,9 @@ export interface operations {
     };
     tribes_endpoints_tribes_get_tribes_get_tribes: {
         parameters: {
-            query?: never;
+            query?: {
+                archived?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -59488,6 +59496,17 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TribeSchema"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };
@@ -61027,7 +61046,9 @@ export interface operations {
     };
     tribes_endpoints_groups_get_tribe_groups_get_tribe_groups: {
         parameters: {
-            query?: never;
+            query?: {
+                archived?: boolean;
+            };
             header?: never;
             path: {
                 tribe_id: number;
@@ -61043,6 +61064,17 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TribeGroupSchema"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Not Found */

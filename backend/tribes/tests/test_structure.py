@@ -256,6 +256,29 @@ class StructureTestCase(TestCase):
             ).exists()
         )
 
+    def test_archived_lists_are_for_managers_only(self):
+        self.tribe.is_active = False
+        self.tribe.save()
+        TribeGroup.objects.create(
+            tribe=self.tribe,
+            name="Old",
+            code="supply-structure.old",
+            is_active=False,
+        )
+        url = f"{BASE_URL}/?archived=true"
+        self.assertEqual(self.client.get(url).status_code, 403)
+        self.assertEqual(
+            self.client.get(url, **_auth(self.pilot)).status_code, 403
+        )
+        archived = self.client.get(url, **_auth(self.manager)).json()
+        self.assertEqual([t["id"] for t in archived], [self.tribe.pk])
+        groups_url = f"{BASE_URL}/{self.tribe.pk}/groups?archived=true"
+        self.assertEqual(
+            self.client.get(groups_url, **_auth(self.pilot)).status_code, 403
+        )
+        groups = self.client.get(groups_url, **_auth(self.manager)).json()
+        self.assertEqual([g["name"] for g in groups], ["Old"])
+
     def test_a_group_is_restored_only_in_an_active_tribe(self):
         group = TribeGroup.objects.create(
             tribe=self.tribe,

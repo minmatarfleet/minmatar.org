@@ -23,6 +23,7 @@ transaction and writes an audit entry.
 | Create a group | `POST /api/tribes/{tribe_id}/groups` (`name`, `description`) | Creates the group, its auth group and Discord role. Its code is `{tribe slug}.{name}`. Not allowed in an archived tribe. |
 | Rename | `PATCH /api/tribes/{tribe_id}` or `.../groups/{group_id}` (`name`) | Renames the auth group and the Discord role with it. The slug and the group code never change: reports and bindings key on them. |
 | Archive, restore | the same `PATCH` (`is_active`) | Sets `is_active`, as the admin did. Memberships and roles are left alone. A group can only be restored in an active tribe. |
+| List archived | `GET /api/tribes/?archived=true`, `GET /api/tribes/{tribe_id}/groups?archived=true` | Archived tribes or groups, to restore them. Managers only (403 otherwise). |
 | Change a chief | `PUT /api/tribes/{tribe_id}/chief`, `.../groups/{group_id}/chief` | The chief swap (`tribes.helpers.chiefs.set_chief`); the API's `can_set_chief` flag follows the feature. |
 
 A name already used by another auth group (and so a Discord role) is
