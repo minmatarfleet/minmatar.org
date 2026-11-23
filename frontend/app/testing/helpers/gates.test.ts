@@ -114,6 +114,8 @@ const INLINE: Partial<Record<GateKey, Inline>> = {
         || user_permissions.includes('eveonline.change_eveskillset')
         || user_permissions.includes('eveonline.view_eveskillset'),
     'tribes.roster.view': (is_superuser, user_permissions) => user_permissions.includes('eveonline.add_evecharactertag') || is_superuser,
+    // New gate (#3002): the backend's own fallback, tribes.change_tribe or superuser.
+    'tribes.structure.manage': (is_superuser, user_permissions) => user_permissions.includes('tribes.change_tribe') || is_superuser,
     'characters.readiness#strict': (_is_superuser, user_permissions) => user_permissions.includes('eveonline.add_evecharactertag'),
     'industry.industrialists.view': (is_superuser, user_permissions) => is_superuser || user_permissions.includes('eveonline.add_evecharactertag'),
     'industry.industrialists.view#strict': (_is_superuser, user_permissions) => user_permissions.includes('eveonline.add_evecharactertag'),

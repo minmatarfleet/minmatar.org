@@ -1,0 +1,181 @@
+---
+/**
+ * Structure managers (the `tribes.structure.manage` gate, People Team)
+ * create, rename, archive and restore tribes and groups. A button opens a
+ * dialog whose form posts to `tribe_structure_component`, which sends the
+ * pilot to the changed page, or says inside the dialog why it was refused.
+ * The caller checks the gate; this block only renders the dialog.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { query_string } from '@helpers/string'
+import type { StructureMode } from '@helpers/tribe_structure'
+
+interface Props {
+    mode:               StructureMode;
+    /** Every mode but `new_tribe`. */
+    tribe_id?:          number | null;
+    /** Rename, archive or restore a group instead of the tribe. */
+    group_id?:          number | null;
+    /** The current name (rename, archive, restore). */
+    name?:              string;
+    [propName: string]: any;
+}
+
+const {
+    mode,
+    tribe_id = null,
+    group_id = null,
+    name = '',
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const target = group_id ? 'group' : 'tribe'
+const ACTION_URL = `${translatePath('/partials/tribe_structure_component')}?${query_string({
+    action: mode,
+    ...(tribe_id ? { tribe_id } : {}),
+    ...(group_id ? { group_id } : {}),
+})}`
+const form_id = `tribe-structure-${mode}-${group_id ?? tribe_id ?? 'new'}`
+
+const LABELS: Record<StructureMode, { button: string, title: string, text: string, submit: string }> = {
+    new_tribe: {
+        button: t('tribes.structure.new_tribe'),
+        title: t('tribes.structure.new_tribe'),
+        text: t('tribes.structure.new_tribe_text'),
+        submit: t('tribes.structure.create'),
+    },
+    new_group: {
+        button: t('tribes.structure.new_group'),
+        title: t('tribes.structure.new_group'),
+        text: t('tribes.structure.new_group_text'),
+        submit: t('tribes.structure.create'),
+    },
+    rename: {
+        button: t('tribes.structure.rename'),
+        title: t(`tribes.structure.rename_${target}`),
+        text: t('tribes.structure.rename_text'),
+        submit: t('tribes.structure.rename'),
+    },
+    archive: {
+        button: t('tribes.structure.archive'),
+        title: t(`tribes.structure.archive_${target}`),
+        text: t(`tribes.structure.archive_${target}_text`),
+        submit: t('tribes.structure.archive'),
+    },
+    restore: {
+        button: t('tribes.structure.restore'),
+        title: t(`tribes.structure.restore_${target}`),
+        text: t('tribes.structure.restore_text'),
+        submit: t('tribes.structure.restore'),
+    },
+}
+const labels = LABELS[mode]
+const asks_name = mode === 'new_tribe' || mode === 'new_group' || mode === 'rename'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import DialogButton from '@components/blocks/DialogButton.astro'
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+---
+
+<DialogButton
+    size="sm"
+    color="transparent"
+    max_width="32rem"
+    class:list={['[ tribe-structure ]', Astro.props.class]}
+    {...attributes}
+>
+    {labels.button}
+
+    <form
+        slot="dialog"
+        hx-post={ACTION_URL}
+        hx-target="find .tribe-structure__error"
+        hx-swap="innerHTML"
+        hx-disabled-elt="find button[type=submit]"
+    >
+        <Flexblock gap="var(--space-l)">
+            <Flexblock gap="var(--space-2xs)">
+                <h3>{labels.title.replace('{name}', name)}</h3>
+                <p>{labels.text.replace('{name}', name)}</p>
+            </Flexblock>
+
+            {asks_name &&
+                <Flexblock gap="var(--space-s)">
+                    <Flexblock gap="var(--space-3xs)">
+                        <label for={`${form_id}-name`}>{t('tribes.structure.name')}</label>
+                        <Input
+                            id={`${form_id}-name`}
+                            name="name"
+                            value={mode === 'rename' ? name : ''}
+                            maxlength="128"
+                            autocomplete="off"
+                            required
+                        />
+                    </Flexblock>
+                    {mode === 'new_tribe' &&
+                        <Flexblock gap="var(--space-3xs)">
+                            <label for={`${form_id}-slug`}>{t('tribes.structure.slug')}</label>
+                            <Input
+                                id={`${form_id}-slug`}
+                                name="slug"
+                                maxlength="128"
+                                autocomplete="off"
+                                placeholder={t('tribes.structure.slug_placeholder')}
+                            />
+                            <small class="[ tribe-structure__hint ]">{t('tribes.structure.slug_hint')}</small>
+                        </Flexblock>
+                    }
+                    {(mode === 'new_tribe' || mode === 'new_group') &&
+                        <Flexblock gap="var(--space-3xs)">
+                            <label for={`${form_id}-description`}>{t('tribes.structure.description')}</label>
+                            <Textarea
+                                id={`${form_id}-description`}
+                                name="description"
+                                rows="3"
+                                maxlength="2000"
+                            />
+                        </Flexblock>
+                    }
+                </Flexblock>
+            }
+
+            <div class="[ tribe-structure__error ]" role="alert"></div>
+
+            <FlexInline justification="flex-end">
+                <Button type="button" size="sm" color="transparent" x-on:click="close_dialog()">
+                    {t('cancel')}
+                </Button>
+                <Button type="submit" size="sm" color={mode === 'archive' ? 'fleet-red' : 'green'}>
+                    {labels.submit}
+                </Button>
+            </FlexInline>
+        </Flexblock>
+    </form>
+</DialogButton>
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-1);
+    }
+
+    .tribe-structure__hint {
+        color: var(--faded);
+    }
+
+    .tribe-structure__error:empty {
+        display: none;
+    }
+
+    .tribe-structure__error :global(small) {
+        color: var(--fleet-red);
+        font-size: var(--step--1);
+    }
+</style>
