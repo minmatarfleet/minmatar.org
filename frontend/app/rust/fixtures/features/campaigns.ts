@@ -9,6 +9,9 @@ import type {
     CampaignParty,
     CampaignRole,
     CampaignRoleMember,
+    CampaignRoleSuggestion,
+    CampaignRoleSuggestions,
+    CampaignCoordinator,
     CampaignRosterCorporation,
     CampaignSite,
     CampaignStructure,
@@ -467,12 +470,14 @@ const READS: Record<string, string[]> = {
     fc: ['fittings', 'fleets', 'structures', 'timers'],
     diplomat: ['sides'],
     recon: ['structures', 'timers'],
+    it: [],
 }
 const EDITS: Record<string, string[]> = {
-    coordinator: ['roles', 'sides', 'structures', 'timers'],
+    coordinator: ['discord', 'roles', 'sides', 'structures', 'timers'],
     fc: ['fleets'],
     diplomat: ['sides'],
     recon: ['structures', 'timers'],
+    it: ['discord'],
 }
 const campaign_role = (kind: string, label: string, members: CampaignRoleMember[], fields: Partial<CampaignRole> = {}): CampaignRole => ({
     kind,
@@ -503,6 +508,9 @@ export const campaign_roles_typical: CampaignRole[] = [
     campaign_role('recon', 'Recon', [
         role_member(7, { character_id: 90000002, character_name: 'Quiet Kestrel', corporation_name: 'Sebiestor Field Sappers' }),
     ]),
+    campaign_role('it', 'IT', [
+        role_member(8, { character_id: 90000003, character_name: 'Tech Rook', corporation_name: 'Republic Signals Corps', discord_name: 'ally-tech' }),
+    ]),
 ]
 
 export const campaign_roles_unsynced: CampaignRole[] = campaign_roles_typical.map((role) => ({
@@ -520,4 +528,69 @@ export const campaign_discord_roles = [
     { id: '7008', name: 'Diplomat' },
     { id: '7005', name: 'Recon' },
     { id: '7100', name: 'Line member' },
+]
+
+// The Settings tab's Coordinators section (CampaignCoordinatorsPanel): a coalition
+// campaign whose coordination server holds four alliances' pilots.
+const FL33T = { corporation_name: 'Rattini Tribe', alliance_name: 'Minmatar Fleet Alliance' }
+const COA = { corporation_name: 'Cryonic Origin', alliance_name: 'Cryonic Origin Alliance' }
+const FRONT = { corporation_name: 'Nisroc Angels', alliance_name: 'The Obsidian Front - Reborn' }
+
+export const campaign_coordinator_roles: CampaignRole[] = [
+    campaign_role('coordinator', 'Coordinator', [
+        role_member(11, { discord_user_id: '704', discord_name: '[FL33T] BearThatCares', character_id: 634915984, character_name: 'BearThatCares', ...FL33T }),
+    ]),
+    campaign_role('fc', 'FC', [
+        role_member(12, { discord_user_id: '709', discord_name: '[FRONT] Aiel Bladesire', character_id: 1177885977, character_name: 'Aiel Bladesire', corporation_name: 'Quafe Commandos', alliance_name: FRONT.alliance_name, signed_in: false }),
+        role_member(13, { discord_user_id: '707', discord_name: '[FL33T] Khermes', character_id: 90146672, character_name: 'Khermes', ...FL33T }),
+    ]),
+    campaign_role('diplomat', 'Diplomat', [
+        role_member(14, { source: 'site', discord_user_id: null, character_id: 2113754774, character_name: 'Mudaro Rogers', ...COA, signed_in: false }),
+    ], { discord_role_id: null, discord_role_name: '' }),
+    campaign_role('recon', 'Recon', []),
+    campaign_role('it', 'IT', [
+        role_member(15, { discord_user_id: '710', discord_name: '[FRONT] Fallum Thenek', character_id: 2112938046, character_name: 'Fallum Thenek', ...FRONT, signed_in: false }),
+    ]),
+]
+
+const suggestion = (id: number, fields: Partial<CampaignRoleSuggestion>): CampaignRoleSuggestion => ({
+    discord_user_id: String(id),
+    discord_name: '',
+    character_id: null,
+    character_name: '',
+    corporation_name: '',
+    alliance_name: '',
+    match: '',
+    tag: '',
+    tag_check: '',
+    avatar_url: '',
+    roles: [],
+    ...fields,
+})
+
+export const campaign_coordination_members: CampaignRoleSuggestions = {
+    available: true,
+    own_server: true,
+    members: [
+        suggestion(700, { discord_name: '[CAMELOT] TerrorByte R', tag: 'CAMELOT' }),
+        suggestion(701, { discord_name: '[COA] Mudaro Rogers', tag: 'COA', match: 'esi', tag_check: 'match', character_id: 2113754774, character_name: 'Mudaro Rogers', ...COA, roles: ['diplomat'] }),
+        suggestion(702, { discord_name: '[COA] Skora Vel', tag: 'COA', match: 'esi', tag_check: 'match', character_id: 2123189900, character_name: 'Skora Vel', ...COA }),
+        suggestion(703, { discord_name: '[FL33T] Barret Smythe', tag: 'FL33T', match: 'site', tag_check: 'match', character_id: 154198067, character_name: 'Barret Smythe', corporation_name: 'Soltech Armada', alliance_name: FL33T.alliance_name }),
+        suggestion(704, { discord_name: '[FL33T] BearThatCares', tag: 'FL33T', match: 'linked', tag_check: 'match', character_id: 634915984, character_name: 'BearThatCares', ...FL33T, roles: ['coordinator'] }),
+        suggestion(705, { discord_name: '[FL33T] Casper Sullivan', tag: 'FL33T', match: 'site', tag_check: 'match', character_id: 2120307642, character_name: 'Casper Sullivan', ...FL33T }),
+        suggestion(706, { discord_name: '[FL33T] Fariius', tag: 'FL33T', match: 'site', tag_check: 'match', character_id: 299286127, character_name: 'Fariius', ...FL33T }),
+        suggestion(707, { discord_name: '[FL33T] Khermes', tag: 'FL33T', match: 'linked', tag_check: 'match', character_id: 90146672, character_name: 'Khermes', ...FL33T, roles: ['fc'] }),
+        suggestion(708, { discord_name: '[FL33T] treges', tag: 'FL33T', match: 'esi', tag_check: 'match', character_id: 365375372, character_name: 'treges', corporation_name: 'Every Little Helps.', alliance_name: FL33T.alliance_name }),
+        suggestion(709, { discord_name: '[FRONT] Aiel Bladesire', tag: 'FRONT', match: 'esi', tag_check: 'match', character_id: 1177885977, character_name: 'Aiel Bladesire', corporation_name: 'Quafe Commandos', alliance_name: FRONT.alliance_name, roles: ['fc'] }),
+        suggestion(710, { discord_name: '[FRONT] Fallum Thenek', tag: 'FRONT', match: 'esi', tag_check: 'match', character_id: 2112938046, character_name: 'Fallum Thenek', ...FRONT, roles: ['it'] }),
+        suggestion(711, { discord_name: '[FRONT] Ynot E', tag: 'FRONT' }),
+        suggestion(712, { discord_name: '[FRONT] Crispy', tag: 'FRONT', match: 'esi', tag_check: 'mismatch', character_id: 146978457, character_name: 'Crispy', corporation_name: 'Pator Tech School' }),
+        suggestion(713, { discord_name: 'nightowl', match: 'site', character_id: 2114275173, character_name: 'Nightowl', corporation_name: 'Republic Military School' }),
+    ],
+}
+
+export const campaign_coordination_no_server: CampaignRoleSuggestions = { available: false, own_server: false, members: [] }
+
+export const campaign_legacy_coordinators: CampaignCoordinator[] = [
+    { id: 1, character_id: 1532073385, character_name: 'Broseph Rap', corporation_name: 'The Dark Tribe', alliance_name: 'Minmatar Fleet Alliance', signed_in: true, discord_servers: [] },
 ]

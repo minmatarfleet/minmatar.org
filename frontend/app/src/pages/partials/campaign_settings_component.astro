@@ -9,14 +9,15 @@
  * part=systems    goal, role and priority per system, retire, add by name; one Save
  *                 (op=preview re-renders with a picked system added as a New row)
  * part=sides      enemies, allies and third parties picked by name
- * part=coordinators characters from outside the alliance who help run it
+ * part=coordinators who helps run it: invite anyone as Coordinator, FC, Recon or Diplomat
+ *                 (by character, or from the coordination Discord's members)
  * part=fittings   attached doctrines, each fitting on or off, and one-off fittings
  * part=targets    this week's targets: accept, nudge, propose again
  * part=order      the commander's order: publish, draft from the week plan
  * part=structures the structures under recon (added from the Structures tab)
  * part=coordination our Discord server and the servers coordinators linked, with channels
  */
-import { i18n } from '@helpers/i18n'
+import { i18n, t_key } from '@helpers/i18n'
 const { t, lang, translatePath } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
@@ -28,12 +29,14 @@ import {
     get_campaign_coordination,
     put_campaign_coordination,
     get_campaign_discord_links,
+    get_campaign_roles,
+    get_campaign_role_suggestions,
     change_campaign,
     type CampaignChoices,
 } from '@helpers/api.minmatar.org/campaigns'
 import { get_fittings } from '@helpers/api.minmatar.org/ships'
 import { get_doctrines } from '@helpers/api.minmatar.org/doctrines'
-import type { CampaignCoordination, CampaignDiscordLink, CampaignSettings, Doctrine, Fitting } from '@dtypes/api.minmatar.org'
+import type { CampaignCoordination, CampaignDiscordLink, CampaignRoles, CampaignRoleSuggestions, CampaignSettings, Doctrine, Fitting } from '@dtypes/api.minmatar.org'
 import { get_item_icon, get_player_icon } from '@helpers/eve_image'
 import { campaign_sides } from '@helpers/campaign_sides'
 import { form_text } from '@helpers/manage_forms'
@@ -62,7 +65,7 @@ const slug = params.get('slug') ?? ''
 if (!/^[a-z0-9-]+$/.test(slug)) return HTTP_403_Forbidden()
 
 const PARTS = ['features', 'basics', 'systems', 'sides', 'coordinators', 'fittings', 'targets', 'order', 'structures', 'coordination'] as const
-const COORDINATOR_SCOPES = ['sides', 'structures', 'timers', 'fleets', 'fittings'] as const
+const ROLE_KIND = /^(coordinator|fc|diplomat|recon|it)$/
 type Part = typeof PARTS[number]
 const part = (PARTS as readonly string[]).includes(params.get('part') ?? '') ? params.get('part') as Part : 'basics'
 const has_structures_tab = params.get('tab') === '1'
@@ -111,6 +114,8 @@ let fittings: Fitting[] = []
 let coordination: CampaignCoordination | null = null
 let doctrines: Doctrine[] = []
 let links: CampaignDiscordLink[] = []
+let roles_data: CampaignRoles | null = null
+let discord_members: CampaignRoleSuggestions | null = null
 let fetch_error: Error | false = false
 
 try {
@@ -261,10 +266,25 @@ if (is_post && settings && choices) {
                     if (scopes.has(scope)) scopes.delete(scope)
                     else scopes.add(scope)
                     await change_campaign(slug, auth_token, 'PATCH', '/settings', { coordinator_scopes: [...scopes] })
+                } else if (op === 'remove_role') {
+                    const kind = field('kind')
+                    if (!ROLE_KIND.test(kind)) throw new Error(t('campaigns.action_failed'))
+                    await change_campaign(slug, auth_token, 'DELETE', `/roles/${kind}/members/${posted_number('member_id')}`)
+                } else if (op === 'invite_discord') {
+                    const discord_user_id = field('discord_user_id')
+                    if (!/^\d+$/.test(discord_user_id)) throw new Error(t('campaigns.action_failed'))
+                    const kind = field(`role_${discord_user_id}`)
+                    if (!ROLE_KIND.test(kind)) throw new Error(t('campaigns.coordinators.pick_role'))
+                    await change_campaign(slug, auth_token, 'POST', `/roles/${kind}/members`, {
+                        discord_user_id,
+                        character_name: field(`character_${discord_user_id}`).trim(),
+                    })
                 } else {
+                    const kind = field('invite_role')
+                    if (!ROLE_KIND.test(kind)) throw new Error(t('campaigns.coordinators.pick_role'))
                     const name = field('character_name').trim()
                     if (name.length < 3) throw new Error(t('campaigns.coordinators.not_found'))
-                    await change_campaign(slug, auth_token, 'POST', '/coordinators', { character_name: name })
+                    await change_campaign(slug, auth_token, 'POST', `/roles/${kind}/members`, { character_name: name })
                 }
                 saved = true
                 break
@@ -353,6 +373,19 @@ if (settings && part === 'fittings') {
     }
 }
 
+if (settings && part === 'coordinators') {
+    // Discord can be slow or down: the section still works without the member list.
+    const [roles_result, members_result] = await Promise.allSettled([
+        get_campaign_roles(slug, auth_token),
+        get_campaign_role_suggestions(slug, auth_token),
+    ])
+    if (roles_result.status === 'fulfilled') roles_data = roles_result.value
+    else fetch_error = roles_result.reason
+    if (members_result.status === 'fulfilled') discord_members = members_result.value
+}
+
+const SEARCH_URL = translatePath('/partials/campaign_character_search_component')
+
 if (settings && part === 'coordination') {
     try {
         // A server picked in the form lists its own channels before it is saved.
@@ -385,13 +418,9 @@ function summary_for(current: CampaignSettings): string {
             return systems_summary(current.systems, choices?.goal) || t('campaigns.manage.none_yet')
         case 'sides':
             return sides_summary(current.parties, choices?.party_side) || t('campaigns.manage.none_yet')
-        case 'coordinators': {
-            const count = current.coordinators.length
-            if (count === 0) return t('campaigns.coordinators.none')
-            return t('campaigns.coordinators.summary')
-                .replace('{count}', String(count))
-                .replace('{signed_in}', String(current.coordinators.filter((row) => row.signed_in).length))
-        }
+        case 'coordinators':
+            // The section lists its people; no summary line to repeat them.
+            return ''
         case 'fittings': {
             if (current.fittings.length === 0) return t('campaigns.doctrines.none')
             return t('campaigns.doctrines.summary')
@@ -435,6 +464,7 @@ const format_number = (value: number) => value.toLocaleString(lang, { maximumFra
 import Button from '@components/blocks/Button.astro'
 import FilterChip from '@components/blocks/FilterChip.astro'
 import Input from '@components/blocks/Input.astro'
+import CampaignCoordinatorsPanel from '@components/blocks/CampaignCoordinatorsPanel.astro'
 import Select from '@components/blocks/Select.astro'
 import Tag from '@components/blocks/Tag.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
@@ -672,57 +702,16 @@ import StylessButton from '@components/blocks/StylessButton.astro'
             </Fragment>
         }
 
-        {part === 'coordinators' &&
-            <Fragment>
-                {settings.coordinators.length > 0 &&
-                    <ul class="[ campaign-list ]" role="list">
-                        {settings.coordinators.map((row) => (
-                            <li class="[ campaign-list__row ]">
-                                <img src={get_player_icon(row.character_id, 64)} alt="" width="40" height="40" class="[ campaign-portrait ]" />
-                                <span class="[ campaign-list__name ]">
-                                    <span class="[ manage-who__name ]">{row.character_name}</span>
-                                    <span class="[ manage-who__sub ]">{[row.corporation_name, row.alliance_name].filter(Boolean).join(' · ')}</span>
-                                </span>
-                                <span class:list={['[ campaign-coordinator__state ]', { 'is-on': row.signed_in }]}>
-                                    {row.signed_in ? t('campaigns.coordinators.signed_in') : t('campaigns.coordinators.invited')}
-                                </span>
-                                <span class="[ campaign-coordinator__discord ]">
-                                    {row.discord_servers.length > 0
-                                        ? t('campaigns.coordinators.discord').replace('{servers}', row.discord_servers.join(', '))
-                                        : t('campaigns.coordinators.no_discord')}
-                                </span>
-                                <StylessButton
-                                    type="button"
-                                    class="[ campaign-icon-button ]"
-                                    aria-label={t('campaigns.coordinators.remove').replace('{name}', row.character_name)}
-                                    hx-post={PART_URL}
-                                    hx-vals={JSON.stringify({ op: 'remove', coordinator_id: String(row.id) })}
-                                ><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></StylessButton>
-                            </li>
-                        ))}
-                    </ul>
-                }
-                <div class="[ campaign-scopes ]">
-                    <span class="[ manage-muted ]">{t('campaigns.coordinators.can_see')}</span>
-                    {COORDINATOR_SCOPES.map((scope) =>
-                        <FilterChip
-                            tone="green"
-                            active={settings.coordinator_scopes.includes(scope)}
-                            hx-post={PART_URL}
-                            hx-vals={JSON.stringify({ op: 'scope', scope })}
-                        >{t(`campaigns.coordinators.scope.${scope}`)}</FilterChip>
-                    )}
-                </div>
-                <div class="[ campaign-invite ]">
-                    <label for="campaign-coordinator-name" class="[ visually-hidden ]">{t('campaigns.coordinators.invite_placeholder')}</label>
-                    <Input id="campaign-coordinator-name" size="sm" name="character_name" maxlength="255" placeholder={t('campaigns.coordinators.invite_placeholder')} />
-                    <Button type="submit" size="sm" name="op" value="invite">{t('campaigns.coordinators.invite')}</Button>
-                </div>
-                <div class="[ manage-actions ]">
-                    {error_message && <span class="[ manage-field__error ]" role="alert">{error_message}</span>}
-                    {saved && <span class="[ manage-saved ]">{t('campaigns.manage.saved')}</span>}
-                </div>
-            </Fragment>
+        {part === 'coordinators' && roles_data &&
+            <CampaignCoordinatorsPanel
+                roles={roles_data.roles}
+                coordinators={settings.coordinators}
+                coordinator_scopes={settings.coordinator_scopes}
+                discord={discord_members}
+                part_url={PART_URL}
+                search_url={SEARCH_URL}
+                error_message={error_message}
+            />
         }
 
         {part === 'fittings' &&
@@ -1126,28 +1115,11 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         flex: 0 0 8rem;
     }
 
-    .campaign-doctrines,
-    .campaign-scopes,
-    .campaign-invite {
+    .campaign-doctrines {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
         gap: var(--space-2xs);
-    }
-
-    .campaign-invite :global(input) {
-        flex: 1 1 18rem;
-    }
-
-    .campaign-coordinator__state {
-        flex: 0 0 14rem;
-        color: var(--faded);
-
-        &.is-on { color: var(--green); }
-    }
-
-    .campaign-coordinator__discord {
-        flex: 1 1 14rem;
     }
 
     .campaign-server {

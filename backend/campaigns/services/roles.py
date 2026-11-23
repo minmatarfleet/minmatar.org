@@ -1,4 +1,4 @@
-"""Campaign roles: Coordinator, FC, Diplomat and Recon.
+"""Campaign roles: Coordinator, FC, Diplomat, Recon and IT.
 
 Each role mirrors a role on the campaign's coordination Discord server.
 Discord decides who holds it: ``sync`` reads the server's members and
@@ -43,15 +43,26 @@ READS: dict[str, set[str]] = {
     CampaignRoleKind.FC: {"structures", "timers", "fleets", "fittings"},
     CampaignRoleKind.DIPLOMAT: {"sides"},
     CampaignRoleKind.RECON: {"structures", "timers"},
+    # IT connects a server; it reads nothing of the plan.
+    CampaignRoleKind.IT: set(),
 }
 
-# What each role edits. ``roles`` is adding and removing role holders.
-# Settings, disclosure, the order and the theater stay with managers.
+# What each role edits. ``roles`` is adding and removing role holders;
+# ``discord`` is adding the bot to their own server and picking its
+# channels. Settings, disclosure, the order and the theater stay with
+# managers.
 EDITS: dict[str, set[str]] = {
-    CampaignRoleKind.COORDINATOR: {"sides", "structures", "timers", "roles"},
+    CampaignRoleKind.COORDINATOR: {
+        "sides",
+        "structures",
+        "timers",
+        "roles",
+        "discord",
+    },
     CampaignRoleKind.FC: {"fleets"},
     CampaignRoleKind.DIPLOMAT: {"sides"},
     CampaignRoleKind.RECON: {"structures", "timers"},
+    CampaignRoleKind.IT: {"discord"},
 }
 
 # Discord role names matched on the first sync, lower case.
@@ -60,6 +71,7 @@ NAMES: dict[str, tuple[str, ...]] = {
     CampaignRoleKind.FC: ("fc", "fcs", "fleet commander"),
     CampaignRoleKind.DIPLOMAT: ("diplomat", "diplomats"),
     CampaignRoleKind.RECON: ("recon", "scout", "scouts"),
+    CampaignRoleKind.IT: ("it", "tech", "tech support"),
 }
 
 
@@ -291,11 +303,21 @@ def sync(campaign: Campaign) -> dict:
                     "source": CampaignRoleMember.Source.DISCORD,
                     "discord_name": _display_name(on_server[discord_id]),
                     "user": profile.get("user"),
-                    "character_id": profile.get("character_id"),
-                    "character_name": profile.get("character_name", ""),
-                    "corporation_name": profile.get("corporation_name", ""),
-                    "alliance_name": profile.get("alliance_name", ""),
                 }
+                # Someone not linked keeps the character they were invited
+                # as (``add`` from a suggestion) until they link Discord.
+                if profile.get("character_id"):
+                    defaults.update(
+                        {
+                            key: profile.get(key) or ""
+                            for key in (
+                                "character_name",
+                                "corporation_name",
+                                "alliance_name",
+                            )
+                        }
+                    )
+                    defaults["character_id"] = profile["character_id"]
                 CampaignRoleMember.objects.update_or_create(
                     role=role, discord_user_id=discord_id, defaults=defaults
                 )
@@ -308,6 +330,10 @@ def sync(campaign: Campaign) -> dict:
             role.sync_error = ""
             role.save(update_fields=["synced_at", "sync_error"])
         counts[role.kind] = len(wanted)
+    # pylint: disable-next=import-outside-toplevel
+    from campaigns.services import role_suggestions
+
+    role_suggestions.forget(campaign)
     logger.info("Campaign %s roles synced: %s", campaign.id, counts)
     return counts
 
@@ -341,19 +367,29 @@ def _grant_pending(client, roles, on_server) -> dict[int, set[int]]:
     return granted
 
 
-def add_character(campaign: Campaign, kind: str, name: str, by) -> None:
-    """Add a role holder by character name (pending until Discord)."""
-    # pylint: disable=import-outside-toplevel
-    from campaigns.services import coordinators
-
+def _role(campaign: Campaign, kind: str) -> CampaignRole:
     if kind not in KINDS:
         raise RoleError("Unknown role.")
-    role = next(r for r in ensure_roles(campaign) if r.kind == kind)
+    return next(r for r in ensure_roles(campaign) if r.kind == kind)
+
+
+def _lookup(name: str) -> dict:
+    # pylint: disable-next=import-outside-toplevel
+    from campaigns.services import coordinators
+
     try:
-        found = coordinators.lookup(name)
+        return coordinators.lookup(name)
     except coordinators.NotFound as error:
         raise RoleError("No character has that exact name.") from error
-    CampaignRoleMember.objects.update_or_create(
+
+
+def add_character(
+    campaign: Campaign, kind: str, name: str, by
+) -> CampaignRoleMember:
+    """Add a role holder by character name (pending until Discord)."""
+    role = _role(campaign, kind)
+    found = _lookup(name)
+    member = CampaignRoleMember.objects.update_or_create(
         role=role,
         character_id=found["character_id"],
         source=CampaignRoleMember.Source.SITE,
@@ -364,7 +400,116 @@ def add_character(campaign: Campaign, kind: str, name: str, by) -> None:
             "user": _owner(found["character_id"]),
             "added_by": by,
         },
+    )[0]
+    notify(member)
+    return member
+
+
+def add_discord_member(
+    campaign: Campaign,
+    kind: str,
+    discord_user_id: int,
+    by,
+    character_name: str = "",
+) -> CampaignRoleMember:
+    """Invite someone already on the coordination server, as the character
+    picked for them (the suggested one unless ``character_name`` says
+    otherwise).
+
+    With the role pointed at a Discord role they get it there at once and
+    the row is a ``discord`` one, kept by every sync. Without one the row
+    waits like a character invite, tied to their Discord account too.
+    """
+    # pylint: disable-next=import-outside-toplevel
+    from campaigns.services import role_suggestions
+
+    role = _role(campaign, kind)
+    suggestion = role_suggestions.find(campaign, discord_user_id)
+    if suggestion is None:
+        raise RoleError("They are not on the coordination server.")
+    if character_name:
+        found = _lookup(character_name)
+    elif role_suggestions.trusted(suggestion):
+        found = {
+            key: suggestion[key]
+            for key in (
+                "character_id",
+                "character_name",
+                "corporation_name",
+                "alliance_name",
+            )
+        }
+    else:
+        raise RoleError("Pick the character they fly.")
+    owner = _owner(found["character_id"])
+    fields = {
+        "discord_name": suggestion["discord_name"],
+        "character_id": found["character_id"],
+        "character_name": found["character_name"],
+        "corporation_name": found["corporation_name"],
+        "alliance_name": found["alliance_name"],
+        "user": owner,
+        "added_by": by,
+    }
+    if role.discord_role_id:
+        try:
+            _client(campaign).add_user_role(
+                discord_user_id, role.discord_role_id
+            )
+        except Exception as error:  # pylint: disable=broad-except
+            raise RoleError(
+                "Discord would not give them the role. Check the bot can "
+                "manage roles on the server."
+            ) from error
+        fields["source"] = CampaignRoleMember.Source.DISCORD
+    else:
+        fields["source"] = CampaignRoleMember.Source.SITE
+    # A pending invite for the same character is this one now.
+    role.members.filter(
+        source=CampaignRoleMember.Source.SITE,
+        character_id=found["character_id"],
+    ).exclude(discord_user_id=discord_user_id).delete()
+    member = CampaignRoleMember.objects.update_or_create(
+        role=role, discord_user_id=discord_user_id, defaults=fields
+    )[0]
+    notify(member)
+    return member
+
+
+def notify(member: CampaignRoleMember) -> bool:
+    """DM the character's owner that they hold the role. Nobody to tell
+    until someone on the site owns the character."""
+    # pylint: disable=import-outside-toplevel
+    from campaigns.services.coordinators import _inviter_name
+    from campaigns.services.discord_posts import (
+        POSTING_STATUSES,
+        campaign_url,
     )
+    from notifications.service import notify_user
+    from notifications.types.campaigns import (
+        CAMPAIGN_COORDINATOR_INVITED_KEY,
+    )
+
+    campaign = member.role.campaign
+    user = member.user or _owner(member.character_id)
+    if user is None or campaign.status not in POSTING_STATUSES:
+        return False
+    notify_user(
+        user,
+        CAMPAIGN_COORDINATOR_INVITED_KEY,
+        {
+            "campaign_name": campaign.name,
+            "character_name": member.character_name,
+            "inviter": _inviter_name(member.added_by),
+            "url": campaign_url(campaign),
+            "role": member.role.kind,
+        },
+        idempotency_key=(
+            f"{CAMPAIGN_COORDINATOR_INVITED_KEY}:role:{member.role_id}:"
+            f"{member.character_id}"
+        ),
+    )
+    return True
 
 
 def remove_member(member: CampaignRoleMember) -> None:

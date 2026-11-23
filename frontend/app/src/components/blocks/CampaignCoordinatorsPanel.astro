@@ -1,0 +1,546 @@
+---
+/**
+ * The Coordinators section of a campaign's Settings tab: who helps run the
+ * campaign, with which role, and the coordination Discord's members to
+ * invite from.
+ *
+ * - People with access: role holders (role tag, status) and coordinators
+ *   invited the old way, without a role. Invite anyone by character with a
+ *   role picker, filter by role; what each role sees and changes opens
+ *   on demand.
+ * - On the coordination Discord: every member, grouped by the tag in their
+ *   server name, with the character we found for them and how sure that is
+ *   (`linked`, the tag matches, a name match only, a name twin outside
+ *   their tag, nothing). People who already have a role hide behind a
+ *   switch; a search filters the rendered rows.
+ *
+ * Renders from props inside `campaign_settings_component`'s form: every
+ * action posts that form to `part_url` with an `op`.
+ */
+import { i18n, t_key } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { get_player_icon } from '@helpers/eve_image'
+import type {
+    CampaignCoordinator,
+    CampaignRole,
+    CampaignRoleSuggestion,
+    CampaignRoleSuggestions,
+} from '@dtypes/api.minmatar.org'
+
+interface Props {
+    roles:              CampaignRole[];
+    /** Coordinators invited before roles, without one. */
+    coordinators?:      CampaignCoordinator[];
+    /** What those coordinators see. */
+    coordinator_scopes?: string[];
+    /** From `GET /api/campaigns/<slug>/roles/suggestions`; null when Discord could not say. */
+    discord:            CampaignRoleSuggestions | null;
+    part_url:           string;
+    /** Combobox search for characters (`?q=`). */
+    search_url:         string;
+    error_message?:     string;
+    [propName: string]: any;
+}
+
+const {
+    roles,
+    coordinators = [],
+    coordinator_scopes = [],
+    discord,
+    part_url,
+    search_url,
+    error_message = '',
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+// EVE's default portrait, for people we have no character for yet.
+const DEFAULT_PORTRAIT = get_player_icon(1, 64)
+const SCOPES = ['sides', 'structures', 'timers', 'fleets', 'fittings'] as const
+const ROLE_COLORS: Record<string, string> = {
+    coordinator: 'fleet-red',
+    fc: 'fleet-yellow',
+    diplomat: 'militia-purple',
+    recon: 'alliance-blue',
+    it: 'green',
+}
+
+type Status = { text: string, hint: string, color: string }
+const GOOD = 'green'
+const CHECK = 'fleet-yellow'
+const QUIET = 'faded'
+
+const role_label = (kind: string) => roles.find((role) => role.kind === kind)?.label ?? kind
+const strip_tag = (name: string) => name.replace(/^\s*[\[(<][^\])>]{1,12}[\])>]\s*/, '') || name
+const same_name = (discord_name: string, character_name: string) =>
+    strip_tag(discord_name).toLowerCase() === character_name.toLowerCase()
+const meta = (...parts: (string | null | undefined | false)[]) => parts.filter(Boolean).join(' · ')
+
+const holders = roles.flatMap((role) => role.members.map((member) => ({ role, member })))
+const people = holders.length + coordinators.length
+
+function holder_status(role: CampaignRole, member: CampaignRole['members'][number]): Status {
+    if (member.source !== 'site') {
+        return member.signed_in
+            ? { text: t('campaigns.coordinators.signed_in'), hint: t('campaigns.coordinators.signed_in_hint'), color: GOOD }
+            : { text: t('campaigns.roles.not_signed_in'), hint: t('campaigns.roles.discord_only'), color: QUIET }
+    }
+    return role.discord_role_id
+        ? { text: t('campaigns.coordinators.status_waiting'), hint: t('campaigns.roles.waiting'), color: CHECK }
+        : { text: t('campaigns.coordinators.status_site_only'), hint: t('campaigns.coordinators.site_only'), color: CHECK }
+}
+
+/** How sure the character we found for a server member is. */
+function match_status(row: CampaignRoleSuggestion): Status {
+    if (row.match === 'linked')
+        return { text: t('campaigns.coordinators.match_linked'), hint: t('campaigns.coordinators.match_linked_hint'), color: GOOD }
+    if (!row.character_id)
+        return { text: t('campaigns.coordinators.match_none'), hint: t('campaigns.coordinators.match_none_hint'), color: QUIET }
+    if (row.tag_check === 'mismatch')
+        return {
+            text: t('campaigns.coordinators.match_mismatch').replace('{tag}', row.tag),
+            hint: t('campaigns.coordinators.match_mismatch_hint').replace('{name}', row.character_name).replace('{tag}', row.tag),
+            color: CHECK,
+        }
+    if (row.tag_check === 'match')
+        return { text: t('campaigns.coordinators.match_tag').replace('{tag}', row.tag), hint: t('campaigns.coordinators.match_tag_hint'), color: GOOD }
+    return { text: t('campaigns.coordinators.match_name'), hint: t('campaigns.coordinators.match_name_hint'), color: CHECK }
+}
+
+const sure = (row: CampaignRoleSuggestion) => Boolean(row.character_id) && (row.match === 'linked' || row.tag_check !== 'mismatch')
+
+const members = discord?.members ?? []
+const groups: [string, CampaignRoleSuggestion[]][] = []
+for (const row of members) {
+    const group = groups.find(([tag]) => tag === row.tag)
+    if (group) group[1].push(row)
+    else groups.push([row.tag, [row]])
+}
+const held_count = members.filter((row) => row.roles.length > 0).length
+const search_text = (row: CampaignRoleSuggestion) =>
+    [row.discord_name, row.character_name, row.corporation_name, row.alliance_name].join(' ').toLowerCase()
+const ROW_FILTER = "(held || !$el.dataset.held) && $el.dataset.search.includes(q.trim().toLowerCase())"
+const GROUP_FILTER = "[...$el.querySelectorAll('[data-search]')].some((li) => (held || !li.dataset.held) && li.dataset.search.includes(q.trim().toLowerCase()))"
+
+/** A status reads in white on a dot and border of its colour, so it stays legible on the dark page. */
+const ROLE_FILTER = "role === 'all' || $el.dataset.role === role"
+const role_counts = roles.map((role) => ({ kind: role.kind, label: role.label, count: role.members.length }))
+
+const remove = (vals: Record<string, string>) => ({
+    'hx-post': part_url,
+    'hx-vals': JSON.stringify(vals),
+})
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import BlockList from '@components/compositions/BlockList.astro'
+
+import Badge from '@components/blocks/Badge.astro'
+import Button from '@components/blocks/Button.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro'
+import Combobox from '@components/blocks/Combobox.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
+import Input from '@components/blocks/Input.astro'
+import PilotBadge from '@components/blocks/PilotBadge.astro'
+import Select from '@components/blocks/Select.astro'
+import Switch from '@components/blocks/Switch.astro'
+import Tag from '@components/blocks/Tag.astro'
+---
+
+<Flexblock gap="var(--space-l)" class:list={['[ campaign-coordinators ]', Astro.props.class]} {...attributes}>
+    <section class="[ campaign-coordinators__section ]" aria-labelledby="campaign-coordinators-access" x-data="{ role: 'all' }">
+        <div class="[ campaign-coordinators__head ]">
+            <h4 id="campaign-coordinators-access">{t('campaigns.coordinators.with_access')}</h4>
+            {people > 0 &&
+                <ChipGroup aria_label={t('campaigns.coordinators.filter_roles')} variant="default" wrap>
+                    <FilterChip type="radio" name="coordinator_role_filter" value="all" checked input_attributes={{ 'x-model': 'role' }} count={people}>{t('campaigns.coordinators.filter_all')}</FilterChip>
+                    {role_counts.map((role) =>
+                        <FilterChip type="radio" name="coordinator_role_filter" value={role.kind} input_attributes={{ 'x-model': 'role' }} count={role.count}>{role.label}</FilterChip>
+                    )}
+                    {coordinators.length > 0 &&
+                        <FilterChip type="radio" name="coordinator_role_filter" value="invited" input_attributes={{ 'x-model': 'role' }} count={coordinators.length}>{t('campaigns.coordinators.invited_coordinator')}</FilterChip>
+                    }
+                </ChipGroup>
+            }
+        </div>
+
+        {people === 0 ?
+            <EmptyState title={t('campaigns.coordinators.none')} />
+            :
+            <BlockList gap="0" role="list" class="[ campaign-coordinators__list ]">
+                {holders.map(({ role, member }) => {
+                    const name = member.character_name || member.discord_name
+                    const status = holder_status(role, member)
+                    const sub = meta(
+                        member.corporation_name,
+                        member.alliance_name,
+                        member.discord_name && member.character_name && !same_name(member.discord_name, member.character_name) && `@${member.discord_name}`,
+                    )
+                    return (
+                        <div role="listitem" class="[ campaign-coordinators__row ]" data-role={role.kind} x-show={ROLE_FILTER}>
+                            {member.character_id
+                                ? <PilotBadge character_id={member.character_id} character_name={member.character_name} size={32} icon_quality={64}>
+                                    {sub && <small class="[ campaign-coordinators__meta ]">{sub}</small>}
+                                  </PilotBadge>
+                                : <Badge title={name} image={DEFAULT_PORTRAIT} size={32}>
+                                    <small class="[ campaign-coordinators__meta ]">{t('campaigns.roles.discord_only')}</small>
+                                  </Badge>
+                            }
+                            <span class="[ campaign-coordinators__tags ]">
+                                <Tag text={role.label} color={ROLE_COLORS[role.kind]} narrow />
+                            </span>
+                            <span class="[ campaign-coordinators__status ]">
+                                <Tag text={status.text} title={status.hint} color={status.color} text_color="var(--highlight)" variant="outline" narrow>
+                                    <span slot="icon" class="[ campaign-coordinators__dot ]" style={`color: var(--${status.color})`} aria-hidden="true"></span>
+                                </Tag>
+                            </span>
+                            <span class="[ campaign-coordinators__action ]">
+                                <Button type="button" size="sm" color="transparent" narrow
+                                    {...remove({ op: 'remove_role', kind: role.kind, member_id: String(member.id) })}
+                                    hx-confirm={t('campaigns.roles.remove_confirm').replace('{name}', name)}
+                                    aria-label={t('campaigns.coordinators.remove').replace('{name}', name)}
+                                >{t('campaigns.roles.remove_short')}</Button>
+                            </span>
+                        </div>
+                    )
+                })}
+                {coordinators.map((row) => (
+                    <div role="listitem" class="[ campaign-coordinators__row ]" data-role="invited" x-show={ROLE_FILTER}>
+                        <PilotBadge character_id={row.character_id} character_name={row.character_name} size={32} icon_quality={64}>
+                            <small class="[ campaign-coordinators__meta ]">{meta(row.corporation_name, row.alliance_name)}</small>
+                        </PilotBadge>
+                        <span class="[ campaign-coordinators__tags ]">
+                            <Tag text={t('campaigns.coordinators.invited_coordinator')} color="faded" text_color="var(--highlight)" variant="outline" narrow />
+                        </span>
+                        <span class="[ campaign-coordinators__status ]">
+                            <Tag
+                                text={row.signed_in ? t('campaigns.coordinators.signed_in') : t('campaigns.coordinators.status_invited')}
+                                title={row.signed_in ? t('campaigns.coordinators.signed_in_hint') : t('campaigns.coordinators.invited')}
+                                color={row.signed_in ? GOOD : QUIET}
+                                text_color="var(--highlight)"
+                                variant="outline"
+                                narrow
+                            >
+                                <span slot="icon" class="[ campaign-coordinators__dot ]" style={`color: var(--${row.signed_in ? GOOD : QUIET})`} aria-hidden="true"></span>
+                            </Tag>
+                        </span>
+                        <span class="[ campaign-coordinators__action ]">
+                            <Button type="button" size="sm" color="transparent" narrow
+                                {...remove({ op: 'remove', coordinator_id: String(row.id) })}
+                                aria-label={t('campaigns.coordinators.remove').replace('{name}', row.character_name)}
+                            >{t('campaigns.roles.remove_short')}</Button>
+                        </span>
+                    </div>
+                ))}
+            </BlockList>
+        }
+
+        <FlexInline gap="var(--space-xs)" class="[ campaign-coordinators__invite ]">
+            <div class="[ campaign-coordinators__picker ]">
+                <Combobox
+                    id="campaign-coordinator-name"
+                    name="character_name"
+                    label={t('campaigns.coordinators.invite_placeholder')}
+                    hidden_label
+                    search_url={search_url}
+                    placeholder={t('campaigns.coordinators.invite_placeholder')}
+                    size="sm"
+                    pick_first
+                />
+            </div>
+            <label for="campaign-coordinator-role" class="[ visually-hidden ]">{t('campaigns.coordinators.role')}</label>
+            <Select id="campaign-coordinator-role" name="invite_role" size="sm" width="10rem">
+                <option value="">{t('campaigns.coordinators.role')}</option>
+                {roles.map((role) => <option value={role.kind}>{role.label}</option>)}
+            </Select>
+            <Button type="submit" size="sm" name="op" value="invite">{t('campaigns.coordinators.invite')}</Button>
+        </FlexInline>
+
+        {error_message && <p class="[ campaign-coordinators__error ]" role="alert">{error_message}</p>}
+
+        <CollapsibleBlock padding_inline="0" gap="var(--space-2xs)" class="[ campaign-coordinators__roles ]">
+            <span slot="head">{t('campaigns.coordinators.what_roles_do')}</span>
+            <Flexblock gap="var(--space-s)">
+            <BlockList gap="var(--space-2xs)" role="list">
+                {roles.map((role) => (
+                    <div role="listitem" class="[ campaign-coordinators__role ]">
+                        <span><Tag text={role.label} color={ROLE_COLORS[role.kind]} narrow /></span>
+                        <small>{[
+                            role.reads.length > 0 ? `${t('campaigns.roles.unlocks')} ${role.reads.map((scope) => t(t_key('campaigns.roles.scope_', scope))).join(', ')}.` : '',
+                            role.edits.length > 0 ? `${t('campaigns.roles.edits')} ${role.edits.map((scope) => t(t_key('campaigns.roles.edit_', scope))).join(', ')}.` : '',
+                        ].filter(Boolean).join(' ')}</small>
+                    </div>
+                ))}
+            </BlockList>
+            </Flexblock>
+        </CollapsibleBlock>
+
+        {coordinators.length > 0 &&
+            <FlexInline gap="var(--space-xs)">
+                <small class="[ campaign-coordinators__meta ]">{t('campaigns.coordinators.can_see')}</small>
+                <ChipGroup aria_label={t('campaigns.coordinators.can_see')} variant="default" wrap>
+                    {SCOPES.map((scope) =>
+                        <FilterChip
+                            tone="green"
+                            active={coordinator_scopes.includes(scope)}
+                            hx-post={part_url}
+                            hx-vals={JSON.stringify({ op: 'scope', scope })}
+                        >{t(t_key('campaigns.coordinators.scope.', scope))}</FilterChip>
+                    )}
+                </ChipGroup>
+            </FlexInline>
+        }
+    </section>
+
+    <section class="[ campaign-coordinators__section ]" aria-labelledby="campaign-coordinators-discord" x-data="{ q: '', held: false }">
+        {!discord || (discord.own_server && !discord.available) ?
+            <Fragment>
+                <h4 id="campaign-coordinators-discord">{t('campaigns.coordinators.discord_heading')}</h4>
+                <EmptyState title={t('campaigns.coordinators.discord_failed')} />
+            </Fragment>
+        : !discord.own_server ?
+            <Fragment>
+                <h4 id="campaign-coordinators-discord">{t('campaigns.coordinators.discord_heading')}</h4>
+                <EmptyState title={t('campaigns.coordinators.no_server_title')} hint={t('campaigns.coordinators.no_server')} />
+            </Fragment>
+        : members.length === 0 ?
+            <Fragment>
+                <h4 id="campaign-coordinators-discord">{t('campaigns.coordinators.discord_heading')}</h4>
+                <EmptyState title={t('campaigns.coordinators.discord_empty')} />
+            </Fragment>
+        :
+            <Fragment>
+                <div class="[ campaign-coordinators__head ]">
+                    <h4 id="campaign-coordinators-discord">{t('campaigns.coordinators.discord_title').replace('{count}', String(members.length))}</h4>
+                    <FlexInline gap="var(--space-m)" class="[ campaign-coordinators__tools ]">
+                        <label for="campaign-discord-search" class="[ visually-hidden ]">{t('campaigns.coordinators.search')}</label>
+                        <Input id="campaign-discord-search" size="sm" width="14rem" type="search" placeholder={t('campaigns.coordinators.search')} x-model="q" x-on:keydown.enter.prevent="" autocomplete="off" />
+                        {held_count > 0 &&
+                            <Switch x-model="held" label={t('campaigns.coordinators.show_held').replace('{count}', String(held_count))} />
+                        }
+                    </FlexInline>
+                </div>
+
+                {groups.map(([tag, rows]) => (
+                    <div class="[ campaign-coordinators__group ]" x-show={GROUP_FILTER}>
+                        <h5>{tag ? `[${tag}]` : t('campaigns.coordinators.no_tag')} <span>{rows.length}</span></h5>
+                        <BlockList gap="0" role="list" class="[ campaign-coordinators__list ]">
+                            {rows.map((row) => {
+                                const open_roles = roles.filter((role) => !row.roles.includes(role.kind))
+                                const confident = sure(row)
+                                const name = confident ? row.character_name : strip_tag(row.discord_name)
+                                const status = match_status(row)
+                                const sub = confident
+                                    ? meta(same_name(row.discord_name, row.character_name) ? '' : `@${strip_tag(row.discord_name)}`, row.corporation_name, row.alliance_name)
+                                    : row.character_id ? t('campaigns.coordinators.closest').replace('{name}', row.character_name) : ''
+                                return (
+                                    <div
+                                        role="listitem"
+                                        class="[ campaign-coordinators__row ]"
+                                        data-search={search_text(row)}
+                                        data-held={row.roles.length ? '1' : undefined}
+                                        x-show={ROW_FILTER}
+                                    >
+                                        {confident
+                                            ? <PilotBadge character_id={row.character_id as number} character_name={row.character_name} size={32} icon_quality={64}>
+                                                {sub && <small class="[ campaign-coordinators__meta ]">{sub}</small>}
+                                              </PilotBadge>
+                                            : <Badge title={name} image={row.avatar_url || DEFAULT_PORTRAIT} size={32}>
+                                                {sub && <small class="[ campaign-coordinators__meta ]">{sub}</small>}
+                                              </Badge>
+                                        }
+                                        <span class="[ campaign-coordinators__tags ]">
+                                            {row.roles.map((kind) => <Tag text={role_label(kind)} color={ROLE_COLORS[kind]} narrow />)}
+                                        </span>
+                                        <span class="[ campaign-coordinators__status ]">
+                                            <Tag text={status.text} title={status.hint} color={status.color} text_color="var(--highlight)" variant="outline" narrow>
+                                                <span slot="icon" class="[ campaign-coordinators__dot ]" style={`color: var(--${status.color})`} aria-hidden="true"></span>
+                                            </Tag>
+                                        </span>
+                                        <span class="[ campaign-coordinators__action campaign-coordinators__action--invite ]">
+                                            {open_roles.length > 0 &&
+                                                <Fragment>
+                                                    {confident ?
+                                                        <span aria-hidden="true"></span>
+                                                        :
+                                                        <Fragment>
+                                                            <label for={`campaign-discord-character-${row.discord_user_id}`} class="[ visually-hidden ]">{t('campaigns.coordinators.their_character').replace('{name}', row.discord_name)}</label>
+                                                            <Input id={`campaign-discord-character-${row.discord_user_id}`} size="sm" name={`character_${row.discord_user_id}`} maxlength="255" placeholder={t('campaigns.coordinators.their_character_short')} />
+                                                        </Fragment>
+                                                    }
+                                                    <label for={`campaign-discord-role-${row.discord_user_id}`} class="[ visually-hidden ]">{t('campaigns.coordinators.invite_as').replace('{name}', name)}</label>
+                                                    <Select id={`campaign-discord-role-${row.discord_user_id}`} name={`role_${row.discord_user_id}`} size="sm">
+                                                        <option value="">{t('campaigns.coordinators.role')}</option>
+                                                        {open_roles.map((role) => <option value={role.kind}>{role.label}</option>)}
+                                                    </Select>
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        outline
+                                                        hx-post={part_url}
+                                                        hx-vals={JSON.stringify({ op: 'invite_discord', discord_user_id: row.discord_user_id })}
+                                                        hx-disabled-elt="this"
+                                                        aria-label={t('campaigns.coordinators.invite_name').replace('{name}', name)}
+                                                    >{t('campaigns.coordinators.invite')}</Button>
+                                                </Fragment>
+                                            }
+                                        </span>
+                                    </div>
+                                )
+                            })}
+                        </BlockList>
+                    </div>
+                ))}
+            </Fragment>
+        }
+    </section>
+</Flexblock>
+
+<style lang="scss">
+    .campaign-coordinators__section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+
+        & + & {
+            padding-block-start: var(--space-l);
+            border-block-start: 1px solid var(--border-color);
+        }
+    }
+
+    h4, h5, p {
+        margin: 0;
+    }
+
+    h4 {
+        font-size: var(--step-0);
+    }
+
+    h5 {
+        font-size: var(--step--1);
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        color: var(--faded);
+
+        span {
+            margin-inline-start: var(--space-3xs);
+            font-weight: 400;
+        }
+    }
+
+    .campaign-coordinators__meta {
+        color: var(--faded);
+    }
+
+    .campaign-coordinators__list {
+        border-block-start: 1px solid var(--border-color);
+    }
+
+    /* One grid for every person row in both lists: who, tags, action. */
+    .campaign-coordinators__row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 8rem 13rem 25rem;
+        align-items: center;
+        gap: var(--space-s);
+        padding-block: var(--space-2xs);
+        border-block-end: 1px solid var(--border-color);
+    }
+
+    .campaign-coordinators__tags {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-3xs);
+    }
+
+    .campaign-coordinators__dot {
+        display: inline-block;
+        width: 0.5em;
+        height: 0.5em;
+        margin-inline-end: var(--space-3xs);
+        border-radius: 50%;
+        background-color: currentColor;
+    }
+
+    .campaign-coordinators__action {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: var(--space-2xs);
+    }
+
+    /* Character, role and Invite in fixed columns, so every row lines up
+       whether or not it needs a character typed. */
+    .campaign-coordinators__action--invite {
+        display: grid;
+        grid-template-columns: 11rem 8.5rem auto;
+        justify-content: end;
+    }
+
+    .campaign-coordinators__invite {
+        flex-wrap: nowrap;
+    }
+
+    .campaign-coordinators__picker {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .campaign-coordinators__error {
+        font-size: var(--step--1);
+        color: var(--fleet-red);
+    }
+
+    .campaign-coordinators__roles {
+        font-size: var(--step--1);
+    }
+
+    .campaign-coordinators__role {
+        display: grid;
+        grid-template-columns: 7rem minmax(0, 1fr);
+        align-items: baseline;
+        gap: var(--space-s);
+
+        small {
+            color: var(--faded);
+        }
+    }
+
+    .campaign-coordinators__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-s);
+    }
+
+    .campaign-coordinators__group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    @media (max-width: 64rem) {
+        .campaign-coordinators__row {
+            grid-template-columns: minmax(0, 1fr) auto auto;
+        }
+
+        .campaign-coordinators__action {
+            grid-column: 1 / -1;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .campaign-coordinators__action--invite {
+            grid-template-columns: minmax(0, 1fr) 8.5rem auto;
+        }
+
+        .campaign-coordinators__invite {
+            flex-wrap: wrap;
+        }
+    }
+</style>

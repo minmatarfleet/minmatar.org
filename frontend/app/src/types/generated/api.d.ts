@@ -1339,8 +1339,8 @@ export interface paths {
         };
         /**
          * List Links
-         * @description The servers this viewer may edit: all of them for managers, a
-         *     coordinator's own for a coordinator.
+         * @description The servers this viewer may edit: all of them for managers, their
+         *     own for Coordinators, IT and invited coordinators.
          */
         get: operations["campaigns_endpoints_get_discord_links_list_links"];
         put?: never;
@@ -1701,6 +1701,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/campaigns/{slug}/roles/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Role Suggestions
+         * @description Everyone on the campaign's coordination server, each with the EVE
+         *     character they most likely fly and the roles they already hold, for
+         *     whoever may add role holders. A guess to invite from, cached for ten
+         *     minutes; Sync now refreshes it.
+         */
+        get: operations["campaigns_endpoints_get_role_suggestions_get_role_suggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/campaigns/{slug}/roles/sync": {
         parameters: {
             query?: never;
@@ -1752,8 +1775,10 @@ export interface paths {
         put?: never;
         /**
          * Add Role Member
-         * @description Add a role holder by exact character name. They get the Discord role
-         *     on the next sync once they have linked Discord.
+         * @description Add a role holder: a member of the coordination server
+         *     (``discord_user_id``, from the suggestions; they get the Discord role at
+         *     once), or anyone by exact character name (they get it on the next sync
+         *     once they have linked Discord). The owner of the character is told.
          */
         post: operations["campaigns_endpoints_post_role_member_add_role_member"];
         delete?: never;
@@ -13991,8 +14016,13 @@ export interface components {
         };
         /** CampaignRoleAdd */
         CampaignRoleAdd: {
-            /** Character Name */
-            character_name: string;
+            /**
+             * Character Name
+             * @default
+             */
+            character_name?: string;
+            /** Discord User Id */
+            discord_user_id?: string | null;
         };
         /** CampaignRoleMap */
         CampaignRoleMap: {
@@ -14070,6 +14100,73 @@ export interface components {
             sync_error?: string;
             /** Synced At */
             synced_at?: string | null;
+        };
+        /** CampaignRoleSuggestionOut */
+        CampaignRoleSuggestionOut: {
+            /**
+             * Alliance Name
+             * @default
+             */
+            alliance_name?: string;
+            /**
+             * Avatar Url
+             * @default
+             */
+            avatar_url?: string;
+            /** Character Id */
+            character_id?: number | null;
+            /**
+             * Character Name
+             * @default
+             */
+            character_name?: string;
+            /**
+             * Corporation Name
+             * @default
+             */
+            corporation_name?: string;
+            /**
+             * Discord Name
+             * @default
+             */
+            discord_name?: string;
+            /** Discord User Id */
+            discord_user_id: string;
+            /**
+             * Match
+             * @default
+             */
+            match?: string;
+            /**
+             * Roles
+             * @default []
+             */
+            roles?: string[];
+            /**
+             * Tag
+             * @default
+             */
+            tag?: string;
+            /**
+             * Tag Check
+             * @default
+             */
+            tag_check?: string;
+        };
+        /** CampaignRoleSuggestionsOut */
+        CampaignRoleSuggestionsOut: {
+            /** Available */
+            available: boolean;
+            /**
+             * Members
+             * @default []
+             */
+            members?: components["schemas"]["CampaignRoleSuggestionOut"][];
+            /**
+             * Own Server
+             * @default false
+             */
+            own_server?: boolean;
         };
         /** CampaignRolesOut */
         CampaignRolesOut: {
@@ -38274,6 +38371,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    campaigns_endpoints_get_role_suggestions_get_role_suggestions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignRoleSuggestionsOut"];
                 };
             };
             /** @description Forbidden */

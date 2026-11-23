@@ -100,6 +100,9 @@ def _editable(user, campaign: Campaign, viewer: str) -> list[str]:
     found: set[str] = set()
     for kind in role_service.kinds_for(user, campaign):
         found |= role_service.EDITS.get(kind, set())
+    # Coordinators invited before roles link their own Discord server.
+    if disclosure.invited(user, campaign):
+        found.add("discord")
     return sorted(found)
 
 

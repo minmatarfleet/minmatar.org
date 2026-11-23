@@ -5624,15 +5624,23 @@
       "CampaignRoleAdd": {
         "properties": {
           "character_name": {
+            "default": "",
             "maxLength": 255,
-            "minLength": 3,
             "title": "Character Name",
             "type": "string"
+          },
+          "discord_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discord User Id"
           }
         },
-        "required": [
-          "character_name"
-        ],
         "title": "CampaignRoleAdd",
         "type": "object"
       },
@@ -5791,6 +5799,104 @@
           "label"
         ],
         "title": "CampaignRoleOut",
+        "type": "object"
+      },
+      "CampaignRoleSuggestionOut": {
+        "properties": {
+          "alliance_name": {
+            "default": "",
+            "title": "Alliance Name",
+            "type": "string"
+          },
+          "avatar_url": {
+            "default": "",
+            "title": "Avatar Url",
+            "type": "string"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "character_name": {
+            "default": "",
+            "title": "Character Name",
+            "type": "string"
+          },
+          "corporation_name": {
+            "default": "",
+            "title": "Corporation Name",
+            "type": "string"
+          },
+          "discord_name": {
+            "default": "",
+            "title": "Discord Name",
+            "type": "string"
+          },
+          "discord_user_id": {
+            "title": "Discord User Id",
+            "type": "string"
+          },
+          "match": {
+            "default": "",
+            "title": "Match",
+            "type": "string"
+          },
+          "roles": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Roles",
+            "type": "array"
+          },
+          "tag": {
+            "default": "",
+            "title": "Tag",
+            "type": "string"
+          },
+          "tag_check": {
+            "default": "",
+            "title": "Tag Check",
+            "type": "string"
+          }
+        },
+        "required": [
+          "discord_user_id"
+        ],
+        "title": "CampaignRoleSuggestionOut",
+        "type": "object"
+      },
+      "CampaignRoleSuggestionsOut": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "members": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CampaignRoleSuggestionOut"
+            },
+            "title": "Members",
+            "type": "array"
+          },
+          "own_server": {
+            "default": false,
+            "title": "Own Server",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "available"
+        ],
+        "title": "CampaignRoleSuggestionsOut",
         "type": "object"
       },
       "CampaignRolesOut": {
@@ -60708,7 +60814,7 @@
     },
     "/api/campaigns/{slug}/discord-links": {
       "get": {
-        "description": "The servers this viewer may edit: all of them for managers, a\ncoordinator's own for a coordinator.",
+        "description": "The servers this viewer may edit: all of them for managers, their\nown for Coordinators, IT and invited coordinators.",
         "operationId": "campaigns_endpoints_get_discord_links_list_links",
         "parameters": [
           {
@@ -62173,6 +62279,57 @@
         ]
       }
     },
+    "/api/campaigns/{slug}/roles/suggestions": {
+      "get": {
+        "description": "Everyone on the campaign's coordination server, each with the EVE\ncharacter they most likely fly and the roles they already hold, for\nwhoever may add role holders. A guess to invite from, cached for ten\nminutes; Sync now refreshes it.",
+        "operationId": "campaigns_endpoints_get_role_suggestions_get_role_suggestions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignRoleSuggestionsOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Role Suggestions",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
     "/api/campaigns/{slug}/roles/sync": {
       "post": {
         "description": "Read the coordination server now instead of waiting for the beat.",
@@ -62316,7 +62473,7 @@
     },
     "/api/campaigns/{slug}/roles/{kind}/members": {
       "post": {
-        "description": "Add a role holder by exact character name. They get the Discord role\non the next sync once they have linked Discord.",
+        "description": "Add a role holder: a member of the coordination server\n(``discord_user_id``, from the suggestions; they get the Discord role at\nonce), or anyone by exact character name (they get it on the next sync\nonce they have linked Discord). The owner of the character is told.",
         "operationId": "campaigns_endpoints_post_role_member_add_role_member",
         "parameters": [
           {

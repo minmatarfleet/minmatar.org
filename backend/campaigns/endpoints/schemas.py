@@ -375,7 +375,42 @@ class CampaignRolesOut(Schema):
 
 
 class CampaignRoleAdd(Schema):
-    character_name: str = Field(min_length=3, max_length=255)
+    # The character to add. With ``discord_user_id``, overrides the
+    # character suggested for that server member; may be left out then.
+    character_name: str = Field(default="", max_length=255)
+    # A member of the coordination server, from the suggestions.
+    discord_user_id: Optional[str] = None
+
+
+class CampaignRoleSuggestionOut(Schema):
+    discord_user_id: str
+    discord_name: str = ""
+    # The guessed character, if any.
+    character_id: Optional[int] = None
+    character_name: str = ""
+    corporation_name: str = ""
+    alliance_name: str = ""
+    # How the character was found: linked (their Discord is linked on the
+    # site), site (a name matches a character on the site), esi (a name is
+    # an EVE character), or empty (no guess).
+    match: str = ""
+    # The ticker in their server name ("[FRONT] Aiel" -> "FRONT"), and
+    # whether the guessed character's corporation or alliance has it:
+    # match, mismatch (likely a name twin: name the character to invite),
+    # or empty.
+    tag: str = ""
+    tag_check: str = ""
+    avatar_url: str = ""
+    # Roles they already hold on this campaign.
+    roles: list[str] = []
+
+
+class CampaignRoleSuggestionsOut(Schema):
+    # False when the campaign has no coordination server of its own or
+    # Discord would not list its members.
+    available: bool
+    own_server: bool = False
+    members: list[CampaignRoleSuggestionOut] = []
 
 
 class CampaignRoleMap(Schema):
