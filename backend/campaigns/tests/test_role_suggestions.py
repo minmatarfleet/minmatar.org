@@ -324,6 +324,9 @@ class TagCheckTestCase(TestCase):
         self.assertTrue(role_suggestions.trusted(rows[1]))
         self.assertEqual(rows[2]["tag_check"], "mismatch")
         self.assertFalse(role_suggestions.trusted(rows[2]))
+        # The alliance ticker settled Aiel; only Crispy's corporation is
+        # looked up.
+        esi.get_corporation.assert_called_once_with(11)
 
     def test_username_only_without_a_server_name(self):
         self.assertEqual(

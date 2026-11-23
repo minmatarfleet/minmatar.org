@@ -2,8 +2,9 @@
 
 Managers add the bot to the server the campaign is run from ("ours").
 Managers, Coordinators, IT and coordinators invited the old way link more
-servers ("link") that campaign pings are forwarded to. Both go through Discord's OAuth2 code grant, which our
-application requires; the callback learns the server from the code.
+servers ("link") that campaign pings are forwarded to. Both go through
+Discord's OAuth2 code grant, which our application requires; the callback
+learns the server from the code.
 """
 
 from __future__ import annotations

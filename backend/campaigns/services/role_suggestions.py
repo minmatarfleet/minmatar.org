@@ -29,7 +29,8 @@ from campaigns.models import Campaign, CampaignRoleMember
 
 logger = logging.getLogger(__name__)
 
-CACHE_SECONDS = 10 * 60
+# Longer than the 15-minute role sync, which refreshes it (``warm``).
+CACHE_SECONDS = 20 * 60
 ESI_BATCH = 500
 
 LINKED = "linked"
@@ -209,7 +210,7 @@ def _tickers(corp_ids: set[int], alliance_ids: set[int]) -> dict[int, str]:
 
 
 def _affiliations(character_ids: list[int]) -> dict[int, dict]:
-    """Character id -> corporation and alliance names and tickers."""
+    """Character id -> corporation and alliance ids and names."""
     # pylint: disable=import-outside-toplevel
     from eveonline.client import EsiClient
     from eveonline.models import EveAlliance, EveCharacter, EveCorporation
@@ -255,16 +256,12 @@ def _affiliations(character_ids: list[int]) -> dict[int, dict]:
         if response.success():
             for row in response.results() or []:
                 names[int(row["id"])] = row.get("name", "")
-    tickers = _tickers(corp_ids, alliance_ids)
     return {
         cid: {
+            "corporation_id": corp,
+            "alliance_id": alliance,
             "corporation_name": names.get(corp, "") or "",
             "alliance_name": names.get(alliance, "") or "",
-            "tickers": {
-                tickers[entity].upper()
-                for entity in (corp, alliance)
-                if entity and tickers.get(entity)
-            },
         }
         for cid, (corp, alliance) in ids.items()
     }
@@ -320,8 +317,54 @@ def match_members(members: list[dict]) -> list[dict]:
         found = affiliation.get(row["character_id"], {})
         row["corporation_name"] = found.get("corporation_name", "")
         row["alliance_name"] = found.get("alliance_name", "")
-        row["tag_check"] = _tag_check(row, found.get("tickers", set()))
+    _check_tags(rows, affiliation)
     return rows
+
+
+def _check_tags(rows: list[dict], affiliation: dict[int, dict]) -> None:
+    """Set each row's ``tag_check``. Looks up only the tickers it needs:
+    the alliance's first, the corporation's only when that is no match,
+    so a big server costs few ESI calls."""
+    tagged = [row for row in rows if row["tag"] and row["character_id"]]
+    of = {
+        row["character_id"]: affiliation.get(row["character_id"], {})
+        for row in tagged
+    }
+    alliance_tickers = _tickers(
+        set(),
+        {
+            found["alliance_id"]
+            for found in of.values()
+            if found.get("alliance_id")
+        },
+    )
+    unsure = [
+        row
+        for row in tagged
+        if alliance_tickers.get(
+            of[row["character_id"]].get("alliance_id"), ""
+        ).upper()
+        != row["tag"]
+    ]
+    corp_tickers = _tickers(
+        {
+            of[row["character_id"]]["corporation_id"]
+            for row in unsure
+            if of[row["character_id"]].get("corporation_id")
+        },
+        set(),
+    )
+    for row in rows:
+        found = of.get(row["character_id"], {})
+        tickers = {
+            ticker.upper()
+            for ticker in (
+                alliance_tickers.get(found.get("alliance_id"), ""),
+                corp_tickers.get(found.get("corporation_id"), ""),
+            )
+            if ticker
+        }
+        row["tag_check"] = _tag_check(row, tickers)
 
 
 def _tag_check(row: dict, tickers: set[str]) -> str:
@@ -343,7 +386,7 @@ def trusted(row: dict) -> bool:
 def server_members(campaign: Campaign) -> list[dict] | None:
     """Every human on the campaign's own coordination server, each with a
     guessed character. None when the campaign has no server of its own or
-    Discord would not list it. Cached for ten minutes."""
+    Discord would not list it. Cached; the role sync refreshes it."""
     if not campaign.coordination_guild_id:
         return None
     cached = cache.get(cache_key(campaign))
@@ -376,6 +419,18 @@ def server_members(campaign: Campaign) -> list[dict] | None:
     )
     cache.set(cache_key(campaign), rows, CACHE_SECONDS)
     return rows
+
+
+def warm(campaign: Campaign) -> None:
+    """Rebuild the cached list, from the role sync task, so the Settings
+    page reads it instead of asking Discord and ESI in a request."""
+    forget(campaign)
+    try:
+        server_members(campaign)
+    except Exception:  # pylint: disable=broad-except
+        logger.warning(
+            "Campaign %s: could not list role suggestions", campaign.id
+        )
 
 
 def find(campaign: Campaign, discord_user_id: int) -> dict | None:

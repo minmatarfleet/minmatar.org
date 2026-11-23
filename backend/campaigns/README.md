@@ -103,8 +103,8 @@ unchanged, with `coordinator_scopes`; new invites always carry a role.
 
 Settings → Coordinators invites by character with a role picker, and lists
 everyone on the campaign's own coordination server
-(`GET /{slug}/roles/suggestions`, `services/role_suggestions.py`, cached ten
-minutes, cleared by every sync) with the character each one most likely
+(`GET /{slug}/roles/suggestions`, `services/role_suggestions.py`, cached
+and rebuilt by every role sync, so the page never waits on Discord and ESI) with the character each one most likely
 flies: `linked` (their Discord is linked on the site, so their main),
 `site` (a cleaned nickname, display name or username is a character here)
 or `esi` (the same names, by ESI's exact-name lookup). Tickers in brackets
@@ -113,7 +113,8 @@ when the member set no server nickname or display name. The ticker they
 wear (`[FRONT] Aiel` → `FRONT`) groups the list and checks the guess: when
 the character's corporation and alliance tickers don't include it, the row
 is a `mismatch` (most likely a name twin) and inviting it needs the
-character named. The guess is stored only when someone
+character named. Tickers are looked up only as needed: the alliance's
+first, the corporation's only when that is no match. The guess is stored only when someone
 invites that member (`POST /{slug}/roles/{kind}/members` with
 `discord_user_id`, optionally overriding `character_name`): with the role
 mapped to a Discord role they get it there at once and the row is a

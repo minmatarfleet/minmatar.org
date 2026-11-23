@@ -525,8 +525,19 @@ import Tag from '@components/blocks/Tag.astro'
     }
 
     @media (max-width: 64rem) {
+        /* Phones: the person on their own line, role and status under
+           them, then the actions. */
         .campaign-coordinators__row {
-            grid-template-columns: minmax(0, 1fr) auto auto;
+            grid-template-columns: auto minmax(0, 1fr);
+            row-gap: var(--space-2xs);
+
+            > :first-child {
+                grid-column: 1 / -1;
+            }
+        }
+
+        .campaign-coordinators__status {
+            justify-self: start;
         }
 
         .campaign-coordinators__action {
@@ -535,8 +546,18 @@ import Tag from '@components/blocks/Tag.astro'
             flex-wrap: wrap;
         }
 
+        /* Character on its own line, then role and Invite. */
         .campaign-coordinators__action--invite {
-            grid-template-columns: minmax(0, 1fr) 8.5rem auto;
+            grid-template-columns: minmax(0, 1fr) auto;
+            width: 100%;
+
+            > :global(.input-group) {
+                grid-column: 1 / -1;
+            }
+
+            > span[aria-hidden] {
+                display: none;
+            }
         }
 
         .campaign-coordinators__invite {

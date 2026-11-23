@@ -62281,7 +62281,7 @@
     },
     "/api/campaigns/{slug}/roles/suggestions": {
       "get": {
-        "description": "Everyone on the campaign's coordination server, each with the EVE\ncharacter they most likely fly and the roles they already hold, for\nwhoever may add role holders. A guess to invite from, cached for ten\nminutes; Sync now refreshes it.",
+        "description": "Everyone on the campaign's coordination server, each with the EVE\ncharacter they most likely fly and the roles they already hold, for\nwhoever may add role holders. A guess to invite from, cached and\nrefreshed by every role sync.",
         "operationId": "campaigns_endpoints_get_role_suggestions_get_role_suggestions",
         "parameters": [
           {

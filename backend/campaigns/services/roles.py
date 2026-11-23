@@ -333,7 +333,7 @@ def sync(campaign: Campaign) -> dict:
     # pylint: disable-next=import-outside-toplevel
     from campaigns.services import role_suggestions
 
-    role_suggestions.forget(campaign)
+    role_suggestions.warm(campaign)
     logger.info("Campaign %s roles synced: %s", campaign.id, counts)
     return counts
 

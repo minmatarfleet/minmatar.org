@@ -23,8 +23,8 @@ from campaigns.services import role_suggestions
 def get_role_suggestions(request, slug: str):
     """Everyone on the campaign's coordination server, each with the EVE
     character they most likely fly and the roles they already hold, for
-    whoever may add role holders. A guess to invite from, cached for ten
-    minutes; Sync now refreshes it."""
+    whoever may add role holders. A guess to invite from, cached and
+    refreshed by every role sync."""
     campaign, _, denied = _campaign(request, slug)
     if denied:
         return denied

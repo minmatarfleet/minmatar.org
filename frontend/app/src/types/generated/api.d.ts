@@ -1712,8 +1712,8 @@ export interface paths {
          * Get Role Suggestions
          * @description Everyone on the campaign's coordination server, each with the EVE
          *     character they most likely fly and the roles they already hold, for
-         *     whoever may add role holders. A guess to invite from, cached for ten
-         *     minutes; Sync now refreshes it.
+         *     whoever may add role holders. A guess to invite from, cached and
+         *     refreshed by every role sync.
          */
         get: operations["campaigns_endpoints_get_role_suggestions_get_role_suggestions"];
         put?: never;
