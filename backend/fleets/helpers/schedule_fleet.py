@@ -119,7 +119,8 @@ def create_scheduled_fleet(
 def create_group_fleet(
     *, user: User, payload: CreateEveFleetRequest
 ) -> EveFleet | tuple[int, dict]:
-    """A tribe group fleet: no audience, and never a pre-ping."""
+    """A tribe group fleet: no audience. ``immediate_ping`` sends the quiet
+    group pre-ping (``send_discord_pre_ping``)."""
     group = resolve_host_group(user, payload.host_group_id)
     if isinstance(group, tuple):
         return group
@@ -142,7 +143,7 @@ def create_group_fleet(
     if payload.doctrine_id:
         doctrine = EveDoctrine.objects.filter(id=payload.doctrine_id).first()
 
-    return EveFleet.objects.create(
+    fleet = EveFleet.objects.create(
         type=payload.type,
         description=payload.description,
         objective=(payload.objective or "").strip(),
@@ -159,6 +160,9 @@ def create_group_fleet(
         status="pending",
         campaign=campaign,
     )
+    if payload.immediate_ping:
+        send_discord_pre_ping(fleet)
+    return fleet
 
 
 def private_fleet_error(user: User, payload) -> tuple[int, dict] | None:

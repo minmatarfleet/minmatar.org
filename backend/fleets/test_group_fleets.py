@@ -11,6 +11,10 @@ from django.utils import timezone
 from app.test import TestCase
 from app.testing import make_token
 from eveonline.models import EveLocation
+from fleets.endpoints.helpers import (
+    SILENT_MESSAGE_FLAG,
+    send_discord_pre_ping,
+)
 from fleets.helpers.metrics import led_fleets
 from fleets.models import EveFleet, EveFleetAudience
 from fleets.tasks import update_fleet_schedule
@@ -119,15 +123,24 @@ class GroupFleetCreateTests(GroupFleetTestBase):
 
         self.group.fleet_policy = TribeGroup.POLICY_MEMBERS
         self.group.save()
-        response = self.call(
-            "post", "", self.member, self.create_payload(immediate_ping=True)
-        )
+        response = self.call("post", "", self.member, self.create_payload())
         self.assertEqual(response.status_code, 200, response.content)
         fleet = EveFleet.objects.get(id=response.json()["id"])
         self.assertIsNone(fleet.audience)
         self.assertEqual(fleet.host_group, self.group)
         self.assertEqual(response.json()["host_group"]["id"], self.group.id)
         queue.assert_not_called()
+
+    def test_chief_creates_group_fleet_with_pre_ping_when_asked(self, queue):
+        response = self.call(
+            "post",
+            "",
+            self.chief,
+            self.create_payload(immediate_ping=True),
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        queue.assert_called_once()
+        self.assertEqual(queue.call_args.args[0], GROUP_CHANNEL_ID)
 
     def test_switched_off_group_blocks_even_the_chief(self, queue):
         self.group.fleets_enabled = False
@@ -143,7 +156,7 @@ class GroupFleetCreateTests(GroupFleetTestBase):
                 "post",
                 "",
                 self.chief,
-                self.create_payload(immediate_ping=True, on_schedule=True),
+                self.create_payload(on_schedule=True),
             )
         self.assertEqual(response.status_code, 200, response.content)
         pre_ping.assert_not_called()
@@ -337,6 +350,65 @@ class GroupFleetVisibilityTests(GroupFleetTestBase):
         response = self.call("get", f"/{fleet.id}", nobody)
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.content, b"null")
+
+
+@patch("fleets.endpoints.helpers.queue_channel_message")
+class GroupFleetPrePingTests(GroupFleetTestBase):
+    """A group pre-ping is quiet: the group's channel, no mention, and
+    Discord's silent flag, so nobody is notified (tribe-publishing rule 3)."""
+
+    def test_group_pre_ping_is_quiet_in_the_group_channel(self, queue):
+        fleet = self.group_fleet()
+        self.assertTrue(send_discord_pre_ping(fleet))
+        queue.assert_called_once()
+        self.assertEqual(queue.call_args.args[0], GROUP_CHANNEL_ID)
+        payload = queue.call_args.kwargs["payload"]
+        self.assertEqual(payload["content"], "")
+        self.assertEqual(payload["flags"], SILENT_MESSAGE_FLAG)
+        self.assertEqual(SILENT_MESSAGE_FLAG, 4096)
+        self.assertEqual(payload["embeds"][0]["title"], "FLEET PRE-PING")
+        self.assertNotIn(str(ROLE_ID), str(payload))
+        self.assertNotIn("@everyone", str(payload))
+
+    def test_group_pre_ping_falls_back_to_the_tribe_channel(self, queue):
+        self.group.discord_channel_id = None
+        self.group.save()
+        self.assertTrue(send_discord_pre_ping(self.group_fleet()))
+        self.assertEqual(queue.call_args.args[0], TRIBE_CHANNEL_ID)
+
+    def test_group_pre_ping_without_a_channel_sends_nothing(self, queue):
+        self.group.discord_channel_id = None
+        self.group.save()
+        self.group.tribe.discord_channel_id = None
+        self.group.tribe.save()
+        self.assertFalse(send_discord_pre_ping(self.group_fleet()))
+        queue.assert_not_called()
+
+    def test_alliance_pre_ping_is_unchanged(self, queue):
+        self.assertTrue(send_discord_pre_ping(self.alliance_fleet()))
+        payload = queue.call_args.kwargs["payload"]
+        self.assertEqual(queue.call_args.args[0], 4242)
+        self.assertEqual(payload["content"], "@everyone")
+        self.assertNotIn("flags", payload)
+
+    def test_preping_endpoint_sends_for_the_group_fleet_creator(self, queue):
+        fleet = self.group_fleet()
+        response = self.call("post", f"/{fleet.id}/preping", self.fc)
+        self.assertEqual(response.status_code, 202, response.content)
+        queue.assert_called_once()
+        refused = self.call("post", f"/{fleet.id}/preping", self.member)
+        self.assertEqual(refused.status_code, 403)
+
+    def test_preping_endpoint_group_without_channel_is_400(self, queue):
+        self.group.discord_channel_id = None
+        self.group.save()
+        self.group.tribe.discord_channel_id = None
+        self.group.tribe.save()
+        fleet = self.group_fleet()
+        response = self.call("post", f"/{fleet.id}/preping", self.fc)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("no Discord channel", response.json()["detail"])
+        queue.assert_not_called()
 
 
 @patch("fleets.models.queue_channel_message")
