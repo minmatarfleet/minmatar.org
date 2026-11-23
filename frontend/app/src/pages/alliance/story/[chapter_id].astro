@@ -9,6 +9,7 @@ import {
     defaultChronicleChapterId,
     getChronicleChapterById,
     getChronicleProgressSections,
+    resolve_chronicle_chapter_id,
 } from '@/data/rat-chronicle'
 
 import Viewport from '@layouts/Viewport.astro'
@@ -22,9 +23,18 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 
 import RatChronicle from '@components/blocks/RatChronicle.astro'
 import PageProgress from '@components/blocks/guides/PageProgress.astro'
+import ContentViewer from '@components/blocks/ContentViewer.astro'
 
 const chapter_id = Astro.params.chapter_id ?? ''
-const chapter = getChronicleChapterById(chapter_id)
+const current_id = resolve_chronicle_chapter_id(chapter_id)
+
+// An address from before the chronicle was regrouped moves for good to the
+// chapter that holds its content now; anything else goes to the first chapter.
+if (current_id && current_id !== chapter_id) {
+    return Astro.redirect(`/alliance/story/${current_id}/`, 301)
+}
+
+const chapter = current_id ? getChronicleChapterById(current_id) : undefined
 
 if (!chapter) {
     return Astro.redirect(`/alliance/story/${defaultChronicleChapterId}/`)
@@ -76,6 +86,8 @@ const progress = pageProgressFromSections({
             <RatChronicle activeChapterId={chapter.id} />
         </Flexblock>
     </PageLanding>
+
+    <ContentViewer />
 </Viewport>
 
 <style lang="scss">

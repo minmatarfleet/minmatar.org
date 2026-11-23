@@ -369,7 +369,7 @@ export const YC128_10: NewsletterIssue = {
             kicker: 'On the site',
             title: 'Something to read',
             books: [
-                { title: 'The Rat Chronicle, ch. 5–11', tag: 'Early draft', text: "From the Providence War to the DRL Reckoning. These chapters are still being edited, so you're reading them first. Tell us what to fix.", href: '/alliance/story/chapter-5/' },
+                { title: 'The Rat Chronicle, ch. 5–11', tag: 'Early draft', text: "From the Providence War to the DRL Reckoning. These chapters are still being edited, so you're reading them first. Tell us what to fix.", href: '/alliance/story/providence-war/' },
                 { title: 'September Frontline Report', text: 'Eight systems changed hands, and the 625B brawl in Amamake.', href: '/warzone/yc128-09/' },
                 { title: 'September Market Report', text: "What sold in Amamake in September, and what's dying faster than it's sold.", href: '/amamake-market/yc128-09/' },
             ],
