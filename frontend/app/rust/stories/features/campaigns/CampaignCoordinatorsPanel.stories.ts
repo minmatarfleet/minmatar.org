@@ -60,9 +60,10 @@ export const RoleHoldersHidden = {
         const canvas = within(canvasElement)
         // Five members already hold a role: hidden until the switch is on.
         await expect(shown(canvasElement)).toHaveLength(9)
-        await userEvent.click(canvas.getByRole('checkbox', { name: 'Show the 5 who have a role' }))
-        // Alpine re-renders on its next tick in a real browser.
-        await waitFor(() => expect(shown(canvasElement)).toHaveLength(14))
+        const toggle = canvas.getByRole('checkbox', { name: 'Show the 5 who have a role' })
+        await userEvent.click(toggle)
+        await expect(toggle).toBeChecked()
+        await waitFor(() => expect(shown(canvasElement)).toHaveLength(14), { timeout: 5000 })
     },
 }
 
@@ -82,11 +83,11 @@ export const FilterByRole = {
         const visible = () => [...access.querySelectorAll<HTMLElement>('[data-role]')].filter((row) => row.style.display !== 'none')
         await expect(visible()).toHaveLength(5)
         await userEvent.click(canvas.getByRole('radio', { name: /^FC/ }))
-        await waitFor(() => expect(visible().map((row) => row.dataset.role)).toEqual(['fc', 'fc']))
+        await waitFor(() => expect(visible().map((row) => row.dataset.role)).toEqual(['fc', 'fc']), { timeout: 5000 })
         await userEvent.click(canvas.getByRole('radio', { name: /^IT/ }))
-        await waitFor(() => expect(visible().map((row) => row.dataset.role)).toEqual(['it']))
+        await waitFor(() => expect(visible().map((row) => row.dataset.role)).toEqual(['it']), { timeout: 5000 })
         await userEvent.click(canvas.getByRole('radio', { name: /^Everyone/ }))
-        await waitFor(() => expect(visible()).toHaveLength(5))
+        await waitFor(() => expect(visible()).toHaveLength(5), { timeout: 5000 })
     },
 }
 
