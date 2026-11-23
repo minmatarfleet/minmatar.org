@@ -1,4 +1,4 @@
-"""GET "/chief-candidates?q=" - find a pilot to make chief (superuser)."""
+"""GET "/chief-candidates?q=" - find a pilot to make chief (tribes.structure.manage)."""
 
 from typing import List
 
@@ -7,6 +7,7 @@ from ninja import Router
 from authentication import AuthBearer
 from eveonline.helpers.characters.characters import user_primary_character
 from eveonline.models import EveCharacter
+from tribes.helpers.structure import can_manage_structure
 from tribes.endpoints.chief_assign.schemas import ChiefCandidateSchema
 
 MIN_QUERY = 2
@@ -24,8 +25,8 @@ router = Router(tags=["Tribes - Chiefs"])
 
 
 def get_chief_candidates(request, q: str = ""):
-    if not request.user.is_superuser:
-        return 403, {"detail": "Only superusers can swap a chief."}
+    if not can_manage_structure(request.user):
+        return 403, {"detail": "You can't change chiefs."}
     q = (q or "").strip()
     if len(q) < MIN_QUERY:
         return 200, []

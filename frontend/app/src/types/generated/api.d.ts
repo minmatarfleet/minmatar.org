@@ -10409,7 +10409,11 @@ export interface paths {
         /** List all active tribes. */
         get: operations["tribes_endpoints_tribes_get_tribes_get_tribes"];
         put?: never;
-        post?: never;
+        /**
+         * Create a tribe; its auth group and Discord role are made too.
+         * @description Needs tribes.structure.manage.
+         */
+        post: operations["tribes_endpoints_tribes_post_tribe_post_tribe"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10779,7 +10783,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Rename, archive or restore a tribe.
+         * @description Needs tribes.structure.manage. A rename renames the linked auth group and Discord role; the slug stays.
+         */
+        patch: operations["tribes_endpoints_tribes_patch_tribe_patch_tribe"];
         trace?: never;
     };
     "/api/tribes/{tribe_id}/about": {
@@ -10807,7 +10815,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Swap the chief of a seat, or empty it (superuser only). */
+        /** Swap the chief of a seat, or empty it (tribes.structure.manage). */
         put: operations["tribes_endpoints_chief_assign_put_chief_put_tribe_chief"];
         post?: never;
         delete?: never;
@@ -10880,7 +10888,11 @@ export interface paths {
         /** List active groups in a tribe. */
         get: operations["tribes_endpoints_groups_get_tribe_groups_get_tribe_groups"];
         put?: never;
-        post?: never;
+        /**
+         * Create a tribe group; its auth group and Discord role too.
+         * @description Needs tribes.structure.manage. The code is {tribe slug}.{name} and never changes.
+         */
+        post: operations["tribes_endpoints_groups_post_tribe_group_post_tribe_group"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10901,7 +10913,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Rename, archive or restore a tribe group.
+         * @description Needs tribes.structure.manage. A rename renames the linked auth group and Discord role; the code stays.
+         */
+        patch: operations["tribes_endpoints_groups_patch_tribe_group_patch_tribe_group"];
         trace?: never;
     };
     "/api/tribes/{tribe_id}/groups/{group_id}/about": {
@@ -10929,7 +10945,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Swap the chief of a seat, or empty it (superuser only). */
+        /** Swap the chief of a seat, or empty it (tribes.structure.manage). */
         put: operations["tribes_endpoints_chief_assign_put_chief_put_group_chief"];
         post?: never;
         delete?: never;
@@ -31358,6 +31374,16 @@ export interface components {
             /** Type */
             type: string;
         };
+        /**
+         * StructurePatchRequest
+         * @description Rename, archive (``is_active: false``) or restore.
+         */
+        StructurePatchRequest: {
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Name */
+            name?: string | null;
+        };
         /** StructureReportRequest */
         StructureReportRequest: {
             /**
@@ -32516,6 +32542,21 @@ export interface components {
             /** Tribe Id */
             tribe_id: number;
         };
+        /** TribeCreateRequest */
+        TribeCreateRequest: {
+            /**
+             * Description
+             * @default
+             */
+            description?: string;
+            /** Name */
+            name: string;
+            /**
+             * Slug
+             * @default
+             */
+            slug?: string;
+        };
         /** TribeDiscordMapping */
         TribeDiscordMapping: {
             /** Problem */
@@ -32805,6 +32846,16 @@ export interface components {
             label: string;
             /** Region */
             region: string;
+        };
+        /** TribeGroupCreateRequest */
+        TribeGroupCreateRequest: {
+            /**
+             * Description
+             * @default
+             */
+            description?: string;
+            /** Name */
+            name: string;
         };
         /** TribeGroupGrowthSchema */
         TribeGroupGrowthSchema: {
@@ -59441,6 +59492,57 @@ export interface operations {
             };
         };
     };
+    tribes_endpoints_tribes_post_tribe_post_tribe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TribeCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TribeSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     tribes_endpoints_chief_assign_get_candidates_get_chief_candidates: {
         parameters: {
             query?: {
@@ -60470,6 +60572,68 @@ export interface operations {
             };
         };
     };
+    tribes_endpoints_tribes_patch_tribe_patch_tribe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tribe_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StructurePatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TribeSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     tribes_endpoints_tribes_get_tribe_about_get_tribe_about: {
         parameters: {
             query?: never;
@@ -60894,6 +61058,68 @@ export interface operations {
             };
         };
     };
+    tribes_endpoints_groups_post_tribe_group_post_tribe_group: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tribe_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TribeGroupCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TribeGroupSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     tribes_endpoints_groups_get_tribe_group_get_tribe_group: {
         parameters: {
             query?: never;
@@ -60924,6 +61150,69 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    tribes_endpoints_groups_patch_tribe_group_patch_tribe_group: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tribe_id: number;
+                group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StructurePatchRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TribeGroupSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

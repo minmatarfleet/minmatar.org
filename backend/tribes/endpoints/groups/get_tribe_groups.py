@@ -3,7 +3,6 @@
 from typing import List
 
 from django.db.models import Count, Q
-from ninja import Router
 
 from authentication import AuthOptional
 from tribes.endpoints.groups.schemas import TribeGroupSchema
@@ -19,8 +18,6 @@ ROUTE_SPEC = {
     "response": {200: List[TribeGroupSchema], 404: dict},
     "auth": AuthOptional(),
 }
-
-router = Router(tags=["Tribes - Groups"])
 
 
 def get_tribe_groups(request, tribe_id: int):
@@ -64,6 +61,3 @@ def get_tribe_groups(request, tribe_id: int):
         for tg in groups
     ]
     return 200, result
-
-
-router.get(PATH, **ROUTE_SPEC)(get_tribe_groups)

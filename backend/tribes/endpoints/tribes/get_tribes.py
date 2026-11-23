@@ -2,7 +2,6 @@
 
 from typing import List
 
-from ninja import Router
 
 from tribes.endpoints.tribes.schemas import TribeSchema
 from tribes.endpoints.tribes.serializers import serialize_tribe
@@ -15,8 +14,6 @@ ROUTE_SPEC = {
     "summary": "List all active tribes.",
     "response": {200: List[TribeSchema]},
 }
-
-router = Router(tags=["Tribes"])
 
 
 def get_tribes(request):
@@ -31,6 +28,3 @@ def get_tribes(request):
             .prefetch_related("groups")
         )
     ]
-
-
-router.get(PATH, **ROUTE_SPEC)(get_tribes)
