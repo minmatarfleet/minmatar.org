@@ -11,6 +11,8 @@ interface Props {
     fleet_tracking?:            Tracking;
     fleet_status?:              TrackingStatus;
     is_fleet_commander:         boolean;
+    /** A tribe group fleet: its FC can send a quiet pre-ping before fleet time. */
+    is_group_fleet?:            boolean;
     alert?:                     false | Alert;
     start_tracking?:            boolean;
     fleet_tracking_texts?:      FleetTrackingTexts | false;
@@ -28,6 +30,7 @@ const {
     fleet_tracking,
     fleet_status,
     is_fleet_commander,
+    is_group_fleet = false,
     alert = false,
     start_tracking = false,
     fleet_tracking_texts = false,
@@ -52,6 +55,7 @@ const FLEET_STATUS_PARTIAL_URL = `${translatePath('/partials/fleet_status_compon
 import Flexblock from '@components/compositions/Flexblock.astro';
 
 import StartFleetControls from '@components/blocks/StartFleetControls.astro';
+import PrepingButton from '@components/blocks/PrepingButton.astro';
 import EndFleetButton from '@components/blocks/EndFleetButton.astro';
 import FleetPhaseLabel from '@components/blocks/FleetPhaseLabel.astro';
 ---
@@ -96,6 +100,11 @@ import FleetPhaseLabel from '@components/blocks/FleetPhaseLabel.astro';
                 main_character_id={main_character_id}
                 main_character_name={main_character_name}
             />
+        }
+
+        {/* Removed at fleet time by FleetDetails (is_fleet_time). */}
+        {is_fleet_commander && is_group_fleet && !is_fleet_time && phase === 'upcoming' &&
+            <PrepingButton fleet_id={fleet_id} />
         }
 
         {is_fleet_commander && !is_fleet_time && phase === 'upcoming' &&

@@ -595,6 +595,15 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                         style={initial_group && !initial_group.allow_open_fleets ? undefined : 'display: none'}
                                         x-text="members_only_note.replace('{group}', group?.name ?? '')"
                                     >{t('fleets.host.members_only_note').replace('{group}', initial_group?.name ?? '')}</small>
+                                    {!fleet?.id &&
+                                        <Switch shape="square"
+                                            class="[ w-full ]"
+                                            name="immediate_ping"
+                                            label={t('fleets.host.preping_label')}
+                                            description={t('fleets.host.preping_description')}
+                                        />
+                                    }
+                                    <small class="[ fleet-host-ping-steps ]">{t('fleets.host.ping_steps')}</small>
                                 </Flexblock>
                             }
                         </Flexblock>
