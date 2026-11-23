@@ -15,14 +15,16 @@ import {
 } from '@/data/rat-chronicle'
 import type { ChronicleBlock } from '@/data/rat-chronicle'
 
-const RAT_BIBLE_PATH = join(process.cwd(), '..', '..', 'backend', 'reminders', 'messages', 'rat_quotes.py')
+const RAT_BIBLE_PATH = join(process.cwd(), 'testing', 'contracts', 'rat_bible.json')
 
-/** The verses as `citation - 'text'` strings, read from the backend's list. */
+/**
+ * The verses by citation. The file is the backend's list (reminders/messages/rat_quotes.py),
+ * kept current by backend/reminders/tests/test_rat_bible_contract.py.
+ */
 function rat_bible(): Map<string, string> {
-    const source = readFileSync(RAT_BIBLE_PATH, 'utf8')
+    const { verses: lines } = JSON.parse(readFileSync(RAT_BIBLE_PATH, 'utf8')) as { verses: string[] }
     const verses = new Map<string, string>()
-    for (const match of source.matchAll(/^\s*"(.+)",\s*$/gm)) {
-        const line = match[1].replace(/\\"/g, '"')
+    for (const line of lines) {
         const split = line.indexOf(" - '")
         if (split === -1) continue
         verses.set(line.slice(0, split).trim(), line.slice(split + 4).replace(/'$/, '').trim())
