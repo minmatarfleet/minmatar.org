@@ -1,4 +1,4 @@
-import { expect, userEvent, within } from 'storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import CampaignCoordinatorsPanel from '@components/blocks/CampaignCoordinatorsPanel.astro'
 import {
     campaign_coordination_members,
@@ -61,7 +61,8 @@ export const RoleHoldersHidden = {
         // Five members already hold a role: hidden until the switch is on.
         await expect(shown(canvasElement)).toHaveLength(9)
         await userEvent.click(canvas.getByRole('checkbox', { name: 'Show the 5 who have a role' }))
-        await expect(shown(canvasElement)).toHaveLength(14)
+        // Alpine re-renders on its next tick in a real browser.
+        await waitFor(() => expect(shown(canvasElement)).toHaveLength(14))
     },
 }
 
@@ -70,7 +71,7 @@ export const SearchFiltersRows = {
         const canvas = within(canvasElement)
         await userEvent.type(canvas.getByRole('searchbox', { name: 'Find someone' }), 'cryonic')
         // Mudaro Rogers holds a role, so only Skora Vel shows.
-        await expect(shown(canvasElement).map((row) => row.textContent)).toEqual([expect.stringContaining('Skora Vel')])
+        await waitFor(() => expect(shown(canvasElement).map((row) => row.textContent)).toEqual([expect.stringContaining('Skora Vel')]))
     },
 }
 
@@ -81,11 +82,11 @@ export const FilterByRole = {
         const visible = () => [...access.querySelectorAll<HTMLElement>('[data-role]')].filter((row) => row.style.display !== 'none')
         await expect(visible()).toHaveLength(5)
         await userEvent.click(canvas.getByRole('radio', { name: /^FC/ }))
-        await expect(visible().map((row) => row.dataset.role)).toEqual(['fc', 'fc'])
+        await waitFor(() => expect(visible().map((row) => row.dataset.role)).toEqual(['fc', 'fc']))
         await userEvent.click(canvas.getByRole('radio', { name: /^IT/ }))
-        await expect(visible().map((row) => row.dataset.role)).toEqual(['it'])
+        await waitFor(() => expect(visible().map((row) => row.dataset.role)).toEqual(['it']))
         await userEvent.click(canvas.getByRole('radio', { name: /^Everyone/ }))
-        await expect(visible()).toHaveLength(5)
+        await waitFor(() => expect(visible()).toHaveLength(5))
     },
 }
 
