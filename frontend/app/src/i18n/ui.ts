@@ -7064,7 +7064,7 @@ export const ui = {
         'disable_external_link_prompt_description': 'Displayed when opening an external link',
         'can_be_restored': 'Can be restored on account settings',
         'code_hint': 'Please quote error ID CODE when contacting support',
-        'not_in_fleet_notice': 'Nothing was posted to Discord. Create the fleet in EVE first, then click Start fleet again.',
+        'not_in_fleet_notice': 'Nothing was posted to Discord. Create the fleet in EVE first, with you as fleet boss, then click Start fleet again.',
         'become_a_supplier': 'Become a supplier',
         'set_prime_time': 'Set prime time',
         'set_prime_time_description': 'Please take a moment to let us know which time zone you’re most active in.',
