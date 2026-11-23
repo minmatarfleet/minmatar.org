@@ -3,8 +3,9 @@
 Guests sign in with EVE (``publicData`` only) and get a voice JWT: it names
 a ``VoiceIdentity``, never a Django user, and carries ``aud: voice`` so it
 can't be used anywhere else (``AuthBearer`` rejects tokens with an
-audience). Members already signed in to the site use their own token and
-pick one of their characters.
+audience). Members already signed in to the site use their own token and connect
+as their main. Voice is main-only: ``voice.access`` refuses any other
+character on a site account, so an alt signing in as a guest gets nowhere.
 """
 
 from __future__ import annotations
@@ -18,7 +19,6 @@ from django.utils import timezone
 from ninja.security import HttpBearer
 
 from eveonline.helpers.characters import user_primary_character
-from eveonline.models import EveCharacter
 from users.jwt_auth import decode_audience_jwt, decode_user_jwt, encode_jwt
 from voice.models import VoiceAuditEvent, VoiceGrant, VoiceIdentity
 
@@ -99,18 +99,9 @@ def revoke_identity_access(identity: VoiceIdentity) -> None:
     ).update(expires_at=timezone.now())
 
 
-def member_identity(
-    user: User, character_id: int | None
-) -> VoiceIdentity | None:
-    """The identity for one of a signed-in member's characters.
-
-    ``character_id`` must be theirs; without it, their primary character.
-    """
-    characters = EveCharacter.objects.filter(user=user).select_related("token")
-    if character_id:
-        character = characters.filter(character_id=character_id).first()
-    else:
-        character = user_primary_character(user)
+def member_identity(user: User) -> VoiceIdentity | None:
+    """The identity of a signed-in member's main: voice is main-only."""
+    character = user_primary_character(user)
     if character is None:
         return None
     owner_hash = ""
@@ -159,11 +150,11 @@ class VoiceAuth(HttpBearer):
         return user
 
 
-def request_identity(request, character_id: int | None = None):
+def request_identity(request):
     """The character this voice request acts as, or None."""
     identity = getattr(request, "voice_identity", None)
     if identity is not None:
         return identity
     if request.user.is_authenticated:
-        return member_identity(request.user, character_id)
+        return member_identity(request.user)
     return None

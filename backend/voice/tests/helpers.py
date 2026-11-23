@@ -102,6 +102,13 @@ class VoiceTestCase(TestCase):
         clear_feature_cache()
         return django_user, character
 
+    def alt(self, user, name):
+        """A second character on the user's account (not their main)."""
+        with factory.django.mute_signals(signals.post_save, signals.pre_save):
+            return EveCharacter.objects.create(
+                character_id=next(_ids), character_name=name, user=user
+            )
+
     def join(self, group, user):
         with factory.django.mute_signals(signals.m2m_changed):
             TribeGroupMembership.objects.create(

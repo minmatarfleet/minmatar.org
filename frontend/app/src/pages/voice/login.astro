@@ -1,12 +1,15 @@
 ---
-// The EVE sign-in for /voice lands here with ?token=<voice session>.
+// The EVE sign-in for /voice lands here with ?token=<voice session>&state=.
+// The token is kept only when state matches the cookie /voice/sign-in set.
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
-import { VOICE_SESSION_COOKIE, VOICE_SESSION_DAYS } from '@helpers/voice_session'
+import { VOICE_SESSION_COOKIE, VOICE_SESSION_DAYS, VOICE_LOGIN_STATE_COOKIE, login_state_matches } from '@helpers/voice_session'
 
 const token = Astro.url.searchParams.get('token')
-if (!token || Astro.url.searchParams.get('error'))
+const expected_state = Astro.cookies.get(VOICE_LOGIN_STATE_COOKIE)?.value
+Astro.cookies.delete(VOICE_LOGIN_STATE_COOKIE, { path: '/' })
+if (!token || Astro.url.searchParams.get('error') || !login_state_matches(Astro.url.searchParams.get('state'), expected_state))
     return Astro.redirect(translatePath('/voice?error=login'))
 
 Astro.cookies.set(VOICE_SESSION_COOKIE, token, {

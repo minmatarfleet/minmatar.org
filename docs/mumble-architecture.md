@@ -32,7 +32,9 @@ Worked out on read (`voice_record(character_id)`), never stored:
 | Voice admin | feature `voice.admin` (superusers) or a Strategic FC | `voiceadmin`: move, mute, kick anywhere |
 | Ban | `VoiceBan` | refuses everything; checked first |
 
-Stored as `VoiceGrant` rows (`backend/voice/grants.py`), so logins never join fleet tables: pilots in the in-game fleet (logistics hull and wing noted for placement), volunteers, invitees who said in (except low confidence), the fleet's creator and in-game boss (with their alts) as commanders, co-FCs added on the fleet page, and capital hulls flown or volunteered by trusted pilots. Grants end with the fleet's lease. A kick lasts for the rest of the lease.
+**Main only.** A character on a site account connects only when it is that account's main (`voice.access`): an alt is refused (`reason: not_main`) even through the guest sign-in, and fleet grants earned on an alt (in the in-game fleet, volunteering, boss) go to the main. Characters with no site account count as their own main.
+
+Stored as `VoiceGrant` rows (`backend/voice/grants.py`), so logins never join fleet tables: pilots in the in-game fleet (logistics hull and wing noted for placement), volunteers, invitees who said in (except low confidence), the fleet's creator and in-game boss (with their alts) as commanders, co-FCs added on the fleet page, and capital hulls flown or volunteered by trusted pilots. Each sync also expires the grants of pilots who backed out (withdrew, answered Out or low confidence, left the in-game fleet); co-FC grants are only changed on the fleet page. Grants all end with the fleet's lease. A kick lasts for the rest of the lease.
 
 ## Leases
 
@@ -40,8 +42,8 @@ Three branches (`Fleet 1`-`Fleet 3`) always exist. `backend/voice/leases.py`: a 
 
 ## Signing in
 
-- `/voice` (`frontend/app/src/pages/voice.astro`) has no gate. Site members use their own session and pick a character. Guests sign in with EVE through `GET /api/voice/login` (`publicData` only, no site account); `backend/voice/views.py` completes it, stores a `VoiceIdentity` (with the owner hash) and keeps no ESI token. The browser gets a voice JWT (`aud: voice`, 30 days) in an HttpOnly `voice_session` cookie. A changed owner hash (character sold) revokes certificates and grants.
-- **Connect** (`POST /api/voice/connect`) mints a one-time token (hashed, 2 minutes) inside a `mumble://` link. The first login binds the client certificate; later logins use it. An empty certificate hash is never bound or matched. Up to 3 certificates per character, removable on `/voice`.
+- `/voice` (`frontend/app/src/pages/voice.astro`) has no gate. Site members use their own session and connect as their main. Guests sign in with EVE: `/voice/sign-in` sets a random state in a short-lived cookie and sends the browser to `GET /api/voice/login` (`publicData` only, no site account), and `/voice/login` keeps the returned token only when its state matches the cookie; `backend/voice/views.py` completes it, stores a `VoiceIdentity` (with the owner hash) and keeps no ESI token. The browser gets a voice JWT (`aud: voice`, 30 days) in an HttpOnly `voice_session` cookie. A changed owner hash (character sold) revokes certificates and grants.
+- **Connect** (`POST /api/voice/connect`) mints a one-time token (hashed, 2 minutes) inside a `mumble://` link. The first login binds the client certificate; later logins use it. An empty certificate hash is never bound or matched. Up to 3 certificates per character, removable on `/voice`. A certificate bound to the account's old main moves to the new main on its first Connect; one bound to another account is refused.
 - The Mumble user id is the `VoiceIdentity` id. Display name `[TICKER] Character`. `SuperUser` is always refused.
 - **Fail closed**: Murmur has a long random server password nobody is told. With the voice service down, nobody gets in (lab-verified, `voice/tests/lab/fail_closed.py`).
 

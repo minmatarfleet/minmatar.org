@@ -57,16 +57,25 @@ def authenticate(name: str, password: str, cert_hash: str, store) -> Decision:
     if (name or "").strip().lower() == SUPERUSER.lower():
         return Decision(REFUSE, reason="superuser")
     try:
+        refused = None
         if cert_hash:
             record = store.by_certificate(cert_hash)
             if record is not None:
                 # A bound certificate decides the identity; a spent token
                 # sent alongside it is ignored.
-                return _accept(record)
+                decision = _accept(record)
+                if decision.accepted or not password:
+                    return decision
+                # Refused (e.g. no longer the account's main): a fresh token
+                # may move the certificate to the new main. Django only
+                # allows that within one account.
+                refused = decision
         if password:
             record = store.redeem(password, cert_hash or "")
             if record is not None:
                 return _accept(record)
+        if refused is not None:
+            return refused
     except Unavailable as exc:
         logger.warning("Voice access could not be checked: %s", exc)
         return Decision(UNAVAILABLE, reason="unavailable")

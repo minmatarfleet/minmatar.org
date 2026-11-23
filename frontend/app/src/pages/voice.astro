@@ -2,19 +2,14 @@
 import { i18n } from '@helpers/i18n'
 const { t, lang, translatePath } = i18n(Astro.url)
 
-import { get_voice_session, parse_character_id } from '@helpers/voice_session'
-import { voice_login_url } from '@helpers/api.minmatar.org/voice'
-import { get_app_url } from '@helpers/env'
+import { get_voice_session } from '@helpers/voice_session'
 
 // No gate: guests (NPSI pilots, campaign allies) use this page too.
 const session = get_voice_session(Astro)
-const character_id = parse_character_id(Astro.url.searchParams.get('character_id'))
 const login_failed = Astro.url.searchParams.get('error') !== null
 
-const LOGIN_URL = voice_login_url(`${get_app_url()}${translatePath('/voice/login')}`)
-const STATUS_PARTIAL_URL = translatePath(
-    `/partials/voice_status_component/${character_id ? `?character_id=${character_id}` : ''}`
-)
+const LOGIN_URL = translatePath('/voice/sign-in')
+const STATUS_PARTIAL_URL = translatePath('/partials/voice_status_component/')
 const page_title = t('voice.page_title')
 
 import Viewport from '@layouts/Viewport.astro'

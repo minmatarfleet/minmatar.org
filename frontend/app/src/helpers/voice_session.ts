@@ -3,6 +3,19 @@ import { get_request_user } from '@helpers/request_user'
 
 export const VOICE_SESSION_COOKIE = 'voice_session'
 export const VOICE_SESSION_DAYS = 30
+export const VOICE_LOGIN_STATE_COOKIE = 'voice_login_state'
+export const VOICE_LOGIN_STATE_MINUTES = 10
+
+/** A random state for one EVE sign-in (base64url, 32 bytes). */
+export function new_login_state(): string {
+    const bytes = crypto.getRandomValues(new Uint8Array(32))
+    return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+/** True when the state EVE sign-in returned is the one this browser started with. */
+export function login_state_matches(returned:string | null | undefined, expected:string | null | undefined): boolean {
+    return !!returned && !!expected && returned.length >= 16 && returned === expected
+}
 
 export interface VoiceSession {
     token:  string;

@@ -2,15 +2,19 @@
 
 import json
 from datetime import timedelta
+from types import SimpleNamespace
 from unittest.mock import patch
-from urllib.parse import unquote, urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit
 
-from django.test import Client, override_settings
+from django.test import Client, RequestFactory, override_settings
 from django.utils import timezone
 
 from app.testing import make_token
+from eveonline.helpers.characters import set_primary_character
 from voice import connect, store
 from voice.identity import issue_voice_jwt, upsert_identity
+from voice.tasks import publish_fleet_wing_pilots
+from voice.views import SESSION_KEY, STATE_SESSION_KEY, voice_sso_complete
 from voice.models import (
     MAX_CERTIFICATES,
     VoiceBan,
@@ -56,6 +60,43 @@ class SignInTest(VoiceApiTestCase):
             sso.call_args.kwargs["return_to"], "voice_sso_complete"
         )
 
+    @override_settings(
+        ESI_SSO_CLIENT_ID="x", ESI_SSO_CALLBACK_URL="https://cb"
+    )
+    def test_login_keeps_a_well_formed_state_only(self):
+        client = Client()
+        with patch("voice.endpoints.get_login.sso_redirect") as sso:
+            sso.return_value = __import__(
+                "django.http"
+            ).http.HttpResponseRedirect("https://login.eveonline.com/")
+            state = "a" * 43
+            client.get(f"{BASE}/login?state={state}")
+            self.assertEqual(client.session[STATE_SESSION_KEY], "a" * 43)
+            client.get(f"{BASE}/login?state=short")
+            self.assertEqual(client.session[STATE_SESSION_KEY], "")
+
+    def test_sign_in_returns_the_state_with_the_token(self):
+        _, character = self.pilot("guest", user=False)
+        request = RequestFactory().get("/api/voice/complete/")
+        request.session = {
+            SESSION_KEY: "https://my.minmatar.org/voice/login",
+            STATE_SESSION_KEY: "s" * 43,
+        }
+        token = SimpleNamespace(
+            character_id=character.character_id,
+            character_name=character.character_name,
+            character_owner_hash="owner",
+            user_id=None,
+            delete=lambda: None,
+        )
+        with patch(
+            "voice.views._public_affiliation", return_value=(None, None)
+        ):
+            response = voice_sso_complete.__wrapped__(request, token)
+        query = parse_qs(urlsplit(response["Location"]).query)
+        self.assertEqual(query["state"], ["s" * 43])
+        self.assertTrue(query["token"][0])
+
     def test_voice_token_is_not_a_site_token(self):
         _, character = self.pilot("guest", user=False)
         identity = self.identity(character)
@@ -92,30 +133,28 @@ class StatusConnectTest(VoiceApiTestCase):
         response = self.call("post", "/connect", token, {})
         self.assertEqual(response.status_code, 403)
 
-    def test_member_picks_one_of_their_characters(self):
-        user, character = self.pilot("member", "Alliance")
+    def test_a_member_always_connects_as_their_main(self):
+        user, main = self.pilot("member", "Alliance")
+        alt = self.alt(user, "member alt")
         body = self.call(
             "get",
-            f"/status?character_id={character.character_id}",
+            f"/status?character_id={alt.character_id}",
             make_token(user),
         ).json()
+        self.assertEqual(body["character_id"], main.character_id)
         self.assertTrue(body["admitted"])
         self.assertTrue(body["community"])
         self.assertEqual(body["signed_in_as"], "member")
-        self.assertEqual(
-            [c["character_id"] for c in body["characters"]],
-            [character.character_id],
-        )
+        self.assertNotIn("characters", body)
 
-    def test_member_cannot_pick_someone_elses_character(self):
+    def test_an_alt_signed_in_with_eve_is_refused(self):
         user, _ = self.pilot("member", "Alliance")
-        _, other = self.pilot("other", "Alliance")
-        response = self.call(
-            "get",
-            f"/status?character_id={other.character_id}",
-            make_token(user),
-        )
-        self.assertEqual(response.status_code, 404)
+        alt = self.alt(user, "member alt")
+        token = issue_voice_jwt(self.identity(alt))
+        body = self.call("get", "/status", token).json()
+        self.assertFalse(body["admitted"])
+        self.assertEqual(body["reason"], "not_main")
+        self.assertEqual(self.call("post", "/connect", token).status_code, 403)
 
     @override_settings(VOICE_HOST="voice.example", VOICE_PORT=64738)
     def test_connect_returns_a_one_time_mumble_link(self):
@@ -210,6 +249,22 @@ class RedeemTest(VoiceApiTestCase):
         token = connect.mint_token(self.identity_)
         self.assertEqual(self.redeem(token, "theirs").status_code, 404)
 
+    def test_a_new_main_takes_over_the_old_mains_certificate(self):
+        user = self.character.user
+        old = VoiceCertificate.objects.create(
+            identity=self.identity_, cert_hash="same-client"
+        )
+        new_main = self.alt(user, "new main")
+        set_primary_character(user, new_main)
+        new_identity = self.identity(new_main)
+        token = connect.mint_token(new_identity)
+        self.assertEqual(self.redeem(token, "same-client").status_code, 200)
+        self.assertFalse(VoiceCertificate.objects.filter(pk=old.pk).exists())
+        self.assertEqual(
+            VoiceCertificate.objects.get(cert_hash="same-client").identity,
+            new_identity,
+        )
+
     def test_at_most_three_certificates(self):
         for n in range(MAX_CERTIFICATES + 1):
             self.assertEqual(
@@ -288,13 +343,35 @@ class FleetToolsTest(VoiceApiTestCase):
             {"wing_channels": {"1": "Command"}},
         )
         self.assertEqual(bad.status_code, 400)
-        ok = self.call(
-            "post",
-            path,
-            make_token(self.fc_user),
-            {"wing_channels": {"1": "Auxiliary A"}},
-        )
+        with patch(
+            "voice.endpoints.post_fleet_wings.publish_fleet_wing_pilots"
+        ) as task, self.captureOnCommitCallbacks(execute=True):
+            ok = self.call(
+                "post",
+                path,
+                make_token(self.fc_user),
+                {"wing_channels": {"1": "Auxiliary A"}},
+            )
         self.assertEqual(ok.status_code, 204)
+        # The republish is queued for this fleet, not done in the request.
+        task.apply_async.assert_called_once_with(args=(self.fleet_.id,))
+
+    def test_wing_republish_covers_this_fleets_wing_pilots_only(self):
+        other = self.fleet(self.fc_user)
+        for character_id, fleet, wing_id in (
+            (501, self.fleet_, 3),
+            (502, self.fleet_, None),
+            (503, other, 3),
+        ):
+            VoiceGrant.objects.create(
+                character_id=character_id,
+                fleet=fleet,
+                source=VoiceGrant.SOURCE_IN_FLEET,
+                wing_id=wing_id,
+            )
+        with patch("voice.tasks.publisher.publish_characters") as publish:
+            publish_fleet_wing_pilots(self.fleet_.id)
+        self.assertEqual(list(publish.call_args.args[0]), [501])
 
     def test_kick_queues_a_command_and_ends_fleet_access(self):
         identity = self.identity(self.pilot_char)

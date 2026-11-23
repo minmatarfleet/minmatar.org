@@ -9,7 +9,7 @@ from django.dispatch import receiver
 
 from campaigns.models import CampaignParty
 from discord.outbox import on_commit_enqueue
-from eveonline.models import EveCharacter
+from eveonline.models import EveCharacter, EvePlayer
 from fleets.models import (
     EveFleetInvite,
     EveFleetRoleVolunteer,
@@ -46,6 +46,8 @@ def _republish_user(user_id):
         )
 
 
+# EvePlayer: a new main is the only character that may connect.
+@receiver([post_save, post_delete], sender=EvePlayer)
 @receiver([post_save, post_delete], sender=TribeGroupMembership)
 @receiver([post_save, post_delete], sender=UserAffiliation)
 @receiver([post_save, post_delete], sender=UserCommunityStatus)

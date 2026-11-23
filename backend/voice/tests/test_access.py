@@ -47,6 +47,34 @@ class StandingAccessTest(VoiceTestCase):
         clear_feature_cache()
         self.assertFalse(voice_record(character.character_id).admitted)
 
+    def test_only_the_accounts_main_gets_in(self):
+        user, main = self.pilot("main", "Alliance")
+        alt = self.alt(user, "alt")
+        self.assertTrue(voice_record(main.character_id).admitted)
+        record = voice_record(alt.character_id)
+        self.assertFalse(record.admitted)
+        self.assertEqual(record.reason, "not_main")
+        # Fleet grants on the alt don't help either.
+        fleet = self.fleet(user)
+        self.lease(fleet)
+        VoiceGrant.objects.create(
+            character_id=alt.character_id,
+            fleet=fleet,
+            source=VoiceGrant.SOURCE_IN_FLEET,
+        )
+        self.assertFalse(voice_record(alt.character_id).admitted)
+
+    def test_a_character_without_a_site_account_is_its_own_main(self):
+        _, guest = self.pilot("guest", user=False)
+        fleet = self.fleet()
+        self.lease(fleet)
+        VoiceGrant.objects.create(
+            character_id=guest.character_id,
+            fleet=fleet,
+            source=VoiceGrant.SOURCE_VOLUNTEER,
+        )
+        self.assertTrue(voice_record(guest.character_id).admitted)
+
     def test_ban_beats_everything(self):
         user, character = self.pilot("banned", "Alliance")
         self.join(self.fc_group, user)

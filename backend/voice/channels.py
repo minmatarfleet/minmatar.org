@@ -1,7 +1,9 @@
 """Mumble channel names shared with the voice service (voice/voice_auth/layout.py).
 
-Changing a name is a voice-service change too: the contract test in
-voice/tests/test_contracts.py fails until both sides agree.
+Changing a name is a voice-service change too. The backend writes these
+names to voice/tests/contracts/channels.json (voice/tests/test_publisher.py),
+and ``ContractTest`` in voice/tests/test_service.py fails until both sides
+agree.
 """
 
 ROOT = "Minmatar Fleet"

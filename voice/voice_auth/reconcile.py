@@ -222,10 +222,15 @@ class Reconciler:
         live = set(users)
         for key in [k for k in self.applied if k[0] not in live]:
             del self.applied[key]
-        try:
-            for user in users.values():
+        for user in users.values():
+            # One pilot's failure (a record that can't be read, a session
+            # that just ended) must not stop the pilots after them.
+            try:
                 self._reconcile_user(user, leases)
-        except Exception:  # pylint: disable=broad-exception-caught
-            logger.warning("Voice record read failed; finishing next tick")
+            except Exception:  # pylint: disable=broad-exception-caught
+                logger.warning(
+                    "Reconciling session %s failed; retrying next tick",
+                    user.session,
+                )
         self.sessions = live
         return len(users)

@@ -1,7 +1,8 @@
 """Fleet-scoped voice grants, worked out from a Mumble fleet's own data.
 
-Grants are only added or upgraded while the lease runs; they end together
-when the lease is released (``voice.leases.release``). Co-FC grants come from
+Each sync adds, updates and expires grants to match the fleet: a pilot who
+backs out loses theirs. All of them end together when the lease is
+released (``voice.leases.release``). Co-FC grants come from
 the fleet page (``voice.endpoints``) and are never touched here.
 """
 
@@ -10,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import timedelta
 
+from django.utils import timezone
 from eveuniverse.models import EveType
 
 from eveonline.models import EveCharacter
@@ -21,6 +23,7 @@ from fleets.models import (
     EveFleetInvite,
 )
 from groups.helpers.feature_access import can_use_feature
+from voice.access import main_character_ids
 from voice.models import VoiceAuditEvent, VoiceChannelLease, VoiceGrant
 
 LOGISTICS_GROUPS = frozenset({"Logistics", "Logistics Frigate"})
@@ -214,15 +217,25 @@ def wanted_grants(fleet: EveFleet) -> list[Wanted]:
 def sync_fleet(fleet: EveFleet) -> set[int]:
     """Add or update the fleet's grants. Returns characters whose access
     changed (so the caller republishes them)."""
+    wanted = wanted_grants(fleet)
+    # Voice is main-only: what an alt earns goes to the account's main.
+    mains = main_character_ids(item.character_id for item in wanted)
     merged: dict[tuple, Wanted] = {}
-    for item in wanted_grants(fleet):
-        key = (int(item.character_id), item.source, item.role)
+    for item in wanted:
+        character_id = mains.get(int(item.character_id), item.character_id)
+        key = (int(character_id), item.source, item.role)
         previous = merged.get(key)
         if previous is None:
-            merged[key] = item
+            merged[key] = Wanted(
+                character_id,
+                item.source,
+                item.role,
+                logistics=item.logistics,
+                wing_id=item.wing_id,
+            )
         else:
             merged[key] = Wanted(
-                item.character_id,
+                character_id,
                 item.source,
                 item.role,
                 logistics=previous.logistics or item.logistics,
@@ -271,4 +284,14 @@ def sync_fleet(fleet: EveFleet) -> set[int]:
             grant.wing_id = item.wing_id
             grant.save(update_fields=["logistics", "wing_id", "updated_at"])
             changed.add(key[0])
+    # Pilots who backed out (withdrew, answered Out or low confidence, left
+    # the in-game fleet) lose that grant. Co-FCs are managed on the fleet
+    # page, never here.
+    now = timezone.now()
+    for key, grant in existing.items():
+        if key in merged or grant.source == VoiceGrant.SOURCE_CO_FC:
+            continue
+        grant.expires_at = now
+        grant.save(update_fields=["expires_at", "updated_at"])
+        changed.add(key[0])
     return changed

@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
-import { get_voice_session, parse_character_id, parse_positive_id } from '@helpers/voice_session'
+import { get_voice_session, parse_positive_id } from '@helpers/voice_session'
 import {
     get_voice_status,
     get_voice_certificates,
@@ -15,33 +15,28 @@ const session = get_voice_session(Astro)
 if (!session)
     return HTTP_404_Not_Found()
 
-let character_id = parse_character_id(Astro.url.searchParams.get('character_id'))
-
 if (Astro.request.method === 'POST') {
     const form = await Astro.request.formData()
-    character_id = parse_character_id(form.get('character_id')) ?? character_id
     const certificate_id = parse_positive_id(form.get('certificate_id'))
     if (form.get('action') === 'remove_certificate' && certificate_id) {
         try {
-            await delete_voice_certificate(session.token, certificate_id, character_id)
+            await delete_voice_certificate(session.token, certificate_id)
         } catch (error) {
             console.log(`Could not revoke voice certificate: ${error.message}`)
         }
     }
 }
 
-const STATUS_PARTIAL_URL = translatePath(
-    `/partials/voice_status_component/${character_id ? `?character_id=${character_id}` : ''}`
-)
+const STATUS_PARTIAL_URL = translatePath('/partials/voice_status_component/')
 const CONNECT_PARTIAL_URL = translatePath('/partials/voice_connect_component/')
 
 let status: VoiceStatus | null = null
 let certificates: VoiceCertificate[] = []
 let fetching_error: Error | false = false
 try {
-    status = await get_voice_status(session.token, character_id)
+    status = await get_voice_status(session.token)
     if (status)
-        certificates = await get_voice_certificates(session.token, status.character_id) ?? []
+        certificates = await get_voice_certificates(session.token) ?? []
 } catch (error) {
     fetching_error = error
 }
@@ -58,7 +53,6 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Button from '@components/blocks/Button.astro'
-import Select from '@components/blocks/Select.astro'
 import Tag from '@components/blocks/Tag.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
@@ -76,32 +70,15 @@ import LocalTime from '@components/blocks/LocalTime.astro'
                 <Flexblock gap="var(--space-s)">
                     <h2>{t('voice.status.title')}</h2>
                     <Flexblock gap="var(--space-m)">
-                        {status.characters.length > 1 &&
-                            <form
-                                hx-get={translatePath('/partials/voice_status_component/')}
-                                hx-target="#voice-status"
-                                hx-swap="outerHTML"
-                            >
-                                <FlexInline>
-                                    <label for="voice-character">{t('voice.status.character')}</label>
-                                    <Select id="voice-character" name="character_id" size="sm" width="auto">
-                                        {status.characters.map((character) =>
-                                            <option value={character.character_id} selected={character.character_id === status?.character_id}>
-                                                {character.character_name}
-                                            </option>
-                                        )}
-                                    </Select>
-                                    <Button type="submit" size="sm" color="transparent">{t('voice.status.switch')}</Button>
-                                </FlexInline>
-                            </form>
-                        }
-
                         <p><strong>{status.display_name}</strong></p>
 
                         {status.banned &&
                             <EmptyState title={t('voice.status.banned')} hint={t('voice.status.banned_hint')} />
                         }
-                        {!status.banned && !status.admitted &&
+                        {!status.banned && !status.admitted && status.reason === 'not_main' &&
+                            <EmptyState title={t('voice.status.not_main')} hint={t('voice.status.not_main_hint')} />
+                        }
+                        {!status.banned && !status.admitted && status.reason !== 'not_main' &&
                             <EmptyState title={t('voice.status.no_access')} hint={t('voice.status.no_access_hint')} />
                         }
                         {status.admitted &&
@@ -121,7 +98,6 @@ import LocalTime from '@components/blocks/LocalTime.astro'
                                     hx-swap="innerHTML"
                                     hx-disabled-elt="find button"
                                 >
-                                    <input type="hidden" name="character_id" value={status.character_id} />
                                     <Button type="submit" size="sm">{t('voice.connect')}</Button>
                                 </form>
                                 <div id="voice-connect" aria-live="polite"></div>
@@ -152,7 +128,6 @@ import LocalTime from '@components/blocks/LocalTime.astro'
                                         </span>
                                         <input type="hidden" name="action" value="remove_certificate" />
                                         <input type="hidden" name="certificate_id" value={certificate.id} />
-                                        <input type="hidden" name="character_id" value={status?.character_id} />
                                         <Button type="submit" size="sm" color="transparent">{t('voice.certificates.remove')}</Button>
                                     </FlexInline>
                                 </form>

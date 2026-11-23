@@ -1,7 +1,5 @@
 """GET /api/voice/certificates: the Mumble certificates bound to a character."""
 
-from typing import Optional
-
 from app.errors import ErrorResponse
 from voice.endpoints.base import router
 from voice.endpoints.schemas import VoiceCertificateResponse
@@ -14,8 +12,8 @@ from voice.identity import VoiceAuth, request_identity
     auth=VoiceAuth(),
     response={200: list[VoiceCertificateResponse], 404: ErrorResponse},
 )
-def get_certificates(request, character_id: Optional[int] = None):
-    identity = request_identity(request, character_id)
+def get_certificates(request):
+    identity = request_identity(request)
     if identity is None:
         return 404, ErrorResponse(detail="No character.")
     return [

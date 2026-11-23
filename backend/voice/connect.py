@@ -62,7 +62,8 @@ def redeem_token(token: str, cert_hash: str = "") -> VoiceIdentity | None:
     """Spend a connect token; bind the certificate when there is one.
 
     Returns the identity, or None for an unknown, spent or expired token,
-    or a certificate already bound to someone else.
+    or a certificate bound to someone else. A certificate bound to another
+    character on the same account (the pilot's old main) moves over.
     """
     if not token:
         return None
@@ -76,19 +77,46 @@ def redeem_token(token: str, cert_hash: str = "") -> VoiceIdentity | None:
         )
         if row is None or row.expires_at <= now:
             return None
-        if cert_hash:
-            other = (
-                VoiceCertificate.objects.filter(cert_hash=cert_hash)
-                .exclude(identity=row.identity)
-                .exists()
-            )
-            if other:
-                return None
+        if cert_hash and not _release_certificate(row.identity, cert_hash):
+            return None
         row.used_at = now
         row.save(update_fields=["used_at"])
         if cert_hash:
             bind_certificate(row.identity, cert_hash)
         return row.identity
+
+
+def _release_certificate(identity: VoiceIdentity, cert_hash: str) -> bool:
+    """Free a certificate bound to another identity, so this one can bind it.
+
+    Allowed only when both characters are on the same site account: the
+    pilot changed their main and connects with the same Mumble client.
+    Returns False when it belongs to someone else.
+    """
+    # pylint: disable=import-outside-toplevel
+    from voice.access import owner_user_id
+    from voice.publisher import unpublish_certificate
+
+    others = list(
+        VoiceCertificate.objects.filter(cert_hash=cert_hash)
+        .exclude(identity=identity)
+        .select_related("identity")
+    )
+    if not others:
+        return True
+    owner = owner_user_id(identity.character_id)
+    if owner is None or any(
+        owner_user_id(cert.identity.character_id) != owner for cert in others
+    ):
+        return False
+    unpublish_certificate(cert_hash)
+    for cert in others:
+        VoiceAuditEvent.record(
+            VoiceAuditEvent.KIND_CERT_REVOKED,
+            character_id=cert.identity.character_id,
+        )
+        cert.delete()
+    return True
 
 
 def bind_certificate(

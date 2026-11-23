@@ -1,14 +1,10 @@
-"""GET /api/voice/status: can the signed-in character join, and why."""
-
-from typing import Optional
+"""GET /api/voice/status: can the signed-in main join, and why."""
 
 from app.errors import ErrorResponse
-from eveonline.models import EveCharacter
 from voice import channels
 from voice.access import voice_record
 from voice.endpoints.base import router
 from voice.endpoints.schemas import (
-    VoiceCharacter,
     VoiceFleetAccess,
     VoiceStatusResponse,
 )
@@ -21,21 +17,11 @@ from voice.identity import VoiceAuth, request_identity
     auth=VoiceAuth(),
     response={200: VoiceStatusResponse, 404: ErrorResponse},
 )
-def get_status(request, character_id: Optional[int] = None):
-    identity = request_identity(request, character_id)
+def get_status(request):
+    identity = request_identity(request)
     if identity is None:
         return 404, ErrorResponse(detail="No character to connect with.")
     record = voice_record(identity.character_id)
-    characters = []
-    if request.user.is_authenticated:
-        characters = [
-            VoiceCharacter(
-                character_id=c.character_id, character_name=c.character_name
-            )
-            for c in EveCharacter.objects.filter(user=request.user).order_by(
-                "character_name"
-            )
-        ]
     return VoiceStatusResponse(
         character_id=identity.character_id,
         character_name=identity.character_name,
@@ -56,5 +42,4 @@ def get_status(request, character_id: Optional[int] = None):
         ],
         certificate_count=identity.certificates.count(),
         signed_in_as="member" if request.user.is_authenticated else "guest",
-        characters=characters,
     )

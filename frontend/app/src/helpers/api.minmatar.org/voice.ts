@@ -12,40 +12,36 @@ const API_ENDPOINT = `${import.meta.env.API_URL}/api/voice`
 
 /** The EVE sign-in for /voice (public info only). The browser goes here,
  * so it uses the public API address, not the server-side one. */
-export function voice_login_url(redirect_url:string) {
-    return `${get_public_api_url()}/api/voice/login?redirect_url=${encodeURIComponent(redirect_url)}`
+export function voice_login_url(redirect_url:string, state:string) {
+    return `${get_public_api_url()}/api/voice/login?redirect_url=${encodeURIComponent(redirect_url)}&state=${encodeURIComponent(state)}`
 }
 
-function character_query(character_id?:number | null) {
-    return character_id ? `?character_id=${character_id}` : ''
-}
-
-/** `token` is a voice session (guest) or a site session (member). */
-export async function get_voice_status(token:string, character_id?:number | null) {
-    return await api_request<VoiceStatus>(`${API_ENDPOINT}/status${character_query(character_id)}`, {
+/** `token` is a voice session (guest) or a site session (member, who
+ * always connects as their main). */
+export async function get_voice_status(token:string) {
+    return await api_request<VoiceStatus>(`${API_ENDPOINT}/status`, {
         token,
         error: 'Error fetching voice status',
     })
 }
 
-export async function post_voice_connect(token:string, character_id?:number | null) {
+export async function post_voice_connect(token:string) {
     return await api_request<VoiceConnect>(`${API_ENDPOINT}/connect`, {
         method: 'POST',
         token,
-        body: { character_id: character_id ?? null },
         error: 'Error connecting to voice',
     })
 }
 
-export async function get_voice_certificates(token:string, character_id?:number | null) {
-    return await api_request<VoiceCertificate[]>(`${API_ENDPOINT}/certificates${character_query(character_id)}`, {
+export async function get_voice_certificates(token:string) {
+    return await api_request<VoiceCertificate[]>(`${API_ENDPOINT}/certificates`, {
         token,
         error: 'Error fetching voice certificates',
     })
 }
 
-export async function delete_voice_certificate(token:string, certificate_id:number, character_id?:number | null) {
-    return await api_status_is(`${API_ENDPOINT}/certificates/${certificate_id}${character_query(character_id)}`, {
+export async function delete_voice_certificate(token:string, certificate_id:number) {
+    return await api_status_is(`${API_ENDPOINT}/certificates/${certificate_id}`, {
         method: 'DELETE',
         token,
         error: 'Error revoking voice certificate',

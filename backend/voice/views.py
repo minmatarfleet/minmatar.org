@@ -1,6 +1,7 @@
 """EVE SSO completion for /voice (public info only, no site account)."""
 
 import logging
+from urllib.parse import urlencode
 
 from esi.decorators import token_required
 
@@ -13,6 +14,7 @@ from voice.models import VoiceAuditEvent
 logger = logging.getLogger(__name__)
 
 SESSION_KEY = "voice_redirect_url"
+STATE_SESSION_KEY = "voice_login_state"
 
 
 def default_voice_login_url() -> str:
@@ -38,6 +40,7 @@ def voice_sso_complete(request, token):
     redirect_url = safe_login_redirect_url(
         request.session.pop(SESSION_KEY, None), default_voice_login_url()
     )
+    state = request.session.pop(STATE_SESSION_KEY, "") or ""
     try:
         corporation_id, alliance_id = _public_affiliation(token.character_id)
         identity = upsert_identity(
@@ -58,4 +61,7 @@ def voice_sso_complete(request, token):
     VoiceAuditEvent.record(
         VoiceAuditEvent.KIND_SIGN_IN, character_id=identity.character_id
     )
-    return oauth_redirect(f"{redirect_url}?token={issue_voice_jwt(identity)}")
+    # The website keeps the token only when state matches the cookie it set
+    # when this browser started the sign-in.
+    query = urlencode({"token": issue_voice_jwt(identity), "state": state})
+    return oauth_redirect(f"{redirect_url}?{query}")

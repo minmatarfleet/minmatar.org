@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 
+from django.contrib.auth.models import User
 from django.db.models import Q
 from django.utils import timezone
 
@@ -18,6 +19,10 @@ from campaigns.models import (
     CampaignStatus,
     PartyKind,
     PartySide,
+)
+from eveonline.helpers.characters.identity import (
+    primary_character_for_user,
+    primary_characters_for_users,
 )
 from eveonline.models import EveCharacter, EveCorporation
 from fleets.endpoints.helpers import is_strategic_fc
@@ -37,6 +42,7 @@ CAPITALS_TRIBE_SLUG = "capitals"
 REASON_OK = "ok"
 REASON_BANNED = "banned"
 REASON_NO_ACCESS = "no_access"
+REASON_NOT_MAIN = "not_main"
 
 
 @dataclass
@@ -75,9 +81,53 @@ class VoiceRecord:
 def _character(character_id: int):
     return (
         EveCharacter.objects.filter(character_id=character_id)
-        .select_related("user")
+        .select_related("user", "token")
         .first()
     )
+
+
+def _owner_user_id(character) -> int | None:
+    """The site account a character belongs to, also when only its ESI
+    token links it (legacy characters)."""
+    if character is None:
+        return None
+    if character.user_id:
+        return character.user_id
+    token = character.token if character.token_id else None
+    return token.user_id if token is not None else None
+
+
+def owner_user_id(character_id: int) -> int | None:
+    return _owner_user_id(_character(character_id))
+
+
+def main_character_ids(character_ids) -> dict[int, int]:
+    """Character id -> the main of the account it belongs to.
+
+    Voice is main-only: fleet access earned on an alt goes to the main.
+    Characters without an account, or on an account without a main, map to
+    themselves.
+    """
+    ids = {int(c) for c in character_ids if c}
+    if not ids:
+        return {}
+    owners = {}
+    for character in EveCharacter.objects.filter(
+        character_id__in=ids
+    ).select_related("token"):
+        owner = _owner_user_id(character)
+        if owner:
+            owners[int(character.character_id)] = owner
+    mains = {
+        user_id: int(main.character_id)
+        for user_id, main in primary_characters_for_users(
+            set(owners.values())
+        ).items()
+    }
+    return {
+        character_id: mains.get(owners.get(character_id), character_id)
+        for character_id in ids
+    }
 
 
 def display_name(
@@ -192,6 +242,15 @@ def _placement(lease, *, commander: bool, grants: list) -> str:
     return channels.MAINLINE
 
 
+def _is_main(owner, character_id: int) -> bool:
+    """Only an account's main may connect. A character with no site
+    account (a guest) counts as its own main."""
+    if owner is None:
+        return True
+    main = primary_character_for_user(owner)
+    return main is not None and int(main.character_id) == character_id
+
+
 def voice_record(character_id: int, *, now=None) -> VoiceRecord:
     now = now or timezone.now()
     character_id = int(character_id)
@@ -203,20 +262,22 @@ def voice_record(character_id: int, *, now=None) -> VoiceRecord:
         identity.corporation_id if identity else None,
     )
 
-    if is_banned(character_id):
+    banned = is_banned(character_id)
+    owner = User.objects.filter(pk=_owner_user_id(character)).first()
+    if banned or not _is_main(owner, character_id):
         return VoiceRecord(
             character_id=character_id,
             identity_id=identity.id if identity else None,
             display_name=name,
             admitted=False,
-            banned=True,
-            reason=REASON_BANNED,
+            banned=banned,
+            reason=REASON_BANNED if banned else REASON_NOT_MAIN,
             server_groups=[],
             branches={},
             preferred_branch=None,
         )
 
-    standing = standing_access(character.user if character else None)
+    standing = standing_access(owner)
     leases = {
         lease.fleet_id: lease
         for lease in VoiceChannelLease.active()

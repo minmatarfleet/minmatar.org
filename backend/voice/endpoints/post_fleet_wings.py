@@ -1,12 +1,14 @@
 """POST /api/voice/fleets/{fleet_id}/wings: in-game wing -> channel mapping."""
 
 from app.errors import ErrorResponse
+from discord.outbox import on_commit_enqueue
 from voice import channels
 from voice.endpoints.base import router
 from voice.endpoints.fleet_helpers import AUTH, managed_fleet
 from voice.endpoints.schemas import VoiceWingsRequest
-from voice.models import VoiceAuditEvent, VoiceChannelLease, VoiceIdentity
-from voice.publisher import publish_characters, publish_leases
+from voice.models import VoiceAuditEvent, VoiceChannelLease
+from voice.publisher import publish_leases
+from voice.tasks import publish_fleet_wing_pilots
 
 
 @router.post(
@@ -44,7 +46,9 @@ def post_fleet_wings(request, fleet_id: int, payload: VoiceWingsRequest):
         VoiceAuditEvent.KIND_WINGS, fleet_id=fleet.id, actor=request.user
     )
     publish_leases()
-    publish_characters(
-        VoiceIdentity.objects.values_list("character_id", flat=True)
+    on_commit_enqueue(
+        publish_fleet_wing_pilots,
+        (fleet.id,),
+        context=f"voice wings fleet {fleet.id}",
     )
     return 204, None

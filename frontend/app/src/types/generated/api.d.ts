@@ -11838,7 +11838,7 @@ export interface paths {
         };
         /**
          * Sign in to fleet voice with EVE (public info only)
-         * @description Redirects to EVE SSO asking only for publicData. Afterwards the browser lands on redirect_url with ?token=<voice session token>.
+         * @description Redirects to EVE SSO asking only for publicData. Afterwards the browser lands on redirect_url with ?token=<voice session token>&state=<state>. The website sets state in a cookie before sending the browser here, and only keeps a token whose state matches.
          */
         get: operations["voice_endpoints_get_login_get_login"];
         put?: never;
@@ -34092,13 +34092,6 @@ export interface components {
             /** Last Used At */
             last_used_at: string | null;
         };
-        /** VoiceCharacter */
-        VoiceCharacter: {
-            /** Character Id */
-            character_id: number;
-            /** Character Name */
-            character_name: string;
-        };
         /** VoiceCharacterRequest */
         VoiceCharacterRequest: {
             /** Character Id */
@@ -34110,11 +34103,6 @@ export interface components {
             character_id: number;
             /** Character Name */
             character_name: string;
-        };
-        /** VoiceConnectRequest */
-        VoiceConnectRequest: {
-            /** Character Id */
-            character_id?: number | null;
         };
         /** VoiceConnectResponse */
         VoiceConnectResponse: {
@@ -34181,8 +34169,6 @@ export interface components {
             character_id: number;
             /** Character Name */
             character_name: string;
-            /** Characters */
-            characters: components["schemas"]["VoiceCharacter"][];
             /** Community */
             community: boolean;
             /** Display Name */
@@ -63189,9 +63175,7 @@ export interface operations {
     };
     voice_endpoints_get_certificates_get_certificates: {
         parameters: {
-            query?: {
-                character_id?: number | null;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -63220,9 +63204,7 @@ export interface operations {
     };
     voice_endpoints_delete_certificate_delete_certificate: {
         parameters: {
-            query?: {
-                character_id?: number | null;
-            };
+            query?: never;
             header?: never;
             path: {
                 certificate_id: number;
@@ -63256,11 +63238,7 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VoiceConnectRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {
@@ -63509,6 +63487,7 @@ export interface operations {
         parameters: {
             query?: {
                 redirect_url?: string;
+                state?: string;
             };
             header?: never;
             path?: never;
@@ -63527,9 +63506,7 @@ export interface operations {
     };
     voice_endpoints_get_status_get_status: {
         parameters: {
-            query?: {
-                character_id?: number | null;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;

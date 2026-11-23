@@ -9,6 +9,7 @@ from django.test import Client
 from django.utils import timezone
 
 from app.testing import make_token
+from fleets.helpers.copy_fleet import _copy_request
 from fleets.models import EveFleetAudience, FleetVoiceOption
 from fleets.motd import get_motd
 from fleets.tests import setup_fleet_reference_data
@@ -63,6 +64,19 @@ class VoiceOptionTest(VoiceTestCase):
         self.assertFalse(plain.json()["uses_mumble"])
         mumble = self.create(voice_option_id=self.mumble.id).json()
         self.assertTrue(mumble["uses_mumble"])
+
+    def test_copying_a_fleet_whose_option_was_switched_off_uses_the_default(
+        self,
+    ):
+        fleet = self.fleet(self.fc_user)
+        self.mumble.is_active = False
+        self.mumble.save()
+        request = _copy_request(fleet, timezone.now() + timedelta(days=7), [])
+        self.assertIsNone(request.voice_option_id)
+        self.mumble.is_active = True
+        self.mumble.save()
+        request = _copy_request(fleet, timezone.now() + timedelta(days=7), [])
+        self.assertEqual(request.voice_option_id, self.mumble.id)
 
     def test_voice_options_lists_active_ones(self):
         body = (

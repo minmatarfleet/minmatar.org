@@ -1,7 +1,5 @@
 """DELETE /api/voice/certificates/{id}: forget a Mumble certificate."""
 
-from typing import Optional
-
 from app.errors import ErrorResponse
 from voice.endpoints.base import router
 from voice.identity import VoiceAuth, request_identity
@@ -19,10 +17,8 @@ from voice.publisher import (
     auth=VoiceAuth(),
     response={204: None, 404: ErrorResponse},
 )
-def delete_certificate(
-    request, certificate_id: int, character_id: Optional[int] = None
-):
-    identity = request_identity(request, character_id)
+def delete_certificate(request, certificate_id: int):
+    identity = request_identity(request)
     cert = (
         identity.certificates.filter(id=certificate_id).first()
         if identity

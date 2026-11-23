@@ -6,11 +6,6 @@ from typing import Optional
 from ninja import Schema
 
 
-class VoiceCharacter(Schema):
-    character_id: int
-    character_name: str
-
-
 class VoiceFleetAccess(Schema):
     fleet_id: int
     branch: int
@@ -31,12 +26,6 @@ class VoiceStatusResponse(Schema):
     certificate_count: int
     # "guest" (EVE sign-in on /voice) or "member" (site account)
     signed_in_as: str
-    # A member's characters, to pick which one connects
-    characters: list[VoiceCharacter]
-
-
-class VoiceConnectRequest(Schema):
-    character_id: Optional[int] = None
 
 
 class VoiceConnectResponse(Schema):

@@ -127,6 +127,30 @@ class AuthenticatorTest(unittest.TestCase):
     def test_unknown_token_refused(self):
         self.assertEqual(self.auth(pw="bad").result, -1)
 
+    def test_refused_certificate_lets_a_fresh_token_move_it(self):
+        # The certificate's character is no longer the account's main; the
+        # new main's token may take it over (Django checks the account).
+        publish(
+            self.redis,
+            {**self.record, "admitted": False, "reason": "not_main"},
+            certs=["bound-cert"],
+        )
+        new_main = {**self.record, "identity_id": 7, "character_id": 7}
+        self.internal.records["token:fresh"] = new_main
+        decision = self.auth(pw="fresh", cert="bound-cert")
+        self.assertEqual(decision.result, 7)
+        self.assertEqual(self.internal.redeemed, [("fresh", "bound-cert")])
+
+    def test_refused_certificate_stays_refused_without_a_valid_token(self):
+        publish(
+            self.redis,
+            {**self.record, "admitted": False, "reason": "not_main"},
+            certs=["bound-cert"],
+        )
+        decision = self.auth(pw="bad", cert="bound-cert")
+        self.assertEqual(decision.result, -1)
+        self.assertEqual(decision.reason, "not_main")
+
     def test_server_groups_come_from_the_record(self):
         commander = contract("record_commander.json")
         publish(self.redis, commander, certs=["fc-cert"])
@@ -261,6 +285,25 @@ class ReconcileTest(unittest.TestCase):
         )
         self.reconciler.tick()
         self.assertEqual(self.murmur.kicked, [(11, "bye")])
+
+    def test_one_failing_pilot_does_not_stop_the_others(self):
+        self.murmur.connect(10, self.fc["identity_id"], self.ids.lobby)
+        self.murmur.connect(11, 2, self.ids.lobby)
+        original = self.reconciler._reconcile_user
+        seen = []
+
+        def flaky(user, leases):
+            seen.append(user.session)
+            if user.session == 10:
+                raise RuntimeError("session ended mid-tick")
+            original(user, leases)
+
+        self.reconciler._reconcile_user = flaky
+        self.reconciler.tick()
+        self.assertEqual(sorted(seen), [10, 11])
+        self.assertEqual(
+            self.murmur.users()[11].channel, self.ids.subchannels[1][L.LOGISTICS]
+        )
 
     def test_a_missing_record_does_not_drop_a_connected_pilot(self):
         self.murmur.connect(30, 999, self.ids.lobby)

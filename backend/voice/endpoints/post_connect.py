@@ -1,10 +1,10 @@
-"""POST /api/voice/connect: a one-time mumble:// link for this character."""
+"""POST /api/voice/connect: a one-time mumble:// link for the main."""
 
 from app.errors import ErrorResponse
 from voice.access import voice_record
 from voice.connect import TOKEN_TTL, mint_token, mumble_url
 from voice.endpoints.base import router
-from voice.endpoints.schemas import VoiceConnectRequest, VoiceConnectResponse
+from voice.endpoints.schemas import VoiceConnectResponse
 from voice.identity import VoiceAuth, request_identity
 from voice.publisher import publish_character
 
@@ -23,8 +23,8 @@ from voice.publisher import publish_character
         404: ErrorResponse,
     },
 )
-def post_connect(request, payload: VoiceConnectRequest):
-    identity = request_identity(request, payload.character_id)
+def post_connect(request):
+    identity = request_identity(request)
     if identity is None:
         return 404, ErrorResponse(detail="No character to connect with.")
     record = voice_record(identity.character_id)

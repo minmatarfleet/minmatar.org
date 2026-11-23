@@ -224,6 +224,58 @@ class GrantSyncTest(VoiceTestCase):
         )
         self.assertEqual(self.roles(unsure_char.character_id), set())
 
+    def test_an_alt_in_fleet_gives_the_grant_to_the_main(self):
+        user, main = self.pilot("flies an alt", "Alliance")
+        alt = self.alt(user, "the alt")
+        self.member(alt.character_id, _ship(11978, "Logistics"), wing_id=4)
+        grants.sync_fleet(self.fleet_)
+        self.assertEqual(self.roles(alt.character_id), set())
+        self.assertIn(
+            (VoiceGrant.SOURCE_IN_FLEET, VoiceGrant.ROLE_MEMBER),
+            self.roles(main.character_id),
+        )
+        grant = VoiceGrant.objects.get(
+            character_id=main.character_id, source=VoiceGrant.SOURCE_IN_FLEET
+        )
+        self.assertTrue(grant.logistics)
+        self.assertEqual(grant.wing_id, 4)
+
+    def test_backing_out_ends_the_grant_but_not_a_co_fc(self):
+        user, character = self.pilot("volunteer", "Alliance")
+        volunteer = EveFleetRoleVolunteer.objects.create(
+            eve_fleet=self.fleet_,
+            character_id=character.character_id,
+            character_name="volunteer",
+            role="scout",
+        )
+        VoiceGrant.objects.create(
+            character_id=character.character_id,
+            fleet=self.fleet_,
+            source=VoiceGrant.SOURCE_CO_FC,
+            role=VoiceGrant.ROLE_COMMANDER,
+        )
+        grants.sync_fleet(self.fleet_)
+        self.assertIn(
+            (VoiceGrant.SOURCE_VOLUNTEER, VoiceGrant.ROLE_MEMBER),
+            self.roles(character.character_id),
+        )
+        volunteer.delete()
+        changed = grants.sync_fleet(self.fleet_)
+        self.assertIn(character.character_id, changed)
+        self.assertEqual(
+            self.roles(character.character_id),
+            {(VoiceGrant.SOURCE_CO_FC, VoiceGrant.ROLE_COMMANDER)},
+        )
+        del user
+
+    def test_leaving_the_in_game_fleet_ends_the_grant(self):
+        member = self.member(3010, _ship(587, "Frigate"))
+        grants.sync_fleet(self.fleet_)
+        self.assertTrue(self.roles(3010))
+        member.delete()
+        grants.sync_fleet(self.fleet_)
+        self.assertEqual(self.roles(3010), set())
+
     def test_a_kick_lasts_for_the_lease(self):
         self.member(3003, _ship(587, "Frigate"))
         grants.sync_fleet(self.fleet_)

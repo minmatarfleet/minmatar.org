@@ -16,7 +16,7 @@ from django.utils import timezone
 from app.celery import app
 from fleets.models import EveFleet, EveFleetInstance
 from voice import grants, leases, publisher, store
-from voice.models import VoiceChannelLease, VoiceIdentity
+from voice.models import VoiceChannelLease, VoiceGrant, VoiceIdentity
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +83,21 @@ def expire_grants():
 def rebuild_records():
     """Hourly: republish everything, so drift never lasts."""
     return publisher.rebuild_all()
+
+
+@app.task(expires=5 * 60)
+def publish_fleet_wing_pilots(fleet_id: int):
+    """The FC changed the wing map: republish this fleet's pilots who have
+    a wing (nobody else's placement can change)."""
+    publisher.publish_characters(
+        VoiceGrant.objects.filter(
+            fleet_id=fleet_id,
+            expires_at__isnull=True,
+            wing_id__isnull=False,
+        )
+        .values_list("character_id", flat=True)
+        .distinct()
+    )
 
 
 @app.task(expires=60)

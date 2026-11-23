@@ -6,19 +6,16 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
-import { get_voice_session, parse_character_id } from '@helpers/voice_session'
+import { get_voice_session } from '@helpers/voice_session'
 import { post_voice_connect } from '@helpers/api.minmatar.org/voice'
 
 const session = get_voice_session(Astro)
 if (!session || Astro.request.method !== 'POST')
     return HTTP_404_Not_Found()
 
-const form = await Astro.request.formData()
-const character_id = parse_character_id(form.get('character_id'))
-
 let url: string | null = null
 try {
-    url = (await post_voice_connect(session.token, character_id))?.url ?? null
+    url = (await post_voice_connect(session.token))?.url ?? null
 } catch (error) {
     console.log(`Voice connect failed: ${error.message}`)
 }

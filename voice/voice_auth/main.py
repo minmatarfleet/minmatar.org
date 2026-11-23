@@ -103,15 +103,24 @@ class IceServer:
         ]
         self.server.setACL(channel_id, acls, group_list, inherit)
 
+    # A pilot can disconnect between getUsers() and any call for them:
+    # Murmur then raises InvalidSessionException, which is nothing to do.
+
     def move(self, session, channel_id):
-        state = self.server.getState(session)
-        state.channel = channel_id
-        self.server.setState(state)
+        try:
+            state = self.server.getState(session)
+            state.channel = channel_id
+            self.server.setState(state)
+        except self.M.InvalidSessionException:
+            pass
 
     def set_priority(self, session, value):
-        state = self.server.getState(session)
-        state.prioritySpeaker = bool(value)
-        self.server.setState(state)
+        try:
+            state = self.server.getState(session)
+            state.prioritySpeaker = bool(value)
+            self.server.setState(state)
+        except self.M.InvalidSessionException:
+            pass
 
     def kick(self, session, reason):
         try:
@@ -126,10 +135,16 @@ class IceServer:
             pass
 
     def add_group(self, channel_id, session, group):
-        self.server.addUserToGroup(channel_id, session, group)
+        try:
+            self.server.addUserToGroup(channel_id, session, group)
+        except self.M.InvalidSessionException:
+            pass
 
     def remove_group(self, channel_id, session, group):
-        self.server.removeUserFromGroup(channel_id, session, group)
+        try:
+            self.server.removeUserFromGroup(channel_id, session, group)
+        except self.M.InvalidSessionException:
+            pass
 
     def update_certificate(self, cert, key):
         self.server.updateCertificate(cert, key, "")

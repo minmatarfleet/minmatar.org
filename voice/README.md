@@ -8,7 +8,7 @@ Django decides who may connect (`backend/voice/`); this service obeys. It holds 
 |---|---|
 | `MumbleServer.ice` | The Ice interface, pinned to the Murmur image (`mumblevoip/mumble-server:v1.5.939`). Update both together. |
 | `voice_auth/main.py` | Ice setup, authenticator registration, reconnect loop. The only Ice-specific code. |
-| `voice_auth/authenticator.py` | The login decision: bound certificate, else one-time token; `-1` refuse, `-3` try later. `SuperUser` always refused; an empty certificate hash never matches. |
+| `voice_auth/authenticator.py` | The login decision: bound certificate, else one-time token (also tried when the certificate's record is refused, so a new main can take over its certificate); `-1` refuse, `-3` try later. `SuperUser` always refused; an empty certificate hash never matches. |
 | `voice_auth/records.py` | Reads records from Redis; on a miss asks Django's `/api/voice/internal/` through the edge's `internal` entrypoint. |
 | `voice_auth/reconcile.py` | Every 5 s and on `voice:changed`: lease ends, website kicks, branch groups, one-time placement, priority speakers. |
 | `voice_auth/layout.py` | The channels and ACLs, applied idempotently at start. |
