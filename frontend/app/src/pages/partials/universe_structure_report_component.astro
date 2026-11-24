@@ -49,7 +49,8 @@ const go = text('go') || 'find'
 
 // The structures in that system like the one described, or an error for an unknown system.
 const find_candidates = async () => {
-    if (!state.system_name || state.type_id === null) throw new Error(t('universe.report.unknown_system'))
+    if (state.type_id === null) throw new Error(t('universe.report.no_type'))
+    if (!state.system_name) throw new Error(t('universe.report.unknown_system'))
     const match = await match_universe_structures(auth_token, state.system_name, state.type_id, state.name)
     if (!match?.system_found) throw new Error(t('universe.report.unknown_system'))
     return match.candidates
