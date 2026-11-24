@@ -68,7 +68,7 @@ class TribeGroupSchema(BaseModel):
     # Viewer flags: the executor appoints; anyone may volunteer once per
     # group. Open seats beside filled ones take volunteers too.
     can_appoint_chief: bool = False
-    # The viewer is a superuser and can swap any seat's chief.
+    # The viewer has tribes.structure.manage and can swap any seat's chief.
     can_set_chief: bool = False
     has_volunteered: bool = False
     is_active: bool

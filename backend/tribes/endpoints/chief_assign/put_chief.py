@@ -1,4 +1,4 @@
-"""PUT chief of a tribe or a group (superuser swap)."""
+"""PUT chief of a tribe or a group (tribes.structure.manage)."""
 
 from django.contrib.auth.models import User
 from ninja import Router
@@ -17,7 +17,7 @@ TRIBE_PATH = "/{tribe_id}/chief"
 GROUP_PATH = "/{tribe_id}/groups/{group_id}/chief"
 RESPONSES = {200: ChiefSeatSchema, 400: dict, 403: dict, 404: dict, 502: dict}
 ROUTE_SPEC = {
-    "summary": "Swap the chief of a seat, or empty it (superuser only).",
+    "summary": "Swap the chief of a seat, or empty it (tribes.structure.manage).",
     "response": RESPONSES,
     "auth": AuthBearer(),
 }

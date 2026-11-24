@@ -1,7 +1,5 @@
 """GET "/{tribe_id}" - tribe detail."""
 
-from ninja import Router
-
 from authentication import AuthOptional
 
 from tribes.endpoints.tribes.schemas import TribeSchema
@@ -16,8 +14,6 @@ ROUTE_SPEC = {
     "auth": AuthOptional(),
 }
 
-router = Router(tags=["Tribes"])
-
 
 def get_tribe(request, tribe_id: int):
     tribe = (
@@ -30,6 +26,3 @@ def get_tribe(request, tribe_id: int):
     if not tribe:
         return 404, {"detail": "Tribe not found."}
     return 200, serialize_tribe(tribe, request_user=request.user)
-
-
-router.get(PATH, **ROUTE_SPEC)(get_tribe)

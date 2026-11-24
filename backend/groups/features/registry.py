@@ -391,6 +391,17 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         ),
         default_auth_group_names=_aff("People Team"),
     ),
+    "tribes.structure.manage": FeatureDefinition(
+        code="tribes.structure.manage",
+        label="Create and archive tribes and groups",
+        scope=FeatureScope.AUTH_GROUP,
+        description=(
+            "Create, rename and archive tribes and tribe groups, and change "
+            "any chief. The linked Discord role is made automatically."
+        ),
+        default_auth_group_names=_aff("People Team"),
+        legacy_permission="tribes.change_tribe",
+    ),
     "fittings.doctrine.approve": FeatureDefinition(
         code="fittings.doctrine.approve",
         label="Approve doctrine changes",

@@ -5,6 +5,7 @@ from groups.helpers.feature_access import (
     tribe_group_effective_affiliation_ids,
 )
 from groups.models import AffiliationType
+from tribes.helpers.structure import can_manage_structure
 from tribes.endpoints.groups.rank_serializers import (
     serialize_tribe_group_ranks,
 )
@@ -183,7 +184,7 @@ def serialize_tribe_group(
         acting_chief=acting_ref,
         chief_is_interim=acting.is_interim,
         can_appoint_chief=can_appoint_chief,
-        can_set_chief=bool(getattr(request_user, "is_superuser", False)),
+        can_set_chief=can_manage_structure(request_user),
         has_volunteered=has_volunteered,
         is_active=tg.is_active,
         member_count=member_count,
