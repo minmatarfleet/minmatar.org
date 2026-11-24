@@ -40,6 +40,7 @@ from campaigns.endpoints import post_discord_report  # noqa: F401
 from campaigns.endpoints import get_discord_links  # noqa: F401
 from campaigns.endpoints import patch_discord_link  # noqa: F401
 from campaigns.endpoints import delete_discord_link  # noqa: F401
+from campaigns.endpoints import get_role_suggestions  # noqa: F401
 from campaigns.endpoints import get_roles  # noqa: F401
 from campaigns.endpoints import post_roles_sync  # noqa: F401
 from campaigns.endpoints import post_role_member  # noqa: F401

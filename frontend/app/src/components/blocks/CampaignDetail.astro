@@ -84,6 +84,7 @@ const TABS = campaign_tabs({
     before_start,
     coordinator_scopes: is_coordinator ? campaign.coordinator_scopes : null,
     has_roles: (campaign.viewer_roles ?? []).length > 0,
+    can_link_discord: (campaign.can_edit ?? []).includes('discord'),
 })
 const tab_label = (tab:string) => tab === 'settings'
     ? t('campaigns.manage.tab')

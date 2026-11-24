@@ -65,7 +65,7 @@ character nobody owns yet gets it when someone signs in with it
 
 ## Campaign roles
 
-Four roles, Coordinator, FC, Diplomat and Recon (`CampaignRole`), mirror
+Five roles, Coordinator, FC, Diplomat, Recon and IT (`CampaignRole`), mirror
 roles on the campaign's coordination Discord server
 (`services/roles.py`). **Discord decides who holds them**: the 15-minute
 `sync_all_campaign_roles` beat (and Sync now on the Roles tab) reads the
@@ -78,17 +78,49 @@ A role holder sees an undisclosed campaign (viewer role `coordinator`) and:
 
 | Role | Reads | Changes |
 | --- | --- | --- |
-| Coordinator | sides, structures, timers, fleets, fittings | sides, structures, timers, who holds roles |
+| Coordinator | sides, structures, timers, fleets, fittings | sides, structures, timers, who holds roles, their own Discord server |
 | FC | structures, timers, fleets, fittings | campaign fleets, private ones included |
 | Diplomat | sides | sides |
 | Recon | structures, timers | structures, timers |
+| IT | nothing | their own Discord server |
+
+IT is an allied alliance's tech person: they add our bot to their
+alliance's Discord server and pick its channels (`CampaignDiscordLink`),
+without reading the plan. Linking a server is the `discord` area: managers,
+Coordinator and IT role holders, and coordinators invited before roles
+(`discord_link_helpers.links_own_server`). FC, Diplomat and Recon do not
+link servers, and the Discord tab shows only for those who may.
 
 Settings, disclosure, the order, the theater and the Discord role mapping
 stay with managers. Adding someone by character makes a pending `site` row
 that already counts on the site; once its owner links Discord and is on the
 server, the sync gives them the Discord role. Removing someone takes the
-Discord role away too. Invited coordinators (`CampaignCoordinator`) keep
-working unchanged, with `coordinator_scopes`.
+Discord role away too. The owner of an added character gets a DM naming
+the role. Invited coordinators (`CampaignCoordinator`) keep working
+unchanged, with `coordinator_scopes`; new invites always carry a role.
+
+### Inviting from the coordination Discord
+
+Settings → Coordinators invites by character with a role picker, and lists
+everyone on the campaign's own coordination server
+(`GET /{slug}/roles/suggestions`, `services/role_suggestions.py`, cached
+and rebuilt by every role sync, so the page never waits on Discord and ESI) with the character each one most likely
+flies: `linked` (their Discord is linked on the site, so their main),
+`site` (a cleaned nickname, display name or username is a character here)
+or `esi` (the same names, by ESI's exact-name lookup). Tickers in brackets
+and `| suffixes` are dropped first, and the account username counts only
+when the member set no server nickname or display name. The ticker they
+wear (`[FRONT] Aiel` → `FRONT`) groups the list and checks the guess: when
+the character's corporation and alliance tickers don't include it, the row
+is a `mismatch` (most likely a name twin) and inviting it needs the
+character named. Tickers are looked up only as needed: the alliance's
+first, the corporation's only when that is no match. The guess is stored only when someone
+invites that member (`POST /{slug}/roles/{kind}/members` with
+`discord_user_id`, optionally overriding `character_name`): with the role
+mapped to a Discord role they get it there at once and the row is a
+`discord` one; otherwise it is a `site` row tied to their Discord id. A
+sync keeps the invited character on a `discord` row until its holder links
+Discord. Our alliance server is never listed.
 
 A private fleet can count towards an undisclosed campaign only, and only
 someone who may see the campaign can attach a fleet to it. The fleet list's

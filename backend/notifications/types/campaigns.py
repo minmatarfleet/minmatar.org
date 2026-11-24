@@ -8,24 +8,46 @@ from notifications.registry import NotificationType, register
 
 CAMPAIGN_COORDINATOR_INVITED_KEY = "campaigns.coordinator_invited"
 
+# Campaign roles (``campaigns.services.roles``), as the DM names them.
+ROLE_NAMES = {
+    "coordinator": "a Coordinator",
+    "fc": "an FC",
+    "diplomat": "a Diplomat",
+    "recon": "Recon",
+}
+
 
 def render_coordinator_invited(ctx: dict) -> dict:
     campaign = ctx["campaign_name"]
     character = ctx["character_name"]
     inviter = ctx.get("inviter") or "Minmatar Fleet"
     url = ctx.get("url") or ""
-    title = f"You’re a coordinator for {campaign}"
-    body = (
-        f"{inviter} invited {character} to help coordinate {campaign}. "
-        "Open the campaign page to see the plan, and add our bot to your "
-        "Discord server to get its timers and fleet pings there."
-    )
-    description = (
-        f"**{inviter}** invited **{character}** to help coordinate "
-        f"**{campaign}**.\nOpen the campaign page to see the plan, and add "
-        "our bot to your Discord server to get its timers and fleet pings "
-        "there."
-    )
+    role = ROLE_NAMES.get(ctx.get("role") or "")
+    if role:
+        title = f"You’re {role} for {campaign}"
+        body = (
+            f"{inviter} invited {character} to {campaign} as {role}. "
+            "Open the campaign page to see the plan, even before it is "
+            "announced."
+        )
+        description = (
+            f"**{inviter}** invited **{character}** to **{campaign}** as "
+            f"{role}.\nOpen the campaign page to see the plan, even before "
+            "it is announced."
+        )
+    else:
+        title = f"You’re a coordinator for {campaign}"
+        body = (
+            f"{inviter} invited {character} to help coordinate {campaign}. "
+            "Open the campaign page to see the plan, and add our bot to "
+            "your Discord server to get its timers and fleet pings there."
+        )
+        description = (
+            f"**{inviter}** invited **{character}** to help coordinate "
+            f"**{campaign}**.\nOpen the campaign page to see the plan, and "
+            "add our bot to your Discord server to get its timers and fleet "
+            "pings there."
+        )
     embed = {
         "author": {"name": "Campaigns"},
         "color": feature_color("campaigns"),
