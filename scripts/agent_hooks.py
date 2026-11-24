@@ -9,6 +9,8 @@ Two hooks, registered in `.claude/settings.json` (and generated into
   request also `scripts/check_pull_request.py` on its description. A
   failure blocks the command and tells the agent why. `gh pr edit --body`
   checks only the description.
+  `gh issue create` runs `scripts/check_issue.py` on its labels and body: a
+  type label, and for a significant feature a design or a person's sign-off.
 - post-edit: after an agent edits a backend or bot Python file, report
   flake8 errors; a backend file is formatted with black first.
 
@@ -47,6 +49,8 @@ QUOTED = re.compile(r"'[^']*'|\"(?:\\.|[^\"\\])*\"")
 SEPARATOR = r"(?:^|[;&|(\n]|\$\()\s*(?:[A-Z_]+=\S*\s+)*"
 GIT_PUSH = re.compile(SEPARATOR + r"git\s+(?:-C\s+(\S+)\s+)?push\b(.*)", re.M)
 GH_PR = re.compile(SEPARATOR + r"gh\s+pr\s+(create|ready|edit)\b(.*)", re.M)
+GH_ISSUE = re.compile(SEPARATOR + r"gh\s+issue\s+create\b(.*)", re.M)
+LABEL = re.compile(r"(?:^|\s)(?:--label|-l)(?:=|\s+)('[^']*'|\"(?:\\.|[^\"\\])*\"|\S+)")
 CD = re.compile(SEPARATOR + r"cd\s+(\S+)", re.M)
 
 
@@ -188,8 +192,67 @@ def _check_body(repo: Path, body: str) -> tuple[bool, str]:
     return ok, "\n".join(errors) or text
 
 
+def issue_labels(command: str) -> list[str]:
+    """Every label a `gh issue create` passes (repeated or comma-separated)."""
+    text = HEREDOC.sub("", command)
+    return [
+        part.strip()
+        for match in LABEL.finditer(text)
+        for part in _unquote(match.group(1)).split(",")
+        if part.strip()
+    ]
+
+
+def _check_issue(repo: Path, body: str, labels: list[str]) -> tuple[bool, str]:
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".md", delete=False, encoding="utf-8"
+    ) as out:
+        out.write(body)
+    try:
+        return _run(
+            repo,
+            [
+                "python3",
+                "scripts/check_issue.py",
+                "--body-file",
+                out.name,
+                "--labels",
+                ",".join(labels),
+            ],
+        )
+    finally:
+        os.unlink(out.name)
+
+
 def _ci(repo: Path) -> tuple[bool, str]:
     return _run(repo, ["python3", "scripts/ci_local.py"])
+
+
+def _issue_problems(command: str, blank: str, cwd: Path) -> list[str]:
+    """Why a `gh issue create` in the command must not run yet."""
+    problems: list[str] = []
+    for match in GH_ISSUE.finditer(blank):
+        where = _directory(blank, match, cwd)
+        repo = _repo(where)
+        if not repo or not (repo / "scripts" / "check_issue.py").exists():
+            continue
+        if re.search(r"(^|\s)(--web|-w)\b", match.group(1)):
+            continue  # the browser form applies the labels itself
+        body, why = pr_body(command, where)
+        if body is None and why != "no --body or --body-file":
+            problems.append(
+                f"Can't check the issue body: {why}. Write it to a file and "
+                "pass `--body-file <file>` so the hook can run "
+                "scripts/check_issue.py on it."
+            )
+            continue
+        ok, text = _check_issue(repo, body or "", issue_labels(command))
+        if not ok:
+            problems.append(
+                "The issue isn't ready to open (scripts/check_issue.py, "
+                ".claude/rules/issues.md):\n" + text
+            )
+    return problems
 
 
 def gate(command: str, cwd: Path) -> str | None:
@@ -207,8 +270,7 @@ def gate(command: str, cwd: Path) -> str | None:
         ok, text = _ci(repo)
         if not ok:
             problems.append(
-                "CI checks failed (scripts/ci_local.py). Fix these first:\n"
-                + text
+                "CI checks failed (scripts/ci_local.py). Fix these first:\n" + text
             )
 
     for match in GIT_PUSH.finditer(blank):
@@ -259,6 +321,8 @@ def gate(command: str, cwd: Path) -> str | None:
                 )
         if verb in ("create", "ready"):
             ci(repo)
+
+    problems.extend(_issue_problems(command, blank, cwd))
 
     if not problems:
         return None
@@ -370,9 +434,7 @@ def post_edit(path_text: str) -> tuple[str | None, bool]:
             capture_output=True,
         )
         if path.read_bytes() != before:
-            notes.append(
-                f"black reformatted {rel}; read it before editing it again."
-            )
+            notes.append(f"black reformatted {rel}; read it before editing it again.")
 
     flake8 = _tool(repo, "flake8")
     if flake8:

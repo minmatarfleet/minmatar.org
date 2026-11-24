@@ -38,6 +38,7 @@ A warm backend run takes under a minute; the first run in a new worktree migrate
   - `git push` runs `ci_local.py`. Deleting a branch, pushing tags and dry runs are not checked.
   - `gh pr create` and `gh pr ready` also run `scripts/check_pull_request.py` on the description. Drafts skip the description, as CI does.
   - `gh pr edit --body ...` checks only the description, and not on a draft.
+  - `gh issue create` runs `scripts/check_issue.py` on its `--label`s and body: at least one type label from `.github/labels.json`, and for a significant feature a design link or a person's sign-off (`.claude/rules/issues.md`). `--web` isn't checked; the browser form sets the labels.
   - A failure blocks the command and tells the agent what failed.
   - The hook reads the description from `--body-file`, from a heredoc (`--body "$(cat <<'EOF' ...)"`) or from a quoted `--body`. When it can't read it, it asks for `--body-file`.
 - **After a file edit** (Claude `PostToolUse` on Edit/Write, Cursor `postToolUse` on Write): a backend `.py` file is formatted with black, and a backend or bot `.py` file is checked with flake8 (`bot/` isn't black-formatted). Errors go back to the agent.

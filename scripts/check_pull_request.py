@@ -5,6 +5,11 @@ The template asks for the quality controls every pull request goes through.
 This script reads the description and the files the pull request changes and
 fails when a control that applies is missing:
 
+- Issue: every pull request says which issue it closes ("Closes #123") or
+  refers to ("Refs #123"), or ticks "No issue for this change" and says why.
+- Screenshots: a change to what the website (`frontend/app/src/`) or the
+  desktop app (`desktop/src/renderer/`) shows needs "Screenshots below"
+  ticked and at least one image, or "No visible change" and a reason.
 - Frontend review: a change under `frontend/app/` needs "Ran the frontend
   review on the final diff" ticked and the frontend-review skill's result.
 - Backend review: a change under `backend/` or `bot/` needs "Ran the backend
@@ -38,6 +43,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 FRONTEND_PREFIXES = ("frontend/app/",)
 BACKEND_PREFIXES = ("backend/", "bot/")
+VISIBLE_PREFIXES = ("frontend/app/src/", "desktop/src/renderer/")
 RUST_LIBRARY = "frontend/app/rust/library.ts"
 COMPONENTS = "frontend/app/src/components/"
 COMPOSITIONS = "frontend/app/src/components/compositions/"
@@ -59,10 +65,30 @@ HEADING = re.compile(r"^##\s+(.+?)\s*$", re.M)
 LIBRARY_ENTRY = re.compile(r"'((?:[\w-]+/)+[\w-]+)'")
 HANDLE = re.compile(r"@([A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)")
 PLACEHOLDER = re.compile(r"<short sha>|<one line per")
+# "Closes #12", "fixes owner/repo#12", "Refs https://github.com/o/r/issues/12".
+ISSUE_REF = r"(?:[\w.-]+/[\w.-]+)?#\d+|https://github\.com/[\w.-]+/[\w.-]+/issues/\d+"
+CLOSES = re.compile(
+    r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s*:?\s+(?:" + ISSUE_REF + ")",
+    re.I,
+)
+REFERS = re.compile(
+    r"\b(?:refs?|references|related(?:\s+to)?|part\s+of|see|follow-up\s+to)"
+    r"\s*:?\s+(?:" + ISSUE_REF + ")",
+    re.I,
+)
+BARE_ISSUE = re.compile(ISSUE_REF)
+IMAGE = re.compile(
+    r"!\[[^\]]*\]\(\s*\S+?\s*\)|<img\b[^>]*\bsrc\s*=|"
+    r"https://github\.com/user-attachments/assets/\S+",
+    re.I,
+)
+MIN_REASON = 10
 
 # Labels in the order they appear, per section, so a field's text runs up to
 # the next label.
 LABELS = {
+    "issue": ["Issue"],
+    "screenshots": ["Screenshots"],
     "frontend review": ["Result"],
     "backend review": ["Result"],
     "rust component library": [
@@ -73,6 +99,9 @@ LABELS = {
     "documentation": ["Docs updated, or why none needed"],
 }
 MIN_JUSTIFICATION = 40
+# Sections only a pull request that needs them must have, so a description
+# written before the section existed still passes when it doesn't apply.
+OPTIONAL_SECTIONS = {"screenshots"}
 
 
 # --- Description parsing ---------------------------------------------------
@@ -84,27 +113,19 @@ def sections(body: str) -> dict[str, str]:
     found = {}
     matches = list(HEADING.finditer(text))
     for index, match in enumerate(matches):
-        end = (
-            matches[index + 1].start()
-            if index + 1 < len(matches)
-            else len(text)
-        )
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
         found[match.group(1).strip().lower()] = text[match.end() : end]
     return found
 
 
 def ticked(section: str, phrase: str) -> bool:
-    pattern = re.compile(
-        r"^\s*[-*]\s+\[[xX]\]\s+" + re.escape(phrase), re.M | re.I
-    )
+    pattern = re.compile(r"^\s*[-*]\s+\[[xX]\]\s+" + re.escape(phrase), re.M | re.I)
     return bool(pattern.search(section))
 
 
 def field(section: str, label: str, labels: list[str]) -> str:
     """Text after `label:`, up to the next label or checkbox; stripped."""
-    start = re.search(
-        r"^\s*" + re.escape(label) + r"\s*:", section, re.M | re.I
-    )
+    start = re.search(r"^\s*" + re.escape(label) + r"\s*:", section, re.M | re.I)
     if not start:
         return ""
     rest = section[start.end() :]
@@ -131,10 +152,7 @@ def is_doc(path: str) -> bool:
         (path.startswith("docs/") and path.endswith(".md"))
         or name in ("README.md", "AGENTS.md")
         or path.startswith((".claude/rules/", ".claude/skills/"))
-        or (
-            path.startswith("frontend/app/rust/docs/")
-            and name.endswith(".mdx")
-        )
+        or (path.startswith("frontend/app/rust/docs/") and name.endswith(".mdx"))
     )
 
 
@@ -203,7 +221,10 @@ def check(
     notices: list[str] = []
     found = sections(body)
 
+    visible = [p for p in changed if p.startswith(VISIBLE_PREFIXES)]
     for heading in LABELS:
+        if heading in OPTIONAL_SECTIONS and not visible:
+            continue
         if heading not in found:
             errors.append(
                 f'The description has no "## {heading.title()}" section. '
@@ -212,6 +233,9 @@ def check(
     if errors:
         return errors, notices
 
+    _issue(errors, found["issue"])
+    if visible:
+        _screenshots(errors, found["screenshots"], visible)
     _review(
         errors,
         found["frontend review"],
@@ -235,6 +259,57 @@ def check(
     return errors, notices
 
 
+def _issue(errors, section):
+    text = field(section, "Issue", LABELS["issue"])
+    no_issue = ticked(section, "No issue for this change")
+    linked = CLOSES.search(text) or REFERS.search(text)
+    if no_issue and CLOSES.search(text):
+        errors.append(
+            'Issue: "No issue for this change" is ticked, but the "Issue:" '
+            "line closes one. Untick the box or drop the Closes line."
+        )
+    elif no_issue:
+        if len(text) < MIN_REASON:
+            errors.append(
+                'Issue: say why there is no issue on the "Issue:" line (a '
+                "Sentry fix, a help ticket link, a follow-up to #N)."
+            )
+    elif not linked:
+        hint = (
+            " A bare #123 doesn't say which: write Closes or Refs before it."
+            if BARE_ISSUE.search(text)
+            else ""
+        )
+        errors.append(
+            'Issue: under "Issue:" write "Closes #123" when this pull '
+            'request finishes the issue, or "Refs #123" when it is part of '
+            'one; or tick "No issue for this change" and say why.' + hint
+        )
+
+
+def _screenshots(errors, section, visible):
+    sample = ", ".join(visible[:3]) + (" ..." if len(visible) > 3 else "")
+    shown = ticked(section, "Screenshots below")
+    invisible = ticked(section, "No visible change")
+    text = field(section, "Screenshots", LABELS["screenshots"])
+    if shown == invisible:
+        errors.append(
+            'Screenshots: tick exactly one of "Screenshots below" and "No '
+            f'visible change" (the pull request changes {sample}).'
+        )
+    elif shown and not IMAGE.search(text):
+        errors.append(
+            'Screenshots: "Screenshots below" is ticked, but there is no '
+            'image under "Screenshots:". Upload them with '
+            "scripts/pr_screenshots.py and paste the markdown it prints."
+        )
+    elif invisible and len(IMAGE.sub("", text).strip()) < MIN_REASON:
+        errors.append(
+            'Screenshots: say on the "Screenshots:" line why nothing '
+            f"visible changes (the pull request changes {sample})."
+        )
+
+
 def _review(errors, section, *, area, touched, none_box, ran_box, skill):
     if not touched:
         return
@@ -252,8 +327,7 @@ def _review(errors, section, *, area, touched, none_box, ran_box, skill):
     result = field(section, "Result", LABELS[f"{area} review"])
     if not result or PLACEHOLDER.search(result):
         errors.append(
-            f"{area.title()} review: paste the review's result under "
-            '"Result:".'
+            f"{area.title()} review: paste the review's result under " '"Result:".'
         )
 
 
@@ -308,18 +382,14 @@ def _docs(errors, notices, section, changed, docs):
             f"{doc} names {', '.join(paths[:3])}"
             for doc, paths in sorted(naming.items())[:10]
         )
-        notices.append(
-            f"Docs that name files this pull request changes: {listed}"
-        )
+        notices.append(f"Docs that name files this pull request changes: {listed}")
     if updated == unchanged:
         errors.append(
             'Documentation: tick exactly one of "Updated the docs this change '
             'affects" and "No documented behaviour changed".'
         )
         return
-    reason = field(
-        section, "Docs updated, or why none needed", LABELS["documentation"]
-    )
+    reason = field(section, "Docs updated, or why none needed", LABELS["documentation"])
     if updated and not docs_changed:
         errors.append(
             'Documentation: "Updated the docs this change affects" is '
@@ -382,9 +452,7 @@ def main(argv: list[str] | None = None) -> int:
         default="origin/main",
         help="branch the pull request merges into",
     )
-    parser.add_argument(
-        "--body-file", help="description file (default: $PR_BODY)"
-    )
+    parser.add_argument("--body-file", help="description file (default: $PR_BODY)")
     args = parser.parse_args(argv)
 
     if os.environ.get("PR_DRAFT") == "true":
@@ -419,9 +487,7 @@ def main(argv: list[str] | None = None) -> int:
             )
             out.write("\n")
             if notices:
-                out.write(
-                    "\n" + "\n".join(f"- ℹ️ {n}" for n in notices) + "\n"
-                )
+                out.write("\n" + "\n".join(f"- ℹ️ {n}" for n in notices) + "\n")
     if errors:
         print(
             f"\n{len(errors)} checklist item(s) to fix in the pull request description."
