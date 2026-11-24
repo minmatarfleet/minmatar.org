@@ -2,21 +2,38 @@
 // Starts the EVE sign-in for /voice. The random state goes in a cookie here
 // and through EVE SSO; /voice/login keeps the token only when they match,
 // so a link carrying someone else's token can't sign this browser in.
+// `?switch=1` (an alt was signed in) drops the current voice session first;
+// `?then=connect` (a returning pilot) opens Mumble straight after.
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
 import { get_app_url } from '@helpers/env'
-import { VOICE_LOGIN_STATE_COOKIE, VOICE_LOGIN_STATE_MINUTES, new_login_state } from '@helpers/voice_session'
+import {
+    VOICE_SESSION_COOKIE,
+    VOICE_LOGIN_STATE_COOKIE,
+    VOICE_LOGIN_STATE_MINUTES,
+    VOICE_LOGIN_THEN_COOKIE,
+    new_login_state,
+} from '@helpers/voice_session'
 import { voice_login_url } from '@helpers/api.minmatar.org/voice'
 
-const state = new_login_state()
-Astro.cookies.set(VOICE_LOGIN_STATE_COOKIE, state, {
+if (Astro.url.searchParams.get('switch') === '1')
+    Astro.cookies.delete(VOICE_SESSION_COOKIE, { path: '/' })
+
+const login_cookie = {
     path: '/',
     httpOnly: true,
     secure: import.meta.env.PROD,
-    sameSite: 'lax',
+    sameSite: 'lax' as const,
     maxAge: VOICE_LOGIN_STATE_MINUTES * 60,
-})
+}
+if (Astro.url.searchParams.get('then') === 'connect')
+    Astro.cookies.set(VOICE_LOGIN_THEN_COOKIE, 'connect', login_cookie)
+else
+    Astro.cookies.delete(VOICE_LOGIN_THEN_COOKIE, { path: '/' })
+
+const state = new_login_state()
+Astro.cookies.set(VOICE_LOGIN_STATE_COOKIE, state, login_cookie)
 
 return Astro.redirect(voice_login_url(`${get_app_url()}${translatePath('/voice/login')}`, state))
 ---

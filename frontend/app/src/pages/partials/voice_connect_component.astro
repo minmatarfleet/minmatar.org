@@ -1,9 +1,11 @@
 ---
 // no-error-refetch: a mutation (POST) that shows its failure inline next to the Connect button.
-// POST only: mints a one-time Mumble link. The token stays inside the link;
-// the page never shows it as text.
+// POST only: mints a one-time Mumble link and opens it straight away, so
+// Connect is one click. "Open Mumble" stays as the fallback, and a watcher
+// (voice_connected_component) tells the page once the pilot reaches the server.
+// The token stays inside the link; the page never shows it as text.
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import { get_voice_session } from '@helpers/voice_session'
@@ -20,15 +22,68 @@ try {
     console.log(`Voice connect failed: ${error.message}`)
 }
 
+const STATUS_PARTIAL_URL = translatePath('/partials/voice_status_component/')
+const WATCH_URL = `${translatePath('/partials/voice_connected_component/')}?since=${encodeURIComponent(new Date().toISOString())}`
+const swap_flow = (view: string) => ({ 'hx-get': `${STATUS_PARTIAL_URL}?view=${view}`, 'hx-target': '#voice-flow', 'hx-swap': 'outerHTML' })
+
 import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
+import Markdown from '@components/blocks/Markdown.astro'
 ---
 
 {url
-    ? <Flexblock>
-        <p>{t('voice.connect.ready')}</p>
-        <Button href={url} size="sm" color="green">{t('voice.connect.open')}</Button>
-        <small>{t('voice.connect.expires')}</small>
-    </Flexblock>
+    ? <div class="[ voice-opening ]" x-data x-init="window.location.href = $el.dataset.url" data-url={url}>
+        <Flexblock gap="var(--space-s)">
+            <small role="status" class="[ voice-live ]">{t('voice.opening.waiting')}</small>
+            <h3>{t('voice.opening.title')}</h3>
+            <Markdown markdown={t('voice.opening.text')} />
+            <FlexInline>
+                <Button href={url} size="sm" color="green">{t('voice.opening.open')}</Button>
+            </FlexInline>
+            <Flexblock gap="var(--space-2xs)">
+                <strong>{t('voice.opening.question')}</strong>
+                <FlexInline gap="var(--space-xs)">
+                    <Button size="sm" outline={true} {...swap_flow('keys')}>{t('voice.opening.yes')}</Button>
+                    <Button size="sm" outline={true} {...swap_flow('trouble')}>{t('voice.opening.no')}</Button>
+                </FlexInline>
+            </Flexblock>
+            <small class="[ voice-note ]">{t('voice.opening.expires')}</small>
+        </Flexblock>
+        <div hx-get={WATCH_URL} hx-trigger="load delay:5s" hx-swap="outerHTML"></div>
+    </div>
     : <p role="alert">{t('voice.connect.failed')}</p>
 }
+
+<style lang="scss">
+    .voice-opening {
+        padding: var(--space-m);
+        border: 1px solid var(--border-color-hover);
+        background: var(--surface-sunken);
+    }
+
+    .voice-note {
+        color: var(--faded);
+    }
+
+    .voice-live::before {
+        content: '';
+        display: inline-block;
+        width: var(--space-2xs);
+        height: var(--space-2xs);
+        margin-inline-end: var(--space-2xs);
+        border-radius: 50%;
+        background: var(--fleet-yellow);
+        animation: voice-pulse 1.6s ease-in-out infinite;
+    }
+
+    @keyframes voice-pulse {
+        50% { opacity: 0.25; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .voice-live::before {
+            animation: none;
+        }
+    }
+</style>
