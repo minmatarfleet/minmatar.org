@@ -55,6 +55,19 @@ the decision in the same thread reply.
 Do not use **3** for “please explain this screen” or expected denials —
 that is **1**. Do not use **1** when the code is wrong — that is **2**.
 
+**Every GitHub issue opened from a ticket gets a label**, set when it is
+created (`labels` on `issue_write`, never added later):
+
+- `bug` — the code is wrong and this run does not fix it (needs a call
+  on the fix, or is out of scope for a PR now).
+- `user-feedback` — a feature request, product question or policy
+  decision raised by a pilot (including “works as coded, but the rule
+  looks wrong”).
+
+Pick one; use both only when the ticket is a confirmed bug and also
+needs a product call. GitHub creates a missing label on first use. The
+issue body is scrubbed the same way as these files (§4a).
+
 **Always open a PR** before ending: stash unrelated dirty files, branch
 from latest `origin/main`, commit the product fix (if any) **and** the
 skill/learnings updates, then `gh pr create`. Skill-only PRs are required
