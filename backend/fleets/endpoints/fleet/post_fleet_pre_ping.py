@@ -39,6 +39,17 @@ def send_pre_ping(request, fleet_id):
     if fleet.invite_only:
         return 400, ErrorResponse(detail="A private fleet never pre-pings")
 
+    if (
+        fleet.host_group_id
+        and not fleet.host_group.effective_discord_channel_id
+    ):
+        return 400, ErrorResponse(
+            detail=(
+                "The group has no Discord channel, so nothing was posted. "
+                "A chief can set one in the group's settings."
+            )
+        )
+
     sent = send_discord_pre_ping(fleet)
 
     if sent:

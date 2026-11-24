@@ -85,7 +85,8 @@ if (Astro.request.method === "POST") {
             disable_motd: (data.get('disable_motd' as string) === 'on'),
             hide_volunteers: (data.get('hide_volunteers' as string) === 'on'),
             track_mining: (data.get('track_mining' as string) === 'on'),
-            immediate_ping: false, //(data.get('immediate_ping' as string) === 'on'),
+            // Only a group fleet can ask for a pre-ping here (a quiet one); alliance fleets don't pre-ping from the site.
+            immediate_ping: is_group_fleet && data.get('immediate_ping') === 'on',
             ...(host_fields && is_group_fleet && host_fields),
             // Private fleets are alliance fleets; the API checks the Strategic FC.
             invite_only: !is_group_fleet && data.get('invite_only') === 'on',

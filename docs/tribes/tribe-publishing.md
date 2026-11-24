@@ -15,10 +15,14 @@ file disagree, fix one of them in the same change.
 2. A members-only group item is never shown, listed, counted in alliance
    metrics, pinged or scheduled outside the group. Its existence may be
    revealed (the gate page names the group), its content may not.
-3. Group fleets never ping `@everyone` and never send a pre-ping. The only
-   fleet ping is the start ping from `EveFleet.notify_discord`. The alliance
-   does not do pre-pings: do not add any pre-ping UI or call
-   `send_discord_pre_ping` for a group fleet.
+3. Group fleets never ping `@everyone`. The ping that notifies members is
+   the start ping from `EveFleet.notify_discord`, with the group's role. A
+   group fleet may also send a **quiet pre-ping** so members know a fleet is
+   coming, for better turnout (`send_discord_pre_ping`): the "Pre-ping
+   quietly now" switch when scheduling, or the FC's Pre-ping button before
+   fleet time. It goes to the group's channel (else its tribe's), mentions
+   nobody and is sent as a Discord silent message (flag 4096), so nobody is
+   notified. Alliance fleets still have no pre-ping controls on the site.
 4. "Open to the alliance" only makes a group fleet visible. Its ping still
    goes to the group's channel with the group's role.
 5. Strategic fleets are alliance-only. A group fleet's type is
@@ -116,7 +120,8 @@ weekday as `starts_at` (e.g. 2nd Saturday).
     `fleets.create` feature is not required); `audience_id` is ignored and
     stored as None; type `strategic` (or a campaign type) is a 400;
     `open_to_alliance` needs `group.allow_open_fleets` (400 otherwise);
-    `on_schedule` is forced False unless open; `immediate_ping` is ignored.
+    `on_schedule` is forced False unless open; `immediate_ping` sends the
+    quiet group pre-ping (rule 3).
   - On `UpdateEveFleetRequest` the three fields default to null and are
     only applied when sent, so a PATCH that leaves them out keeps the
     fleet's flags. A group fleet is edited by its FC, a Strategic FC or a
@@ -150,6 +155,12 @@ weekday as `starts_at` (e.g. 2nd Saturday).
   `host_group_id` the group's fleet publishing right.
 - Start ping for a group fleet: effective group channel, content = role
   mention, AUDIENCE line = group name. No channel → no ping.
+- Pre-ping for a group fleet (`POST /api/fleets/{id}/preping`, creator only,
+  or `immediate_ping` on create): effective group channel, empty content,
+  `flags: 4096`, title "FLEET PRE-PING". No channel → 400 "The group has no
+  Discord channel, so nothing was posted." A start without an in-game fleet
+  posts nothing; the site says to create the fleet in EVE first, then click
+  Start fleet again.
 - `#schedule`: alliance part unchanged. If there are upcoming group fleets
   with `open_to_alliance and on_schedule`, append:
 

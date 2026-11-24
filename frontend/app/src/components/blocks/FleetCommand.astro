@@ -41,6 +41,7 @@ import FleetSetupSteps from '@components/blocks/FleetSetupSteps.astro'
             fleet_tracking={fleet.tracking}
             fleet_status={fleet.status}
             is_fleet_commander={is_fleet_commander}
+            is_group_fleet={Boolean(fleet.host_group)}
             fleet_tracking_texts={fleet_tracking_texts}
             disable_motd={fleet.disable_motd}
         />
