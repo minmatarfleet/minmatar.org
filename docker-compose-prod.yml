@@ -239,8 +239,10 @@ services:
             # the authenticator, nobody gets in.
             - MUMBLE_CONFIG_SERVERPASSWORD=${VOICE_SERVER_PASSWORD}
             - MUMBLE_SUPERUSER_PASSWORD=${VOICE_SUPERUSER_PASSWORD}
+            # Quote any entry with ": " in it, or YAML reads it as a map and
+            # compose refuses the file (test_compose_files checks).
             - MUMBLE_CONFIG_REGISTERNAME=Minmatar Fleet
-            - MUMBLE_CONFIG_WELCOMETEXT=Minmatar Fleet voice. Help: my.minmatar.org/voice
+            - "MUMBLE_CONFIG_WELCOMETEXT=Minmatar Fleet voice. Help: my.minmatar.org/voice"
             - MUMBLE_CONFIG_USERS=400
             - MUMBLE_CONFIG_BANDWIDTH=72000
             - MUMBLE_CONFIG_ALLOWPING=false
