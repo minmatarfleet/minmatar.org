@@ -7,6 +7,8 @@ layout, reconcile, certs) is plain Python and tested with fakes.
 
 from __future__ import annotations
 
+import concurrent.futures
+import faulthandler
 import logging
 import os
 import signal
@@ -22,6 +24,11 @@ from voice_auth.reconcile import Reconciler
 from voice_auth.records import CHANGED_CHANNEL, InternalClient, RecordStore
 
 logger = logging.getLogger("voice_auth")
+ice_logger = logging.getLogger("voice_auth.ice")
+
+# Size of voice-auth's Ice server thread pool, which runs the authenticator
+# servant. Ice defaults to 1: one slow login decision would hold up the next.
+SERVER_THREADS = 4
 
 SLICE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "MumbleServer.ice")
 
@@ -46,11 +53,46 @@ def load_slice():
     return Ice, MumbleServer
 
 
+class TimedProxy:
+    """Wraps an Ice proxy and logs each call at DEBUG: name and duration.
+
+    Off unless VOICE_LOG_LEVEL=DEBUG. The "start" line is what shows which
+    call hung when Murmur stops answering.
+    """
+
+    def __init__(self, target, clock=time.monotonic):
+        self._target = target
+        self._clock = clock
+
+    def __getattr__(self, name):
+        attr = getattr(self._target, name)
+        if not callable(attr) or not ice_logger.isEnabledFor(logging.DEBUG):
+            return attr
+
+        def call(*args, **kwargs):
+            ice_logger.debug("Ice %s: start", name)
+            start = self._clock()
+            try:
+                result = attr(*args, **kwargs)
+            except Exception as exc:
+                ice_logger.debug(
+                    "Ice %s: %s after %.3f s",
+                    name,
+                    type(exc).__name__,
+                    self._clock() - start,
+                )
+                raise
+            ice_logger.debug("Ice %s: %.3f s", name, self._clock() - start)
+            return result
+
+        return call
+
+
 class IceServer:
     """The few Murmur calls the logic needs, over one server proxy."""
 
     def __init__(self, server, MumbleServer):  # noqa: N803
-        self.server = server
+        self.server = server if isinstance(server, TimedProxy) else TimedProxy(server)
         self.M = MumbleServer
 
     def users(self):
@@ -163,8 +205,15 @@ def configure_properties(props, cfg: config.Config) -> None:
     not be able to reach (setAuthenticator then raises
     InvalidCallbackException). Murmur resolves the published name on the
     network it shares with us.
+
+    Ice.Default.InvocationTimeout applies to every proxy this communicator
+    makes, including the ones Murmur hands back (getServer), so no call to
+    Murmur can wait forever: it raises, and run() reconnects.
     """
     props.setProperty("Ice.ImplicitContext", "Shared")
+    props.setProperty("Ice.Default.InvocationTimeout", str(cfg.ice_timeout_ms))
+    props.setProperty("Ice.ThreadPool.Server.Size", str(SERVER_THREADS))
+    props.setProperty("Ice.ThreadPool.Server.SizeMax", str(SERVER_THREADS))
     props.setProperty("Ice.Default.EncodingVersion", "1.0")
     props.setProperty("Ice.MessageSizeMax", "65536")
     props.setProperty(
@@ -176,12 +225,16 @@ def configure_properties(props, cfg: config.Config) -> None:
     )
 
 
-def make_authenticator_servant(MumbleServer, store, health):  # noqa: N803
+def make_authenticator_servant(
+    MumbleServer, store, health, executor, deadline  # noqa: N803
+):
     class Authenticator(MumbleServer.ServerAuthenticator):
         def authenticate(  # pylint: disable=too-many-arguments
             self, name, pw, certificates, certhash, certstrong, current=None
         ):
-            decision = authenticator.authenticate(name, pw, certhash, store)
+            decision = authenticator.authenticate_within(
+                name, pw, certhash, store, executor, deadline
+            )
             logger.info(
                 "Voice login %s (%s)",
                 "accepted" if decision.accepted else "refused",
@@ -221,8 +274,13 @@ def run(cfg: config.Config) -> None:  # pragma: no cover - needs Murmur
     Ice, MumbleServer = load_slice()  # noqa: N806
     redis = redis_lib.Redis.from_url(cfg.redis_url, socket_timeout=5)
     store = RecordStore(redis, InternalClient(cfg.internal_url, cfg.internal_secret))
-    health = health_mod.Health()
+    health = health_mod.Health(stall_seconds=cfg.stall_seconds)
     health_mod.serve(health, cfg.health_port)
+    health_mod.Watchdog(health).start()
+    # Login decisions run here so the servant can answer by a deadline.
+    executor = concurrent.futures.ThreadPoolExecutor(
+        max_workers=SERVER_THREADS, thread_name_prefix="auth"
+    )
     wake = threading.Event()
     threading.Thread(
         target=_listen_for_changes, args=(redis, wake), daemon=True
@@ -239,15 +297,23 @@ def run(cfg: config.Config) -> None:  # pragma: no cover - needs Murmur
         communicator = Ice.initialize(init)
         try:
             communicator.getImplicitContext().put("secret", cfg.ice_secret)
-            meta = MumbleServer.MetaPrx.checkedCast(
-                communicator.stringToProxy(
-                    f"Meta:tcp -h {cfg.ice_host} -p {cfg.ice_port}"
+            meta = TimedProxy(
+                MumbleServer.MetaPrx.checkedCast(
+                    communicator.stringToProxy(
+                        f"Meta:tcp -h {cfg.ice_host} -p {cfg.ice_port}"
+                    )
                 )
             )
             adapter = communicator.createObjectAdapter(CALLBACK_ADAPTER)
             adapter.activate()
-            server = meta.getServer(cfg.server_id)
-            servant = make_authenticator_servant(MumbleServer, store, health)
+            server = TimedProxy(meta.getServer(cfg.server_id))
+            logger.info(
+                "Ice invocation timeout %s ms",
+                getattr(server, "ice_getInvocationTimeout", lambda: "unknown")(),
+            )
+            servant = make_authenticator_servant(
+                MumbleServer, store, health, executor, cfg.auth_deadline_seconds
+            )
             proxy = MumbleServer.ServerAuthenticatorPrx.uncheckedCast(
                 adapter.addWithUUID(servant)
             )
@@ -265,16 +331,21 @@ def run(cfg: config.Config) -> None:  # pragma: no cover - needs Murmur
                 health.sessions = reconciler.tick()
                 health.beat(redis)
                 certs.check()
+                health.tick()
                 wake.wait(cfg.tick_seconds)
                 wake.clear()
         except Exception:  # pylint: disable=broad-exception-caught
             logger.exception("Lost the voice server; reconnecting in 5 s")
             health.ice_connected = False
             health.authenticator = False
-            health.beat(redis)
-            stop.wait(5)
         finally:
+            # Destroying the communicator closes the callback connection
+            # too, so a login Murmur is still waiting on fails at once and
+            # Murmur's main thread is free again before we reconnect.
             communicator.destroy()
+        health.beat(redis)
+        health.tick()
+        stop.wait(5)
 
 
 def main() -> int:  # pragma: no cover
@@ -284,6 +355,10 @@ def main() -> int:  # pragma: no cover
         format="%(asctime)s %(levelname)s %(message)s",
     )
     cfg = config.from_env()
+    logging.getLogger("voice_auth").setLevel(cfg.log_level)
+    # `docker kill -s USR1 <voice-auth>` prints every thread's Python stack
+    # to the logs, without ptrace or a debugger in the image.
+    faulthandler.register(signal.SIGUSR1, all_threads=True)
     if cfg.sentry_dsn:
         import sentry_sdk  # pylint: disable=import-outside-toplevel,import-error
 

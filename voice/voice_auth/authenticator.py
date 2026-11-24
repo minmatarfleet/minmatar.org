@@ -11,6 +11,7 @@ returned: nobody is registered on the server.
 
 from __future__ import annotations
 
+import concurrent.futures
 import logging
 from dataclasses import dataclass, field
 
@@ -80,3 +81,32 @@ def authenticate(name: str, password: str, cert_hash: str, store) -> Decision:
         logger.warning("Voice access could not be checked: %s", exc)
         return Decision(UNAVAILABLE, reason="unavailable")
     return Decision(REFUSE, reason="unknown")
+
+
+def authenticate_within(
+    name: str,
+    password: str,
+    cert_hash: str,
+    store,
+    executor: concurrent.futures.Executor,
+    deadline: float,
+) -> Decision:
+    """``authenticate``, but never slower than ``deadline`` seconds.
+
+    Murmur calls the authenticator synchronously on its main thread, with
+    no timeout: until we answer, it serves no voice and no Ice call. A slow
+    Redis or Django becomes "try again later" (-3) instead, and so does any
+    unexpected error: an exception would make Murmur drop the authenticator,
+    and then nobody can log in until we reconnect.
+    """
+    future = executor.submit(authenticate, name, password, cert_hash, store)
+    try:
+        return future.result(timeout=deadline)
+    except concurrent.futures.TimeoutError:
+        logger.warning(
+            "Voice access check took over %.1f s; asked the client to retry", deadline
+        )
+        return Decision(UNAVAILABLE, reason="slow")
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.exception("Voice access check failed")
+        return Decision(UNAVAILABLE, reason="error")
