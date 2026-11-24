@@ -116,6 +116,7 @@ function status_label(code: string | null): string {
         case 'active': return t('corporations.detail.status_active')
         case 'trial': return t('corporations.detail.status_trial')
         case 'on_leave': return t('corporations.detail.status_on_leave')
+        case 'alumni': return t('corporations.detail.status_alumni')
         default: return t('corporations.detail.status_none')
     }
 }
@@ -936,6 +937,10 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 
         &[data-status='on_leave'] {
             color: var(--faded);
+        }
+
+        &[data-status='alumni'] {
+            color: var(--alliance-blue);
         }
 
         &[data-status='none'] {

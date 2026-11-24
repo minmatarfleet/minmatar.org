@@ -101,7 +101,7 @@ export const NEW_MEMBER_DAYS = 90
 export type MemberAttention = 'esi_suspended' | 'no_account' | 'token_missing' | 'trial_ready'
 
 export const MEMBER_TIMEZONE_FILTERS = TIMEZONE_FILTERS
-export const MEMBER_STATUS_FILTERS = ['active', 'trial', 'on_leave', 'none'] as const
+export const MEMBER_STATUS_FILTERS = ['active', 'trial', 'on_leave', 'alumni', 'none'] as const
 export type MemberStatusFilter = typeof MEMBER_STATUS_FILTERS[number]
 // Linked = the character belongs to a site account; "not linked" are in-game
 // members nobody has registered yet.
@@ -510,12 +510,13 @@ export function build_member_roster(
         ? filtered.filter((row) => params.ids.includes(row.character_id))
         : filtered
     const sorted = sort_corporation_member_rows(picked, params.sort, params.direction)
-    // Re-add: the pilots a leader can chase first. On Leave pilots' tasks
-    // are paused, so they wait at the bottom.
+    // Re-add: the pilots a leader can chase first. On Leave and alumni
+    // pilots' tasks are paused, so they wait at the bottom.
+    const away = (row:CorporationMemberRow) => row.community_status === 'on_leave' || row.community_status === 'alumni'
     if (params.view === 'esi')
         return [
-            ...sorted.filter((row) => row.community_status !== 'on_leave'),
-            ...sorted.filter((row) => row.community_status === 'on_leave'),
+            ...sorted.filter((row) => !away(row)),
+            ...sorted.filter(away),
         ]
     return sorted
 }

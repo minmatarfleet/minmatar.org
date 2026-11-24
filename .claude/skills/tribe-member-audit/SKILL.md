@@ -45,6 +45,7 @@ Task Progress:
 |-------|----------------|-------|
 | Group | `TribeGroup.code` | e.g. `capitals.dreads`, `supply.mining`, `supply.planetary-interaction` |
 | Membership | `TribeGroupMembership` | `status` = `active` / `inactive` / `pending`; user-scoped |
+| Alumni | `UserCommunityStatus` | `status` = `alumni`: immune to this audit, never mark them inactive |
 | Committed chars | `TribeGroupMembershipCharacter` | Optional; hulls/colonies may live on any linked alt |
 | Hulls | `EveCharacterAsset` | Ships only, ESI-synced; not full asset dump |
 | Mining ledger | `EveCharacterMiningEntry` | Per-character daily ore; used by mining reports |
@@ -95,6 +96,7 @@ for code in CODES:
     active = list(
         TribeGroupMembership.objects.using(DB)
         .filter(tribe_group=tg, status="active")
+        .exclude(user__community_status__status="alumni")
         .select_related("user")
     )
     chars = list(
@@ -149,6 +151,7 @@ tg = TribeGroup.objects.using(DB).get(code="supply.planetary-interaction")
 active = list(
     TribeGroupMembership.objects.using(DB)
     .filter(tribe_group=tg, status="active")
+        .exclude(user__community_status__status="alumni")
     .select_related("user")
 )
 chars = list(
@@ -214,7 +217,7 @@ targets = {
 for code, users in targets.items():
     for m in TribeGroupMembership.objects.filter(
         tribe_group__code=code, status="active", user__username__in=users
-    ).select_related("user"):
+    ).exclude(user__community_status__status="alumni").select_related("user"):
         m.status = "inactive"
         m.left_at = now
         m.history_inactive_reason = "removed"

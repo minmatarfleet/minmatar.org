@@ -51,11 +51,12 @@ export async function promote_corporation_member(access_token: string, id: numbe
 
 /** Put a member on leave (CEO) or take them off leave (CEO, directors,
  * People team): the same rules as the alliance health lists. */
-export async function set_corporation_member_status(access_token: string, id: number, character_id: number, action: CorporationMemberStatusAction) {
+/** `reason` is required for `alumni`: the CEO's write-up, sent to the pilot on Discord. */
+export async function set_corporation_member_status(access_token: string, id: number, character_id: number, action: CorporationMemberStatusAction, reason = '') {
     return await api_request<CorporationMemberStatus>(`${API_ENDPOINT}/corporations/${id}/members/${character_id}/status`, {
         method: 'POST',
         token: access_token,
-        body: { action },
+        body: { action, reason },
         error: 'Error changing community status',
     })
 }

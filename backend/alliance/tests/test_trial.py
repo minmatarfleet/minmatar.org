@@ -565,7 +565,7 @@ class MemberStatusFromRosterTestCase(TestCase):
             status="active"
         )
         data = self.client.get(INSIGHTS_URL, **self._as(self.ceo)).json()
-        self.assertEqual(data["status_actions"], ["leave"])
+        self.assertEqual(data["status_actions"], ["leave", "alumni"])
         self.assertEqual(self._post(self.ceo, "leave").status_code, 200)
         self.assertEqual(self._status(), "on_leave")
 

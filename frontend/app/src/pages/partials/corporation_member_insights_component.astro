@@ -21,7 +21,8 @@ import { query_string } from '@helpers/string'
  * the ships they bring to fleets, and their kills, so leadership doesn't
  * need zKillboard to check. The CEO, directors and People team can promote a
  * trial member to active from here, and take a member off leave (or, the
- * CEO, put them on leave); the roster then reloads.
+ * CEO, put them on leave, or make them alumni with a write-up the pilot gets
+ * on Discord); the roster then reloads.
  */
 const params = Astro.url.searchParams
 const corporation_id = parseInt(params.get('corporation_id') ?? '0') || 0
@@ -43,9 +44,12 @@ if (Astro.request.method === 'POST' && params.get('action') === 'promote') {
 const status_action = params.get('action')
 let status_error:string | false = false
 
-if (Astro.request.method === 'POST' && (status_action === 'leave' || status_action === 'restore')) {
+if (Astro.request.method === 'POST' && (status_action === 'leave' || status_action === 'restore' || status_action === 'alumni')) {
     try {
-        await set_corporation_member_status(auth_token as string, corporation_id, character_id, status_action)
+        const reason = status_action === 'alumni'
+            ? String((await Astro.request.formData()).get('reason') ?? '').trim()
+            : ''
+        await set_corporation_member_status(auth_token as string, corporation_id, character_id, status_action, reason)
         Astro.response.headers.set('HX-Trigger', 'corporation-members-changed')
     } catch (error) {
         status_error = (error as Error).message || t('trial.status_failed')
@@ -70,12 +74,20 @@ const promote_url = `${refetch_url}&action=promote`
 const promote_confirm = character_name
     ? t('trial.promote_confirm').replace('{name}', character_name)
     : t('trial.promote_confirm_unnamed')
+const is_alumni = insights?.community_status === 'alumni'
 const status_confirm = (action:'leave' | 'restore') => character_name
-    ? t(action === 'leave' ? 'trial.status_leave_confirm' : 'trial.status_restore_confirm').replace('{name}', character_name)
+    ? t(action === 'leave' ? 'trial.status_leave_confirm' : is_alumni ? 'trial.status_alumni_restore_confirm' : 'trial.status_restore_confirm').replace('{name}', character_name)
     : t('trial.status_confirm_unnamed')
+const status_label = (action:'leave' | 'restore') => t(
+    action === 'leave' ? 'trial.status_leave' : is_alumni ? 'trial.status_alumni_restore' : 'trial.status_restore',
+)
 const status_actions = (insights?.status_actions ?? []).filter(
     (action):action is 'leave' | 'restore' => action === 'leave' || action === 'restore',
 )
+const can_make_alumni = (insights?.status_actions ?? []).includes('alumni')
+const alumni_title = character_name
+    ? t('trial.alumni_title').replace('{name}', character_name)
+    : t('trial.alumni_title_unnamed')
 const target_id = `member-insights-${character_id}`
 
 const SIGNALS = ['fleets', 'kills', 'voice'] as const
@@ -97,6 +109,10 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import TrialProgressBar from '@components/blocks/TrialProgressBar.astro'
 import TierScale from '@components/blocks/TierScale.astro'
 import Button from '@components/blocks/Button.astro'
+import DialogButton from '@components/blocks/DialogButton.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
 ---
 
 <div id={target_id} class="[ member-insights ]">
@@ -145,7 +161,7 @@ import Button from '@components/blocks/Button.astro'
                         }
                     </div>
                 }
-                {(status_actions.length > 0 || status_error) &&
+                {(status_actions.length > 0 || can_make_alumni || status_error) &&
                     <div class="[ member-insights__promote ]">
                         {status_error && <p class="[ member-insights__error ]" role="alert">{status_error}</p>}
                         {status_actions.map((action) =>
@@ -158,9 +174,34 @@ import Button from '@components/blocks/Button.astro'
                                 hx-swap="outerHTML"
                                 hx-confirm={status_confirm(action)}
                             >
-                                {t(action === 'leave' ? 'trial.status_leave' : 'trial.status_restore')}
+                                {status_label(action)}
                             </Button>
                         )}
+                        {can_make_alumni &&
+                            <DialogButton size="sm" color="transparent" max_width="36rem">
+                                {t('trial.status_alumni')}
+                                <form
+                                    slot="dialog"
+                                    class="[ member-insights__alumni ]"
+                                    hx-post={`${refetch_url}&action=alumni`}
+                                    hx-target={`#${target_id}`}
+                                    hx-swap="outerHTML"
+                                >
+                                    <Flexblock gap="var(--space-s)">
+                                        <h3>{alumni_title}</h3>
+                                        <p class="[ member-insights__muted ]">{t('trial.alumni_hint')}</p>
+                                        <label class="[ member-insights__field ]">
+                                            <span class="[ member-insights__strong ]">{t('trial.alumni_reason')}</span>
+                                            <Textarea name="reason" rows="5" maxlength="1000" required />
+                                            <small class="[ member-insights__muted ]">{t('trial.alumni_reason_hint')}</small>
+                                        </label>
+                                        <FlexInline justification="flex-end">
+                                            <Button type="submit" size="sm" color="green">{t('trial.alumni_submit')}</Button>
+                                        </FlexInline>
+                                    </Flexblock>
+                                </form>
+                            </DialogButton>
+                        }
                     </div>
                 }
                 <h4 class="[ member-insights__eyebrow ]">{t('trial.member_compare')}</h4>
@@ -286,6 +327,15 @@ import Button from '@components/blocks/Button.astro'
         margin: 0;
         font-size: var(--step--1);
         color: var(--faded);
+    }
+
+    .member-insights__alumni h3 {
+        margin: 0;
+    }
+
+    .member-insights__field {
+        display: grid;
+        gap: var(--space-3xs);
     }
 
     .member-insights__pace {

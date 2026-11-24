@@ -15,7 +15,7 @@ from users.helpers import offboard_group
 
 logger = logging.getLogger(__name__)
 
-VALID_STATUSES = {"active", "trial", "on_leave"}
+VALID_STATUSES = {"active", "trial", "on_leave", "alumni"}
 
 PEOPLE_TEAM = "People Team"
 TECH_TEAM = "Technology Team"
@@ -155,11 +155,19 @@ def offboard_corporation_groups(corporation: EveCorporation) -> None:
         offboard_group(group_id)
 
 
+ALUMNI_GROUP_NAME = "Alumni"
+
+
 def _trial_and_on_leave_groups():
     """Get or create Trial and On Leave groups in app context so signals (e.g. Discord role) trigger."""
     trial_group, _ = AuthGroup.objects.get_or_create(name="Trial")
     on_leave_group, _ = AuthGroup.objects.get_or_create(name="On Leave")
     return trial_group, on_leave_group
+
+
+def _alumni_group():
+    group, _ = AuthGroup.objects.get_or_create(name=ALUMNI_GROUP_NAME)
+    return group
 
 
 def process_bulk_community_status_row(
@@ -230,7 +238,10 @@ def promote_from_trial(user: User, changed_by: User, reason: str) -> bool:
 
 
 def reconcile_community_status_for_affiliation(user: User) -> None:
-    """Clear trial/on_leave when the user is no longer Alliance."""
+    """Clear trial/on_leave when the user is no longer Alliance.
+
+    Alumni stay alumni: most have left the alliance in game by then.
+    """
     affiliation = (
         UserAffiliation.objects.filter(user=user)
         .select_related("affiliation")
@@ -262,12 +273,14 @@ def sync_user_community_groups(user: User) -> None:
     Trial: affiliation group + Trial group.
     Active: affiliation group only.
     On Leave: On Leave group only (no affiliation group).
+    Alumni: Alumni group only (no affiliation group).
     Only adds/removes groups when membership actually changes to avoid Discord overhead.
     Per-group add/remove so Discord fail-closed errors on one group do not skip
     the rest of this user's diff (reconciler retries remaining). See
     docs/auth/discord-groups.md.
     """
     trial_group, on_leave_group = _trial_and_on_leave_groups()
+    alumni_group = _alumni_group()
     affiliation = UserAffiliation.objects.filter(user=user).first()
     affiliation_group = affiliation.affiliation.group if affiliation else None
 
@@ -281,7 +294,7 @@ def sync_user_community_groups(user: User) -> None:
         AuthGroup.objects.filter(affiliationtype__isnull=False).distinct()
     )
     community_groups = list(
-        {g for g in (trial_group, on_leave_group) if g}
+        {g for g in (trial_group, on_leave_group, alumni_group) if g}
         | set(all_affiliation_groups)
     )
     if not community_groups:
@@ -289,6 +302,8 @@ def sync_user_community_groups(user: User) -> None:
 
     if status == UserCommunityStatus.STATUS_ON_LEAVE:
         desired = {on_leave_group} if on_leave_group else set()
+    elif status == UserCommunityStatus.STATUS_ALUMNI:
+        desired = {alumni_group}
     elif status == UserCommunityStatus.STATUS_TRIAL:
         desired = {g for g in (trial_group, affiliation_group) if g}
     else:

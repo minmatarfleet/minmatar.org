@@ -42,7 +42,7 @@ Until November 2026, `update_alliance_characters` queued `update_character` for 
 
   A pull that finds new ore stamps the pilot Hot straight away. A Hot pilot drops back after about three empty pulls. ESI caches the ledger for about 10 minutes, so pulling faster gains nothing. On leave slows only Default and Unlikely pilots. The skill sets are cached for an hour (`MINING_SKILLS_CACHE_KEY`).
 - **Mining slots:** a successful mining pull is next due at the pilot's fixed slot within the interval (`next_slot`: the golden-ratio fraction of the character ID), between half and one and a half intervals away. Pilots spread evenly over the interval, and the landing page's mining lines come in staggered rather than in bursts.
-- **On leave:** characters of users whose `UserCommunityStatus` is On Leave use 72 h for every section. A section that is already longer (planets, weekly) keeps its own interval.
+- **On leave:** characters of users whose `UserCommunityStatus` is On Leave or Alumni use 72 h for every section. A section that is already longer (planets, weekly) keeps its own interval.
 - **Priority:** active fleet, then industry, then on leave, then the default.
 - **Industry characters outside the members:** the 1 h audiences are kept fresh even when the character isn't a member, but only for that one section.
 - **Applicants and other non-members:** every section is fetched once when the character is added (`update_character_urgent`), and not again until the affiliation sync puts them in a tracked alliance.
