@@ -7,6 +7,9 @@ from .models import (
     AgentDiscordPostTarget,
     AgentDiscordReadBlock,
     AgentDiscordSettings,
+    AgentEsiCall,
+    AgentEsiCharacter,
+    AgentEsiSettings,
     AgentKey,
 )
 
@@ -17,6 +20,7 @@ class AgentKeyAdmin(admin.ModelAdmin):
         "name",
         "key_prefix",
         "can_write",
+        "can_use_esi",
         "active",
         "expires_at",
         "last_used_at",
@@ -100,6 +104,80 @@ class AgentDiscordCallAdmin(admin.ModelAdmin):
     )
     list_filter = ("tool", "is_write", "ok", "key")
     search_fields = ("guild_id", "channel_id", "error")
+    date_hierarchy = "created_at"
+    list_select_related = ("key",)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(AgentEsiSettings)
+class AgentEsiSettingsAdmin(admin.ModelAdmin):
+    list_display = (
+        "__str__",
+        "enabled",
+        "calls_per_minute",
+        "calls_per_day",
+    )
+
+    def has_add_permission(self, request):
+        return not AgentEsiSettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(AgentEsiCharacter)
+class AgentEsiCharacterAdmin(admin.ModelAdmin):
+    list_display = (
+        "character_id",
+        "character_name",
+        "key",
+        "note",
+        "expires_at",
+        "created_by",
+        "created_at",
+    )
+    list_filter = ("key",)
+    search_fields = ("character_id", "note")
+    readonly_fields = ("created_by", "created_at")
+    list_select_related = ("key",)
+
+    @admin.display(description="Character")
+    def character_name(self, obj):
+        # pylint: disable=import-outside-toplevel
+        from eveonline.models import EveCharacter
+
+        character = EveCharacter.objects.filter(
+            character_id=obj.character_id
+        ).first()
+        return character.character_name if character else "-"
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(AgentEsiCall)
+class AgentEsiCallAdmin(admin.ModelAdmin):
+    list_display = (
+        "created_at",
+        "key",
+        "tool",
+        "character_id",
+        "method",
+        "path",
+        "esi_status",
+        "ok",
+        "error",
+        "ip",
+    )
+    list_filter = ("tool", "ok", "key")
+    search_fields = ("character_id", "path", "error")
     date_hierarchy = "created_at"
     list_select_related = ("key",)
 

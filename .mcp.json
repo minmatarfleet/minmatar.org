@@ -11,6 +11,13 @@
         "Authorization": "Bearer ${MINMATAR_AGENT_KEY:-set-by-cloud-proxy}"
       }
     },
+    "esi": {
+      "type": "http",
+      "url": "https://api.minmatar.org/api/agent/esi/mcp",
+      "headers": {
+        "Authorization": "Bearer ${MINMATAR_AGENT_KEY:-set-by-cloud-proxy}"
+      }
+    },
     "reddit": {
       "type": "stdio",
       "command": "bash",

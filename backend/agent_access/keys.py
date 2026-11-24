@@ -1,4 +1,4 @@
-"""Creating and checking agent keys."""
+"""Creating and checking agent keys (Discord and ESI endpoints)."""
 
 import hashlib
 import logging
@@ -81,7 +81,7 @@ def _alert_failed(request, key: AgentKey | None) -> None:
         return
     reason = "unknown key" if key is None else "revoked or expired key"
     logger.error(
-        "Agent Discord endpoint refused a request (%s) from %s, key %s",
+        "Agent endpoint refused a request (%s) from %s, key %s",
         reason,
         ip,
         key.key_prefix if key else "-",

@@ -66,6 +66,7 @@ Other entry points: the [root README](../README.md) (local setup, quickstart), [
 | [auth/discord-groups.md](auth/discord-groups.md) | current | Discord roles and auth group membership |
 | [auth/discord-groups-verification.md](auth/discord-groups-verification.md) | current | Live Discord sync verification playbook |
 | [auth/agent-discord-access.md](auth/agent-discord-access.md) | current | Claude reading and posting in Discord through the backend's MCP endpoint: keys, tools, post targets, audit |
+| [auth/agent-esi-access.md](auth/agent-esi-access.md) | current | Claude calling ESI as a granted character through the backend's MCP endpoint: grants, tools, limits, audit |
 
 ## Operations
 
