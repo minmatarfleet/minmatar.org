@@ -18,8 +18,8 @@ the application page and a no-login survey page, all as htmx partials built from
 **Tech stack:** Django + Django Ninja, Celery (`AppTask`, routes in `backend/app/queues.py`), django-esi through
 `eveonline.client.EsiClient`, Astro + htmx + Alpine, Rust components, Vitest.
 
-**Spec:** the design artifact linked on #3198 (private until shared: https://claude.ai/artifact/YQiSwJYgPZZXS8HZ3KvMDQ)
-and the issue's requirements. Section numbers below ("design 06") point at the artifact.
+**Spec:** [exit-flow-design.md](exit-flow-design.md) and the issue's requirements. Section numbers below
+("design 06") point at that document's numbered sections.
 
 ## Design summary
 
@@ -35,7 +35,7 @@ The decisions made on top of the issue, which this plan builds:
 | Alert volume | At most one alert per application and reason. Alerts only for a can't-rejoin flag or "kicked for another reason". A later answer re-alerts only when it adds a can't-rejoin flag. No history, no alert. |
 | Code layout | Exit surveys in `surveys` (the issue asks for it): its definitions, typed answers and `SurveyField` fit, but `SurveyResponse` requires a user and campaigns are one per quarter, so the exit surveys get their own invite and response tables. Everything else in a new `exits` app. |
 
-Proposals still to confirm in review are tagged in the artifact. The ones that change the build are listed under
+Proposals still to confirm in review are tagged **[proposal]** in the design. The ones that change the build are listed under
 "Open questions" at the end.
 
 ## Global constraints
@@ -53,7 +53,7 @@ Proposals still to confirm in review are tagged in the artifact. The ones that c
   (`.claude/rules/api-types.md`).
 - Website rules: htmx for server state, Alpine only for local UI; Rust components first
   (`frontend/app/rust/CATALOG.md`); i18n through `t()`; types are aliases of the generated schema.
-- Copy: the CEO notice and the survey texts are fixed in the design artifact (sections 04 and 07); use them as
+- Copy: the CEO notice and the survey texts are fixed in the design (sections 04 and 07); use them as
   written.
 
 ## Review focus
