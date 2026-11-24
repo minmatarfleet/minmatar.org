@@ -32,6 +32,7 @@ Read **`docs/frontend-design.md`** — it is the source of truth. The rules belo
 
 - Compose from `src/components/compositions/` (`Wrapper`, `Grid`, `FlexInline`, `FlexInlineSiblings`, `Flexblock`, `FixedFluid`, `FluidFixed`, `BlockList`, `XFadeScroll`) instead of hand-rolling flex/grid. Wide tables and chip rows scroll inside `XFadeScroll`, not a hand-rolled `overflow-x: auto`.
 - Pass spacing via tokens. Reuse `Button`, `Badge`, `Tag`, `Input` rather than restyling raw elements. A bordered panel is `ComponentBlock`; `Card` is only the picture card with hover actions.
+- Settings pages use the settings standard (`docs/frontend-design.md`, "Settings pages"): `SettingsLayout` for the section list, `SettingsGroup` + `SettingRow` for the rows, `SaveBar` to save a form of text fields. Not stacks of collapsible sections.
 
 ## 4.1 Rust (the component library) — look here first
 
