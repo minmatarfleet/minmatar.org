@@ -66,7 +66,9 @@ Unless noted, features deny community status `on_leave` on the scope path. The o
 | `industry.loyalty.settings` | `tribe_membership` | `industry.change_industryloyaltypoint` | LP buyback tribe group (`supply.loyalty-points`): LP corps, pricing, accounts, contacts |
 | `market.manage` | `tribe_membership` | `eveonline.change_evelocation` | Market tribe group (`supply.market`): hubs and stocking expectations |
 | `buyback.manage` | `tribe_membership` | `buyback.change_evebuybacksettings` | Mining tribe group (`supply.mining`): buyback rates, location, accepted items |
-| `freight.manage` | `tribe_chief` | `freight.change_evefreightroute` | Freighters tribe group (`supply.freighters`): every timezone chief of the group and that tribe's chief manage routes and pricing |
+| `freight.manage` | `tribe_chief` | `freight.change_evefreightroute` | Freighters tribe group (`supply.freighters`). Every timezone chief of the group and that tribe's chief manage freight routes, pricing, and visibility. |
+
+In Freight Routes, managers can enable **Shadow contracts** for one direction of a route. The calculator and contract listings show those routes and contracts to signed-in Alliance members and site superusers. The setting also applies to existing contracts for that origin and destination.
 
 ## Campaigns
 

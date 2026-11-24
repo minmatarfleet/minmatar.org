@@ -88,6 +88,7 @@ if (is_post) {
                 ...read.pricing,
                 ...days(),
                 active: true,
+                shadow_contracts: form_flag(form, 'shadow_contracts'),
             })
         } else if (part === 'switch' && id) {
             await patch_freight_route(auth_token, id, { active: form_flag(form, 'active') })
@@ -97,7 +98,11 @@ if (is_post) {
             if ('invalid' in read) {
                 error = t('manage.freight.not_an_amount').replace('~FIELD', field_label(read.invalid))
             } else {
-                await patch_freight_route(auth_token, id, { ...read.pricing, ...days() })
+                await patch_freight_route(auth_token, id, {
+                    ...read.pricing,
+                    ...days(),
+                    shadow_contracts: form_flag(form, 'shadow_contracts'),
+                })
                 saved = true
             }
         }

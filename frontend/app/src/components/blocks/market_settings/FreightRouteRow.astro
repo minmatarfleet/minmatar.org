@@ -62,6 +62,7 @@ import StylessButton from '@components/blocks/StylessButton.astro'
         <StylessButton type="button" class="[ manage-who ]" x-on:click="open = !open">
             <span class="[ manage-who__text ]">
                 <span class="[ manage-who__name ]">{name}</span>
+                {route.shadow_contracts && <span class="[ manage-who__sub ]">{t('manage.freight.shadow_contracts')}</span>}
                 {route.fee_never_applies
                     ? <span class="[ manage-who__sub manage-warn ]">{t('manage.freight.view_fee_never')}</span>
                     : <span class="[ manage-who__sub market-phone-only ]">{price}</span>

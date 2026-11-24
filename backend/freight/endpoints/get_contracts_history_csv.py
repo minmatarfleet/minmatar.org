@@ -24,7 +24,9 @@ router = Router(tags=["Freight"])
 )
 def get_contracts_history_csv(request):
     contracts = list(
-        FreightContract.objects.finished().order_by("-date_completed")
+        FreightContract.objects.visible_to(request.user)
+        .finished()
+        .order_by("-date_completed")
     )
     csv_text = render_freight_history_csv(contracts)
     stamp = datetime.now(dt_timezone.utc).strftime("%Y%m%d")

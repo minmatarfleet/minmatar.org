@@ -19,6 +19,7 @@ try {
     detail = null
 }
 if (!detail) return HTTP_404_Not_Found()
+Astro.response.headers.set('Cache-Control', 'private, no-store')
 
 const rigs = detail.fitting.filter((m) => m.slot === 'rig')
 const services = detail.fitting.filter((m) => m.slot === 'service')

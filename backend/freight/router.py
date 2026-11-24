@@ -1,8 +1,10 @@
 from typing import List, Optional
 
+from django.views.decorators.cache import never_cache
 from ninja import Router
 from pydantic import BaseModel
 
+from authentication import AuthLenient
 from freight.endpoints import router as endpoints_router
 from freight.helpers.pricing import (
     FreightContractValidationError,
@@ -14,6 +16,7 @@ from freight.helpers.pricing import (
 from .models import EveFreightRoute
 
 router = Router(tags=["Freight"])
+router.add_decorator(never_cache, mode="view")
 router.add_router("", endpoints_router)
 
 
@@ -40,9 +43,15 @@ class EveFreightRouteCostResponse(BaseModel):
     cost: int
 
 
-@router.get("/routes", response=List[EveFreightRouteResponse])
+@router.get(
+    "/routes", auth=AuthLenient(), response=List[EveFreightRouteResponse]
+)
 def get_routes(request):
-    routes = EveFreightRoute.objects.available()
+    routes = (
+        EveFreightRoute.objects.available()
+        .visible_to(request.auth)
+        .select_related("origin_location", "destination_location")
+    )
     response = []
     for route in routes:
         response.append(
@@ -71,6 +80,7 @@ def get_routes(request):
 
 @router.get(
     "/routes/{route_id}/cost",
+    auth=AuthLenient(),
     response={200: EveFreightRouteCostResponse, 400: dict, 404: dict},
 )
 def get_route_cost(request, route_id: int, m3: int, collateral: int = 0):
@@ -78,7 +88,12 @@ def get_route_cost(request, route_id: int, m3: int, collateral: int = 0):
     Rate: isk_per_m3 * m3 + ceil(collateral_modifier * collateral).
     Fixed: flat fee; rejects if m3 or collateral exceed route maxima.
     """
-    route = EveFreightRoute.objects.available().filter(id=route_id).first()
+    route = (
+        EveFreightRoute.objects.available()
+        .visible_to(request.auth)
+        .filter(id=route_id)
+        .first()
+    )
     if not route:
         return 404, {"detail": "Route not found."}
     try:

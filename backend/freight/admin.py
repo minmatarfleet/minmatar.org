@@ -77,9 +77,11 @@ class FreightRouteAdmin(admin.ModelAdmin):
         "expiration_days",
         "days_to_complete",
         "active",
+        "shadow_contracts",
     )
     list_filter = (
         "active",
+        "shadow_contracts",
         "route_type",
         "origin_location",
         "destination_location",
@@ -105,6 +107,7 @@ class FreightRouteAdmin(admin.ModelAdmin):
                     "destination_location",
                     "route_type",
                     "active",
+                    "shadow_contracts",
                 ),
             },
         ),

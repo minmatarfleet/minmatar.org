@@ -32805,6 +32805,10 @@
             "title": "Route Type",
             "type": "string"
           },
+          "shadow_contracts": {
+            "title": "Shadow Contracts",
+            "type": "boolean"
+          },
           "xl_fee_millions": {
             "title": "Xl Fee Millions",
             "type": "number"
@@ -32823,7 +32827,8 @@
           "max_collateral",
           "expiration_days",
           "days_to_complete",
-          "active"
+          "active",
+          "shadow_contracts"
         ],
         "title": "ManageRoute",
         "type": "object"
@@ -46300,6 +46305,11 @@
             "title": "Route Type",
             "type": "string"
           },
+          "shadow_contracts": {
+            "default": false,
+            "title": "Shadow Contracts",
+            "type": "boolean"
+          },
           "xl_fee_millions": {
             "default": 0,
             "minimum": 0,
@@ -46444,6 +46454,17 @@
               }
             ],
             "title": "Route Type"
+          },
+          "shadow_contracts": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shadow Contracts"
           },
           "xl_fee_millions": {
             "anyOf": [
@@ -75155,6 +75176,11 @@
             "description": "OK"
           }
         },
+        "security": [
+          {
+            "AuthLenient": []
+          }
+        ],
         "summary": "Get Character Statistics",
         "tags": [
           "Freight",
@@ -75183,6 +75209,11 @@
             "description": "OK"
           }
         },
+        "security": [
+          {
+            "AuthLenient": []
+          }
+        ],
         "summary": "Get Contracts",
         "tags": [
           "Freight",
@@ -75211,6 +75242,11 @@
             "description": "OK"
           }
         },
+        "security": [
+          {
+            "AuthLenient": []
+          }
+        ],
         "summary": "Get Contracts History",
         "tags": [
           "Freight",
@@ -75267,6 +75303,11 @@
             "description": "OK"
           }
         },
+        "security": [
+          {
+            "AuthLenient": []
+          }
+        ],
         "summary": "Get Contracts Stats",
         "tags": [
           "Freight",
@@ -75534,6 +75575,11 @@
             "description": "OK"
           }
         },
+        "security": [
+          {
+            "AuthLenient": []
+          }
+        ],
         "summary": "Get Routes",
         "tags": [
           "Freight"
@@ -75610,6 +75656,11 @@
             "description": "Not Found"
           }
         },
+        "security": [
+          {
+            "AuthLenient": []
+          }
+        ],
         "summary": "Get Route Cost",
         "tags": [
           "Freight"

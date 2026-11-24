@@ -3,14 +3,18 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { fetch_freight_routes } from '@helpers/fetching/freights'
+import { get_request_user } from '@helpers/request_user'
 import type { FreightRoutesData } from '@dtypes/layout_components'
+
+const { auth_token } = get_request_user(Astro)
+Astro.response.headers.set('Cache-Control', 'private, no-store')
 
 let freight_routes_data:FreightRoutesData | null = null
 let default_route:string | number | null = null
 let fetch_freight_routes_error: Error | false = false
 
 try {
-    freight_routes_data = await fetch_freight_routes()
+    freight_routes_data = await fetch_freight_routes(auth_token)
     default_route = freight_routes_data.routes[0]?.value ?? ''
 } catch (error) {
     fetch_freight_routes_error = error

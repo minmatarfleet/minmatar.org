@@ -30,6 +30,7 @@ FIELDS = (
     "expiration_days",
     "days_to_complete",
     "active",
+    "shadow_contracts",
 )
 
 
@@ -70,6 +71,7 @@ class ManageRoute(BaseModel):
     expiration_days: int
     days_to_complete: int
     active: bool
+    shadow_contracts: bool
     # Fixed route with an XL fee that its max volume never reaches.
     fee_never_applies: bool = False
     quote: Optional[RouteQuote] = None
@@ -93,6 +95,7 @@ class RouteCreateRequest(BaseModel):
     expiration_days: int = Field(default=3, ge=1)
     days_to_complete: int = Field(default=3, ge=1)
     active: bool = True
+    shadow_contracts: bool = False
 
 
 class RouteQuoteRequest(BaseModel):
@@ -118,6 +121,7 @@ class RoutePatchRequest(BaseModel):
     expiration_days: Optional[int] = Field(default=None, ge=1)
     days_to_complete: Optional[int] = Field(default=None, ge=1)
     active: Optional[bool] = None
+    shadow_contracts: Optional[bool] = None
 
 
 def _location(location) -> Optional[RouteLocation]:
@@ -155,6 +159,7 @@ def route_schema(route: EveFreightRoute) -> ManageRoute:
         expiration_days=route.expiration_days,
         days_to_complete=route.days_to_complete,
         active=route.active,
+        shadow_contracts=route.shadow_contracts,
         fee_never_applies=xl_fee_never_applies(route),
         quote=quote_schema(route),
     )

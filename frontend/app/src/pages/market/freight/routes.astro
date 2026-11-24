@@ -29,6 +29,7 @@ import LazyPartial from '@components/blocks/LazyPartial.astro'
 import Button from '@components/blocks/Button.astro'
 import DialogButton from '@components/blocks/DialogButton.astro'
 import ManageHero from '@components/blocks/manage/ManageHero.astro'
+import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
 import EntityPicker from '@components/blocks/manage/EntityPicker.astro'
 import FreightPricingFields from '@components/blocks/market_settings/FreightPricingFields.astro'
 
@@ -73,6 +74,8 @@ const breadcrumbs = [
                                 <EntityPicker id="freight-add-destination" kind="location" name="destination_location_id" label={t('freight.routes.destination')} required={true} />
                             </div>
                             <FreightPricingFields key="freight-add" />
+                            <ManageSwitch name="shadow_contracts" label={t('manage.freight.shadow_contracts')} aria-describedby="freight-add-shadow-hint" />
+                            <p id="freight-add-shadow-hint" class="[ manage-muted ]">{t('manage.freight.shadow_hint')}</p>
                             <p class="[ manage-field__error ]" role="alert" x-ref="error"></p>
                             <FlexInline justification="flex-end">
                                 <Button type="button" size="sm" color="transparent" x-on:click="close_dialog()">{t('cancel')}</Button>

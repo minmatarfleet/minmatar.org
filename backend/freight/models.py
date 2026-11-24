@@ -2,12 +2,24 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 from eveonline.models import EveCorporationContract, EveLocation
+from freight.helpers.permissions import can_view_shadow_contracts
 
 FREIGHT_CORPORATION_ID = 98705678
 FREIGHT_CONTRACT_TYPE = "courier"
 
 
 class FreightContractQuerySet(models.QuerySet):
+    def visible_to(self, user):
+        if can_view_shadow_contracts(user):
+            return self
+        # Keep matching retired routes so retirement preserves visibility.
+        shadow_route = EveFreightRoute.objects.filter(
+            origin_location_id=models.OuterRef("start_location_id"),
+            destination_location_id=models.OuterRef("end_location_id"),
+            shadow_contracts=True,
+        )
+        return self.filter(~models.Exists(shadow_route))
+
     def active(self):
         return self.filter(status__in=["outstanding", "in_progress"])
 
@@ -49,6 +61,11 @@ class EveFreightRouteQuerySet(models.QuerySet):
             origin_location__freight_active=True,
             destination_location__freight_active=True,
         )
+
+    def visible_to(self, user):
+        if can_view_shadow_contracts(user):
+            return self
+        return self.filter(shadow_contracts=False)
 
 
 class EveFreightRoute(models.Model):
@@ -122,6 +139,12 @@ class EveFreightRoute(models.Model):
         help_text="Days allowed to complete the contract after acceptance.",
     )
     active = models.BooleanField(default=True)
+    shadow_contracts = models.BooleanField(
+        default=False,
+        db_default=False,
+        verbose_name="Shadow contracts",
+        help_text="Hide this route and its contracts from public freight pages.",
+    )
 
     def clean(self):
         super().clean()

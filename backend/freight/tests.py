@@ -4,12 +4,15 @@ from unittest.mock import patch
 
 from django.apps import apps
 from django.contrib import admin
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, User
 from django.core.exceptions import ValidationError
+from django.db.models.signals import post_save
 from django.test import Client, RequestFactory
 from django.utils import timezone
+from factory.django import mute_signals
 
 from app.test import TestCase
+from app.testing import auth_headers
 
 from eveonline.helpers.characters import set_primary_character
 from eveonline.models import (
@@ -25,6 +28,7 @@ from freight.models import (
     FREIGHT_CORPORATION_ID,
     FREIGHT_CONTRACT_TYPE,
 )
+from groups.models import AffiliationType, UserAffiliation
 
 BASE_URL = "/api/freight"
 
@@ -1063,6 +1067,137 @@ def _freight_location(location_id, name, *, freight_active=True):
         solar_system_name=name,
         freight_active=freight_active,
     )
+
+
+class ShadowFreightRouteTestCase(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.alliance_pilot = User.objects.create(username="alliance_pilot")
+        with mute_signals(post_save):
+            alliance = AffiliationType.objects.create(
+                name="Alliance",
+                group=Group.objects.create(name="Alliance"),
+                priority=10,
+            )
+            UserAffiliation.objects.create(
+                user=self.alliance_pilot, affiliation=alliance
+            )
+        self.origin = _freight_location(1, "Origin")
+        self.destination = _freight_location(2, "Destination")
+        self.shadow = EveFreightRoute.objects.create(
+            origin_location=self.origin,
+            destination_location=self.destination,
+            isk_per_m3=400,
+            shadow_contracts=True,
+        )
+        self.public = EveFreightRoute.objects.create(
+            origin_location=self.destination, destination_location=self.origin
+        )
+
+    def test_calculator_list_and_quote_require_alliance_access_for_shadow_route(
+        self,
+    ):
+        route_url = f"{BASE_URL}/routes"
+        cost_url = f"{route_url}/{self.shadow.pk}/cost?m3=100"
+        for headers in ({}, auth_headers(self.user)):
+            self.assertEqual(
+                [
+                    row["route_id"]
+                    for row in self.client.get(route_url, **headers).json()
+                ],
+                [self.public.pk],
+            )
+            self.assertEqual(
+                self.client.get(cost_url, **headers).status_code, 404
+            )
+
+        headers = auth_headers(self.alliance_pilot)
+        listing = self.client.get(route_url, **headers)
+        self.assertCountEqual(
+            [row["route_id"] for row in listing.json()],
+            [self.shadow.pk, self.public.pk],
+        )
+        self.assertIn("no-store", listing["Cache-Control"])
+        self.assertEqual(
+            self.client.get(cost_url, **headers).json()["cost"], 40_000
+        )
+
+    def test_existing_structure_summary_respects_shadow_visibility(self):
+        url = f"/api/structures/locations/{self.destination.pk}"
+        with patch("structures.location_router._stations", return_value={}):
+            self.assertEqual(self.client.get(url).json()["routes_here"], [])
+            detail = self.client.get(
+                url, **auth_headers(self.alliance_pilot)
+            ).json()
+        self.assertEqual(
+            [route["origin"] for route in detail["routes_here"]],
+            [self.origin.short_name],
+        )
+
+    def test_contract_visibility_matches_direction_even_when_route_is_retired(
+        self,
+    ):
+        self.shadow.active = False
+        self.shadow.save(update_fields=["active"])
+        corp = EveCorporation.objects.create(
+            corporation_id=FREIGHT_CORPORATION_ID,
+            name="Freight Corp",
+            ticker="FRT",
+        )
+        now = timezone.now()
+        for route, first_id in ((self.shadow, 90100), (self.public, 90200)):
+            for offset, status in enumerate(("outstanding", "finished")):
+                FreightContract.objects.create(
+                    contract_id=first_id + offset,
+                    corporation=corp,
+                    type=FREIGHT_CONTRACT_TYPE,
+                    assignee_id=FREIGHT_CORPORATION_ID,
+                    issuer_id=12345,
+                    start_location_id=route.origin_location_id,
+                    end_location_id=route.destination_location_id,
+                    status=status,
+                    date_issued=now - timedelta(hours=1),
+                    date_completed=now if status == "finished" else None,
+                )
+
+        for suffix, public_id, shadow_id in (
+            ("", 90200, 90100),
+            ("/history", 90201, 90101),
+        ):
+            url = f"{BASE_URL}/contracts{suffix}"
+            for headers in ({}, auth_headers(self.user)):
+                self.assertEqual(
+                    [
+                        row["contract_id"]
+                        for row in self.client.get(url, **headers).json()
+                    ],
+                    [public_id],
+                )
+            member_response = self.client.get(
+                url, **auth_headers(self.alliance_pilot)
+            )
+            self.assertIn("no-store", member_response["Cache-Control"])
+            self.assertCountEqual(
+                [row["contract_id"] for row in member_response.json()],
+                [public_id, shadow_id],
+            )
+
+        stats_url = f"{BASE_URL}/contracts/stats"
+        self.assertEqual(self.client.get(stats_url).json()["active_count"], 1)
+        self.assertEqual(
+            self.client.get(
+                stats_url, **auth_headers(self.alliance_pilot)
+            ).json()["active_count"],
+            2,
+        )
+        csv_url = f"{BASE_URL}/contracts/history/csv"
+        self.assertNotContains(
+            self.client.get(csv_url, **auth_headers(self.user)), "90101"
+        )
+        self.assertContains(
+            self.client.get(csv_url, **auth_headers(self.alliance_pilot)),
+            "90101",
+        )
 
 
 class FreightLocationDisableRoutesTestCase(TestCase):

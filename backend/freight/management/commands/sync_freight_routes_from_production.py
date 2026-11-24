@@ -40,6 +40,7 @@ ROUTE_FIELDS = (
     "expiration_days",
     "days_to_complete",
     "active",
+    "shadow_contracts",
 )
 
 

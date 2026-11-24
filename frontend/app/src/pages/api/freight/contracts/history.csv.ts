@@ -29,6 +29,7 @@ export async function GET({ cookies, locals }) {
     return new Response(body, {
         status: 200,
         headers: {
+            'Cache-Control': 'private, no-store',
             'Content-Type': 'text/csv; charset=utf-8',
             'Content-Disposition': `attachment; filename="freight-contracts-history-${stamp}.csv"`,
         },

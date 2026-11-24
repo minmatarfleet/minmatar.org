@@ -528,7 +528,7 @@ def _pilot_rows(pilots: dict) -> List[dict]:
     return sorted(out, key=lambda p: (-p["items"], p["name"]))
 
 
-def routes_here(location_id: int) -> List[dict]:
+def routes_here(location_id: int, user) -> List[dict]:
     """Active freight routes that end at this location, with their price."""
     # pylint: disable=import-outside-toplevel
     from freight.models import EveFreightRoute
@@ -539,9 +539,8 @@ def routes_here(location_id: int) -> List[dict]:
             "isk_per_m3": float(route.isk_per_m3 or 0),
             "route_type": route.route_type or "rate",
         }
-        for route in EveFreightRoute.objects.filter(
-            active=True, destination_location_id=location_id
-        )
+        for route in EveFreightRoute.objects.visible_to(user)
+        .filter(active=True, destination_location_id=location_id)
         .select_related("origin_location")
         .order_by("isk_per_m3")
     ]

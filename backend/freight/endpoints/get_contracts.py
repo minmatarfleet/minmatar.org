@@ -4,6 +4,7 @@ from typing import List
 
 from ninja import Router
 
+from authentication import AuthLenient
 from freight.endpoints.schemas import FreightContractResponse
 from freight.helpers.contract_display import (
     FREIGHT_CORP_FALLBACK_NAME,
@@ -113,9 +114,14 @@ def prepare_contract_responses(contracts):
 
 @router.get(
     "/contracts",
+    auth=AuthLenient(),
     description="Fetch outstanding and in-progress freight contracts.",
     response=List[FreightContractResponse],
 )
 def get_contracts(request):
-    contracts = list(FreightContract.objects.active().order_by("-date_issued"))
+    contracts = list(
+        FreightContract.objects.visible_to(request.auth)
+        .active()
+        .order_by("-date_issued")
+    )
     return prepare_contract_responses(contracts)

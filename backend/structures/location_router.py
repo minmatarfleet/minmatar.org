@@ -5,7 +5,9 @@ from datetime import datetime
 from typing import List, Optional
 
 from django.utils import timezone
+from django.views.decorators.cache import never_cache
 from ninja import Router, Schema
+from ninja.decorators import decorate_view
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer, AuthOptional
@@ -803,6 +805,7 @@ def decline(request, submission_id: int, payload: LocationDecline):
     auth=AuthOptional(),
     response={200: LocationDetail, 404: ErrorResponse},
 )
+@decorate_view(never_cache)
 def get_location(request, location_id: int):
     user = _user(request)
     location = (
@@ -816,7 +819,7 @@ def get_location(request, location_id: int):
             "description": location.description,
             "dock_access": dock.dock_entries(location),
             "planner_systems": _planner_systems(),
-            "routes_here": svc.routes_here(location.location_id),
+            "routes_here": svc.routes_here(location.location_id, user),
             "fitting": location.fitting or [],
             "audience_tribe_group_ids": [
                 row.tribe_group_id
