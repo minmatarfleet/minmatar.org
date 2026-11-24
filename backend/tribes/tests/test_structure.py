@@ -40,6 +40,11 @@ class StructureTestCase(TestCase):
             group=Group.objects.create(name="Supply"),
         )
         clear_feature_cache()
+        # The name check lists the server's Discord roles.
+        discord = patch("tribes.helpers.structure.DiscordClient")
+        self.discord = discord.start()
+        self.discord.return_value.get_roles.return_value = []
+        self.addCleanup(discord.stop)
 
     def _send(self, method, url, user, body):
         return getattr(self.client, method)(
@@ -132,6 +137,36 @@ class StructureTestCase(TestCase):
         self.assertEqual(empty.status_code, 400)
         self.assertEqual(Tribe.objects.count(), 1)
 
+    def test_names_of_unlinked_discord_roles_are_refused(self):
+        # A hand-made Discord role with no auth group behind it: the
+        # signal would link it by name and hand it to the new group.
+        self.discord.return_value.get_roles.return_value = [
+            {"id": "777", "name": "Directors"}
+        ]
+        for url in ("/", f"/{self.tribe.pk}/groups"):
+            with self.subTest(url=url):
+                response = self._send(
+                    "post", url, self.manager, {"name": "directors"}
+                )
+                self.assertEqual(response.status_code, 400)
+                self.assertIn("already exists", response.json()["detail"])
+        self.assertFalse(Group.objects.filter(name__iexact="directors"))
+        self.assertFalse(Tribe.objects.filter(name="directors").exists())
+        self.assertFalse(TribeGroup.objects.filter(name="directors"))
+
+    def test_names_of_stored_discord_roles_are_refused(self):
+        # A DiscordRole row whose name has drifted from its auth group's.
+        DiscordRole.objects.create(
+            role_id=778,
+            name="Fleet Commanders",
+            group=Group.objects.create(name="FC old"),
+        )
+        response = self._send(
+            "post", "/", self.manager, {"name": "Fleet Commanders"}
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(Tribe.objects.count(), 1)
+
     def test_create_a_group_makes_its_auth_group_and_code(self):
         response = self._send(
             "post",
@@ -216,6 +251,70 @@ class StructureTestCase(TestCase):
         self.tribe.refresh_from_db()
         self.assertEqual(self.tribe.name, "Supply")
         self.assertEqual(self.tribe.group.name, "Supply")
+
+    def test_rename_to_a_discord_role_name_is_refused(self):
+        DiscordRole.objects.create(
+            role_id=557, name="Supply", group=self.tribe.group
+        )
+        group = TribeGroup.objects.create(
+            tribe=self.tribe,
+            name="Miners",
+            code="supply-structure.miners",
+            group=Group.objects.create(name="Miners"),
+        )
+        self.discord.return_value.get_roles.return_value = [
+            {"id": "557", "name": "Supply"},
+            {"id": "779", "name": "Leadership"},
+        ]
+        for url in (
+            f"/{self.tribe.pk}",
+            f"/{self.tribe.pk}/groups/{group.pk}",
+        ):
+            with self.subTest(url=url):
+                response = self._send(
+                    "patch", url, self.manager, {"name": "Leadership"}
+                )
+                self.assertEqual(response.status_code, 400)
+        self.discord.return_value.edit_role.assert_not_called()
+        self.tribe.refresh_from_db()
+        group.refresh_from_db()
+        self.assertEqual(self.tribe.group.name, "Supply")
+        self.assertEqual(group.group.name, "Miners")
+
+    def test_rename_may_match_its_own_discord_role(self):
+        DiscordRole.objects.create(
+            role_id=558, name="Supply", group=self.tribe.group
+        )
+        self.discord.return_value.get_roles.return_value = [
+            {"id": "558", "name": "Supply"}
+        ]
+        response = self._send(
+            "patch", f"/{self.tribe.pk}", self.manager, {"name": "SUPPLY"}
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.discord.return_value.edit_role.assert_called_once_with(
+            558, "SUPPLY"
+        )
+
+    def test_discord_is_renamed_last(self):
+        DiscordRole.objects.create(
+            role_id=559, name="Supply", group=self.tribe.group
+        )
+
+        def saved_first(role_id, name):
+            # Every database write, the audit entry too, is done before
+            # Discord is called, so nothing can fail after it.
+            self.assertEqual(Tribe.objects.get(pk=self.tribe.pk).name, name)
+            self.assertTrue(
+                AuditEntry.objects.filter(summary__startswith="Tribe Haul")
+            )
+
+        self.discord.return_value.edit_role.side_effect = saved_first
+        response = self._send(
+            "patch", f"/{self.tribe.pk}", self.manager, {"name": "Haul"}
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.discord.return_value.edit_role.assert_called_once()
 
     def test_rename_a_group_keeps_its_code(self):
         group = TribeGroup.objects.create(
