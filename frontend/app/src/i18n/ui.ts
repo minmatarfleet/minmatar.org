@@ -5728,7 +5728,7 @@ export const ui = {
         'scope_groups.total': '{count} scopes will be requested',
         'scope_groups.toggle_label': 'Request {group} scopes',
         'scope_groups.continue': 'Continue to EVE login',
-        'scope_groups.Basic.summary': 'Fleets, skills, assets, killmails and loyalty points.',
+        'scope_groups.Basic.summary': 'Fleets, skills, assets, killmails, loyalty points, and your corporation roles, standings and saved fittings.',
         'scope_groups.Basic.used_for': 'fleet tracking, MOTDs, skillsets, group access, buyback and after action reports',
         'scope_groups.FactionWarfare.summary': 'Faction warfare stats and your in-game notifications, read for LP payouts.',
         'scope_groups.FactionWarfare.used_for': 'counting complexes, advantage sites and battlefields toward campaign standings',

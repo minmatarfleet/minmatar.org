@@ -198,6 +198,16 @@ class ScopeRolloutTestCase(TestCase):
             build_character_response(self.main, self.main).flags,
         )
 
+    def test_the_november_basic_scopes_read_as_one_phrase(self):
+        added = NOT_GATED_SCOPES["Basic"]
+        self.main.token = token_with(1001, UP_TO_DATE - added)
+        self.main.save()
+        self.assertEqual(
+            self._task().detail,
+            "A newer login adds corporation roles, standings and saved "
+            "fittings",
+        )
+
     def test_a_group_the_character_has_is_checked_in_full(self):
         self.main.esi_scope_groups = ["Basic", "Industry", "FactionWarfare"]
         self.main.token = token_with(

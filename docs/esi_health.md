@@ -29,7 +29,7 @@ Director scopes stay a corporation's job (below), and guest (Public) and Executo
 
 Scopes added to Basic or Director that no feature reads yet are listed in `NOT_GATED_SCOPES` (`eveonline/scopes.py`). Gates (`token_satisfies_type`: tribe group token requirements, and the groups Account › Characters lists) leave them out, so growing a group never locks a pilot out; the `update_scopes` task still asks for them. Take a scope out of that set when a feature starts depending on it.
 
-On 2026-11-24 Basic gained seven read-only scopes in one go (corporation roles, titles, medals, standings, freelance jobs, saved fittings, structure names) so one re-login covers them, and Director gained every other corporation scope ESI has (`0003_seed_director_corporation_scopes`, Don't ask: no corporation's director token state changes). Each new scope must also be enabled on the EVE developer application before deploy, or SSO refuses the login.
+On 2026-11-24 Basic gained seven read-only scopes in one go (corporation roles, titles, medals, standings, freelance jobs, saved fittings, structure names) so one re-login covers them, and Director gained every other corporation scope ESI has (`0003_seed_director_corporation_scopes`, Don't ask: no corporation's director token state changes). The Basic ones share one label (`0004_seed_basic_scope_labels`), so the task reads "A newer login adds corporation roles, standings and saved fittings". Each new scope must also be enabled on the EVE developer application before deploy, or SSO refuses the login.
 
 Seeded (`0002_seed_scope_rollouts`): structure search in Basic, not asked (only structure search uses it, and 664 of 824 tokens predate it); corporation projects in Director, required.
 
