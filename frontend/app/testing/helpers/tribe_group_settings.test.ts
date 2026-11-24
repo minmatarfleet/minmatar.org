@@ -52,6 +52,7 @@ describe('Publishing settings patch', () => {
             allow_open_fleets: false,
             fleets_enabled: false,
             events_enabled: false,
+            track_mining_by_default: false,
             post_policy: 'chosen',
             post_publisher_character_ids: [9001, 9002],
             fleet_policy: 'members',

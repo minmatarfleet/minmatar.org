@@ -102,6 +102,8 @@ INSTALLED_APPS = [
     "esi_health.apps.EsiHealthConfig",
     # Fleet voice on Mumble: access records for the voice service
     "voice.apps.VoiceConfig",
+    # Agent (Claude) access to Discord through curated MCP tools
+    "agent_access.apps.AgentAccessConfig",
 ]
 
 # Discord Login

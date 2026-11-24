@@ -41,6 +41,8 @@ export interface CampaignTabsOptions {
     coordinator_scopes?: string[] | null;
     /** A manager or a holder of a campaign role: the Roles tab. */
     has_roles?:     boolean;
+    /** Links their own Discord server (Coordinator, IT, invited coordinator): the Discord tab. */
+    can_link_discord?: boolean;
 }
 
 /**
@@ -48,14 +50,14 @@ export interface CampaignTabsOptions {
  * Activity (the kill feed) gives way to Destruction on a strategic campaign,
  * where the feed is all it holds.
  */
-export function campaign_tabs({ kind, features, has_systems, can_manage, before_start = false, coordinator_scopes = null, has_roles = false }: CampaignTabsOptions): CampaignTab[] {
+export function campaign_tabs({ kind, features, has_systems, can_manage, before_start = false, coordinator_scopes = null, has_roles = false, can_link_discord = false }: CampaignTabsOptions): CampaignTab[] {
     if (coordinator_scopes) {
         const shared: CampaignTab[] = []
         if (features.structures && coordinator_scopes.includes('structures')) shared.push('structures')
         if (features.timers && coordinator_scopes.includes('timers')) shared.push('timers')
         if (features.fleets && coordinator_scopes.includes('fleets')) shared.push('fleets')
         if (has_roles) shared.push('roles')
-        shared.push('discord')
+        if (can_link_discord) shared.push('discord')
         return shared
     }
     const is_strategic = kind === 'strategic'

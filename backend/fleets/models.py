@@ -11,7 +11,10 @@ from eveonline.client import EsiClient
 from eveonline.models import EveCharacter, EveLocation
 from eveonline.helpers.characters import user_primary_character
 from fittings.models import EveDoctrine, EveFitting, EveFittingRefit
-from fleets.helpers.member_ships import apply_esi_fleet_member
+from fleets.helpers.member_ships import (
+    apply_esi_fleet_member,
+    mark_members_left,
+)
 from fleets.helpers.eft_items import fitting_href
 from fleets.motd import get_motd
 from fleets.helpers.start_ping import build_start_ping
@@ -135,6 +138,10 @@ class EveFleet(models.Model):
     # Pilots see their own sign-ups and the counts; names show only to the
     # fleet's FC and Strategic FCs. On by default.
     hide_volunteers = models.BooleanField(default=True)
+    # Record what each member mines while the fleet runs, from the ESI
+    # mining ledger. A group fleet takes the group's
+    # track_mining_by_default when the create request leaves it out.
+    track_mining = models.BooleanField(default=False)
 
     fleet_statuses = (
         ("pending", "Pending"),
@@ -552,6 +559,12 @@ class EveFleetInstance(models.Model):
 
         for esi_fleet_member in response:
             apply_esi_fleet_member(self, esi_fleet_member, resolved_ids)
+        # A live fleet always lists its boss, so an empty answer is a bad
+        # read, not everyone leaving at once.
+        if response:
+            mark_members_left(
+                self, {member["character_id"] for member in response}
+            )
 
         self.last_updated = timezone.now()
         self.save()
@@ -647,11 +660,79 @@ class EveFleetInstanceMember(models.Model):
     wing_id = models.BigIntegerField()
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
+    # Set by every member poll that lists the pilot.
+    last_seen_at = models.DateTimeField(null=True, blank=True)
+    # Set when a poll no longer lists the pilot; cleared when they rejoin.
+    left_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         indexes = [
             models.Index(fields=["character_id"]),
         ]
+
+
+class EveFleetMiningSegment(models.Model):
+    """
+    One stint of one member in a fleet that tracks mining.
+
+    Readings are per-ore totals from the pilot's ESI mining ledger, summed
+    over every row dated on or after ``since_date`` (any system). The ore
+    mined in the stint is ``latest_totals - start_totals``. The live poll and
+    the end reading both write ``latest_totals``, so a failed end reading
+    still leaves the last good poll. See docs/fleets/mining-tracking.md.
+    """
+
+    STATUS_PENDING = "pending"
+    STATUS_OPEN = "open"
+    STATUS_CLOSING = "closing"
+    STATUS_CLOSED = "closed"
+    STATUS_CLOSED_STALE = "closed_stale"
+    STATUS_NO_SCOPE = "no_scope"
+    STATUS_FAILED = "failed"
+    STATUS_CHOICES = (
+        (STATUS_PENDING, "Waiting for the start reading"),
+        (STATUS_OPEN, "Open"),
+        (STATUS_CLOSING, "Waiting for the end reading"),
+        (STATUS_CLOSED, "Closed"),
+        (STATUS_CLOSED_STALE, "Closed on the last poll"),
+        (STATUS_NO_SCOPE, "No mining scope"),
+        (STATUS_FAILED, "No start reading"),
+    )
+    ACTIVE_STATUSES = (STATUS_PENDING, STATUS_OPEN, STATUS_CLOSING)
+
+    member = models.ForeignKey(
+        EveFleetInstanceMember,
+        on_delete=models.CASCADE,
+        related_name="mining_segments",
+    )
+    status = models.CharField(
+        max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING
+    )
+    started_at = models.DateTimeField()
+    ended_at = models.DateTimeField(null=True, blank=True)
+    # Ledger rows dated on or after this day (EVE time) are summed.
+    since_date = models.DateField()
+    # {str(type_id): quantity}
+    start_totals = models.JSONField(null=True, blank=True)
+    latest_totals = models.JSONField(null=True, blank=True)
+    start_read_at = models.DateTimeField(null=True, blank=True)
+    latest_read_at = models.DateTimeField(null=True, blank=True)
+    # ISO times of every ledger read ESI answered while the stint was open
+    # or closing, from any caller (the character-sync scheduler included),
+    # with or without new ore. The timeline spreads each "+X ore" row over
+    # the gap since the read before it.
+    read_times = models.JSONField(default=list, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["status"]),
+        ]
+
+    def __str__(self):
+        return (
+            f"Mining segment {self.pk} ({self.status}) member {self.member_id}"
+        )
 
 
 class EveFleetInstanceMemberImplantSnapshot(models.Model):
@@ -1301,6 +1382,20 @@ def close_fleet_cleanup(eve_fleet) -> None:
         logger.warning(
             "ESI fitting cleanup failed for fleet %s: %s", eve_fleet.id, e
         )
+    close_fleet_mining(eve_fleet)
+
+
+def close_fleet_mining(eve_fleet) -> None:
+    """End every open mining stint; end readings follow after the lag."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.mining import close_open_segments
+
+    try:
+        close_open_segments(eve_fleet)
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.exception(
+            "Closing mining stints failed for fleet %s", eve_fleet.id
+        )
 
 
 def _motd_refits(eve_fleet):
@@ -1418,7 +1513,7 @@ class NpsiEventSource(models.Model):
         verbose_name = "NPSI event source"
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
 
 class NpsiExternalEvent(models.Model):

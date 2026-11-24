@@ -145,6 +145,8 @@ def _copy_request(
         location_id=location_id,
         disable_motd=bool(fleet.disable_motd),
         hide_volunteers=fleet.hide_volunteers,
+        # The copy keeps the FC's choice, not the group's current default.
+        track_mining=fleet.track_mining,
         campaign_id=campaign.id if campaign else None,
         # A voice option switched off since (Mumble taken offline, a Discord
         # retired) falls back to the default instead of refusing the copy.

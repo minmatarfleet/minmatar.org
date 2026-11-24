@@ -95,6 +95,7 @@ def get_fleet(request, fleet_id: int):
         "tracking": tracking,
         "disable_motd": fleet.disable_motd,
         "hide_volunteers": fleet.hide_volunteers,
+        "track_mining": fleet.track_mining,
         "status": fleet.status,
         "aar_link": fleet.aar_link,
         **_campaign_fields(fleet, request.user),

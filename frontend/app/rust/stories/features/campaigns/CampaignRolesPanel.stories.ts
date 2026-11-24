@@ -19,7 +19,7 @@ export default {
         docs: {
             description: {
                 component: [
-                    'The Roles tab of `/campaigns/<slug>/`: the four campaign roles (Coordinator, FC, Diplomat, Recon) held on the coordination Discord, with a member count each. A row opens to its holders: portrait, corporation, alliance and Discord name, tagged "Not signed in" (Discord only) or "Gets the role once they link Discord" (added on the site).',
+                    'The Roles tab of `/campaigns/<slug>/`: the campaign roles (Coordinator, FC, Diplomat, Recon, and IT, the tech person from an allied alliance who connects their Discord server) held on the coordination Discord, with a member count each. A row opens to its holders: portrait, corporation, alliance and Discord name, tagged "Not signed in" (Discord only) or "Gets the role once they link Discord" (added on the site).',
                     'Managers and Coordinators add someone with a character Combobox and remove them; managers also pick the Discord role behind each campaign role. FCs, Diplomats and Recon read it only. Every action posts to `part_url` (`campaign_roles_component`) and swaps the panel.',
                 ].join('\n\n'),
             },
@@ -37,8 +37,8 @@ export default {
 export const ReadOnly = {
     play: async ({ canvasElement }: Ctx) => {
         const canvas = within(canvasElement)
-        await expect(canvas.getByRole('heading', { name: 'Roles – 4' })).toBeVisible()
-        await expect(canvasElement.querySelectorAll('[data-role]')).toHaveLength(4)
+        await expect(canvas.getByRole('heading', { name: 'Roles – 5' })).toBeVisible()
+        await expect(canvasElement.querySelectorAll('[data-role]')).toHaveLength(5)
         // The open FC row lists its three holders and their states.
         await expect(canvas.getByText('Henri Gray')).toBeVisible()
         await expect(canvas.getByText('Not signed in')).toBeVisible()

@@ -41,7 +41,7 @@ def seed(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("fleets", "0065_fleetvoiceoption_evefleet_voice_option"),
+        ("fleets", "0068_fleetvoiceoption_evefleet_voice_option"),
     ]
 
     operations = [

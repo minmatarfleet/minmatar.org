@@ -73,8 +73,10 @@ describe('sitemap_xml', () => {
         expect(paths).toContain('/alliance/campaigns/hek/')
         expect(paths).toContain('/alliance/campaigns/auga-yc128/')
         expect(paths).not.toContain('/alliance/story/')
-        expect(paths).toContain('/alliance/story/chapter-1/')
-        expect(paths).toContain('/alliance/story/chapter-11/')
+        expect(paths).toContain('/alliance/story/rat-genesis/')
+        expect(paths).toContain('/alliance/story/dronelands/')
+        // Chapter addresses from before the eras redirect too.
+        expect(paths).not.toContain('/alliance/story/chapter-1/')
 
         // Filtered views canonicalise to their page, and the newsletter hub to its latest issue.
         expect(paths.filter((path) => path.includes('?'))).toEqual([])

@@ -135,6 +135,13 @@ class TribeGroup(models.Model):
         default=False,
         help_text="Publishers may open group fleets to the whole alliance.",
     )
+    track_mining_by_default = models.BooleanField(
+        default=False,
+        help_text=(
+            "New group fleets start with Track mining on. The FC can still "
+            "turn it off."
+        ),
+    )
 
     @property
     def effective_discord_channel_id(self) -> int | None:

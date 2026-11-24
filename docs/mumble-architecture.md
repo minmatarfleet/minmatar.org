@@ -17,7 +17,7 @@ flowchart LR
 
 ## Going live
 
-The Mumble voice option (`FleetVoiceOption`, kind `mumble`) is created **inactive** by `fleets/migrations/0066_seed_voice_options.py`, so nothing changes for pilots until ops switches it on in the admin. Before that: the host steps in the private runbook (nginx block and certbot certificate for `voice.minmatar.org`, network protection for port 64738), the secrets in `.env` (see `.env.example`), and removing any old voice stack. `voice.tasks.heartbeat_check` stays quiet until the option is active.
+The Mumble voice option (`FleetVoiceOption`, kind `mumble`) is created **inactive** by `fleets/migrations/0069_seed_voice_options.py`, so nothing changes for pilots until ops switches it on in the admin. Before that: the host steps in the private runbook (nginx block and certbot certificate for `voice.minmatar.org`, network protection for port 64738), the secrets in `.env` (see `.env.example`), and removing any old voice stack. `voice.tasks.heartbeat_check` stays quiet until the option is active.
 
 ## Who can connect
 

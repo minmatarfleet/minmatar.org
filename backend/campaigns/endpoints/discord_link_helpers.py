@@ -1,9 +1,10 @@
 """Add the bot to a Discord server for a campaign, and pick its channels.
 
 Managers add the bot to the server the campaign is run from ("ours").
-Managers and coordinators link more servers ("link") that campaign pings
-are forwarded to. Both go through Discord's OAuth2 code grant, which our
-application requires; the callback learns the server from the code.
+Managers, Coordinators, IT and coordinators invited the old way link more
+servers ("link") that campaign pings are forwarded to. Both go through
+Discord's OAuth2 code grant, which our application requires; the callback
+learns the server from the code.
 """
 
 from __future__ import annotations
@@ -16,19 +17,28 @@ SESSION_KEY = "campaign_discord_bot"
 PURPOSES = ("ours", "link")
 
 
+def links_own_server(user, campaign: Campaign) -> bool:
+    """Links their own server: a Coordinator or IT role holder (the
+    ``discord`` area), or a coordinator invited before roles."""
+    # pylint: disable-next=import-outside-toplevel
+    from campaigns.services import roles
+
+    return roles.may_edit(user, campaign, "discord") or disclosure.invited(
+        user, campaign
+    )
+
+
 def _may_link(user, campaign: Campaign, purpose: str) -> bool:
-    viewer = disclosure.role(user, campaign)
-    if purpose == "ours":
-        return viewer == disclosure.MANAGER
-    return viewer in (disclosure.MANAGER, disclosure.COORDINATOR)
+    if disclosure.is_manager(user, campaign):
+        return True
+    return purpose == "link" and links_own_server(user, campaign)
 
 
 def _may_edit(user, link: CampaignDiscordLink) -> bool:
     if disclosure.is_manager(user, link.campaign):
         return True
-    return (
-        link.linked_by_id == user.id
-        and disclosure.role(user, link.campaign) == disclosure.COORDINATOR
+    return link.linked_by_id == user.id and links_own_server(
+        user, link.campaign
     )
 
 

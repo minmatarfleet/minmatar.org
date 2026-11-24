@@ -182,7 +182,7 @@ class RolesTestCase(TestCase):
             ).json()
         self.assertEqual(
             [role["kind"] for role in body["roles"]],
-            ["coordinator", "fc", "diplomat", "recon"],
+            ["coordinator", "fc", "diplomat", "recon", "it"],
         )
         self.assertTrue(body["can_map"])
         self.assertTrue(body["can_change"])

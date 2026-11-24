@@ -1,6 +1,6 @@
 ---
 /**
- * A campaign's Roles tab: Coordinator, FC, Diplomat and Recon, held on the
+ * A campaign's Roles tab: Coordinator, FC, Diplomat, Recon and IT, held on the
  * coordination Discord, with who holds each. A row opens to its holders
  * (portrait, corporation, alliance, Discord name, whether they are signed
  * in or still waiting for Discord). Managers and Coordinators add someone
@@ -51,7 +51,8 @@ const COLORS: Record<string, string> = {
     coordinator: 'var(--fleet-red)',
     fc: 'var(--fleet-yellow)',
     diplomat: 'var(--militia-purple)',
-    recon: 'var(--faded)',
+    recon: 'var(--alliance-blue)',
+    it: 'var(--green)',
 }
 const action = (extra: Record<string, string>) => ({
     'hx-post': part_url,
@@ -122,10 +123,10 @@ import LocalTime from '@components/blocks/LocalTime.astro'
                         </div>
 
                         <Flexblock gap="var(--space-xs)" class="[ campaign-roles__body ]">
-                            <p class="[ campaign-roles__muted ]">
-                                {t('campaigns.roles.unlocks')} {role.reads.map((scope) => t(t_key('campaigns.roles.scope_', scope))).join(', ')}.
-                                {role.edits.length > 0 && <> {t('campaigns.roles.edits')} {role.edits.map((scope) => t(t_key('campaigns.roles.edit_', scope))).join(', ')}.</>}
-                            </p>
+                            <p class="[ campaign-roles__muted ]">{[
+                                role.reads.length > 0 ? `${t('campaigns.roles.unlocks')} ${role.reads.map((scope) => t(t_key('campaigns.roles.scope_', scope))).join(', ')}.` : '',
+                                role.edits.length > 0 ? `${t('campaigns.roles.edits')} ${role.edits.map((scope) => t(t_key('campaigns.roles.edit_', scope))).join(', ')}.` : '',
+                            ].filter(Boolean).join(' ')}</p>
                             {role.sync_error && <p class="[ campaign-roles__warn ]">{role.sync_error}</p>}
 
                             {role.members.length === 0 ?

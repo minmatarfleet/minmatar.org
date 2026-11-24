@@ -82,6 +82,7 @@ if (Astro.request.method === "POST") {
             location_id: parseInt(data.get('location_id') as string),
             disable_motd: (data.get('disable_motd' as string) === 'on'),
             hide_volunteers: (data.get('hide_volunteers' as string) === 'on'),
+            track_mining: (data.get('track_mining' as string) === 'on'),
             ...(host_fields && host_fields),
         } as FleetPatchRequest
         
@@ -155,6 +156,8 @@ const form_host_groups:PublishableGroup[] = current_group && !host_groups.some((
         member_count: 0,
         allow_alliance_posts: false,
         allow_open_fleets: Boolean(fleet?.open_to_alliance),
+        // Unused here: the edit form keeps the fleet's own track_mining.
+        track_mining_by_default: false,
     } ] :
     host_groups
 const show_host_row = form_host_groups.length > 0
@@ -276,6 +279,7 @@ const eve_time = eve_clock(eve_datetime)
                         eve_time={eve_time}
                         disable_motd={fleet?.disable_motd}
                         hide_volunteers={fleet?.hide_volunteers}
+                        track_mining={Boolean(fleet?.track_mining)}
                         lang={lang}
                         host_groups={form_host_groups}
                         selected_host={selected_host}

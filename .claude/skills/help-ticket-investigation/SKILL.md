@@ -98,17 +98,23 @@ URL shape: `https://discord.com/channels/<guild_id>/<thread_id>`
 
 ### Discord MCP
 
-Use the workspace Discord MCP (`get_channel_info`, `read_messages`,
-`get_attachment`, `send_message`). Claude Code loads it as `discord` from
-`.mcp.json`; Cursor loads the same `mcps/run-discord-mcp.sh` as
-`discord-mcp`. That server reaches the production guild and can post in
-help threads. If one Discord MCP times out, try the other connected
-Discord MCP. An archived thread returns “Channel not found” for reads and
-sends; a thread can be archived mid-run when its ticket is closed.
+Use the `discord` MCP (`get_channel_info`, `read_messages`,
+`get_attachment`, `send_message`). Claude Code loads it from `.mcp.json`:
+it is the backend's agent endpoint (`docs/auth/agent-discord-access.md`),
+which reaches every server the bot is in, including archived threads.
+Posting works in every #help ticket thread (the threads under
+`DISCORD_HELP_CHANNEL_ID`) and in channels with a post target (`can_post`
+in `get_channel_info`); each `send_message` asks for approval.
+`close_help_ticket` `{ channel_id, reason }` closes a ticket the way its
+Close button does (notice in the thread, archive and lock, `HelpTicket`
+closed), and also asks for approval. Cursor
+still loads the older `mcps/run-discord-mcp.sh` jar as `discord-mcp`,
+with camelCase arguments (`channelId`). A thread can be archived mid-run
+when its ticket is closed; replying unarchives it unless it is locked.
 
-1. `get_channel_info` `{ channelId }` — confirm name / private thread.
-2. `read_messages` `{ channelId, count: "50" }` (raise if the thread is busy).
-3. For **every** message id, `get_attachment` `{ channelId, messageId }`.
+1. `get_channel_info` `{ channel_id }` — confirm name / private thread.
+2. `read_messages` `{ channel_id, limit: 50 }` (page with `before`).
+3. For **every** message id, `get_attachment` `{ channel_id, message_id }`.
 4. If attachments return CDN URLs, download and **Read the image files**.
    Do not skip “empty” starter messages.
 
@@ -250,9 +256,10 @@ Scan this table before inventing a new theory.
 
 ### Discord reply
 
-`send_message` on the **thread** `channelId`. Short, operational. No user
-pks, no other members’ data, no tokens. The cloud agent bot is the test
-guild and 403s production help threads. The workspace Discord MCP reaches
+`send_message` on the **thread** `channel_id`. Short, operational. No user
+pks, no other members’ data, no tokens. Tag someone with
+`mention_user_ids`; nothing else pings. The cloud agent bot is the test
+guild and 403s production help threads. The `discord` MCP reaches
 the production guild. When a merged help-ticket PR says the thread was
 not answered, post outcome 1 or 2 from that MCP with the PR URL, then
 change that learning's Discord line off “no reply”. Do not invent a
@@ -264,6 +271,10 @@ cannot be archived. Still open the PR.
 | **1 Clarify** | What the product already does and why. Mention the opener. |
 | **2 Fix** | What was wrong, **PR URL**, what happens after deploy. Mention the opener. If you already replied without a PR, follow up with the link. |
 | **3 Decision** | Facts + the exact question. Mention the opener **and** BearThatCares. Do not invent a policy answer. |
+
+Close the ticket with `close_help_ticket` only when the opener confirmed
+it is resolved, or the person running the loop says to. A fix that is not
+deployed yet is not resolved.
 
 ### PR (always)
 

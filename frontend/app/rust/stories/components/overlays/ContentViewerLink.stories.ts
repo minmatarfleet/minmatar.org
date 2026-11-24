@@ -102,15 +102,22 @@ export const OpensOnPlainClick = {
         // Record whether the link's own handler cancelled the click, then stop
         // the navigation so the story page stays put.
         const cancelled: boolean[] = []
-        canvasElement.addEventListener('click', (event) => { cancelled.push(event.defaultPrevented); event.preventDefault() })
-        click(a, { ctrlKey: true })
-        await new Promise((resolve) => setTimeout(resolve, 50))
-        await expect(seen).toHaveLength(0)
-        await expect(cancelled[0]).toBe(false)
-        click(a)
-        await waitFor(() => expect(seen).toHaveLength(1))
-        await expect(cancelled[1]).toBe(true)
-        await expect(seen[0]).toEqual({ title: 'EvE Online - The Cope - The Imperium Retreats', href: '/alliance/propaganda/eve-online---the-cope-275' })
-        stop()
+        const record = (event: Event) => { cancelled.push(event.defaultPrevented); event.preventDefault() }
+        // The story root is shared with every story the browser run plays
+        // after this one: the listener must go, or their clicks are cancelled.
+        canvasElement.addEventListener('click', record)
+        try {
+            click(a, { ctrlKey: true })
+            await new Promise((resolve) => setTimeout(resolve, 50))
+            await expect(seen).toHaveLength(0)
+            await expect(cancelled[0]).toBe(false)
+            click(a)
+            await waitFor(() => expect(seen).toHaveLength(1))
+            await expect(cancelled[1]).toBe(true)
+            await expect(seen[0]).toEqual({ title: 'EvE Online - The Cope - The Imperium Retreats', href: '/alliance/propaganda/eve-online---the-cope-275' })
+        } finally {
+            canvasElement.removeEventListener('click', record)
+            stop()
+        }
     },
 }

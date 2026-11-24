@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ("fleets", "0065_fleetvoiceoption_evefleet_voice_option"),
+        ("fleets", "0068_fleetvoiceoption_evefleet_voice_option"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

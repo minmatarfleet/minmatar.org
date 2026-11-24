@@ -82,6 +82,7 @@ describe('fetch_fleet_by_id', () => {
             audience: 'Alliance',
             disable_motd: false,
             hide_volunteers: false,
+            track_mining: false,
             status: 'pending',
             aar_link: '',
             roam_report_url: '',

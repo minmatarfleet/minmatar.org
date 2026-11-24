@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("fleets", "0064_mining_form_up_locations"),
+        ("fleets", "0067_mining_read_times"),
     ]
 
     operations = [

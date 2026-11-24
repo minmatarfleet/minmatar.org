@@ -41,6 +41,10 @@ REQUEST_PATH_ALLOWLIST = {
     # Staff-only admin and diagnostics, not member-facing traffic.
     "users/admin.py": "admin role delete",
     "tech/router.py": "tech diagnostics: list roles",
+    # The MCP tool result is the Discord response. agent_access/discord_api.py
+    # makes one attempt with a short timeout and returns 429 to the agent
+    # instead of backing off in the request.
+    "agent_access/views.py": "agent MCP tools",
 }
 
 # Modules that may send a DM directly, and why.

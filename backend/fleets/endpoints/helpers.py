@@ -131,6 +131,7 @@ def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
         "tracking": tracking,
         "disable_motd": fleet.disable_motd,
         "hide_volunteers": fleet.hide_volunteers,
+        "track_mining": fleet.track_mining,
         "status": fixup_fleet_status(fleet, tracking),
         "doctrine_id": fleet.doctrine.id if fleet.doctrine else None,
         "doctrine_name": fleet.doctrine.name if fleet.doctrine else None,
@@ -250,6 +251,16 @@ def _fleet_apply_optional_scalar_updates(fleet: EveFleet, payload) -> None:
         fleet.aar_link = payload.aar_link
     if "hide_volunteers" in payload.model_fields_set:
         fleet.hide_volunteers = bool(payload.hide_volunteers)
+    # Left out or null: unchanged. Moving a fleet into a group keeps it too.
+    if payload.track_mining is not None:
+        if fleet.track_mining and not payload.track_mining:
+            # Switched off mid-fleet: close every stint now, so readings
+            # stop and the ore so far is kept.
+            # pylint: disable=import-outside-toplevel
+            from fleets.helpers.mining import close_open_segments
+
+            close_open_segments(fleet)
+        fleet.track_mining = payload.track_mining
 
 
 def update_instance_endtime(fleet: EveFleet) -> None:

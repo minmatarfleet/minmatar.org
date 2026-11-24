@@ -1339,8 +1339,8 @@ export interface paths {
         };
         /**
          * List Links
-         * @description The servers this viewer may edit: all of them for managers, a
-         *     coordinator's own for a coordinator.
+         * @description The servers this viewer may edit: all of them for managers, their
+         *     own for Coordinators, IT and invited coordinators.
          */
         get: operations["campaigns_endpoints_get_discord_links_list_links"];
         put?: never;
@@ -1701,6 +1701,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/campaigns/{slug}/roles/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Role Suggestions
+         * @description Everyone on the campaign's coordination server, each with the EVE
+         *     character they most likely fly and the roles they already hold, for
+         *     whoever may add role holders. A guess to invite from, cached and
+         *     refreshed by every role sync.
+         */
+        get: operations["campaigns_endpoints_get_role_suggestions_get_role_suggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/campaigns/{slug}/roles/sync": {
         parameters: {
             query?: never;
@@ -1752,8 +1775,10 @@ export interface paths {
         put?: never;
         /**
          * Add Role Member
-         * @description Add a role holder by exact character name. They get the Discord role
-         *     on the next sync once they have linked Discord.
+         * @description Add a role holder: a member of the coordination server
+         *     (``discord_user_id``, from the suggestions; they get the Discord role at
+         *     once), or anyone by exact character name (they get it on the next sync
+         *     once they have linked Discord). The owner of the character is told.
          */
         post: operations["campaigns_endpoints_post_role_member_add_role_member"];
         delete?: never;
@@ -4546,6 +4571,26 @@ export interface paths {
          * @description Get fleet members: the roster. Only the fleet's FC and fleet managers (Strategic FCs) may read it.
          */
         get: operations["fleets_endpoints_fleet_get_fleet_members_get_fleet_members"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fleets/{fleet_id}/mining": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Fleet Mining
+         * @description Ore mined per pilot while they were in the in-game fleet, from their ESI mining ledger (any system), with m3 and a Jita ISK estimate, and a timeline: ore per pilot per 15-minute bucket from the ledger deltas each pull stores, join/leave times, idle runs (2+ empty buckets in the fleet) and a newest-first log. Live: readings land about every 15 minutes, and end readings about 11 minutes after a pilot leaves or the fleet ends (measuring stays true until then). Pilots without the mining scope are listed as no_scope. The fleet's FC and Strategic FCs see every pilot by name, and everyone sees their own. Otherwise: when the fleet hides its roster, other pilots have no name; else they show as their owner's main, or as 'Undisclosed Character' (no id) when their ore came from outside high sec, like the homepage feed. Empty for a fleet that never tracked mining.
+         */
+        get: operations["fleets_endpoints_fleet_get_fleet_mining_get_fleet_mining"];
         put?: never;
         post?: never;
         delete?: never;
@@ -14204,8 +14249,13 @@ export interface components {
         };
         /** CampaignRoleAdd */
         CampaignRoleAdd: {
-            /** Character Name */
-            character_name: string;
+            /**
+             * Character Name
+             * @default
+             */
+            character_name?: string;
+            /** Discord User Id */
+            discord_user_id?: string | null;
         };
         /** CampaignRoleMap */
         CampaignRoleMap: {
@@ -14283,6 +14333,73 @@ export interface components {
             sync_error?: string;
             /** Synced At */
             synced_at?: string | null;
+        };
+        /** CampaignRoleSuggestionOut */
+        CampaignRoleSuggestionOut: {
+            /**
+             * Alliance Name
+             * @default
+             */
+            alliance_name?: string;
+            /**
+             * Avatar Url
+             * @default
+             */
+            avatar_url?: string;
+            /** Character Id */
+            character_id?: number | null;
+            /**
+             * Character Name
+             * @default
+             */
+            character_name?: string;
+            /**
+             * Corporation Name
+             * @default
+             */
+            corporation_name?: string;
+            /**
+             * Discord Name
+             * @default
+             */
+            discord_name?: string;
+            /** Discord User Id */
+            discord_user_id: string;
+            /**
+             * Match
+             * @default
+             */
+            match?: string;
+            /**
+             * Roles
+             * @default []
+             */
+            roles?: string[];
+            /**
+             * Tag
+             * @default
+             */
+            tag?: string;
+            /**
+             * Tag Check
+             * @default
+             */
+            tag_check?: string;
+        };
+        /** CampaignRoleSuggestionsOut */
+        CampaignRoleSuggestionsOut: {
+            /** Available */
+            available: boolean;
+            /**
+             * Members
+             * @default []
+             */
+            members?: components["schemas"]["CampaignRoleSuggestionOut"][];
+            /**
+             * Own Server
+             * @default false
+             */
+            own_server?: boolean;
         };
         /** CampaignRolesOut */
         CampaignRolesOut: {
@@ -16650,6 +16767,8 @@ export interface components {
             start_time: string;
             /** Status */
             status?: string | null;
+            /** Track Mining */
+            track_mining?: boolean | null;
             type: components["schemas"]["EveFleetType"];
             /** Voice Option Id */
             voice_option_id?: number | null;
@@ -18220,6 +18339,11 @@ export interface components {
             start_time?: string | null;
             /** Status */
             status?: string | null;
+            /**
+             * Track Mining
+             * @default false
+             */
+            track_mining?: boolean;
             tracking?: components["schemas"]["EveFleetTrackingResponse"] | null;
             type: components["schemas"]["EveFleetType"];
             /**
@@ -18319,6 +18443,11 @@ export interface components {
             start_time?: string | null;
             /** Status */
             status?: string | null;
+            /**
+             * Track Mining
+             * @default false
+             */
+            track_mining?: boolean;
             tracking?: components["schemas"]["EveFleetTrackingResponse"] | null;
             type: components["schemas"]["EveFleetType"];
             /**
@@ -18713,6 +18842,11 @@ export interface components {
             start_time?: string | null;
             /** Status */
             status?: string | null;
+            /**
+             * Track Mining
+             * @default false
+             */
+            track_mining?: boolean;
             tracking?: components["schemas"]["EveFleetTrackingResponse"] | null;
             type: components["schemas"]["EveFleetType"];
             /**
@@ -20636,6 +20770,122 @@ export interface components {
             totals: components["schemas"]["InviteTotals"];
             /** Waves */
             waves: components["schemas"]["InviteWave"][];
+        };
+        /** FleetMiningEvent */
+        FleetMiningEvent: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Character Id */
+            character_id?: number | null;
+            /** Character Name */
+            character_name?: string | null;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "join" | "leave" | "ore";
+            /** Ore Name */
+            ore_name?: string | null;
+            /** Quantity */
+            quantity?: number | null;
+            /** Type Id */
+            type_id?: number | null;
+            /** Volume M3 */
+            volume_m3?: number | null;
+        };
+        /** FleetMiningOre */
+        FleetMiningOre: {
+            /** Isk Estimate */
+            isk_estimate: number;
+            /** Name */
+            name: string;
+            /** Quantity */
+            quantity: number;
+            /** Type Id */
+            type_id: number;
+            /** Volume M3 */
+            volume_m3: number;
+        };
+        /** FleetMiningPilot */
+        FleetMiningPilot: {
+            /** Character Id */
+            character_id?: number | null;
+            /** Character Name */
+            character_name?: string | null;
+            /** Isk Estimate */
+            isk_estimate: number;
+            /** Ores */
+            ores: components["schemas"]["FleetMiningOre"][];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "measuring" | "done" | "partial" | "no_scope";
+            /** Volume M3 */
+            volume_m3: number;
+        };
+        /** FleetMiningResponse */
+        FleetMiningResponse: {
+            /** Isk Estimate */
+            isk_estimate: number;
+            /** Measuring */
+            measuring: boolean;
+            /** Ores */
+            ores: components["schemas"]["FleetMiningOre"][];
+            /** Pilots */
+            pilots: components["schemas"]["FleetMiningPilot"][];
+            /** Pilots No Scope */
+            pilots_no_scope: number;
+            timeline?: components["schemas"]["FleetMiningTimeline"] | null;
+            /** Track Mining */
+            track_mining: boolean;
+            /** Updated At */
+            updated_at?: string | null;
+            /** Volume M3 */
+            volume_m3: number;
+        };
+        /** FleetMiningTimeline */
+        FleetMiningTimeline: {
+            /** Bucket Minutes */
+            bucket_minutes: number;
+            /** Buckets */
+            buckets: string[];
+            /**
+             * End
+             * Format: date-time
+             */
+            end: string;
+            /** Events */
+            events: components["schemas"]["FleetMiningEvent"][];
+            /** Pilots */
+            pilots: components["schemas"]["FleetMiningTimelinePilot"][];
+            /**
+             * Start
+             * Format: date-time
+             */
+            start: string;
+            /** Totals M3 */
+            totals_m3: number[];
+        };
+        /** FleetMiningTimelinePilot */
+        FleetMiningTimelinePilot: {
+            /** Cell M3 */
+            cell_m3: number[];
+            /** Cells */
+            cells: ("ore" | "quiet" | "idle" | "out")[];
+            /** Character Id */
+            character_id?: number | null;
+            /** Character Name */
+            character_name?: string | null;
+            /** Mining Pct */
+            mining_pct?: number | null;
+            /** No Scope */
+            no_scope: boolean;
+            /** Volume M3 */
+            volume_m3: number;
         };
         /** FleetParticipantsCharacter */
         FleetParticipantsCharacter: {
@@ -29061,6 +29311,11 @@ export interface components {
             member_count: number;
             /** Name */
             name: string;
+            /**
+             * Track Mining By Default
+             * @default false
+             */
+            track_mining_by_default?: boolean;
             /** Tribe Id */
             tribe_id: number;
             /** Tribe Name */
@@ -33086,6 +33341,8 @@ export interface components {
             post_policy?: components["schemas"]["PublishingPolicy"] | null;
             /** Post Publisher Character Ids */
             post_publisher_character_ids?: number[] | null;
+            /** Track Mining By Default */
+            track_mining_by_default?: boolean | null;
         };
         /** TribeGroupPublishingSchema */
         TribeGroupPublishingSchema: {
@@ -33122,6 +33379,11 @@ export interface components {
             post_policy: components["schemas"]["PublishingPolicy"];
             /** Post Publishers */
             post_publishers: components["schemas"]["PublisherSchema"][];
+            /**
+             * Track Mining By Default
+             * @default false
+             */
+            track_mining_by_default?: boolean;
         };
         /** TribeGroupRankSchema */
         TribeGroupRankSchema: {
@@ -33884,6 +34146,8 @@ export interface components {
             start_time?: string | null;
             /** Status */
             status?: string | null;
+            /** Track Mining */
+            track_mining?: boolean | null;
             type?: components["schemas"]["EveFleetType"] | null;
             /** Voice Option Id */
             voice_option_id?: number | null;
@@ -38657,6 +38921,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    campaigns_endpoints_get_role_suggestions_get_role_suggestions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignRoleSuggestionsOut"];
                 };
             };
             /** @description Forbidden */
@@ -45484,6 +45786,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EveFleetMemberResponse"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    fleets_endpoints_fleet_get_fleet_mining_get_fleet_mining: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetMiningResponse"];
                 };
             };
             /** @description Forbidden */

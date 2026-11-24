@@ -5624,15 +5624,23 @@
       "CampaignRoleAdd": {
         "properties": {
           "character_name": {
+            "default": "",
             "maxLength": 255,
-            "minLength": 3,
             "title": "Character Name",
             "type": "string"
+          },
+          "discord_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discord User Id"
           }
         },
-        "required": [
-          "character_name"
-        ],
         "title": "CampaignRoleAdd",
         "type": "object"
       },
@@ -5791,6 +5799,104 @@
           "label"
         ],
         "title": "CampaignRoleOut",
+        "type": "object"
+      },
+      "CampaignRoleSuggestionOut": {
+        "properties": {
+          "alliance_name": {
+            "default": "",
+            "title": "Alliance Name",
+            "type": "string"
+          },
+          "avatar_url": {
+            "default": "",
+            "title": "Avatar Url",
+            "type": "string"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "character_name": {
+            "default": "",
+            "title": "Character Name",
+            "type": "string"
+          },
+          "corporation_name": {
+            "default": "",
+            "title": "Corporation Name",
+            "type": "string"
+          },
+          "discord_name": {
+            "default": "",
+            "title": "Discord Name",
+            "type": "string"
+          },
+          "discord_user_id": {
+            "title": "Discord User Id",
+            "type": "string"
+          },
+          "match": {
+            "default": "",
+            "title": "Match",
+            "type": "string"
+          },
+          "roles": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Roles",
+            "type": "array"
+          },
+          "tag": {
+            "default": "",
+            "title": "Tag",
+            "type": "string"
+          },
+          "tag_check": {
+            "default": "",
+            "title": "Tag Check",
+            "type": "string"
+          }
+        },
+        "required": [
+          "discord_user_id"
+        ],
+        "title": "CampaignRoleSuggestionOut",
+        "type": "object"
+      },
+      "CampaignRoleSuggestionsOut": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "members": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/CampaignRoleSuggestionOut"
+            },
+            "title": "Members",
+            "type": "array"
+          },
+          "own_server": {
+            "default": false,
+            "title": "Own Server",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "available"
+        ],
+        "title": "CampaignRoleSuggestionsOut",
         "type": "object"
       },
       "CampaignRolesOut": {
@@ -11619,6 +11725,17 @@
             ],
             "title": "Status"
           },
+          "track_mining": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Track Mining"
+          },
           "type": {
             "$ref": "#/components/schemas/EveFleetType"
           },
@@ -15393,6 +15510,11 @@
             ],
             "title": "Status"
           },
+          "track_mining": {
+            "default": false,
+            "title": "Track Mining",
+            "type": "boolean"
+          },
           "tracking": {
             "anyOf": [
               {
@@ -15719,6 +15841,11 @@
               }
             ],
             "title": "Status"
+          },
+          "track_mining": {
+            "default": false,
+            "title": "Track Mining",
+            "type": "boolean"
           },
           "tracking": {
             "anyOf": [
@@ -16752,6 +16879,11 @@
               }
             ],
             "title": "Status"
+          },
+          "track_mining": {
+            "default": false,
+            "title": "Track Mining",
+            "type": "boolean"
           },
           "tracking": {
             "anyOf": [
@@ -21606,6 +21738,390 @@
           "can_see_leak_trace"
         ],
         "title": "FleetInvitesResponse",
+        "type": "object"
+      },
+      "FleetMiningEvent": {
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "character_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Name"
+          },
+          "kind": {
+            "enum": [
+              "join",
+              "leave",
+              "ore"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "ore_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ore Name"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type Id"
+          },
+          "volume_m3": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Volume M3"
+          }
+        },
+        "required": [
+          "at",
+          "kind"
+        ],
+        "title": "FleetMiningEvent",
+        "type": "object"
+      },
+      "FleetMiningOre": {
+        "properties": {
+          "isk_estimate": {
+            "title": "Isk Estimate",
+            "type": "number"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "quantity": {
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "type_id": {
+            "title": "Type Id",
+            "type": "integer"
+          },
+          "volume_m3": {
+            "title": "Volume M3",
+            "type": "number"
+          }
+        },
+        "required": [
+          "type_id",
+          "name",
+          "quantity",
+          "volume_m3",
+          "isk_estimate"
+        ],
+        "title": "FleetMiningOre",
+        "type": "object"
+      },
+      "FleetMiningPilot": {
+        "properties": {
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "character_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Name"
+          },
+          "isk_estimate": {
+            "title": "Isk Estimate",
+            "type": "number"
+          },
+          "ores": {
+            "items": {
+              "$ref": "#/components/schemas/FleetMiningOre"
+            },
+            "title": "Ores",
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "measuring",
+              "done",
+              "partial",
+              "no_scope"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "volume_m3": {
+            "title": "Volume M3",
+            "type": "number"
+          }
+        },
+        "required": [
+          "status",
+          "ores",
+          "volume_m3",
+          "isk_estimate"
+        ],
+        "title": "FleetMiningPilot",
+        "type": "object"
+      },
+      "FleetMiningResponse": {
+        "properties": {
+          "isk_estimate": {
+            "title": "Isk Estimate",
+            "type": "number"
+          },
+          "measuring": {
+            "title": "Measuring",
+            "type": "boolean"
+          },
+          "ores": {
+            "items": {
+              "$ref": "#/components/schemas/FleetMiningOre"
+            },
+            "title": "Ores",
+            "type": "array"
+          },
+          "pilots": {
+            "items": {
+              "$ref": "#/components/schemas/FleetMiningPilot"
+            },
+            "title": "Pilots",
+            "type": "array"
+          },
+          "pilots_no_scope": {
+            "title": "Pilots No Scope",
+            "type": "integer"
+          },
+          "timeline": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FleetMiningTimeline"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "track_mining": {
+            "title": "Track Mining",
+            "type": "boolean"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "volume_m3": {
+            "title": "Volume M3",
+            "type": "number"
+          }
+        },
+        "required": [
+          "track_mining",
+          "measuring",
+          "pilots",
+          "ores",
+          "volume_m3",
+          "isk_estimate",
+          "pilots_no_scope"
+        ],
+        "title": "FleetMiningResponse",
+        "type": "object"
+      },
+      "FleetMiningTimeline": {
+        "properties": {
+          "bucket_minutes": {
+            "title": "Bucket Minutes",
+            "type": "integer"
+          },
+          "buckets": {
+            "items": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "title": "Buckets",
+            "type": "array"
+          },
+          "end": {
+            "format": "date-time",
+            "title": "End",
+            "type": "string"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/FleetMiningEvent"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "pilots": {
+            "items": {
+              "$ref": "#/components/schemas/FleetMiningTimelinePilot"
+            },
+            "title": "Pilots",
+            "type": "array"
+          },
+          "start": {
+            "format": "date-time",
+            "title": "Start",
+            "type": "string"
+          },
+          "totals_m3": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Totals M3",
+            "type": "array"
+          }
+        },
+        "required": [
+          "bucket_minutes",
+          "start",
+          "end",
+          "buckets",
+          "totals_m3",
+          "pilots",
+          "events"
+        ],
+        "title": "FleetMiningTimeline",
+        "type": "object"
+      },
+      "FleetMiningTimelinePilot": {
+        "properties": {
+          "cell_m3": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Cell M3",
+            "type": "array"
+          },
+          "cells": {
+            "items": {
+              "enum": [
+                "ore",
+                "quiet",
+                "idle",
+                "out"
+              ],
+              "type": "string"
+            },
+            "title": "Cells",
+            "type": "array"
+          },
+          "character_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Id"
+          },
+          "character_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Character Name"
+          },
+          "mining_pct": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mining Pct"
+          },
+          "no_scope": {
+            "title": "No Scope",
+            "type": "boolean"
+          },
+          "volume_m3": {
+            "title": "Volume M3",
+            "type": "number"
+          }
+        },
+        "required": [
+          "no_scope",
+          "cells",
+          "cell_m3",
+          "volume_m3"
+        ],
+        "title": "FleetMiningTimelinePilot",
         "type": "object"
       },
       "FleetParticipantsCharacter": {
@@ -43103,6 +43619,11 @@
             "title": "Name",
             "type": "string"
           },
+          "track_mining_by_default": {
+            "default": false,
+            "title": "Track Mining By Default",
+            "type": "boolean"
+          },
           "tribe_id": {
             "title": "Tribe Id",
             "type": "integer"
@@ -52735,6 +53256,17 @@
               }
             ],
             "title": "Post Publisher Character Ids"
+          },
+          "track_mining_by_default": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Track Mining By Default"
           }
         },
         "title": "TribeGroupPublishingPatch",
@@ -52837,6 +53369,11 @@
             },
             "title": "Post Publishers",
             "type": "array"
+          },
+          "track_mining_by_default": {
+            "default": false,
+            "title": "Track Mining By Default",
+            "type": "boolean"
           }
         },
         "required": [
@@ -54584,6 +55121,17 @@
               }
             ],
             "title": "Status"
+          },
+          "track_mining": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Track Mining"
           },
           "type": {
             "anyOf": [
@@ -61171,7 +61719,7 @@
     },
     "/api/campaigns/{slug}/discord-links": {
       "get": {
-        "description": "The servers this viewer may edit: all of them for managers, a\ncoordinator's own for a coordinator.",
+        "description": "The servers this viewer may edit: all of them for managers, their\nown for Coordinators, IT and invited coordinators.",
         "operationId": "campaigns_endpoints_get_discord_links_list_links",
         "parameters": [
           {
@@ -62636,6 +63184,57 @@
         ]
       }
     },
+    "/api/campaigns/{slug}/roles/suggestions": {
+      "get": {
+        "description": "Everyone on the campaign's coordination server, each with the EVE\ncharacter they most likely fly and the roles they already hold, for\nwhoever may add role holders. A guess to invite from, cached and\nrefreshed by every role sync.",
+        "operationId": "campaigns_endpoints_get_role_suggestions_get_role_suggestions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignRoleSuggestionsOut"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Role Suggestions",
+        "tags": [
+          "Campaigns"
+        ]
+      }
+    },
     "/api/campaigns/{slug}/roles/sync": {
       "post": {
         "description": "Read the coordination server now instead of waiting for the beat.",
@@ -62779,7 +63378,7 @@
     },
     "/api/campaigns/{slug}/roles/{kind}/members": {
       "post": {
-        "description": "Add a role holder by exact character name. They get the Discord role\non the next sync once they have linked Discord.",
+        "description": "Add a role holder: a member of the coordination server\n(``discord_user_id``, from the suggestions; they get the Discord role at\nonce), or anyone by exact character name (they get it on the next sync\nonce they have linked Discord). The owner of the character is told.",
         "operationId": "campaigns_endpoints_post_role_member_add_role_member",
         "parameters": [
           {
@@ -72819,6 +73418,50 @@
           }
         ],
         "summary": "Get Fleet Members",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/{fleet_id}/mining": {
+      "get": {
+        "description": "Ore mined per pilot while they were in the in-game fleet, from their ESI mining ledger (any system), with m3 and a Jita ISK estimate, and a timeline: ore per pilot per 15-minute bucket from the ledger deltas each pull stores, join/leave times, idle runs (2+ empty buckets in the fleet) and a newest-first log. Live: readings land about every 15 minutes, and end readings about 11 minutes after a pilot leaves or the fleet ends (measuring stays true until then). Pilots without the mining scope are listed as no_scope. The fleet's FC and Strategic FCs see every pilot by name, and everyone sees their own. Otherwise: when the fleet hides its roster, other pilots have no name; else they show as their owner's main, or as 'Undisclosed Character' (no id) when their ore came from outside high sec, like the homepage feed. Empty for a fleet that never tracked mining.",
+        "operationId": "fleets_endpoints_fleet_get_fleet_mining_get_fleet_mining",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FleetMiningResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Fleet Mining",
         "tags": [
           "Fleets"
         ]

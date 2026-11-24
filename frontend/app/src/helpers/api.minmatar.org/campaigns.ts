@@ -1,4 +1,4 @@
-import type { CampaignChoices, CampaignCoordination, CampaignCoordinationPut, CampaignDestruction, CampaignDiscordLink, CampaignRoles, CampaignTimer } from '@dtypes/api.minmatar.org'
+import type { CampaignChoices, CampaignCoordination, CampaignCoordinationPut, CampaignDestruction, CampaignDiscordLink, CampaignRoles, CampaignRoleSuggestions, CampaignTimer } from '@dtypes/api.minmatar.org'
 import type {
     CampaignListItem,
     CampaignDetail,
@@ -349,6 +349,14 @@ export async function get_campaign_roles(slug:string, access_token:string) {
     return await api_request<CampaignRoles>(`${API_ENDPOINT}/${slug}/roles`, {
         token: access_token,
         error: 'Error fetching campaign roles',
+    })
+}
+
+/** Everyone on the campaign's own coordination server, with the character each most likely flies. */
+export async function get_campaign_role_suggestions(slug:string, access_token:string) {
+    return await api_request<CampaignRoleSuggestions>(`${API_ENDPOINT}/${slug}/roles/suggestions`, {
+        token: access_token,
+        error: 'Error fetching the coordination server members',
     })
 }
 
