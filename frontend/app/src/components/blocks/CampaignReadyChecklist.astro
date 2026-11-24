@@ -21,6 +21,16 @@ delete attributes.class
 
 const weeks = Math.max(1, Math.round((new Date(campaign.end_at).getTime() - new Date(campaign.start_at).getTime()) / (7 * 86_400_000)))
 const dates = `${eve_day_short(lang, campaign.start_at, { weekday: true })} ${eve_clock(campaign.start_at)} → ${eve_day_short(lang, campaign.end_at, { weekday: true })} · ${weeks} ${t('weeks').toLowerCase()}`
+// Each step opens the settings section that sets it.
+const STEP_SECTIONS: Record<string, string> = {
+    dates: 'basics',
+    sides: 'sides',
+    features: 'features',
+    briefing: 'basics',
+    structures: 'structures',
+    fittings: 'fittings',
+    discord: 'coordination',
+}
 const steps = campaign_ready_steps(campaign, features_on(campaign.features), dates)
 const done = steps.filter((step) => step.done).length
 const percent = Math.round((done / steps.length) * 100)
@@ -60,7 +70,7 @@ import CampaignMeter from '@components/blocks/CampaignMeter.astro'
                 }
                 <span class="[ campaign-ready__label ]">{t(step.label_key)}</span>
                 <span class="[ campaign-ready__summary ]">{summary(step)}</span>
-                <a href="#settings" class="[ campaign-ready__action ]">{t(step.done ? 'campaigns.ready.change' : 'campaigns.ready.set_up')}</a>
+                <a href={`?section=${STEP_SECTIONS[step.id] ?? 'basics'}#settings`} class="[ campaign-ready__action ]">{t(step.done ? 'campaigns.ready.change' : 'campaigns.ready.set_up')}</a>
             </li>
         )}
     </ul>

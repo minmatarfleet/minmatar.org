@@ -26,8 +26,6 @@ import CorporationRequirementForm from '@components/blocks/CorporationRequiremen
 
 const ROOT_ID = 'corporation-requirements'
 const TARGET = `#${ROOT_ID}`
-// Lives in the accordion header on the corporation page; refreshed out of band.
-const SUMMARY_ID = 'corporation-settings-requirements-summary'
 
 const { auth_token } = get_request_user(Astro)
 if (!auth_token) return HTTP_403_Forbidden()
@@ -114,11 +112,15 @@ const who = (value: string, kind: string) => kind === 'prime_time'
         other_account: t('corporations.requirements.who_other_account'),
     } as Record<string, string>)[value] ?? value
 import StylessButton from '@components/blocks/StylessButton.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
 ---
 
-<span id={SUMMARY_ID} hx-swap-oob="innerHTML">{summary}</span>
-
 <div id={ROOT_ID} class="[ corp-req ]">
+    <FlexInline class="[ settings-head ]" justification="space-between" gap="var(--space-2xs) var(--space-s)">
+        <h2>{t('corporations.settings.requirements_section')}</h2>
+        <small class="[ settings-head__summary ]">{summary}</small>
+    </FlexInline>
+
     {error && <p class="[ corp-req__error ]" role="alert">{error}</p>}
 
     <section class="[ corp-req__card ]" aria-labelledby="corp-req-checked">
@@ -255,6 +257,10 @@ import StylessButton from '@components/blocks/StylessButton.astro'
 </div>
 
 <style lang="scss">
+    .settings-head__summary {
+        color: var(--faded);
+    }
+
     .corp-req {
         display: flex;
         flex-direction: column;

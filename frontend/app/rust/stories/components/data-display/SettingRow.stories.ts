@@ -1,6 +1,7 @@
 import { expect, within } from 'storybook/test'
 import SettingRow from '@components/blocks/SettingRow.astro'
 import Button from '@components/blocks/Button.astro'
+import Textarea from '@components/blocks/Textarea.astro'
 
 export default {
     title: 'Components/Data display/SettingRow',
@@ -16,6 +17,7 @@ export default {
         title: { control: 'text', description: 'Bold name of the setting.' },
         description: { control: 'text', description: 'Short muted explanation under the title.' },
         for: { control: 'text', description: 'Id of the control; turns the title into a `<label for>`.' },
+        wide: { control: 'boolean', description: 'For text fields: the title takes a fixed column and the control fills the rest of the row.' },
     },
     args: {
         title: 'Fleet notifications',
@@ -90,5 +92,21 @@ export const LongDescription = {
         const canvas = within(canvasElement)
         await expect(canvas.getByText(/Approved claims are paid out/)).toBeVisible()
         await expect(canvas.getByRole('button', { name: 'Change' })).toBeVisible()
+    },
+}
+
+export const Wide = {
+    name: 'Wide (text field)',
+    args: {
+        title: 'Introduction',
+        description: undefined,
+        for: 'corp-intro',
+        wide: true,
+        slots: { default: { component: Textarea, props: { id: 'corp-intro', name: 'introduction' }, slots: { default: 'A cult of Minmatar pilots who worship the Rat.' } } },
+    },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const canvas = within(canvasElement)
+        await expect(canvasElement.querySelector('.setting-row')).toHaveClass('setting-row--wide')
+        await expect(canvas.getByLabelText('Introduction')).toHaveValue('A cult of Minmatar pilots who worship the Rat.')
     },
 }

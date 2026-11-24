@@ -16,7 +16,7 @@ if (!can(await get_gates(Astro), 'learning.manage'))
 
 import { MENTORS_ADMIN_PARTIAL, mentors_url } from '@helpers/mentors'
 
-const partial_url = translatePath(mentors_url(MENTORS_ADMIN_PARTIAL, {}))
+const partial_url = translatePath(mentors_url(MENTORS_ADMIN_PARTIAL, { section: Astro.url.searchParams.get('section') ?? undefined }))
 const page_title = `${t('mentors.page_title')} ${t('mentors.nav.admin')} · ${t('learning.center_title')}`
 
 import Viewport from '@layouts/Viewport.astro'

@@ -31,46 +31,12 @@ export function duration_parts(start_iso: string, end_iso: string): { value: num
     return { value: days, unit: 'days' }
 }
 
-/** "Tue 17 Nov" in EVE time. */
-export function eve_weekday_date(lang: string, iso: string): string {
-    const date = new Date(iso)
-    if (Number.isNaN(date.getTime())) return ''
-    return date.toLocaleDateString(lang, { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })
-}
-
 /** "3 Nov 19:25" in EVE time. */
 export function eve_date_time(lang: string, iso: string): string {
     const date = new Date(iso)
     if (Number.isNaN(date.getTime())) return ''
     const day = date.toLocaleDateString(lang, { day: 'numeric', month: 'short', timeZone: 'UTC' })
     return `${day} ${date.toISOString().slice(11, 16)}`
-}
-
-/** "Kamela, take · Huola, pressure": each live system with its goal. */
-export function systems_summary(
-    systems: { name: string, goal: string, retired?: boolean }[],
-    goals: CampaignChoice[] | undefined,
-): string {
-    return systems
-        .filter((system) => !system.retired)
-        .map((system) => `${system.name}, ${choice_label(goals, system.goal).toLowerCase()}`)
-        .join(' · ')
-}
-
-/** "Enemy: Amarr Defense [AMD] · Ally: ...": parties grouped by side. */
-export function sides_summary(
-    parties: { name: string, ticker?: string | null, side: string }[],
-    sides: CampaignChoice[] | undefined,
-): string {
-    // Counts, not names: the list below the summary already names every party.
-    const order = (sides ?? []).map((side) => side.value)
-    const counts = new Map<string, number>()
-    for (const party of parties)
-        counts.set(party.side, (counts.get(party.side) ?? 0) + 1)
-    return [...counts.entries()]
-        .sort(([a], [b]) => order.indexOf(a) - order.indexOf(b))
-        .map(([side, count]) => `${count} ${choice_label(sides, side).toLowerCase()}`)
-        .join(' · ')
 }
 
 /** What the new-campaign form posted, to fill it again after a refusal. */

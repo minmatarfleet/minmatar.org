@@ -23,12 +23,12 @@ import { query_string } from '@helpers/string'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Button from '@components/blocks/Button.astro'
+import SettingsGroup from '@components/blocks/SettingsGroup.astro'
+import SettingRow from '@components/blocks/SettingRow.astro'
+import SaveBar from '@components/blocks/SaveBar.astro'
 import Input from '@components/blocks/Input.astro'
 
 const ROOT_ID = 'corporation-forum-post'
-const URL_HELP_ID = 'corp-forum-post-url-help'
-// Lives in the accordion header on the corporation page; refreshed out of band.
-const SUMMARY_ID = 'corporation-settings-forum-summary'
 
 const { auth_token } = get_request_user(Astro)
 if (!auth_token) return HTTP_403_Forbidden()
@@ -91,78 +91,44 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 <ErrorRefetch args={{ partial: PARTIAL_URL, error: fetch_post_error as Error, delay: delay }} />
 :
 <>
-<span id={SUMMARY_ID} hx-swap-oob="true">{summary}</span>
-
 <div id={ROOT_ID} class="[ corp-forum-post ]">
-    <Flexblock gap="var(--space-l)">
-        <p class="[ corp-forum-post__leading ]">{t('corporations.forum_post.leading')}</p>
+    <form
+        method="post"
+        action={PARTIAL_URL}
+        hx-post={PARTIAL_URL}
+        hx-target={`#${ROOT_ID}`}
+        hx-swap="outerHTML"
+    >
+        <Flexblock gap="var(--space-l)">
+            <FlexInline class="[ settings-head ]" justification="space-between" gap="var(--space-2xs) var(--space-s)">
+                <h2>{t('corporations.settings.forum_section')}</h2>
+                <small class="[ corp-forum-post__muted ]">{summary}</small>
+            </FlexInline>
 
-        {flash &&
-            <p
-                class:list={['[ corp-forum-post__flash ]', { 'is-error': flash.kind === 'error' }]}
-                role={flash.kind === 'error' ? 'alert' : 'status'}
-            >
-                {t(flash.key)}
-            </p>
-        }
+            {flash &&
+                <p
+                    class:list={['[ corp-forum-post__flash ]', { 'is-error': flash.kind === 'error' }]}
+                    role={flash.kind === 'error' ? 'alert' : 'status'}
+                >
+                    {t(flash.key)}
+                </p>
+            }
 
-        <section class="[ corp-forum-post__panel ]" aria-labelledby="corp-forum-post-thread">
-            <Flexblock gap="var(--space-xs)">
-                <h3 id="corp-forum-post-thread">{t('corporations.forum_post.thread')}</h3>
-                {post.exists && post.url ?
-                    <a
-                        class="[ corp-forum-post__thread ]"
-                        href={post.url}
-                        target="_blank"
-                        rel="noreferrer noopener"
-                    >{forum_post_link_text(post)}</a>
-                    :
-                    <p class="[ corp-forum-post__muted ]">{t('corporations.forum_post.not_linked')}</p>
-                }
-                {post.exists && !post.title &&
-                    <small class="[ corp-forum-post__muted ]">{t('corporations.forum_post.title_unavailable')}</small>
-                }
-            </Flexblock>
-        </section>
-
-        <form
-            method="post"
-            action={PARTIAL_URL}
-            hx-post={PARTIAL_URL}
-            hx-target={`#${ROOT_ID}`}
-            hx-swap="outerHTML"
-        >
-            <Flexblock gap="var(--space-m)">
-                <Flexblock gap="var(--space-3xs)">
-                    <FlexInline gap="var(--space-xs)" justification="space-between">
-                        <label class="[ corp-forum-post__label ]" for="corp-forum-post-url">
-                            {t('corporations.forum_post.url_label')}
-                        </label>
-                        <a href={RECRUITMENT_CENTER_URL} target="_blank" rel="noreferrer noopener">
-                            <small>{t('corporations.forum_post.recruitment_center')}</small>
-                        </a>
-                    </FlexInline>
-                    <Input
-                        id="corp-forum-post-url"
-                        name="url"
-                        type="url"
-                        inputmode="url"
-                        autocomplete="off"
-                        placeholder="https://forums.eveonline.com/t/…"
-                        value={url_value}
-                        aria-describedby={URL_HELP_ID}
-                        aria-invalid={flash?.kind === 'error' ? 'true' : undefined}
-                        required
-                    />
-                    <small id={URL_HELP_ID} class="[ corp-forum-post__muted ]">
-                        {t('corporations.forum_post.url_help')}
-                    </small>
-                </Flexblock>
-
-                <FlexInline gap="var(--space-m)">
-                    <Button type="submit" name="action" value="save" color="fleet-red" size="sm" off_disable={true}>
-                        {t('corporations.forum_post.save')}
-                    </Button>
+            <SettingsGroup>
+                <SettingRow title={t('corporations.forum_post.thread')} wide={true}>
+                    {post.exists && post.url ?
+                        <a
+                            class="[ corp-forum-post__thread ]"
+                            href={post.url}
+                            target="_blank"
+                            rel="noreferrer noopener"
+                        >{forum_post_link_text(post)}</a>
+                        :
+                        <span class="[ corp-forum-post__muted ]">{t('corporations.forum_post.not_linked')}</span>
+                    }
+                    {post.exists && !post.title &&
+                        <small class="[ corp-forum-post__muted ]">{t('corporations.forum_post.title_unavailable')}</small>
+                    }
                     {post.exists &&
                         <Button
                             type="submit"
@@ -173,44 +139,45 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                             size="sm"
                             narrow={true}
                             off_disable={true}
+                            data-save-bar-ignore
                         >
                             {t('corporations.forum_post.remove')}
                         </Button>
                     }
-                </FlexInline>
-            </Flexblock>
-        </form>
-    </Flexblock>
+                </SettingRow>
+                <SettingRow
+                    title={t('corporations.forum_post.url_label')}
+                    description={t('corporations.forum_post.url_help')}
+                    for="corp-forum-post-url"
+                    wide={true}
+                >
+                    <Input
+                        id="corp-forum-post-url"
+                        name="url"
+                        type="url"
+                        inputmode="url"
+                        autocomplete="off"
+                        placeholder="https://forums.eveonline.com/t/…"
+                        value={url_value}
+                        aria-invalid={flash?.kind === 'error' ? 'true' : undefined}
+                        required
+                    />
+                    <a href={RECRUITMENT_CENTER_URL} target="_blank" rel="noreferrer noopener">
+                        <small>{t('corporations.forum_post.recruitment_center')}</small>
+                    </a>
+                </SettingRow>
+            </SettingsGroup>
+
+            <SaveBar shown={flash?.kind === 'error'} save_label={t('corporations.forum_post.save')} />
+        </Flexblock>
+    </form>
 </div>
 </>
 }
 
 <style lang="scss">
-    .corp-forum-post {
-        max-width: var(--max-text-width);
-    }
-
-    // Flexblock spaces children with margin-block-start; keep that intact.
-    h3,
-    p {
-        margin-block-end: 0;
-    }
-
-    h3 {
-        font-size: var(--step-0);
-    }
-
-    .corp-forum-post__leading {
-        color: var(--highlight);
-    }
-
     .corp-forum-post__muted {
         color: var(--faded);
-    }
-
-    .corp-forum-post__label {
-        font-family: var(--button-font);
-        color: var(--highlight);
     }
 
     .corp-forum-post__thread {
@@ -226,11 +193,5 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         &.is-error {
             border-left-color: var(--fleet-red);
         }
-    }
-
-    .corp-forum-post__panel {
-        padding: var(--space-s);
-        border: solid 1px var(--border-color);
-        background-color: var(--component-background);
     }
 </style>

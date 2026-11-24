@@ -2,7 +2,7 @@
 /**
  * The bodies of the campaign Settings tab's sections (CampaignSettingsPanel).
  * Each `part` GETs its form and POSTs back to itself; the form swaps only
- * itself and sends the section's summary out of band.
+ * itself, its heading included.
  *
  * part=features   the feature switches (one per tab or header part)
  * part=basics     name, tagline, status, start and end (EVE time)
@@ -43,15 +43,12 @@ import { form_text } from '@helpers/manage_forms'
 import { query_string } from '@helpers/string'
 import {
     choice_label,
-    systems_summary,
-    sides_summary,
-    eve_weekday_date,
     refusal_text,
     DISCORD_CHANNEL_SLOTS,
     discord_channel_body,
     discord_channel_label_key,
 } from '@helpers/campaign_manage'
-import { CAMPAIGN_FEATURES, features_on } from '@helpers/campaign_features'
+import { CAMPAIGN_FEATURES } from '@helpers/campaign_features'
 
 const { auth_token, user } = get_request_user(Astro)
 if (!user || !auth_token) return HTTP_403_Forbidden()
@@ -403,53 +400,17 @@ const fittings_on = (settings?.fittings ?? []).filter((row) => row.enabled).leng
 
 const retired = settings?.systems.filter((system) => system.retired && !rows.some((row) => row.solar_system_id === system.solar_system_id)) ?? []
 
-function summary_for(current: CampaignSettings): string {
-    switch (part) {
-        case 'features':
-            return t('campaigns.manage.features_summary')
-                .replace('~COUNT', String(features_on(current.features)))
-                .replace('~TOTAL', String(CAMPAIGN_FEATURES.length))
-        case 'basics': {
-            const status = choice_label(choices?.status, current.status)
-            const ends = t('campaigns.manage.ends_on').replace('~DATE', eve_weekday_date(lang, current.end_at))
-            return [current.tagline && `"${current.tagline}"`, status, ends].filter(Boolean).join(' · ')
-        }
-        case 'systems':
-            return systems_summary(current.systems, choices?.goal) || t('campaigns.manage.none_yet')
-        case 'sides':
-            return sides_summary(current.parties, choices?.party_side) || t('campaigns.manage.none_yet')
-        case 'coordinators':
-            // The section lists its people; no summary line to repeat them.
-            return ''
-        case 'fittings': {
-            if (current.fittings.length === 0) return t('campaigns.doctrines.none')
-            return t('campaigns.doctrines.summary')
-                .replace('{doctrines}', current.doctrines.map((row) => row.name).join(', ') || t('campaigns.doctrines.none'))
-                .replace('{on}', String(current.fittings.filter((row) => row.enabled).length))
-                .replace('{total}', String(current.fittings.length))
-        }
-        case 'targets': {
-            const count = current.week_targets.length
-            if (count === 0) return t('campaigns.manage.targets_none')
-            const proposed = current.week_targets.filter((row) => row.proposed).length
-            return [
-                count === 1 ? t('campaigns.manage.targets_count_one') : t('campaigns.manage.targets_count').replace('~COUNT', String(count)),
-                proposed > 0 ? t('campaigns.manage.targets_proposed').replace('~COUNT', String(proposed)) : '',
-            ].filter(Boolean).join(' · ')
-        }
-        case 'order':
-            return current.commander_order_text
-                ? `${current.commander_order_text}${current.commander_order_is_draft ? ` ${t('campaigns.manage.order_draft_suffix')}` : ''}`
-                : t('campaigns.manage.order_none')
-        case 'coordination':
-            return t('campaigns.discord.servers_summary').replace('{count}', String(1 + (coordination?.links?.length ?? 0)))
-        case 'structures':
-            return current.structures.length === 0
-                ? t('campaigns.manage.none_yet')
-                : current.structures.length === 1
-                    ? t('campaigns.manage.structures_count_one')
-                    : t('campaigns.manage.structures_count').replace('~COUNT', String(current.structures.length))
-    }
+const PART_TITLES: Record<Part, string> = {
+    features: t('campaigns.manage.features'),
+    basics: t('campaigns.settings.general'),
+    systems: t('campaigns.manage.systems'),
+    sides: t('campaigns.manage.sides'),
+    coordinators: t('campaigns.coordinators.title'),
+    fittings: t('campaigns.doctrines.title'),
+    targets: t('campaigns.manage.targets'),
+    order: t('campaigns.manage.order'),
+    structures: t('campaigns.manage.structures'),
+    coordination: t('campaigns.manage.coordination'),
 }
 
 const PARTY_KINDS = ['alliance', 'corporation', 'character'] as const
@@ -473,13 +434,15 @@ import ManageTable from '@components/blocks/manage/ManageTable.astro'
 import ManageField from '@components/blocks/manage/ManageField.astro'
 import EntityPicker from '@components/blocks/manage/EntityPicker.astro'
 import EveTimeInput from '@components/blocks/manage/EveTimeInput.astro'
-import SectionSummary from '@components/blocks/manage/SectionSummary.astro'
+import SettingsGroup from '@components/blocks/SettingsGroup.astro'
+import SettingRow from '@components/blocks/SettingRow.astro'
+import SaveBar from '@components/blocks/SaveBar.astro'
 import Switch from '@components/blocks/Switch.astro'
 import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
 {fetch_error || !settings || !choices ?
-    <div id={body_id} class="[ manage-section__body ]">
+    <div id={body_id}>
         <ErrorRefetch
             args={{
                 partial: PART_URL,
@@ -492,59 +455,57 @@ import StylessButton from '@components/blocks/StylessButton.astro'
     :
     <form
         id={body_id}
-        class="[ manage-section__body manage-form campaign-settings ]"
+        class="[ manage-form campaign-settings ]"
         hx-post={PART_URL}
         hx-target="this"
         hx-swap="outerHTML"
     >
+        <h2>{PART_TITLES[part]}</h2>
+
         {part === 'features' &&
             <Fragment>
-                <div class="[ campaign-features ]">
+                <SettingsGroup>
                     {CAMPAIGN_FEATURES.map((feature) =>
-                        <Switch shape="square"
-                            name={`${feature}_enabled`}
-                            label={t(`campaigns.features.${feature}`)}
+                        <SettingRow
+                            title={t(`campaigns.features.${feature}`)}
                             description={t(`campaigns.features.${feature}_help`)}
-                            checked={settings.features[feature]}
-                        />
+                            for={`campaign-feature-${feature}`}
+                        >
+                            <Switch id={`campaign-feature-${feature}`} name={`${feature}_enabled`} checked={settings.features[feature]} />
+                        </SettingRow>
                     )}
-                </div>
-                <div class="[ manage-actions ]">
-                    <Button type="submit" size="sm">{t('campaigns.manage.save')}</Button>
-                    {error_message && <span class="[ manage-field__error ]" role="alert">{error_message}</span>}
-                    {saved && <span class="[ manage-saved ]">{t('campaigns.manage.saved')}</span>}
-                </div>
+                </SettingsGroup>
+                {error_message && <p class="[ manage-field__error ]" role="alert">{error_message}</p>}
+                {saved && <p class="[ manage-saved ]" role="status">{t('campaigns.manage.saved')}</p>}
+                <SaveBar shown={Boolean(error_message)} save_label={t('campaigns.manage.save')} />
             </Fragment>
         }
 
         {part === 'basics' &&
             <Fragment>
-                <div class="[ manage-fields ]">
-                    <ManageField label={t('campaigns.manage.name')} for="campaign-basics-name">
+                <SettingsGroup>
+                    <SettingRow title={t('campaigns.manage.name')} for="campaign-basics-name" wide={true}>
                         <Input id="campaign-basics-name" size="sm" name="name" value={settings.name} maxlength="128" required />
-                    </ManageField>
-                    <ManageField label={t('campaigns.manage.tagline')} for="campaign-basics-tagline" hint={t('campaigns.manage.tagline_hint')}>
+                    </SettingRow>
+                    <SettingRow title={t('campaigns.manage.tagline')} description={t('campaigns.manage.tagline_hint')} for="campaign-basics-tagline" wide={true}>
                         <Input id="campaign-basics-tagline" size="sm" name="tagline" value={settings.tagline} maxlength="200" />
-                    </ManageField>
-                    <ManageField label={t('campaigns.manage.status')} for="campaign-basics-status">
-                        <Select id="campaign-basics-status" size="sm" name="status">
+                    </SettingRow>
+                    <SettingRow title={t('campaigns.manage.status')} for="campaign-basics-status" wide={true}>
+                        <Select id="campaign-basics-status" size="sm" name="status" width="16rem">
                             {choices.status.map((choice) => <option value={choice.value} selected={choice.value === settings.status}>{choice.label}</option>)}
                         </Select>
-                    </ManageField>
-                    <EveTimeInput id="campaign-basics-start" name="start_at" label={t('campaigns.manage.starts')} value={settings.start_at} required />
-                    <EveTimeInput id="campaign-basics-end" name="end_at" label={t('campaigns.manage.ends')} value={settings.end_at} required />
-                </div>
-                <Switch shape="square"
-                    name="undisclosed"
-                    label={t('campaigns.manage.undisclosed')}
-                    description={t('campaigns.manage.undisclosed_hint')}
-                    checked={settings.undisclosed}
-                />
-                <div class="[ manage-actions ]">
-                    <Button type="submit" size="sm">{t('campaigns.manage.save')}</Button>
-                    {error_message && <span class="[ manage-field__error ]" role="alert">{error_message}</span>}
-                    {saved && <span class="[ manage-saved ]">{t('campaigns.manage.saved')}</span>}
-                </div>
+                    </SettingRow>
+                    <SettingRow title={t('campaigns.manage.dates_label')} wide={true}>
+                        <EveTimeInput id="campaign-basics-start" name="start_at" label={t('campaigns.manage.starts')} value={settings.start_at} required />
+                        <EveTimeInput id="campaign-basics-end" name="end_at" label={t('campaigns.manage.ends')} value={settings.end_at} required />
+                    </SettingRow>
+                    <SettingRow title={t('campaigns.manage.undisclosed')} description={t('campaigns.manage.undisclosed_hint')} for="campaign-basics-undisclosed">
+                        <Switch id="campaign-basics-undisclosed" name="undisclosed" checked={settings.undisclosed} />
+                    </SettingRow>
+                </SettingsGroup>
+                {error_message && <p class="[ manage-field__error ]" role="alert">{error_message}</p>}
+                {saved && <p class="[ manage-saved ]" role="status">{t('campaigns.manage.saved')}</p>}
+                <SaveBar shown={Boolean(error_message)} save_label={t('campaigns.manage.save')} />
             </Fragment>
         }
 
@@ -638,11 +599,14 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                             placeholder={t('campaigns.manage.add_system')}
                         />
                     </div>
-                    <div class="[ manage-actions ]">
-                        <Button type="button" color="transparent" size="sm" hx-get={PART_URL}>{t('campaigns.manage.discard')}</Button>
-                        <Button type="submit" size="sm" name="op" value="save">{t('campaigns.manage.save_systems')}</Button>
-                        {saved && <span class="[ manage-saved ]">{t('campaigns.manage.saved')}</span>}
-                    </div>
+                    {saved && <p class="[ manage-saved ]" role="status">{t('campaigns.manage.saved')}</p>}
+                    <SaveBar
+                        shown={is_preview}
+                        save_label={t('campaigns.manage.save_systems')}
+                        discard_label={t('campaigns.manage.discard')}
+                        save_attributes={{ name: 'op', value: 'save' }}
+                        discard_attributes={{ type: 'button', 'hx-get': PART_URL }}
+                    />
                 </div>
             </Fragment>
         }
@@ -949,26 +913,24 @@ import StylessButton from '@components/blocks/StylessButton.astro'
                         </li>
                     )}
                 </ul>
-                <div class="[ manage-actions ]">
-                    <Button type="submit" size="sm" color="green">{t('campaigns.manage.save')}</Button>
-                    {coordination.link_url &&
+                {coordination.link_url &&
+                    <div class="[ manage-actions ]">
                         <Button color="transparent" size="sm" href={BOT_CONNECT_URL('link')}>{t('campaigns.discord.link_server')}</Button>
-                    }
-                    {error_message && <span class="[ manage-field__error ]" role="alert">{error_message}</span>}
-                    {saved && <span class="[ manage-saved ]">{t('campaigns.manage.saved')}</span>}
-                </div>
+                    </div>
+                }
+                {error_message && <p class="[ manage-field__error ]" role="alert">{error_message}</p>}
+                {saved && <p class="[ manage-saved ]" role="status">{t('campaigns.manage.saved')}</p>}
+                {/* A server picked in the select re-renders the form before it is saved. */}
+                <SaveBar shown={Boolean(error_message) || (!is_post && params.has('guild_id'))} save_label={t('campaigns.manage.save')} />
             </Fragment>
         }
 
-        {is_post && !is_preview && <SectionSummary section_id={section_id} text={summary_for(settings)} />}
     </form>
 }
 
 <style lang="scss">
-    .campaign-features {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-s);
+    .campaign-settings {
+        gap: var(--space-l);
     }
 
     .campaign-settings :global(select) {
