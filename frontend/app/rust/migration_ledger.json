@@ -923,22 +923,6 @@
     "batch": "w8-sonnet-chips-4"
   },
   {
-    "file": "src/pages/partials/tasks_projects_component.astro",
-    "selector": "nav chips",
-    "path": "converge",
-    "pattern": "filter-chip-toggle",
-    "note": "Project view chips are FilterChip buttons (aria-pressed plus the old aria-current) with counts.",
-    "batch": "w8-sonnet-chips-4"
-  },
-  {
-    "file": "src/pages/partials/tasks_team_component.astro",
-    "selector": "nav chips",
-    "path": "converge",
-    "pattern": "filter-chip-toggle",
-    "note": "Team chips are FilterChip buttons (aria-pressed plus the old aria-current).",
-    "batch": "w8-sonnet-chips-4"
-  },
-  {
     "file": "src/pages/partials/universe_locations_component.astro",
     "selector": "nav chips",
     "path": "converge",
@@ -952,14 +936,6 @@
     "path": "converge",
     "pattern": "filter-chip-toggle",
     "note": "Hull filter chips are FilterChip buttons bound to Alpine filter; active chip fills yellow.",
-    "batch": "w8-sonnet-chips-4"
-  },
-  {
-    "file": "src/pages/tasks/projects/[id].astro",
-    "selector": ".manage-actions fieldset",
-    "path": "converge",
-    "pattern": "radio-chip",
-    "note": "Health chips are FilterChip radios.",
     "batch": "w8-sonnet-chips-4"
   },
   {

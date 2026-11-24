@@ -3,7 +3,6 @@
     "groups": ["tasks", "fleets", "market", "content", "learning", "ships", "people"],
     "screens": [
         { "key": "task_rules", "group": "tasks", "path": "/tasks/settings/rules/", "gate": "tasks.manage" },
-        { "key": "project_templates", "group": "tasks", "path": "/tasks/settings/templates/", "gate": "tasks.manage" },
         { "key": "weekly_dm", "group": "tasks", "path": "/tasks/settings/weekly/", "gate": "tasks.manage" },
         { "key": "campaigns", "group": "fleets", "path": "/campaigns/", "gate": "campaigns.manage" },
         { "key": "payout_codes", "group": "fleets", "path": "/campaigns/event-codes/", "gate": "campaigns.manage" },

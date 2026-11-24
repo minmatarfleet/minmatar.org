@@ -35,8 +35,6 @@ try {
         when: WHEN.includes(when) ? when : 'this_week',
         due_date: when === 'date' ? String(form.get('due_date') ?? '') || null : null,
         body: String(form.get('body') ?? ''),
-        project_id: number('project_id'),
-        stage_id: number('stage_id'),
     }
     await create_task(auth_token, task)
     Astro.response.headers.set('HX-Trigger', JSON.stringify({

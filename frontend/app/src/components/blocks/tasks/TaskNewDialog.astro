@@ -3,32 +3,24 @@
  * The New task button and dialog. A leader gives a pilot (searched by
  * name, with how much they already have open) or one of their teams a
  * task. No date by default: "This week" or "No rush", a date only when it
- * is real. Inside a project the task joins it, in the stage picked.
+ * is real.
  */
 import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { TaskAssignees, TaskProjectStage } from '@dtypes/api.minmatar.org'
+import type { TaskAssignees } from '@dtypes/api.minmatar.org'
 
 interface Props {
     teams:          TaskAssignees['teams'];
-    project_id?:    number;
-    stages?:        Pick<TaskProjectStage, 'id' | 'name'>[];
-    label?:         string;
-    color?:         'fleet-red' | 'transparent';
 }
 
 const {
     teams,
-    project_id,
-    stages = [],
-    label,
-    color = 'fleet-red',
 } = Astro.props
 
 const CREATE_URL = translatePath('/partials/tasks_new_component/')
 const PEOPLE_URL = translatePath('/partials/tasks_assignees_component/')
-const id = project_id ? `task-new-${project_id}` : 'task-new'
+const id = 'task-new'
 
 import DialogButton from '@components/blocks/DialogButton.astro'
 import Button from '@components/blocks/Button.astro'
@@ -41,8 +33,8 @@ import ManageField from '@components/blocks/manage/ManageField.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 ---
 
-<DialogButton size="sm" color={color} max_width="44rem">
-    {label ?? t('tasks.new_task')}
+<DialogButton size="sm" color="fleet-red" max_width="44rem">
+    {t('tasks.new_task')}
 
     <form
         slot="dialog"
@@ -55,8 +47,6 @@ import Flexblock from '@components/compositions/Flexblock.astro'
     >
         <Flexblock gap="var(--space-m)">
             <h2>{t('tasks.new_task')}</h2>
-
-            {project_id && <input type="hidden" name="project_id" value={project_id} />}
 
             <ManageField label={t('tasks.new.what')} for={`${id}-title`}>
                 <Input id={`${id}-title`} name="title" maxlength="200" required autocomplete="off" />
@@ -111,14 +101,6 @@ import Flexblock from '@components/compositions/Flexblock.astro'
                     <Input id={`${id}-date`} name="due_date" type="date" x-bind:required="when === 'date'" />
                 </ManageField>
             </div>
-
-            {stages.length > 0 &&
-                <ManageField label={t('tasks.project.stages')} for={`${id}-stage`}>
-                    <Select id={`${id}-stage`} name="stage_id" size="sm">
-                        {stages.map((stage) => <option value={stage.id}>{stage.name}</option>)}
-                    </Select>
-                </ManageField>
-            }
 
             <ManageField label={t('tasks.new.notes')} for={`${id}-body`}>
                 <Textarea id={`${id}-body`} name="body" rows="3" maxlength="4000" />

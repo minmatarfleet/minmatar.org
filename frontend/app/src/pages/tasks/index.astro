@@ -7,7 +7,7 @@ import { login_redirect } from '@helpers/http_responses'
 import { get_request_user } from '@helpers/request_user'
 import { get_gates, can } from '@helpers/gates'
 import { can_manage_hub } from '@helpers/manage'
-import { get_my_tasks, get_task_assignees, get_task_teams } from '@helpers/api.minmatar.org/tasks'
+import { get_my_tasks, get_task_assignees } from '@helpers/api.minmatar.org/tasks'
 import { get_player_icon } from '@helpers/eve_image'
 
 const { auth_token, user } = get_request_user(Astro)
@@ -23,13 +23,10 @@ try {
     board_error = failure as Error
 }
 
-// Leaders see Team (their corporations and tribes) and can give out tasks.
-let leads_teams = false
+// Leaders can give out tasks.
 let teams: TaskAssignees['teams'] = []
 if (board?.can_assign) {
     try {
-        const overview = await get_task_teams(auth_token)
-        leads_teams = overview.corporations.length + overview.tribes.length + overview.pilots.length > 0
         teams = (await get_task_assignees(auth_token, '')).teams
     } catch (failure) {
         console.log(failure)
@@ -47,8 +44,6 @@ const tabs = [
         label: t('tasks.tab.mine'),
         ...(needs_you > 0 && { meta: String(needs_you), flag: 'attention' as const }),
     },
-    ...(leads_teams ? [{ id: 'team', label: t('tasks.tab.team') }] : []),
-    { id: 'projects', label: t('tasks.tab.projects') },
     { id: 'settings', label: t('tasks.tab.settings') },
 ]
 
@@ -109,26 +104,6 @@ import RifterIcon from '@components/icons/RifterIcon.astro'
                         </div>
                     )
                 }
-            </SectionTabPanel>
-
-            {leads_teams &&
-                <SectionTabPanel id="team" id_prefix="tasks">
-                    <LazyPartial url={translatePath('/partials/tasks_team_component/')} trigger="reveal" swap="outerHTML">
-                        <FlexInline class="[ items-center ]" gap="var(--space-3xs)">
-                            <RifterIcon class="small" />
-                            <p class="[ loading ]">{t('loading')}</p>
-                        </FlexInline>
-                    </LazyPartial>
-                </SectionTabPanel>
-            }
-
-            <SectionTabPanel id="projects" id_prefix="tasks">
-                <LazyPartial url={translatePath('/partials/tasks_projects_component/')} trigger="reveal" swap="outerHTML">
-                    <FlexInline class="[ items-center ]" gap="var(--space-3xs)">
-                        <RifterIcon class="small" />
-                        <p class="[ loading ]">{t('loading')}</p>
-                    </FlexInline>
-                </LazyPartial>
             </SectionTabPanel>
 
             <SectionTabPanel id="settings" id_prefix="tasks">
