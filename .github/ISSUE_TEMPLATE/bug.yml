@@ -1,0 +1,28 @@
+name: Bug
+description: Something is broken or shows the wrong thing.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you saw. Screenshots help.
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      description: The page URL, desktop window, or Discord command.
+    validations:
+      required: true
+  - type: textarea
+    id: who
+    attributes:
+      label: Who is affected
+      description: One pilot, a corporation, a role (FCs, directors), or everyone. Character name if it is one pilot.
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Sentry link, help ticket, browser or desktop app version, how often it happens.

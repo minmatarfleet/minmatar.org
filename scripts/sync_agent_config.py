@@ -45,6 +45,7 @@ CURSOR_HOOKS = Path(".cursor/hooks.json")
 HOOK_EVENTS = {
     ("PreToolUse", "Bash"): ("beforeShellExecution", None),
     ("PostToolUse", "Edit|MultiEdit|Write"): ("postToolUse", "Write"),
+    ("UserPromptSubmit", ""): ("beforeSubmitPrompt", None),
 }
 
 

@@ -1,0 +1,26 @@
+name: User feedback
+description: Something a pilot asked for or complained about (help ticket, Discord, a meeting).
+labels: ["user-feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: Record what the pilot said in their words. Whoever triages it adds `feature` or `bug`.
+  - type: textarea
+    id: feedback
+    attributes:
+      label: Feedback
+      description: What the pilot said, quoted where you can.
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source
+      description: Help ticket or Discord link, meeting name and date.
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: How many pilots raised it, what you already checked, ideas.

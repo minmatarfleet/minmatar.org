@@ -1,0 +1,9 @@
+[
+  {"name": "feature", "group": "type", "color": "1D76DB", "description": "New capability, or a change to how something works"},
+  {"name": "bug", "group": "type", "color": "D73A4A", "description": "Something is broken or shows the wrong thing"},
+  {"name": "user-feedback", "group": "type", "color": "FBCA04", "description": "Raised by a pilot (help ticket, Discord, meeting); add feature or bug once triaged"},
+  {"name": "security", "group": "type", "color": "B60205", "description": "Access control, secrets, or hardening (exploit details stay private)"},
+  {"name": "tech-debt", "group": "type", "color": "C5DEF5", "description": "Cleanup, refactor, upgrade or tooling: no change pilots should notice"},
+  {"name": "needs-design", "group": "status", "color": "D4C5F9", "description": "Significant feature without a design or a person's sign-off to skip one"},
+  {"name": "needs-triage", "group": "status", "color": "EDEDED", "description": "No type label yet"}
+]

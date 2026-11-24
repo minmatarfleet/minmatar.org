@@ -147,6 +147,37 @@ class GateTest(unittest.TestCase):
         self.assertIsNone(self.gate("gh pr ready 5 --undo"))
         self.ci_mock.assert_not_called()
 
+    def test_issue_create_needs_a_type_label(self):
+        reason = self.gate("gh issue create -t 'Thing' --body 'Fix the thing'")
+        self.assertIn("type label", reason)
+        self.ci_mock.assert_not_called()
+        self.assertIsNone(
+            self.gate("gh issue create -t 'Thing' -l bug --body 'Broken'")
+        )
+
+    def test_issue_create_significant_feature_needs_a_design(self):
+        reason = self.gate(
+            "gh issue create -t 'New page' --label feature --body 'Build it'"
+        )
+        self.assertIn("design", reason)
+        body = "### Size\n\nSmall: a change inside an existing page"
+        command = (
+            "gh issue create -t x --label 'feature,user-feedback' "
+            f"--body \"$(cat <<'EOF'\n{body}\nEOF\n)\""
+        )
+        self.assertIsNone(self.gate(command))
+
+    def test_issue_create_in_the_browser_is_not_gated(self):
+        self.assertIsNone(self.gate("gh issue create --web"))
+
+    def test_issue_labels(self):
+        self.assertEqual(
+            self.hooks.issue_labels(
+                'gh issue create -l bug --label "feature, user-feedback"'
+            ),
+            ["bug", "feature", "user-feedback"],
+        )
+
     def test_draft_skips_the_body(self):
         self.ci_mock.return_value = (True, "")
         self.assertIsNone(self.gate("gh pr create --draft --fill"))
@@ -239,7 +270,8 @@ class CursorHooksTest(unittest.TestCase):
         settings = (REPO / ".claude" / "settings.json").read_text()
         cursor = json.loads(sync.render_hooks(settings))
         self.assertEqual(
-            set(cursor["hooks"]), {"beforeShellExecution", "postToolUse"}
+            set(cursor["hooks"]),
+            {"beforeShellExecution", "postToolUse", "beforeSubmitPrompt"},
         )
         for entries in cursor["hooks"].values():
             for entry in entries:

@@ -1,0 +1,50 @@
+name: Issue labels
+# Keeps the status labels on an issue current (scripts/check_issue.py):
+# needs-triage while it has no type label (.github/labels.json), and
+# needs-design while a significant feature has neither a design nor a
+# person's sign-off. Comments once when needs-design is added.
+on:
+  issues:
+    types: [opened, edited, labeled, unlabeled, reopened]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  status-labels:
+    if: github.event.issue.state == 'open'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/check_issue.py
+            .github/labels.json
+      - name: Check the issue
+        id: check
+        env:
+          # Passed through the environment, never interpolated into the script.
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_LABELS: ${{ toJSON(github.event.issue.labels.*.name) }}
+        run: python3 scripts/check_issue.py --github
+      - name: Apply the labels
+        if: steps.check.outputs.add != '' || steps.check.outputs.remove != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.number }}
+          ADD: ${{ steps.check.outputs.add }}
+          REMOVE: ${{ steps.check.outputs.remove }}
+        run: |
+          args=()
+          [ -n "$ADD" ] && args+=(--add-label "$ADD")
+          [ -n "$REMOVE" ] && args+=(--remove-label "$REMOVE")
+          gh issue edit "$ISSUE" --repo "$GITHUB_REPOSITORY" "${args[@]}"
+      - name: Ask for a design
+        if: steps.check.outputs.design_added == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$ISSUE" --repo "$GITHUB_REPOSITORY" --body "This looks like a significant feature, so it needs a design before it is built: link a Claude design artifact, wireframe canvas, Figma file or mock-up under **Design**. If it can ship without one, a maintainer ticks **Design sign-off** and adds their @handle and the reason under **Signed off by**. The \`needs-design\` label comes off when either is there."
