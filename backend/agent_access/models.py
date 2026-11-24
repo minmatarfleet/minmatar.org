@@ -229,7 +229,7 @@ class AgentEsiCharacter(models.Model):
     note = models.CharField(
         max_length=200,
         blank=True,
-        help_text="Why, e.g. \"Debugging asset sync for help ticket #123\".",
+        help_text='Why, e.g. "Debugging asset sync for help ticket #123".',
     )
     created_by = models.ForeignKey(
         User,
