@@ -13,7 +13,17 @@ Django decides who may connect (`backend/voice/`); this service obeys. It holds 
 | `voice_auth/reconcile.py` | Every 5 s and on `voice:changed`: lease ends, website kicks, branch groups, one-time placement, priority speakers. |
 | `voice_auth/layout.py` | The channels and ACLs, applied idempotently at start. |
 | `voice_auth/certs.py` | Loads the Let's Encrypt certificate with `updateCertificate`, again whenever certbot renews it. |
-| `voice_auth/health.py` | `/health` for the Docker healthcheck, and the `voice:heartbeat` key Django's `voice.tasks.heartbeat_check` watches. |
+| `voice_auth/health.py` | `/health` for the Docker healthcheck, the `voice:heartbeat` key Django's `voice.tasks.heartbeat_check` watches, and the watchdog that exits a stalled process. |
+
+## When Murmur stops answering
+
+Murmur calls the authenticator on its main thread and waits for the answer with no timeout; every Ice call we make into Murmur also needs that thread. So a login decision that never comes back freezes Murmur, and a frozen Murmur freezes our main loop. Guards:
+
+- Every call into Murmur gives up after `VOICE_ICE_TIMEOUT_MS` (10 s, `Ice.Default.InvocationTimeout`). The loop then destroys the communicator, which also fails any login Murmur is still waiting on, and reconnects.
+- A login decision answers within `VOICE_AUTH_DEADLINE_SECONDS` (5 s); a slow Redis or Django, or an unexpected error, becomes "try again later" (-3). The Ice server thread pool has 4 threads, so one slow decision doesn't queue the next.
+- `/health` answers 503 once the main loop hasn't finished an iteration for `VOICE_STALL_SECONDS` (3 ticks, at least 60 s). The watchdog then dumps every thread's stack and exits; `restart: always` brings it back. Docker never restarts a container that is only unhealthy.
+
+Diagnosing a hang: `docker kill -s USR1 <voice-auth container>` prints every thread's Python stack to the logs. `VOICE_LOG_LEVEL=DEBUG` logs each Ice call to Murmur with its duration.
 
 ## Tests
 

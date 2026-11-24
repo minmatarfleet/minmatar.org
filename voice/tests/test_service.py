@@ -5,16 +5,25 @@ Contract files in tests/contracts/ are written by the backend
 record shape change fails here as well as there.
 """
 
+import concurrent.futures
 import json
+import logging
 import os
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 
 from tests.fakes import Broken, FakeMurmur, FakeRedis
 from voice_auth import authenticator, config, layout as L
 from voice_auth.certs import CertWatcher
-from voice_auth.main import CALLBACK_ADAPTER, configure_properties
+from voice_auth.health import Health, Watchdog
+from voice_auth.main import (
+    CALLBACK_ADAPTER,
+    SERVER_THREADS,
+    TimedProxy,
+    configure_properties,
+)
 from voice_auth.records import (
     CERT_KEY,
     CHAR_KEY,
@@ -355,6 +364,165 @@ class IcePropertiesTest(unittest.TestCase):
             props.values[f"{CALLBACK_ADAPTER}.PublishedEndpoints"],
             "tcp -h voice-auth -p 6503",
         )
+
+    def test_every_murmur_call_has_an_invocation_timeout(self):
+        # Without it a Murmur that stops answering hangs the main loop
+        # forever (2026-11-24).
+        props = FakeProperties()
+        configure_properties(props, config.from_env())
+        self.assertEqual(props.values["Ice.Default.InvocationTimeout"], "10000")
+
+    def test_invocation_timeout_is_configurable(self):
+        os.environ["VOICE_ICE_TIMEOUT_MS"] = "2500"
+        self.addCleanup(os.environ.pop, "VOICE_ICE_TIMEOUT_MS", None)
+        props = FakeProperties()
+        configure_properties(props, config.from_env())
+        self.assertEqual(props.values["Ice.Default.InvocationTimeout"], "2500")
+
+    def test_server_thread_pool_runs_more_than_one_login(self):
+        props = FakeProperties()
+        configure_properties(props, config.from_env())
+        self.assertEqual(
+            props.values["Ice.ThreadPool.Server.Size"], str(SERVER_THREADS)
+        )
+        self.assertEqual(
+            props.values["Ice.ThreadPool.Server.SizeMax"], str(SERVER_THREADS)
+        )
+        self.assertGreater(SERVER_THREADS, 1)
+
+
+class FakeClock:
+    def __init__(self):
+        self.now = 1000.0
+
+    def __call__(self):
+        return self.now
+
+
+class StallTest(unittest.TestCase):
+    def healthy(self, clock):
+        health = Health(stall_seconds=60, clock=clock)
+        health.ice_connected = health.authenticator = health.redis_ok = True
+        return health
+
+    def test_a_ticking_loop_is_healthy(self):
+        clock = FakeClock()
+        health = self.healthy(clock)
+        clock.now += 59
+        self.assertTrue(health.healthy)
+        health.tick()
+        clock.now += 59
+        self.assertTrue(health.healthy)
+        self.assertFalse(health.payload()["stalled"])
+
+    def test_a_stalled_loop_is_unhealthy_even_when_connected(self):
+        clock = FakeClock()
+        health = self.healthy(clock)
+        clock.now += 61
+        self.assertTrue(health.stalled)
+        self.assertFalse(health.healthy)
+        payload = health.payload()
+        self.assertTrue(payload["stalled"])
+        self.assertEqual(payload["loop_age"], 61.0)
+
+    def test_stall_threshold_is_three_ticks_and_at_least_a_minute(self):
+        self.assertEqual(config.stall_seconds_for(5), 60)
+        self.assertEqual(config.stall_seconds_for(30), 90)
+        self.assertEqual(config.from_env().stall_seconds, 60)
+
+    def test_watchdog_exits_only_after_the_threshold(self):
+        clock = FakeClock()
+        health = self.healthy(clock)
+        exits, dumps = [], []
+        dog = Watchdog(health, exit_process=exits.append, dump=lambda: dumps.append(1))
+        clock.now += 60
+        self.assertFalse(dog.check())
+        self.assertEqual(exits, [])
+        clock.now += 1
+        with self.assertLogs("voice_auth.health", "CRITICAL"):
+            self.assertTrue(dog.check())
+        self.assertEqual(exits, [1])
+        self.assertEqual(dumps, [1])
+
+    def test_watchdog_leaves_a_reconnecting_loop_alone(self):
+        # Murmur down: the loop keeps failing and retrying, which is progress.
+        clock = FakeClock()
+        health = Health(stall_seconds=60, clock=clock)
+        exits = []
+        dog = Watchdog(health, exit_process=exits.append, dump=lambda: None)
+        for _ in range(10):
+            clock.now += 15
+            health.tick()
+            self.assertFalse(dog.check())
+        self.assertEqual(exits, [])
+        self.assertFalse(health.healthy)  # still 503: not connected
+
+
+class AuthDeadlineTest(unittest.TestCase):
+    def setUp(self):
+        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
+        self.addCleanup(self.executor.shutdown, wait=False)
+
+    def test_a_slow_check_answers_try_later_by_the_deadline(self):
+        release = threading.Event()
+        self.addCleanup(release.set)
+
+        class SlowStore:
+            def by_certificate(self, cert_hash):
+                release.wait(5)
+
+        with self.assertLogs("voice_auth.authenticator", "WARNING"):
+            decision = authenticator.authenticate_within(
+                "pilot", "", "abc", SlowStore(), self.executor, 0.05
+            )
+        self.assertEqual(decision.result, authenticator.UNAVAILABLE)
+
+    def test_an_unexpected_error_answers_try_later(self):
+        # An exception would make Murmur drop the authenticator entirely.
+        class BrokenStore:
+            def by_certificate(self, cert_hash):
+                raise ValueError("bad record")
+
+        with self.assertLogs("voice_auth.authenticator", "ERROR"):
+            decision = authenticator.authenticate_within(
+                "pilot", "", "abc", BrokenStore(), self.executor, 1
+            )
+        self.assertEqual(decision.result, authenticator.UNAVAILABLE)
+
+    def test_a_quick_decision_passes_through(self):
+        decision = authenticator.authenticate_within(
+            "SuperUser", "", "", None, self.executor, 1
+        )
+        self.assertEqual(decision.result, authenticator.REFUSE)
+
+
+class TimedProxyTest(unittest.TestCase):
+    class Target:
+        value = 3
+
+        def getUsers(self):  # noqa: N802
+            return {"a": 1}
+
+        def fail(self):
+            raise RuntimeError("timeout")
+
+    def test_logs_each_call_at_debug(self):
+        proxy = TimedProxy(self.Target())
+        with self.assertLogs("voice_auth.ice", "DEBUG") as logs:
+            self.assertEqual(proxy.getUsers(), {"a": 1})
+            with self.assertRaises(RuntimeError):
+                proxy.fail()
+        self.assertEqual(len(logs.records), 4)
+        self.assertIn("getUsers: start", logs.output[0])
+        self.assertIn("fail: RuntimeError", logs.output[3])
+        self.assertEqual(proxy.value, 3)
+
+    def test_silent_by_default(self):
+        logging.getLogger("voice_auth.ice").setLevel(logging.INFO)
+        self.addCleanup(logging.getLogger("voice_auth.ice").setLevel, logging.NOTSET)
+        proxy = TimedProxy(self.Target())
+        self.assertEqual(proxy.getUsers.__name__, "getUsers")  # not wrapped
+        self.assertEqual(proxy.getUsers(), {"a": 1})
 
 
 if __name__ == "__main__":
