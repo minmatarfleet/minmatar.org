@@ -92,6 +92,13 @@ def fleet_commander_alt_fields(
     }
 
 
+def fleet_voice_fields(fleet: EveFleet) -> dict:
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.voice_options import fleet_voice_fields as fields
+
+    return fields(fleet)
+
+
 def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
     tracking = None
     instance = EveFleetInstance.objects.filter(eve_fleet=fleet).first()
@@ -131,6 +138,7 @@ def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
         "aar_link": fleet.aar_link,
         "roam_report_url": fleet.roam_report_url,
         **fleet_host_fields(fleet),
+        **fleet_voice_fields(fleet),
     }
 
 
@@ -150,14 +158,57 @@ def _fleet_authorized(request, fleet: EveFleet) -> bool:
     return is_strategic_fc(request.user)
 
 
+# Discord's SUPPRESS_NOTIFICATIONS message flag (an @silent message).
+SILENT_MESSAGE_FLAG = 4096
+
+
+def _send_group_pre_ping(fleet: EveFleet) -> bool:
+    """A quiet pre-ping in the group's channel (or its tribe's): no
+    mention, sent silently, so the fleet shows as scheduled without
+    notifying anyone (docs/tribes/tribe-publishing.md rule 3)."""
+    group = fleet.host_group
+    channel_id = group.effective_discord_channel_id
+    if not channel_id:
+        return False
+    notification = get_fleet_discord_notification(
+        is_pre_ping=True,
+        fleet_id=fleet.id,
+        fleet_type=fleet.get_type_display(),
+        fleet_location=(
+            fleet.formup_location.location_name
+            if fleet.formup_location
+            else "Ask FC"
+        ),
+        fleet_audience=group.name,
+        fleet_commander_name=fleet.fleet_commander.character_name,
+        fleet_commander_id=fleet.fleet_commander.character_id,
+        fleet_description=fleet.description,
+        fleet_voice_channel=None,
+        fleet_voice_channel_link=None,
+        fleet_start_time=fleet.start_time,
+        content="",
+    )
+    notification["flags"] = SILENT_MESSAGE_FLAG
+    queue_channel_message(
+        channel_id,
+        payload=notification,
+        context=f"group pre-ping for fleet {fleet.id}",
+    )
+    return True
+
+
 def send_discord_pre_ping(fleet: EveFleet) -> bool:
     """Queue a Discord pre-ping for a fleet; a worker posts it.
 
-    Returns False when the fleet has no audience channel to ping. Tribe
-    group fleets never pre-ping (docs/tribes/tribe-publishing.md rule 3),
-    and nor do private fleets (docs/fleets/private-fleets.md).
+    Returns False when the fleet has no channel to ping. A tribe group
+    fleet pre-pings its group's channel quietly (``_send_group_pre_ping``);
+    a private fleet never pre-pings (docs/fleets/private-fleets.md).
     """
-    if fleet.host_group_id or fleet.invite_only or not fleet.audience:
+    if fleet.invite_only:
+        return False
+    if fleet.host_group_id:
+        return _send_group_pre_ping(fleet)
+    if not fleet.audience:
         return False
     if not fleet.audience.discord_channel_id:
         logger.error(

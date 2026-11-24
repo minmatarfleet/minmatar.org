@@ -6,7 +6,7 @@ alwaysApply: true
 # Running Tests
 
 `python3 scripts/ci_local.py` (repo root) runs the CI checks this branch's changes need: backend lint and tests,
-bot, frontend, desktop, agent config. The agent hooks run it before every `git push` and pull request
+bot, voice service, frontend, desktop, agent config. The agent hooks run it before every `git push` and pull request
 (`docs/agent-ci-hooks.md`). Use the commands below to run a narrower set while you work.
 
 Use Django's test runner with the test settings (SQLite, no external DB):

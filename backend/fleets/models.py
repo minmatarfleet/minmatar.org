@@ -5,7 +5,7 @@ from django.contrib.auth.models import Group, User
 from django.db import models
 from django.utils import timezone
 
-from app.links import fitting_url, fleet_edit_url
+from app.links import fitting_url, fleet_edit_url, voice_url
 from discord.outbox import queue_channel_message
 from eveonline.client import EsiClient
 from eveonline.models import EveCharacter, EveLocation
@@ -34,6 +34,61 @@ MOTD_MAX_LENGTH = 4000
 # Campaign fleets are tracked like any other fleet but never scheduled, so
 # the catalog and the schedule filter them out.
 CAMPAIGN_FLEET_TYPES = ("standing", "gang")
+
+
+class FleetVoiceOption(models.Model):
+    """Where a fleet talks: a Discord server, or the alliance Mumble server.
+
+    FCs pick one when scheduling; the fleet MOTD shows it. Managed in the
+    admin. An inactive option can't be picked (Mumble starts inactive and is
+    switched on at go-live). See docs/mumble-architecture.md.
+    """
+
+    KIND_DISCORD = "discord"
+    KIND_MUMBLE = "mumble"
+    KIND_CHOICES = (
+        (KIND_DISCORD, "Discord"),
+        (KIND_MUMBLE, "Mumble"),
+    )
+
+    name = models.CharField(max_length=64, unique=True)
+    kind = models.CharField(
+        max_length=16, choices=KIND_CHOICES, default=KIND_DISCORD
+    )
+    link = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Link shown in the fleet MOTD, e.g. a Discord invite.",
+    )
+    discord_guild_id = models.BigIntegerField(null=True, blank=True)
+    discord_channel_id = models.BigIntegerField(null=True, blank=True)
+    is_default = models.BooleanField(
+        default=False, help_text="Picked for new fleets. Keep exactly one."
+    )
+    is_active = models.BooleanField(
+        default=True, help_text="Only active options can be picked."
+    )
+    order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ("order", "name")
+
+    def __str__(self):
+        return str(self.name)
+
+    @property
+    def is_mumble(self) -> bool:
+        return self.kind == self.KIND_MUMBLE
+
+    @classmethod
+    def default_option(cls):
+        return (
+            cls.objects.filter(is_default=True, is_active=True).first()
+            or cls.objects.filter(
+                is_active=True, kind=cls.KIND_DISCORD
+            ).first()
+        )
 
 
 class EveFleet(models.Model):
@@ -127,6 +182,15 @@ class EveFleet(models.Model):
         help_text="Counts this fleet towards a Faction Warfare campaign.",
     )
 
+    voice_option = models.ForeignKey(
+        FleetVoiceOption,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="fleets",
+        help_text="Where the fleet talks. Empty means the default option.",
+    )
+
     # A private fleet: only invited pilots, its FC and Strategic FCs know it
     # exists until it is declassified. See docs/fleets/private-fleets.md.
     invite_only = models.BooleanField(default=False)
@@ -142,6 +206,32 @@ class EveFleet(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
+
+    DEFAULT_VOICE_LINK = "https://discord.gg/minmatar"
+    DEFAULT_VOICE_NAME = "Minmatar Fleet Discord"
+
+    @property
+    def effective_voice_option(self):
+        """The fleet's voice option, or the default one when none is set."""
+        if self.voice_option_id:
+            return self.voice_option
+        return FleetVoiceOption.default_option()
+
+    @property
+    def uses_mumble(self) -> bool:
+        option = self.effective_voice_option
+        return bool(option and option.is_mumble)
+
+    def motd_voice(self) -> tuple[str, str]:
+        """(link, name) for the MOTD's Voice line."""
+        option = self.effective_voice_option
+        if option is None:
+            return self.DEFAULT_VOICE_LINK, self.DEFAULT_VOICE_NAME
+        if option.is_mumble:
+            link = voice_url()
+            host_and_path = link.split("://", 1)[-1]
+            return link, f"Mumble — {host_and_path}"
+        return option.link or self.DEFAULT_VOICE_LINK, option.name
 
     @property
     def token(self):
@@ -377,8 +467,7 @@ class EveFleetInstance(models.Model):
             fc.character_name,
             formup_location.location_id if formup_location else None,
             formup_location.short_name if formup_location else None,
-            "https://discord.gg/minmatar",
-            "Minmatar Fleet Discord",
+            *eve_fleet.motd_voice(),
             eve_fleet.doctrine.doctrine_link if eve_fleet.doctrine else None,
             eve_fleet.doctrine.name if eve_fleet.doctrine else None,
         )
@@ -1278,6 +1367,11 @@ def close_fleet_cleanup(eve_fleet) -> None:
             (eve_fleet.id,),
             context=f"fleet {eve_fleet.id} close thread",
         )
+    if eve_fleet.uses_mumble:
+        # pylint: disable=import-outside-toplevel
+        from voice.leases import schedule_release
+
+        schedule_release(eve_fleet)
     from fleets.helpers.esi_fittings import (  # pylint: disable=import-outside-toplevel
         cleanup_fleet_esi_fittings,
     )

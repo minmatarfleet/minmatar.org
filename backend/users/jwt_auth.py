@@ -29,6 +29,20 @@ def decode_user_jwt(token: str) -> dict:
     return jwt.decode(token, settings.SECRET_KEY, algorithms=[JWT_ALGORITHM])
 
 
+def decode_audience_jwt(token: str, audience: str) -> dict:
+    """Verify a token issued for one audience only (e.g. ``voice``).
+
+    User tokens carry no ``aud``, and a token with an ``aud`` is refused by
+    ``decode_user_jwt``, so audience tokens never pass as site sessions.
+    """
+    return jwt.decode(
+        token,
+        settings.SECRET_KEY,
+        algorithms=[JWT_ALGORITHM],
+        audience=audience,
+    )
+
+
 def issue_discord_user_jwt(
     request, django_user, discord_user_data: dict
 ) -> str:

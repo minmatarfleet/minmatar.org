@@ -101,17 +101,34 @@ def solar_system_id(name: str) -> Optional[int]:
     return system_id
 
 
+def default_name(system_name: str, type_id: int) -> str:
+    """The name a report without one gets: "<system> - <type>"."""
+    return f"{system_name} - {REPORTABLE_TYPES[type_id]}"
+
+
+def _has_default_name(structure: EveStructure) -> bool:
+    """A reported row still named after its type, so the reporter left
+    the name empty and it may hold the wrong type."""
+    return (
+        structure.source == EveStructure.SOURCE_REPORTED
+        and normalise_name(structure.name, structure.system_name)
+        == (structure.type_name or "").strip().lower()
+    )
+
+
 def candidates(
     structures: Iterable[EveStructure], type_id: int, name: str, system_name
 ) -> list[EveStructure]:
-    """Rows in the system worth offering: same type or a similar name."""
+    """Rows in the system worth offering: same type, a similar name, or a
+    reported row with no name of its own (its type may be the mistake the
+    reporter is correcting)."""
     wanted = normalise_name(name, system_name)
     picked = []
     for structure in structures:
         same_type = structure.type_id == type_id
         theirs = normalise_name(structure.name, structure.system_name)
         similar = bool(wanted) and (wanted in theirs or theirs in wanted)
-        if same_type or similar:
+        if same_type or similar or _has_default_name(structure):
             picked.append(structure)
     picked.sort(
         key=lambda s: (
@@ -264,7 +281,8 @@ def apply_report(structure: EveStructure, details: ReportDetails, user):
     """
     Update a row from a report. On an ESI row a report only fills what ESI
     leaves empty (fitting, reinforcement hour) and never
-    touches ESI-owned fields. It never changes visibility or source.
+    touches ESI-owned fields (type included). On a reported row it also
+    corrects the type. It never changes visibility or source.
     """
     now = timezone.now()
     if structure.source == EveStructure.SOURCE_ESI:
@@ -276,6 +294,15 @@ def apply_report(structure: EveStructure, details: ReportDetails, user):
         ):
             structure.reinforce_hour = details.reinforce_hour
     else:
+        if details.type_id != structure.type_id:
+            # A reported row's type is only what a pilot picked, so a
+            # later report on the same row corrects it.
+            if not details.name and _has_default_name(structure):
+                structure.name = default_name(
+                    structure.system_name, details.type_id
+                )
+            structure.type_id = details.type_id
+            structure.type_name = REPORTABLE_TYPES[details.type_id]
         if details.name:
             structure.name = details.name
         if details.corporation_name:
@@ -311,7 +338,7 @@ def create_reported(
                     type_id=details.type_id,
                     type_name=REPORTABLE_TYPES[details.type_id],
                     name=details.name
-                    or f"{details.system_name} - {REPORTABLE_TYPES[details.type_id]}",
+                    or default_name(details.system_name, details.type_id),
                     reinforce_hour=details.reinforce_hour,
                     fitting=details.fitting or None,
                     corporation=corporation,

@@ -13,6 +13,7 @@ It compares the working tree (committed, uncommitted and untracked files) with `
 | `backend-tests` | anything under `backend/` changed | the whole suite (`--parallel auto --keepdb`, migration tests excluded), then `--tag migration` when a migration changed |
 | `backend-tests` (`app.tests` only) | docs, READMEs, agent config, `scripts/`, `.github/`, desktop contract files or `openapi.json` changed | the repo-wide tests in `backend/app/tests/` (docs, PR checklist, schema) |
 | `bot` | `bot/` changed | flake8 and the bot's unittest suite |
+| `voice` | `voice/` changed | flake8 and the voice service's unittest suite (the real-Murmur lab runs in CI only) |
 | `frontend-tests`, `frontend-types` | `frontend/app/` changed | `npm run test -- --run` and `npm run check` |
 | `desktop` | `desktop/` changed | `npm test` and the version check |
 | `rust-browser` | only with `--rust` | builds Rust and plays every story in Chromium |

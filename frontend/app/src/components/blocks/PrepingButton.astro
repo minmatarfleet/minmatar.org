@@ -29,7 +29,7 @@ import Button from '@components/blocks/Button.astro';
                 content: '${t('preping_dialog_text')}',
                 hx: {
                     method: 'post',
-                    url: '${PREPING_BUTTON_PARTIAL_URL}?fleet_id=${fleet_id}',
+                    url: '${PREPING_BUTTON_PARTIAL_URL}',
                     swap: 'outerHTML transition:true',
                     target: '#preping-button',
                 }

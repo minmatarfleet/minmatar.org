@@ -11,6 +11,7 @@ trigger, the same commands CI runs:
   migration changed. A change outside `backend/` that backend tests read
   (docs, agent rules, the PR template, contract files) runs `app.tests`.
 - bot: flake8 and the bot's unittest suite.
+- voice: flake8 and the voice service's unittest suite (voice/).
 - frontend-tests and frontend-types: vitest and the astro check ratchet.
 - desktop: the desktop tests and the version check.
 - agent-config: `.cursor/` is generated from `.claude/`.
@@ -250,6 +251,7 @@ def plan(
     checks: list[Check] = []
     backend = [p for p in changed if p.startswith("backend/")]
     bot = [p for p in changed if p.startswith("bot/")]
+    voice = [p for p in changed if p.startswith("voice/")]
     frontend = [p for p in changed if p.startswith("frontend/app/")]
     desktop = [p for p in changed if p.startswith("desktop/")]
     agent = [p for p in changed if p.startswith((".claude/", ".cursor/"))]
@@ -360,6 +362,19 @@ def plan(
                     "DISCORD_BOT_TOKEN": "ci-placeholder",
                     "MINMATAR_API_TOKEN": "ci-placeholder",
                 },
+            )
+        )
+
+    if voice or run_all:
+        checks.append(
+            Check(
+                "voice",
+                "voice",
+                [
+                    [tool("flake8"), "--max-line-length", "100", "."],
+                    ["python3", "-m", "unittest", "discover", "-s", "tests", "-t", "."],
+                ],
+                f"{len(voice)} voice service files",
             )
         )
 

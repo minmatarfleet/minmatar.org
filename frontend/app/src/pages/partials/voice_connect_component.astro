@@ -1,0 +1,34 @@
+---
+// no-error-refetch: a mutation (POST) that shows its failure inline next to the Connect button.
+// POST only: mints a one-time Mumble link. The token stays inside the link;
+// the page never shows it as text.
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_voice_session } from '@helpers/voice_session'
+import { post_voice_connect } from '@helpers/api.minmatar.org/voice'
+
+const session = get_voice_session(Astro)
+if (!session || Astro.request.method !== 'POST')
+    return HTTP_404_Not_Found()
+
+let url: string | null = null
+try {
+    url = (await post_voice_connect(session.token))?.url ?? null
+} catch (error) {
+    console.log(`Voice connect failed: ${error.message}`)
+}
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Button from '@components/blocks/Button.astro'
+---
+
+{url
+    ? <Flexblock>
+        <p>{t('voice.connect.ready')}</p>
+        <Button href={url} size="sm" color="green">{t('voice.connect.open')}</Button>
+        <small>{t('voice.connect.expires')}</small>
+    </Flexblock>
+    : <p role="alert">{t('voice.connect.failed')}</p>
+}

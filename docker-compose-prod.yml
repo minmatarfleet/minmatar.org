@@ -24,6 +24,9 @@ services:
             - --entryPoints.api.forwardedHeaders.trustedIPs=127.0.0.1/32,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
             - --entryPoints.web.address=:4321
             - --entryPoints.web.forwardedHeaders.trustedIPs=127.0.0.1/32,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+            # The voice service's way in to /api/voice/internal/. No host
+            # port: only containers on the default network reach it.
+            - --entryPoints.internal.address=:8001
         # Only the host's nginx reaches these; it terminates TLS.
         ports:
             - "127.0.0.1:8020:8000"
@@ -67,7 +70,12 @@ services:
         labels:
             - traefik.enable=true
             - traefik.http.routers.app.entrypoints=api
-            - traefik.http.routers.app.rule=PathPrefix(`/`)
+            # /api/voice/internal/ is served only on the internal entrypoint.
+            - traefik.http.routers.app.rule=PathPrefix(`/`) && !PathPrefix(`/api/voice/internal/`)
+            - traefik.http.routers.app.service=app
+            - traefik.http.routers.app-internal.entrypoints=internal
+            - traefik.http.routers.app-internal.rule=PathPrefix(`/api/voice/internal/`)
+            - traefik.http.routers.app-internal.service=app
             - traefik.http.services.app.loadbalancer.server.port=8000
 
     bot:
@@ -107,6 +115,10 @@ services:
     celery-fleets:
         <<: *celery-worker
         command: celery -A app worker -l info -Q fleets
+
+    celery-voice:
+        <<: *celery-worker
+        command: celery -A app worker -l info -Q voice --concurrency 2
 
     celery-intel:
         <<: *celery-worker
@@ -205,6 +217,82 @@ services:
             - traefik.http.routers.rust.rule=Path(`/rust`) || PathPrefix(`/rust/`)
             - traefik.http.services.rust.loadbalancer.server.port=6007
 
+    # Fleet voice (docs/mumble-architecture.md). Neither is rebuilt or
+    # recreated by an ordinary deploy: Murmur's image is pinned and the voice
+    # service has its own build context, so voice stays up.
+    voice-murmur:
+        image: mumblevoip/mumble-server:v1.5.939
+        restart: always
+        ports:
+            - "64738:64738/tcp"
+            - "64738:64738/udp"
+        volumes:
+            - voice_murmur:/data
+        environment:
+            # Every setting is a MUMBLE_CONFIG_* variable. Don't mount a
+            # config file: with MUMBLE_CUSTOM_CONFIG_FILE set the image
+            # ignores all of these.
+            - MUMBLE_CONFIG_ICE=tcp -h 0.0.0.0 -p 6502
+            - MUMBLE_CONFIG_ICESECRETWRITE=${VOICE_ICE_SECRET_WRITE}
+            - MUMBLE_CONFIG_ICESECRETREAD=${VOICE_ICE_SECRET_READ}
+            # Fail closed: a long random password nobody is told. Without
+            # the authenticator, nobody gets in.
+            - MUMBLE_CONFIG_SERVERPASSWORD=${VOICE_SERVER_PASSWORD}
+            - MUMBLE_SUPERUSER_PASSWORD=${VOICE_SUPERUSER_PASSWORD}
+            # Quote any entry with ": " in it, or YAML reads it as a map and
+            # compose refuses the file (test_compose_files checks).
+            - MUMBLE_CONFIG_REGISTERNAME=Minmatar Fleet
+            - "MUMBLE_CONFIG_WELCOMETEXT=Minmatar Fleet voice. Help: my.minmatar.org/voice"
+            - MUMBLE_CONFIG_USERS=400
+            - MUMBLE_CONFIG_BANDWIDTH=72000
+            - MUMBLE_CONFIG_ALLOWPING=false
+            - MUMBLE_CONFIG_SENDVERSION=false
+            # Lobby is the first channel the voice service creates.
+            - MUMBLE_CONFIG_DEFAULTCHANNEL=1
+            - MUMBLE_CONFIG_REMEMBERCHANNEL=false
+            - MUMBLE_CONFIG_ALLOWHTML=false
+            - MUMBLE_CONFIG_IMAGEMESSAGELENGTH=0
+            - MUMBLE_CONFIG_AUTOBANATTEMPTS=30
+            - MUMBLE_CONFIG_AUTOBANTIMEFRAME=120
+            - MUMBLE_CONFIG_AUTOBANTIME=300
+            - MUMBLE_CONFIG_LOGDAYS=1
+            - MUMBLE_CONFIG_OBFUSCATE=true
+        networks:
+            - voice
+            - voice_clients
+
+    voice-auth:
+        build:
+            context: ./voice/.
+            dockerfile: Dockerfile
+        restart: always
+        depends_on:
+            - voice-murmur
+            - redis
+        environment:
+            - VOICE_REDIS_URL=redis://redis:6379/3
+            - VOICE_ICE_HOST=voice-murmur
+            - VOICE_ICE_PORT=6502
+            - VOICE_ICE_SECRET=${VOICE_ICE_SECRET_WRITE}
+            - VOICE_CALLBACK_HOST=voice-auth
+            - VOICE_CALLBACK_PORT=6503
+            - VOICE_INTERNAL_URL=http://edge:8001/api/voice/internal
+            - VOICE_INTERNAL_SECRET=${VOICE_INTERNAL_SECRET}
+            - VOICE_CERT_FILE=/etc/letsencrypt/live/voice.minmatar.org/fullchain.pem
+            - VOICE_KEY_FILE=/etc/letsencrypt/live/voice.minmatar.org/privkey.pem
+            - SENTRY_DSN=${VOICE_SENTRY_DSN:-}
+        volumes:
+            - /etc/letsencrypt:/etc/letsencrypt:ro
+        healthcheck:
+            test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=3)"]
+            interval: 15s
+            timeout: 5s
+            retries: 3
+            start_period: 30s
+        networks:
+            - voice
+            - default
+
     redis:
         image: redis:6.0.9-alpine
         volumes:
@@ -224,6 +312,12 @@ secrets:
 
 networks:
     web: {}
+    # Ice between Murmur and the voice service, nothing else.
+    voice:
+        internal: true
+    # Murmur's client port (an internal network can't publish ports).
+    voice_clients: {}
 
 volumes:
     redis: {}
+    voice_murmur: {}

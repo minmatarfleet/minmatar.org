@@ -6,6 +6,10 @@ from django.contrib.auth.models import User
 
 from app.errors import ErrorResponse
 from fittings.models import EveDoctrine
+from fleets.helpers.voice_options import (
+    fleet_voice_fields,
+    resolve_voice_option,
+)
 from fleets.endpoints.helpers import fleet_host_fields, send_discord_pre_ping
 from fleets.endpoints.schemas import CreateEveFleetRequest, EveFleetResponse
 from fleets.helpers.fleet_doctrine import doctrine_choice_error
@@ -92,6 +96,11 @@ def create_scheduled_fleet(
     )
     if isinstance(campaign, tuple):
         return campaign
+    voice_option = resolve_voice_option(
+        getattr(payload, "voice_option_id", None)
+    )
+    if isinstance(voice_option, tuple):
+        return voice_option
 
     fleet = EveFleet.objects.create(
         type=payload.type,
@@ -107,6 +116,7 @@ def create_scheduled_fleet(
         status="pending",
         campaign=campaign,
         invite_only=invite_only,
+        voice_option=voice_option,
     )
 
     if payload.doctrine_id:
@@ -128,7 +138,8 @@ def create_scheduled_fleet(
 def create_group_fleet(
     *, user: User, payload: CreateEveFleetRequest
 ) -> EveFleet | tuple[int, dict]:
-    """A tribe group fleet: no audience, and never a pre-ping."""
+    """A tribe group fleet: no audience. ``immediate_ping`` sends the quiet
+    group pre-ping (``send_discord_pre_ping``)."""
     group = resolve_host_group(user, payload.host_group_id)
     if isinstance(group, tuple):
         return group
@@ -146,12 +157,17 @@ def create_group_fleet(
     campaign = resolve_campaign(getattr(payload, "campaign_id", None), user)
     if isinstance(campaign, tuple):
         return campaign
+    voice_option = resolve_voice_option(
+        getattr(payload, "voice_option_id", None)
+    )
+    if isinstance(voice_option, tuple):
+        return voice_option
 
     doctrine = None
     if payload.doctrine_id:
         doctrine = EveDoctrine.objects.filter(id=payload.doctrine_id).first()
 
-    return EveFleet.objects.create(
+    fleet = EveFleet.objects.create(
         type=payload.type,
         description=payload.description,
         objective=(payload.objective or "").strip(),
@@ -168,7 +184,11 @@ def create_group_fleet(
         track_mining=group_fleet_track_mining(group, payload),
         status="pending",
         campaign=campaign,
+        voice_option=voice_option,
     )
+    if payload.immediate_ping:
+        send_discord_pre_ping(fleet)
+    return fleet
 
 
 def private_fleet_error(user: User, payload) -> tuple[int, dict] | None:
@@ -255,6 +275,7 @@ def fleet_create_response(fleet: EveFleet) -> EveFleetResponse:
         "campaign_id": fleet.campaign_id,
         "campaign_slug": fleet.campaign.slug if fleet.campaign else None,
         **fleet_host_fields(fleet),
+        **fleet_voice_fields(fleet),
     }
     if fleet.doctrine:
         out["doctrine_id"] = fleet.doctrine.id

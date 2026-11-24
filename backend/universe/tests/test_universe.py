@@ -27,6 +27,7 @@ from structures.models import EveStructure, EveStructureTimer
 from structures.reported import (
     ReportDetails,
     absorb_reported_structure,
+    candidates,
     normalise_name,
     record_report,
 )
@@ -540,6 +541,63 @@ class ReportRulesTests(UniverseFixture):
         alliance_row.refresh_from_db()
         self.assertEqual(alliance_row.name, "Amamake - alliance")
         self.assertEqual(alliance_row.reinforce_hour, 19)
+
+    def test_resubmit_corrects_reported_type(self):
+        row = record_report(
+            self.pilots["member"],
+            ReportDetails(
+                system_name="TU-O0T", type_id=35833, name="Cerulean Cave"
+            ),
+            self.reported,
+            visible_structures(self.pilots["member"]),
+        )
+        row.refresh_from_db()
+        self.assertEqual(row.id, self.reported.id)
+        self.assertEqual(row.type_id, 35833)
+        self.assertEqual(row.type_name, "Fortizar")
+        self.assertEqual(row.name, "Cerulean Cave")
+
+    def test_resubmit_renames_unnamed_reported_row(self):
+        unnamed = EveStructure.objects.create(
+            id=EveStructure.REPORTED_ID_BASE - 1,
+            system_id=TU_O0T,
+            system_name="TU-O0T",
+            type_id=35832,
+            type_name="Astrahus",
+            name="TU-O0T - Astrahus",
+            visibility="alliance",
+            source="reported",
+        )
+        offered = candidates(
+            EveStructure.objects.filter(system_id=TU_O0T),
+            35826,
+            "",
+            "TU-O0T",
+        )
+        self.assertIn(unnamed, offered)
+        self.assertNotIn(self.reported, offered)
+        record_report(
+            self.pilots["member"],
+            ReportDetails(system_name="TU-O0T", type_id=35826),
+            unnamed,
+            visible_structures(self.pilots["member"]),
+        )
+        unnamed.refresh_from_db()
+        self.assertEqual(unnamed.type_id, 35826)
+        self.assertEqual(unnamed.type_name, "Azbel")
+        self.assertEqual(unnamed.name, "TU-O0T - Azbel")
+
+    def test_report_never_changes_esi_type(self):
+        alliance_row = self.structures["alliance"]
+        type_id = alliance_row.type_id
+        record_report(
+            self.pilots["member"],
+            ReportDetails(system_name="Amamake", type_id=35826),
+            alliance_row,
+            visible_structures(self.pilots["member"]),
+        )
+        alliance_row.refresh_from_db()
+        self.assertEqual(alliance_row.type_id, type_id)
 
     def test_ambiguous_hidden_match_is_flagged(self):
         for index in (7, 8):

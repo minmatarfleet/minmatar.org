@@ -790,6 +790,9 @@ class FleetEngagementsTestCase(TimelineFleetFixture):
             self._get()
 
     def _queries(self):
+        # Warm the process caches first: run alone (a cold cache), the
+        # baseline would count a lookup the requests after it skip.
+        self._get()
         with CaptureQueriesContext(connection) as ctx:
             self._get()
         return len(ctx.captured_queries)

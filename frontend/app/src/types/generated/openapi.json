@@ -11738,6 +11738,17 @@
           },
           "type": {
             "$ref": "#/components/schemas/EveFleetType"
+          },
+          "voice_option_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Option Id"
           }
         },
         "required": [
@@ -15516,6 +15527,22 @@
           },
           "type": {
             "$ref": "#/components/schemas/EveFleetType"
+          },
+          "uses_mumble": {
+            "default": false,
+            "title": "Uses Mumble",
+            "type": "boolean"
+          },
+          "voice_option_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Option Id"
           }
         },
         "required": [
@@ -15832,6 +15859,22 @@
           },
           "type": {
             "$ref": "#/components/schemas/EveFleetType"
+          },
+          "uses_mumble": {
+            "default": false,
+            "title": "Uses Mumble",
+            "type": "boolean"
+          },
+          "voice_option_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Option Id"
           }
         },
         "required": [
@@ -16854,6 +16897,22 @@
           },
           "type": {
             "$ref": "#/components/schemas/EveFleetType"
+          },
+          "uses_mumble": {
+            "default": false,
+            "title": "Uses Mumble",
+            "type": "boolean"
+          },
+          "voice_option_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Option Id"
           }
         },
         "required": [
@@ -23326,6 +23385,34 @@
           "killmails"
         ],
         "title": "FleetPublicKillsResponse",
+        "type": "object"
+      },
+      "FleetVoiceOptionResponse": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_default": {
+            "title": "Is Default",
+            "type": "boolean"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "is_default"
+        ],
+        "title": "FleetVoiceOptionResponse",
         "type": "object"
       },
       "FleetWindowAfterAction": {
@@ -55055,6 +55142,17 @@
                 "type": "null"
               }
             ]
+          },
+          "voice_option_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Option Id"
           }
         },
         "title": "UpdateEveFleetRequest",
@@ -55569,6 +55667,367 @@
           "visibility"
         ],
         "title": "VisibilityRequest",
+        "type": "object"
+      },
+      "VoiceBanRequest": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "reason": {
+            "default": "",
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id"
+        ],
+        "title": "VoiceBanRequest",
+        "type": "object"
+      },
+      "VoiceBanResponse": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "character_id",
+          "character_name",
+          "reason",
+          "expires_at"
+        ],
+        "title": "VoiceBanResponse",
+        "type": "object"
+      },
+      "VoiceCertificateResponse": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "fingerprint": {
+            "title": "Fingerprint",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          }
+        },
+        "required": [
+          "id",
+          "fingerprint",
+          "created_at",
+          "last_used_at"
+        ],
+        "title": "VoiceCertificateResponse",
+        "type": "object"
+      },
+      "VoiceCharacterRequest": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "character_id"
+        ],
+        "title": "VoiceCharacterRequest",
+        "type": "object"
+      },
+      "VoiceCoFc": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name"
+        ],
+        "title": "VoiceCoFc",
+        "type": "object"
+      },
+      "VoiceConnectResponse": {
+        "properties": {
+          "expires_in_seconds": {
+            "title": "Expires In Seconds",
+            "type": "integer"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "expires_in_seconds"
+        ],
+        "title": "VoiceConnectResponse",
+        "type": "object"
+      },
+      "VoiceFleetAccess": {
+        "properties": {
+          "branch": {
+            "title": "Branch",
+            "type": "integer"
+          },
+          "branch_name": {
+            "title": "Branch Name",
+            "type": "string"
+          },
+          "commander": {
+            "title": "Commander",
+            "type": "boolean"
+          },
+          "fleet_id": {
+            "title": "Fleet Id",
+            "type": "integer"
+          },
+          "placement": {
+            "title": "Placement",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fleet_id",
+          "branch",
+          "branch_name",
+          "placement",
+          "commander"
+        ],
+        "title": "VoiceFleetAccess",
+        "type": "object"
+      },
+      "VoiceFleetResponse": {
+        "properties": {
+          "branch": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Branch"
+          },
+          "branch_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Branch Name"
+          },
+          "can_ban": {
+            "title": "Can Ban",
+            "type": "boolean"
+          },
+          "can_manage_voice": {
+            "title": "Can Manage Voice",
+            "type": "boolean"
+          },
+          "channel_choices": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Channel Choices",
+            "type": "array"
+          },
+          "co_fcs": {
+            "items": {
+              "$ref": "#/components/schemas/VoiceCoFc"
+            },
+            "title": "Co Fcs",
+            "type": "array"
+          },
+          "fleet_id": {
+            "title": "Fleet Id",
+            "type": "integer"
+          },
+          "uses_mumble": {
+            "title": "Uses Mumble",
+            "type": "boolean"
+          },
+          "wing_channels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Wing Channels",
+            "type": "object"
+          }
+        },
+        "required": [
+          "fleet_id",
+          "uses_mumble",
+          "can_manage_voice",
+          "can_ban",
+          "branch",
+          "branch_name",
+          "wing_channels",
+          "channel_choices",
+          "co_fcs"
+        ],
+        "title": "VoiceFleetResponse",
+        "type": "object"
+      },
+      "VoiceKickRequest": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "message": {
+            "default": "",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id"
+        ],
+        "title": "VoiceKickRequest",
+        "type": "object"
+      },
+      "VoiceStatusResponse": {
+        "properties": {
+          "admitted": {
+            "title": "Admitted",
+            "type": "boolean"
+          },
+          "banned": {
+            "title": "Banned",
+            "type": "boolean"
+          },
+          "certificate_count": {
+            "title": "Certificate Count",
+            "type": "integer"
+          },
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "community": {
+            "title": "Community",
+            "type": "boolean"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "fleets": {
+            "items": {
+              "$ref": "#/components/schemas/VoiceFleetAccess"
+            },
+            "title": "Fleets",
+            "type": "array"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "signed_in_as": {
+            "title": "Signed In As",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "display_name",
+          "admitted",
+          "banned",
+          "reason",
+          "community",
+          "fleets",
+          "certificate_count",
+          "signed_in_as"
+        ],
+        "title": "VoiceStatusResponse",
+        "type": "object"
+      },
+      "VoiceWingsRequest": {
+        "properties": {
+          "wing_channels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Wing Channels",
+            "type": "object"
+          }
+        },
+        "required": [
+          "wing_channels"
+        ],
+        "title": "VoiceWingsRequest",
         "type": "object"
       },
       "VolunteerRequest": {
@@ -56461,6 +56920,10 @@
         "type": "http"
       },
       "AuthOptional": {
+        "scheme": "bearer",
+        "type": "http"
+      },
+      "VoiceAuth": {
         "scheme": "bearer",
         "type": "http"
       }
@@ -71282,6 +71745,48 @@
           }
         ],
         "summary": "Get V3 Fleets",
+        "tags": [
+          "Fleets"
+        ]
+      }
+    },
+    "/api/fleets/voice-options": {
+      "get": {
+        "description": "The voice options the fleet form offers (active ones only). Same access as /types.",
+        "operationId": "fleets_endpoints_reference_get_fleet_voice_options_get_fleet_voice_options",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FleetVoiceOptionResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Get Fleet Voice Options",
         "tags": [
           "Fleets"
         ]
@@ -99692,6 +100197,562 @@
         "summary": "Sync user with Discord",
         "tags": [
           "Authentication"
+        ]
+      }
+    },
+    "/api/voice/bans": {
+      "post": {
+        "operationId": "voice_endpoints_post_ban_post_ban",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoiceBanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoiceBanResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Ban a character from fleet voice",
+        "tags": [
+          "Voice"
+        ]
+      }
+    },
+    "/api/voice/certificates": {
+      "get": {
+        "operationId": "voice_endpoints_get_certificates_get_certificates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/VoiceCertificateResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "VoiceAuth": []
+          }
+        ],
+        "summary": "Mumble certificates bound to the character",
+        "tags": [
+          "Voice"
+        ]
+      }
+    },
+    "/api/voice/certificates/{certificate_id}": {
+      "delete": {
+        "operationId": "voice_endpoints_delete_certificate_delete_certificate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "certificate_id",
+            "required": true,
+            "schema": {
+              "title": "Certificate Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "VoiceAuth": []
+          }
+        ],
+        "summary": "Revoke a Mumble certificate",
+        "tags": [
+          "Voice"
+        ]
+      }
+    },
+    "/api/voice/connect": {
+      "post": {
+        "description": "Returns a mumble:// link carrying a one-time password that expires in 2 minutes. The first connection binds the Mumble certificate.",
+        "operationId": "voice_endpoints_post_connect_post_connect",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoiceConnectResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "VoiceAuth": []
+          }
+        ],
+        "summary": "Mint a one-time Mumble link",
+        "tags": [
+          "Voice"
+        ]
+      }
+    },
+    "/api/voice/fleets/{fleet_id}": {
+      "get": {
+        "operationId": "voice_endpoints_get_fleet_voice_get_fleet_voice",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoiceFleetResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "A fleet's voice: branch, co-FCs, wing channels",
+        "tags": [
+          "Voice"
+        ]
+      }
+    },
+    "/api/voice/fleets/{fleet_id}/co-fcs": {
+      "post": {
+        "operationId": "voice_endpoints_post_fleet_co_fc_post_fleet_co_fc",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoiceCharacterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Add a co-FC (Commanders in this fleet's branch)",
+        "tags": [
+          "Voice"
+        ]
+      }
+    },
+    "/api/voice/fleets/{fleet_id}/co-fcs/{character_id}": {
+      "delete": {
+        "operationId": "voice_endpoints_delete_fleet_co_fc_delete_fleet_co_fc",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "title": "Character Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Remove a co-FC",
+        "tags": [
+          "Voice"
+        ]
+      }
+    },
+    "/api/voice/fleets/{fleet_id}/kick": {
+      "post": {
+        "operationId": "voice_endpoints_post_fleet_kick_post_fleet_kick",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoiceKickRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Kick a pilot and end their access to this fleet",
+        "tags": [
+          "Voice"
+        ]
+      }
+    },
+    "/api/voice/fleets/{fleet_id}/wings": {
+      "post": {
+        "operationId": "voice_endpoints_post_fleet_wings_post_fleet_wings",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "fleet_id",
+            "required": true,
+            "schema": {
+              "title": "Fleet Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoiceWingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Send in-game wings to channels on first placement",
+        "tags": [
+          "Voice"
+        ]
+      }
+    },
+    "/api/voice/login": {
+      "get": {
+        "description": "Redirects to EVE SSO asking only for publicData. Afterwards the browser lands on redirect_url with ?token=<voice session token>&state=<state>. The website sets state in a cookie before sending the browser here, and only keeps a token whose state matches.",
+        "operationId": "voice_endpoints_get_login_get_login",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "redirect_url",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Redirect Url",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "state",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "State",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Found"
+          }
+        },
+        "summary": "Sign in to fleet voice with EVE (public info only)",
+        "tags": [
+          "Voice"
+        ]
+      }
+    },
+    "/api/voice/status": {
+      "get": {
+        "operationId": "voice_endpoints_get_status_get_status",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoiceStatusResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "VoiceAuth": []
+          }
+        ],
+        "summary": "Voice access for the signed-in character",
+        "tags": [
+          "Voice"
         ]
       }
     }
