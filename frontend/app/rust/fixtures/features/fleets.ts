@@ -8,6 +8,7 @@ import type {
 } from '@dtypes/layout_components'
 import type { FleetCommander, FleetCommanderMetrics, Contract, CandidateFleet, FleetTypes } from '@dtypes/api.minmatar.org'
 import type { CommandStep } from '@helpers/fleet_command'
+import type { FleetMining, FleetMiningEvent, FleetMiningTimeline } from '@helpers/api.minmatar.org/fleets'
 
 // Countdown.astro's ticker calls a bare `pad()` that nothing on the page defines (src/components/blocks/Countdown.astro),
 // so it throws a ReferenceError every second. A stand-in keeps the stories' output clean until that is fixed.
@@ -673,3 +674,89 @@ export const battle_pilot_long_name: BattlePilotRow = battle_pilot({
     corporation_id: CORPS.fosfo.corporation_id,
     alliance_name: 'Minmatar Fleet Alliance',
 })
+
+// Mining fleets (docs/fleets/mining-tracking.md): a 90-minute fleet in six
+// 15-minute buckets. Alex mines throughout; Taylor idles for 30 minutes; a
+// multiboxer's two characters leave together after an hour; Pat has no
+// mining scope.
+const MINING_START = Date.UTC(2026, 10, 22, 18, 0)
+const mining_at = (minutes: number) => new Date(MINING_START + minutes * 60_000).toISOString()
+
+const mining_pilot = (
+    character_id: number | null,
+    character_name: string | null,
+    cells: FleetMiningTimeline['pilots'][number]['cells'],
+    cell_m3: number[],
+    no_scope = false,
+): FleetMiningTimeline['pilots'][number] => {
+    const in_fleet = cells.filter(c => c !== 'out').length
+    const with_ore = cells.filter(c => c === 'ore').length
+    return {
+        character_id,
+        character_name,
+        no_scope,
+        cells,
+        cell_m3,
+        volume_m3: cell_m3.reduce((a, b) => a + b, 0),
+        mining_pct: no_scope || !in_fleet ? null : Math.round(100 * with_ore / in_fleet),
+    }
+}
+
+const mining_event = (minutes: number, kind: FleetMiningEvent['kind'], name: string, extra: Partial<FleetMiningEvent> = {}): FleetMiningEvent => ({
+    at: mining_at(minutes),
+    kind,
+    character_id: null,
+    character_name: name,
+    type_id: null,
+    ore_name: null,
+    quantity: null,
+    volume_m3: null,
+    ...extra,
+})
+
+const MINING_PILOTS = [
+    mining_pilot(95000001, 'Alex Example', ['ore', 'ore', 'ore', 'ore', 'ore', 'ore'], [6000, 6200, 5800, 6100, 6000, 5900]),
+    mining_pilot(95000002, 'Taylor Trial', ['ore', 'idle', 'idle', 'ore', 'ore', 'quiet'], [2400, 0, 0, 2500, 2300, 0]),
+    mining_pilot(95000003, 'Boxer Main', ['ore', 'ore', 'ore', 'ore', 'out', 'out'], [1500, 1500, 1500, 1500, 0, 0]),
+    mining_pilot(95000004, 'Boxer Alt One', ['ore', 'ore', 'ore', 'ore', 'out', 'out'], [1500, 1500, 1500, 1500, 0, 0]),
+    mining_pilot(95000005, 'Pat Noscope', ['quiet', 'quiet', 'quiet', 'quiet', 'quiet', 'quiet'], [0, 0, 0, 0, 0, 0], true),
+]
+
+export const mining_timeline: FleetMiningTimeline = {
+    bucket_minutes: 15,
+    start: mining_at(0),
+    end: mining_at(90),
+    buckets: [0, 15, 30, 45, 60, 75].map(mining_at),
+    totals_m3: [0, 1, 2, 3, 4, 5].map(i => MINING_PILOTS.reduce((sum, p) => sum + p.cell_m3[i], 0)),
+    pilots: MINING_PILOTS,
+    events: [
+        mining_event(74, 'ore', 'Alex Example', { type_id: 1230, ore_name: 'Veldspar', quantity: 59000, volume_m3: 5900 }),
+        mining_event(60, 'leave', 'Boxer Alt One'),
+        mining_event(60, 'leave', 'Boxer Main'),
+        mining_event(59, 'ore', 'Taylor Trial', { type_id: 1228, ore_name: 'Scordite', quantity: 15333, volume_m3: 2300 }),
+        mining_event(0, 'join', 'Alex Example'),
+    ],
+}
+
+const mining_ore = (type_id: number, name: string, quantity: number, volume_m3: number, isk_estimate: number) =>
+    ({ type_id, name, quantity, volume_m3, isk_estimate })
+
+export const mining_fleet: FleetMining = {
+    track_mining: true,
+    measuring: false,
+    updated_at: mining_at(101),
+    pilots: [
+        { character_id: 95000001, character_name: 'Alex Example', status: 'done', ores: [mining_ore(1230, 'Veldspar', 360000, 36000, 3780000)], volume_m3: 36000, isk_estimate: 3780000 },
+        { character_id: 95000002, character_name: 'Taylor Trial', status: 'done', ores: [mining_ore(1228, 'Scordite', 48000, 7200, 806000)], volume_m3: 7200, isk_estimate: 806000 },
+        { character_id: 95000003, character_name: 'Boxer Main', status: 'done', ores: [mining_ore(1230, 'Veldspar', 60000, 6000, 630000)], volume_m3: 6000, isk_estimate: 630000 },
+        { character_id: 95000004, character_name: 'Boxer Alt One', status: 'done', ores: [mining_ore(1230, 'Veldspar', 60000, 6000, 630000)], volume_m3: 6000, isk_estimate: 630000 },
+        { character_id: 95000005, character_name: 'Pat Noscope', status: 'no_scope', ores: [], volume_m3: 0, isk_estimate: 0 },
+    ],
+    ores: [mining_ore(1230, 'Veldspar', 480000, 48000, 5040000), mining_ore(1228, 'Scordite', 48000, 7200, 806000)],
+    volume_m3: 55200,
+    isk_estimate: 5846000,
+    pilots_no_scope: 1,
+    timeline: mining_timeline,
+}
+
+export const mining_fleet_no_timeline: FleetMining = { ...mining_fleet, timeline: null, measuring: true }

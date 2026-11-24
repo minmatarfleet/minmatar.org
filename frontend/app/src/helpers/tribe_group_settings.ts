@@ -54,6 +54,7 @@ export function publishing_settings_patch(form: FormValues): TribeGroupPublishin
         allow_open_fleets: form.get('allow_open_fleets') === 'on',
         fleets_enabled: form.get('fleets_enabled') === 'on',
         events_enabled: form.get('events_enabled') === 'on',
+        track_mining_by_default: form.get('track_mining_by_default') === 'on',
     }
     for (const kind of PUBLISHING_KINDS) {
         const chosen = policy(form.get(`${kind}_policy`))

@@ -593,6 +593,7 @@ export interface FleetUI {
     audience:               string;
     disable_motd:           boolean;
     hide_volunteers:        boolean;
+    track_mining?:          boolean;
     status?:                TrackingStatus;
     aar_link:               string;
     roam_report_url?:       string;

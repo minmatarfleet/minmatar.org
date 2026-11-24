@@ -1,0 +1,211 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { FleetMining, FleetMiningOre, FleetMiningPilot } from '@helpers/api.minmatar.org/fleets'
+import { format_isk, format_volume_m3, number_thousand_separator } from '@helpers/numbers'
+import { format_date_time } from '@helpers/date'
+import { get_player_icon } from '@helpers/eve_image'
+
+interface Props {
+    mining:             FleetMining;
+    [propName: string]: any;
+}
+
+const {
+    mining,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const STATUS_TAGS: Record<FleetMiningPilot['status'], { text: string, color: string }> = {
+    measuring:  { text: t('fleets.mining.status_measuring'), color: 'fleet-yellow' },
+    done:       { text: t('fleets.mining.status_done'), color: 'green' },
+    partial:    { text: t('fleets.mining.status_partial'), color: 'fleet-yellow' },
+    no_scope:   { text: t('fleets.mining.status_no_scope'), color: 'fleet-red' },
+}
+
+const ore_line = (ore:FleetMiningOre):string =>
+    `${ore.name} ${number_thousand_separator(ore.quantity, lang)}`
+
+const counted = mining.pilots.filter(pilot => pilot.status !== 'no_scope').length
+const has_timeline = Boolean(mining.timeline && mining.timeline.pilots.length > 0)
+
+import Tag from '@components/blocks/Tag.astro'
+import FleetMiningDispatch from '@components/blocks/FleetMiningDispatch.astro'
+import FleetMiningLog from '@components/blocks/FleetMiningLog.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+---
+
+<div class:list={['[ fleet-mining ]', Astro.props.class]} {...attributes}>
+    <Flexblock gap='var(--space-s)'>
+        {/* With a timeline the dispatch view carries the headline figures. */}
+        {!has_timeline &&
+            <FlexInline gap='var(--space-m)' class="[ fleet-mining-summary ]">
+                <div>
+                    <small>{t('fleets.mining.total_volume')}</small>
+                    <span class="[ fleet-mining-figure ]">{format_volume_m3(mining.volume_m3)} m³</span>
+                </div>
+                <div>
+                    <small>{t('fleets.mining.total_isk')}</small>
+                    <span class="[ fleet-mining-figure ]">{format_isk(mining.isk_estimate, { suffix: ' ISK' })}</span>
+                </div>
+                <div>
+                    <small>{t('fleets.mining.pilots')}</small>
+                    <span class="[ fleet-mining-figure ]">{counted}</span>
+                </div>
+            </FlexInline>
+        }
+
+        {has_timeline &&
+            <FleetMiningDispatch timeline={mining.timeline!} isk_estimate={mining.isk_estimate} />
+        }
+
+        <small class="[ fleet-mining-note ]">
+            {mining.measuring ? t('fleets.mining.measuring_note') : t('fleets.mining.done_note')}
+            {mining.updated_at && ` ${t('fleets.mining.updated').replace('{time}', format_date_time(lang, mining.updated_at))}`}
+            {mining.pilots_no_scope > 0 && ` ${t('fleets.mining.no_scope_note').replace('{count}', mining.pilots_no_scope.toString())}`}
+        </small>
+
+        {mining.pilots.length === 0 ?
+            <EmptyState title={t('fleets.mining.empty')} />
+            :
+            <div>
+                <small class="[ fleet-mining-section ]">{t('fleets.mining.by_pilot')}</small>
+                <div class="[ fleet-mining-header ]" aria-hidden="true">
+                    <small>{t('fleets.mining.column_pilot')}</small>
+                    <small>{t('fleets.mining.column_ore')}</small>
+                    <small class="[ fleet-mining-numeric ]">{t('fleets.mining.column_volume')}</small>
+                    <small class="[ fleet-mining-numeric ]">{t('fleets.mining.column_isk')}</small>
+                </div>
+                {mining.pilots.map(pilot =>
+                    <div class="[ fleet-mining-row ]">
+                        <div class="[ fleet-mining-pilot ]">
+                            {pilot.character_id ?
+                                <img loading='lazy' width='32' height='32' src={get_player_icon(pilot.character_id, 32)} alt='' />
+                                :
+                                <span class="[ fleet-mining-avatar ]" aria-hidden="true"></span>
+                            }
+                            <span class="[ text-[var(--highlight)] ]">{pilot.character_name ?? t('fleets.mining.hidden_pilot')}</span>
+                            <Tag text={STATUS_TAGS[pilot.status].text} color={STATUS_TAGS[pilot.status].color} narrow={true} />
+                        </div>
+                        <small class="[ fleet-mining-ores ]" data-label={t('fleets.mining.column_ore')}>
+                            {pilot.ores.length > 0 ? pilot.ores.map(ore_line).join(' · ') : '—'}
+                        </small>
+                        <span class="[ fleet-mining-numeric ]" data-label={t('fleets.mining.column_volume')}>{format_volume_m3(pilot.volume_m3)} m³</span>
+                        <span class="[ fleet-mining-numeric ]" data-label={t('fleets.mining.column_isk')}>{format_isk(pilot.isk_estimate)}</span>
+                    </div>
+                )}
+            </div>
+        }
+
+        {mining.timeline &&
+            <FleetMiningLog events={mining.timeline.events} />
+        }
+    </Flexblock>
+</div>
+
+<style lang="scss">
+    .fleet-mining-summary {
+        small {
+            display: block;
+            color: var(--foreground);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: var(--step--2);
+        }
+    }
+
+    .fleet-mining-figure {
+        color: var(--highlight);
+        font-size: var(--step-1);
+    }
+
+    .fleet-mining-note {
+        color: var(--foreground);
+    }
+
+    .fleet-mining-section {
+        display: block;
+        color: var(--foreground);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: var(--step--2);
+        padding-block-end: var(--space-3xs);
+    }
+
+    .fleet-mining-header,
+    .fleet-mining-row {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) minmax(0, 1fr) minmax(0, 1fr);
+        column-gap: var(--space-s);
+        align-items: center;
+    }
+
+    .fleet-mining-header {
+        padding-block: var(--space-3xs);
+
+        small {
+            color: var(--foreground);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: var(--step--2);
+        }
+    }
+
+    .fleet-mining-row {
+        padding-block: var(--space-xs);
+        border-top: solid 1px var(--border-color);
+        row-gap: var(--space-2xs);
+    }
+
+    .fleet-mining-pilot {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        flex-wrap: wrap;
+        min-width: 0;
+
+        img,
+        .fleet-mining-avatar {
+            width: var(--space-l);
+            height: var(--space-l);
+            flex: 0 0 auto;
+        }
+
+        .fleet-mining-avatar {
+            background-color: var(--border-color);
+        }
+    }
+
+    .fleet-mining-ores {
+        color: var(--foreground);
+    }
+
+    .fleet-mining-numeric {
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    @media screen and (max-width: 991px) {
+        .fleet-mining-header {
+            display: none;
+        }
+
+        .fleet-mining-row {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .fleet-mining-pilot,
+        .fleet-mining-ores {
+            grid-column: 1 / -1;
+        }
+
+        .fleet-mining-row .fleet-mining-numeric {
+            text-align: left;
+        }
+    }
+</style>

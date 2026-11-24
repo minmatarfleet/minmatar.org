@@ -131,6 +131,10 @@ const my_character_ids = new Set(pilots.map(pilot => pilot.character_id))
 const has_my_ships = ship_volunteers.some(volunteer => my_character_ids.has(volunteer.character_id))
 const invites_tab = show_invites ? [{ id: 'invites', label: t('fleets.tabs.invites') }] : []
 const INVITES_URL = `${translatePath('/partials/fleet_invites_component')}?fleet_id=${fleet.id}`
+// Mining results (docs/fleets/mining-tracking.md): once the fleet is running.
+const show_mining = Boolean(fleet.track_mining)
+const mining_tab = show_mining ? [{ id: 'mining', label: t('fleets.tabs.mining') }] : []
+const MINING_URL = `${translatePath('/partials/fleet_mining_component')}?fleet_id=${fleet.id}`
 
 const tally = roles ? role_tally(roles, composition, {
     logi_fc: t('fleets.after.logi_fc'),
@@ -157,6 +161,7 @@ const fleet_tabs = [
             t('fleets.tabs.in_fleet_meta').replace('{count}', fleet_metrics.members.toString()) :
             signed_up > 0 ? signed_up.toString() : undefined,
     },
+    ...(live ? mining_tab : []),
     ...(show_fights ? [{ id: 'fights', label: t('fleets.tabs.fights'), ...fights_meta }] : []),
     ...(show_command ? [{
         id: 'command',
@@ -192,7 +197,9 @@ const history_tabs = [
     }] : []),
     ...(participants ? [{ id: 'participants', label: t('fleets.tabs.participants'), meta: t('fleets.tabs.pilots_meta').replace('{count}', participants.people.toString()) }] : []),
     ...(show_kills && fleet_kills ? [{ id: 'kills', label: t('fleets.tabs.kills'), meta: t('fleets.tabs.kills_meta').replace('{count}', fleet_kills.killmails.length.toString()) }] : []),
-    { id: 'aar', label: t('fleets.tabs.fights'), ...(show_fights ? fights_meta : {}) },
+    // A mining fleet's AAR leads with the dispatch view; there is no
+    // separate Mining tab once the fleet is over.
+    { id: 'aar', label: t('fleets.tabs.fights'), ...(show_fights ? fights_meta : show_mining ? { meta: t('fleets.tabs.mining') } : {}) },
     ...invites_tab,
     // Run it again, or declassify a private fleet.
     ...(show_history_settings ? [{ id: 'settings', label: t('fleets.tabs.settings'), icon: 'cog' as const }] : []),
@@ -329,6 +336,12 @@ const PICK_SHIPS_URL = `${translatePath('/partials/fleet_pick_ships_modal_compon
                             fights={fights}
                             can_edit={can_remove_fleet}
                         />
+                        {show_mining &&
+                            <LazyPartial url={MINING_URL} trigger="reveal">
+                                <p class="[ loading ]">{t('fleets.tabs.mining')}</p>
+                            </LazyPartial>
+                        }
+                        {/* Combat stays when a mining fleet also fought. */}
                         {show_fights && fights &&
                             <FleetFights fights={fights} fleet_id={fleet.id} />
                         }
@@ -497,6 +510,14 @@ const PICK_SHIPS_URL = `${translatePath('/partials/fleet_pick_ships_modal_compon
                     }
                 </SectionTabs>
             </SectionTabPanel>
+
+            {live && show_mining &&
+                <SectionTabPanel id="mining" id_prefix="fleet">
+                    <LazyPartial url={MINING_URL} trigger="reveal">
+                        <p class="[ loading ]">{t('fleets.tabs.mining')}</p>
+                    </LazyPartial>
+                </SectionTabPanel>
+            }
 
             {show_fights && fights &&
                 <SectionTabPanel id="fights" id_prefix="fleet">

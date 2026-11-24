@@ -42,6 +42,7 @@ class TribeGroupPublishingSchema(BaseModel):
     allow_open_fleets: bool
     fleets_enabled: bool = True
     events_enabled: bool = True
+    track_mining_by_default: bool = False
     # Discord ids are strings: they don't fit a JavaScript number.
     discord_channel_id: Optional[str] = None
     effective_discord_channel_id: Optional[str] = None
@@ -62,6 +63,7 @@ class TribeGroupPublishingPatch(BaseModel):
     allow_open_fleets: Optional[bool] = None
     fleets_enabled: Optional[bool] = None
     events_enabled: Optional[bool] = None
+    track_mining_by_default: Optional[bool] = None
     # null clears the group's channel (the tribe's channel is used). A
     # string of digits is accepted (Discord ids don't fit a JS number).
     discord_channel_id: Optional[int] = None
@@ -71,6 +73,8 @@ class PublishableGroupSchema(HostGroupRef):
     member_count: int
     allow_alliance_posts: bool
     allow_open_fleets: bool
+    # The fleet form ticks Track mining by default for this group.
+    track_mining_by_default: bool = False
 
 
 class DiscordChannelSchema(BaseModel):

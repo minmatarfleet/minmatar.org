@@ -544,6 +544,16 @@ CELERYBEAT_OTHER = [
         },
     ),
     (
+        # Each open stint is read about every 15 minutes; this only queues
+        # the readings that are due (docs/fleets/mining-tracking.md).
+        "[Misc] Poll mining fleet ledgers",
+        {
+            "task": "fleets.tasks.poll_fleet_mining",
+            "schedule": schedule(timedelta(minutes=5)),
+            "options": {"expire_seconds": 5 * 60},
+        },
+    ),
+    (
         "[Misc] Poll NPSI calendar feeds",
         {
             "task": "fleets.tasks.poll_npsi_events",

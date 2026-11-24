@@ -11,6 +11,7 @@ from .models import (
     EveFleetFitting,
     EveFleetInstanceMemberShipSnapshot,
     EveFleetFittingRefit,
+    EveFleetMiningSegment,
     EveFleetRoleVolunteer,
     EveFleetShipVolunteer,
     NpsiEventSource,
@@ -22,6 +23,7 @@ _HIDDEN_FLEETS_INDEX_MODELS = {
     "evefleetinstancemember",
     "evefleetinstancememberimplantsnapshot",
     "evefleetinstancemembershipsnapshot",
+    "evefleetminingsegment",
 }
 
 
@@ -378,3 +380,21 @@ def _fleets_get_app_list(request, app_label=None):
 
 fleets_previous_get_app_list = admin.site.get_app_list
 admin.site.get_app_list = _fleets_get_app_list
+
+
+@admin.register(EveFleetMiningSegment)
+class EveFleetMiningSegmentAdmin(admin.ModelAdmin):
+    """Mining fleet ledger readings, for debugging (read only)."""
+
+    list_display = (
+        "id",
+        "member",
+        "status",
+        "started_at",
+        "ended_at",
+        "since_date",
+        "latest_read_at",
+    )
+    list_filter = ("status",)
+    search_fields = ("member__character_name", "member__character_id")
+    raw_id_fields = ("member",)

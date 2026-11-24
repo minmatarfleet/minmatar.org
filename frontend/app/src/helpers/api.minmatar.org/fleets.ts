@@ -805,6 +805,20 @@ export async function get_fleet_public_kills(fleet_id: number): Promise<FleetPub
     })
 }
 
+// Mining fleets (docs/fleets/mining-tracking.md).
+export type FleetMining = ApiResponse<'FleetMiningResponse'>
+export type FleetMiningPilot = ApiResponse<'FleetMiningPilot'>
+export type FleetMiningOre = ApiResponse<'FleetMiningOre'>
+export type FleetMiningTimeline = ApiResponse<'FleetMiningTimeline'>
+export type FleetMiningEvent = ApiResponse<'FleetMiningEvent'>
+
+/** Ore mined per pilot while they were in the in-game fleet. */
+export async function get_fleet_mining(access_token: string, fleet_id: number): Promise<FleetMining> {
+    return await api_request<FleetMining>(`${API_ENDPOINT}/${fleet_id}/mining`, {
+        token: access_token,
+    })
+}
+
 /** Who flew; with ``engagement`` (a 1-based rounds position) only that engagement. */
 export async function get_fleet_participants(access_token: string, fleet_id: number, engagement?: number): Promise<FleetParticipants> {
     const query = engagement ? `?engagement=${engagement}` : ''

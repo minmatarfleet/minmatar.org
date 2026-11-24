@@ -191,6 +191,7 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
         "status": fleet.status,
         "disable_motd": fleet.disable_motd,
         "hide_volunteers": fleet.hide_volunteers,
+        "track_mining": fleet.track_mining,
         "aar_link": fleet.aar_link,
         "roam_report_url": fleet.roam_report_url,
         **fleet_host_fields(fleet),

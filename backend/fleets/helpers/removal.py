@@ -9,7 +9,7 @@ records. Only a fleet that never started is really deleted.
 
 from django.utils import timezone
 
-from fleets.models import EveFleet, EveFleetInstance
+from fleets.models import EveFleet, EveFleetInstance, close_fleet_mining
 
 DELETED = "deleted"
 CANCELLED = "cancelled"
@@ -35,6 +35,8 @@ def remove_fleet(fleet: EveFleet) -> str:
     EveFleetInstance.objects.filter(
         eve_fleet=fleet, end_time__isnull=True
     ).update(end_time=timezone.now())
+    # A cancelled fleet that ran keeps its mining results too.
+    close_fleet_mining(fleet)
     fleet.status = "cancelled"
     # A full save, so the schedule signal drops it like any other cancel.
     fleet.save()

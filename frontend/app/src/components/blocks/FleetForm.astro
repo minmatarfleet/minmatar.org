@@ -23,6 +23,8 @@ interface Props {
     eve_time:                       string;
     disable_motd:                   boolean;
     hide_volunteers?:               boolean;
+    /** Edit form: the fleet's value. Left out on a new fleet: the host group's default. */
+    track_mining?:                  boolean;
     lang:                           string;
     /**
      * Tribe groups the FC can schedule for. Empty (the default) leaves the
@@ -54,6 +56,7 @@ const {
     disable_motd,
     // New fleets hide who signed up from pilots.
     hide_volunteers = true,
+    track_mining: track_mining_prop,
     lang,
     host_groups: host_groups_prop = [],
     selected_host: selected_host_prop = ALLIANCE_HOST,
@@ -96,8 +99,14 @@ const HOST_GROUPS = Object.fromEntries(host_groups.map((group) => [ String(group
     name: group.name,
     tribe_id: group.tribe_id,
     allow_open: group.allow_open_fleets,
+    track_mining: Boolean(group.track_mining_by_default),
     audience: t('fleets.host.audience_group').replace('{group}', group.name),
 } ]))
+// An edit keeps the fleet's value; a new fleet starts from its host group's default.
+const follows_group_default = track_mining_prop === undefined
+const initial_track_mining = follows_group_default ?
+    Boolean(initial_group?.track_mining_by_default) :
+    track_mining_prop
 const initial_open = Boolean(initial_group?.allow_open_fleets) && open_to_alliance
 // "Post on #schedule" is on by default once the fleet is open.
 const initial_schedule = initial_open ? on_schedule : true
@@ -282,8 +291,10 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
             pick_host() {
                 this.open = false
                 this.sched = true
-                if (this.is_group && this.fleet_type === 'strategic') this.fleet_type = 'non_strategic'
+                if (this.is_group && this.fleet_type === 'strategic') this.fleet_type = 'non_strategic'${follows_group_default ? `
+                this.track_mining = Boolean(this.group?.track_mining)` : ''}
             },` : ''}
+            track_mining: ${JSON.stringify(initial_track_mining)},
             fleet_type: ${JSON.stringify(String(default_fleet_type))},
             eve_date: ${JSON.stringify(eve_date)},
             eve_time: ${JSON.stringify(eve_time)},
@@ -759,6 +770,16 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                             label={t('hide_volunteers')}
                             description={t('hide_volunteers_description')}
                             checked={hide_volunteers}
+                        />
+
+                        <Switch shape="square"
+                            class="[ w-full ]"
+                            name="track_mining"
+                            label={t('track_mining')}
+                            description={t('track_mining_description')}
+                            checked={initial_track_mining}
+                            x-bind:checked="track_mining"
+                            x-on:change="track_mining = $event.target.checked"
                         />
                         
                         <Button x-bind:disabled="submitted" type="submit" color={'green'} class="[ w-full ]">{t('push_button')}</Button>
