@@ -73,7 +73,9 @@ class VoiceAuthRestartTestCase(SimpleTestCase):
         "compose files are outside the image",
     )
     def test_voice_auth_restarts_and_has_a_healthcheck_with_retries(self):
-        compose = yaml.safe_load((REPO / "docker-compose-prod.yml").read_text())
+        compose = yaml.safe_load(
+            (REPO / "docker-compose-prod.yml").read_text()
+        )
         service = compose["services"]["voice-auth"]
         self.assertEqual(service.get("restart"), "always")
         healthcheck = service.get("healthcheck") or {}
