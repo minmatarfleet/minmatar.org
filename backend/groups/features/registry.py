@@ -690,4 +690,34 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         ),
         deny_community_statuses=(),
     ),
+    "voice.join": FeatureDefinition(
+        code="voice.join",
+        label="Join fleet voice",
+        scope=FeatureScope.AFFILIATION,
+        description=(
+            "Connect to the alliance Mumble server: Lobby, the Open channels "
+            "and any Mumble fleet the pilot is in."
+        ),
+        default_affiliation_names=_aff("Alliance", "Associate"),
+    ),
+    "voice.commander": FeatureDefinition(
+        code="voice.commander",
+        label="Command in every Mumble fleet",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description=(
+            "Sit in Command, speak first and broadcast in every Mumble fleet "
+            "branch."
+        ),
+        default_tribe_group_codes=_tribe_codes("pulse.fleet-commanders"),
+    ),
+    "voice.admin": FeatureDefinition(
+        code="voice.admin",
+        label="Administer fleet voice",
+        scope=FeatureScope.AUTH_GROUP,
+        description=(
+            "Move, mute and kick anywhere on Mumble and ban pilots from voice. "
+            "Strategic FCs have it too. Unwired, so otherwise only superusers."
+        ),
+        deny_community_statuses=(),
+    ),
 }

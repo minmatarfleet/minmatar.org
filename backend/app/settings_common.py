@@ -100,6 +100,8 @@ INSTALLED_APPS = [
     "taskboard.apps.TaskboardConfig",
     # ESI health: scope changes and the messages superusers send
     "esi_health.apps.EsiHealthConfig",
+    # Fleet voice on Mumble: access records for the voice service
+    "voice.apps.VoiceConfig",
     # Agent (Claude) access to Discord through curated MCP tools
     "agent_access.apps.AgentAccessConfig",
 ]

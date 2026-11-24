@@ -17,7 +17,7 @@ Uses your own Discord app and ESI credentials. See [developer data seeding](deve
 
 Everything runs in Docker via `docker-compose-prod.yml`: Django (gunicorn), frontend, Celery workers (one service per queue; see [architecture/celery-queues.md](architecture/celery-queues.md)), Beat, bot, Redis, Metabase, etc. The `edge` Traefik proxy holds the API and website ports so deploys can replace `app` and `frontend` without downtime (see [architecture/deploys.md](architecture/deploys.md)).
 
-(Former Mumble/Murmur stack: see [mumble-architecture.md](mumble-architecture.md).)
+(Fleet voice on Mumble runs as `voice-murmur`, `voice-auth` and `celery-voice` in production: see [mumble-architecture.md](mumble-architecture.md).)
 
 ## Frontend-only (Astro dev)
 

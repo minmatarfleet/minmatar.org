@@ -159,6 +159,7 @@ CAPITAL_SHIP_GROUPS = frozenset(
     {
         "Capital Ship",
         "Dreadnought",
+        "Lancer Dreadnought",
         "Carrier",
         "Supercarrier",
         "Titan",

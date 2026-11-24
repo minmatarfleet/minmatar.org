@@ -21,6 +21,8 @@ from app.settings_env import BASE_DIR, ENV, WEB_LINK_URL
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("SECRET_KEY", "testing")
 SHARED_SECRET = os.environ.get("SHARED_SECRET", "nothing")
+VOICE_REDIS_URL = "memory://"
+VOICE_INTERNAL_SECRET = "voice-test-secret"
 
 TESTING = True
 

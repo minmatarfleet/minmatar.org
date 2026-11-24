@@ -16,6 +16,7 @@ How background work is split across queues and workers, the rules every task fol
 | `market` | Market orders, contracts, prices, history, moon revenue | `celery-market` | 2 | 30 min |
 | `industry` | Industry orders and jobs, LP store, LP and item buyback | `celery-industry` | 1 | 30 min |
 | `community` | Discord, groups, tribes, applications, content, upkeep | `celery-community` | 1 | 30 min |
+| `voice` | Fleet voice on Mumble: grants, leases, published access records | `celery-voice` | 1 | 1 min |
 
 Worker services are defined in `docker-compose-prod.yml`. Each runs one process per host CPU unless the service sets `--concurrency`. Replicas were spread from the old layout so the total stays about the same. "Warns after" is the queue's `max_wait_seconds`: when its oldest message has waited longer, Sentry gets a warning (see [Monitoring](#monitoring)).
 

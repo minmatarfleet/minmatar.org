@@ -25,6 +25,16 @@ After appending, **fold any new durable rule into [SKILL.md](SKILL.md)**
 (Known failure classes or the workflow). If the rule already lives there,
 do not duplicate it — one clarifying clause at most.
 
+## 2026-11-24 — Structure report resubmit cannot correct the type
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL in the thread
+**PR:** fix+skill
+**Symptom vs cause:** A pilot reported a structure with the wrong type, then reported it again with the right type and picked the existing row. `apply_report` updated name, owner, fit and hour on a reported row but never `type_id` / `type_name`, so the wrong type stuck. A row reported without a name is called `<system> - <type>`, so with a blank name and a different type it was not even offered in the match step.
+**Durable rule:** A reported row's type is what a pilot picked; a later report on that row corrects it (and renames a default-named row). ESI rows never change type from a report. Match step also offers reported rows that still carry their default name.
+**Skill update:** added the structure-report type row.
+
 ## 2026-11-22 — Tribe application notice, then nothing on the members page
 
 **Category:** pulse.technology

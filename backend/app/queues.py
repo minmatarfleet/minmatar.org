@@ -97,6 +97,12 @@ QUEUES: dict[str, QueueSpec] = {
             dedupe_ttl_seconds=60 * 60,
         ),
         QueueSpec(
+            "voice",
+            "Fleet voice on Mumble: grants, leases, published access records",
+            max_wait_seconds=60,
+            dedupe_ttl_seconds=5 * 60,
+        ),
+        QueueSpec(
             "community",
             "Discord, groups, tribes, applications, content and upkeep",
             max_wait_seconds=30 * 60,
@@ -188,6 +194,7 @@ ROUTES: dict[str, str] = {
     "timezones.": "community",
     "taskboard.": "community",
     "app.": "community",
+    "voice.": "voice",
     # Celery's built-ins (backend_cleanup, chord_unlock)
     "celery.": "community",
 }

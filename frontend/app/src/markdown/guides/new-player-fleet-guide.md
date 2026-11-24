@@ -8,7 +8,7 @@ Fleets can be intimidating the first time. This guide covers voice, what to fly,
 
 ## Voice
 
-Our alliance uses Discord for voice communications. This is fairly uncommon, as most groups have strict Teamspeak or Mumble setups.
+Most of our fleets use Discord for voice. Some strategic fleets use our Mumble server instead: the fleet MOTD then links [my.minmatar.org/voice](/voice), where you sign in and connect in a few clicks.
 
 - **Use push to talk, not voice activation.** Nobody wants to hear minor sounds when there are over a hundred in voice.
 - **If you use voice activation, activate Krisp.** Background noise disrupts everyone in comms.

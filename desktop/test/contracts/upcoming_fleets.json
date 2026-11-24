@@ -26,7 +26,9 @@
     "status": "pending",
     "track_mining": false,
     "tracking": null,
-    "type": "training"
+    "type": "training",
+    "uses_mumble": false,
+    "voice_option_id": 1
   },
   {
     "aar_forum_url": null,
@@ -62,6 +64,8 @@
       "is_registered": false,
       "start_time": "2026-01-17T17:35:00Z"
     },
-    "type": "non_strategic"
+    "type": "non_strategic",
+    "uses_mumble": false,
+    "voice_option_id": 1
   }
 ]

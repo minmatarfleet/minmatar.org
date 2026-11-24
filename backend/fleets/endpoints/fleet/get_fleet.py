@@ -7,6 +7,7 @@ from groups.helpers.feature_access import fleet_hidden_from
 from tribes.helpers.publishing import host_group_ref
 from tribes.schemas import RestrictedResponse, restricted
 
+from fleets.helpers.voice_options import fleet_voice_fields
 from fleets.endpoints.helpers import (
     _fleet_authorized,
     fleet_commander_alt_fields,
@@ -102,6 +103,7 @@ def get_fleet(request, fleet_id: int):
         "aar_forum_url": aars_forum_url(),
         "can_copy": can_copy_fleet(request.user, fleet),
         **fleet_host_fields(fleet),
+        **fleet_voice_fields(fleet),
         **private_fleet_fields(request.user, fleet),
     }
     if fleet.doctrine:

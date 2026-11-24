@@ -1,0 +1,27 @@
+{
+  "admitted": true,
+  "banned": false,
+  "branches": {
+    "1": {
+      "commander": true,
+      "fleet_id": 501,
+      "groups": [
+        "fleet",
+        "commanders",
+        "capitals"
+      ],
+      "lease_id": 601,
+      "part_of_fleet": true,
+      "placement": "Command"
+    }
+  },
+  "character_id": 90000001,
+  "display_name": "[FL33T] Contract FC",
+  "identity_id": 1,
+  "preferred_branch": 1,
+  "reason": "ok",
+  "server_groups": [
+    "community"
+  ],
+  "version": 1
+}

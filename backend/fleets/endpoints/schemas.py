@@ -76,6 +76,9 @@ class EveFleetResponse(BaseModel):
     host_group: Optional[HostGroupRef] = None
     open_to_alliance: bool = False
     on_schedule: bool = False
+    # Where the fleet talks (FleetVoiceOption); see /fleets/voice-options.
+    voice_option_id: Optional[int] = None
+    uses_mumble: bool = False
 
     tracking: Optional[EveFleetTrackingResponse] = None
 
@@ -162,6 +165,8 @@ class CreateEveFleetRequest(BaseModel):
     # A private fleet: off the schedule and every list; Strategic FCs only.
     # docs/fleets/private-fleets.md.
     invite_only: bool = False
+    # Empty: the default voice option (the alliance Discord).
+    voice_option_id: Optional[int] = None
 
 
 class CopyEveFleetRequest(BaseModel):
@@ -189,6 +194,8 @@ class UpdateEveFleetRequest(BaseModel):
     host_group_id: Optional[int] = None
     open_to_alliance: Optional[bool] = None
     on_schedule: Optional[bool] = None
+    # Left out: unchanged. Null: the default voice option.
+    voice_option_id: Optional[int] = None
 
 
 class FleetPingPreviewRequest(BaseModel):

@@ -110,7 +110,8 @@ import OptionCard from '@components/blocks/OptionCard.astro'
         <div class="[ structure-add__body ]" x-data={`{ by_hand: ${pasted ? 'false' : String(Boolean(state.system_name))} }`}>
             <StructureHowTo topics={['name']} />
             <ManageField label={t('universe.report.type')} for="universe-report-type">
-                <Select id="universe-report-type" name="type_id" size="sm">
+                <Select id="universe-report-type" name="type_id" size="sm" required>
+                    <option value="" disabled selected={state.type_id === null}>{t('universe.report.pick_type')}</option>
                     {REPORTABLE_TYPES.map(([id, name]) => <option value={id} selected={state.type_id === id}>{name}</option>)}
                 </Select>
             </ManageField>
