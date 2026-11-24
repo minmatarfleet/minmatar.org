@@ -148,6 +148,13 @@ def _copy_request(
         # The copy keeps the FC's choice, not the group's current default.
         track_mining=fleet.track_mining,
         campaign_id=campaign.id if campaign else None,
+        # A voice option switched off since (Mumble taken offline, a Discord
+        # retired) falls back to the default instead of refusing the copy.
+        voice_option_id=(
+            fleet.voice_option_id
+            if fleet.voice_option_id and fleet.voice_option.is_active
+            else None
+        ),
         host_group_id=fleet.host_group_id,
         open_to_alliance=open_to_alliance,
         on_schedule=open_to_alliance and bool(fleet.on_schedule),

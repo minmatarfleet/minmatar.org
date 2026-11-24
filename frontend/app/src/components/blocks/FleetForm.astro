@@ -2,7 +2,7 @@
 import { i18n, dynamic_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { Audience, Location, CampaignListItem, PublishableGroup } from '@dtypes/api.minmatar.org'
+import type { Audience, Location, CampaignListItem, PublishableGroup, FleetVoiceOption } from '@dtypes/api.minmatar.org'
 import type { DoctrineType, SelectOptions, FleetUI, CharacterBasic, HostOptionUI } from '@dtypes/layout_components'
 import { fleet_types } from '@dtypes/api.minmatar.org'
 import { get_player_icon } from '@helpers/eve_image'
@@ -17,6 +17,8 @@ interface Props {
     locations:                      Location[];
     doctrines:                      DoctrineType[];
     campaigns?:                     CampaignListItem[];
+    /** Where the fleet talks (Discord, Mumble). The picker shows when there is a choice. */
+    voice_options?:                 FleetVoiceOption[];
     default_campaign_id?:           number | null;
     fleet_commander:                CharacterBasic | null;
     eve_date:                       string;
@@ -49,6 +51,7 @@ const {
     locations: locations_prop,
     doctrines: doctrines_prop,
     campaigns: campaigns_prop = [],
+    voice_options = [],
     default_campaign_id = null,
     fleet_commander,
     eve_date,
@@ -225,6 +228,16 @@ const default_fleet_type = fleet?.type ?? (initial_is_group ? 'non_strategic' : 
 // The fleet's own doctrine id, not the fetched doctrine: when that fetch
 // fails the form must not fall back to "No doctrine" and clear it on save.
 const default_doctrine = fleet?.doctrine_id ?? fleet?.doctrine?.id ?? doctrines_select_options[0].value
+// A fleet keeps its voice option; a new fleet starts on the default one.
+const default_voice_option = fleet?.voice_option_id
+    ?? voice_options.find((option) => option.is_default)?.id
+    ?? voice_options[0]?.id
+    ?? null
+// Picking stays possible when the fleet's option was switched off (it keeps it).
+const show_voice_picker = voice_options.length > 1 || (
+    default_voice_option !== null && !voice_options.some((option) => option.id === default_voice_option)
+)
+
 // The fleet's own campaign wins; a new fleet takes the one the page asked for.
 const wanted_campaign_id = fleet?.campaign_id ?? default_campaign_id
 const default_campaign = campaigns_select_options.find(
@@ -469,6 +482,19 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                     )}
                                 </Select>
                             </FixedFluid>
+
+                            {show_voice_picker &&
+                                <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                    <label for="voice_option" data-tippy-content={t('fleets.voice.hint')}>{t('fleets.voice.label')}</label>
+                                    <Select id="voice_option" name="voice_option_id">
+                                        {voice_options.map((option) =>
+                                            <option value={option.id} selected={option.id === default_voice_option}>
+                                                {option.name}
+                                            </option>
+                                        )}
+                                    </Select>
+                                </FixedFluid>
+                            }
 
                             {show_campaign_picker &&
                                 <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">

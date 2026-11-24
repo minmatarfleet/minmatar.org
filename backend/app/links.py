@@ -25,7 +25,8 @@ def site_url(path: str = "") -> str:
     base = settings.WEB_LINK_URL.rstrip("/")
     if not path:
         return base
-    return f"{base}/{path.lstrip('/')}"
+    path = path.lstrip("/")
+    return f"{base}/{path}"
 
 
 def upcoming_fleets_url() -> str:
@@ -48,6 +49,11 @@ def fitting_url(fitting_id: int) -> str:
 
 def doctrine_url(doctrine_id: int) -> str:
     return site_url(f"/ships/doctrines/list/{int(doctrine_id)}")
+
+
+def voice_url() -> str:
+    """The Mumble page: download, sign in, connect (linked from fleet MOTDs)."""
+    return site_url("/voice")
 
 
 def new_player_fleet_guide_url() -> str:

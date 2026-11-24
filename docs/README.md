@@ -27,6 +27,7 @@ Other entry points: the [root README](../README.md) (local setup, quickstart), [
 | [architecture/character-sync.md](architecture/character-sync.md) | current | Character ESI sync: per-section intervals and audiences, the paced scheduler, freshness tracking, the fanout/shadow/scheduled rollout |
 | [architecture/celery-queues.md](architecture/celery-queues.md) | current | Celery queues and workers, task standards (dedupe, routing, fast lane), Sentry queue monitoring |
 | [architecture/cached-aggregates.md](architecture/cached-aggregates.md) | current | Heavy aggregates: computed by Celery, read from the cache (`CachedRollup`), Redis-tolerant |
+| [mumble-architecture.md](mumble-architecture.md) | current | Fleet voice on Mumble: access rules, leases, sign-in, the voice service and its Redis contract |
 | [architecture/deploys.md](architecture/deploys.md) | current | Production deploys without downtime: `docker rollout`, the Traefik `edge` proxy, healthchecks, migration rules |
 | [architecture/nav-click-latency-plan.md](architecture/nav-click-latency-plan.md) | current | Faster nav clicks: gates cache, parallel backend calls, Campaigns and Fleets skeletons, and what was measured |
 | [market-pricing.md](market-pricing.md) | current | Which market price source to use where |
@@ -77,7 +78,7 @@ Other entry points: the [root README](../README.md) (local setup, quickstart), [
 | Document | Status | About |
 | --- | --- | --- |
 | [campaigns/fw-campaigns-plan.md](campaigns/fw-campaigns-plan.md) | historical | Original FW campaigns plan (built in #2787); current behaviour is in `backend/campaigns/README.md` |
-| [mumble-architecture.md](mumble-architecture.md) | historical | The removed Mumble voice stack |
+| [archive/mumble-removed-stack.md](archive/mumble-removed-stack.md) | historical | The old, removed Mumble voice stack |
 | [archive/plans/pilotfeature_authorization_1115fb1f.plan.md](archive/plans/pilotfeature_authorization_1115fb1f.plan.md) | historical | PilotFeature authorization plan (shipped in #2430) |
 | [archive/plans/planetary_interaction_alliance_feature_85238dfb.plan.md](archive/plans/planetary_interaction_alliance_feature_85238dfb.plan.md) | historical | Planetary interaction plan (shipped in #2021) |
 | [archive/plans/tribes_app_overhaul_1199c279.plan.md](archive/plans/tribes_app_overhaul_1199c279.plan.md) | historical | Tribes app plan (shipped in #1977) |

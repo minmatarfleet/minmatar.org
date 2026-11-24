@@ -1,0 +1,9 @@
+{
+  "1": {
+    "fleet_id": 501,
+    "lease_id": 601,
+    "wing_channels": {
+      "2001": "Auxiliary A"
+    }
+  }
+}

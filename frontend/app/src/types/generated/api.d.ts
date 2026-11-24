@@ -4011,6 +4011,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fleets/voice-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Fleet Voice Options
+         * @description The voice options the fleet form offers (active ones only). Same access as /types.
+         */
+        get: operations["fleets_endpoints_reference_get_fleet_voice_options_get_fleet_voice_options"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fleets/window/current": {
         parameters: {
             query?: never;
@@ -11698,6 +11718,199 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/voice/bans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ban a character from fleet voice */
+        post: operations["voice_endpoints_post_ban_post_ban"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/voice/certificates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Mumble certificates bound to the character */
+        get: operations["voice_endpoints_get_certificates_get_certificates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/voice/certificates/{certificate_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke a Mumble certificate */
+        delete: operations["voice_endpoints_delete_certificate_delete_certificate"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/voice/connect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mint a one-time Mumble link
+         * @description Returns a mumble:// link carrying a one-time password that expires in 2 minutes. The first connection binds the Mumble certificate.
+         */
+        post: operations["voice_endpoints_post_connect_post_connect"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/voice/fleets/{fleet_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A fleet's voice: branch, co-FCs, wing channels */
+        get: operations["voice_endpoints_get_fleet_voice_get_fleet_voice"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/voice/fleets/{fleet_id}/co-fcs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a co-FC (Commanders in this fleet's branch) */
+        post: operations["voice_endpoints_post_fleet_co_fc_post_fleet_co_fc"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/voice/fleets/{fleet_id}/co-fcs/{character_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a co-FC */
+        delete: operations["voice_endpoints_delete_fleet_co_fc_delete_fleet_co_fc"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/voice/fleets/{fleet_id}/kick": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Kick a pilot and end their access to this fleet */
+        post: operations["voice_endpoints_post_fleet_kick_post_fleet_kick"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/voice/fleets/{fleet_id}/wings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send in-game wings to channels on first placement */
+        post: operations["voice_endpoints_post_fleet_wings_post_fleet_wings"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/voice/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sign in to fleet voice with EVE (public info only)
+         * @description Redirects to EVE SSO asking only for publicData. Afterwards the browser lands on redirect_url with ?token=<voice session token>&state=<state>. The website sets state in a cookie before sending the browser here, and only keeps a token whose state matches.
+         */
+        get: operations["voice_endpoints_get_login_get_login"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/voice/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Voice access for the signed-in character */
+        get: operations["voice_endpoints_get_status_get_status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -16557,6 +16770,8 @@ export interface components {
             /** Track Mining */
             track_mining?: boolean | null;
             type: components["schemas"]["EveFleetType"];
+            /** Voice Option Id */
+            voice_option_id?: number | null;
         };
         /** CreateEveFleetRoleVolunteerRequest */
         CreateEveFleetRoleVolunteerRequest: {
@@ -18131,6 +18346,13 @@ export interface components {
             track_mining?: boolean;
             tracking?: components["schemas"]["EveFleetTrackingResponse"] | null;
             type: components["schemas"]["EveFleetType"];
+            /**
+             * Uses Mumble
+             * @default false
+             */
+            uses_mumble?: boolean;
+            /** Voice Option Id */
+            voice_option_id?: number | null;
         };
         /**
          * EveFleetDetailResponse
@@ -18228,6 +18450,13 @@ export interface components {
             track_mining?: boolean;
             tracking?: components["schemas"]["EveFleetTrackingResponse"] | null;
             type: components["schemas"]["EveFleetType"];
+            /**
+             * Uses Mumble
+             * @default false
+             */
+            uses_mumble?: boolean;
+            /** Voice Option Id */
+            voice_option_id?: number | null;
         };
         /**
          * EveFleetFightsResponse
@@ -18620,6 +18849,13 @@ export interface components {
             track_mining?: boolean;
             tracking?: components["schemas"]["EveFleetTrackingResponse"] | null;
             type: components["schemas"]["EveFleetType"];
+            /**
+             * Uses Mumble
+             * @default false
+             */
+            uses_mumble?: boolean;
+            /** Voice Option Id */
+            voice_option_id?: number | null;
         };
         /**
          * EveFleetResultResponse
@@ -21145,6 +21381,17 @@ export interface components {
             systems: string[];
             /** Title */
             title: string;
+        };
+        /** FleetVoiceOptionResponse */
+        FleetVoiceOptionResponse: {
+            /** Id */
+            id: number;
+            /** Is Default */
+            is_default: boolean;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
         };
         /** FleetWindowAfterAction */
         FleetWindowAfterAction: {
@@ -33902,6 +34149,8 @@ export interface components {
             /** Track Mining */
             track_mining?: boolean | null;
             type?: components["schemas"]["EveFleetType"] | null;
+            /** Voice Option Id */
+            voice_option_id?: number | null;
         };
         /** UpdateEvePlayerRequest */
         UpdateEvePlayerRequest: {
@@ -34067,6 +34316,140 @@ export interface components {
              * @enum {string}
              */
             visibility: "alliance" | "corporation" | "private";
+        };
+        /** VoiceBanRequest */
+        VoiceBanRequest: {
+            /** Character Id */
+            character_id: number;
+            /** Expires At */
+            expires_at?: string | null;
+            /**
+             * Reason
+             * @default
+             */
+            reason?: string;
+        };
+        /** VoiceBanResponse */
+        VoiceBanResponse: {
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /** Expires At */
+            expires_at: string | null;
+            /** Id */
+            id: number;
+            /** Reason */
+            reason: string;
+        };
+        /** VoiceCertificateResponse */
+        VoiceCertificateResponse: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Fingerprint */
+            fingerprint: string;
+            /** Id */
+            id: number;
+            /** Last Used At */
+            last_used_at: string | null;
+        };
+        /** VoiceCharacterRequest */
+        VoiceCharacterRequest: {
+            /** Character Id */
+            character_id: number;
+        };
+        /** VoiceCoFc */
+        VoiceCoFc: {
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+        };
+        /** VoiceConnectResponse */
+        VoiceConnectResponse: {
+            /** Expires In Seconds */
+            expires_in_seconds: number;
+            /** Url */
+            url: string;
+        };
+        /** VoiceFleetAccess */
+        VoiceFleetAccess: {
+            /** Branch */
+            branch: number;
+            /** Branch Name */
+            branch_name: string;
+            /** Commander */
+            commander: boolean;
+            /** Fleet Id */
+            fleet_id: number;
+            /** Placement */
+            placement: string;
+        };
+        /** VoiceFleetResponse */
+        VoiceFleetResponse: {
+            /** Branch */
+            branch: number | null;
+            /** Branch Name */
+            branch_name: string | null;
+            /** Can Ban */
+            can_ban: boolean;
+            /** Can Manage Voice */
+            can_manage_voice: boolean;
+            /** Channel Choices */
+            channel_choices: string[];
+            /** Co Fcs */
+            co_fcs: components["schemas"]["VoiceCoFc"][];
+            /** Fleet Id */
+            fleet_id: number;
+            /** Uses Mumble */
+            uses_mumble: boolean;
+            /** Wing Channels */
+            wing_channels: {
+                [key: string]: string;
+            };
+        };
+        /** VoiceKickRequest */
+        VoiceKickRequest: {
+            /** Character Id */
+            character_id: number;
+            /**
+             * Message
+             * @default
+             */
+            message?: string;
+        };
+        /** VoiceStatusResponse */
+        VoiceStatusResponse: {
+            /** Admitted */
+            admitted: boolean;
+            /** Banned */
+            banned: boolean;
+            /** Certificate Count */
+            certificate_count: number;
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /** Community */
+            community: boolean;
+            /** Display Name */
+            display_name: string;
+            /** Fleets */
+            fleets: components["schemas"]["VoiceFleetAccess"][];
+            /** Reason */
+            reason: string;
+            /** Signed In As */
+            signed_in_as: string;
+        };
+        /** VoiceWingsRequest */
+        VoiceWingsRequest: {
+            /** Wing Channels */
+            wing_channels: {
+                [key: string]: string;
+            };
         };
         /** VolunteerRequest */
         VolunteerRequest: {
@@ -44206,6 +44589,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    fleets_endpoints_reference_get_fleet_voice_options_get_fleet_voice_options: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FleetVoiceOptionResponse"][];
                 };
             };
             /** @description Forbidden */
@@ -63057,6 +63469,399 @@ export interface operations {
             };
             /** @description Gone */
             410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    voice_endpoints_post_ban_post_ban: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoiceBanRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoiceBanResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    voice_endpoints_get_certificates_get_certificates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoiceCertificateResponse"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    voice_endpoints_delete_certificate_delete_certificate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                certificate_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    voice_endpoints_post_connect_post_connect: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoiceConnectResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    voice_endpoints_get_fleet_voice_get_fleet_voice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoiceFleetResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    voice_endpoints_post_fleet_co_fc_post_fleet_co_fc: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoiceCharacterRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    voice_endpoints_delete_fleet_co_fc_delete_fleet_co_fc: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+                character_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    voice_endpoints_post_fleet_kick_post_fleet_kick: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoiceKickRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    voice_endpoints_post_fleet_wings_post_fleet_wings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fleet_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoiceWingsRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    voice_endpoints_get_login_get_login: {
+        parameters: {
+            query?: {
+                redirect_url?: string;
+                state?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Found */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    voice_endpoints_get_status_get_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoiceStatusResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

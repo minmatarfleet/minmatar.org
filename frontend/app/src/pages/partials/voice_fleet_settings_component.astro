@@ -1,0 +1,154 @@
+---
+// The fleet Settings tab's voice section, for the fleet's FC. Rights come
+// from the fleet voice API (can_manage_voice, can_ban), not a gate.
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { parse_character_id, parse_positive_id, parse_wings } from '@helpers/voice_session'
+import {
+    get_fleet_voice,
+    post_fleet_co_fc,
+    delete_fleet_co_fc,
+    post_fleet_kick,
+    post_fleet_wings,
+    post_voice_ban,
+} from '@helpers/api.minmatar.org/voice'
+import type { VoiceFleet } from '@dtypes/api.minmatar.org'
+
+const { auth_token, user } = get_request_user(Astro)
+const fleet_id = parse_positive_id(Astro.url.searchParams.get('fleet_id'))
+if (!user || !auth_token || !fleet_id)
+    return HTTP_404_Not_Found()
+
+const PARTIAL_URL = translatePath(`/partials/voice_fleet_settings_component/?fleet_id=${fleet_id}`)
+
+let notice: string | null = null
+if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    const action = String(form.get('action') ?? '')
+    const character_id = parse_character_id(form.get('character_id'))
+    let ok = false
+    try {
+        if (action === 'add_co_fc' && character_id)
+            ok = await post_fleet_co_fc(auth_token, fleet_id, character_id)
+        else if (action === 'remove_co_fc' && character_id)
+            ok = await delete_fleet_co_fc(auth_token, fleet_id, character_id)
+        else if (action === 'kick' && character_id)
+            ok = await post_fleet_kick(auth_token, fleet_id, character_id)
+        else if (action === 'ban' && character_id)
+            ok = await post_voice_ban(auth_token, character_id, String(form.get('reason') ?? ''))
+        else if (action === 'wings')
+            ok = await post_fleet_wings(auth_token, fleet_id, parse_wings(String(form.get('wings') ?? '')))
+    } catch (error) {
+        console.log(`Fleet voice ${action} failed: ${error.message}`)
+    }
+    notice = ok ? t('fleets.voice.saved') : t('fleets.voice.failed')
+}
+
+let voice: VoiceFleet | null = null
+let fetching_error: Error | false = false
+try {
+    voice = await get_fleet_voice(auth_token, fleet_id)
+} catch (error) {
+    fetching_error = error
+}
+if (!fetching_error && (!voice || !voice.can_manage_voice))
+    return new Response(null, { status: 204 })
+
+const wings_text = Object.entries(voice?.wing_channels ?? {})
+    .map(([wing, channel]) => `${wing} = ${channel}`).join('\n')
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import SettingRow from '@components/blocks/SettingRow.astro'
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{fetching_error || !voice
+    ? <ErrorRefetch args={{ partial: PARTIAL_URL, error: fetching_error || new Error('No fleet voice'), delay: 0 }} />
+    : <div id="fleet-voice-settings">
+        <ComponentBlock>
+            <Flexblock gap="var(--space-s)">
+                <h3>{t('fleets.voice.settings_title')}</h3>
+                <Flexblock gap="var(--space-m)">
+                    {notice && <p role="status">{notice}</p>}
+                    {!voice.uses_mumble && <p>{t('fleets.voice.not_mumble')}</p>}
+
+                    <SettingRow title={t('fleets.voice.branch')}>
+                        <p>{voice.branch_name ?? t('fleets.voice.branch_waiting')}</p>
+                    </SettingRow>
+
+                    <SettingRow title={t('fleets.voice.co_fcs')} description={t('fleets.voice.co_fcs_hint')}>
+                        <Flexblock>
+                            {voice.co_fcs.length === 0
+                                ? <EmptyState title={t('fleets.voice.co_fcs_empty')} />
+                                : voice.co_fcs.map((co_fc) =>
+                                    <form hx-post={PARTIAL_URL} hx-target="#fleet-voice-settings" hx-swap="outerHTML">
+                                        <FlexInline justification="space-between">
+                                            <span>{co_fc.character_name}</span>
+                                            <input type="hidden" name="action" value="remove_co_fc" />
+                                            <input type="hidden" name="character_id" value={co_fc.character_id} />
+                                            <Button type="submit" size="sm" color="transparent">{t('fleets.voice.remove')}</Button>
+                                        </FlexInline>
+                                    </form>
+                                )
+                            }
+                            <form hx-post={PARTIAL_URL} hx-target="#fleet-voice-settings" hx-swap="outerHTML">
+                                <FlexInline>
+                                    <input type="hidden" name="action" value="add_co_fc" />
+                                    <Input name="character_id" inputmode="numeric" size="sm" width="12rem" placeholder={t('fleets.voice.character_id')} aria-label={t('fleets.voice.character_id')} required />
+                                    <Button type="submit" size="sm">{t('fleets.voice.add_co_fc')}</Button>
+                                </FlexInline>
+                            </form>
+                        </Flexblock>
+                    </SettingRow>
+
+                    {voice.branch &&
+                        <SettingRow title={t('fleets.voice.wings')} description={t('fleets.voice.wings_hint')}>
+                            <form hx-post={PARTIAL_URL} hx-target="#fleet-voice-settings" hx-swap="outerHTML">
+                                <Flexblock>
+                                    <input type="hidden" name="action" value="wings" />
+                                    <Textarea name="wings" rows="3" aria-label={t('fleets.voice.wings')}>{wings_text}</Textarea>
+                                    <small>{voice.channel_choices.join(', ')}</small>
+                                    <FlexInline>
+                                        <Button type="submit" size="sm">{t('fleets.voice.save_wings')}</Button>
+                                    </FlexInline>
+                                </Flexblock>
+                            </form>
+                        </SettingRow>
+                    }
+
+                    <SettingRow title={t('fleets.voice.kick')} description={t('fleets.voice.kick_hint')}>
+                        <form hx-post={PARTIAL_URL} hx-target="#fleet-voice-settings" hx-swap="outerHTML">
+                            <FlexInline>
+                                <input type="hidden" name="action" value="kick" />
+                                <Input name="character_id" inputmode="numeric" size="sm" width="12rem" placeholder={t('fleets.voice.character_id')} aria-label={t('fleets.voice.character_id')} required />
+                                <Button type="submit" size="sm" color="fleet-red">{t('fleets.voice.kick_button')}</Button>
+                            </FlexInline>
+                        </form>
+                    </SettingRow>
+
+                    {voice.can_ban &&
+                        <SettingRow title={t('fleets.voice.ban')}>
+                            <form hx-post={PARTIAL_URL} hx-target="#fleet-voice-settings" hx-swap="outerHTML">
+                                <FlexInline>
+                                    <input type="hidden" name="action" value="ban" />
+                                    <Input name="character_id" inputmode="numeric" size="sm" width="12rem" placeholder={t('fleets.voice.character_id')} aria-label={t('fleets.voice.character_id')} required />
+                                    <Input name="reason" size="sm" width="16rem" placeholder={t('fleets.voice.ban_reason')} aria-label={t('fleets.voice.ban_reason')} />
+                                    <Button type="submit" size="sm" color="fleet-red">{t('fleets.voice.ban_button')}</Button>
+                                </FlexInline>
+                            </form>
+                        </SettingRow>
+                    }
+                </Flexblock>
+            </Flexblock>
+        </ComponentBlock>
+    </div>
+}

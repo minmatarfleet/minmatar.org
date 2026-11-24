@@ -14,6 +14,7 @@ from .models import (
     EveFleetMiningSegment,
     EveFleetRoleVolunteer,
     EveFleetShipVolunteer,
+    FleetVoiceOption,
     NpsiEventSource,
     NpsiExternalEvent,
 )
@@ -280,6 +281,15 @@ class FleetAdmin(admin.ModelAdmin):
 
 
 admin.site.register(EveFleetAudience)
+
+
+@admin.register(FleetVoiceOption)
+class FleetVoiceOptionAdmin(admin.ModelAdmin):
+    """Where fleets talk. Switch Mumble on here at go-live."""
+
+    list_display = ("name", "kind", "is_default", "is_active", "order")
+    list_editable = ("is_default", "is_active", "order")
+    list_filter = ("kind", "is_active")
 
 
 @admin.register(NpsiEventSource)

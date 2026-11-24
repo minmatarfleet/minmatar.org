@@ -7,6 +7,10 @@ from authentication import AuthBearer
 from groups.helpers.feature_access import can_use_feature
 from tribes.helpers.permissions import user_can_manage_group
 
+from fleets.helpers.voice_options import (
+    fleet_voice_fields,
+    resolve_voice_option,
+)
 from fleets.endpoints.helpers import (
     _fleet_apply_optional_scalar_updates,
     _fleet_manager,
@@ -106,6 +110,42 @@ def _private_fleet_error(fleet, payload):
     return None
 
 
+def _apply_voice_option(fleet, payload):
+    """Set a changed voice option. True if it changed, or (400, error)."""
+    if "voice_option_id" not in payload.model_fields_set:
+        return False
+    if payload.voice_option_id == fleet.voice_option_id:
+        return False
+    option = resolve_voice_option(
+        payload.voice_option_id, fleet.voice_option_id
+    )
+    if isinstance(option, tuple):
+        return 400, option[1]
+    fleet.voice_option = option
+    return True
+
+
+def _apply_campaign_and_voice(fleet, payload, user):
+    """Apply a changed campaign and voice option: (error or None, voice_changed)."""
+    if (
+        "campaign_id" in payload.model_fields_set
+        and payload.campaign_id != fleet.campaign_id
+    ):
+        # Only a change is validated. A fleet attached to a campaign that has
+        # since ended keeps it, and re-saving the fleet cannot detach it by
+        # accident.
+        campaign = resolve_campaign(
+            payload.campaign_id, user, fleet.invite_only
+        )
+        if isinstance(campaign, tuple):
+            return (400, campaign[1]), False
+        fleet.campaign = campaign
+    voice_changed = _apply_voice_option(fleet, payload)
+    if isinstance(voice_changed, tuple):
+        return voice_changed, False
+    return None, voice_changed
+
+
 def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
     fleet = EveFleet.objects.get(id=fleet_id)
     moving_into_group = bool(payload.host_group_id) and (
@@ -147,25 +187,18 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
     if error:
         return error
 
-    if (
-        "campaign_id" in payload.model_fields_set
-        and payload.campaign_id != fleet.campaign_id
-    ):
-        # Only a change is validated. A fleet attached to a campaign that has
-        # since ended keeps it, and re-saving the fleet cannot detach it by
-        # accident.
-        campaign = resolve_campaign(
-            payload.campaign_id, request.user, fleet.invite_only
-        )
-        if isinstance(campaign, tuple):
-            return 400, campaign[1]
-        fleet.campaign = campaign
+    error, voice_changed = _apply_campaign_and_voice(
+        fleet, payload, request.user
+    )
+    if error:
+        return error
 
     fleet.save()
 
     if (
         "doctrine_id" in payload.model_fields_set
         or "hide_volunteers" in payload.model_fields_set
+        or voice_changed
     ):
         try_refresh_active_fleet_motd(fleet)
 
@@ -195,6 +228,7 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
         "aar_link": fleet.aar_link,
         "roam_report_url": fleet.roam_report_url,
         **fleet_host_fields(fleet),
+        **fleet_voice_fields(fleet),
     }
 
     return EveFleetResponse(**out)
