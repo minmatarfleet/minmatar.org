@@ -25,6 +25,16 @@ After appending, **fold any new durable rule into [SKILL.md](SKILL.md)**
 (Known failure classes or the workflow). If the rule already lives there,
 do not duplicate it — one clarifying clause at most.
 
+## 2026-11-24 — Universe structures list empty for an Associate pilot
+
+**Category:** pulse.technology
+**Verdict:** needs-decision (user feedback issue)
+**Discord:** issue link in the thread
+**PR:** skill-only
+**Symptom vs cause:** A BUILD-corp pilot (affiliation Associate) reported structures but saw zero on `/universe/#structures`, even their own. `structures.view` defaults to Alliance and Associate, but `visible_structures` shows `visibility=alliance` rows only when the affiliation is exactly Alliance. Every reported row is alliance-wide. An alt in an Alliance corp does not change the account's affiliation.
+**Durable rule:** When a page is visible but its list is empty, compare the feature's default affiliations with the row filter in `universe/access.py`. Whether Associates see alliance-wide intel is a product call.
+**Skill update:** added the empty-structures row.
+
 ## 2026-11-24 — Chief DM for a tribe application has no link
 
 **Category:** pulse.technology
