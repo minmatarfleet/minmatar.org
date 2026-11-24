@@ -41,9 +41,9 @@ describe('requested scope groups', () => {
     })
 
     it('counts each scope once', () => {
-        expect(requested_scope_count([])).toBe(13)
-        expect(requested_scope_count(['Industry', 'Market'])).toBe(26)
-        expect(requested_scope_count(['Industry', 'Market', 'Director'])).toBe(42)
-        expect(requested_scope_count(['Industry', 'Market', 'Desktop'])).toBe(32)
+        expect(requested_scope_count([])).toBe(20)
+        expect(requested_scope_count(['Industry', 'Market'])).toBe(33)
+        expect(requested_scope_count(['Industry', 'Market', 'Director'])).toBe(51)
+        expect(requested_scope_count(['Industry', 'Market', 'Desktop'])).toBe(39)
     })
 })
