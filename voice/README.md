@@ -4,6 +4,8 @@ The Mumble side of fleet voice (design: [docs/mumble-architecture.md](../docs/mu
 
 Django decides who may connect (`backend/voice/`); this service obeys. It holds no business rules: it reads the access records Django publishes to Redis.
 
+Operating and debugging it in production: the mumble-voice skill (`.claude/skills/mumble-voice/SKILL.md`).
+
 | Path | Role |
 |---|---|
 | `MumbleServer.ice` | The Ice interface, pinned to the Murmur image (`mumblevoip/mumble-server:v1.5.939`). Update both together. |
