@@ -12,7 +12,7 @@ The design aims to be useful without being overbearing. The rules below come fro
 | Rule | Who | Weight |
 |---|---|---|
 | `reauth_character` | the pilot | needs you: one task for a broken main, one for all broken alts ([ESI health](../esi_health.md)) |
-| `update_scopes` | the pilot | suggestion: a working token lacks a scope ESI health asks for |
+| `update_scopes` | the pilot | suggestion: a working token lacks a scope its groups have today, or a required group ([ESI health](../esi_health.md#scope-changes)) |
 | `pick_main` | the pilot | needs you |
 | `fleet_invite` | the pilot | needs you |
 | `tribe_invitation` | the pilot | needs you |

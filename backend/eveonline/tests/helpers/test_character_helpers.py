@@ -98,7 +98,7 @@ class CharacterHelperTests(TestCase):
             esi_scope_groups=["Basic"],
         )
         self.assertEqual(
-            ["Basic", "Director", "Industry"],
+            ["Basic", "Director", "Industry", "FactionWarfare"],
             scope_groups_for_token_add(char, TokenType.INDUSTRY),
         )
         self.assertEqual(
@@ -123,7 +123,7 @@ class CharacterHelperTests(TestCase):
             ["Public"], scope_groups_for_token_add(None, TokenType.PUBLIC)
         )
 
-    def test_existing_character_add_does_not_widen(self):
+    def test_existing_character_relogin_requests_required_groups(self):
         char = EveCharacter.objects.create(
             character_id=10006,
             character_name="Basic Alt",
@@ -131,7 +131,8 @@ class CharacterHelperTests(TestCase):
             esi_scope_groups=["Basic"],
         )
         self.assertEqual(
-            ["Basic"], scope_groups_for_token_add(char, TokenType.BASIC)
+            ["Basic", "FactionWarfare"],
+            scope_groups_for_token_add(char, TokenType.BASIC),
         )
 
     def test_token_granted_before_the_split_still_satisfies_basic(self):

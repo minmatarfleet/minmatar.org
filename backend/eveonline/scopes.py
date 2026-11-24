@@ -121,10 +121,12 @@ class TokenType(Enum):
     CAMPAIGN = "Campaign"
 
 
-# Requested on top of the asked-for token type whenever a character is added
-# without naming one (Add character, Add main). Gates still check the token
-# type alone, so older tokens without these keep passing.
-NEW_CHARACTER_SCOPE_GROUPS = [TokenType.FACTION_WARFARE]
+# Every character's token should hold these on top of Basic (Public guest
+# logins aside). Every add and re-login requests them, and the "Update ESI"
+# task (taskboard.rules.collect_update_scopes) asks working tokens without
+# them to log in again. Gates still check the token type alone, so older
+# tokens without these keep passing. Adding a group here asks everyone.
+REQUIRED_SCOPE_GROUPS = [TokenType.FACTION_WARFARE]
 
 # Groups a pilot may switch on in the add-character dialog, on top of Basic.
 SELECTABLE_SCOPE_GROUPS = (

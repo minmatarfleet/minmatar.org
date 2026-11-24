@@ -24,9 +24,8 @@ from esi_health.models import ScopeRollout
 from esi_health.services import (
     DIRECTOR_MISSING,
     DIRECTOR_OK,
-    asked_rollouts,
     director_statuses,
-    missing_rollouts,
+    missing_scope_labels,
     needs_readd_q,
     token_scopes,
 )
@@ -189,14 +188,19 @@ def collect_reauth_character(user_ids: Optional[set[int]]) -> list[Item]:
 
 
 def collect_update_scopes(user_ids: Optional[set[int]]) -> list[Item]:
-    """Working tokens missing a scope a superuser asks for (ESI health)."""
-    rollouts = asked_rollouts()
-    if not rollouts:
-        return []
+    """Working tokens missing a scope their groups or required groups have.
+
+    See esi_health.services: a scope added to a group, or a group that
+    became required, asks everyone whose token predates it.
+    """
+    rollouts = list(ScopeRollout.objects.all())
     characters = list(
         _limit(
             EveCharacter.objects.filter(
-                user__isnull=False, token__isnull=False, esi_suspended=False
+                user__isnull=False,
+                token__isnull=False,
+                esi_suspended=False,
+                exempt=False,
             ),
             "user_id",
             user_ids,
@@ -211,9 +215,9 @@ def collect_update_scopes(user_ids: Optional[set[int]]) -> list[Item]:
     )
     scopes = token_scopes(c.token_id for c in characters)
     by_user: dict[int, list[str]] = {}
-    labels: dict[int, set[str]] = {}
+    labels: dict[int, list[str]] = {}
     for character in characters:
-        missing = missing_rollouts(
+        missing = missing_scope_labels(
             character, scopes.get(character.token_id, set()), rollouts
         )
         if not missing:
@@ -221,13 +225,12 @@ def collect_update_scopes(user_ids: Optional[set[int]]) -> list[Item]:
         by_user.setdefault(character.user_id, []).append(
             character.character_name
         )
-        labels.setdefault(character.user_id, set()).update(
-            rollout.label for rollout in missing
-        )
+        user_labels = labels.setdefault(character.user_id, [])
+        user_labels.extend(m for m in missing if m not in user_labels)
     items = []
     for user_id, names in by_user.items():
         count = len(names)
-        adds = " and ".join(sorted(labels[user_id]))
+        adds = _and_list(labels[user_id])
         items.append(
             Item(
                 source_key="scopes",
@@ -243,6 +246,12 @@ def collect_update_scopes(user_ids: Optional[set[int]]) -> list[Item]:
             )
         )
     return items
+
+
+def _and_list(words: list[str]) -> str:
+    if len(words) <= 2:
+        return " and ".join(words)
+    return f"{', '.join(words[:-1])} and {words[-1]}"
 
 
 def collect_pick_main(user_ids: Optional[set[int]]) -> list[Item]:
@@ -677,7 +686,8 @@ RULES: dict[str, Rule] = {
         Rule(
             "update_scopes",
             "Update ESI",
-            "Opens when a working token lacks a scope ESI health asks for",
+            "Opens when a working token lacks a scope its groups have today, "
+            "or a group that became required",
             AUDIENCE_PILOT,
             Weight.SUGGESTION,
             collect_update_scopes,

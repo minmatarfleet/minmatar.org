@@ -13,11 +13,18 @@ The pilot gets two tasks at most: "Re-add <main>" and "Re-add N alts". Re-add li
 
 ## Scope changes
 
-A scope added to a group only reaches tokens granted afterwards. `ScopeRollout` records each change and how hard we ask (Manage › ESI health › Scope changes):
+A scope added to a group only reaches tokens granted afterwards. The `update_scopes` suggestion task and the Update link on Account › Characters (`SCOPES_OUTDATED`) open by themselves for a working token that lacks (`esi_health.services.missing_scope_labels`):
+
+- a scope its groups have today: the scope lists in `eveonline/scopes.py` are the source of truth, so adding a scope to Basic, Industry, ... asks every token that predates it, with no row to add; or
+- a whole required group: every non-guest character should hold Basic plus `REQUIRED_SCOPE_GROUPS` (Faction Warfare). Adding a group there asks everyone without it. Every add and re-login requests the required groups, so the Update link closes the task.
+
+Director scopes stay a corporation's job (below), and guest (Public) and Executor tokens are never asked. The task says what a new login adds: a required group by name ("Faction Warfare"), a new scope by its `ScopeRollout` label, or "newer Basic scopes" when it has none.
+
+`ScopeRollout` records a change, its label, and how hard we ask (Manage › ESI health › Scope changes):
 
 | Group | Choices | Effect |
 |---|---|---|
-| Character groups (Basic, ...) | Don't ask, Suggest | Suggest opens the `update_scopes` suggestion task and an Update link on Account › Characters |
+| Character groups (Basic, ...) | Don't ask, Suggest | Don't ask leaves that scope out of the task; Suggest is the same as having no row |
 | Director | Don't ask, Require | Require counts the scope in the director token check: corporations whose best token lacks it get `corp_director_token` and the Members tab warning |
 
 Seeded (`0002_seed_scope_rollouts`): structure search in Basic, not asked (only structure search uses it, and 664 of 824 tokens predate it); corporation projects in Director, required.

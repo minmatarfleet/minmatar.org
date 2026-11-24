@@ -22,7 +22,14 @@ from eveonline.models import (
     EveCorporation,
     EvePlayer,
 )
-from eveonline.scopes import BASIC_SCOPES, DIRECTOR_SCOPES
+from eveonline.scopes import (
+    TokenType,
+    BASIC_SCOPES,
+    DIRECTOR_SCOPES,
+    FACTION_WARFARE_SCOPES,
+    INDUSTRY_SCOPES,
+    scopes_for,
+)
 from groups.models import UserCommunityStatus
 from notifications.models import NotificationDelivery
 from taskboard import sync
@@ -33,6 +40,7 @@ CORP = 98726134
 OTHER_CORP = 98647659
 PROJECTS = "esi-corporations.read_projects.v1"
 STRUCTURE_SEARCH = "esi-search.search_structures.v1"
+UP_TO_DATE = set(scopes_for(TokenType.FACTION_WARFARE))
 
 
 def token_with(character_id: int, scopes) -> Token:
@@ -142,9 +150,14 @@ class ScopeRolloutTestCase(TestCase):
             "Fariius",
             1001,
             esi_token_level="Basic",
-            token=token_with(1001, set(BASIC_SCOPES) - {STRUCTURE_SEARCH}),
+            esi_scope_groups=["Basic", "FactionWarfare"],
+            token=token_with(1001, UP_TO_DATE - {STRUCTURE_SEARCH}),
         )
         self.rollout = ScopeRollout.objects.get(scope=STRUCTURE_SEARCH)
+
+    def _task(self):
+        sync.sync_rule(RULES["update_scopes"])
+        return Task.objects.filter(rule="update_scopes").first()
 
     def test_nobody_is_asked_until_a_superuser_asks(self):
         self.assertEqual(self.rollout.mode, ScopeRollout.MODE_NONE)
@@ -168,6 +181,96 @@ class ScopeRolloutTestCase(TestCase):
         self.assertIn(
             "SCOPES_OUTDATED",
             build_character_response(self.main, self.main).flags,
+        )
+
+    def test_a_scope_added_to_a_group_asks_without_a_rollout(self):
+        # Clones were added to Basic with no ScopeRollout row.
+        clones = "esi-clones.read_clones.v1"
+        self.main.token = token_with(1001, UP_TO_DATE - {clones})
+        self.main.save()
+        task = self._task()
+        self.assertEqual(task.title, "Update ESI on Fariius")
+        self.assertEqual(task.detail, "A newer login adds newer Basic scopes")
+        self.main.tag_count = 1
+        self.assertIn(
+            "SCOPES_OUTDATED",
+            build_character_response(self.main, self.main).flags,
+        )
+
+    def test_a_group_the_character_has_is_checked_in_full(self):
+        self.main.esi_scope_groups = ["Basic", "Industry", "FactionWarfare"]
+        self.main.token = token_with(
+            1001, UP_TO_DATE | set(INDUSTRY_SCOPES[1:])
+        )
+        self.main.save()
+        self.assertEqual(
+            self._task().detail, "A newer login adds newer Industry scopes"
+        )
+
+    def test_a_required_group_asks_characters_without_it(self):
+        _, alt = pilot("Flee65", 1002, esi_token_level="Basic")
+        alt.esi_scope_groups = ["Basic"]
+        alt.token = token_with(1002, set(BASIC_SCOPES))
+        alt.save()
+        sync.sync_rule(RULES["update_scopes"])
+        task = Task.objects.get(rule="update_scopes", user=alt.user)
+        self.assertEqual(task.title, "Update ESI on Flee65")
+        self.assertEqual(task.detail, "A newer login adds Faction Warfare")
+
+    def test_up_to_date_guest_and_broken_tokens_are_not_asked(self):
+        self.main.token = token_with(1001, UP_TO_DATE)
+        self.main.save()
+        user = User.objects.create(username="other")
+        character(
+            1003,
+            "Guest",
+            user,
+            esi_token_level="Public",
+            token=token_with(1003, ["publicData"]),
+        )
+        character(
+            1004,
+            "Broken",
+            user,
+            esi_token_level="Basic",
+            esi_suspended=True,
+            token=token_with(1004, []),
+        )
+        self.assertIsNone(self._task())
+
+    def test_director_scopes_stay_a_corporation_task(self):
+        self.main.esi_token_level = "Director"
+        self.main.token = token_with(
+            1001, UP_TO_DATE | (set(DIRECTOR_SCOPES) - {PROJECTS})
+        )
+        self.main.save()
+        self.assertIsNone(self._task())
+
+    def test_fixing_the_token_closes_the_task(self):
+        self.main.token = token_with(1001, set(BASIC_SCOPES))
+        self.main.esi_scope_groups = ["Basic"]
+        self.main.save()
+        self.assertEqual(self._task().status, Task.STATUS_OPEN)
+        self.main.token = token_with(
+            1001, set(BASIC_SCOPES) | set(FACTION_WARFARE_SCOPES)
+        )
+        self.main.save()
+        self.assertEqual(self._task().status, Task.STATUS_DONE)
+
+    def test_several_things_read_as_one_list(self):
+        self.rollout.mode = ScopeRollout.MODE_SUGGEST
+        self.rollout.save()
+        self.main.esi_scope_groups = ["Basic", "Industry"]
+        self.main.token = token_with(
+            1001,
+            set(BASIC_SCOPES) - {STRUCTURE_SEARCH, "esi-clones.read_clones.v1"}
+            | set(INDUSTRY_SCOPES[1:]),
+        )
+        self.main.save()
+        self.assertEqual(
+            self._task().detail,
+            "A newer login adds newer Basic scopes, structure search, "
+            "newer Industry scopes and Faction Warfare",
         )
 
 
