@@ -26,6 +26,8 @@ from authentication import UnauthorizedError
 from tech.testdata import setup_test_data
 from tech.router import router as tech_router
 
+from agent_access.views import mcp_endpoint
+
 from alliance.router import router as alliance_router
 from applications.router import router as applications_router
 from combatlog.router import router as combatlog_router
@@ -125,6 +127,11 @@ urlpatterns = [
         "api/users/eve/complete/",
         eve_mobile_sso_complete,
         name="eve_mobile_sso_complete",
+    ),
+    path(
+        "api/agent/discord/mcp",
+        mcp_endpoint,
+        name="agent_discord_mcp",
     ),
     path("api/", api.urls),
     path("admin/login/", discord_login, name="discord_login_override"),
