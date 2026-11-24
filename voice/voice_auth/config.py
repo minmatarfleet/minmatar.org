@@ -10,6 +10,8 @@ class Config:
     ice_host: str
     ice_port: int
     ice_secret: str
+    # The name Murmur uses to call us back (published in our proxies). The
+    # callback adapter itself listens on all interfaces; see main.py.
     callback_host: str
     callback_port: int
     internal_url: str
