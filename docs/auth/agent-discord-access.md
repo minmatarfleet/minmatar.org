@@ -5,7 +5,8 @@ an MCP endpoint on the backend. The bot token never leaves production: the agent
 works only on this endpoint, and the backend makes each Discord call itself, through a fixed set of tools.
 
 Code: `backend/agent_access/`. Endpoint: `POST https://api.minmatar.org/api/agent/discord/mcp`
-(`agent_access/views.py`), MCP over Streamable HTTP with JSON responses and no sessions.
+(`agent_access/views.py`), MCP over Streamable HTTP with JSON responses and no sessions. The same keys can be given
+ESI access for chosen characters: `docs/auth/agent-esi-access.md`.
 
 ## What the agent can do
 

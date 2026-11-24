@@ -26,7 +26,7 @@ from authentication import UnauthorizedError
 from tech.testdata import setup_test_data
 from tech.router import router as tech_router
 
-from agent_access.views import mcp_endpoint
+from agent_access.views import esi_mcp_endpoint, mcp_endpoint
 
 from alliance.router import router as alliance_router
 from applications.router import router as applications_router
@@ -140,6 +140,11 @@ urlpatterns = [
         "api/agent/discord/mcp",
         mcp_endpoint,
         name="agent_discord_mcp",
+    ),
+    path(
+        "api/agent/esi/mcp",
+        esi_mcp_endpoint,
+        name="agent_esi_mcp",
     ),
     path("api/", api.urls),
     path("admin/login/", discord_login, name="discord_login_override"),
