@@ -28,6 +28,7 @@ from eveonline.scopes import (
     DIRECTOR_SCOPES,
     FACTION_WARFARE_SCOPES,
     INDUSTRY_SCOPES,
+    NOT_GATED_SCOPES,
     scopes_for,
 )
 from groups.models import UserCommunityStatus
@@ -311,6 +312,16 @@ class DirectorTokenTestCase(TestCase):
         )
         statuses = services.director_statuses([OTHER_CORP])
         self.assertEqual(statuses[OTHER_CORP].state, services.DIRECTOR_OK)
+
+    def test_corporation_scopes_added_later_dont_count(self):
+        # Director tokens granted before every corporation scope was added
+        # keep their state: the new scopes are seeded "Don't ask".
+        before = set(DIRECTOR_SCOPES) - NOT_GATED_SCOPES["Director"]
+        EveCharacter.objects.filter(character_id=2002).update(
+            token=token_with(2002, before)
+        )
+        statuses = services.director_statuses([CORP])
+        self.assertEqual(statuses[CORP].state, services.DIRECTOR_OK)
 
     def test_corporation_tasks_for_leaders(self):
         sync.sync_rule(RULES["corp_director_token"])

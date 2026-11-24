@@ -9,6 +9,10 @@ Two hooks, registered in `.claude/settings.json` (and generated into
   request also `scripts/check_pull_request.py` on its description. A
   failure blocks the command and tells the agent why. `gh pr edit --body`
   checks only the description.
+  In a Claude cloud session, the first push of a branch the session was
+  given a random name for (`claude/quirky-ramanujan-mezmg0`) is blocked
+  until the agent renames it to say what it does
+  (`claude/esi-scope-update-task-mezmg0`).
 - post-edit: after an agent edits a backend or bot Python file, report
   flake8 errors; a backend file is formatted with black first.
 
@@ -48,6 +52,10 @@ SEPARATOR = r"(?:^|[;&|(\n]|\$\()\s*(?:[A-Z_]+=\S*\s+)*"
 GIT_PUSH = re.compile(SEPARATOR + r"git\s+(?:-C\s+(\S+)\s+)?push\b(.*)", re.M)
 GH_PR = re.compile(SEPARATOR + r"gh\s+pr\s+(create|ready|edit)\b(.*)", re.M)
 CD = re.compile(SEPARATOR + r"cd\s+(\S+)", re.M)
+# Claude cloud sessions name their branch claude/<adjective>-<name>-<id>.
+# The cloud git proxy only accepts pushes to claude/...-<id>, so a rename
+# keeps both ends and puts at least three words of summary in between.
+CLOUD_BRANCH = re.compile(r"^claude/([a-z]+)-([a-z]+)-([a-z0-9]{4,})$")
 
 
 # --- Reading a shell command -------------------------------------------------
@@ -192,12 +200,73 @@ def _ci(repo: Path) -> tuple[bool, str]:
     return _run(repo, ["python3", "scripts/ci_local.py"])
 
 
+def _cloud_session() -> bool:
+    return os.environ.get("CLAUDE_CODE_REMOTE", "").lower() == "true"
+
+
+def branch_name_problem(repo: Path) -> str | None:
+    """Why a cloud session's random branch name should change before push.
+
+    Only a branch that isn't on the remote yet: renaming a pushed branch
+    would orphan its pull request.
+    """
+    ok, branch = _run(repo, ["git", "rev-parse", "--abbrev-ref", "HEAD"])
+    branch = branch.strip()
+    match = CLOUD_BRANCH.match(branch) if ok else None
+    if not match:
+        return None
+    pushed, _ = _run(
+        repo,
+        [
+            "git",
+            "rev-parse",
+            "--verify",
+            "-q",
+            f"refs/remotes/origin/{branch}",
+        ],
+    )
+    tracked, _ = _run(
+        repo,
+        ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"],
+    )
+    if pushed or tracked:
+        return None
+    suffix = match.group(3)
+    return (
+        f"The branch `{branch}` has the session's random name. Rename it to "
+        "say what the change does (three to six lowercase words, kebab "
+        f"case), keeping `claude/` and the session id `-{suffix}` so the "
+        "cloud git proxy accepts the push, then push again:\n\n"
+        f"    git branch -m claude/<what-it-does>-{suffix}\n"
+        "    git push -u origin HEAD\n\n"
+        f"For example `claude/esi-scope-update-task-{suffix}`."
+    )
+
+
+def _cloud_branch_gate(blank: str, cwd: Path) -> str | None:
+    if not _cloud_session():
+        return None
+    for match in GIT_PUSH.finditer(blank):
+        if re.search(r"(^|\s)(--delete|-d|--tags)(\s|$)", match.group(2)):
+            continue
+        repo = _repo(_directory(blank, match, cwd))
+        problem = repo and branch_name_problem(repo)
+        if problem:
+            return problem
+    return None
+
+
 def gate(command: str, cwd: Path) -> str | None:
     """Why the command must not run yet, or None to let it run."""
     if SKIP in command:
         return None
     blank = _blank(command)
     problems: list[str] = []
+
+    problem = _cloud_branch_gate(blank, cwd)
+    if problem:
+        # Before CI: the checks would only run again after the rename.
+        return problem
     ran_ci: set[Path] = set()
 
     def ci(repo: Path) -> None:

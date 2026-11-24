@@ -16,6 +16,18 @@ BASIC_SCOPES = [
     "esi-clones.read_implants.v1",
     # Character search covers corporations and alliances, not only structures.
     "esi-search.search_structures.v1",
+    # Added together (2026-11) so the next re-login covers what the site is
+    # likely to read about a pilot, without another round of asking. Each is
+    # read-only and about the pilot's own standing in their corporation or
+    # what their docking access already shows; no wallet, mail, contacts or
+    # location (location is Desktop's, on a click).
+    "esi-characters.read_corporation_roles.v1",
+    "esi-characters.read_titles.v1",
+    "esi-characters.read_medals.v1",
+    "esi-characters.read_standings.v1",
+    "esi-characters.read_freelance_jobs.v1",
+    "esi-fittings.read_fittings.v1",
+    "esi-universe.read_structures.v1",
 ]
 
 DIRECTOR_SCOPES = [
@@ -37,7 +49,46 @@ DIRECTOR_SCOPES = [
     "esi-killmails.read_corporation_killmails.v1",
     "esi-planets.read_customs_offices.v1",
     "esi-wallet.read_corporation_wallets.v1",
+    # Every other corporation scope ESI has (2026-11), so a director logs in
+    # once. Corporation contracts, orders, jobs and mining also sit in Market
+    # and Industry; scope_group() tells those groups apart by their character
+    # scopes.
+    "esi-contracts.read_corporation_contracts.v1",
+    "esi-corporations.read_freelance_jobs.v1",
+    "esi-industry.read_corporation_jobs.v1",
+    "esi-industry.read_corporation_mining.v1",
+    "esi-markets.read_corporation_orders.v1",
+    "esi-structures.read_corporation.v1",
 ]
+
+# Scopes added to Basic and Director after tokens were granted that no
+# feature needs yet. Gates (token_satisfies_type: tribe group token
+# requirements, and the groups scope_groups() lists) don't require them, so
+# growing a group never locks a pilot out; the "Update ESI" task still asks
+# for them. Take a scope out of here when a feature starts depending on it.
+NOT_GATED_SCOPES = {
+    "Basic": frozenset(
+        [
+            "esi-characters.read_corporation_roles.v1",
+            "esi-characters.read_titles.v1",
+            "esi-characters.read_medals.v1",
+            "esi-characters.read_standings.v1",
+            "esi-characters.read_freelance_jobs.v1",
+            "esi-fittings.read_fittings.v1",
+            "esi-universe.read_structures.v1",
+        ]
+    ),
+    "Director": frozenset(
+        [
+            "esi-contracts.read_corporation_contracts.v1",
+            "esi-corporations.read_freelance_jobs.v1",
+            "esi-industry.read_corporation_jobs.v1",
+            "esi-industry.read_corporation_mining.v1",
+            "esi-markets.read_corporation_orders.v1",
+            "esi-structures.read_corporation.v1",
+        ]
+    ),
+}
 
 INDUSTRY_SCOPES = [
     "esi-characters.read_blueprints.v1",
@@ -156,34 +207,49 @@ def parse_scope_groups(value: str | None) -> List[TokenType]:
     return groups
 
 
-def scopes_for(token_type: TokenType):
-    """Returns the full list of scopes for the specified token type (Basic + added groups)."""
+def _scopes(token_type: TokenType, basic: list, director: list) -> list:
     match token_type:
         case TokenType.BASIC:
-            return list(BASIC_SCOPES)
+            return list(basic)
         case TokenType.DIRECTOR:
-            return BASIC_SCOPES + DIRECTOR_SCOPES
+            return basic + director
         case TokenType.INDUSTRY:
-            return BASIC_SCOPES + INDUSTRY_SCOPES
+            return basic + INDUSTRY_SCOPES
         case TokenType.FLEET_COMMANDER:
-            return BASIC_SCOPES + FLEET_COMMANDER_SCOPES
+            return basic + FLEET_COMMANDER_SCOPES
         case TokenType.FACTION_WARFARE | TokenType.CAMPAIGN:
-            return BASIC_SCOPES + FACTION_WARFARE_SCOPES
+            return basic + FACTION_WARFARE_SCOPES
         case TokenType.PUBLIC:
             return ["publicData"]
         case TokenType.MARKET:
-            return BASIC_SCOPES + MARKET_SCOPES
+            return basic + MARKET_SCOPES
         case TokenType.DESKTOP:
-            return BASIC_SCOPES + DESKTOP_SCOPES
+            return basic + DESKTOP_SCOPES
         case TokenType.EXECUTOR:
-            return (
-                BASIC_SCOPES
-                + DIRECTOR_SCOPES
-                + MARKET_SCOPES
-                + EXECUTOR_SCOPES
-            )
+            return basic + director + MARKET_SCOPES + EXECUTOR_SCOPES
         case _:
             return []
+
+
+def scopes_for(token_type: TokenType):
+    """Returns the full list of scopes for the specified token type (Basic + added groups)."""
+    # Director and Market share the corporation contract and order scopes.
+    return list(
+        dict.fromkeys(_scopes(token_type, BASIC_SCOPES, DIRECTOR_SCOPES))
+    )
+
+
+def gated_scopes(token_type: TokenType) -> set[str]:
+    """The scopes a gate requires for token_type: all but NOT_GATED_SCOPES.
+
+    A scope another part of the type also lists (corporation contracts in
+    Market) stays required.
+    """
+    basic = [s for s in BASIC_SCOPES if s not in NOT_GATED_SCOPES["Basic"]]
+    director = [
+        s for s in DIRECTOR_SCOPES if s not in NOT_GATED_SCOPES["Director"]
+    ]
+    return set(_scopes(token_type, basic, director))
 
 
 def scopes_for_groups(groups: List[str]) -> List[str]:
@@ -212,8 +278,6 @@ def scope_group(token: Token) -> str | None:
     if "esi-mail.send_mail.v1" in token_scopes:
         return TokenType.EXECUTOR.value
     if "esi-contracts.read_character_contracts.v1" in token_scopes:
-        return TokenType.MARKET.value
-    if "esi-contracts.read_corporation_contracts.v1" in token_scopes:
         return TokenType.MARKET.value
     if "esi-markets.structure_markets.v1" in token_scopes:
         return TokenType.MARKET.value
@@ -264,8 +328,8 @@ def scope_groups(token: Token) -> List[str]:
     groups = [widest]
     token_scopes = set(scope_names(token))
     for token_type in LISTED_SCOPE_GROUPS:
-        if token_type.value not in groups and set(
-            scopes_for(token_type)
+        if token_type.value not in groups and gated_scopes(
+            token_type
         ).issubset(token_scopes):
             groups.append(token_type.value)
     return groups
@@ -298,10 +362,10 @@ def add_scopes(token_type: TokenType, token: Token):
 
 
 def token_satisfies_type(token: Token, token_type: TokenType) -> bool:
-    """True when the token includes every scope for the given token type."""
+    """True when the token includes every gated scope for token_type."""
     if not token:
         return False
-    required = set(scopes_for(token_type))
+    required = gated_scopes(token_type)
     if not required:
         return False
     return required.issubset(set(scope_names(token)))

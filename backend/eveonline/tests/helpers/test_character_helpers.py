@@ -45,15 +45,15 @@ class CharacterHelperTests(TestCase):
         )
         char.save()
 
-        self.assertEqual(11, len(character_desired_scopes(char)))
+        self.assertEqual(18, len(character_desired_scopes(char)))
 
         self.assertEqual(0, len(scope_names(char.token)))
 
         add_scopes(TokenType.DIRECTOR, char.token)
 
-        self.assertEqual(29, len(scope_names(char.token)))
+        self.assertEqual(42, len(scope_names(char.token)))
 
-        self.assertEqual(35, len(scopes_for(TokenType.EXECUTOR)))
+        self.assertEqual(46, len(scopes_for(TokenType.EXECUTOR)))
 
     def test_merge_scope_groups(self):
         self.assertEqual(
@@ -191,7 +191,7 @@ class CharacterHelperTests(TestCase):
 
     def test_market_does_not_request_director_scopes(self):
         market = set(scopes_for(TokenType.MARKET))
-        self.assertEqual(16, len(market))
+        self.assertEqual(23, len(market))
         self.assertNotIn(
             "esi-corporations.read_corporation_membership.v1", market
         )

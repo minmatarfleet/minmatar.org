@@ -12,6 +12,13 @@ export const BASIC_SCOPES = [
     'esi-clones.read_clones.v1',
     'esi-clones.read_implants.v1',
     'esi-search.search_structures.v1',
+    'esi-characters.read_corporation_roles.v1',
+    'esi-characters.read_titles.v1',
+    'esi-characters.read_medals.v1',
+    'esi-characters.read_standings.v1',
+    'esi-characters.read_freelance_jobs.v1',
+    'esi-fittings.read_fittings.v1',
+    'esi-universe.read_structures.v1',
 ] as const
 
 export const DIRECTOR_SCOPES = [
@@ -33,6 +40,12 @@ export const DIRECTOR_SCOPES = [
     'esi-killmails.read_corporation_killmails.v1',
     'esi-planets.read_customs_offices.v1',
     'esi-wallet.read_corporation_wallets.v1',
+    'esi-contracts.read_corporation_contracts.v1',
+    'esi-corporations.read_freelance_jobs.v1',
+    'esi-industry.read_corporation_jobs.v1',
+    'esi-industry.read_corporation_mining.v1',
+    'esi-markets.read_corporation_orders.v1',
+    'esi-structures.read_corporation.v1',
 ] as const
 
 export const INDUSTRY_SCOPES = [
@@ -84,11 +97,14 @@ const TOKEN_SCOPES: Record<string, readonly string[]> = {
     Director: [...BASIC_SCOPES, ...DIRECTOR_SCOPES],
     Industry: [...BASIC_SCOPES, ...INDUSTRY_SCOPES],
     Market: [...BASIC_SCOPES, ...MARKET_SCOPES],
+    // Director and Market share the corporation contract and order scopes.
     Executor: [
-        ...BASIC_SCOPES,
-        ...DIRECTOR_SCOPES,
-        ...MARKET_SCOPES,
-        ...EXECUTOR_SCOPES,
+        ...new Set([
+            ...BASIC_SCOPES,
+            ...DIRECTOR_SCOPES,
+            ...MARKET_SCOPES,
+            ...EXECUTOR_SCOPES,
+        ]),
     ],
     FleetCommander: [...BASIC_SCOPES, ...FLEET_COMMANDER_SCOPES],
     FactionWarfare: [...BASIC_SCOPES, ...FACTION_WARFARE_SCOPES],
