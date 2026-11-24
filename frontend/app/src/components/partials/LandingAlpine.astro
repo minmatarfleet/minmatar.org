@@ -1,0 +1,61 @@
+---
+/**
+ * Homepage Alpine factory — must load in HeadScripts before AlpineCdn.
+ *
+ * ClientRouter swaps <body>, and Alpine's MutationObserver inits the new
+ * x-data before the page's own is:inline scripts run. Defined in the page
+ * body, landing_rotator did not exist yet on a soft navigation to `/`, so the
+ * hero button and Latest rendered empty and never rotated
+ * (MINMATAR-FRONTEND-KS, -92, -KQ and their per-browser copies).
+ * Defined here it is on window from the first page a pilot opens.
+ */
+---
+
+<script is:inline>
+    // A rotator for the hero's button and Latest: shows item `index`,
+    // fills the x-ref="bar" over `ms`, then moves to the next. Hover or
+    // focus pauses both; reduced motion never advances.
+    // The fill is a Web Animation, which outlives the page: after a soft
+    // navigation it still finishes, and $refs.bar is gone by then
+    // (MINMATAR-FRONTEND-KN/KM). destroy() cancels it, and run() stops
+    // when the bar is no longer on the page.
+    window.landing_rotator = (count, ms) => ({
+        index: 0,
+        count,
+        paused: false,
+        still: false,
+        timer: null,
+        init() {
+            this.still = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+            if (!this.still && this.count > 1) this.run()
+        },
+        destroy() {
+            this.stop()
+        },
+        stop() {
+            if (!this.timer) return
+            this.timer.onfinish = null
+            this.timer.cancel()
+            this.timer = null
+        },
+        run() {
+            this.stop()
+            const bar = this.$refs.bar
+            if (!bar?.isConnected) return
+            this.timer = bar.animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: ms, fill: 'forwards' })
+            if (this.paused) this.timer.pause()
+            this.timer.onfinish = () => { this.index = (this.index + 1) % this.count; this.run() }
+        },
+        go(to) {
+            this.index = (to + this.count) % this.count
+            if (!this.still) this.run()
+        },
+        pause(on) {
+            this.paused = on
+            if (!this.timer) return
+            on ? this.timer.pause() : this.timer.play()
+        },
+        // How many places after the current one `i` comes (0 = current).
+        after(i) { return (i - this.index + this.count) % this.count },
+    })
+</script>
