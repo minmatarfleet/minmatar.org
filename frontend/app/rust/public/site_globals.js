@@ -17,7 +17,8 @@
 
     function play_sound(filepath) {
         let sound = new Audio(filepath);
-        sound.play();
+        // Rejects when the browser blocks autoplay (MINMATAR-FRONTEND-EM).
+        sound.play().catch(() => {});
 
         sound.onended = function() {
             this.currentSrc = null;

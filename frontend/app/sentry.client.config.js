@@ -11,7 +11,8 @@ Sentry.init({
 	environment: enabled ? 'production' : undefined,
 	ignoreErrors: [
 		'Transition was aborted because of invalid state',
-		'Transition was skipped',
+		// "View transition was skipped because document visibility state is hidden" (MINMATAR-FRONTEND-EG)
+		/transition was skipped/i,
 		/AbortError: Transition was skipped/,
 		/InvalidStateError: Transition was aborted/,
 	],
