@@ -36,6 +36,7 @@ Other entry points: the [root README](../README.md) (local setup, quickstart), [
 | [fleet-ships-and-refits.md](fleet-ships-and-refits.md) | current | Fleet ship lists, refits and in-game fittings |
 | [fleets/fleet-on-alt.md](fleets/fleet-on-alt.md) | current | Running a fleet on an alt: the start finds the boss character, the main stays the FC, public pages show only the alt |
 | [fleets/invite-rsvp.md](fleets/invite-rsvp.md) | current | Answering a fleet invite: I'm available / I'm not available buttons, the 10-minute sign-up link with no login, High/Medium/Low confidence |
+| [fleets/mining-tracking.md](fleets/mining-tracking.md) | current | Mining fleets: Track mining, per-stint ESI ledger readings (start, every 15 minutes, end), results per pilot on the Mining tab |
 | [fleets/private-fleets.md](fleets/private-fleets.md) | current | Private (invite-only) fleets: waves of Discord invites, the coordination thread, ship targets, declassifying |
 | [fleets/fleet-role-training-plan.md](fleets/fleet-role-training-plan.md) | current | Fleet Roles guides: the template, simulators, certificates, Training tab links, and what is not built yet |
 | [tribes/tribe-publishing.md](tribes/tribe-publishing.md) | current | Tribe groups publishing posts, fleets and Discord events: rules, data, permissions, API |
@@ -62,6 +63,7 @@ Other entry points: the [root README](../README.md) (local setup, quickstart), [
 | [auth/migration.md](auth/migration.md) | current | Retiring legacy permissions |
 | [auth/discord-groups.md](auth/discord-groups.md) | current | Discord roles and auth group membership |
 | [auth/discord-groups-verification.md](auth/discord-groups-verification.md) | current | Live Discord sync verification playbook |
+| [auth/agent-discord-access.md](auth/agent-discord-access.md) | current | Claude reading and posting in Discord through the backend's MCP endpoint: keys, tools, post targets, audit |
 
 ## Desktop app
 

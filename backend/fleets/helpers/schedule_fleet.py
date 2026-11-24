@@ -55,6 +55,14 @@ def group_fleet_error(
     return None
 
 
+def group_fleet_track_mining(group, payload) -> bool:
+    """The request's track_mining, or the group's default when left out."""
+    requested = getattr(payload, "track_mining", None)
+    if requested is None:
+        return bool(group.track_mining_by_default)
+    return bool(requested)
+
+
 def create_scheduled_fleet(
     *, user: User, payload: CreateEveFleetRequest
 ) -> EveFleet | tuple[int, dict]:
@@ -95,6 +103,7 @@ def create_scheduled_fleet(
         audience=audience,
         disable_motd=payload.disable_motd,
         hide_volunteers=payload.hide_volunteers,
+        track_mining=bool(getattr(payload, "track_mining", None)),
         status="pending",
         campaign=campaign,
         invite_only=invite_only,
@@ -157,6 +166,7 @@ def create_group_fleet(
         doctrine=doctrine,
         disable_motd=payload.disable_motd,
         hide_volunteers=payload.hide_volunteers,
+        track_mining=group_fleet_track_mining(group, payload),
         status="pending",
         campaign=campaign,
     )
@@ -244,6 +254,7 @@ def fleet_create_response(fleet: EveFleet) -> EveFleetResponse:
         "audience": fleet.audience.name if fleet.audience else None,
         "disable_motd": fleet.disable_motd,
         "hide_volunteers": fleet.hide_volunteers,
+        "track_mining": fleet.track_mining,
         "status": fleet.status,
         "campaign_id": fleet.campaign_id,
         "campaign_slug": fleet.campaign.slug if fleet.campaign else None,

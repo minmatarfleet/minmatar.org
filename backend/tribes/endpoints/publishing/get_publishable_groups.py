@@ -45,6 +45,7 @@ def get_publishable_groups(request, kind: PublishingKind):
             member_count=counts.get(group.pk, 0),
             allow_alliance_posts=group.allow_alliance_posts,
             allow_open_fleets=group.allow_open_fleets,
+            track_mining_by_default=group.track_mining_by_default,
         )
         for group in groups
     ]

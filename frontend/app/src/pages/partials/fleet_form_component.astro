@@ -89,6 +89,7 @@ const eve_time = eve_clock(eve_datetime)
         eve_time={eve_time}
         disable_motd={fleet ? fleet.disable_motd : false}
         hide_volunteers={fleet ? fleet.hide_volunteers : false}
+        track_mining={fleet ? Boolean(fleet.track_mining) : false}
         lang={lang}
     />
 }

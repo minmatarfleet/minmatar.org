@@ -910,6 +910,7 @@ export interface FleetRequest {
     audience_id:        number;
     disable_motd:       boolean;
     hide_volunteers?:   boolean;
+    track_mining?:      boolean;
     immediate_ping?:    boolean;
     status?:            TrackingStatus;
     campaign_id?:       number | null;
@@ -3285,6 +3286,8 @@ export type CampaignRoles = ApiResponse<'CampaignRolesOut'>
 export type CampaignRole = ApiResponse<'CampaignRoleOut'>
 export type CampaignRoleMember = ApiResponse<'CampaignRoleMemberOut'>
 export type DiscordRoleOption = ApiResponse<'DiscordRoleOption'>
+export type CampaignRoleSuggestions = ApiResponse<'CampaignRoleSuggestionsOut'>
+export type CampaignRoleSuggestion = ApiResponse<'CampaignRoleSuggestionOut'>
 export type CampaignDoctrine = ApiResponse<'CampaignDoctrineOut'>
 export type CampaignDoctrines = ApiResponse<'CampaignDoctrinesOut'>
 export type CampaignFeatures = ApiResponse<'CampaignFeatures'>

@@ -145,6 +145,8 @@ def _copy_request(
         location_id=location_id,
         disable_motd=bool(fleet.disable_motd),
         hide_volunteers=fleet.hide_volunteers,
+        # The copy keeps the FC's choice, not the group's current default.
+        track_mining=fleet.track_mining,
         campaign_id=campaign.id if campaign else None,
         host_group_id=fleet.host_group_id,
         open_to_alliance=open_to_alliance,

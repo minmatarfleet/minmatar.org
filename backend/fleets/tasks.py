@@ -649,3 +649,76 @@ def close_private_fleet_thread(fleet_id: int):
         logger.warning(
             "Could not close fleet %s thread", fleet_id, exc_info=True
         )
+
+
+# Mining fleets (docs/fleets/mining-tracking.md). Readings call ESI, so a
+# failed one is retried a few times; the 5-minute poll below also picks up
+# any reading whose task was lost.
+
+
+@app.task(bind=True, max_retries=3)
+def fleet_mining_start_reading(self, segment_id: int):
+    """Start reading for one mining stint."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.mining import take_start_reading
+
+    if not take_start_reading(segment_id) and (
+        self.request.retries < self.max_retries
+    ):
+        raise self.retry(countdown=60 * 2**self.request.retries)
+
+
+@app.task()
+def fleet_mining_poll_reading(segment_id: int):
+    """Live reading for one open mining stint."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.mining import take_poll_reading
+
+    return take_poll_reading(segment_id)
+
+
+@app.task(bind=True, max_retries=3)
+def fleet_mining_end_reading(self, segment_id: int):
+    """End reading for one closing stint; the last try settles it."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.mining import take_end_reading
+
+    final = self.request.retries >= self.max_retries
+    if not take_end_reading(segment_id, final=final):
+        raise self.retry(countdown=5 * 60)
+
+
+@app.task()
+def fleet_mining_settle_end(segment_id: int):
+    """A lost end task: one last try, else close on the last good reading."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.mining import take_end_reading
+
+    return take_end_reading(segment_id, final=True)
+
+
+@app.task(expires=5 * 60, exclusive=5 * 60)
+def poll_fleet_mining():
+    """Queue the mining readings that are due, spread over a few minutes."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers import mining
+
+    due = mining.due_segments()
+    queued = 0
+    total = max(1, sum(len(ids) for ids in due.values()))
+    for kind, task in (
+        ("start", fleet_mining_start_reading),
+        ("poll", fleet_mining_poll_reading),
+    ):
+        for segment_id in due[kind]:
+            task.apply_async(
+                args=[segment_id],
+                countdown=int(queued * mining.POLL_SPREAD_SECONDS / total),
+            )
+            queued += 1
+    for segment_id in due["end"]:
+        fleet_mining_settle_end.apply_async(args=[segment_id])
+        queued += 1
+    if queued:
+        logger.info("Queued %s mining reading(s)", queued)
+    return queued

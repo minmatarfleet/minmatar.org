@@ -1,7 +1,7 @@
 ---
 /**
- * The campaign Roles tab: fetches the four roles (Coordinator, FC,
- * Diplomat, Recon) and their holders, runs sync, add, remove and map
+ * The campaign Roles tab: fetches the campaign roles (Coordinator, FC,
+ * Diplomat, Recon, IT) and their holders, runs sync, add, remove and map
  * actions, and renders CampaignRolesPanel. Discord decides who holds a
  * role; the API checks every step.
  */
@@ -24,7 +24,7 @@ if (!/^[a-z0-9-]+$/.test(slug)) return HTTP_403_Forbidden()
 
 const PART_URL = translatePath(`/partials/campaign_roles_component?${query_string({ slug })}`)
 const SEARCH_URL = translatePath('/partials/campaign_character_search_component')
-const KIND = /^(coordinator|fc|diplomat|recon)$/
+const KIND = /^(coordinator|fc|diplomat|recon|it)$/
 
 let data: CampaignRoles | null = null
 let fetch_error: Error | false = false

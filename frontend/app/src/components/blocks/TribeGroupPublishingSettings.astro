@@ -190,6 +190,12 @@ import Flexblock from '@components/compositions/Flexblock.astro'
                     label={t('tribes.settings.allow_fleets')}
                     description={t('tribes.settings.allow_fleets_help')}
                 />
+                <Switch shape="square"
+                    name="track_mining_by_default"
+                    checked={settings.track_mining_by_default}
+                    label={t('tribes.settings.track_mining_by_default')}
+                    description={t('tribes.settings.track_mining_by_default_help')}
+                />
             </div>
 
             <div class="[ tribe-settings-section__foot ]">

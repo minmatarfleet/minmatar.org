@@ -69,7 +69,13 @@ describe('campaign roles tab', () => {
 
     it('gives a role holder in the coordinator view their shared tabs and Roles', () => {
         expect(campaign_tabs({ kind: 'strategic', features: features as never, has_systems: false, can_manage: false, coordinator_scopes: ['fleets'], has_roles: true }))
-            .toEqual(['fleets', 'roles', 'discord'])
+            .toEqual(['fleets', 'roles'])
+    })
+
+    it('gives the Discord tab only to those who link their own server', () => {
+        // An IT role holder reads nothing of the plan but connects Discord.
+        expect(campaign_tabs({ kind: 'strategic', features: features as never, has_systems: false, can_manage: false, coordinator_scopes: [], has_roles: true, can_link_discord: true }))
+            .toEqual(['roles', 'discord'])
     })
 
     it('hides Roles from plain members', () => {

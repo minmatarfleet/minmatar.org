@@ -148,6 +148,39 @@ class PublishingEndpointTests(TestCase):
         )
         self.assertEqual(response.status_code, 400)
 
+    def test_track_mining_by_default_setting(self):
+        path = f"/groups/{self.group.id}/publishing"
+        self.assertFalse(
+            self.call("get", path, self.chief).json()[
+                "track_mining_by_default"
+            ]
+        )
+
+        response = self.call(
+            "patch", path, self.chief, {"track_mining_by_default": True}
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertTrue(response.json()["track_mining_by_default"])
+        self.group.refresh_from_db()
+        self.assertTrue(self.group.track_mining_by_default)
+
+        self.assertEqual(
+            self.call(
+                "patch",
+                path,
+                self.member,
+                {"track_mining_by_default": False},
+            ).status_code,
+            403,
+        )
+
+        self.group.fleet_policy = TribeGroup.POLICY_MEMBERS
+        self.group.save()
+        rows = self.call(
+            "get", "/publishable-groups?kind=fleet", self.member
+        ).json()
+        self.assertTrue(rows[0]["track_mining_by_default"])
+
     def test_publishable_groups(self):
         self.group.fleet_policy = TribeGroup.POLICY_MEMBERS
         self.group.save()

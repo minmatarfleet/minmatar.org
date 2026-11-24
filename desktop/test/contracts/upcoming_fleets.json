@@ -24,6 +24,7 @@
     "roam_report_url": null,
     "start_time": "2026-01-17T20:00:00Z",
     "status": "pending",
+    "track_mining": false,
     "tracking": null,
     "type": "training"
   },
@@ -52,6 +53,7 @@
     "roam_report_url": null,
     "start_time": "2026-01-17T17:30:00Z",
     "status": "active",
+    "track_mining": false,
     "tracking": {
       "end_time": null,
       "has_motd": false,

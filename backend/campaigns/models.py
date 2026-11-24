@@ -1749,10 +1749,12 @@ class CampaignRoleKind(models.TextChoices):
     FC = "fc", "FC"
     DIPLOMAT = "diplomat", "Diplomat"
     RECON = "recon", "Recon"
+    # An allied alliance's tech person: connects their Discord server.
+    IT = "it", "IT"
 
 
 class CampaignRole(models.Model):
-    """One of a campaign's four roles, mirrored from a role on its
+    """One of a campaign's roles, mirrored from a role on its
     coordination Discord server (``services.roles``). Discord decides who
     holds it; the site follows on every sync."""
 

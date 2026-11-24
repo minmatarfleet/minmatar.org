@@ -64,6 +64,7 @@ class EveFleetResponse(BaseModel):
     location: str
     disable_motd: bool = False
     hide_volunteers: bool = False
+    track_mining: bool = False
     status: Optional[str] = None
     aar_link: Optional[str] = None
     campaign_id: Optional[int] = None
@@ -148,6 +149,9 @@ class CreateEveFleetRequest(BaseModel):
     location_id: Optional[int] = None
     disable_motd: bool = False
     hide_volunteers: bool = True
+    # Left out (null): a group fleet takes its group's
+    # track_mining_by_default; an alliance fleet is off.
+    track_mining: Optional[bool] = None
     immediate_ping: bool = False
     status: Optional[str] = None
     campaign_id: Optional[int] = None
@@ -176,6 +180,7 @@ class UpdateEveFleetRequest(BaseModel):
     location_id: Optional[int] = None
     disable_motd: Optional[bool] = False
     hide_volunteers: Optional[bool] = None
+    track_mining: Optional[bool] = None
     status: Optional[str] = None
     aar_link: Optional[str] = None
     campaign_id: Optional[int] = None

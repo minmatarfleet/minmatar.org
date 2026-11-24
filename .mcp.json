@@ -5,14 +5,18 @@
       "url": "https://mcp.sentry.dev/mcp"
     },
     "discord": {
-      "type": "stdio",
-      "command": "bash",
-      "args": ["${CLAUDE_PROJECT_DIR:-.}/mcps/run-discord-mcp.sh"]
+      "type": "http",
+      "url": "https://api.minmatar.org/api/agent/discord/mcp",
+      "headers": {
+        "Authorization": "Bearer ${MINMATAR_AGENT_KEY:-set-by-cloud-proxy}"
+      }
     },
     "reddit": {
       "type": "stdio",
       "command": "bash",
-      "args": ["${CLAUDE_PROJECT_DIR:-.}/mcps/run-reddit-mcp.sh"]
+      "args": [
+        "${CLAUDE_PROJECT_DIR:-.}/mcps/run-reddit-mcp.sh"
+      ]
     }
   }
 }

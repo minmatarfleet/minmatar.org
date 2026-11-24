@@ -425,3 +425,71 @@ class DiscordConnectTestCase(TestCase):
             )
         self.assertEqual(response.status_code, 200)
         self.assertEqual([row["guild_id"] for row in response.json()], ["2"])
+
+
+@override_settings(DISCORD_GUILD_ID=1, DISCORD_CLIENT_ID="bot-client")
+class DiscordConnectByRoleTestCase(TestCase):
+    """IT and Coordinator role holders link their own server; other roles
+    do not."""
+
+    def setUp(self):
+        self.client = Client()
+        self.campaign = make_campaign(undisclosed=True)
+
+    def _holder(self, kind, character_id):
+        # pylint: disable=import-outside-toplevel
+        from campaigns.models import CampaignRoleMember
+        from campaigns.services import roles
+
+        user = User.objects.create(username=f"{kind}-holder")
+        EveCharacter.objects.create(
+            character_id=character_id, character_name=kind, user=user
+        )
+        role = next(
+            r for r in roles.ensure_roles(self.campaign) if r.kind == kind
+        )
+        CampaignRoleMember.objects.create(
+            role=role,
+            source=CampaignRoleMember.Source.SITE,
+            character_id=character_id,
+            character_name=kind,
+            user=user,
+        )
+        return user
+
+    def _connect(self, user):
+        token = auth_headers(user)["HTTP_AUTHORIZATION"].split()[-1]
+        return self.client.get(
+            f"{BASE}/{self.campaign.slug}/discord/bot/connect",
+            {"purpose": "link", "token": token},
+        )
+
+    def test_it_links_their_server_and_sees_nothing_of_the_plan(self):
+        it = self._holder("it", 901)
+        self.assertEqual(self._connect(it).status_code, 302)
+        detail = self.client.get(
+            f"{BASE}/{self.campaign.slug}", **auth_headers(it)
+        ).json()
+        self.assertEqual(detail["viewer_roles"], ["it"])
+        self.assertEqual(detail["can_edit"], ["discord"])
+        self.assertEqual(detail["coordinator_scopes"], [])
+        with patch("campaigns.services.coordination.DiscordClient"):
+            links = self.client.get(
+                f"{BASE}/{self.campaign.slug}/discord-links",
+                **auth_headers(it),
+            )
+        self.assertEqual(links.status_code, 200)
+
+    def test_coordinator_role_links_their_server(self):
+        self.assertEqual(
+            self._connect(self._holder("coordinator", 902)).status_code, 302
+        )
+
+    def test_an_fc_does_not_link_servers(self):
+        fc = self._holder("fc", 903)
+        self.assertEqual(self._connect(fc).status_code, 403)
+        links = self.client.get(
+            f"{BASE}/{self.campaign.slug}/discord-links",
+            **auth_headers(fc),
+        )
+        self.assertEqual(links.status_code, 403)

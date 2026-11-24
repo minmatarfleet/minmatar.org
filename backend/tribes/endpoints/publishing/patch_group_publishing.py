@@ -95,6 +95,7 @@ def _apply_settings(group: TribeGroup, payload) -> None:
         "allow_open_fleets",
         "fleets_enabled",
         "events_enabled",
+        "track_mining_by_default",
     ):
         value = getattr(payload, flag)
         if value is not None:
