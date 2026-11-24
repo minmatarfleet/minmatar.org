@@ -123,7 +123,9 @@ def _active_grants(key: AgentKey):
 
 def check_rate(ctx: Context) -> None:
     now = timezone.now()
-    calls = AgentEsiCall.objects.filter(key=ctx.key)
+    # Calls that reached ESI: refusals (this one included) don't count, so
+    # an agent retrying while limited doesn't keep itself locked out.
+    calls = AgentEsiCall.objects.filter(key=ctx.key, esi_status__isnull=False)
     if (
         calls.filter(created_at__gte=now - timedelta(minutes=1)).count()
         >= ctx.settings.calls_per_minute
@@ -304,7 +306,7 @@ def list_characters(ctx: Context, args: dict) -> dict:
         if search:
             characters = (
                 characters.filter(character_id=int(search))
-                if search.isdigit()
+                if search.isdigit() and len(search) <= 12
                 else characters.filter(character_name__icontains=search)
             )
         total = characters.count()

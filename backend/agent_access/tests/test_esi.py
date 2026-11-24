@@ -153,6 +153,11 @@ class AllCharactersTests(EsiMcpTestCase):
             [c["character_name"] for c in out["characters"]], ["Alt", "Pilot"]
         )
 
+    def test_long_digit_search_matches_names(self):
+        out = self.call("list_characters", search="9" * 30)
+        self.assertFalse(out["isError"], out)
+        self.assertEqual(out["structuredContent"]["total"], 0)
+
     def test_search_and_limit(self):
         out = self.call("list_characters", search="pil")["structuredContent"]
         self.assertEqual(
@@ -327,6 +332,10 @@ class EsiGetTests(EsiMcpTestCase):
         self.assertTrue(result["isError"])
         self.assertIn("rate limit", result["content"][0]["text"])
         self.assertEqual(len(self.esi.calls), 1)
+        # Refusals don't count: still limited by the one real call, not more.
+        self.assertEqual(
+            AgentEsiCall.objects.filter(esi_status__isnull=False).count(), 1
+        )
 
     def test_low_error_budget_is_refused(self):
         with mock.patch(
