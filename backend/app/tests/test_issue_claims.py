@@ -183,6 +183,56 @@ class ReportTest(unittest.TestCase):
 
 
 @unittest.skipUnless(HAS_REPO, "needs the full repository checkout")
+class RepoSlugTest(unittest.TestCase):
+    def setUp(self):
+        self.claims = _load("issue_claims")
+
+    def slug(self, remotes):
+        def get_url(args, **kwargs):
+            name = args[-1]
+            if name not in remotes:
+                raise self.claims.subprocess.CalledProcessError(2, args)
+            return mock.Mock(stdout=remotes[name] + "\n")
+
+        with mock.patch.object(
+            self.claims.subprocess, "run", side_effect=get_url
+        ):
+            return self.claims.repo_slug(Path("."))
+
+    def test_github_urls(self):
+        for url in (
+            "https://github.com/minmatarfleet/minmatar.org.git",
+            "git@github.com:minmatarfleet/minmatar.org.git",
+        ):
+            with self.subTest(url=url):
+                self.assertEqual(
+                    self.slug({"origin": url}), "minmatarfleet/minmatar.org"
+                )
+
+    def test_ssh_host_alias(self):
+        self.assertEqual(
+            self.slug(
+                {"origin": "git@github-work:keldar-atm/minmatar.org.git"}
+            ),
+            "keldar-atm/minmatar.org",
+        )
+
+    def test_fork_uses_upstream(self):
+        self.assertEqual(
+            self.slug(
+                {
+                    "origin": "git@github-work:keldar-atm/minmatar.org.git",
+                    "upstream": "git@github-work:minmatarfleet/minmatar.org.git",
+                }
+            ),
+            "minmatarfleet/minmatar.org",
+        )
+
+    def test_no_remote(self):
+        self.assertIsNone(self.slug({}))
+
+
+@unittest.skipUnless(HAS_REPO, "needs the full repository checkout")
 class ClaimHooksTest(unittest.TestCase):
     def setUp(self):
         self.hooks = _load("agent_hooks")

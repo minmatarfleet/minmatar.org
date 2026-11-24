@@ -32,7 +32,12 @@ MAX_ISSUES = 5
 CLAIM_DAYS = 30
 ASSIGN_ACCESS = {"admin", "maintain", "write", "triage"}
 
-REMOTE = re.compile(r"github\.com[:/]([\w.-]+)/([\w.-]+?)(?:\.git)?/?$")
+# github.com URLs, and SSH host aliases from ~/.ssh/config ("git@github-work:owner/repo.git").
+REMOTE = re.compile(
+    r"(?:github\.com[:/]|^git@[\w.-]+:)([\w.-]+)/([\w.-]+?)(?:\.git)?/?$"
+)
+# A fork's issues live on the repository it was forked from.
+REMOTE_NAMES = ("upstream", "origin")
 # "#123", "issue 123", "issues/123" (a URL to this repo is checked by slug).
 PROMPT_REF = re.compile(
     r"(?:(?<![\w/&])#(\d{2,})\b|\bissue\s+#?(\d{2,})\b|"
@@ -104,18 +109,23 @@ def _gh(repo: Path, *args: str) -> str | None:
 
 
 def repo_slug(repo: Path) -> str | None:
-    try:
-        url = subprocess.run(
-            ["git", "remote", "get-url", "origin"],
-            cwd=repo,
-            capture_output=True,
-            text=True,
-            check=True,
-        ).stdout.strip()
-    except (OSError, subprocess.CalledProcessError):
-        return None
-    match = REMOTE.search(url)
-    return f"{match.group(1)}/{match.group(2)}" if match else None
+    """owner/name of the repository whose issues the hooks check: the
+    ``upstream`` remote in a fork, otherwise ``origin``."""
+    for name in REMOTE_NAMES:
+        try:
+            url = subprocess.run(
+                ["git", "remote", "get-url", name],
+                cwd=repo,
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout.strip()
+        except (OSError, subprocess.CalledProcessError):
+            continue
+        match = REMOTE.search(url)
+        if match:
+            return f"{match.group(1)}/{match.group(2)}"
+    return None
 
 
 def prompt_issues(text: str, slug: str) -> list[int]:
