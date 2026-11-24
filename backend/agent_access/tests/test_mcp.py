@@ -237,6 +237,19 @@ class ReadTests(McpTestCase):
         self.assertTrue(result["isError"])
         self.assertIn("blocked", result["content"][0]["text"])
 
+    def test_list_channels_queries_targets_once(self):
+        AgentDiscordPostTarget.objects.create(
+            guild_id=GUILD, channel_id=CHANNEL
+        )
+        channels = [CHANNELS[CATEGORY], CHANNELS[CHANNEL]] * 20
+        self.get.side_effect = lambda path, params=None: channels
+        ctx = tools.Context(key=self.key, settings=AgentDiscordSettings.get())
+        # Server block check, channel blocks, post targets: not per channel.
+        with self.assertNumQueries(3):
+            listed = tools.list_channels(ctx, {"guild_id": GUILD})
+        self.assertEqual(len(listed["channels"]), 40)
+        self.assertTrue(listed["channels"][1]["can_post"])
+
     def test_blocked_server_is_hidden(self):
         AgentDiscordReadBlock.objects.create(guild_id=OTHER_GUILD)
         servers = self.call("list_servers")["structuredContent"]["servers"]

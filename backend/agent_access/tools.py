@@ -42,6 +42,14 @@ class Context:
     guild_id: str = ""
     channel_id: str = ""
     _channels: dict = field(default_factory=dict)
+    _targets: dict = field(default_factory=dict)
+
+    def post_targets(self, guild_id: str) -> list:
+        if guild_id not in self._targets:
+            self._targets[guild_id] = list(
+                AgentDiscordPostTarget.objects.filter(guild_id=guild_id)
+            )
+        return self._targets[guild_id]
 
     def channel(self, channel_id: str) -> dict:
         if channel_id not in self._channels:
@@ -122,10 +130,7 @@ def check_channel(ctx: Context, channel_id) -> dict:
 
 
 def can_post(ctx: Context, channel: dict) -> bool:
-    targets = AgentDiscordPostTarget.objects.filter(
-        guild_id=channel.get("guild_id")
-    )
-    for target in targets:
+    for target in ctx.post_targets(channel.get("guild_id") or ""):
         if not target.channel_id or target.channel_id == channel["id"]:
             return True
         if (
