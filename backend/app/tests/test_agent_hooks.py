@@ -270,7 +270,8 @@ class CursorHooksTest(unittest.TestCase):
         settings = (REPO / ".claude" / "settings.json").read_text()
         cursor = json.loads(sync.render_hooks(settings))
         self.assertEqual(
-            set(cursor["hooks"]), {"beforeShellExecution", "postToolUse"}
+            set(cursor["hooks"]),
+            {"beforeShellExecution", "postToolUse", "beforeSubmitPrompt"},
         )
         for entries in cursor["hooks"].values():
             for entry in entries:

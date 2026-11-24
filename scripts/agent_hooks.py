@@ -11,11 +11,19 @@ Two hooks, registered in `.claude/settings.json` (and generated into
   checks only the description.
   `gh issue create` runs `scripts/check_issue.py` on its labels and body: a
   type label, and for a significant feature a design or a person's sign-off.
+- pre-shell, `gh pr create`: every open issue the description closes or
+  refers to must be claimed by the person (assigned, or a comment of
+  theirs), and when someone else looks to be on one the person is asked to
+  confirm (`scripts/issue_claims.py`).
+- prompt: when a prompt names an issue, tell the person if someone else is
+  already working on it, and tell the agent to claim it (assign or comment)
+  before changing code.
 - post-edit: after an agent edits a backend or bot Python file, report
   flake8 errors; a backend file is formatted with black first.
 
     python3 scripts/agent_hooks.py claude pre-shell   # JSON on stdin
     python3 scripts/agent_hooks.py cursor post-edit
+    python3 scripts/agent_hooks.py claude prompt
 
 A person can bypass the gate with `CI_LOCAL_SKIP=1 git push ...`. Agents
 don't, unless the person asks. Standard library only.
@@ -32,6 +40,9 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import issue_claims  # noqa: E402  (scripts/ isn't a package)
 
 HERE = Path(__file__).resolve().parent.parent
 SKIP = "CI_LOCAL_SKIP=1"
@@ -331,6 +342,74 @@ def gate(command: str, cwd: Path) -> str | None:
     )
 
 
+def claims_gate(command: str, cwd: Path) -> tuple[str | None, str | None]:
+    """(why to block, what to ask the person) for the issues a new pull
+    request refers to; (None, None) when there is nothing to say."""
+    blank = _blank(command)
+    block: list[str] = []
+    ask: list[str] = []
+    for match in GH_PR.finditer(blank):
+        if match.group(1) != "create":
+            continue
+        where = _directory(blank, match, cwd)
+        repo = _repo(where)
+        slug = repo and issue_claims.repo_slug(repo)
+        body, _ = pr_body(command, where)
+        if not repo or not slug or not body:
+            continue
+        found = issue_claims.report(repo, issue_claims.body_issues(body, slug), slug)
+        if found.unclaimed:
+            block.append(
+                "Claim the issues this pull request refers to before opening "
+                "it, so nobody else starts on them "
+                "(.claude/rules/issues.md):\n"
+                + "\n".join(f"- {line}" for line in found.unclaimed)
+            )
+        ask.extend(found.warnings)
+    block_text = "\n\n".join(block) or None
+    ask_text = None
+    if ask:
+        ask_text = (
+            "Someone else may already be working on an issue this pull "
+            "request refers to:\n"
+            + "\n".join(f"- {line}" for line in ask)
+            + "\nOpen the pull request anyway?"
+        )
+    return block_text, ask_text
+
+
+def prompt_report(prompt: str, cwd: Path) -> issue_claims.Report:
+    repo = _repo(cwd)
+    slug = repo and issue_claims.repo_slug(repo)
+    if not repo or not slug:
+        return issue_claims.Report()
+    numbers = issue_claims.prompt_issues(prompt, slug)
+    return issue_claims.report(repo, numbers, slug)
+
+
+def prompt_context(found: issue_claims.Report) -> str | None:
+    """What the agent is told about the issues a prompt names."""
+    lines = []
+    if found.warnings:
+        lines.append(
+            "Someone else may already be working on an issue in this prompt "
+            "(the person has been shown this too). Tell the person and ask "
+            "whether to go ahead before changing any code for it:"
+        )
+        lines += [f"- {line}" for line in found.warnings]
+    if found.unclaimed:
+        lines.append(
+            "These issues aren't claimed by the person yet. If you are going "
+            "to work on one (not just read or answer about it), claim it "
+            "first so nobody else starts on it:"
+        )
+        lines += [f"- {line}" for line in found.unclaimed]
+    lines += found.context
+    if not lines:
+        return None
+    return "GitHub issues (scripts/issue_claims.py):\n" + "\n".join(lines)
+
+
 def _pr_target(rest: str) -> list[str]:
     try:
         words = shlex.split(rest or "")
@@ -480,19 +559,63 @@ def main(argv: list[str]) -> int:
         command = data.get("command")
         if command is None:
             command = (data.get("tool_input") or {}).get("command", "")
-        reason = gate(command or "", cwd.resolve())
+        claim_block, ask = claims_gate(command or "", cwd.resolve())
+        reason = "\n\n".join(
+            r for r in (claim_block, gate(command or "", cwd.resolve())) if r
+        )
         if client == "claude":
             if reason:
                 print(reason, file=sys.stderr)
                 return 2
+            if ask:
+                print(
+                    json.dumps(
+                        {
+                            "hookSpecificOutput": {
+                                "hookEventName": "PreToolUse",
+                                "permissionDecision": "ask",
+                                "permissionDecisionReason": ask,
+                            }
+                        }
+                    )
+                )
             return 0
         out = {"permission": "allow"}
         if reason:
             out = {
                 "permission": "deny",
                 "agent_message": reason,
-                "user_message": "Blocked: CI checks or the PR checklist fail.",
+                "user_message": "Blocked: CI checks, the PR checklist or "
+                "an unclaimed issue.",
             }
+        elif ask:
+            out = {"permission": "ask", "user_message": ask, "agent_message": ask}
+        print(json.dumps(out))
+        return 0
+
+    if event == "prompt":
+        found = prompt_report(data.get("prompt") or "", cwd.resolve())
+        warning = None
+        if found.warnings:
+            warning = "Someone may already be working on this:\n" + "\n".join(
+                f"- {line}" for line in found.warnings
+            )
+        if client == "claude":
+            context = prompt_context(found)
+            out = {}
+            if warning:
+                out["systemMessage"] = warning
+            if context:
+                out["hookSpecificOutput"] = {
+                    "hookEventName": "UserPromptSubmit",
+                    "additionalContext": context,
+                }
+            if out:
+                print(json.dumps(out))
+            return 0
+        out = {"continue": True}
+        if warning:
+            out["user_message"] = warning
         print(json.dumps(out))
         return 0
 

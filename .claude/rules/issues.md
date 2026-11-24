@@ -63,6 +63,19 @@ Links, related issues, data.
 
 `Size` starts with `Significant`, `Small` or `Nothing visible`; a feature without one is treated as significant.
 
+## Claiming an issue
+
+Before changing code for an issue, check nobody else is on it, then claim it:
+
+- **Someone else is on it** (assigned, an open pull request of theirs, or a recent comment saying so): tell the person
+  and ask whether to go ahead. Don't start, assign yourself alongside them, or comment on their behalf without that.
+- **Nobody is**: assign the person (`gh issue edit N --add-assignee @me`) when their GitHub access allows it (triage
+  or more); otherwise comment that they are picking it up (`gh issue comment N --body "I'm picking this up."`).
+  Reading or answering a question about an issue isn't working on it: don't claim it for that.
+
+A prompt hook looks up the issues a prompt names and says which of these applies; the pull request hook blocks
+`gh pr create` until every issue the description closes or refers to is claimed (`docs/agent-ci-hooks.md`).
+
 ## The hook
 
 `scripts/agent_hooks.py` runs `scripts/check_issue.py` before `gh issue create` and blocks it without a type label,

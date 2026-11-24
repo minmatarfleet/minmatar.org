@@ -41,6 +41,10 @@ A warm backend run takes under a minute; the first run in a new worktree migrate
   - `gh issue create` runs `scripts/check_issue.py` on its `--label`s and body: at least one type label from `.github/labels.json`, and for a significant feature a design link or a person's sign-off (`.claude/rules/issues.md`). `--web` isn't checked; the browser form sets the labels.
   - A failure blocks the command and tells the agent what failed.
   - The hook reads the description from `--body-file`, from a heredoc (`--body "$(cat <<'EOF' ...)"`) or from a quoted `--body`. When it can't read it, it asks for `--body-file`.
+- **Issue claims** (`scripts/issue_claims.py`, so two people or their agents don't build the same thing):
+  - **When a prompt names an issue** (Claude `UserPromptSubmit`, Cursor `beforeSubmitPrompt`), as `#123`, `issue 123` or an issues URL, the hook looks it up with `gh`. When someone else looks to be on it (assigned, an open pull request of theirs references it, or a comment of theirs in the last 30 days says so), the person is shown who. Claude is also told to ask before changing code for it, and to claim an unclaimed issue before working on it: `gh issue edit N --add-assignee @me` with triage access or more, else a comment. Cursor's prompt hook can only show the warning.
+  - **Before `gh pr create`**, every open issue the description closes or refers to must be claimed by the person opening it (assigned, or a comment of theirs); the hook blocks with the command to run. When someone else looks to be on one, the person is asked to confirm (`ask`) instead of the command running straight away.
+  - When `gh` is missing, signed out or offline, the claim checks say nothing and block nothing.
 - **After a file edit** (Claude `PostToolUse` on Edit/Write, Cursor `postToolUse` on Write): a backend `.py` file is formatted with black, and a backend or bot `.py` file is checked with flake8 (`bot/` isn't black-formatted). Errors go back to the agent.
 
 To push without the checks (for a person, not an agent), prefix the command with `CI_LOCAL_SKIP=1`.
