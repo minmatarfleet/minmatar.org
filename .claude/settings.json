@@ -1,6 +1,6 @@
 {
   "permissions": {
-    "ask": [
+    "allow": [
       "mcp__discord__send_message",
       "mcp__discord__add_reaction",
       "mcp__discord__close_help_ticket"

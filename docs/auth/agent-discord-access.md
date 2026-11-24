@@ -60,8 +60,11 @@ says which was used.
 ## Connecting an agent
 
 `.mcp.json` loads the endpoint as the `discord` server, sending
-`Authorization: Bearer ${MINMATAR_AGENT_KEY}`. `.claude/settings.json` makes `send_message`, `add_reaction` and
-`close_help_ticket` ask for approval every time.
+`Authorization: Bearer ${MINMATAR_AGENT_KEY}`. `.claude/settings.json` allows `send_message`, `add_reaction` and
+`close_help_ticket` without a permission prompt, so scheduled runs (such as the morning help-ticket triage) can post
+with nobody watching. The limits above are enforced by the backend, not by the prompt: posting only where
+`get_channel_info` says `can_post`, no `@everyone`/`@here`/role pings, no DMs, and every call in the audit log.
+Revoke the key to stop an agent.
 
 - **Claude cloud sessions**: save the key as a **network secret** on the cloud environment, for host
   `api.minmatar.org`, header `Authorization`, prefix `Bearer`. The session's proxy adds it to requests to
