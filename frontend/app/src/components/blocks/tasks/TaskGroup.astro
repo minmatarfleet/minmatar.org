@@ -14,7 +14,6 @@ interface Props {
     target:         string;
     /** Red eyebrow and warn "when" cells (the Now group). */
     urgent?:        boolean;
-    in_project?:    boolean;
     [propName: string]: any;
 }
 
@@ -25,7 +24,6 @@ const {
     action_url,
     target,
     urgent = false,
-    in_project = false,
     ...attributes
 } = Astro.props
 
@@ -40,7 +38,7 @@ delete attributes.class
         </div>
         <ul class="[ task-list ]" role="list">
             {tasks.map((task) => (
-                <TaskRow task={task} action_url={action_url} target={target} warn={urgent} in_project={in_project} />
+                <TaskRow task={task} action_url={action_url} target={target} warn={urgent} />
             ))}
         </ul>
     </section>

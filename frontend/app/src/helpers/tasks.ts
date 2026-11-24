@@ -56,18 +56,16 @@ export function when_label(t:Translate, lang:string, task:TaskItem, now:Date = n
 }
 
 /** One line under the title: what the site said, who asked, or the team. */
-export function sub_label(t:Translate, task:TaskItem, team_label:string, in_project:boolean = false):string {
+export function sub_label(t:Translate, task:TaskItem, team_label:string):string {
     const parts:string[] = []
     if (task.team_kind) {
         if (team_label) parts.push(team_label)
         if (!task.assignee) parts.push(t('tasks.up_for_grabs'))
     }
     if (task.detail) parts.push(task.detail)
-    else if (!in_project && task.created_by && task.kind === 'assigned' && task.created_by.user_id !== task.assignee?.user_id)
+    else if (task.created_by && task.kind === 'assigned' && task.created_by.user_id !== task.assignee?.user_id)
         parts.push(t('tasks.asked_by').replace('~NAME', task.created_by.name))
-    else if (in_project && task.assignee && !task.team_kind)
-        parts.push(task.assignee.name)
-    if (task.project_name && !in_project) parts.push(task.project_name)
+    if (task.project_name) parts.push(task.project_name)
     if (task.status === 'done' && task.thanked_by)
         parts.push(t('tasks.thanked_by').replace('~NAME', task.thanked_by.name))
     if (task.status !== 'open' && task.close_note && !task.thanked_by && parts.length === 0)
@@ -102,8 +100,7 @@ export function task_glyph(task:TaskItem):string {
 }
 
 /** The row's picture: the person it is about when there is one. */
-export function task_person(task:TaskItem, in_project:boolean = false) {
-    if (in_project) return task.assignee
+export function task_person(task:TaskItem) {
     if (task.kind === 'assigned' && task.created_by && task.created_by.user_id !== task.assignee?.user_id)
         return task.created_by
     if (task.team_kind && task.assignee)

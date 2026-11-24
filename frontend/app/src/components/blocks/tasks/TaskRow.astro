@@ -25,8 +25,6 @@ interface Props {
     /** Warn colour on the "when" cell (the Now group). */
     warn?:          boolean;
     open?:          boolean;
-    /** Inside a project page: name who does it, not the project. */
-    in_project?:    boolean;
 }
 
 const {
@@ -35,15 +33,14 @@ const {
     target,
     warn = false,
     open = false,
-    in_project = false,
 } = Astro.props
 
 const now = new Date()
 const team_label = task.team_kind === 'staff'
     ? t(t_key('manage.screen_', task.team_role))
     : task.team_label
-const person = task_person(task, in_project)
-const sub = sub_label(t, task, team_label, in_project)
+const person = task_person(task)
+const sub = sub_label(t, task, team_label)
 const when = when_label(t, lang, task, now)
 
 const sep = action_url.includes('?') ? '&' : '?'
