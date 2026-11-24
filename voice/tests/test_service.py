@@ -12,8 +12,9 @@ import unittest
 from pathlib import Path
 
 from tests.fakes import Broken, FakeMurmur, FakeRedis
-from voice_auth import authenticator, layout as L
+from voice_auth import authenticator, config, layout as L
 from voice_auth.certs import CertWatcher
+from voice_auth.main import CALLBACK_ADAPTER, configure_properties
 from voice_auth.records import (
     CERT_KEY,
     CHAR_KEY,
@@ -325,6 +326,35 @@ class CertTest(unittest.TestCase):
             os.utime(cert, ns=(1, 10**18))
             self.assertTrue(watcher.check())
             self.assertEqual(murmur.certificate, ("CERT2", "KEY1"))
+
+
+class FakeProperties:
+    def __init__(self):
+        self.values = {}
+
+    def setProperty(self, key, value):  # noqa: N802
+        self.values[key] = value
+
+
+class IcePropertiesTest(unittest.TestCase):
+    def setUp(self):
+        os.environ["VOICE_CALLBACK_HOST"] = "voice-auth"
+        os.environ["VOICE_CALLBACK_PORT"] = "6503"
+        self.addCleanup(os.environ.pop, "VOICE_CALLBACK_HOST", None)
+        self.addCleanup(os.environ.pop, "VOICE_CALLBACK_PORT", None)
+
+    def test_callback_adapter_listens_everywhere_and_publishes_the_service_name(self):
+        # voice-auth is on two Docker networks and Murmur on one: binding to
+        # the service name would listen on an address Murmur cannot reach.
+        props = FakeProperties()
+        configure_properties(props, config.from_env())
+        self.assertEqual(
+            props.values[f"{CALLBACK_ADAPTER}.Endpoints"], "tcp -h 0.0.0.0 -p 6503"
+        )
+        self.assertEqual(
+            props.values[f"{CALLBACK_ADAPTER}.PublishedEndpoints"],
+            "tcp -h voice-auth -p 6503",
+        )
 
 
 if __name__ == "__main__":

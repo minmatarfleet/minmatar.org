@@ -150,6 +150,32 @@ class IceServer:
         self.server.updateCertificate(cert, key, "")
 
 
+CALLBACK_ADAPTER = "Callback.Client"
+
+
+def configure_properties(props, cfg: config.Config) -> None:
+    """Set the Ice properties for the Murmur connection and the callback adapter.
+
+    The callback adapter listens on every interface but publishes
+    cfg.callback_host in its proxies. voice-auth sits on two Docker networks
+    and voice-murmur on only one; binding to the service name would listen on
+    whichever address it resolves to inside this container, which Murmur may
+    not be able to reach (setAuthenticator then raises
+    InvalidCallbackException). Murmur resolves the published name on the
+    network it shares with us.
+    """
+    props.setProperty("Ice.ImplicitContext", "Shared")
+    props.setProperty("Ice.Default.EncodingVersion", "1.0")
+    props.setProperty("Ice.MessageSizeMax", "65536")
+    props.setProperty(
+        f"{CALLBACK_ADAPTER}.Endpoints", f"tcp -h 0.0.0.0 -p {cfg.callback_port}"
+    )
+    props.setProperty(
+        f"{CALLBACK_ADAPTER}.PublishedEndpoints",
+        f"tcp -h {cfg.callback_host} -p {cfg.callback_port}",
+    )
+
+
 def make_authenticator_servant(MumbleServer, store, health):  # noqa: N803
     class Authenticator(MumbleServer.ServerAuthenticator):
         def authenticate(  # pylint: disable=too-many-arguments
@@ -207,9 +233,7 @@ def run(cfg: config.Config) -> None:  # pragma: no cover - needs Murmur
 
     while not stop.is_set():
         props = Ice.createProperties()
-        props.setProperty("Ice.ImplicitContext", "Shared")
-        props.setProperty("Ice.Default.EncodingVersion", "1.0")
-        props.setProperty("Ice.MessageSizeMax", "65536")
+        configure_properties(props, cfg)
         init = Ice.InitializationData()
         init.properties = props
         communicator = Ice.initialize(init)
@@ -220,9 +244,7 @@ def run(cfg: config.Config) -> None:  # pragma: no cover - needs Murmur
                     f"Meta:tcp -h {cfg.ice_host} -p {cfg.ice_port}"
                 )
             )
-            adapter = communicator.createObjectAdapterWithEndpoints(
-                "Callback.Client", f"tcp -h {cfg.callback_host} -p {cfg.callback_port}"
-            )
+            adapter = communicator.createObjectAdapter(CALLBACK_ADAPTER)
             adapter.activate()
             server = meta.getServer(cfg.server_id)
             servant = make_authenticator_servant(MumbleServer, store, health)
