@@ -47,7 +47,7 @@ Claude Code reads the project config from **`.mcp.json`** in the repo root (Curs
 | Server | Transport | Auth |
 | ------ | --------- | ---- |
 | **sentry** | Remote HTTP | OAuth: run `/mcp` → `sentry` → **Authenticate** |
-| **discord** | Local JAR stdio | Personal bot token in `mcps/.env` |
+| **discord** | Remote HTTP (`api.minmatar.org/api/agent/discord/mcp`) | Agent key: `MINMATAR_AGENT_KEY`, or a cloud network secret (`docs/auth/agent-discord-access.md`) |
 | **reddit** | Local JAR stdio | One-time `--init` / `--auth` (see Reddit (JAR) below) |
 
 Approve the project servers when Claude Code prompts on first launch. Composio is not wired into `.mcp.json`; add a stdio entry running `bash ${CLAUDE_PROJECT_DIR:-.}/mcps/run-composio-mcp.sh` if you need it.
@@ -108,6 +108,8 @@ If OAuth fails in Cursor, fallback stdio config:
 
 - **Binary:** `discord-mcp-1.0.0.jar` (tracked in git). Built locally from [SaseQ/discord-mcp](https://github.com/SaseQ/discord-mcp) on 2026-04-05. It is **not** the upstream `v1.0.0` release asset: its message and user services differ, so don't swap in the release download without checking the tools you rely on still exist.
 - **Runner:** `run-discord-mcp.sh` loads `DISCORD_TOKEN` and `DISCORD_GUILD_ID` from `mcps/.env`.
+- **Cursor only.** Claude Code uses the backend's agent endpoint instead, which keeps the bot token on
+  production and exposes only curated tools (`docs/auth/agent-discord-access.md`).
 
 Create a **personal/community bot** at [Discord Developer Portal](https://discord.com/developers/applications) (separate from any work bot). Enable **Message Content Intent** if you need full message bodies. Invite the bot to your server with read permissions.
 
