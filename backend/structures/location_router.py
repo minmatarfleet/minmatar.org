@@ -397,7 +397,7 @@ class CardContext:
         self.you = svc.holdings(user, ids)
         self.orders = svc.open_order_counts(ids)
         self.security = _security_map(row.solar_system_id for row in rows)
-        self.routes = svc.route_counts(ids)
+        self.routes = svc.route_counts(ids, user=user)
         self.stations = _stations(rows)
         self.indices = caps.cost_indices(row.solar_system_id for row in rows)
         self.station_services = {
@@ -521,6 +521,7 @@ def _user(request):
     response={200: LocationList},
     description="Locations on the structure browser that this user may see.",
 )
+@decorate_view(never_cache)
 def list_locations(request):
     user = _user(request)
     rows = list(

@@ -155,6 +155,12 @@ class FreightRouteAdmin(admin.ModelAdmin):
         ),
     )
 
+    def has_delete_permission(self, request, obj=None):
+        # Retire shadow routes to keep their contract history hidden.
+        if obj is not None and obj.shadow_contracts:
+            return False
+        return super().has_delete_permission(request, obj)
+
     def get_changeform_initial_data(self, request):
         initial = super().get_changeform_initial_data(request)
         origin_id = request.GET.get("origin_location")

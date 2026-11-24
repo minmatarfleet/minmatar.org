@@ -560,15 +560,20 @@ def open_order_counts(location_ids: Iterable[int]) -> dict:
     return {row["location_id"]: row["n"] for row in rows}
 
 
-def route_counts(location_ids: Iterable[int]) -> dict:
+def route_counts(
+    location_ids: Iterable[int], *, user=None, include_shadow=False
+) -> dict:
     # pylint: disable=import-outside-toplevel
     from freight.models import EveFreightRoute
 
     ids = list(location_ids)
     counts = {lid: 0 for lid in ids}
-    for origin, destination in EveFreightRoute.objects.filter(
-        active=True
-    ).values_list("origin_location_id", "destination_location_id"):
+    routes = EveFreightRoute.objects.filter(active=True)
+    if not include_shadow:
+        routes = routes.visible_to(user)
+    for origin, destination in routes.values_list(
+        "origin_location_id", "destination_location_id"
+    ):
         if origin in counts:
             counts[origin] += 1
         if destination in counts:
@@ -969,7 +974,9 @@ def attention_items(locations) -> List[dict]:
                 }
             )
     items.extend(same_fitting_items(locations))
-    routes = route_counts(location.location_id for location in locations)
+    routes = route_counts(
+        (location.location_id for location in locations), include_shadow=True
+    )
     for location in locations:
         if routes.get(location.location_id) and not location.freight_active:
             items.append(

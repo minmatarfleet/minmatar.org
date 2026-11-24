@@ -8,6 +8,7 @@ from django.contrib.auth.models import Group, User
 from django.core.exceptions import ValidationError
 from django.db.models.signals import post_save
 from django.test import Client, RequestFactory
+from django.urls import reverse
 from django.utils import timezone
 from factory.django import mute_signals
 
@@ -839,6 +840,31 @@ class FreightAdminViewsTestCase(TestCase):
         self.assertContains(response, "Manage outbound routes")
         self.assertContains(response, "Add outbound route")
 
+    def test_admin_cannot_delete_a_shadow_route(self):
+        route = EveFreightRoute.objects.get()
+        route.shadow_contracts = True
+        route.save(update_fields=["shadow_contracts"])
+        delete_url = reverse(
+            "admin:freight_evefreightroute_delete", args=[route.pk]
+        )
+        self.assertEqual(
+            self.client.post(delete_url, {"post": "yes"}).status_code, 403
+        )
+
+        changelist = reverse("admin:freight_evefreightroute_changelist")
+        self.assertEqual(
+            self.client.post(
+                changelist,
+                {
+                    "action": "delete_selected",
+                    "_selected_action": [route.pk],
+                    "post": "yes",
+                },
+            ).status_code,
+            403,
+        )
+        self.assertTrue(EveFreightRoute.objects.filter(pk=route.pk).exists())
+
     def test_get_app_list_shows_freight_locations_on_staging_systems(self):
         request = RequestFactory().get("/admin/")
         request.user = self.admin_user
@@ -1125,13 +1151,45 @@ class ShadowFreightRouteTestCase(TestCase):
     def test_existing_structure_summary_respects_shadow_visibility(self):
         url = f"/api/structures/locations/{self.destination.pk}"
         with patch("structures.location_router._stations", return_value={}):
-            self.assertEqual(self.client.get(url).json()["routes_here"], [])
+            public_detail = self.client.get(url).json()
             detail = self.client.get(
                 url, **auth_headers(self.alliance_pilot)
             ).json()
+            public_cards = self.client.get("/api/structures/locations").json()[
+                "locations"
+            ]
+        self.assertEqual(public_detail["routes_here"], [])
+        self.assertEqual(public_detail["route_count"], 1)
+        self.assertEqual(detail["route_count"], 2)
+        self.assertEqual(
+            {row["location_id"]: row["route_count"] for row in public_cards},
+            {self.origin.pk: 1, self.destination.pk: 1},
+        )
         self.assertEqual(
             [route["origin"] for route in detail["routes_here"]],
             [self.origin.short_name],
+        )
+
+    def test_a_retired_shadow_route_hides_an_active_route_in_the_same_direction(
+        self,
+    ):
+        self.shadow.active = False
+        self.shadow.save(update_fields=["active"])
+        replacement = EveFreightRoute.objects.create(
+            origin_location=self.origin,
+            destination_location=self.destination,
+        )
+        route_url = f"{BASE_URL}/routes"
+        public_routes = self.client.get(route_url).json()
+        self.assertEqual(
+            [row["route_id"] for row in public_routes], [self.public.pk]
+        )
+        member_routes = self.client.get(
+            route_url, **auth_headers(self.alliance_pilot)
+        ).json()
+        self.assertCountEqual(
+            [row["route_id"] for row in member_routes],
+            [self.public.pk, replacement.pk],
         )
 
     def test_contract_visibility_matches_direction_even_when_route_is_retired(
