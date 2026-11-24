@@ -1,0 +1,523 @@
+---
+/**
+ * Mining dispatch view (docs/fleets/mining-tracking.md), after the haul-truck
+ * dispatch boards open-pit mines use:
+ *
+ * - headline figures: ore, m³ per hour, est. ISK;
+ * - the fleet's running ore total, with join/leave markers;
+ * - one strip per pilot, a cell per 15-minute bucket: green (brighter =
+ *   more ore), red = idle in the fleet, faint = waiting for a reading,
+ *   outline = not in the fleet; then each pilot's m³ and "mining %".
+ *
+ * Server-rendered: SVG for the chart, an HTML grid for the strips, so names
+ * and numbers stay at the page's type size whatever the panel width.
+ */
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { FleetMiningEvent, FleetMiningTimeline } from '@helpers/api.minmatar.org/fleets'
+import { format_isk, format_volume_m3 } from '@helpers/numbers'
+import StylessButton from '@components/blocks/StylessButton.astro'
+
+interface Props {
+    timeline:           FleetMiningTimeline;
+    isk_estimate:       number;
+    [propName: string]: any;
+}
+
+const {
+    timeline,
+    isk_estimate,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const count = timeline.buckets.length
+const minutes = timeline.bucket_minutes
+const time_label = (iso:string) => new Date(iso).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })
+const short = (m3:number) => m3 >= 1000 ? `${(m3 / 1000).toFixed(m3 >= 100000 ? 0 : 1)}k` : `${Math.round(m3)}`
+
+// Headline figures.
+const cumulative = timeline.totals_m3.reduce<number[]>((sum, v, i) => [...sum, (sum[i - 1] ?? 0) + v], [])
+const total = cumulative[count - 1] ?? 0
+const hours = Math.max(1 / 60, (new Date(timeline.end).getTime() - new Date(timeline.start).getTime()) / 3_600_000)
+const per_hour = total / hours
+
+// Running total chart (viewBox units; the drawing scales to the panel).
+const W = 1200, H = 220, LEFT = 56, RIGHT = 16, TOP = 16, BOTTOM = 28
+const plot_h = H - TOP - BOTTOM
+const y_max = Math.max(1, total * 1.1)
+// Bucket i ends at x(i + 1): the curve starts at zero on the fleet's start.
+const x_at = (i:number) => LEFT + i * (W - LEFT - RIGHT) / Math.max(1, count)
+const y_at = (v:number) => TOP + plot_h - v / y_max * plot_h
+const points = [[x_at(0), y_at(0)], ...cumulative.map((v, i) => [x_at(i + 1), y_at(v)])]
+const line = points.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
+const area = `${line} L${x_at(count).toFixed(1)},${y_at(0)} L${x_at(0).toFixed(1)},${y_at(0)} Z`
+const grid = [0.25, 0.5, 0.75, 1].map(f => y_max * f)
+const label_every = Math.max(1, Math.ceil(count / 8))
+const start_ms = new Date(timeline.buckets[0] ?? timeline.start).getTime()
+const x_of_time = (iso:string) => LEFT + (new Date(iso).getTime() - start_ms) / (minutes * 60_000) * (W - LEFT - RIGHT) / Math.max(1, count)
+// Roster changes, snapped to the nearest slot boundary and merged, so a
+// multiboxer dropping five characters is one marker, not five. No label on
+// the chart: hovering a marker lists who joined and who left. Joins at the
+// fleet's start and leaves at its end are the fleet itself, not changes.
+const name_of = (e:FleetMiningEvent) => e.character_name ?? t('fleets.mining.hidden_pilot')
+const changes = new Map<number, { joins: string[], leaves: string[] }>()
+for (const e of timeline.events) {
+    if (e.kind === 'ore') continue
+    const boundary = Math.round((new Date(e.at).getTime() - start_ms) / (minutes * 60_000))
+    if (e.kind === 'join' && boundary <= 0) continue
+    if (e.kind === 'leave' && boundary >= count) continue
+    const change = changes.get(boundary) ?? { joins: [], leaves: [] }
+    ;(e.kind === 'join' ? change.joins : change.leaves).push(name_of(e))
+    changes.set(boundary, change)
+}
+const markers = [...changes.entries()].sort(([a], [b]) => a - b).map(([boundary, change]) => {
+    const when = time_label(new Date(start_ms + boundary * minutes * 60_000).toISOString())
+    const joins = [...change.joins].sort()
+    const leaves = [...change.leaves].sort()
+    return {
+        x: x_at(boundary),
+        when,
+        joins,
+        leaves,
+        title: [
+            when,
+            joins.length ? `${t('fleets.mining.dispatch.joined')}: ${joins.join(', ')}` : '',
+            leaves.length ? `${t('fleets.mining.dispatch.left')}: ${leaves.join(', ')}` : '',
+        ].filter(Boolean).join('\n'),
+    }
+})
+
+// Pilot strips.
+const cell_max = Math.max(1, ...timeline.pilots.flatMap(p => p.cell_m3))
+const pilot_max = Math.max(1, ...timeline.pilots.map(p => p.volume_m3))
+const cell_title = (cell:string, m3:number, i:number) => {
+    const when = time_label(timeline.buckets[i])
+    if (cell === 'ore') return `${when} · ${format_volume_m3(m3)} m³`
+    if (cell === 'idle') return `${when} · ${t('fleets.mining.dispatch.legend_idle')}`
+    if (cell === 'quiet') return `${when} · ${t('fleets.mining.dispatch.legend_quiet')}`
+    return `${when} · ${t('fleets.mining.dispatch.legend_out')}`
+}
+---
+
+<div class:list={['[ fleet-mining-dispatch ]', Astro.props.class]} {...attributes}>
+    <div class="[ dispatch-kpis ]">
+        <div>
+            <small>{t('fleets.mining.total_volume')}</small>
+            <span>{format_volume_m3(total)} m³</span>
+        </div>
+        <div>
+            <small>{t('fleets.mining.dispatch.per_hour')}</small>
+            <span>{format_volume_m3(per_hour)} m³</span>
+        </div>
+        <div>
+            <small>{t('fleets.mining.total_isk')}</small>
+            <span>{format_isk(isk_estimate, { suffix: ' ISK' })}</span>
+        </div>
+    </div>
+
+    <small class="[ dispatch-label ]">{t('fleets.mining.dispatch.total')}</small>
+    {/* Alpine only toggles which roster-change box is open (local UI). */}
+    <div
+        class="[ dispatch-chart-wrap ]"
+        x-data="{ open: null }"
+        x-on:keydown.escape="open = null"
+    >
+    <svg viewBox={`0 0 ${W} ${H}`} class="[ dispatch-chart ]" role="img" aria-label={t('fleets.mining.dispatch.total_aria').replace('{total}', format_volume_m3(total))}>
+        {grid.map(v =>
+            <g>
+                <line x1={LEFT} x2={W - RIGHT} y1={y_at(v)} y2={y_at(v)} class="grid" />
+                <text x={LEFT - 8} y={y_at(v) + 4} text-anchor="end" class="axis">{short(v)}</text>
+            </g>
+        )}
+        <line x1={LEFT} x2={W - RIGHT} y1={y_at(0)} y2={y_at(0)} class="grid" />
+        <path d={area} class="area" />
+        <path d={line} class="line" />
+        {markers.map((marker, index) =>
+            <g
+                class="[ marker-group ]"
+                tabindex="0"
+                role="button"
+                aria-label={marker.title.replaceAll('\n', '. ')}
+                x-bind:aria-expanded={`open === ${index}`}
+                x-bind:class={`{ 'is-open': open === ${index} }`}
+                x-on:click={`open = open === ${index} ? null : ${index}`}
+                x-on:keydown.enter.prevent={`open = open === ${index} ? null : ${index}`}
+                x-on:keydown.space.prevent={`open = open === ${index} ? null : ${index}`}
+                x-on:mousedown.prevent
+            >
+                <title>{marker.title}</title>
+                <line x1={marker.x} x2={marker.x} y1={TOP + 8} y2={y_at(0)} class="marker" />
+                {/* Joins point up, leaves point down; both when both happened. */}
+                {marker.joins.length > 0 &&
+                    <path d={`M${marker.x - 6},${TOP + 8} L${marker.x},${TOP - 2} L${marker.x + 6},${TOP + 8} Z`} class="marker-join" />
+                }
+                {marker.leaves.length > 0 &&
+                    <path d={`M${marker.x - 6},${TOP + (marker.joins.length ? 10 : 0)} L${marker.x},${TOP + (marker.joins.length ? 20 : 10)} L${marker.x + 6},${TOP + (marker.joins.length ? 10 : 0)} Z`} class="marker-leave" />
+                }
+                {/* A wide, invisible hover target. */}
+                <rect x={marker.x - 10} y={TOP - 4} width="20" height={y_at(0) - TOP + 4} class="marker-hit" />
+            </g>
+        )}
+        {timeline.buckets.map((iso, i) => i % label_every === 0 &&
+            <text x={x_at(i)} y={H - 8} text-anchor="middle" class="axis">{time_label(iso)}</text>
+        )}
+    </svg>
+
+    {/* The clicked marker's roster change, in a panel under the chart. */}
+    {/* The outer box slides open (x-collapse); the inner one carries the
+        border, so no line is left showing while it is closed. */}
+    {markers.map((marker, index) =>
+        <div
+            class="[ dispatch-change-slide ]"
+            x-show={`open === ${index}`}
+            x-collapse.duration.250ms
+            style="display: none"
+            role="region"
+            aria-live="polite"
+            aria-label={marker.when}
+        >
+        <div class="[ dispatch-change ]">
+            <div class="[ dispatch-change__head ]">
+                <strong>{marker.when}</strong>
+                <StylessButton
+                    type="button"
+                    class="[ dispatch-change__close ]"
+                    aria-label={t('fleets.mining.dispatch.close')}
+                    x-on:click="open = null"
+                >×</StylessButton>
+            </div>
+            {marker.joins.length > 0 &&
+                <div>
+                    <small class="[ dispatch-change__joined ]">▲ {t('fleets.mining.dispatch.joined')} ({marker.joins.length})</small>
+                    <ul>{marker.joins.map(name => <li>{name}</li>)}</ul>
+                </div>
+            }
+            {marker.leaves.length > 0 &&
+                <div>
+                    <small class="[ dispatch-change__left ]">▼ {t('fleets.mining.dispatch.left')} ({marker.leaves.length})</small>
+                    <ul>{marker.leaves.map(name => <li>{name}</li>)}</ul>
+                </div>
+            }
+        </div>
+        </div>
+    )}
+    </div>
+
+    <small class="[ dispatch-label ]">{t('fleets.mining.dispatch.pilots').replace('{minutes}', minutes.toString())}</small>
+    <div class="[ dispatch-strips ]" role="group" aria-label={t('fleets.mining.dispatch.pilots_aria')}>
+        <div class="[ dispatch-row dispatch-row--head ]">
+            <small>{t('fleets.mining.column_pilot')}</small>
+            <small class="[ dispatch-times ]">
+                <span>{time_label(timeline.buckets[0])}</span>
+                <span>{time_label(timeline.end)}</span>
+            </small>
+            <small class="[ numeric ]">m³</small>
+            <small class="[ numeric ]">{t('fleets.mining.dispatch.mining_pct')}</small>
+        </div>
+        {timeline.pilots.map(pilot =>
+            <div class="[ dispatch-row ]">
+                <span class="[ dispatch-name ]">{pilot.character_name ?? t('fleets.mining.hidden_pilot')}</span>
+                <span class="[ dispatch-cells ]">
+                    {pilot.cells.map((cell, i) =>
+                        <span
+                            class:list={['[ dispatch-cell ]', cell]}
+                            style={cell === 'ore' ? `opacity:${(0.3 + 0.7 * pilot.cell_m3[i] / cell_max).toFixed(2)}` : undefined}
+                            title={cell_title(cell, pilot.cell_m3[i], i)}
+                        ></span>
+                    )}
+                </span>
+                {pilot.no_scope ?
+                    <small class="[ numeric dispatch-muted ]">{t('fleets.mining.status_no_scope')}</small>
+                    :
+                    <span class="[ numeric dispatch-volume ]">
+                        <span class="[ dispatch-bar ]" style={`width:${Math.max(4, pilot.volume_m3 / pilot_max * 100).toFixed(0)}%`}></span>
+                        {short(pilot.volume_m3)}
+                    </span>
+                }
+                <span class:list={['[ numeric ]', { behind: (pilot.mining_pct ?? 100) < 80 }]}>
+                    {pilot.no_scope ? '—' : `${pilot.mining_pct ?? 0}%`}
+                </span>
+            </div>
+        )}
+    </div>
+
+    <div class="[ dispatch-legend ]">
+        <small><span class="[ dispatch-cell ore ]"></span>{t('fleets.mining.dispatch.legend_ore')}</small>
+        <small><span class="[ dispatch-cell idle ]"></span>{t('fleets.mining.dispatch.legend_idle')}</small>
+        <small><span class="[ dispatch-cell quiet ]"></span>{t('fleets.mining.dispatch.legend_quiet')}</small>
+        <small><span class="[ dispatch-cell out ]"></span>{t('fleets.mining.dispatch.legend_out')}</small>
+    </div>
+</div>
+
+<style lang="scss">
+    .fleet-mining-dispatch {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+    }
+
+    .dispatch-label,
+    .dispatch-kpis small,
+    .dispatch-row--head small {
+        color: var(--foreground);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: var(--step--2);
+    }
+
+    .dispatch-kpis {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-l);
+
+        small {
+            display: block;
+        }
+
+        span {
+            color: var(--highlight);
+            font-size: var(--step-2);
+        }
+    }
+
+    .behind {
+        color: var(--fleet-red-text);
+    }
+
+    .dispatch-chart {
+        width: 100%;
+        height: auto;
+
+        // viewBox units: the 1200-wide drawing fills the panel.
+        .axis {
+            fill: var(--foreground);
+            font-size: 13px;
+        }
+
+        .grid {
+            stroke: var(--border-color);
+            stroke-width: 1;
+        }
+
+        .area {
+            fill: var(--green);
+            opacity: 0.15;
+        }
+
+        .line {
+            fill: none;
+            stroke: var(--green);
+            stroke-width: 3;
+        }
+
+        .marker {
+            stroke: var(--foreground);
+            stroke-width: 1;
+            stroke-dasharray: 2 4;
+            opacity: 0.6;
+        }
+
+        .marker-join {
+            fill: var(--green);
+        }
+
+        .marker-leave {
+            fill: var(--fleet-red);
+        }
+
+        .marker-hit {
+            fill: transparent;
+            cursor: pointer;
+        }
+
+        .marker-group.is-open .marker,
+        .marker-group:focus-visible .marker,
+        .marker-group:hover .marker {
+            opacity: 1;
+            stroke-dasharray: none;
+        }
+
+        .marker-group:focus-visible {
+            outline: none;
+
+            .marker {
+                stroke: var(--highlight);
+            }
+        }
+    }
+
+    .dispatch-chart-wrap {
+        position: relative;
+    }
+
+    // Markers are controls, not text: no selection on repeated clicks, no
+    // browser focus ring or tap flash on a mouse click. Keyboard focus keeps
+    // its own ring (:focus-visible below).
+    .dispatch-chart {
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
+    .marker-group {
+        outline: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .dispatch-change-slide {
+            transition: none !important;
+        }
+    }
+
+    // The clicked marker's roster change, under the chart.
+    .dispatch-change {
+        margin-top: var(--space-2xs);
+        padding: var(--space-xs) var(--space-s);
+        color: var(--highlight);
+        border: solid 1px var(--border-color);
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs) var(--space-l);
+
+        ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            font-size: var(--step--1);
+            columns: 2;
+        }
+    }
+
+    .dispatch-change__head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--space-s);
+        flex-basis: 100%;
+    }
+
+    .dispatch-change__close {
+        color: var(--foreground);
+        font-size: var(--step-0);
+    }
+
+    .dispatch-change__joined {
+        color: var(--green);
+    }
+
+    .dispatch-change__left {
+        color: var(--fleet-red-text);
+    }
+
+    .dispatch-strips {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .dispatch-row {
+        display: grid;
+        grid-template-columns: minmax(0, 12rem) minmax(0, 1fr) 6rem 4.5rem;
+        column-gap: var(--space-s);
+        align-items: center;
+        padding-block: var(--space-3xs);
+    }
+
+    .dispatch-row--head {
+        padding-block-end: var(--space-2xs);
+    }
+
+    .dispatch-name {
+        color: var(--highlight);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .dispatch-times {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .dispatch-cells {
+        display: flex;
+        gap: var(--space-3xs);
+    }
+
+    .dispatch-cell {
+        display: inline-block;
+        flex: 1 1 0;
+        min-width: var(--space-3xs);
+        height: var(--space-m);
+
+        &.ore {
+            background-color: var(--green);
+        }
+
+        &.idle {
+            background-color: var(--fleet-red);
+        }
+
+        &.quiet {
+            background-color: var(--foreground);
+            opacity: 0.12;
+        }
+
+        &.out {
+            border: solid 1px var(--border-color);
+            opacity: 0.6;
+        }
+    }
+
+    .numeric {
+        text-align: right;
+        white-space: nowrap;
+        color: var(--highlight);
+    }
+
+    .dispatch-muted {
+        color: var(--foreground);
+    }
+
+    .dispatch-volume {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: var(--space-2xs);
+    }
+
+    .dispatch-bar {
+        display: inline-block;
+        max-width: 2.5rem;
+        height: var(--space-2xs);
+        background-color: var(--green);
+        flex: 0 1 auto;
+    }
+
+    .dispatch-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-m);
+
+        small {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2xs);
+            color: var(--foreground);
+        }
+
+        .dispatch-cell {
+            flex: 0 0 auto;
+            width: var(--space-s);
+            height: var(--space-s);
+        }
+    }
+
+    @media screen and (max-width: 767px) {
+        .dispatch-row {
+            grid-template-columns: minmax(0, 7rem) minmax(0, 1fr) 4.5rem 3.5rem;
+        }
+    }
+</style>

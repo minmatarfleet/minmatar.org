@@ -24,6 +24,7 @@ function group(id: number, overrides: Partial<PublishableGroup> = {}): Publishab
         member_count: 12,
         allow_alliance_posts: true,
         allow_open_fleets: false,
+        track_mining_by_default: false,
         ...overrides,
     }
 }

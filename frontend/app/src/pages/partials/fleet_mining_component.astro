@@ -1,0 +1,56 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import { get_request_user } from '@helpers/request_user'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+if (!fleet_id)
+    return HTTP_404_Not_Found()
+
+import type { FleetMining } from '@helpers/api.minmatar.org/fleets'
+import { get_fleet_mining } from '@helpers/api.minmatar.org/fleets'
+
+let fetch_mining_error:Error | false = false
+let mining:FleetMining | null = null
+
+try {
+    mining = await get_fleet_mining(auth_token as string, fleet_id)
+} catch (error) {
+    fetch_mining_error = error
+}
+
+const FLEET_MINING_PARTIAL_URL = translatePath(`/partials/fleet_mining_component?fleet_id=${fleet_id}`)
+// While readings are still due the panel refreshes itself; once every
+// pilot's reading is in it stops.
+const refresh_attributes = mining?.measuring ? {
+    'hx-get': FLEET_MINING_PARTIAL_URL,
+    'hx-trigger': 'every 60s',
+    'hx-swap': 'outerHTML',
+} : {}
+
+import FleetMiningResults from '@components/blocks/FleetMiningResults.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{fetch_mining_error ?
+    <ErrorRefetch
+        args={{
+            partial: FLEET_MINING_PARTIAL_URL,
+            error: fetch_mining_error,
+            delay: delay,
+            target: '#fleet-mining',
+        }}
+    />
+    :
+    <FleetMiningResults id="fleet-mining" mining={mining as FleetMining} {...refresh_attributes} />
+}

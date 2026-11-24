@@ -47,6 +47,7 @@ def serialize_publishing(group: TribeGroup) -> TribeGroupPublishingSchema:
         allow_open_fleets=group.allow_open_fleets,
         fleets_enabled=group.fleets_enabled,
         events_enabled=group.events_enabled,
+        track_mining_by_default=group.track_mining_by_default,
         discord_channel_id=_snowflake(group.discord_channel_id),
         effective_discord_channel_id=_snowflake(effective_id),
         effective_discord_channel_name=channel_name(effective_id),

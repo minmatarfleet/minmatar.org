@@ -82,6 +82,7 @@ if (Astro.request.method === "POST") {
             location_id: parseInt(data.get('location_id') as string),
             disable_motd: (data.get('disable_motd' as string) === 'on'),
             hide_volunteers: (data.get('hide_volunteers' as string) === 'on'),
+            track_mining: (data.get('track_mining' as string) === 'on'),
             immediate_ping: false, //(data.get('immediate_ping' as string) === 'on'),
             ...(host_fields && is_group_fleet && host_fields),
             // Private fleets are alliance fleets; the API checks the Strategic FC.

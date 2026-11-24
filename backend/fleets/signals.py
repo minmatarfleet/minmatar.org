@@ -4,6 +4,7 @@ from django.db import transaction
 from django.db.models import signals
 from django.dispatch import receiver
 
+from eveonline.helpers.characters.mining import mining_ledger_read
 from eveonline.models import EveCharacter
 from fleets.models import EveFleet, EveFleetShipVolunteer
 from fleets.tasks import queue_fleet_schedule_refresh
@@ -183,3 +184,19 @@ def private_fleet_answer_on_volunteer_save(sender, instance, **kwargs):
 )
 def private_fleet_answer_on_volunteer_delete(sender, instance, **kwargs):
     _volunteer_owner_changed(instance)
+
+
+@receiver(mining_ledger_read)
+def fleet_mining_ledger_read(sender, character, read_at, **kwargs):
+    """Stamp the read on the pilot's open mining stints (if any). Never
+    lets a stamping error fail the ledger sync that sent it."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.mining import record_ledger_read
+
+    try:
+        record_ledger_read(character, read_at)
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.exception(
+            "Could not stamp mining read for character %s",
+            character.character_id,
+        )

@@ -910,6 +910,7 @@ export interface FleetRequest {
     audience_id:        number;
     disable_motd:       boolean;
     hide_volunteers?:   boolean;
+    track_mining?:      boolean;
     immediate_ping?:    boolean;
     status?:            TrackingStatus;
     campaign_id?:       number | null;

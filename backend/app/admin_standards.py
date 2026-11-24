@@ -77,6 +77,8 @@ READ_ONLY_MODELS = _labels(
     # Misc logs
     "referrals.ReferralClick",
     "notifications.NotificationDelivery",
+    # ESI ledger readings for mining fleets
+    "fleets.EveFleetMiningSegment",
 )
 
 # Tables that run to millions of rows in production: no COUNT(*) on the list.

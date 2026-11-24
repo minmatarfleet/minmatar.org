@@ -167,6 +167,7 @@ async function fleet_ui(access_token:string, fleet:FleetDetail):Promise<FleetUI>
         audience: fleet.audience,
         disable_motd: fleet.disable_motd,
         hide_volunteers: fleet.hide_volunteers,
+        track_mining: fleet.track_mining ?? false,
         status: fleet.status,
         aar_link: fleet.aar_link ?? '',
         roam_report_url: fleet.roam_report_url ?? '',

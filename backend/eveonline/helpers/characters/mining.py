@@ -3,6 +3,7 @@
 import logging
 from datetime import date, timedelta
 
+from django.dispatch import Signal
 from django.utils import timezone
 
 from eveuniverse.models import EveType, EveTypeMaterial
@@ -15,6 +16,11 @@ from eveonline.models.characters import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Sent after every ledger read ESI answered, with or without new ore:
+# ``character`` and ``read_at``. A read that finds nothing new stores no
+# EveCharacterMiningDelta row, so this is the only record that it ran.
+mining_ledger_read = Signal()
 
 
 def _ensure_type_materials(eve_type: EveType) -> None:
@@ -67,24 +73,60 @@ def update_character_mining(eve_character_id: int) -> int:
             eve_character_id,
         )
         return 0
+    synced = sync_character_mining(character)
+    return synced or 0
+
+
+def sync_character_mining(character: EveCharacter) -> int | None:
+    """
+    Fetch the ledger from ESI and upsert it.
+
+    Returns the number of entries synced, or None when nothing could be
+    read (ESI-suspended character or an ESI error), so a caller that needs
+    a fresh reading can tell "no mining" from "no answer".
+    """
     if character.esi_suspended:
         logger.debug(
             "Skipping mining for ESI-suspended character %s",
-            eve_character_id,
+            character.character_id,
         )
-        return 0
+        return None
 
     esi = EsiClient(character)
     response = esi.get_character_mining_ledger()
     if not response.success():
         logger.warning(
             "Skipping mining for character %s, %s",
-            eve_character_id,
+            character.character_id,
             response.response_code,
         )
-        return 0
+        return None
 
-    entries = response.results() or []
+    synced = _store_ledger_entries(character, response.results() or [])
+    mining_ledger_read.send(
+        sender=sync_character_mining,
+        character=character,
+        read_at=timezone.now(),
+    )
+    return synced
+
+
+def mining_totals_since(
+    character: EveCharacter, since_date: date
+) -> dict[str, int]:
+    """Units mined per ore type ({str(type_id): qty}) on or after a day."""
+    totals: dict[str, int] = {}
+    rows = EveCharacterMiningEntry.objects.filter(
+        character=character, date__gte=since_date
+    ).values_list("eve_type_id", "quantity")
+    for type_id, quantity in rows:
+        key = str(type_id)
+        totals[key] = totals.get(key, 0) + int(quantity)
+    return totals
+
+
+def _store_ledger_entries(character: EveCharacter, entries) -> int:
+    eve_character_id = character.character_id
     seen_type_ids: set[int] = set()
 
     for entry in entries:

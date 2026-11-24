@@ -55,7 +55,7 @@ delete attributes.class
 const group_by_id = new Map(groups.map((group) => [group.id, group]))
 
 const panel_groups = existing_host
-    ? [group_by_id.get(existing_host.id) ?? { ...existing_host, member_count: 0, allow_alliance_posts: true, allow_open_fleets: false }]
+    ? [group_by_id.get(existing_host.id) ?? { ...existing_host, member_count: 0, allow_alliance_posts: true, allow_open_fleets: false, track_mining_by_default: false }]
     : groups
 
 const is_fixed = Boolean(existing_host)

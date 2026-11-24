@@ -30,6 +30,12 @@ from fleets.endpoints.fleet.get_fleet_my_srp import (
     get_fleet_my_srp,
     METHOD as get_fleet_my_srp_method,
 )
+from fleets.endpoints.fleet.get_fleet_mining import (
+    PATH as get_fleet_mining_path,
+    ROUTE_SPEC as get_fleet_mining_spec,
+    get_fleet_mining,
+    METHOD as get_fleet_mining_method,
+)
 from fleets.endpoints.fleet.get_fleet_participants import (
     PATH as get_fleet_participants_path,
     ROUTE_SPEC as get_fleet_participants_spec,
@@ -453,6 +459,12 @@ _ROUTES = (
         get_fleet_participants_path,
         get_fleet_participants_spec,
         get_fleet_participants,
+    ),
+    (
+        get_fleet_mining_method,
+        get_fleet_mining_path,
+        get_fleet_mining_spec,
+        get_fleet_mining,
     ),
     (
         get_fleet_public_kills_method,

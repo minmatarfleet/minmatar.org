@@ -1,0 +1,103 @@
+---
+/** Mining log: joins, leaves and every ledger delta, newest first. */
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { FleetMiningEvent } from '@helpers/api.minmatar.org/fleets'
+import { format_volume_m3, number_thousand_separator } from '@helpers/numbers'
+
+interface Props {
+    events:             FleetMiningEvent[];
+    [propName: string]: any;
+}
+
+const {
+    events,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const SHOWN = 30
+const time_label = (iso:string) => new Date(iso).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })
+const what = (event:FleetMiningEvent) =>
+    event.kind === 'join' ? t('fleets.mining.log.joined') :
+    event.kind === 'leave' ? t('fleets.mining.log.left') :
+    `+${number_thousand_separator(event.quantity ?? 0, lang)} ${event.ore_name ?? ''}`
+import EmptyState from '@components/blocks/EmptyState.astro'
+
+const first = events.slice(0, SHOWN)
+const rest = events.slice(SHOWN)
+---
+
+<div class:list={['[ fleet-mining-log ]', Astro.props.class]} {...attributes}>
+    <small class="[ fleet-mining-log__label ]">{t('fleets.mining.log.title')}</small>
+    {events.length === 0 ?
+        <EmptyState title={t('fleets.mining.log.empty')} />
+        :
+        <>
+            {first.map(event =>
+                <div class:list={['[ fleet-mining-log__row ]', event.kind]}>
+                    <small>{time_label(event.at)}</small>
+                    <span>{event.character_name ?? t('fleets.mining.hidden_pilot')}</span>
+                    <span>{what(event)}</span>
+                    <small>{event.volume_m3 ? `${format_volume_m3(event.volume_m3)} m³` : ''}</small>
+                </div>
+            )}
+            {rest.length > 0 &&
+                <details>
+                    <summary><small>{t('fleets.mining.log.more').replace('{count}', rest.length.toString())}</small></summary>
+                    {rest.map(event =>
+                        <div class:list={['[ fleet-mining-log__row ]', event.kind]}>
+                            <small>{time_label(event.at)}</small>
+                            <span>{event.character_name ?? t('fleets.mining.hidden_pilot')}</span>
+                            <span>{what(event)}</span>
+                            <small>{event.volume_m3 ? `${format_volume_m3(event.volume_m3)} m³` : ''}</small>
+                        </div>
+                    )}
+                </details>
+            }
+        </>
+    }
+</div>
+
+<style lang="scss">
+    .fleet-mining-log__label {
+        display: block;
+        color: var(--foreground);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: var(--step--2);
+        padding-block-end: var(--space-3xs);
+    }
+
+    .fleet-mining-log__row {
+        display: grid;
+        grid-template-columns: max-content minmax(0, 2fr) minmax(0, 3fr) minmax(0, 1fr);
+        column-gap: var(--space-s);
+        align-items: center;
+        padding-block: var(--space-3xs);
+        border-top: solid 1px var(--border-color);
+
+        small {
+            color: var(--foreground);
+        }
+
+        small:last-child {
+            text-align: right;
+        }
+
+        &.join span:nth-child(3) {
+            color: var(--green);
+        }
+
+        &.leave span:nth-child(3) {
+            color: var(--fleet-yellow);
+        }
+    }
+
+    summary {
+        cursor: pointer;
+        padding-block: var(--space-2xs);
+    }
+</style>

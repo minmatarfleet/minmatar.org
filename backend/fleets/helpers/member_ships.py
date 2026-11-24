@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from django.utils import timezone
+
 from eveonline.killmail_classes import CAPSULE_TYPE_IDS, is_capsule
 
 if TYPE_CHECKING:
@@ -207,12 +209,17 @@ def apply_esi_fleet_member(
         )
         for field, value in member_fields.items():
             setattr(existing, field, value)
+        # Seen again after a poll missed them: a rejoin.
+        existing.left_at = None
+        existing.last_seen_at = timezone.now()
         existing.save()
+        _track_mining_stint(fleet_instance, existing)
         return existing
 
     member = member_model.objects.create(
         eve_fleet_instance=fleet_instance,
         character_id=character_id,
+        last_seen_at=timezone.now(),
         **member_fields,
     )
     record_initial_ship_snapshot(
@@ -222,4 +229,43 @@ def apply_esi_fleet_member(
         solar_system_id=solar_system_id,
         solar_system_name=solar_system_name,
     )
+    _track_mining_stint(fleet_instance, member)
     return member
+
+
+def _track_mining_stint(
+    fleet_instance: EveFleetInstance, member: EveFleetInstanceMember
+) -> None:
+    """A member in a mining fleet has a stint open while they are in it."""
+    if not fleet_instance.eve_fleet.track_mining:
+        return
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.mining import has_open_segment, open_segment
+
+    if not has_open_segment(member):
+        open_segment(member)
+
+
+def mark_members_left(
+    fleet_instance: EveFleetInstance, present_character_ids: set[int]
+) -> int:
+    """Members the latest poll no longer lists have left; returns how many."""
+    member_model, _ = _fleet_models()
+    gone = list(
+        member_model.objects.filter(
+            eve_fleet_instance=fleet_instance, left_at__isnull=True
+        ).exclude(character_id__in=present_character_ids)
+    )
+    if not gone:
+        return 0
+    now = timezone.now()
+    member_model.objects.filter(pk__in=[m.pk for m in gone]).update(
+        left_at=now
+    )
+    if fleet_instance.eve_fleet.track_mining:
+        # pylint: disable=import-outside-toplevel
+        from fleets.helpers.mining import close_member_segments
+
+        for member in gone:
+            close_member_segments(member, now)
+    return len(gone)
