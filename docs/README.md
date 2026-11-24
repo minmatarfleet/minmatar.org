@@ -65,6 +65,14 @@ Other entry points: the [root README](../README.md) (local setup, quickstart), [
 | [auth/discord-groups-verification.md](auth/discord-groups-verification.md) | current | Live Discord sync verification playbook |
 | [auth/agent-discord-access.md](auth/agent-discord-access.md) | current | Claude reading and posting in Discord through the backend's MCP endpoint: keys, tools, post targets, audit |
 
+## Operations
+
+| Document | Status | About |
+| --- | --- | --- |
+| [operations/backups.md](operations/backups.md) | current | Database backups and point-in-time recovery: what is protected, how it works, monitoring, limits, who holds the keys |
+| [operations/restore-runbook.md](operations/restore-runbook.md) | current | Step-by-step restore to an isolated instance, the dropped-table variant, Plane Postgres, validation checklist |
+| [operations/restore-drill.md](operations/restore-drill.md) | current | The monthly restore drill checklist |
+
 ## Desktop app
 
 | Document | Status | About |

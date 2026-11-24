@@ -1,0 +1,28 @@
+# Example backup job configuration. Placeholder values only.
+#
+# Copy to the server's backup config directory (<BACKUP_CONFIG_DIR>), fill in
+# the real values there, and restrict it to the user that runs the job.
+# Never commit a filled-in copy: infra/backup/config is gitignored.
+
+# Offsite object storage (S3-compatible, object lock enabled on the bucket).
+BUCKET=<bucket>
+ENDPOINT=<object-storage-endpoint>
+# Write-only upload credential. The read/restore credential is never on the server.
+UPLOAD_KEY_ID=<upload-key-id>
+UPLOAD_KEY=<upload-key>
+
+# age public key that backups are encrypted to. The private key stays offline.
+AGE_RECIPIENT=<age-public-key>
+
+# Local working area for dumps and binary-log staging.
+WORK_DIR=<BACKUP_WORK_DIR>
+
+# Scheduled-job monitoring (error-monitoring service check-ins).
+SENTRY_CRON_BASE=<sentry-cron-url>
+SENTRY_KEY=<sentry-key>
+MONITOR_NIGHTLY=<nightly-backup-monitor-slug>
+MONITOR_BINLOG=<binlog-shipping-monitor-slug>
+MONITOR_DISK=<disk-usage-monitor-slug>
+
+# Disk usage that triggers an alert, as a percentage. Example value only.
+DISK_ALERT_PERCENT=<disk-alert-percent>

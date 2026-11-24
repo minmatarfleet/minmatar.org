@@ -199,3 +199,11 @@ sde/*.zip
 # go to private GitHub security advisories, never the repo (docs/research/README.md).
 docs/research/*bug-crawl*
 docs/research/*security*
+
+# Backup job: the real config and environment files live only on the server.
+infra/backup/config
+*.env
+# Tracked templates with dummy values only.
+!backend/standalone.env
+!frontend/standalone.env
+!frontend/app/rust/display.env
