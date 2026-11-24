@@ -264,7 +264,9 @@ def apply_report(structure: EveStructure, details: ReportDetails, user):
     """
     Update a row from a report. On an ESI row a report only fills what ESI
     leaves empty (fitting, reinforcement hour) and never
-    touches ESI-owned fields. It never changes visibility or source.
+    touches ESI-owned fields, type included. On a reported row it
+    replaces the type and whatever else the report gives. It never
+    changes visibility or source.
     """
     now = timezone.now()
     if structure.source == EveStructure.SOURCE_ESI:
@@ -276,6 +278,11 @@ def apply_report(structure: EveStructure, details: ReportDetails, user):
         ):
             structure.reinforce_hour = details.reinforce_hour
     else:
+        # A reported row's type is only ever what a pilot said, so the
+        # latest report corrects it (a Metenox filed as the default Astrahus).
+        if details.type_id in REPORTABLE_TYPES:
+            structure.type_id = details.type_id
+            structure.type_name = REPORTABLE_TYPES[details.type_id]
         if details.name:
             structure.name = details.name
         if details.corporation_name:

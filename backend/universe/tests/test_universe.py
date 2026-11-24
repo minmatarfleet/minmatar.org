@@ -541,6 +541,31 @@ class ReportRulesTests(UniverseFixture):
         self.assertEqual(alliance_row.name, "Amamake - alliance")
         self.assertEqual(alliance_row.reinforce_hour, 19)
 
+    def test_report_corrects_reported_row_type(self):
+        record_report(
+            self.pilots["member"],
+            ReportDetails(
+                system_name="TU-O0T", type_id=81826, name="Cerulean Cave"
+            ),
+            self.reported,
+            visible_structures(self.pilots["member"]),
+        )
+        self.reported.refresh_from_db()
+        self.assertEqual(self.reported.type_id, 81826)
+        self.assertEqual(self.reported.type_name, "Metenox Moon Drill")
+
+    def test_report_never_changes_esi_type(self):
+        alliance_row = self.structures["alliance"]
+        type_id = alliance_row.type_id
+        record_report(
+            self.pilots["member"],
+            ReportDetails(system_name="Amamake", type_id=81826),
+            alliance_row,
+            visible_structures(self.pilots["member"]),
+        )
+        alliance_row.refresh_from_db()
+        self.assertEqual(alliance_row.type_id, type_id)
+
     def test_ambiguous_hidden_match_is_flagged(self):
         for index in (7, 8):
             EveStructure.objects.create(

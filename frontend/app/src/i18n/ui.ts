@@ -72,6 +72,8 @@ export const ui = {
         'universe.report.skipped': "Skipped",
         'universe.report.system': "System",
         'universe.report.type': "Type",
+        'universe.report.pick_type': "Pick the structure type",
+        'universe.report.no_type': "Pick the structure type first. A Metenox Moon Drill is not an Astrahus.",
         'universe.report.name': "Name, as it shows in space",
         'universe.report.selected_item': "Selected Item, pasted from the client",
         'universe.report.selected_item_placeholder': "Kamela - Knock Knock\n3.1 AU",
