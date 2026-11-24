@@ -10,11 +10,11 @@ It compares the working tree (committed, uncommitted and untracked files) with `
 | --- | --- | --- |
 | `agent-config` | `.claude/` or `.cursor/` changed | `scripts/sync_agent_config.py --check` |
 | `backend-lint` | a backend `.py` file changed | black, flake8 and pylint on the changed files (CI lints all of `backend/`) |
-| `backend-tests` | anything under `backend/` changed | the whole suite (`--parallel auto --keepdb`, migration tests excluded), then `--tag migration` when a migration changed |
+| `backend-tests` | anything under `backend/` changed | the tests of the apps the diff changes, the apps that import a changed module, and `app.tests` (`--parallel auto`, migration tests excluded); the whole suite for a change outside an app (settings, Pipfile, test runner) or with `--full-backend`; then `--tag migration` when a migration changed. GitHub CI always runs the whole suite. |
 | `backend-tests` (`app.tests` only) | docs, READMEs, agent config, `scripts/`, `.github/`, desktop contract files or `openapi.json` changed | the repo-wide tests in `backend/app/tests/` (docs, PR checklist, schema) |
 | `bot` | `bot/` changed | flake8 and the bot's unittest suite |
 | `voice` | `voice/` changed | flake8 and the voice service's unittest suite (the real-Murmur lab runs in CI only) |
-| `frontend-tests`, `frontend-types` | `frontend/app/` changed | `npm run test -- --run` and `npm run check` |
+| `frontend-tests`, `frontend-types` | `frontend/app/` changed | `npm run test -- --run` and `npm run check`; the type check is skipped when the changes are only Markdown, `public/` files or translation edits that remove no key |
 | `desktop` | `desktop/` changed | `npm test` and the version check |
 | `rust-browser` | only with `--rust` | builds Rust and plays every story in Chromium |
 
@@ -28,7 +28,7 @@ python3 scripts/ci_local.py --list
 
 `--all` runs every check, `--only backend-lint,frontend-types` picks some, and `--no-cache` ignores earlier passes. Checks run side by side. A passing check is remembered for that exact tree, so running it again on the same files is instant. The pass record and each check's full log are kept in the git directory, under ci_local/ (the worktree's own git directory in a worktree). A missing virtualenv (`pipenv sync --dev`) or `node_modules` (`npm ci`) is installed on first use. Hooks run without your login shell, so when the `node` on PATH is older than CI's Node 22, the checks use one from nvm (`~/.nvm/versions/node/`) instead.
 
-A warm backend run takes under a minute; the first run in a new worktree migrates the test database (`backend/.test-db/`) and takes about three.
+Backend tests never run on the cached database itself. `backend/ci_test_db.py migrate` keeps `backend/.test-db/template.sqlite3` migrated and nothing else, and each run copies it to `.test-db/run/` first, so rows a run leaves behind (a `TransactionTestCase` flush, a crashed worker, the migration tests) can't fail the next one. A warm run takes seconds to under a minute (the whole suite is about 40 seconds); the first run in a new worktree builds the template and takes about three.
 
 ## The hooks
 

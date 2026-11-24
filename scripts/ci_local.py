@@ -7,12 +7,18 @@ uncommitted and untracked files) and runs only the checks those files
 trigger, the same commands CI runs:
 
 - backend-lint: black, flake8 and pylint on the changed backend files.
-- backend-tests: the backend suite, plus the migration tests when a
+- backend-tests: the tests of the backend apps the diff changes, the apps
+  that import them, and `app.tests` (the whole suite for a change outside
+  an app, or with --full-backend / --all), plus the migration tests when a
   migration changed. A change outside `backend/` that backend tests read
   (docs, agent rules, the PR template, contract files) runs `app.tests`.
+  Tests run on a fresh copy of a migrated template DB that never holds
+  test data, so one run can't leave rows that break the next.
 - bot: flake8 and the bot's unittest suite.
 - voice: flake8 and the voice service's unittest suite (voice/).
 - frontend-tests and frontend-types: vitest and the astro check ratchet.
+  The type check is skipped when the website changes are only Markdown,
+  public/ files or translation edits that remove no key.
 - desktop: the desktop tests and the version check.
 - agent-config: `.cursor/` is generated from `.claude/`.
 - rust-browser (only with --rust): every story in Chromium.
@@ -25,6 +31,7 @@ so running it again on the same files is free.
     python3 scripts/ci_local.py --list      # what would run, and why
     python3 scripts/ci_local.py --all       # every check
     python3 scripts/ci_local.py --only backend-lint,frontend-types
+    python3 scripts/ci_local.py --full-backend  # every backend test
 
 The agent hooks (`scripts/agent_hooks.py`) run it before `git push` and
 `gh pr create`. Standard library only.
@@ -36,6 +43,7 @@ import argparse
 import fnmatch
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -46,7 +54,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-TEST_DB = ".test-db/test_db.sqlite3"
+# Migrated by ci_test_db.py and never tested on; each run gets a copy.
+TEMPLATE_DB = ".test-db/template.sqlite3"
+TEST_DB = ".test-db/run/test_db.sqlite3"
 EXCERPT_LINES = 80
 
 # Changes outside backend/ that backend tests read: docs (test_docs), the PR
@@ -63,6 +73,19 @@ BACKEND_READS = (
     "frontend/app/src/types/generated/openapi.json",
     "frontend/app/src/json/feature_gates.json",
 )
+
+
+# Backend paths that aren't one app's: a change here runs the whole suite.
+BACKEND_SHARED = ("app", "fixtures", "templates", "sql", "scripts")
+# Website changes the astro type check can't fail on.
+FRONTEND_TEXT = (
+    "frontend/app/*.md",
+    "frontend/app/**/*.md",
+    "frontend/app/**/*.mdx",
+    "frontend/app/public/*",
+)
+I18N = "frontend/app/src/i18n/*.ts"
+TRANSLATION_KEY = re.compile(r"^\s*['\"]([^'\"]+)['\"]\s*:")
 
 
 def _git(*args: str, cwd: Path = ROOT, env: dict | None = None) -> str:
@@ -189,6 +212,12 @@ class Check:
     before: object = None  # callable run before the steps
     after: object = None  # callable run after the steps, pass or fail
     excerpt: object = None  # callable(output) -> excerpt
+    # Name in the pass cache; a partial run must not count as a full one.
+    key: str = ""
+
+    @property
+    def cache_key(self) -> str:
+        return self.key or self.name
 
 
 def django_excerpt(output: str) -> str:
@@ -238,15 +267,225 @@ def _backend_python_files(changed: list[str]) -> list[str]:
     return files
 
 
+def _backend_apps(backend: Path) -> set[str]:
+    return {
+        p.name
+        for p in backend.iterdir()
+        if (p / "__init__.py").exists() and p.name not in BACKEND_SHARED
+    }
+
+
+FROM_IMPORT = re.compile(r"^\s*from\s+([\w.]+)\s+import\s+\(?([\w\s,]+)", re.M)
+PLAIN_IMPORT = re.compile(r"^\s*import\s+([\w.]+)", re.M)
+
+
+def _module_of(backend: Path, path: str) -> str | None:
+    """`eveonline.scopes` for backend/eveonline/scopes.py; None if not .py."""
+    if not path.endswith(".py"):
+        return None
+    parts = path[len("backend/") : -len(".py")].split("/")
+    if parts[-1] == "__init__":
+        parts = parts[:-1]
+    return ".".join(parts)
+
+
+def _is_module(backend: Path, dotted: str) -> bool:
+    base = backend.joinpath(*dotted.split("."))
+    return base.with_suffix(".py").exists() or (base / "__init__.py").exists()
+
+
+def _imports(backend: Path, text: str) -> set[str]:
+    """The modules a file imports, as precisely as the import names them.
+
+    `from eveonline import scopes` is `eveonline.scopes`, not all of
+    `eveonline`; `from eveonline.scopes import TokenType` is
+    `eveonline.scopes`.
+    """
+    found = set(PLAIN_IMPORT.findall(text))
+    for module, names in FROM_IMPORT.findall(text):
+        subs = [
+            f"{module}.{n}"
+            for n in re.findall(r"\w+", names)
+            if _is_module(backend, f"{module}.{n}")
+        ]
+        found.update(subs or [module])
+    return found
+
+
+def _importers(backend: Path, apps: set[str], modules: set[str]) -> set[str]:
+    """The apps with a module importing one of modules, or its package."""
+
+    def reaches(imported: str) -> bool:
+        return any(
+            imported == m
+            or imported.startswith(m + ".")
+            or m.startswith(imported + ".")
+            for m in modules
+        )
+
+    found = set()
+    for app in apps:
+        for file in (backend / app).rglob("*.py"):
+            if "migrations" in file.parts:
+                continue
+            text = file.read_text(encoding="utf-8", errors="replace")
+            if any(reaches(i) for i in _imports(backend, text)):
+                found.add(app)
+                break
+    return found
+
+
+def affected_backend_apps(
+    changed: list[str], backend: Path | None = None
+) -> list[str] | None:
+    """Test labels for a backend change, or None for the whole suite.
+
+    The apps the diff changes, the apps with a module importing a changed
+    module (or a package holding one), and `app` (the repo-wide tests:
+    docs, schema, hooks). A file outside an app (settings, Pipfile, the
+    test runner, fixtures) can reach anything, so it runs everything, and
+    so does a selection that is most of the suite anyway. GitHub CI still
+    runs the whole suite on the pull request.
+    """
+    backend = backend or ROOT / "backend"
+    apps = _backend_apps(backend)
+    touched: set[str] = set()
+    modules: set[str] = set()
+    for path in changed:
+        if not path.startswith("backend/"):
+            continue
+        parts = path.split("/")
+        if len(parts) < 3 or parts[1] not in apps:
+            return None
+        touched.add(parts[1])
+        module = _module_of(backend, path)
+        if module and "migrations" not in parts:
+            modules.add(module)
+    if not touched:
+        return None
+
+    labels = touched | _importers(backend, apps - touched, modules)
+    if len(labels) >= 0.75 * len(apps):
+        return None
+    return sorted(labels | {"app"})
+
+
+def removed_translation_keys(paths: list[str], base: str) -> list[str]:
+    """Translation keys the diff deletes from the i18n files."""
+    try:
+        start = _git("merge-base", base, "HEAD").strip()
+        diff = _git("diff", "-U0", start, "--", *paths)
+    except subprocess.CalledProcessError:
+        return ["(could not diff)"]
+    removed, added = set(), set()
+    for line in diff.splitlines():
+        if line.startswith(("---", "+++")):
+            continue
+        match = TRANSLATION_KEY.match(line[1:]) if line[:1] in "+-" else None
+        if match:
+            (removed if line[0] == "-" else added).add(match.group(1))
+    return sorted(removed - added)
+
+
+def frontend_types_needed(frontend: list[str], base: str) -> bool:
+    """False when no website change can fail the astro type check."""
+    if not frontend:
+        return False
+    i18n = [p for p in frontend if fnmatch.fnmatch(p, I18N)]
+    other = [p for p in frontend if p not in i18n]
+    if any(not _matches(p, FRONTEND_TEXT) for p in other):
+        return True
+    # t() takes a typed key, so deleting one can break a page.
+    return bool(i18n) and bool(removed_translation_keys(i18n, base))
+
+
 def _clear_worker_dbs() -> None:
-    # --keepdb reuses test_db_<n>.sqlite3 clones left by the last run, rows
-    # and all; only the migrated test_db.sqlite3 is worth keeping.
-    for clone in (ROOT / "backend" / ".test-db").glob("test_db_*.sqlite3"):
-        clone.unlink()
+    """Start the run on a fresh copy of the template, with no clones.
+
+    --keepdb reuses whatever the last run left (rows, half-applied
+    TransactionTestCase flushes, test_db_<n> clones), which is how one run
+    broke the next with IntegrityErrors in unrelated tests. The template is
+    only ever migrated (ci_test_db.py migrate), never tested on.
+    """
+    test_db = ROOT / "backend" / ".test-db"
+    shutil.rmtree(test_db / "run", ignore_errors=True)
+    # The pre-template cache, tested on directly; never trust it again.
+    for old in test_db.glob("test_db*.sqlite3*"):
+        old.unlink()
+
+
+def _backend_tests(
+    py: str,
+    backend: list[str],
+    reads: list[str],
+    migrations: list[str],
+    full: bool,
+    run_all: bool,
+) -> Check | None:
+    """backend-tests: the affected apps (or everything) on a fresh DB."""
+    test_env = {"TEST_DB_NAME": TEST_DB, "SETUP_TEST_DATA": ""}
+    manage = [py, "manage.py", "test", "--settings=app.settings_test"]
+    keep = ["--keepdb", "--noinput"]
+    fresh_db = [
+        ["mkdir", "-p", ".test-db/run"],
+        [py, "ci_test_db.py", "check", TEMPLATE_DB],
+        [py, "ci_test_db.py", "migrate", TEMPLATE_DB],
+        [py, "ci_test_db.py", "record", TEMPLATE_DB],
+        ["cp", TEMPLATE_DB, TEST_DB],
+    ]
+    if backend or run_all:
+        labels = None if full else affected_backend_apps(backend)
+        steps = [
+            *fresh_db,
+            [
+                *manage,
+                "--parallel",
+                "auto",
+                *keep,
+                "--exclude-tag",
+                "migration",
+                *(labels or []),
+            ],
+        ]
+        if labels:
+            why = f"{len(backend)} backend files: {', '.join(labels)}"
+        else:
+            why = f"{len(backend)} backend files, whole suite"
+        if migrations or run_all:
+            steps.append([*manage, *keep, "--tag", "migration"])
+            why += f", {len(migrations)} migrations"
+        return Check(
+            "backend-tests",
+            "backend",
+            steps,
+            why,
+            env=test_env,
+            before=_clear_worker_dbs,
+            excerpt=django_excerpt,
+            key="backend-tests:" + ",".join(labels) if labels else "",
+        )
+    if reads:
+        return Check(
+            "backend-tests",
+            "backend",
+            [*fresh_db, [*manage, *keep, "app.tests"]],
+            f"app.tests: {len(reads)} files backend tests read",
+            env=test_env,
+            before=_clear_worker_dbs,
+            excerpt=django_excerpt,
+            key="backend-tests:app.tests",
+        )
+
+    return None
 
 
 def plan(
-    changed: list[str], run_all: bool, rust: bool, venvs: dict
+    changed: list[str],
+    run_all: bool,
+    rust: bool,
+    venvs: dict,
+    full_backend: bool = False,
+    base: str = "origin/main",
 ) -> list[Check]:
     checks: list[Check] = []
     backend = [p for p in changed if p.startswith("backend/")]
@@ -289,54 +528,11 @@ def plan(
             )
         )
 
-    test_env = {"TEST_DB_NAME": TEST_DB, "SETUP_TEST_DATA": ""}
-    manage = [py, "manage.py", "test", "--settings=app.settings_test"]
-    keep = ["--keepdb", "--noinput"]
-    if backend or run_all:
-        steps = [
-            ["mkdir", "-p", ".test-db"],
-            [py, "ci_test_db.py", "check", TEST_DB],
-            [
-                *manage,
-                "--parallel",
-                "auto",
-                *keep,
-                "--exclude-tag",
-                "migration",
-            ],
-        ]
-        why = f"{len(backend)} backend files"
-        if migrations or run_all:
-            steps.append([*manage, *keep, "--tag", "migration"])
-            why += f", {len(migrations)} migrations"
-        checks.append(
-            Check(
-                "backend-tests",
-                "backend",
-                steps,
-                why,
-                env=test_env,
-                before=_clear_worker_dbs,
-                after=lambda: subprocess.run(
-                    [py, "ci_test_db.py", "record", TEST_DB],
-                    cwd=ROOT / "backend",
-                    capture_output=True,
-                ),
-                excerpt=django_excerpt,
-            )
-        )
-    elif reads:
-        checks.append(
-            Check(
-                "backend-tests",
-                "backend",
-                [["mkdir", "-p", ".test-db"], [*manage, *keep, "app.tests"]],
-                f"app.tests: {len(reads)} files backend tests read",
-                env=test_env,
-                before=_clear_worker_dbs,
-                excerpt=django_excerpt,
-            )
-        )
+    tests = _backend_tests(
+        py, backend, reads, migrations, run_all or full_backend, run_all
+    )
+    if tests:
+        checks.append(tests)
 
     if bot or run_all:
         bot_bin = venvs.get("bot")
@@ -390,13 +586,14 @@ def plan(
                 why,
             )
         )
-        # Shares node_modules with frontend-tests, so it installs nothing.
-        checks.append(
-            Check("frontend-types", app, [["npm", "run", "check"]], why)
-        )
-        if install:
-            # Run after the install above, not beside it.
-            checks[-1].before = "frontend-tests"
+        if run_all or frontend_types_needed(frontend, base):
+            # Shares node_modules with frontend-tests: installs nothing.
+            checks.append(
+                Check("frontend-types", app, [["npm", "run", "check"]], why)
+            )
+            if install:
+                # Run after the install above, not beside it.
+                checks[-1].before = "frontend-tests"
         if rust:
             checks.append(
                 Check(
@@ -557,6 +754,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--list", action="store_true", help="plan only")
     parser.add_argument("--rust", action="store_true", help="add Rust stories")
     parser.add_argument("--no-cache", action="store_true")
+    parser.add_argument(
+        "--full-backend",
+        action="store_true",
+        help="every backend test, not only the affected apps'",
+    )
     args = parser.parse_args(argv)
 
     changed = changed_files(args.base)
@@ -569,7 +771,9 @@ def main(argv: list[str] | None = None) -> int:
             venvs["backend"] = pipenv_bin("backend")
         if args.all or any(p.startswith("bot/") for p in changed):
             venvs["bot"] = pipenv_bin("bot")
-    checks = plan(changed, args.all, args.rust, venvs)
+    checks = plan(
+        changed, args.all, args.rust, venvs, args.full_backend, args.base
+    )
     if args.only:
         wanted = set(args.only.split(","))
         checks = [c for c in checks if c.name in wanted]
@@ -589,8 +793,10 @@ def main(argv: list[str] | None = None) -> int:
     tree = tree_hash()
     if not args.no_cache:
         passed = set(_load_cache().get(tree, []))
-        skipped = [c for c in checks if c.name in passed]
-        checks = [c for c in checks if c.name not in passed]
+        # A full pass covers a partial one, not the other way round.
+        done = [c for c in checks if passed & {c.name, c.cache_key}]
+        skipped = done
+        checks = [c for c in checks if c not in done]
         if not checks:
             names = ", ".join(c.name for c in skipped)
             print(f"ci_local: already passed on these files ({names}).")
@@ -598,7 +804,7 @@ def main(argv: list[str] | None = None) -> int:
 
     log_dir = _state_dir() / "logs"
     results = run(checks, log_dir)
-    _save_cache(tree, [r.check.name for r in results if r.ok])
+    _save_cache(tree, [r.check.cache_key for r in results if r.ok])
     failed = [r for r in results if not r.ok]
     header = "failed" if failed else "passed"
     print(f"ci_local: {header} ({len(changed)} changed files)")

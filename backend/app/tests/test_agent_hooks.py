@@ -262,6 +262,59 @@ class CiLocalPlanTest(unittest.TestCase):
     def test_unrelated_changes_run_nothing(self):
         self.assertEqual(self.names(["mobile/App.tsx"]), [])
 
+    def backend_step(self, changed, **kwargs):
+        checks = self.ci.plan(changed, False, False, {}, **kwargs)
+        (tests,) = [c for c in checks if c.name == "backend-tests"]
+        return tests, next(s for s in tests.steps if "--parallel" in s)
+
+    def test_an_app_change_tests_that_app_and_its_importers(self):
+        tests, step = self.backend_step(["backend/moons/models.py"])
+        self.assertIn("moons", step)
+        self.assertIn("app", step)
+        self.assertNotIn("fleets", step)
+        self.assertTrue(tests.cache_key.startswith("backend-tests:"))
+
+    def test_a_module_is_matched_not_its_whole_app(self):
+        apps = self.ci.affected_backend_apps(["backend/eveonline/scopes.py"])
+        self.assertIn("tribes", apps)  # tribes imports eveonline.scopes
+        self.assertNotIn("moons", apps)
+
+    def test_shared_files_and_the_flag_run_the_whole_suite(self):
+        for changed, kwargs in (
+            (["backend/app/settings_test.py"], {}),
+            (["backend/Pipfile.lock"], {}),
+            (["backend/moons/models.py"], {"full_backend": True}),
+        ):
+            tests, step = self.backend_step(changed, **kwargs)
+            self.assertEqual("--exclude-tag", step[-2])
+            self.assertEqual("backend-tests", tests.cache_key)
+
+    def test_tests_run_on_a_copy_of_the_template(self):
+        tests, _ = self.backend_step(["backend/moons/models.py"])
+        self.assertIn(
+            ["cp", self.ci.TEMPLATE_DB, self.ci.TEST_DB], tests.steps
+        )
+        self.assertEqual(self.ci.TEST_DB, tests.env["TEST_DB_NAME"])
+        self.assertNotEqual(self.ci.TEMPLATE_DB, self.ci.TEST_DB)
+
+    def test_text_only_website_changes_skip_the_type_check(self):
+        with mock.patch.object(
+            self.ci, "removed_translation_keys", return_value=[]
+        ):
+            self.assertEqual(
+                self.names(["frontend/app/src/i18n/ui.ts"]),
+                ["frontend-tests"],
+            )
+            self.assertNotIn(
+                "frontend-types", self.names(["frontend/app/README.md"])
+            )
+        with mock.patch.object(
+            self.ci, "removed_translation_keys", return_value=["gone"]
+        ):
+            self.assertIn(
+                "frontend-types", self.names(["frontend/app/src/i18n/ui.ts"])
+            )
+
 
 @unittest.skipUnless(HAS_REPO, "needs the full repository checkout")
 class CursorHooksTest(unittest.TestCase):

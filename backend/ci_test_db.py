@@ -10,6 +10,11 @@ the run migrates from scratch.
 
     python ci_test_db.py check .test-db/test_db.sqlite3
     python ci_test_db.py record .test-db/test_db.sqlite3
+    python ci_test_db.py migrate .test-db/template.sqlite3
+
+`migrate` creates the DB or applies the new migrations, and runs no tests:
+scripts/ci_local.py keeps a template that only ever gets migrations and
+runs each test run on a copy, so test data never reaches the cache.
 
 `record` writes `<db>.manifest.json`: a hash of every migration file that
 the DB has been migrated with. Run it after the tests, before saving the
@@ -18,6 +23,7 @@ cache. `check` runs after restoring it.
 
 import hashlib
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -79,15 +85,31 @@ def record(db: Path) -> None:
     )
 
 
+def migrate(db: Path) -> None:
+    """Create the test DB at db, or bring it up to date. No tests run."""
+    os.environ["DJANGO_SETTINGS_MODULE"] = "app.settings_test"
+    os.environ["TEST_DB_NAME"] = str(db)
+    os.environ.pop("SETUP_TEST_DATA", None)
+    # Django reads the settings module on import: after the environment.
+    import django  # pylint: disable=import-outside-toplevel
+    from django.db import (  # pylint: disable=import-outside-toplevel
+        connection,
+    )
+
+    django.setup()
+    connection.creation.create_test_db(
+        verbosity=0, autoclobber=True, serialize=False, keepdb=True
+    )
+
+
+COMMANDS = {"check": check, "record": record, "migrate": migrate}
+
+
 def main(argv: list[str]) -> int:
-    if len(argv) != 3 or argv[1] not in {"check", "record"}:
+    if len(argv) != 3 or argv[1] not in COMMANDS:
         print(__doc__)
         return 2
-    db = Path(argv[2])
-    if argv[1] == "check":
-        check(db)
-    else:
-        record(db)
+    COMMANDS[argv[1]](Path(argv[2]))
     return 0
 
 
