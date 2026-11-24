@@ -43,6 +43,13 @@ class AgentKey(models.Model):
             "key under Agent ESI characters."
         ),
     )
+    esi_all_characters = models.BooleanField(
+        default=False,
+        help_text=(
+            "With ESI access: may use every character with a stored ESI "
+            "token, not only the granted ones."
+        ),
+    )
     created_by = models.ForeignKey(
         User,
         null=True,

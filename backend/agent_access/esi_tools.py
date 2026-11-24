@@ -1,13 +1,14 @@
 """The ESI tools an agent may call, and the rules around them.
 
-The agent never holds a character's token. It names a character granted to
-its key (`AgentEsiCharacter`) and an ESI route, and the backend makes the
-call with that character's stored token:
+The agent never holds a character's token. It names a character its key may
+use (one granted to it in `AgentEsiCharacter`, or any character with a
+stored token for a key with `esi_all_characters`) and an ESI route, and the
+backend makes the call with that character's stored token:
 
 - GET only, plus the three read-only public POST lookups in `POST_ROUTES`.
   ESI's write routes (fittings, mail, fleet invites, contacts, waypoints)
   are out of reach.
-- A `/characters/{id}/` route must name the granted character itself.
+- A `/characters/{id}/` route must name the character the call runs as.
 - Routes containing a fragment in `AgentEsiSettings.blocked_paths` (mail by
   default) are refused.
 - Per-key call limits, the app-wide ESI error budget (`esi_budget`), one
@@ -43,7 +44,7 @@ ESI_INFO = {"name": "minmatar-esi", "version": "1.0.0"}
 ESI_INSTRUCTIONS = (
     "EVE Online ESI through Minmatar Fleet's application, for debugging, "
     "reporting and testing. list_characters shows the characters this key "
-    "may use and the scopes their tokens hold. esi_get calls one GET route "
+    "may use and the scopes their tokens hold; search it by name. esi_get calls one GET route "
     "(path without a version, e.g. /characters/{character_id}/assets/) with "
     "that character's token; omit character_id for public routes. One page "
     "per call: pass page and read pages in the reply. Data about pilots is "
@@ -54,6 +55,8 @@ MAX_PATH_LENGTH = 300
 MAX_QUERY_PARAMS = 20
 MAX_RESPONSE_BYTES = 256 * 1024
 MAX_POST_ITEMS = 1000
+DEFAULT_LIST_LIMIT = 50
+MAX_LIST_LIMIT = 200
 TIMEOUT_SECONDS = 10
 PATH_RE = re.compile(r"^/[A-Za-z0-9_\-/]*$")
 VERSION_RE = re.compile(r"^/(latest|legacy|dev|v\d+)(/|$)")
@@ -176,7 +179,9 @@ def check_character(ctx: Context, character_id) -> int | None:
     except (TypeError, ValueError) as e:
         raise ToolRefused("character_id must be a number") from e
     ctx.character_id = character_id
-    if not _active_grants(ctx.key).filter(character_id=character_id).exists():
+    if not may_use(ctx.key, character_id):
+        if ctx.key.esi_all_characters:
+            raise ToolRefused("No ESI token is stored for this character")
         raise ToolRefused(
             "This key has no grant for that character (see list_characters)"
         )
@@ -272,25 +277,72 @@ def _int(value):
 # --- tools -----------------------------------------------------------------
 
 
+def may_use(key: AgentKey, character_id: int) -> bool:
+    """A granted character, or for an all-characters key any character
+    with a stored token."""
+    if key.esi_all_characters:
+        return Token.objects.filter(character_id=character_id).exists()
+    return _active_grants(key).filter(character_id=character_id).exists()
+
+
+def _list_args(args: dict) -> tuple[str, int]:
+    search = args.get("search") or ""
+    if not isinstance(search, str) or len(search) > 100:
+        raise ToolRefused("search must be text of at most 100 characters")
+    limit = args.get("limit", DEFAULT_LIST_LIMIT)
+    if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
+        raise ToolRefused("limit must be a whole number from 1")
+    return search.strip(), min(limit, MAX_LIST_LIMIT)
+
+
 def list_characters(ctx: Context, args: dict) -> dict:
-    grants = list(_active_grants(ctx.key).order_by("created_at"))
-    ids = [g.character_id for g in grants]
-    characters = {
-        c.character_id: c
-        for c in EveCharacter.objects.filter(character_id__in=ids)
-    }
+    search, limit = _list_args(args)
+    grants = {}
+    if ctx.key.esi_all_characters:
+        token_ids = Token.objects.values("character_id")
+        characters = EveCharacter.objects.filter(character_id__in=token_ids)
+        if search:
+            characters = (
+                characters.filter(character_id=int(search))
+                if search.isdigit()
+                else characters.filter(character_name__icontains=search)
+            )
+        total = characters.count()
+        characters = list(characters.order_by("character_name")[:limit])
+        ids = [c.character_id for c in characters]
+    else:
+        rows = list(_active_grants(ctx.key).order_by("created_at"))
+        grants = {g.character_id: g for g in rows}
+        by_id = {
+            c.character_id: c
+            for c in EveCharacter.objects.filter(character_id__in=grants)
+        }
+        ids = [
+            g.character_id
+            for g in rows
+            if not search
+            or search == str(g.character_id)
+            or search.lower()
+            in (
+                getattr(by_id.get(g.character_id), "character_name", "") or ""
+            ).lower()
+        ]
+        total = len(ids)
+        ids = ids[:limit]
+        characters = [by_id.get(cid) for cid in ids]
+
     scopes: dict[int, set] = {cid: set() for cid in ids}
     for character_id, scope in Token.objects.filter(
         character_id__in=ids
     ).values_list("character_id", "scopes__name"):
         if scope:
             scopes[character_id].add(scope)
-    rows = []
-    for grant in grants:
-        character = characters.get(grant.character_id)
-        rows.append(
+    out = []
+    for character_id, character in zip(ids, characters):
+        grant = grants.get(character_id)
+        out.append(
             {
-                "character_id": grant.character_id,
+                "character_id": character_id,
                 "character_name": (
                     character.character_name if character else None
                 ),
@@ -301,14 +353,20 @@ def list_characters(ctx: Context, args: dict) -> dict:
                 "esi_suspended": (
                     character.esi_suspended if character else None
                 ),
-                "scopes": sorted(scopes[grant.character_id]),
-                "note": grant.note,
+                "scopes": sorted(scopes[character_id]),
+                "note": grant.note if grant else None,
                 "grant_expires_at": (
-                    grant.expires_at.isoformat() if grant.expires_at else None
+                    grant.expires_at.isoformat()
+                    if grant and grant.expires_at
+                    else None
                 ),
             }
         )
-    return {"characters": rows}
+    return {
+        "all_characters": ctx.key.esi_all_characters,
+        "total": total,
+        "characters": out,
+    }
 
 
 def esi_get(ctx: Context, args: dict) -> dict:
@@ -382,9 +440,22 @@ TOOLS = [
         name="list_characters",
         description=(
             "The characters this key may call ESI as, with the scopes their "
-            "stored tokens hold."
+            "stored tokens hold. For a key with every character, search by "
+            "name (or id) instead of listing them all; total is the number "
+            "that match."
         ),
-        properties={},
+        properties={
+            "search": {
+                "type": "string",
+                "description": "Part of a character name, or a character id.",
+            },
+            "limit": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": MAX_LIST_LIMIT,
+                "description": f"Default {DEFAULT_LIST_LIMIT}.",
+            },
+        },
         required=[],
         handler=list_characters,
     ),

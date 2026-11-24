@@ -21,6 +21,7 @@ class AgentKeyAdmin(admin.ModelAdmin):
         "key_prefix",
         "can_write",
         "can_use_esi",
+        "esi_all_characters",
         "active",
         "expires_at",
         "last_used_at",

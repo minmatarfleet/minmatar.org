@@ -1,10 +1,11 @@
 """Create, list and revoke agent keys.
 
-manage.py agent_key create "Claude cloud: Production" [--read-only] [--esi] [--days 180]
+manage.py agent_key create "Claude cloud: Production" [--read-only] [--esi | --esi-all] [--days 180]
 manage.py agent_key list
 manage.py agent_key revoke <key prefix>
 manage.py agent_key esi-grant <key prefix> <character id> [--note ...] [--days 30]
 manage.py agent_key esi-revoke <key prefix> <character id>
+manage.py agent_key esi-all <key prefix> [--off]
 """
 
 from datetime import timedelta
@@ -33,6 +34,11 @@ class Command(BaseCommand):
             help="May use the ESI endpoint (for characters granted to it).",
         )
         create.add_argument(
+            "--esi-all",
+            action="store_true",
+            help="May use the ESI endpoint as every character with a token.",
+        )
+        create.add_argument(
             "--days",
             type=int,
             default=None,
@@ -54,13 +60,21 @@ class Command(BaseCommand):
         ungrant = sub.add_parser("esi-revoke")
         ungrant.add_argument("prefix")
         ungrant.add_argument("character_id", type=int)
+        everyone = sub.add_parser("esi-all")
+        everyone.add_argument("prefix")
+        everyone.add_argument(
+            "--off",
+            action="store_true",
+            help="Back to granted characters only.",
+        )
 
     def handle(self, *args, **options):
         action = options["action"]
         if action == "create":
             fields = {
                 "can_write": not options["read_only"],
-                "can_use_esi": options["esi"],
+                "can_use_esi": options["esi"] or options["esi_all"],
+                "esi_all_characters": options["esi_all"],
             }
             if options["days"]:
                 fields["expires_at"] = timezone.now() + timedelta(
@@ -75,11 +89,25 @@ class Command(BaseCommand):
                 self.stdout.write(
                     f"{key.key_prefix}  {state:8}  "
                     f"{'rw' if key.can_write else 'ro'}  "
-                    f"{'esi' if key.can_use_esi else '-  '}  {key.name}  "
+                    f"{self._esi_label(key):7}  {key.name}  "
                     f"last used {key.last_used_at or 'never'}"
                 )
         elif action == "esi-grant":
             self._esi_grant(options)
+        elif action == "esi-all":
+            key = self._key(options["prefix"])
+            key.esi_all_characters = not options["off"]
+            if key.esi_all_characters:
+                key.can_use_esi = True
+            key.save(update_fields=["can_use_esi", "esi_all_characters"])
+            self.stdout.write(
+                f"{key} may use ESI as "
+                + (
+                    "every character with a token."
+                    if key.esi_all_characters
+                    else "its granted characters only."
+                )
+            )
         elif action == "esi-revoke":
             key = self._key(options["prefix"])
             count, _ = AgentEsiCharacter.objects.filter(
@@ -96,6 +124,12 @@ class Command(BaseCommand):
                 raise CommandError("No active key with that prefix")
             count = keys.update(revoked_at=timezone.now())
             self.stdout.write(f"Revoked {count} key(s).")
+
+    @staticmethod
+    def _esi_label(key: AgentKey) -> str:
+        if not key.can_use_esi:
+            return "-"
+        return "esi-all" if key.esi_all_characters else "esi"
 
     @staticmethod
     def _key(prefix: str) -> AgentKey:

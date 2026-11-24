@@ -132,6 +132,71 @@ class ListCharactersTests(EsiMcpTestCase):
         self.assertEqual(row["note"], "debugging")
 
 
+class AllCharactersTests(EsiMcpTestCase):
+    def setUp(self):
+        super().setUp()
+        AgentKey.objects.filter(pk=self.key.pk).update(esi_all_characters=True)
+        other = Token.objects.create(character_id=OTHER, character_name="Alt")
+        EveCharacter.objects.create(
+            character_id=OTHER, character_name="Alt", token=other
+        )
+        # A character with no stored token can't be used.
+        EveCharacter.objects.create(
+            character_id=2112345680, character_name="X"
+        )
+
+    def test_lists_characters_with_tokens(self):
+        out = self.call("list_characters")["structuredContent"]
+        self.assertTrue(out["all_characters"])
+        self.assertEqual(out["total"], 2)
+        self.assertEqual(
+            [c["character_name"] for c in out["characters"]], ["Alt", "Pilot"]
+        )
+
+    def test_search_and_limit(self):
+        out = self.call("list_characters", search="pil")["structuredContent"]
+        self.assertEqual(
+            [c["character_id"] for c in out["characters"]], [CHARACTER]
+        )
+        out = self.call("list_characters", search=str(OTHER))[
+            "structuredContent"
+        ]
+        self.assertEqual(
+            [c["character_id"] for c in out["characters"]], [OTHER]
+        )
+        out = self.call("list_characters", limit=1)["structuredContent"]
+        self.assertEqual((out["total"], len(out["characters"])), (2, 1))
+
+    def test_any_character_with_a_token_without_a_grant(self):
+        path = f"/characters/{OTHER}/wallet/"
+        self.esi.add("GET", path, make_response(body=12.5))
+        result = self.call("esi_get", path=path, character_id=OTHER)
+        self.assertFalse(result["isError"], result)
+        self.assertEqual(result["structuredContent"]["data"], 12.5)
+
+    def test_character_without_a_token_is_refused(self):
+        text = self.refused(
+            "esi_get",
+            path="/characters/2112345680/assets/",
+            character_id=2112345680,
+        )
+        self.assertIn("No ESI token", text)
+
+    def test_route_must_still_name_the_character(self):
+        self.refused(
+            "esi_get",
+            path=f"/characters/{OTHER}/wallet/",
+            character_id=CHARACTER,
+        )
+
+    def test_mail_is_still_blocked(self):
+        self.refused(
+            "esi_get",
+            path=f"/characters/{OTHER}/mail/",
+            character_id=OTHER,
+        )
+
+
 class EsiGetTests(EsiMcpTestCase):
     def test_calls_esi_with_the_characters_token(self):
         self.esi.add(
@@ -326,6 +391,17 @@ class CommandTests(TestCase):
             stdout=out,
         )
         self.assertFalse(AgentEsiCharacter.objects.exists())
+
+    def test_esi_all_on_and_off(self):
+        key, _ = create_key("cli")
+        call_command("agent_key", "esi-all", key.key_prefix, stdout=StringIO())
+        key.refresh_from_db()
+        self.assertTrue(key.can_use_esi and key.esi_all_characters)
+        call_command(
+            "agent_key", "esi-all", key.key_prefix, "--off", stdout=StringIO()
+        )
+        key.refresh_from_db()
+        self.assertFalse(key.esi_all_characters)
 
     def test_create_with_esi(self):
         call_command("agent_key", "create", "x", "--esi", stdout=StringIO())
