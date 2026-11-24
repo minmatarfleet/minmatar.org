@@ -104,10 +104,11 @@ it is the backend's agent endpoint (`docs/auth/agent-discord-access.md`),
 which reaches every server the bot is in, including archived threads.
 Posting works in every #help ticket thread (the threads under
 `DISCORD_HELP_CHANNEL_ID`) and in channels with a post target (`can_post`
-in `get_channel_info`); each `send_message` asks for approval.
+in `get_channel_info`); `send_message` runs without a permission prompt
+(`.claude/settings.json`), so read every reply for leaked identifiers before sending it.
 `close_help_ticket` `{ channel_id, reason }` closes a ticket the way its
 Close button does (notice in the thread, archive and lock, `HelpTicket`
-closed), and also asks for approval. Cursor
+closed), also without a prompt. Cursor
 still loads the older `mcps/run-discord-mcp.sh` jar as `discord-mcp`,
 with camelCase arguments (`channelId`). A thread can be archived mid-run
 when its ticket is closed; replying unarchives it unless it is locked.
