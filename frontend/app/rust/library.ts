@@ -18,7 +18,7 @@ export const RUST_LIBRARY = {
     'Components/Forms': [
         'blocks/Button', 'blocks/StylessButton', 'blocks/ButtonStack', 'blocks/ButtonConfirm', 'blocks/ClipboardButton',
         'blocks/Input', 'blocks/InputError', 'blocks/Select', 'blocks/Textarea',
-        'blocks/RadioCheckInput', 'blocks/Switch',
+        'blocks/RadioCheckInput', 'blocks/Switch', 'blocks/SaveBar',
         'blocks/FlatPicker', 'blocks/Kbd', 'blocks/Combobox',
     ],
     'Components/Feedback': [
@@ -30,11 +30,12 @@ export const RUST_LIBRARY = {
         'blocks/Badge', 'blocks/Tag', 'blocks/NotificationBadge',
         'blocks/DebugTag', 'blocks/ComponentBlock', 'blocks/ComponentBlockHeader', 'blocks/CollapsibleBlock',
         'blocks/CollapsableButton', 'blocks/StatCard', 'blocks/RowList', 'blocks/DataGrid', 'blocks/DataGridSkeleton', 'blocks/DataTable', 'blocks/Chart', 'blocks/Carousel', 'blocks/TextGroup',
-        'blocks/Square', 'blocks/Markdown', 'blocks/Marquee', 'blocks/SettingRow', 'blocks/NumberNameTooltip',
+        'blocks/Square', 'blocks/Markdown', 'blocks/Marquee', 'blocks/SettingRow', 'blocks/SettingsGroup', 'blocks/NumberNameTooltip',
         'blocks/Tile', 'blocks/OptionCard', 'blocks/PictureCard',
     ],
     'Components/Navigation': [
         'blocks/ActionMenu', 'blocks/ActionMenuItem', 'blocks/Dropdown', 'blocks/SectionTabs', 'blocks/SectionTabPanel',
+        'blocks/SettingsLayout',
         'blocks/HtmxPager', 'blocks/FilterChip', 'blocks/ChipGroup', 'blocks/ExternalLink',
     ],
     'Components/Overlays': [

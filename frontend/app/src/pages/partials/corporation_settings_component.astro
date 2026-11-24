@@ -42,8 +42,6 @@ const PROBLEMS_ID = 'corp-settings-markdown-problems'
 const SCHEDULE_ID = 'corp-settings-schedule-panel'
 const AUTOMATIC_ID = 'corp-settings-automatic-panel'
 const STATUS_ID = 'corp-settings-save-status'
-// Lives in the accordion header on the corporation page; refreshed out of band.
-const SUMMARY_ID = 'corporation-settings-reddit-summary'
 
 const { auth_token } = get_request_user(Astro)
 if (!auth_token) return HTTP_403_Forbidden()
@@ -156,13 +154,14 @@ const status_text = (() => {
     }
 })()
 ---
-{/* no-error-refetch: form partial: save and unlink failures render as flashes and the autosave status; a failed read is a 500 the accordion keeps its loader for. */}
-
-<span id={SUMMARY_ID} hx-swap-oob="true">{summary}</span>
+{/* no-error-refetch: form partial: save and unlink failures render as flashes and the autosave status; a failed read is a 500 the settings section keeps its loader for. */}
 
 <div id={ROOT_ID} class="[ corp-settings ]">
     <Flexblock gap="var(--space-l)">
-        <p class="[ corp-settings__leading ]">{t('corporations.settings.leading')}</p>
+        <FlexInline class="[ settings-head ]" justification="space-between" gap="var(--space-2xs) var(--space-s)">
+            <h2>{t('corporations.settings.reddit_section')}</h2>
+            <small class="[ settings-head__summary ]">{summary}</small>
+        </FlexInline>
 
         {flash &&
             <p
@@ -520,6 +519,10 @@ const status_text = (() => {
 </div>
 
 <style lang="scss">
+    .settings-head__summary {
+        color: var(--faded);
+    }
+
     .corp-settings {
         max-width: var(--max-text-width);
     }
@@ -534,10 +537,6 @@ const status_text = (() => {
 
     h3 {
         font-size: var(--step-0);
-    }
-
-    .corp-settings__leading {
-        color: var(--highlight);
     }
 
     .corp-settings__muted {

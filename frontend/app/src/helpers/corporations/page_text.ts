@@ -26,12 +26,3 @@ export function page_text_error_key(code: string): UiKey {
     if (code === 'too_long') return 'corporations.page_text.error_too_long'
     return 'corporations.settings.error_save'
 }
-
-/** The collapsed section's header: the headline, cut short, or a nudge. */
-export function page_text_summary(introduction: string, empty: string, max_length: number = 70): string {
-    const headline = introduction.trim()
-    if (!headline) return empty
-    return headline.length > max_length
-        ? `${headline.slice(0, max_length - 1).trimEnd()}…`
-        : headline
-}

@@ -9,6 +9,8 @@ interface Props {
     description?:   string;
     /** Id of the control, so clicking the title focuses or toggles it. */
     for?:           string;
+    /** For text fields: the title takes a fixed column and the control fills the rest. */
+    wide?:          boolean;
     [propName: string]: any;
 }
 
@@ -16,6 +18,7 @@ const {
     title,
     description,
     for: control_id,
+    wide = false,
     ...attributes
 } = Astro.props
 
@@ -24,7 +27,7 @@ delete attributes.class
 const Title = control_id ? 'label' : 'div'
 ---
 
-<div class:list={['[ setting-row ]', Astro.props.class]} {...attributes}>
+<div class:list={['[ setting-row ]', { 'setting-row--wide': wide }, Astro.props.class]} {...attributes}>
     <Title class="[ setting-row__text ]" for={control_id}>
         <strong>{title}</strong>
         {description && <small>{description}</small>}
@@ -54,6 +57,23 @@ const Title = control_id ? 'label' : 'div'
 
         small {
             color: var(--faded);
+        }
+    }
+
+    // Wide: a fixed title column, the control (input, textarea, chips) fills the rest.
+    .setting-row--wide {
+        align-items: flex-start;
+
+        // The title keeps ~12rem beside the control and takes the full width once they stack.
+        > .setting-row__text {
+            flex: 1 1 12rem;
+            padding-block-start: var(--space-2xs);
+        }
+
+        > .setting-row__control {
+            flex: 999 1 24rem;
+            min-width: 0;
+            flex-wrap: wrap;
         }
     }
 

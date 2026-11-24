@@ -1,0 +1,196 @@
+---
+/**
+ * The settings standard: a grouped list of sections on the left, one
+ * section on the right. Used by every settings surface (a corporation's,
+ * a campaign's, the mentor program) so they look and behave the same.
+ *
+ * - Each item is a real link (`href`, usually `?section=<id>`), so the
+ *   page also works without JavaScript and a section can be linked to.
+ * - An item with `url` loads that partial into the content area with htmx
+ *   and pushes `href` to the address bar. With no default slot, the active
+ *   item's `url` is loaded on page load.
+ * - `flag` is a short word for something that needs doing ("Not set",
+ *   "Draft"); `count` a number waiting (applications). Both draw the
+ *   site's attention chip. Leave them out when the section is fine.
+ * - A section partial starts with its `<h2>`, then `SettingsGroup`s of
+ *   `SettingRow`s; a form of text fields ends with a `SaveBar`.
+ *
+ *   <SettingsLayout id="corp-settings" aria_label={t('...')} active="page" groups={[
+ *       { label: t('...profile'), items: [{ id: 'page', label: t('...'), href: '?section=page', url: page_partial }] },
+ *   ]} />
+ */
+export interface SettingsNavItem {
+    id:         string;
+    label:      string;
+    href:       string;
+    /** Partial for the section's body, loaded into the content area. */
+    url?:       string;
+    /** Short word: something needs doing. */
+    flag?:      string;
+    /** Things waiting. Hidden at 0. */
+    count?:     number;
+}
+
+export interface SettingsNavGroup {
+    label?:     string;
+    items:      SettingsNavItem[];
+}
+
+interface Props {
+    /** Base id: the content area is `${id}-content`. */
+    id:         string;
+    groups:     SettingsNavGroup[];
+    active:     string;
+    aria_label: string;
+    [propName: string]: any;
+}
+
+const {
+    id,
+    groups,
+    active: requested_active,
+    aria_label,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import FixedFluid from '@components/compositions/FixedFluid.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
+
+const items = groups.flatMap((group) => group.items)
+const active = items.find((item) => item.id === requested_active) ?? items[0]
+const content_id = `${id}-content`
+---
+
+<FixedFluid
+    id={id}
+    width="15rem"
+    gap="var(--space-xl)"
+    class:list={['[ settings-layout ]', Astro.props.class]}
+    x-data={`{ active: ${JSON.stringify(active?.id ?? '')} }`}
+    {...attributes}
+>
+    <nav class="[ settings-layout__nav ]" aria-label={aria_label}>
+        {groups.map((group) =>
+            <div class="[ settings-layout__group ]">
+                {group.label && <p class="[ settings-layout__group-label ]">{group.label}</p>}
+                {group.items.map((item) =>
+                    <a
+                        href={item.href}
+                        class:list={['[ settings-layout__item ]', { 'is-active': item.id === active?.id }]}
+                        aria-current={item.id === active?.id ? 'page' : undefined}
+                        x-bind:class={`{ 'is-active': active === ${JSON.stringify(item.id)} }`}
+                        x-bind:aria-current={`active === ${JSON.stringify(item.id)} ? 'page' : null`}
+                        x-on:click={`active = ${JSON.stringify(item.id)}`}
+                        hx-get={item.url}
+                        hx-target={item.url ? `#${content_id}` : undefined}
+                        hx-swap={item.url ? 'innerHTML' : undefined}
+                        hx-push-url={item.url ? item.href : undefined}
+                        data-section={item.id}
+                    >
+                        <span>{item.label}</span>
+                        {item.count ?
+                            <span class="[ settings-layout__count ]">{item.count}</span> :
+                            item.flag && <span class="[ settings-layout__flag ]">{item.flag}</span>
+                        }
+                    </a>
+                )}
+            </div>
+        )}
+    </nav>
+
+    <div id={content_id} class="[ settings-layout__content ]">
+        <slot>
+            {active?.url &&
+                <LazyPartial url={active.url}>
+                    <p class="[ settings-layout__loading ]">{t('loading')}</p>
+                </LazyPartial>
+            }
+        </slot>
+    </div>
+</FixedFluid>
+
+<style lang="scss">
+    .settings-layout {
+        align-items: flex-start;
+        padding-block-start: var(--space-m);
+    }
+
+    .settings-layout__nav {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+    }
+
+    .settings-layout__group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .settings-layout__group-label {
+        padding-inline: var(--space-s);
+        padding-block-end: var(--space-3xs);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--faded);
+    }
+
+    .settings-layout__item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-2xs);
+        min-height: 2.75rem;
+        padding: var(--space-3xs) var(--space-s);
+        border-inline-start: 3px solid transparent;
+        color: var(--foreground);
+        text-decoration: none;
+        transition: background-color var(--fast-transition);
+
+        &:hover {
+            background-color: var(--border-color);
+        }
+
+        &.is-active {
+            color: var(--highlight);
+            background-color: var(--border-color);
+            border-inline-start-color: var(--fleet-red);
+        }
+    }
+
+    // The site's "something to do" mark, as on SectionTabs: a yellow chip.
+    .settings-layout__flag,
+    .settings-layout__count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding-inline: var(--space-3xs);
+        font-size: var(--step--2);
+        font-weight: 600;
+        white-space: nowrap;
+        color: var(--background);
+        background-color: var(--fleet-yellow);
+    }
+
+    .settings-layout__count {
+        min-width: 1.75em;
+        border-radius: 999px;
+    }
+
+    .settings-layout__content {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+        min-width: 0;
+    }
+
+    .settings-layout__loading {
+        color: var(--faded);
+    }
+</style>

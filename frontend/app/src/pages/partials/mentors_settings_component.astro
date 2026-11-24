@@ -44,13 +44,14 @@ import Button from '@components/blocks/Button.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import Input from '@components/blocks/Input.astro'
-import ManageField from '@components/blocks/manage/ManageField.astro'
-import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
+import SaveBar from '@components/blocks/SaveBar.astro'
+import SettingRow from '@components/blocks/SettingRow.astro'
+import SettingsGroup from '@components/blocks/SettingsGroup.astro'
+import Switch from '@components/blocks/Switch.astro'
 import Tag from '@components/blocks/Tag.astro'
 import MentorChips from '@components/blocks/mentors/MentorChips.astro'
 import MentorsNav from '@components/blocks/mentors/MentorsNav.astro'
 import MentorsNotice from '@components/blocks/mentors/MentorsNotice.astro'
-import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
 ---
 
 <div id="mentors-settings" class="[ mentors-page ]">
@@ -69,32 +70,37 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                         <EmptyState title={t('mentors.applied')} hint={t('mentors.applied_hint')} />
                     }
 
-                    <MentorsSection title={t('mentors.settings.when')} hint={t('mentors.settings.when_hint')}>
-                        <form
-                            class="[ mentors-form ]"
-                            hx-post={post_url('save_settings')}
-                            hx-target="#mentors-settings"
-                            hx-swap="outerHTML"
-                        >
-                            <MentorChips name="weekday_brackets" kind="brackets" selected={profile.weekday_brackets} legend={t('mentors.weekdays')} />
-                            <MentorChips name="weekend_brackets" kind="brackets" selected={profile.weekend_brackets} legend={t('mentors.weekends')} />
-                            <MentorChips name="days" kind="days" selected={profile.days} legend={t('mentors.request.days')} />
-                            <div class="[ manage-fields ]">
-                                <ManageField label={t('mentors.settings.per_week')} for="mentor-classes-per-week">
-                                    <Input id="mentor-classes-per-week" type="number" name="classes_per_week" min="1" max="10" value={profile.classes_per_week} required size="sm" width="8em" />
-                                </ManageField>
-                            </div>
-                            <div class="[ manage-field ]">
-                                <ManageSwitch name="taking_requests" label={t('mentors.settings.taking')} checked={profile.taking_requests} />
-                                <span class="[ manage-field__hint ]">{t('mentors.settings.taking_hint')}</span>
-                            </div>
-                            <div>
-                                <Button type="submit" size="sm">{t('mentors.settings.save')}</Button>
-                            </div>
-                        </form>
-                    </MentorsSection>
+                    <form
+                        class="[ mentors-form ]"
+                        hx-post={post_url('save_settings')}
+                        hx-target="#mentors-settings"
+                        hx-swap="outerHTML"
+                    >
+                        <SettingsGroup>
+                            <SettingRow title={t('mentors.settings.taking')} description={t('mentors.settings.taking_hint')} for="mentor-taking-requests">
+                                <Switch id="mentor-taking-requests" name="taking_requests" checked={profile.taking_requests} />
+                            </SettingRow>
+                        </SettingsGroup>
 
-                    <MentorsSection title={t('mentors.settings.teach')} hint={t('mentors.settings.teach_hint')}>
+                        <SettingsGroup title={t('mentors.settings.when')}>
+                            <SettingRow title={t('mentors.request.days')} wide={true}>
+                                <MentorChips name="days" kind="days" selected={profile.days} legend={t('mentors.request.days')} hide_legend={true} />
+                            </SettingRow>
+                            <SettingRow title={t('mentors.weekdays')} wide={true}>
+                                <MentorChips name="weekday_brackets" kind="brackets" selected={profile.weekday_brackets} legend={t('mentors.weekdays')} hide_legend={true} />
+                            </SettingRow>
+                            <SettingRow title={t('mentors.weekends')} wide={true}>
+                                <MentorChips name="weekend_brackets" kind="brackets" selected={profile.weekend_brackets} legend={t('mentors.weekends')} hide_legend={true} />
+                            </SettingRow>
+                            <SettingRow title={t('mentors.settings.per_week')} for="mentor-classes-per-week" wide={true}>
+                                <Input id="mentor-classes-per-week" type="number" name="classes_per_week" min="1" max="10" value={profile.classes_per_week} required size="sm" width="8em" />
+                            </SettingRow>
+                        </SettingsGroup>
+
+                        <SaveBar save_label={t('mentors.settings.save')} />
+                    </form>
+
+                    <SettingsGroup title={t('mentors.settings.teach')}>
                         {settings.teaching.length === 0 ?
                             <EmptyState title={t('mentors.settings.teach_empty')} />
                             :
@@ -122,10 +128,10 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                                 )}
                             </ul>
                         }
-                    </MentorsSection>
+                    </SettingsGroup>
 
                     {settings.invites.length > 0 &&
-                        <MentorsSection title={t('mentors.settings.invites')}>
+                        <SettingsGroup title={t('mentors.settings.invites')}>
                             <ul class="[ mentors-classes ]">
                                 {settings.invites.map(row =>
                                     <li>
@@ -156,11 +162,11 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                                     </li>
                                 )}
                             </ul>
-                        </MentorsSection>
+                        </SettingsGroup>
                     }
 
                     {settings.joinable.length > 0 &&
-                        <MentorsSection title={t('mentors.settings.join')}>
+                        <SettingsGroup title={t('mentors.settings.join')}>
                             <ul class="[ mentors-classes ]">
                                 {settings.joinable.map(mentor_class =>
                                     <li>
@@ -181,7 +187,7 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
                                     </li>
                                 )}
                             </ul>
-                        </MentorsSection>
+                        </SettingsGroup>
                     }
                 </>
             }
@@ -199,25 +205,28 @@ import MentorsSection from '@components/blocks/mentors/MentorsSection.astro'
     .mentors-form {
         display: flex;
         flex-direction: column;
-        gap: var(--space-m);
+        gap: var(--space-l);
     }
 
     .mentors-classes {
         display: flex;
         flex-direction: column;
-        gap: var(--space-2xs);
         margin: 0;
         padding: 0;
         list-style: none;
 
+        // Rows like SettingRow's: a rule between them, none above the first.
         li {
             display: flex;
             flex-wrap: wrap;
             align-items: center;
             gap: var(--space-xs);
-            padding: var(--space-xs) var(--space-s);
-            border: solid 1px var(--border-color);
-            background: var(--surface-sunken);
+            padding-block: var(--space-s);
+            border-block-start: 1px solid var(--border-color);
+
+            &:first-child {
+                border-block-start: 0;
+            }
         }
 
         a {

@@ -189,6 +189,14 @@ A toggle switch around a native `<input type="checkbox">`: the default slot is t
 - Slots: `default`
 - Stories (13): `frontend/app/rust/stories/components/forms/Switch.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-switch--docs: Default, Checked, Toggling, Clicking the label text, Disabled, Bound with x-model, Square, Square Checked, Square Toggling, Square Label Only, Square Description Only, Square Disabled, Square Attributes On Input Only
 
+### SaveBar
+
+The unsaved-changes bar of a settings form, as Discord and Shopify do it.
+
+- Import: `import SaveBar from '@components/blocks/SaveBar.astro'`
+- Props: `shown?: boolean = false`, `label?: string = t('settings.unsaved')`, `save_label?: string = t('save')`, `discard_label?: string = t('settings.discard')`, `save_attributes?: Record<string, any> = {}`, `discard_attributes?: Record<string, any> = {}`
+- Stories (6): `frontend/app/rust/stories/components/forms/SaveBar.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-forms-savebar--docs: Hidden until a field changes, Typing shows the bar, Discard resets the form, Instant switches leave it hidden, Custom labels, Save posts an op, Discard reloads
+
 ### FlatPicker
 
 A text input that Alpine turns into a flatpickr date or time picker.
@@ -463,9 +471,18 @@ A horizontally scrolling ticker with faded edges.
 One settings line: title and short description on the left, the control (button, switch or select) in the slot on the right.
 
 - Import: `import SettingRow from '@components/blocks/SettingRow.astro'`
-- Props: `title: string`, `description?: string`, `for?: string`
+- Props: `title: string`, `description?: string`, `for?: string`, `wide?: boolean = false`
 - Slots: `default`
-- Stories (5): `frontend/app/rust/stories/components/data-display/SettingRow.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-settingrow--docs: Default, Label for a control, Without description, Multiple controls, Long description wraps
+- Stories (6): `frontend/app/rust/stories/components/data-display/SettingRow.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-settingrow--docs: Default, Label for a control, Without description, Multiple controls, Long description wraps, Wide (text field)
+
+### SettingsGroup
+
+A titled panel of `SettingRow`s inside a settings section (`SettingsLayout`).
+
+- Import: `import SettingsGroup from '@components/blocks/SettingsGroup.astro'`
+- Props: `title?: string = {t('...visibility')}>`, `tone?: 'default' | 'danger' = "danger"` is the red-bordered panel at the`
+- Slots: `default`
+- Stories (3): `frontend/app/rust/stories/components/data-display/SettingsGroup.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-data-display-settingsgroup--docs: Default, Without a title, Danger zone
 
 ### NumberNameTooltip
 
@@ -548,6 +565,15 @@ The content region of one `SectionTabs` tab.
 - Props: `id: string`, `id_prefix: string`, `is_default?: boolean = false`
 - Slots: `default`
 - Stories (5): `frontend/app/rust/stories/components/navigation/SectionTabPanel.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-sectiontabpanel--docs: Default, Hidden when another tab is active, Shown when its tab becomes active, Rich Content, With Interactive Content
+
+### SettingsLayout
+
+The settings standard: a grouped list of sections on the left and one section on the right, as GitHub, Discord and Linear do it.
+
+- Import: `import SettingsLayout from '@components/blocks/SettingsLayout.astro'`
+- Props: `id: string = "corp-settings" aria_label={t('...')} active="page" groups={[`, `groups: SettingsNavGroup[] = {[`, `active: string = "page" groups={[`, `aria_label: string = {t('...')} active="page" groups={[`
+- Slots: `default`
+- Stories (6): `frontend/app/rust/stories/components/navigation/SettingsLayout.stories.ts`, https://my.minmatar.org/rust/?path=/docs/components-navigation-settingslayout--docs: Default, Flags mark what needs doing, Counts of things waiting, Unknown active section falls back to the first, Clicking a section loads it, Plain links (no partials)
 
 ### HtmxPager
 

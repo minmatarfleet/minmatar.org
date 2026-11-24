@@ -1,23 +1,20 @@
 ---
 /**
- * The campaign page's Settings tab (managers only): one SettingsSection per
- * group, each with a live summary of its current value. The summaries come
- * from the campaign the page already loaded; each body loads its own part
- * of `campaign_settings_component` when the section opens.
+ * The campaign page's Settings tab (managers only), on the settings
+ * standard (SettingsLayout): the sections grouped on the left, one part of
+ * `campaign_settings_component` on the right. `?section=<part>` opens a
+ * part; the list flags parts that need doing from the campaign the page
+ * already loaded.
  */
 import { i18n } from '@helpers/i18n'
-const { t, lang, translatePath } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import type { CampaignDetail, CampaignWeek } from '@dtypes/api.minmatar.org'
-import type { CampaignChoices } from '@helpers/api.minmatar.org/campaigns'
 import { query_string } from '@helpers/string'
-import { choice_label, systems_summary, sides_summary, eve_weekday_date } from '@helpers/campaign_manage'
-import { CAMPAIGN_FEATURES, features_on } from '@helpers/campaign_features'
 
 interface Props {
     campaign:               CampaignDetail;
     week:                   CampaignWeek | null;
-    choices:                CampaignChoices | null;
     has_structures_tab:     boolean;
     can_coordinate?:        boolean;
     [propName: string]: any;
@@ -26,7 +23,6 @@ interface Props {
 const {
     campaign,
     week,
-    choices,
     has_structures_tab,
     can_coordinate = false,
     ...attributes
@@ -40,88 +36,63 @@ const part_url = (part: string) => translatePath(`/partials/campaign_settings_co
     ...(has_structures_tab ? { tab: '1' } : {}),
 })}`)
 
-const none_yet = t('campaigns.manage.none_yet')
-const basics = [
-    campaign.tagline && `"${campaign.tagline}"`,
-    choice_label(choices?.status, campaign.status),
-    t('campaigns.manage.ends_on').replace('~DATE', eve_weekday_date(lang, campaign.end_at)),
-].filter(Boolean).join(' · ')
-
-const targets = week?.targets ?? []
-const proposed = targets.filter((row) => row.proposed).length
-const targets_summary = targets.length === 0
-    ? t('campaigns.manage.targets_none')
-    : [
-        targets.length === 1 ? t('campaigns.manage.targets_count_one') : t('campaigns.manage.targets_count').replace('~COUNT', String(targets.length)),
-        proposed > 0 ? t('campaigns.manage.targets_proposed').replace('~COUNT', String(proposed)) : '',
-    ].filter(Boolean).join(' · ')
-
-const order_summary = campaign.commander_order_text
-    ? `${campaign.commander_order_text}${campaign.commander_order_is_draft ? ` ${t('campaigns.manage.order_draft_suffix')}` : ''}`
-    : t('campaigns.manage.order_none')
-
-const structures = campaign.structures ?? []
-const structures_summary = structures.length === 0
-    ? (has_structures_tab ? `${none_yet} · ${t('campaigns.manage.structures_hint')}` : none_yet)
-    : structures.length === 1
-        ? t('campaigns.manage.structures_count_one')
-        : t('campaigns.manage.structures_count').replace('~COUNT', String(structures.length))
-
-const fittings = campaign.fittings ?? []
+const section_href = (part: string) => `?section=${part}#settings`
+const item = (part: string, label: string, extra: Partial<SettingsNavItem> = {}): SettingsNavItem =>
+    ({ id: part, label, href: section_href(part), url: part_url(part), ...extra })
 
 const features = campaign.features
-const features_summary = t('campaigns.manage.features_summary')
-    .replace('~COUNT', String(features_on(features)))
-    .replace('~TOTAL', String(CAMPAIGN_FEATURES.length))
+const none_yet = t('campaigns.manage.none_yet')
+const proposed = (week?.targets ?? []).filter((row) => row.proposed).length
 
-import Flexblock from '@components/compositions/Flexblock.astro'
-import SettingsSection from '@components/blocks/manage/SettingsSection.astro'
+const groups: SettingsNavGroup[] = [
+    {
+        label: t('campaigns.settings.group_campaign'),
+        items: [
+            item('basics', t('campaigns.settings.general')),
+            item('features', t('campaigns.manage.features')),
+        ],
+    },
+    {
+        label: t('campaigns.settings.group_theater'),
+        items: [
+            ...(features.theater ? [item('systems', t('campaigns.manage.systems'))] : []),
+            item('sides', t('campaigns.manage.sides'), { flag: (campaign.parties ?? []).length === 0 ? none_yet : undefined }),
+            ...(features.structures ? [item('structures', t('campaigns.manage.structures'))] : []),
+        ],
+    },
+    {
+        label: t('campaigns.settings.group_people'),
+        items: [
+            item('coordinators', t('campaigns.coordinators.title')),
+            item('fittings', t('campaigns.settings.doctrines'), { flag: (campaign.fittings ?? []).length === 0 ? none_yet : undefined }),
+        ],
+    },
+    ...(features.weekly_progress ? [{
+        label: t('campaigns.settings.group_week'),
+        items: [
+            item('targets', t('campaigns.manage.targets'), { count: proposed }),
+            item('order', t('campaigns.settings.order'), {
+                flag: !campaign.commander_order_text
+                    ? none_yet
+                    : campaign.commander_order_is_draft ? t('campaigns.settings.order_draft') : undefined,
+            }),
+        ],
+    }] : []),
+    ...(can_coordinate ? [{
+        label: t('campaigns.settings.group_connections'),
+        items: [item('coordination', t('campaigns.settings.discord'))],
+    }] : []),
+]
+
+import SettingsLayout from '@components/blocks/SettingsLayout.astro'
+import type { SettingsNavGroup, SettingsNavItem } from '@components/blocks/SettingsLayout.astro'
 ---
 
-<Flexblock gap="var(--space-m)" class:list={['[ campaign-settings-panel ]', Astro.props.class]} {...attributes}>
-    <p class="[ manage-muted ]">{t('campaigns.manage.gate_note')}</p>
-
-    <SettingsSection id="campaign-settings-features" title={t('campaigns.manage.features')} summary={features_summary} url={part_url('features')} load="open" />
-    <SettingsSection id="campaign-settings-basics" title={t('campaigns.manage.basics')} summary={basics} url={part_url('basics')} load="open" />
-    {features.theater &&
-    <SettingsSection
-        id="campaign-settings-systems"
-        title={t('campaigns.manage.systems')}
-        summary={systems_summary(campaign.systems, choices?.goal) || none_yet}
-        url={part_url('systems')}
-        load="open"
-    />
-    }
-    <SettingsSection
-        id="campaign-settings-sides"
-        title={t('campaigns.manage.sides')}
-        summary={sides_summary(campaign.parties ?? [], choices?.party_side) || none_yet}
-        url={part_url('sides')}
-        load="open"
-    />
-    <SettingsSection
-        id="campaign-settings-coordinators"
-        title={t('campaigns.coordinators.title')}
-        url={part_url('coordinators')}
-        load="open"
-    />
-    <SettingsSection
-        id="campaign-settings-fittings"
-        title={t('campaigns.doctrines.title')}
-        summary={fittings.length ? t('campaigns.ready.fittings_summary').replace('{count}', String(fittings.length)) : none_yet}
-        url={part_url('fittings')}
-        load="open"
-    />
-    {features.weekly_progress &&
-        <SettingsSection id="campaign-settings-targets" title={t('campaigns.manage.targets')} summary={targets_summary} url={part_url('targets')} load="open" />
-    }
-    {features.weekly_progress &&
-        <SettingsSection id="campaign-settings-order" title={t('campaigns.manage.order')} summary={order_summary} url={part_url('order')} load="open" />
-    }
-    {features.structures &&
-        <SettingsSection id="campaign-settings-structures" title={t('campaigns.manage.structures')} summary={structures_summary} url={part_url('structures')} load="open" />
-    }
-    {can_coordinate &&
-        <SettingsSection id="campaign-settings-coordination" title={t('campaigns.manage.coordination')} url={part_url('coordination')} load="open" />
-    }
-</Flexblock>
+<SettingsLayout
+    id="campaign-settings"
+    aria_label={t('campaigns.settings.nav_label')}
+    active={Astro.url.searchParams.get('section') ?? 'basics'}
+    groups={groups}
+    class:list={['[ campaign-settings-panel ]', Astro.props.class]}
+    {...attributes}
+/>

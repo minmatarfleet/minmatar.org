@@ -16,7 +16,6 @@ import type {
 import { campaign_totals_stats, sort_systems_by_contest, fw_objective_systems, ops_theater_systems } from '@helpers/fetching/campaigns'
 import { format_isk } from '@helpers/numbers'
 import { campaign_tabs } from '@helpers/campaign_features'
-import type { CampaignChoices } from '@helpers/api.minmatar.org/campaigns'
 
 interface Props {
     campaign:           CampaignDetailType;
@@ -31,7 +30,6 @@ interface Props {
     token_error?:       string | false;
     /** Managers get the Settings tab. */
     can_manage?:        boolean;
-    choices?:           CampaignChoices | null;
     /** Nothing counts yet: the hero is the checklist (managers) or the fittings. */
     before_start?:      boolean;
     [propName: string]: any;
@@ -49,7 +47,6 @@ const {
     readiness,
     token_error = false,
     can_manage = false,
-    choices = null,
     before_start = false,
     ...attributes
 } = Astro.props
@@ -138,16 +135,25 @@ import { get_gates, can } from '@helpers/gates'
 const can_coordinate = can_manage && can(await get_gates(Astro), 'campaigns.coordination')
 ---
 
-<Flexblock gap='var(--space-l)' class:list={['[ campaign-detail ]', Astro.props.class]} {...attributes}>
+<Flexblock
+    gap='var(--space-l)'
+    class:list={['[ campaign-detail ]', Astro.props.class]}
+    x-data="{ tab: location.hash.slice(1) }"
+    {...{ 'x-on:section-tabs:change': 'tab = $event.detail.tab' }}
+    {...attributes}
+>
     {campaign.status === 'paused' && <CampaignPausedBanner campaign={campaign} can_manage={can_manage} />}
 
-    {!before_start ?
-        <CampaignOrdersHero campaign={campaign} week={week} />
-        : can_manage ?
-            <CampaignReadyChecklist campaign={campaign} />
-            : (campaign.fittings?.length ?? 0) > 0 &&
-                <CampaignFittings fittings={campaign.fittings} />
-    }
+    {/* Settings is a page of its own: the week's progress steps aside so the tabs sit under the title. */}
+    <div x-show="tab !== 'settings'">
+        {!before_start ?
+            <CampaignOrdersHero campaign={campaign} week={week} />
+            : can_manage ?
+                <CampaignReadyChecklist campaign={campaign} />
+                : (campaign.fittings?.length ?? 0) > 0 &&
+                    <CampaignFittings fittings={campaign.fittings} />
+        }
+    </div>
 
     <SectionTabs
         tabs={TABS.map((tab) => ({ id: tab, label: tab_label(tab) }))}
@@ -368,7 +374,7 @@ const can_coordinate = can_manage && can(await get_gates(Astro), 'campaigns.coor
 
         {can_manage &&
             <SectionTabPanel id="settings" id_prefix="campaign" is_default={false}>
-                <CampaignSettingsPanel campaign={campaign} week={week} choices={choices} has_structures_tab={show_structures_tab} can_coordinate={can_coordinate} />
+                <CampaignSettingsPanel campaign={campaign} week={week} has_structures_tab={show_structures_tab} can_coordinate={can_coordinate} />
             </SectionTabPanel>
         }
     </SectionTabs>

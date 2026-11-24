@@ -1,0 +1,99 @@
+---
+/**
+ * The unsaved-changes bar of a settings form. Put it last inside the
+ * `<form>`: it stays hidden until a field in the form changes, then sticks
+ * to the bottom of the screen with Discard (resets the form) and Save
+ * (submits it). It hides again after a successful htmx submit or a reset.
+ *
+ * Settings that apply the moment they change (a `Switch` that posts on
+ * `change`) are not part of the form's save: mark them, or a wrapper, with
+ * `data-save-bar-ignore` so they don't raise the bar.
+ *
+ * `shown` starts it visible, e.g. when the server re-renders a form with an
+ * error and the edits are still unsaved.
+ *
+ * `save_attributes` and `discard_attributes` reach the two buttons: a form
+ * whose Save posts `op=save` passes `{ name: 'op', value: 'save' }`; one
+ * that re-renders rows the server added discards by reloading,
+ * `{ type: 'button', 'hx-get': url }`.
+ */
+interface Props {
+    shown?:         boolean;
+    label?:         string;
+    save_label?:    string;
+    discard_label?: string;
+    save_attributes?:       Record<string, any>;
+    discard_attributes?:    Record<string, any>;
+    [propName: string]: any;
+}
+
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+const {
+    shown = false,
+    label = t('settings.unsaved'),
+    save_label = t('save'),
+    discard_label = t('settings.discard'),
+    save_attributes = {},
+    discard_attributes = {},
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import Button from '@components/blocks/Button.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+const x_data = `{
+    dirty: ${JSON.stringify(shown)},
+    init() {
+        const form = this.$el.closest('form')
+        if (!form) return
+        const mark = (event) => {
+            if (!event.target.closest('[data-save-bar-ignore]')) this.dirty = true
+        }
+        form.addEventListener('input', mark)
+        form.addEventListener('change', mark)
+        form.addEventListener('reset', () => this.$nextTick(() => { this.dirty = false }))
+        form.addEventListener('htmx:afterRequest', (event) => {
+            if (event.detail.elt === form && event.detail.successful) this.dirty = false
+        })
+    },
+}`
+---
+
+<div
+    class:list={['[ save-bar ]', Astro.props.class]}
+    role="region"
+    aria-label={label}
+    x-data={x_data}
+    x-show="dirty"
+    x-cloak={!shown}
+    {...attributes}
+>
+    <span class="[ save-bar__label ]">{label}</span>
+    <FlexInline gap="var(--space-2xs)">
+        <Button type="reset" size="sm" color="transparent" narrow={true} {...discard_attributes}>{discard_label}</Button>
+        <Button type="submit" size="sm" narrow={true} {...save_attributes}>{save_label}</Button>
+    </FlexInline>
+</div>
+
+<style lang="scss">
+    .save-bar {
+        position: sticky;
+        // Above a page's fixed bottom bar (the campaign enlist bar, the phone action bar).
+        inset-block-end: var(--bottom-bar-height, var(--subheader-bar-height, 0px));
+        z-index: 1;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-2xs) var(--space-s);
+        padding: var(--space-2xs) var(--space-2xs) var(--space-2xs) var(--space-m);
+        border: 1px solid var(--border-color-hover);
+        border-block-start: 2px solid var(--fleet-yellow);
+        background-color: var(--component-background);
+        color: var(--highlight);
+    }
+</style>

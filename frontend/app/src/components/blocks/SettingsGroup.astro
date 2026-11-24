@@ -1,0 +1,69 @@
+---
+/**
+ * A titled panel of `SettingRow`s inside a settings section. The title is
+ * a small uppercase label above a bordered panel; rows draw the rules
+ * between themselves. `tone="danger"` is the red-bordered panel at the
+ * bottom of a section for actions that can't be undone.
+ *
+ *   <SettingsGroup title={t('...visibility')}>
+ *       <SettingRow title={t('...undisclosed')} for="undisclosed"><Switch id="undisclosed" ... /></SettingRow>
+ *   </SettingsGroup>
+ */
+interface Props {
+    title?:     string;
+    tone?:      'default' | 'danger';
+    [propName: string]: any;
+}
+
+const {
+    title,
+    tone = 'default',
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+<section class:list={['[ settings-group ]', { 'settings-group--danger': tone === 'danger' }, Astro.props.class]} {...attributes}>
+    {title && <h3 class="[ settings-group__title ]">{title}</h3>}
+    <div class="[ settings-group__panel ]">
+        <slot />
+    </div>
+</section>
+
+<style lang="scss">
+    .settings-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    .settings-group__title {
+        font-family: var(--default-font);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--faded);
+    }
+
+    .settings-group__panel {
+        padding-inline: var(--space-m);
+        border: 1px solid var(--border-color-hover);
+        background-color: var(--surface-sunken);
+
+        // The panel border is the first row's top rule.
+        > :global(:first-child) {
+            border-block-start: 0;
+        }
+
+        // An empty list says so inside the panel, with a row's spacing.
+        > :global(.empty-state) {
+            padding-block: var(--space-s);
+        }
+    }
+
+    .settings-group--danger .settings-group__panel {
+        border-color: color-mix(in srgb, var(--fleet-red) var(--tint-heavy), transparent);
+    }
+</style>

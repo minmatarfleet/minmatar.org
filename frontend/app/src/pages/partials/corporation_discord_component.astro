@@ -52,8 +52,6 @@ import Input from '@components/blocks/Input.astro'
 
 const ROOT_ID = 'corporation-discord'
 const URL_HELP_ID = 'corp-discord-url-help'
-// Lives in the accordion header on the corporation page; refreshed out of band.
-const SUMMARY_ID = 'corporation-settings-discord-summary'
 
 const { auth_token } = get_request_user(Astro)
 if (!auth_token) return HTTP_403_Forbidden()
@@ -207,10 +205,6 @@ const server_name = settings.guild_name ?? t('corporations.discord.unknown_serve
 const bot_server_name = bot.guild_name ?? t('corporations.discord.unknown_server')
 ---
 
-<span id={SUMMARY_ID} hx-swap-oob="innerHTML">
-    <span class:list={['[ corp-discord__summary ]', { 'is-attention': is_dead || bot_attention }]}>{summary}</span>
-</span>
-
 <div
     id={ROOT_ID}
     class="[ corp-discord ]"
@@ -219,6 +213,10 @@ const bot_server_name = bot.guild_name ?? t('corporations.discord.unknown_server
     hx-target={next_poll ? 'this' : undefined}
     hx-swap={next_poll ? 'outerHTML' : undefined}
 >
+    <FlexInline class="[ settings-head ]" justification="space-between" gap="var(--space-2xs) var(--space-s)">
+        <h2>{t('corporations.settings.discord_section')}</h2>
+        <small class:list={['[ settings-head__summary ]', { 'is-attention': is_dead || bot_attention }]}>{summary}</small>
+    </FlexInline>
     <form
         method="post"
         action={PARTIAL_URL}
@@ -439,6 +437,18 @@ const bot_server_name = bot.guild_name ?? t('corporations.discord.unknown_server
 </div>
 
 <style lang="scss">
+    .settings-head__summary {
+        color: var(--faded);
+    }
+
+    .settings-head__summary.is-attention {
+        color: var(--fleet-yellow);
+    }
+
+    .settings-head {
+        margin-block-end: var(--space-l);
+    }
+
     .corp-discord {
         max-width: var(--max-text-width);
     }
@@ -452,8 +462,7 @@ const bot_server_name = bot.guild_name ?? t('corporations.discord.unknown_server
         color: var(--faded);
     }
 
-    .corp-discord__attention,
-    .corp-discord__summary.is-attention {
+    .corp-discord__attention {
         color: var(--fleet-yellow);
     }
 

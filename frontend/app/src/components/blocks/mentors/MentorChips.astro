@@ -14,9 +14,11 @@ interface Props {
     selected: (string | number)[];
     legend: string;
     hint?: string;
+    /** Inside a SettingRow, whose title names the chips: keep the legend for screen readers only. */
+    hide_legend?: boolean;
 }
 
-const { name, kind, selected, legend, hint } = Astro.props
+const { name, kind, selected, legend, hint, hide_legend = false } = Astro.props
 
 const options = kind === 'brackets'
     ? BRACKETS.map(bracket => ({ value: bracket.code, label: bracket.code, title: `${bracket.hours} EVE` }))
@@ -29,7 +31,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 ---
 
 <fieldset class="[ manage-fieldset manage-field ]">
-    <legend class="[ manage-field__label ]">{legend}</legend>
+    <legend class:list={[hide_legend ? 'visually-hidden' : '[ manage-field__label ]']}>{legend}</legend>
     <FlexInline gap="var(--space-3xs)">
         {options.map(option =>
             <OptionCard type="checkbox" name={name} value={option.value} checked={chosen.has(option.value)} title={option.title || undefined}>

@@ -190,6 +190,25 @@ Reach for these before building a variant of your own (all in `src/components/bl
 | `FilterChip` + `ChipGroup` | Filter chips over rendered content (`aria-pressed`) or filtered-view links (`aria-current`). |
 | `CorporationBadge` / `AllianceBadge` | Entity logo + name; the default slot renders at every size. |
 | `ContentViewer` + `ContentViewerLink` | Opening a page in a modal without leaving the one you are on. See below. |
+| `SettingsLayout` + `SettingsGroup` + `SettingRow` + `SaveBar` | Every settings page. See below. |
+
+### Settings pages
+
+Settings follow one standard, the one GitHub, Discord and Linear use, so a corporation's settings, a campaign's and
+the mentor program look and save the same way. The corporation and campaign Settings tabs and the mentor pages are built
+on it; a new settings surface starts from it rather than a stack of collapsible sections.
+
+- **`SettingsLayout`**: the sections in groups on the left, one section on the right. Each item is a link
+  (`?section=<id>`, so a section can be linked to); an item with `url` loads its partial into the content area
+  with htmx and pushes the link. Mark only what needs doing: `flag` ("Not set", "Draft") or `count` (applications
+  waiting). A surface with only a few settings (a mentor's own) is one page of groups without the list.
+- **A section** is a partial: its `<h2>` (a status line beside it only when it says something the rows don't),
+  then `SettingsGroup`s of `SettingRow`s, label on the left and the control on the right (`wide` for text fields).
+  `SettingsGroup tone="danger"` is the red panel for actions that can't be undone, last in the section.
+- **One save rule per form.** Text fields wait for Save: end the form with a `SaveBar`, which appears once a field
+  changes and sticks above the page's bottom bar (`--bottom-bar-height`). A switch that posts on `change` applies at
+  once and is marked `data-save-bar-ignore`. Errors show in the section and keep the bar up (`shown`).
+- No captions explaining the UI: a row's description is for what the setting does, not how to use the page.
 
 ### Pages the ContentViewer can show
 

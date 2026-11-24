@@ -54,17 +54,21 @@ import EmptyState from '@components/blocks/EmptyState.astro'
     <div class="[ campaign-enlist-bar-spacer ]" aria-hidden="true" />
 
     {/* Under 1280px the page actions (the countdown) are also docked at the bottom; sit on top of them.
+        The bar publishes its top edge as --bottom-bar-height, so a sticky SaveBar sits above it.
         Keep comments out of x-init: Alpine only runs it as statements when it starts with const/let/if. */}
     <div
         class="[ campaign-enlist-bar-dock ][ card light-transparency animate-slide-in-bottom ]"
-        x-data="{}"
+        x-data="{ destroy() { document.documentElement.style.removeProperty('--bottom-bar-height') } }"
         x-init={`
             const actions = document.querySelector('.subheader-bar')
             const place = () => {
                 const docked = actions && getComputedStyle(actions).position === 'fixed'
-                $el.style.bottom = docked ? actions.offsetHeight + 'px' : '0px'
+                const offset = docked ? actions.offsetHeight : 0
+                $el.style.bottom = offset + 'px'
+                document.documentElement.style.setProperty('--bottom-bar-height', (offset + $el.offsetHeight) + 'px')
             }
             place()
+            new ResizeObserver(place).observe($el)
             if (actions) new ResizeObserver(place).observe(actions)
         `}
     >
