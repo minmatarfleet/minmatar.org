@@ -55910,13 +55910,41 @@
             "title": "Commander",
             "type": "boolean"
           },
+          "fc_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fc Name"
+          },
           "fleet_id": {
             "title": "Fleet Id",
             "type": "integer"
           },
+          "fleet_title": {
+            "default": "",
+            "title": "Fleet Title",
+            "type": "string"
+          },
           "placement": {
             "title": "Placement",
             "type": "string"
+          },
+          "start_time": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Time"
           }
         },
         "required": [

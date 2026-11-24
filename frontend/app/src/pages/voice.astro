@@ -2,15 +2,27 @@
 import { i18n } from '@helpers/i18n'
 const { t, lang, translatePath } = i18n(Astro.url)
 
-import { get_voice_session } from '@helpers/voice_session'
+import { get_voice_session, VOICE_RETURNING_COOKIE } from '@helpers/voice_session'
+import { login_url } from '@helpers/http_responses'
 
 // No gate: guests (NPSI pilots, campaign allies) use this page too.
 const session = get_voice_session(Astro)
 const login_failed = Astro.url.searchParams.get('error') !== null
+// This browser connected before: a lapsed sign-in offers "Sign in and connect".
+const returning = Astro.cookies.get(VOICE_RETURNING_COOKIE)?.value === '1'
+// Back from "Sign in and connect": open Mumble without another click.
+const auto_connect = Astro.url.searchParams.get('connect') === '1'
 
-const LOGIN_URL = translatePath('/voice/sign-in')
-const STATUS_PARTIAL_URL = translatePath('/partials/voice_status_component/')
+const SIGN_IN_URL = translatePath('/voice/sign-in')
+const STATUS_PARTIAL_URL = `${translatePath('/partials/voice_status_component/')}${auto_connect ? '?connect=1' : ''}`
+const SITE_LOGIN_URL = login_url(Astro, new URL(translatePath('/voice'), Astro.url).href)
 const page_title = t('voice.page_title')
+
+const sign_in_points = [
+    { title: t('voice.sign_in.public'), text: t('voice.sign_in.public_text') },
+    { title: t('voice.sign_in.no_account'), text: t('voice.sign_in.no_account_text') },
+    { title: t('voice.sign_in.no_typing'), text: t('voice.sign_in.no_typing_text') },
+]
 
 import Viewport from '@layouts/Viewport.astro'
 import PageLanding from '@components/page/PageLanding.astro'
@@ -20,7 +32,6 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Button from '@components/blocks/Button.astro'
 import LazyPartial from '@components/blocks/LazyPartial.astro'
-import Markdown from '@components/blocks/Markdown.astro'
 ---
 
 <Viewport title={page_title} meta_description={t('voice.meta_description')}>
@@ -35,67 +46,49 @@ import Markdown from '@components/blocks/Markdown.astro'
             <p class="[ voice-error ]" role="alert">{t('voice.login.failed')}</p>
         }
 
-        <Grid min_item_width="16rem" row_gap="var(--space-m)" column_gap="var(--space-m)">
-            <ComponentBlock>
-                <Flexblock gap="var(--space-s)">
-                    <h2>1. {t('voice.step.download')}</h2>
-                    <Flexblock>
-                        <p>{t('voice.step.download_text')}</p>
-                        <FlexInline>
-                            <Button href="https://www.mumble.info/downloads/" external={true} new_tab={true} size="sm">{t('voice.download_desktop')}</Button>
-                            <Button href="https://play.google.com/store/apps/details?id=se.lublin.mumla" external={true} new_tab={true} size="sm" color="transparent">{t('voice.download_android')}</Button>
-                        </FlexInline>
-                    </Flexblock>
-                </Flexblock>
-            </ComponentBlock>
-
-            <ComponentBlock>
-                <Flexblock gap="var(--space-s)">
-                    <h2>2. {t('voice.step.sign_in')}</h2>
-                    <Flexblock>
-                        {session?.kind === 'member'
-                            ? <p>{t('voice.signed_in_member')}</p>
-                            : <p>{t('voice.step.sign_in_text')}</p>
-                        }
-                        <FlexInline>
-                            {!session &&
-                                <Button href={LOGIN_URL} size="sm">{t('voice.sign_in_eve')}</Button>
-                            }
-                            {session?.kind === 'guest' &&
-                                <Button href={translatePath('/voice/logout')} size="sm" color="transparent">{t('voice.sign_out')}</Button>
-                            }
-                        </FlexInline>
-                    </Flexblock>
-                </Flexblock>
-            </ComponentBlock>
-
-            <ComponentBlock>
-                <Flexblock gap="var(--space-s)">
-                    <h2>3. {t('voice.step.connect')}</h2>
-                    <p>{t('voice.step.connect_text')}</p>
-                </Flexblock>
-            </ComponentBlock>
-        </Grid>
-
-        {session &&
-            <LazyPartial url={STATUS_PARTIAL_URL}>
+        {session
+            ? <LazyPartial url={STATUS_PARTIAL_URL}>
                 <p>{t('loading')}</p>
             </LazyPartial>
+            : returning
+                ? <ComponentBlock>
+                    <Flexblock gap="var(--space-m)">
+                        <Flexblock gap="var(--space-2xs)">
+                            <small>{t('voice.welcome_back')}</small>
+                            <h2>{t('voice.welcome_back.title')}</h2>
+                            <p>{t('voice.welcome_back.text')}</p>
+                        </Flexblock>
+                        <FlexInline gap="var(--space-m)">
+                            <Button href={`${SIGN_IN_URL}?then=connect`} color="green">{t('voice.welcome_back.title')}</Button>
+                            <img src="/images/mumble-logo.svg" alt="" width="40" height="40" />
+                        </FlexInline>
+                        <FlexInline gap="var(--space-m)">
+                            <a href={SIGN_IN_URL}>{t('voice.welcome_back.setup')}</a>
+                            <a href={SITE_LOGIN_URL}>{t('voice.sign_in.site')}</a>
+                        </FlexInline>
+                    </Flexblock>
+                </ComponentBlock>
+                : <ComponentBlock>
+                    <Flexblock gap="var(--space-m)">
+                        <Flexblock gap="var(--space-2xs)">
+                            <h2>{t('voice.sign_in.title')}</h2>
+                            <p>{t('voice.sign_in.text')}</p>
+                        </Flexblock>
+                        <FlexInline gap="var(--space-m)">
+                            <Button href={SIGN_IN_URL}>{t('voice.sign_in.button')}</Button>
+                            <a href={SITE_LOGIN_URL}>{t('voice.sign_in.site')}</a>
+                        </FlexInline>
+                        <Grid min_item_width="12rem" row_gap="var(--space-s)" column_gap="var(--space-s)">
+                            {sign_in_points.map((point) =>
+                                <Flexblock gap="var(--space-3xs)">
+                                    <strong class="[ voice-point ]">{point.title}</strong>
+                                    <small>{point.text}</small>
+                                </Flexblock>
+                            )}
+                        </Grid>
+                    </Flexblock>
+                </ComponentBlock>
         }
-
-        <ComponentBlock>
-            <Flexblock gap="var(--space-s)">
-                <h2>{t('voice.guide.title')}</h2>
-                <Flexblock>
-                    <Markdown markdown={t('voice.guide.ptt')} />
-                    <Markdown markdown={t('voice.guide.report')} />
-                    <Markdown markdown={t('voice.guide.broadcast')} />
-                    <Markdown markdown={t('voice.guide.capitals')} />
-                    <Markdown markdown={t('voice.guide.priority')} />
-                    <p>{t('voice.guide.text')}</p>
-                </Flexblock>
-            </Flexblock>
-        </ComponentBlock>
     </Flexblock>
 </PageLanding>
 </Viewport>
@@ -108,6 +101,10 @@ import Markdown from '@components/blocks/Markdown.astro'
     }
 
     .voice-error {
-        color: var(--fleet-red);
+        color: var(--fleet-red-text);
+    }
+
+    .voice-point {
+        color: var(--highlight);
     }
 </style>

@@ -34440,10 +34440,19 @@ export interface components {
             branch_name: string;
             /** Commander */
             commander: boolean;
+            /** Fc Name */
+            fc_name?: string | null;
             /** Fleet Id */
             fleet_id: number;
+            /**
+             * Fleet Title
+             * @default
+             */
+            fleet_title?: string;
             /** Placement */
             placement: string;
+            /** Start Time */
+            start_time?: string | null;
         };
         /** VoiceFleetResponse */
         VoiceFleetResponse: {

@@ -1,0 +1,53 @@
+---
+// no-error-refetch: an invisible watcher; on a failed check it just checks again.
+// Watches for the pilot to reach the voice server after Connect: a
+// certificate bound or used since `since`. While waiting it swaps in a copy
+// of itself every 5 seconds; once the pilot is in, it sends `voice-connected`,
+// which the /voice flow answers by showing the key guide. It stops after
+// CONNECT_WATCH_SECONDS.
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import {
+    get_voice_session,
+    parse_since,
+    connected_since,
+    VOICE_RETURNING_COOKIE,
+    VOICE_RETURNING_DAYS,
+} from '@helpers/voice_session'
+import { get_voice_certificates } from '@helpers/api.minmatar.org/voice'
+
+const session = get_voice_session(Astro)
+if (!session)
+    return HTTP_404_Not_Found()
+
+const since_param = Astro.url.searchParams.get('since')
+const since = parse_since(since_param)
+if (!since)
+    return new Response(null, { status: 200 })
+
+let connected = false
+try {
+    connected = connected_since(await get_voice_certificates(session.token) ?? [], since)
+} catch (error) {
+    console.log(`Voice connect check failed: ${error.message}`)
+}
+
+if (connected) {
+    Astro.cookies.set(VOICE_RETURNING_COOKIE, '1', {
+        path: '/',
+        httpOnly: true,
+        secure: import.meta.env.PROD,
+        sameSite: 'lax',
+        maxAge: VOICE_RETURNING_DAYS * 24 * 60 * 60,
+    })
+    Astro.response.headers.set('HX-Trigger', 'voice-connected')
+}
+
+const WATCH_URL = `${translatePath('/partials/voice_connected_component/')}?since=${encodeURIComponent(since_param ?? '')}`
+---
+
+{!connected &&
+    <div hx-get={WATCH_URL} hx-trigger="load delay:5s" hx-swap="outerHTML"></div>
+}
