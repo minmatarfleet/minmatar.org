@@ -45,15 +45,15 @@ class CharacterHelperTests(TestCase):
         )
         char.save()
 
-        self.assertEqual(11, len(character_desired_scopes(char)))
+        self.assertEqual(18, len(character_desired_scopes(char)))
 
         self.assertEqual(0, len(scope_names(char.token)))
 
         add_scopes(TokenType.DIRECTOR, char.token)
 
-        self.assertEqual(29, len(scope_names(char.token)))
+        self.assertEqual(42, len(scope_names(char.token)))
 
-        self.assertEqual(35, len(scopes_for(TokenType.EXECUTOR)))
+        self.assertEqual(46, len(scopes_for(TokenType.EXECUTOR)))
 
     def test_merge_scope_groups(self):
         self.assertEqual(
@@ -98,7 +98,7 @@ class CharacterHelperTests(TestCase):
             esi_scope_groups=["Basic"],
         )
         self.assertEqual(
-            ["Basic", "Director", "Industry"],
+            ["Basic", "Director", "Industry", "FactionWarfare"],
             scope_groups_for_token_add(char, TokenType.INDUSTRY),
         )
         self.assertEqual(
@@ -123,7 +123,7 @@ class CharacterHelperTests(TestCase):
             ["Public"], scope_groups_for_token_add(None, TokenType.PUBLIC)
         )
 
-    def test_existing_character_add_does_not_widen(self):
+    def test_existing_character_relogin_requests_required_groups(self):
         char = EveCharacter.objects.create(
             character_id=10006,
             character_name="Basic Alt",
@@ -131,7 +131,8 @@ class CharacterHelperTests(TestCase):
             esi_scope_groups=["Basic"],
         )
         self.assertEqual(
-            ["Basic"], scope_groups_for_token_add(char, TokenType.BASIC)
+            ["Basic", "FactionWarfare"],
+            scope_groups_for_token_add(char, TokenType.BASIC),
         )
 
     def test_token_granted_before_the_split_still_satisfies_basic(self):
@@ -190,7 +191,7 @@ class CharacterHelperTests(TestCase):
 
     def test_market_does_not_request_director_scopes(self):
         market = set(scopes_for(TokenType.MARKET))
-        self.assertEqual(16, len(market))
+        self.assertEqual(23, len(market))
         self.assertNotIn(
             "esi-corporations.read_corporation_membership.v1", market
         )

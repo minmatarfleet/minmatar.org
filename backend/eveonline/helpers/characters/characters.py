@@ -10,7 +10,7 @@ from esi.models import Token
 from eveonline.models import EvePlayer, EveCharacter
 from eveonline.helpers.characters.identity import primary_character_for_user
 from eveonline.scopes import (
-    NEW_CHARACTER_SCOPE_GROUPS,
+    REQUIRED_SCOPE_GROUPS,
     TokenType,
     scope_names,
     scopes_for_groups,
@@ -184,25 +184,22 @@ def scope_groups_for_token_add(
 ) -> List[str]:
     """Scope groups to request in SSO when adding token_type to a character.
 
-    extra_groups are the ones picked in the add-character dialog. A character
-    added without naming one also gets the new-character groups. Public is
-    the guest login and never widens.
+    extra_groups are the ones picked in the add-character dialog. Every add
+    and re-login also asks for the required groups, so a character added
+    before one became required can catch up. Public is the guest login and
+    never widens.
     """
     if token_type == TokenType.PUBLIC:
         return merge_scope_groups([], token_type_str(token_type))
     existing: List[str] = []
     if character is not None:
         existing = character_configured_scope_groups(character)
-    groups = merge_scope_groups(
+    return merge_scope_groups(
         existing,
         token_type_str(token_type),
         *(group.value for group in extra_groups),
+        *(group.value for group in REQUIRED_SCOPE_GROUPS),
     )
-    if character is None:
-        groups = merge_scope_groups(
-            groups, *(group.value for group in NEW_CHARACTER_SCOPE_GROUPS)
-        )
-    return groups
 
 
 def scope_groups_granted(
@@ -212,13 +209,13 @@ def scope_groups_granted(
 ) -> List[str]:
     """The group that was asked for, plus every other one the token holds.
 
-    The callback reads the extra and new-character groups off the token
+    The callback reads the extra and required groups off the token
     rather than assuming the SSO request carried them.
     """
     groups = merge_scope_groups([], token_type_str(token_type))
     if token_type == TokenType.PUBLIC:
         return groups
-    for group in [*extra_groups, *NEW_CHARACTER_SCOPE_GROUPS]:
+    for group in [*extra_groups, *REQUIRED_SCOPE_GROUPS]:
         if token_satisfies_type(token, group):
             groups = merge_scope_groups(groups, group.value)
     return groups

@@ -9,9 +9,13 @@ corporation roster and Manage › ESI health:
   outside the refresh path left 15 alliance characters in that state with no
   task and an ACTIVE label on the account page.
 
-A character whose token works but lacks a scope added later is "outdated",
-and only when a superuser asks for that scope (ScopeRollout mode other than
-"Don't ask").
+A character whose token works but lacks a scope it should hold today is
+"outdated": a scope added to one of its groups (Basic, Industry, ...) after
+it logged in, or a whole group that became required later
+(REQUIRED_SCOPE_GROUPS). The scope lists in eveonline.scopes are the source
+of truth, so a scope added there asks everyone without a ScopeRollout row.
+A ScopeRollout set to "Don't ask" leaves that one scope out, and gives the
+scope its label. Director scopes are a corporation's job (corp_director_token).
 """
 
 from __future__ import annotations
@@ -28,7 +32,13 @@ from esi.models import Token
 from discord.models import DiscordUser
 from eveonline.helpers.alliances import alliance_corporations
 from eveonline.models import EveCharacter, EveCorporation, EvePlayer
-from eveonline.scopes import DIRECTOR_SCOPES, TokenType
+from eveonline.helpers.characters import character_configured_scope_groups
+from eveonline.scopes import (
+    DIRECTOR_SCOPES,
+    REQUIRED_SCOPE_GROUPS,
+    TokenType,
+    scopes_for,
+)
 from esi_health.models import EsiMessage, ScopeRollout
 from groups.models import UserCommunityStatus
 
@@ -77,10 +87,6 @@ def token_scopes(token_ids: Iterable[int]) -> dict[int, set[str]]:
 # --- Scope changes ------------------------------------------------------
 
 
-def asked_rollouts() -> list[ScopeRollout]:
-    return list(ScopeRollout.objects.exclude(mode=ScopeRollout.MODE_NONE))
-
-
 def character_groups(character: EveCharacter) -> set[str]:
     groups = set(character.esi_scope_groups or [])
     if character.esi_token_level:
@@ -95,23 +101,93 @@ def rollout_applies(rollout: ScopeRollout, groups: set[str]) -> bool:
     return rollout.scope_group in groups
 
 
-def missing_rollouts(
+# Groups a pilot's own token is checked against. Director scopes are checked
+# per corporation, and Executor is the mail sender's token, not a pilot's.
+_NOT_PILOT_GROUPS = {
+    TokenType.PUBLIC.value,
+    TokenType.DIRECTOR.value,
+    TokenType.EXECUTOR.value,
+}
+_KNOWN_GROUPS = {token_type.value for token_type in TokenType}
+_GROUP_LABELS = {
+    TokenType.FACTION_WARFARE.value: "Faction Warfare",
+    TokenType.FLEET_COMMANDER.value: "Fleet Commander",
+}
+
+
+def group_label(group: str) -> str:
+    return _GROUP_LABELS.get(group, group)
+
+
+def expected_groups(character: EveCharacter) -> list[str]:
+    """The groups this character's token should hold in full, Basic first.
+
+    Its own groups plus the required ones. Public-only (guest) characters
+    hold nothing more.
+    """
+    own = [
+        TokenType.FACTION_WARFARE.value if g == TokenType.CAMPAIGN.value else g
+        for g in character_configured_scope_groups(character)
+    ]
+    if not set(own) - {TokenType.PUBLIC.value}:
+        return []
+    groups = [TokenType.BASIC.value]
+    for group in [*own, *(g.value for g in REQUIRED_SCOPE_GROUPS)]:
+        if (
+            group in _KNOWN_GROUPS
+            and group not in groups
+            and group not in _NOT_PILOT_GROUPS
+        ):
+            groups.append(group)
+    return groups
+
+
+def missing_scope_labels(
     character: EveCharacter,
     scopes: set[str],
     rollouts: list[ScopeRollout],
-) -> list[ScopeRollout]:
-    """The asked-for scopes this working token lacks."""
+) -> list[str]:
+    """What a new login would add to this working token, as the task says it.
+
+    A required group the character never had reads as the group ("Faction
+    Warfare"); scopes added to a group it has read as their ScopeRollout
+    label, or "newer <group> scopes" when nobody labelled them. Empty when
+    the token is up to date, broken (that's a re-add) or a guest login.
+    """
     if character.token_id is None or character.esi_suspended:
         return []
-    groups = character_groups(character)
-    return [
-        rollout
-        for rollout in rollouts
-        # Director scopes are a corporation's job (corp_director_token).
-        if rollout.scope_group != TokenType.DIRECTOR.value
-        and rollout_applies(rollout, groups)
-        and rollout.scope not in scopes
-    ]
+    groups = expected_groups(character)
+    if not groups:
+        return []
+    own = set(character_configured_scope_groups(character))
+    if TokenType.CAMPAIGN.value in own:
+        own.add(TokenType.FACTION_WARFARE.value)
+    labels = {r.scope: r.label for r in rollouts if r.label}
+    not_asked = {
+        r.scope
+        for r in rollouts
+        if r.mode == ScopeRollout.MODE_NONE
+        and r.scope_group != TokenType.DIRECTOR.value
+    }
+    covered: set[str] = set()
+    result: list[str] = []
+    for group in groups:
+        wanted = set(scopes_for(TokenType(group))) - not_asked - covered
+        missing = wanted - scopes
+        covered |= wanted
+        if not missing:
+            continue
+        if group not in own and group != TokenType.BASIC.value:
+            found = [group_label(group)]
+        else:
+            found = [
+                labels.get(scope) or f"newer {group_label(group)} scopes"
+                for scope in sorted(missing)
+            ]
+        for label in found:
+            if label not in result:
+                result.append(label)
+    return result
 
 
 def required_director_scopes(rollouts: Optional[list] = None) -> set[str]:
