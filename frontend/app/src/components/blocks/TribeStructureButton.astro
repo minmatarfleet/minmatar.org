@@ -117,8 +117,10 @@ import Textarea from '@components/blocks/Textarea.astro'
                             value={mode === 'rename' ? name : ''}
                             maxlength="128"
                             autocomplete="off"
+                            aria-describedby={`${form_id}-name-hint`}
                             required
                         />
+                        <small id={`${form_id}-name-hint`} class="[ tribe-structure__hint ]">{t('tribes.structure.name_hint')}</small>
                     </Flexblock>
                     {mode === 'new_tribe' &&
                         <Flexblock gap="var(--space-3xs)">

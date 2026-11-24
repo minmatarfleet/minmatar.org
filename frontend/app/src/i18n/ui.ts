@@ -4152,6 +4152,7 @@ export const ui = {
         'tribes.structure.restore_group': 'Restore {name}?',
         'tribes.structure.restore_text': '{name} shows on the site again.',
         'tribes.structure.name': 'Name',
+        'tribes.structure.name_hint': 'Pick a name that no other tribe, group or Discord role already uses.',
         'tribes.structure.slug': 'Slug (optional)',
         'tribes.structure.slug_placeholder': 'made from the name',
         'tribes.structure.slug_hint': "Used in links and reports. It can't be changed later.",
