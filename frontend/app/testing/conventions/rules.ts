@@ -301,6 +301,28 @@ const RULE_DEFINITIONS: ConventionRule[] = [
         find: (file) => (is_astro(file) ? hits_in(file, [{ text: file.text, offset: 0 }], /<script\s+src\s*=\s*["']https?:\/\/[^"']*["']\s*>/g) : []),
     },
     {
+        id: 'alpine_factory_in_body',
+        kind: 'absolute',
+        why:
+            'An x-data factory (window.name = ...) defined in an is:inline script of a page or block does not exist yet on a ClientRouter soft navigation: Alpine inits the swapped-in x-data before the page\'s inline scripts run, so every expression in it fails and the markup renders empty (MINMATAR-FRONTEND-KS). Define it in a <head> partial loaded before AlpineCdn (LandingAlpine, LearningAlpine) instead.',
+        find: (file) => {
+            if (!is_astro(file) || file.path.startsWith('src/components/partials/')) return []
+            const template = astro_template(file.text)
+            const hits: Hit[] = []
+            for (const script of file.text.matchAll(/<script\s+is:inline\s*>([\s\S]*?)<\/script>/g)) {
+                const body_offset = script.index! + script[0].indexOf(script[1])
+                for (const m of script[1].matchAll(/(?<![\w.])window\.(\w+)\s*=(?!=)/g)) {
+                    // Only a factory some x-data on this file calls: `x-data="name(...)"` or `...name(...)`.
+                    const used = new RegExp(`x-data=[\\s\\S]{0,200}?(?<![\\w.])${m[1]}\\s*\\(`).test(template.text)
+                    if (!used) continue
+                    const index = body_offset + m.index!
+                    hits.push({ line: line_at(file.text, index), snippet: m[0] })
+                }
+            }
+            return hits
+        },
+    },
+    {
         id: 'raw_eve_image',
         kind: 'ratchet',
         why: 'EVE image URLs come from @helpers/eve_image (get_item_icon, get_player_icon, get_corporation_logo, ...) or the Picture components (<ItemPicture>, <CharacterPicture>, <CorporationPicture>, <Picture>), which pick the size and the fallback. Do not write an images.evetech.net URL in markup or scripts.',

@@ -1,4 +1,4 @@
-"""Superusers swap a tribe or group chief from the site."""
+"""Structure managers (tribes.structure.manage) swap a tribe or group chief."""
 
 from ninja import Router
 

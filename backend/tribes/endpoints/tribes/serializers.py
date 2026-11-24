@@ -1,5 +1,6 @@
 """Shared tribe → API schema helpers."""
 
+from tribes.helpers.structure import can_manage_structure
 from tribes.endpoints.serialization import user_to_character_ref
 from tribes.endpoints.tribes.schemas import TribeSchema
 from tribes.endpoints.tribe_discord.access import can_manage_tribe_discord
@@ -49,7 +50,7 @@ def serialize_tribe(
         ),
         chief_is_interim=acting.is_interim,
         can_appoint_chief=can_appoint_chief,
-        can_set_chief=bool(getattr(request_user, "is_superuser", False)),
+        can_set_chief=can_manage_structure(request_user),
         can_manage_discord=can_manage_tribe_discord(request_user, tribe),
         has_volunteered=has_volunteered,
         is_active=tribe.is_active,

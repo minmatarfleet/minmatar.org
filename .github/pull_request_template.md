@@ -1,11 +1,38 @@
 ## Summary
 
-<!-- What changed and why, for a reviewer who hasn't seen the work. Link the issue, wireframe, or help ticket. Screenshots for anything visible. -->
+<!-- What changed and why, for a reviewer who hasn't seen the work. Link the design, wireframe, or help ticket. -->
 
 <!--
 The sections below are checked by .github/workflows/pull-request.yml (scripts/check_pull_request.py).
 Keep the headings and checkbox wording as they are; tick with [x]. Draft pull requests are checked when they are marked ready.
 -->
+
+## Issue
+
+<!--
+"Closes #123" when merging this pull request finishes the issue (GitHub closes it on merge).
+"Refs #123" when it is part of an issue, or related to one, and the issue stays open. One issue per line.
+No issue: tick the box and say why on the Issue line below (a Sentry fix, a help ticket link, a follow-up to #N's review).
+-->
+
+- [ ] No issue for this change
+
+Issue:
+
+## Screenshots
+
+<!--
+Required when the pull request changes what the website (frontend/app/src/) or the desktop app (desktop/src/renderer/) shows.
+Show the change: before and after when something changed, pages at desktop width and 390px.
+Agents upload images with scripts/pr_screenshots.py, which prints the markdown to paste below.
+Dev or seeded data only: the repository is public, so no production pilot data, intel or anything opsec.
+No visible change: tick that box and say why on the Screenshots line below.
+-->
+
+- [ ] Screenshots below
+- [ ] No visible change
+
+Screenshots:
 
 ## Frontend review
 

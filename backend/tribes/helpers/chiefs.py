@@ -494,7 +494,9 @@ def set_chief(
     user,
     region: str | None = None,
 ) -> object | None:
-    """Superuser override: put ``user`` in the seat, or empty it (None).
+    """Override: put ``user`` in the seat, or empty it (None).
+
+    Needs ``tribes.structure.manage`` (superusers always).
 
     A group seat is one of its timezone seats: ``region`` (US, EU, AU),
     defaulting to the pilot's own timezone when filling one.
@@ -511,9 +513,12 @@ def set_chief(
         ensure_tribe_chiefs_have_group_memberships,
     )
 
-    if by is None or not getattr(by, "is_superuser", False):
+    # pylint: disable-next=import-outside-toplevel
+    from tribes.helpers.structure import can_manage_structure
+
+    if not can_manage_structure(by):
         raise ChiefVolunteerError(
-            "Only superusers can swap a chief.", status_code=403
+            "You can't change this chief.", status_code=403
         )
     seat_region = (
         _swap_region(user, region) if tribe_group is not None else None
@@ -555,12 +560,9 @@ def set_chief(
             for changed_offer in others:
                 changed_offer.status = TribeChiefVolunteer.STATUS_CLOSED
                 _queue_dm_update(changed_offer)
-        record_audit(
-            by,
-            f"Chief of {label}: {display_name(old) if old else 'nobody'}"
-            f" -> {display_name(user) if user else 'nobody'}",
-            "other",
-        )
+        before = display_name(old) if old else "nobody"
+        after = display_name(user) if user else "nobody"
+        record_audit(by, f"Chief of {label}: {before} -> {after}", "other")
     if tribe_group is None and user is not None:
         try:
             ensure_tribe_chiefs_have_group_memberships()

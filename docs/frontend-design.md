@@ -51,6 +51,10 @@ Use Alpine for transient **UI-only** state that requires no server data:
 
 If data must change the DOM, use an **htmx partial + OOB swap** instead.
 
+### Where `x-data` factories live
+
+A factory that `x-data` calls (`x-data="landing_rotator(4, 7000)"`) is defined on `window` in a `<head>` partial loaded before `AlpineCdn`: `LandingAlpine`, `LearningAlpine` and `AllianceHealthPilotAlpine` in `HeadScripts` (and `GuestsHeadScripts` for a page a guest page links to). Never define it in an `is:inline` script in the page body: on a ClientRouter soft navigation Alpine inits the swapped-in `x-data` before those scripts run, so every expression in it fails and the markup renders empty (MINMATAR-FRONTEND-KS). The `alpine_factory_in_body` conventions rule fails on it.
+
 ### Migration
 
 Existing Alpine `fetch()` callers predate this rule and must be migrated to htmx partials opportunistically:

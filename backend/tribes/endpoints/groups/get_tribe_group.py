@@ -1,7 +1,5 @@
 """GET "/{tribe_id}/groups/{group_id}" - tribe group detail."""
 
-from ninja import Router
-
 from authentication import AuthOptional
 from tribes.endpoints.groups.schemas import TribeGroupSchema
 from tribes.endpoints.groups.serializers import serialize_tribe_group
@@ -14,8 +12,6 @@ ROUTE_SPEC = {
     "response": {200: TribeGroupSchema, 404: dict},
     "auth": AuthOptional(),
 }
-
-router = Router(tags=["Tribes - Groups"])
 
 
 def get_tribe_group(request, tribe_id: int, group_id: int):
@@ -39,6 +35,3 @@ def get_tribe_group(request, tribe_id: int, group_id: int):
         return 404, {"detail": "TribeGroup not found."}
 
     return 200, serialize_tribe_group(tg, request_user=request.user)
-
-
-router.get(PATH, **ROUTE_SPEC)(get_tribe_group)

@@ -1,6 +1,6 @@
 {
   "permissions": {
-    "ask": [
+    "allow": [
       "mcp__discord__send_message",
       "mcp__discord__add_reaction",
       "mcp__discord__close_help_ticket"
@@ -26,6 +26,17 @@
           {
             "type": "command",
             "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/agent_hooks.py\" claude post-edit",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/agent_hooks.py\" claude prompt",
             "timeout": 60
           }
         ]

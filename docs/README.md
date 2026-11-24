@@ -4,7 +4,7 @@ Every document under `docs/`, with its status. **Current** describes the code on
 
 When a plan ships, change its status here to historical and give it a header saying what shipped and what changed (see `docs/archive/plans/` for examples).
 
-Other entry points: the [root README](../README.md) (local setup, quickstart), [backend/README.md](../backend/README.md), [frontend/app/README.md](../frontend/app/README.md), [desktop/README.md](../desktop/README.md), [mobile/README.md](../mobile/README.md), [mcps/README.md](../mcps/README.md), [backend/campaigns/README.md](../backend/campaigns/README.md). Agent rules live in `.claude/rules/` (the source of truth; `.cursor/` is generated from it by `scripts/sync_agent_config.py`). Pull requests follow `.github/pull_request_template.md` (frontend and backend reviews, Rust justifications, docs), checked by `scripts/check_pull_request.py`; see `.claude/rules/pull-requests.md`.
+Other entry points: the [root README](../README.md) (local setup, quickstart), [backend/README.md](../backend/README.md), [frontend/app/README.md](../frontend/app/README.md), [desktop/README.md](../desktop/README.md), [mobile/README.md](../mobile/README.md), [mcps/README.md](../mcps/README.md), [backend/campaigns/README.md](../backend/campaigns/README.md). Agent rules live in `.claude/rules/` (the source of truth; `.cursor/` is generated from it by `scripts/sync_agent_config.py`). Pull requests follow `.github/pull_request_template.md` (the issue they close or refer to, screenshots of visible changes via `scripts/pr_screenshots.py`, frontend and backend reviews, Rust justifications, docs), checked by `scripts/check_pull_request.py`; see `.claude/rules/pull-requests.md`. Issues use the forms in `.github/ISSUE_TEMPLATE/` and the type labels in `.github/labels.json`; significant features need a design or a person's sign-off (`scripts/check_issue.py`, `.claude/rules/issues.md`).
 
 ## Development setup
 
@@ -43,6 +43,7 @@ Other entry points: the [root README](../README.md) (local setup, quickstart), [
 | [tribes/tribe-publishing.md](tribes/tribe-publishing.md) | current | Tribe groups publishing posts, fleets and Discord events: rules, data, permissions, API |
 | [tribes/tribe-invitations.md](tribes/tribe-invitations.md) | current | Chiefs inviting pilots to a tribe group: Discord DM, join without review, API |
 | [tribes/interim-chiefs.md](tribes/interim-chiefs.md) | current | Chiefless tribes and groups: interim chief fallback, Help wanted, volunteers the executor appoints |
+| [tribes/tribe-structure.md](tribes/tribe-structure.md) | current | Creating, renaming and archiving tribes and groups, and changing chiefs, on the site: who (People Team), the API, Discord roles |
 | [tasks/README.md](tasks/README.md) | current | Tasks: what waits on each pilot, team work up for grabs, projects and templates, and the rules that keep it light |
 | [esi_health.md](esi_health.md) | current | ESI health: characters to re-add, director tokens, scope changes and the Discord message superusers send |
 | [timezones.md](timezones.md) | current | Pilot timezones (declared and inferred from activity) and the USTZ/EUTZ/AUTZ Discord roles |

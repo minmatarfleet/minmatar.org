@@ -1,0 +1,24 @@
+name: Security
+description: Access control, secrets, or hardening work.
+labels: ["security"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **This repository is public.** Describe the work, not the exploit: no reproduction steps, payloads, tokens,
+        or the names of pilots who could abuse it. If something can be exploited today, message the tech leads
+        privately first and open this issue only for the follow-up work.
+  - type: textarea
+    id: area
+    attributes:
+      label: Area
+      description: Which system or data this protects (e.g. backups, fleet rosters, admin access).
+    validations:
+      required: true
+  - type: textarea
+    id: work
+    attributes:
+      label: Work
+      description: What should change.
+    validations:
+      required: true

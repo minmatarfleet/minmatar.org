@@ -1,0 +1,55 @@
+name: Feature
+description: A new capability, or a change to how something works.
+labels: ["feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A significant feature (a new page, tab or flow, or a reworked layout) needs a design before it is built:
+        a Claude design artifact, a wireframe canvas, a Figma file or a mock-up. A person can sign off building it
+        without one. Until either is here, the issue carries the `needs-design` label.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What can't pilots do today, and who is it for (members, FCs, directors, CEOs)?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should exist when this is done? What is out of scope?
+    validations:
+      required: true
+  - type: dropdown
+    id: size
+    attributes:
+      label: Size
+      options:
+        - "Significant: a new page, tab or flow, or a reworked layout"
+        - "Small: a change inside an existing page"
+        - "Nothing visible: backend, data or automation only"
+    validations:
+      required: true
+  - type: input
+    id: design
+    attributes:
+      label: Design
+      description: Link to the Claude design (artifact or wireframe canvas), Figma file, or mock-up.
+  - type: checkboxes
+    id: design-sign-off
+    attributes:
+      label: Design sign-off
+      options:
+        - label: A person decided this ships without a design
+  - type: input
+    id: signed-off-by
+    attributes:
+      label: Signed off by
+      description: The person's GitHub handle and why no design is needed, e.g. "@handle, copies the Fleets tab layout".
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Links to Discord threads, related issues, data or prior art.

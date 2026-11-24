@@ -49502,6 +49502,35 @@
         "title": "StructureNotificationResponse",
         "type": "object"
       },
+      "StructurePatchRequest": {
+        "description": "Rename, archive (``is_active: false``) or restore.",
+        "properties": {
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "title": "StructurePatchRequest",
+        "type": "object"
+      },
       "StructureReportRequest": {
         "properties": {
           "alliance_name": {
@@ -52382,6 +52411,29 @@
         "title": "TribeAboutSchema",
         "type": "object"
       },
+      "TribeCreateRequest": {
+        "properties": {
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "slug": {
+            "default": "",
+            "title": "Slug",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "TribeCreateRequest",
+        "type": "object"
+      },
       "TribeDiscordMapping": {
         "properties": {
           "problem": {
@@ -53100,6 +53152,24 @@
           "label"
         ],
         "title": "TribeGroupChiefSeatSchema",
+        "type": "object"
+      },
+      "TribeGroupCreateRequest": {
+        "properties": {
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "TribeGroupCreateRequest",
         "type": "object"
       },
       "TribeGroupGrowthSchema": {
@@ -95054,8 +95124,20 @@
     },
     "/api/tribes/": {
       "get": {
+        "description": "archived=true needs tribes.structure.manage.",
         "operationId": "tribes_endpoints_tribes_get_tribes_get_tribes",
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "archived",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Archived",
+              "type": "boolean"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -95070,9 +95152,93 @@
               }
             },
             "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
           }
         },
-        "summary": "List all active tribes.",
+        "security": [
+          {
+            "AuthOptional": []
+          }
+        ],
+        "summary": "List active tribes (archived=true: archived ones).",
+        "tags": [
+          "Tribes",
+          "Tribes"
+        ]
+      },
+      "post": {
+        "description": "Needs tribes.structure.manage.",
+        "operationId": "tribes_endpoints_tribes_post_tribe_post_tribe",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TribeCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TribeSchema"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Create a tribe; its auth group and Discord role are made too.",
         "tags": [
           "Tribes",
           "Tribes"
@@ -96592,6 +96758,93 @@
           "Tribes",
           "Tribes"
         ]
+      },
+      "patch": {
+        "description": "Needs tribes.structure.manage. A rename renames the linked auth group and Discord role; the slug stays.",
+        "operationId": "tribes_endpoints_tribes_patch_tribe_patch_tribe",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tribe_id",
+            "required": true,
+            "schema": {
+              "title": "Tribe Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StructurePatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TribeSchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Rename, archive or restore a tribe.",
+        "tags": [
+          "Tribes",
+          "Tribes"
+        ]
       }
     },
     "/api/tribes/{tribe_id}/about": {
@@ -96733,7 +96986,7 @@
             "AuthBearer": []
           }
         ],
-        "summary": "Swap the chief of a seat, or empty it (superuser only).",
+        "summary": "Swap the chief of a seat, or empty it (tribes.structure.manage).",
         "tags": [
           "Tribes - Chiefs",
           "Tribes - Chiefs"
@@ -97180,6 +97433,7 @@
     },
     "/api/tribes/{tribe_id}/groups": {
       "get": {
+        "description": "archived=true needs tribes.structure.manage.",
         "operationId": "tribes_endpoints_groups_get_tribe_groups_get_tribe_groups",
         "parameters": [
           {
@@ -97189,6 +97443,16 @@
             "schema": {
               "title": "Tribe Id",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "archived",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Archived",
+              "type": "boolean"
             }
           }
         ],
@@ -97206,6 +97470,18 @@
               }
             },
             "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Forbidden"
           },
           "404": {
             "content": {
@@ -97225,7 +97501,94 @@
             "AuthOptional": []
           }
         ],
-        "summary": "List active groups in a tribe.",
+        "summary": "List active groups in a tribe (archived=true: archived ones).",
+        "tags": [
+          "Tribes - Groups",
+          "Tribes - Groups"
+        ]
+      },
+      "post": {
+        "description": "Needs tribes.structure.manage. The code is {tribe slug}.{name} and never changes.",
+        "operationId": "tribes_endpoints_groups_post_tribe_group_post_tribe_group",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tribe_id",
+            "required": true,
+            "schema": {
+              "title": "Tribe Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TribeGroupCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TribeGroupSchema"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Create a tribe group; its auth group and Discord role too.",
         "tags": [
           "Tribes - Groups",
           "Tribes - Groups"
@@ -97285,6 +97648,102 @@
           }
         ],
         "summary": "Tribe group detail with requirements.",
+        "tags": [
+          "Tribes - Groups",
+          "Tribes - Groups"
+        ]
+      },
+      "patch": {
+        "description": "Needs tribes.structure.manage. A rename renames the linked auth group and Discord role; the code stays.",
+        "operationId": "tribes_endpoints_groups_patch_tribe_group_patch_tribe_group",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tribe_id",
+            "required": true,
+            "schema": {
+              "title": "Tribe Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StructurePatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TribeGroupSchema"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Gateway"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Rename, archive or restore a tribe group.",
         "tags": [
           "Tribes - Groups",
           "Tribes - Groups"
@@ -97448,7 +97907,7 @@
             "AuthBearer": []
           }
         ],
-        "summary": "Swap the chief of a seat, or empty it (superuser only).",
+        "summary": "Swap the chief of a seat, or empty it (tribes.structure.manage).",
         "tags": [
           "Tribes - Chiefs",
           "Tribes - Chiefs"

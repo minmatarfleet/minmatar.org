@@ -9,6 +9,16 @@ Every pull request description follows `.github/pull_request_template.md`, inclu
 `gh pr create --body` (the template is only pre-filled in the browser). `.github/workflows/pull-request.yml` runs
 `scripts/check_pull_request.py` on it and fails when a control that applies is missing.
 
+- **Issue**: under "Issue:" write `Closes #123` when merging the pull request finishes the issue (GitHub closes it),
+  or `Refs #123` when it is part of one or related and the issue stays open; one per line. With no issue, tick "No
+  issue for this change" and say why on that line (a Sentry fix, a help ticket link). Look for the issue first
+  (`gh issue list --search`), and don't write `Closes` for an issue the pull request only partly does.
+- **Screenshots**: a change to what the website (`frontend/app/src/`) or the desktop app (`desktop/src/renderer/`)
+  shows needs screenshots of it: before and after when something changed, pages at desktop width and 390px. `gh`
+  can't attach images, so upload them with `python3 scripts/pr_screenshots.py <files>` (it commits them to the
+  `pr-screenshots` branch under the branch's name and prints the markdown to paste under "Screenshots:"). Dev or
+  seeded data only: the repository is public. When nothing visible changes (a helper refactor, a test), tick "No
+  visible change" and say why.
 - **Website changes** (`frontend/app/`): run the `frontend-review` skill (`.claude/skills/frontend-review/SKILL.md`)
   on the final diff, fix what it finds, and paste its result under "Frontend review".
 - **Backend changes** (`backend/`, `bot/`): run the `backend-review` skill (`.claude/skills/backend-review/SKILL.md`)

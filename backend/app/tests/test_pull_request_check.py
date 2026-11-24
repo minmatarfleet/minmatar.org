@@ -34,13 +34,45 @@ FRONTEND_RESULT = """Frontend review (frontend-review skill) on abc1234:
 - Open: none
 - Checks: npm run test passed, npm run check passed"""
 
+QUIET = "Button size only; no page uses the new size yet."
+
 BACKEND_RESULT = """Backend review (backend-review skill) on abc1234:
 - Fixed: nothing found
 - Open: none
 - Checks: tests passed (fleets), black/flake8/pylint clean"""
 
 
+def _tick(text, phrase):
+    return text.replace(f"- [ ] {phrase}", f"- [x] {phrase}", 1)
+
+
+def _fill(text, section, label, value):
+    head, sep, tail = text.partition(f"## {section}")
+    return head + sep + tail.replace(f"{label}:", f"{label}: {value}", 1)
+
+
 def body(
+    issue="Closes #3200",
+    no_issue=False,
+    screenshots=None,
+    no_visible="",
+    **reviews,
+):
+    """A description from the real template: issue, screenshots, reviews."""
+    text = _reviews_body(**reviews)
+    if no_issue:
+        text = _tick(text, "No issue for this change")
+    text = _fill(text, "Issue", "Issue", issue)
+    if screenshots is not None:
+        text = _tick(text, "Screenshots below")
+        text = _fill(text, "Screenshots", "Screenshots", screenshots)
+    if no_visible:
+        text = _tick(text, "No visible change")
+        text = _fill(text, "Screenshots", "Screenshots", no_visible)
+    return text
+
+
+def _reviews_body(
     frontend="none",
     backend="none",
     rust="none",
@@ -122,6 +154,9 @@ class PullRequestCheckTest(unittest.TestCase):
             "This pull request adds or changes a shared component or token",
             "Updated the docs this change affects",
             "No documented behaviour changed",
+            "No issue for this change",
+            "Screenshots below",
+            "No visible change",
         ):
             self.assertIn(
                 f"- [ ] {phrase}", TEMPLATE.read_text(encoding="utf-8")
@@ -131,8 +166,9 @@ class PullRequestCheckTest(unittest.TestCase):
         errors, _ = self.run_check(
             TEMPLATE.read_text(encoding="utf-8"), ["README.md"]
         )
-        self.assertEqual(len(errors), 1)
-        self.assertIn("Documentation", errors[0])
+        self.assertEqual(len(errors), 2)
+        self.assertIn("Issue", errors[0])
+        self.assertIn("Documentation", errors[1])
 
     def test_description_without_the_template_fails(self):
         errors, _ = self.run_check(
@@ -148,7 +184,8 @@ class PullRequestCheckTest(unittest.TestCase):
             any('"No website changes" is ticked' in e for e in errors)
         )
         self.assertTrue(any("frontend-review/SKILL.md" in e for e in errors))
-        self.assertEqual(self.run_check(body(frontend="ran"), changed)[0], [])
+        shot = body(frontend="ran", screenshots="![after](https://x/a.png)")
+        self.assertEqual(self.run_check(shot, changed)[0], [])
 
     def test_review_needs_a_result(self):
         text = (
@@ -160,7 +197,7 @@ class PullRequestCheckTest(unittest.TestCase):
             )
         )
         errors, _ = self.run_check(
-            text, ["frontend/app/src/pages/index.astro"]
+            text, ["frontend/app/rust/stories/x.stories.ts"]
         )
         self.assertEqual(len(errors), 1)
         self.assertIn('"Result:"', errors[0])
@@ -177,11 +214,14 @@ class PullRequestCheckTest(unittest.TestCase):
 
     def test_shared_rust_component_needs_a_human_justification(self):
         changed = ["frontend/app/src/components/blocks/Button.astro"]
-        errors, _ = self.run_check(body(frontend="ran", rust="none"), changed)
+
+        errors, _ = self.run_check(
+            body(no_visible=QUIET, frontend="ran", rust="none"), changed
+        )
         self.assertTrue(any("Rust" in e and "is ticked" in e for e in errors))
 
         errors, _ = self.run_check(
-            body(frontend="ran", rust="changed"), changed
+            body(no_visible=QUIET, frontend="ran", rust="changed"), changed
         )
         self.assertTrue(any("Human justification" in e for e in errors))
         self.assertTrue(any("Justified by" in e for e in errors))
@@ -189,6 +229,7 @@ class PullRequestCheckTest(unittest.TestCase):
         reason = "Fleet sign-up needs a compact button; every existing size wraps on phones."
         errors, _ = self.run_check(
             body(
+                no_visible=QUIET,
                 frontend="ran",
                 rust="changed",
                 justification=reason,
@@ -201,6 +242,7 @@ class PullRequestCheckTest(unittest.TestCase):
 
         errors, _ = self.run_check(
             body(
+                no_visible=QUIET,
                 frontend="ran",
                 rust="changed",
                 justification=reason,
@@ -264,4 +306,87 @@ class PullRequestCheckTest(unittest.TestCase):
                 body(backend="ran", docs="updated"), changed_with_doc, docs
             )[0],
             [],
+        )
+
+
+@unittest.skipUnless(HAS_REPO, "needs the full repository checkout")
+class IssueAndScreenshotsTest(unittest.TestCase):
+    def setUp(self):
+        self.module = _load()
+
+    def errors(self, text, changed=("scripts/x.py",)):
+        return self.module.check(text, list(changed), [LIBRARY], {})[0]
+
+    def test_closes_and_refs_pass(self):
+        for line in (
+            "Closes #12",
+            "fixes #12",
+            "Resolves: minmatarfleet/minmatar.org#12",
+            "Refs #12",
+            "Part of #12",
+            "Closes https://github.com/minmatarfleet/minmatar.org/issues/12",
+        ):
+            self.assertEqual(self.errors(body(issue=line)), [], line)
+
+    def test_missing_or_bare_issue_fails(self):
+        errors = self.errors(body(issue=""))
+        self.assertEqual(len(errors), 1)
+        self.assertIn("Closes #123", errors[0])
+        self.assertIn("bare #123", self.errors(body(issue="#12"))[0])
+
+    def test_no_issue_needs_a_reason_and_no_closes(self):
+        self.assertIn(
+            "say why",
+            self.errors(body(issue="", no_issue=True))[0],
+        )
+        self.assertEqual(
+            self.errors(body(issue="Sentry fix from 11-22", no_issue=True)),
+            [],
+        )
+        self.assertIn(
+            "closes one",
+            self.errors(body(issue="Closes #4", no_issue=True))[0],
+        )
+
+    def test_visible_change_needs_screenshots(self):
+        for changed in (
+            ["frontend/app/src/pages/index.astro"],
+            ["desktop/src/renderer/fleet.js"],
+        ):
+            errors = self.errors(body(frontend="ran"), changed)
+            self.assertTrue(
+                any("Screenshots: tick exactly one" in e for e in errors),
+                errors,
+            )
+        changed = ["frontend/app/src/pages/index.astro"]
+        errors = self.errors(body(frontend="ran", screenshots="soon"), changed)
+        self.assertTrue(any("no image" in e for e in errors))
+        for image in (
+            "![fleet](https://raw.githubusercontent.com/o/r/pr-screenshots/b/f.png)",
+            '<img width="600" src="https://github.com/user-attachments/assets/abc" />',
+        ):
+            self.assertEqual(
+                self.errors(body(frontend="ran", screenshots=image), changed),
+                [],
+            )
+
+    def test_no_visible_change_needs_a_reason(self):
+        changed = ["frontend/app/src/helpers/x.ts"]
+        errors = self.errors(body(frontend="ran", no_visible="no"), changed)
+        self.assertTrue(any("why nothing" in e for e in errors))
+        text = body(
+            frontend="ran", no_visible="Renames a helper; output is identical."
+        )
+        self.assertEqual(self.errors(text, changed), [])
+
+    def test_screenshots_section_is_optional_without_a_visible_change(self):
+        text = (
+            body().split("## Screenshots")[0]
+            + "## Frontend review"
+            + body().split("## Frontend review")[1]
+        )
+        self.assertEqual(self.errors(text, ["scripts/x.py"]), [])
+        self.assertIn(
+            "Screenshots",
+            self.errors(text, ["frontend/app/src/pages/index.astro"])[0],
         )

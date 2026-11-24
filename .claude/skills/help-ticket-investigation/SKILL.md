@@ -55,6 +55,19 @@ the decision in the same thread reply.
 Do not use **3** for “please explain this screen” or expected denials —
 that is **1**. Do not use **1** when the code is wrong — that is **2**.
 
+**Every GitHub issue opened from a ticket gets a label**, set when it is
+created (`labels` on `issue_write`, never added later):
+
+- `bug` — the code is wrong and this run does not fix it (needs a call
+  on the fix, or is out of scope for a PR now).
+- `user-feedback` — a feature request, product question or policy
+  decision raised by a pilot (including “works as coded, but the rule
+  looks wrong”).
+
+Pick one; use both only when the ticket is a confirmed bug and also
+needs a product call. GitHub creates a missing label on first use. The
+issue body is scrubbed the same way as these files (§4a).
+
 **Always open a PR** before ending: stash unrelated dirty files, branch
 from latest `origin/main`, commit the product fix (if any) **and** the
 skill/learnings updates, then `gh pr create`. Skill-only PRs are required
@@ -104,10 +117,11 @@ it is the backend's agent endpoint (`docs/auth/agent-discord-access.md`),
 which reaches every server the bot is in, including archived threads.
 Posting works in every #help ticket thread (the threads under
 `DISCORD_HELP_CHANNEL_ID`) and in channels with a post target (`can_post`
-in `get_channel_info`); each `send_message` asks for approval.
+in `get_channel_info`); `send_message` runs without a permission prompt
+(`.claude/settings.json`), so read every reply for leaked identifiers before sending it.
 `close_help_ticket` `{ channel_id, reason }` closes a ticket the way its
 Close button does (notice in the thread, archive and lock, `HelpTicket`
-closed), and also asks for approval. Cursor
+closed), also without a prompt. Cursor
 still loads the older `mcps/run-discord-mcp.sh` jar as `discord-mcp`,
 with camelCase arguments (`channelId`). A thread can be archived mid-run
 when its ticket is closed; replying unarchives it unless it is locked.
@@ -252,6 +266,9 @@ Scan this table before inventing a new theory.
 | Tribe application notice, then nothing on the members page | Affiliation sync deletes the old `UserAffiliation` before saving the new one. Offboard used to run in that gap, so every pending application went inactive (`reason=removed`, no actor) and the members page dropped it. The chief still had the request notification. There is no cap on how many groups a pilot can apply to. A group with no membership row was never submitted. Offboard now runs after the affiliation write commits. |
 | New player guide missing how to reload the MOTD / MOTD should link the guide | Fleet chat scrolls the MOTD off. Reload is the fleet chat window’s three dots (**More**) → **Reload Channel's MOTD**, documented in `new-player-fleet-guide.md`. Generated MOTD Resources includes `SECTION_RESOURCES_GUIDE` (`<loc>` link to that guide). Discord fleet pings already have a New Player Instructions button to the same URL. |
 | Structure-pings channel says Skyhook, or a reinforce never appears | That channel is `DISCORD_STRUCTURE_PINGS_CHANNEL_ID`, not a `HelpTicket`. Reconstruct the post from `EveStructurePing` (`discord_success`, `text`). `is_new_event` still drops a repeat of the same stage inside an hour, and still drops anything older than 20 minutes. A higher stage (`OrbitalReinforced`, `StructureLostShields`, `StructureLostArmor`, `StructureDestroyed`) must ping. Orbital copy names `typeID` from eveuniverse (Customs Office is 2233, skyhook is 81080) plus `solarSystemID`. Do not post the investigation into that channel. The cloud bot is the test guild and 403s the production guild. |
+| Tribe application DM should link to the group | `_notify_chief_of_new_request` sends no `url`. `discord_format` hyperlinks `embed.url` only when a title is kept, and drops the title when `discord_message` leads with it; use `link_button_components` for a link. Feature request: issue and product call. |
+| Neocom button missing for an associate / BUILD-corp pilot | Neocom buttons are `can(gates, '<gate>')` over pilot features. Fleets is `fleets.view` (default Alliance, Militia, Associate); creating fleets is Alliance only. Check `groups/features/registry.py` defaults and the pilot's `UserAffiliation` before calling it a bug. |
+| Universe structures list empty (Associate / BUILD pilot) | `structures.view` lets Alliance and Associate open `/universe/` and report. `visible_structures` shows alliance-wide rows only to the `Alliance` affiliation, and reported rows are always alliance-wide, so an Associate sees none, including their own reports. Tokens and an Alliance-corp alt don't change it. Policy call: issue, not a code change. |
 | Structure report keeps the wrong type after resubmitting | `/universe/` report flow: picking an existing row calls `apply_report`. On a `source=reported` row it now corrects `type_id` / `type_name` (a `<system> - <type>` default name follows the new type). ESI rows never take a type from a report. The match step offers same-type rows, similar names, and reported rows still on their default name. |
 | Year-in-review cards (m³ moved, freight ISK, LP, reactions, m³ mined, ore ISK, ships and ISK destroyed, fleets) | Placeholder art is not a data source. Freight is finished `FreightContract` volume and `reward`; check the earliest `date_completed` before quoting a full year. LP is completed sell `quantity` and `quantity * isk_per_lp`; check the earliest `completed_at`. Mining m³ is `EveCharacterMiningEntry` for FL33T and BUILD. Ore ISK is the current Jita guide (`EveMarketItemHistory`); some new ores have no price, so the ISK figure is short. Reactions are delivered ESI jobs with `activity_id=9`; the count is runs, not output units. SDE products for those formulas are activity 11. Destroyed ships and ISK are zKill alliance stats for FL33T. Do not add BUILD (shared kills count on both). Fleets are `led_fleets` (not cancelled, alliance-visible). No year-over-year percent when that source has no prior year. |
 

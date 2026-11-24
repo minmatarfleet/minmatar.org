@@ -1,35 +1,36 @@
-"""GET "/{tribe_id}/groups" - list active groups in a tribe."""
+"""GET "/{tribe_id}/groups" - active groups, or archived ones for managers."""
 
 from typing import List
 
 from django.db.models import Count, Q
-from ninja import Router
 
 from authentication import AuthOptional
 from tribes.endpoints.groups.schemas import TribeGroupSchema
 from tribes.endpoints.groups.serializers import serialize_tribe_group
 from tribes.helpers.publishing import active_member_group_ids
 from tribes.helpers.chiefs import ChiefResolver
+from tribes.helpers.structure import can_manage_structure
 from tribes.models import Tribe, TribeGroupMembership
 
 PATH = "/{tribe_id}/groups"
 METHOD = "get"
 ROUTE_SPEC = {
-    "summary": "List active groups in a tribe.",
-    "response": {200: List[TribeGroupSchema], 404: dict},
+    "summary": "List active groups in a tribe (archived=true: archived ones).",
+    "description": "archived=true needs tribes.structure.manage.",
+    "response": {200: List[TribeGroupSchema], 403: dict, 404: dict},
     "auth": AuthOptional(),
 }
 
-router = Router(tags=["Tribes - Groups"])
 
-
-def get_tribe_groups(request, tribe_id: int):
+def get_tribe_groups(request, tribe_id: int, archived: bool = False):
     tribe = Tribe.objects.filter(pk=tribe_id).first()
     if not tribe:
         return 404, {"detail": "Tribe not found."}
+    if archived and not can_manage_structure(request.user):
+        return 403, {"detail": "Only structure managers see archived groups."}
 
     groups = (
-        tribe.groups.filter(is_active=True)
+        tribe.groups.filter(is_active=not archived)
         .select_related(
             "tribe__chief__eveplayer__primary_character",
             "group__discord_group",
@@ -64,6 +65,3 @@ def get_tribe_groups(request, tribe_id: int):
         for tg in groups
     ]
     return 200, result
-
-
-router.get(PATH, **ROUTE_SPEC)(get_tribe_groups)

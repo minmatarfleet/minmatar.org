@@ -25,6 +25,36 @@ After appending, **fold any new durable rule into [SKILL.md](SKILL.md)**
 (Known failure classes or the workflow). If the rule already lives there,
 do not duplicate it — one clarifying clause at most.
 
+## 2026-11-24 — Universe structures list empty for an Associate pilot
+
+**Category:** pulse.technology
+**Verdict:** needs-decision (user feedback issue)
+**Discord:** issue link in the thread
+**PR:** skill-only
+**Symptom vs cause:** A BUILD-corp pilot (affiliation Associate) reported structures but saw zero on `/universe/#structures`, even their own. `structures.view` defaults to Alliance and Associate, but `visible_structures` shows `visibility=alliance` rows only when the affiliation is exactly Alliance. Every reported row is alliance-wide. An alt in an Alliance corp does not change the account's affiliation.
+**Durable rule:** When a page is visible but its list is empty, compare the feature's default affiliations with the row filter in `universe/access.py`. Whether Associates see alliance-wide intel is a product call.
+**Skill update:** added the empty-structures row.
+
+## 2026-11-24 — Chief DM for a tribe application has no link
+
+**Category:** pulse.technology
+**Verdict:** needs-decision (feature request)
+**Discord:** issue link in the thread
+**PR:** skill-only
+**Symptom vs cause:** A tribe chief asked for a link to the group page in the "New tribe membership application" DM. `_notify_chief_of_new_request` passes no `url`, and the text still says "admin panel". `discord_format` only sets `embed.url` when the embed keeps a title, and it drops the title when `discord_message` already leads with it, so a url alone would not show a link. A link button (`link_button_components`) is the existing helper.
+**Durable rule:** Notification links need both a `url` and a rendered title or a link button. Check `discord_format` before promising a clickable link.
+**Skill update:** added the chief-DM row.
+
+## 2026-11-24 — Associate-corp sidebar screenshot with an empty ticket body
+
+**Category:** pulse.technology
+**Verdict:** clarify (asked for what was expected)
+**Discord:** clarify to opener
+**PR:** skill-only
+**Symptom vs cause:** The starter embed's details were empty and `production_readonly` was not configured in that run, so only a screenshot of a BUILD-corp member's sidebar without Fleets was available. `fleets.view` defaults to Alliance, Militia and Associate (`groups/features/registry.py`); `fleets.create` is Alliance only. Universe is shown to every signed-in pilot.
+**Durable rule:** A missing neocom button is a gate (`can(gates, ...)`) backed by a pilot feature's default affiliations. Read the registry before calling it a bug. With no body and no DB, explain the gate and ask what was expected rather than guessing.
+**Skill update:** added the neocom-button row.
+
 ## 2026-11-24 — Structure report resubmit cannot correct the type
 
 **Category:** pulse.technology
