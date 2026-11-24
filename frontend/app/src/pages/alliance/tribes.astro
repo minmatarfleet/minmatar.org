@@ -7,7 +7,9 @@ import { get_request_user } from '@helpers/request_user'
 const { auth_token, user } = get_request_user(Astro)
 
 import type { Tribe, TribeGroup, TribeMembership } from '@dtypes/api.minmatar.org'
-import { get_tribes, get_tribe_groups, get_memberships } from '@helpers/api.minmatar.org/tribes'
+import { get_tribes, get_tribe_groups, get_memberships, get_archived_tribes } from '@helpers/api.minmatar.org/tribes'
+import { get_gates, can } from '@helpers/gates'
+import { tribe_page_path } from '@helpers/tribe_structure'
 
 let tribes: Tribe[] = []
 let directory_groups: {
@@ -64,6 +66,12 @@ try {
     get_tribes_error = error as Error
 }
 
+// Structure managers (People Team) create tribes and reach archived ones.
+const can_manage_structure = Boolean(auth_token) && can(await get_gates(Astro), 'tribes.structure.manage')
+const archived_tribes = can_manage_structure
+    ? await get_archived_tribes(auth_token as string).catch(() => [])
+    : []
+
 const TRIBES_LIST_PARTIAL_URL = translatePath('/partials/tribes_list_component')
 
 import Viewport from '@layouts/Viewport.astro'
@@ -73,6 +81,9 @@ import TextBox from '@components/layout/TextBox.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import TribesGroupsCatalog from '@components/blocks/TribesGroupsCatalog.astro'
+import TribeStructureButton from '@components/blocks/TribeStructureButton.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
 
 const page_title = t('tribes.page_title')
 const leading_text = t('tribes.leading_text')
@@ -104,6 +115,20 @@ const leading_text = t('tribes.leading_text')
             <TextBox>
                 <p class="[ excerpt ]">{leading_text}</p>
             </TextBox>
+
+            {can_manage_structure &&
+                <FlexInline gap="var(--space-2xs)" class="[ tribes-structure ]">
+                    <TribeStructureButton mode="new_tribe" />
+                    {archived_tribes.length > 0 &&
+                        <>
+                            <small>{t('tribes.structure.archived_tribes')}</small>
+                            {archived_tribes.map((tribe) =>
+                                <Button href={translatePath(tribe_page_path(tribe.id))} size="sm" color="transparent">{tribe.name}</Button>
+                            )}
+                        </>
+                    }
+                </FlexInline>
+            }
 
             {get_tribes_error ?
                 <ErrorRefetch

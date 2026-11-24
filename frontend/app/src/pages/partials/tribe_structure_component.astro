@@ -1,0 +1,71 @@
+---
+// no-error-refetch: mutation form; a refused change says why inside the dialog.
+// Structure managers create, rename, archive and restore tribes and groups
+// (TribeStructureButton). On success the pilot goes to the changed page.
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_404_Not_Found, partial_redirect } from '@helpers/http_responses'
+import { get_request_user } from '@helpers/request_user'
+import { get_gates, can } from '@helpers/gates'
+import { parse_structure_action, tribe_page_path } from '@helpers/tribe_structure'
+
+const { auth_token, user } = get_request_user(Astro)
+
+if (!user || !auth_token)
+    return HTTP_403_Forbidden()
+
+if (Astro.request.method !== 'POST')
+    return HTTP_404_Not_Found()
+
+if (!can(await get_gates(Astro), 'tribes.structure.manage'))
+    return HTTP_403_Forbidden()
+
+const action = parse_structure_action(Astro.url.searchParams)
+if (!action)
+    return HTTP_404_Not_Found()
+
+import {
+    create_tribe,
+    create_tribe_group,
+    update_tribe,
+    update_tribe_group,
+    TribeStructureError,
+} from '@helpers/api.minmatar.org/tribes'
+
+const data = await Astro.request.formData()
+const name = String(data.get('name') ?? '').trim()
+const slug = String(data.get('slug') ?? '').trim()
+const description = String(data.get('description') ?? '').trim()
+
+// The backend checks the feature and every rule; this only routes the form.
+let error: string = t('tribes.structure.failed')
+try {
+    const token = auth_token as string
+    const { mode, tribe_id, group_id } = action
+    let path: string | null = null
+    if (mode === 'new_tribe') {
+        const tribe = await create_tribe(token, { name, slug, description })
+        path = tribe_page_path(tribe.id)
+    } else if (mode === 'new_group' && tribe_id) {
+        const group = await create_tribe_group(token, tribe_id, { name, description })
+        path = tribe_page_path(tribe_id, group.id)
+    } else if (tribe_id) {
+        const patch = mode === 'rename' ? { name } : { is_active: mode === 'restore' }
+        if (group_id)
+            await update_tribe_group(token, tribe_id, group_id, patch)
+        else
+            await update_tribe(token, tribe_id, patch)
+        path = tribe_page_path(tribe_id, group_id)
+    }
+    if (path)
+        return partial_redirect(Astro.request, translatePath(path))
+} catch (failure) {
+    if (failure instanceof TribeStructureError)
+        error = failure.message
+    else
+        console.log(`Tribe structure change failed: ${(failure as Error).message}`)
+}
+---
+
+<small>{error}</small>

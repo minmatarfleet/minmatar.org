@@ -26,6 +26,9 @@ import type {
     TribeChiefVolunteer,
     TribeDiscordSettings,
     TribeDiscordMappingUpdate,
+    TribeCreate,
+    TribeGroupCreate,
+    TribeStructurePatch,
 } from '@dtypes/api.minmatar.org'
 import { query_string } from '@helpers/string'
 import { api_request, api_response } from '@helpers/api.minmatar.org/client'
@@ -36,6 +39,55 @@ export async function get_tribes(): Promise<Tribe[]> {
     return await api_request<Tribe[]>(API_ENDPOINT, {
         error: 'Error fetching tribes',
     })
+}
+
+/** Archived tribes, for pilots with the tribes.structure.manage gate. */
+export async function get_archived_tribes(access_token:string): Promise<Tribe[]> {
+    return await api_request<Tribe[]>(`${API_ENDPOINT}/?archived=true`, {
+        token: access_token,
+        error: 'Error fetching archived tribes',
+    })
+}
+
+/** Archived groups of a tribe, for structure managers. */
+export async function get_archived_tribe_groups(access_token:string, tribe_id:number): Promise<TribeGroup[]> {
+    return await api_request<TribeGroup[]>(`${API_ENDPOINT}/${tribe_id}/groups?archived=true`, {
+        token: access_token,
+        error: 'Error fetching archived groups',
+    })
+}
+
+/** A refused structure change; the message is the API's, safe to show. */
+export class TribeStructureError extends Error {}
+
+async function structure_write<T>(access_token:string, endpoint:string, method:string, body:object): Promise<T> {
+    const response = await api_response(endpoint, {
+        method,
+        token: access_token,
+        body,
+        allow: [400, 403, 404, 502],
+    })
+    if (!response.ok) {
+        const payload = await response.json().catch(() => ({}))
+        throw new TribeStructureError(payload.detail ?? `Error ${response.status}`)
+    }
+    return await response.json() as T
+}
+
+export async function create_tribe(access_token:string, body:TribeCreate) {
+    return await structure_write<Tribe>(access_token, `${API_ENDPOINT}/`, 'POST', body)
+}
+
+export async function update_tribe(access_token:string, tribe_id:number, body:TribeStructurePatch) {
+    return await structure_write<Tribe>(access_token, `${API_ENDPOINT}/${tribe_id}`, 'PATCH', body)
+}
+
+export async function create_tribe_group(access_token:string, tribe_id:number, body:TribeGroupCreate) {
+    return await structure_write<TribeGroup>(access_token, `${API_ENDPOINT}/${tribe_id}/groups`, 'POST', body)
+}
+
+export async function update_tribe_group(access_token:string, tribe_id:number, group_id:number, body:TribeStructurePatch) {
+    return await structure_write<TribeGroup>(access_token, `${API_ENDPOINT}/${tribe_id}/groups/${group_id}`, 'PATCH', body)
 }
 
 export class TribeDiscordError extends Error {}

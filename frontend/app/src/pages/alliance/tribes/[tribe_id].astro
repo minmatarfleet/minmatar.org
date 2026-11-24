@@ -7,7 +7,9 @@ import { HTTP_404_Not_Found, login_url } from '@helpers/http_responses'
 import { help_wanted_props } from '@helpers/tribe_chiefs'
 import { query_string } from '@helpers/string'
 import { strip_markdown } from '@helpers/string'
-import { get_tribe, get_tribe_about } from '@helpers/api.minmatar.org/tribes'
+import { get_tribe, get_tribe_about, get_archived_tribe_groups } from '@helpers/api.minmatar.org/tribes'
+import { get_gates, can } from '@helpers/gates'
+import { tribe_page_path } from '@helpers/tribe_structure'
 import { TRIBES_COVER_FALLBACK } from '@helpers/tribe_covers'
 import { PULSE_ORDER, type TribeAboutVital } from '@helpers/tribe_about'
 import { format_isk, number_thousand_separator } from '@helpers/numbers'
@@ -66,6 +68,12 @@ const vitals = [
     },
 ].filter(Boolean) as TribeAboutVital[]
 
+// Structure managers (People Team) rename, archive and add groups here.
+const can_manage_structure = Boolean(auth_token) && can(await get_gates(Astro), 'tribes.structure.manage')
+const archived_groups = can_manage_structure
+    ? await get_archived_tribe_groups(auth_token as string, tribe_id).catch(() => [])
+    : []
+
 const tribes_url = translatePath('/alliance/tribes/')
 const groups_url = translatePath(`/alliance/tribes/?tribe=${encodeURIComponent(tribe.slug)}`)
 const cover = tribe.banner_url || TRIBES_COVER_FALLBACK
@@ -99,6 +107,8 @@ import CharacterPicture from '@components/blocks/CharacterPicture.astro'
 import LazyPartial from '@components/blocks/LazyPartial.astro'
 import TribeChiefHelpWanted from '@components/blocks/TribeChiefHelpWanted.astro'
 import TribeChiefSwap from '@components/blocks/TribeChiefSwap.astro'
+import TribeStructureButton from '@components/blocks/TribeStructureButton.astro'
+import Tag from '@components/blocks/Tag.astro'
 import TribeAboutBody from '@components/blocks/tribe_about/TribeAboutBody.astro'
 import TribeAboutIntro from '@components/blocks/tribe_about/TribeAboutIntro.astro'
 import TribeCapitalLine from '@components/blocks/tribe_about/TribeCapitalLine.astro'
@@ -148,10 +158,36 @@ import TribeAboutGrowth from '@components/blocks/tribe_about/TribeAboutGrowth.as
                             <TribeChiefSwap tribe_id={tribe.id} group_id={null} seat_name={tribe.name} can_set={true} empty={true} />
                         }
                         <PageTitle is_landing={true}>{tribe.name}</PageTitle>
+                        {!tribe.is_active && <Tag text={t('tribes.structure.archived')} color="fleet-yellow" />}
                     </FlexInline>
                 </Flexblock>
-                <Button href={groups_url} size="sm">{t('tribes.about.browse_groups')}</Button>
+                <FlexInline gap="var(--space-2xs)" class="[ tribe-actions ]">
+                    {can_manage_structure &&
+                        <>
+                            <TribeStructureButton mode="rename" tribe_id={tribe.id} name={tribe.name} />
+                            {tribe.is_active
+                                ? <>
+                                    <TribeStructureButton mode="new_group" tribe_id={tribe.id} name={tribe.name} />
+                                    <TribeStructureButton mode="archive" tribe_id={tribe.id} name={tribe.name} />
+                                </>
+                                : <TribeStructureButton mode="restore" tribe_id={tribe.id} name={tribe.name} />
+                            }
+                        </>
+                    }
+                    <Button href={groups_url} size="sm">{t('tribes.about.browse_groups')}</Button>
+                </FlexInline>
             </FlexInline>
+
+            {archived_groups.length > 0 &&
+                <Flexblock gap="var(--space-3xs)" class="[ tribe-archived-groups ]">
+                    <small>{t('tribes.structure.archived_groups')}</small>
+                    <FlexInline gap="var(--space-2xs)">
+                        {archived_groups.map((group) =>
+                            <Button href={translatePath(tribe_page_path(tribe.id, group.id))} size="sm" color="transparent">{group.name}</Button>
+                        )}
+                    </FlexInline>
+                </Flexblock>
+            }
 
             {tribe.chief_is_interim &&
                 <Flexblock gap="var(--space-l)" class="[ w-full ]">
