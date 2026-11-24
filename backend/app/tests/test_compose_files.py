@@ -58,3 +58,24 @@ class ComposeFilesTestCase(SimpleTestCase):
                     f"{path.name}: quote these entries (an unquoted "
                     "': ' makes YAML read them as maps)",
                 )
+
+
+class VoiceAuthRestartTestCase(SimpleTestCase):
+    """voice-auth must come back on its own when its main loop hangs.
+
+    Docker never restarts a container that is only unhealthy. voice-auth's
+    watchdog exits the process instead (voice/voice_auth/health.py), which
+    needs ``restart: always``; the healthcheck still flags it meanwhile.
+    """
+
+    @skipUnless(
+        (REPO / "docker-compose-prod.yml").exists(),
+        "compose files are outside the image",
+    )
+    def test_voice_auth_restarts_and_has_a_healthcheck_with_retries(self):
+        compose = yaml.safe_load((REPO / "docker-compose-prod.yml").read_text())
+        service = compose["services"]["voice-auth"]
+        self.assertEqual(service.get("restart"), "always")
+        healthcheck = service.get("healthcheck") or {}
+        self.assertIn("/health", " ".join(healthcheck.get("test") or []))
+        self.assertGreaterEqual(int(healthcheck.get("retries", 0)), 2)
