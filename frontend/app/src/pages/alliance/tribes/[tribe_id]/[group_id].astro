@@ -384,12 +384,15 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
                         {can_manage_structure &&
                             <>
                                 <TribeStructureButton mode="rename" tribe_id={tribe_id} group_id={group_id} name={tribe_group.name} />
-                                <TribeStructureButton
-                                    mode={tribe_group.is_active ? 'archive' : 'restore'}
-                                    tribe_id={tribe_id}
-                                    group_id={group_id}
-                                    name={tribe_group.name}
-                                />
+                                {/* A group is restored only in an active tribe (the API refuses otherwise). */}
+                                {(tribe_group.is_active || tribe?.is_active !== false) &&
+                                    <TribeStructureButton
+                                        mode={tribe_group.is_active ? 'archive' : 'restore'}
+                                        tribe_id={tribe_id}
+                                        group_id={group_id}
+                                        name={tribe_group.name}
+                                    />
+                                }
                             </>
                         }
                         {can_manage &&
