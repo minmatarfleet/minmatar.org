@@ -4,7 +4,7 @@ from io import StringIO
 from unittest import mock
 
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from agent_access import tools
@@ -15,6 +15,7 @@ from agent_access.models import (
     AgentDiscordReadBlock,
     AgentDiscordSettings,
 )
+from help_tickets.models import HelpRequestCategory, HelpTicket
 
 URL = "/api/agent/discord/mcp"
 GUILD = "100000000000000001"
@@ -324,6 +325,109 @@ class WriteTests(McpTestCase):
             "send_message", channel_id=THREAD, content="x" * 2001
         )
         self.assertTrue(result["isError"])
+
+
+@override_settings(DISCORD_HELP_CHANNEL_ID=int(CHANNEL))
+class HelpTicketTests(McpTestCase):
+    """THREAD sits under CHANNEL, which these tests make #help."""
+
+    def setUp(self):
+        super().setUp()
+        CHANNELS[THREAD]["thread_metadata"] = {
+            "archived": False,
+            "locked": False,
+        }
+        self.addCleanup(
+            CHANNELS[THREAD].__setitem__,
+            "thread_metadata",
+            {"archived": True, "locked": False},
+        )
+        patcher = mock.patch.object(
+            tools.discord_api, "close_thread", return_value={}
+        )
+        self.close = patcher.start()
+        self.addCleanup(patcher.stop)
+        category = HelpRequestCategory.objects.create(
+            title="Technology", code="pulse.technology"
+        )
+        self.ticket = HelpTicket.objects.create(
+            category=category,
+            opener_discord_id=int(USER),
+            thread_id=int(THREAD),
+            thread_name="pulse-technology-pilot",
+            body="Broken",
+        )
+
+    def test_help_threads_are_postable_without_a_target(self):
+        info = self.call("get_channel_info", channel_id=THREAD)
+        self.assertTrue(info["structuredContent"]["can_post"])
+        result = self.call("send_message", channel_id=THREAD, content="Hi")
+        self.assertFalse(result["isError"])
+
+    def test_help_channel_itself_is_not_postable(self):
+        result = self.call("send_message", channel_id=CHANNEL, content="Hi")
+        self.assertTrue(result["isError"])
+        self.post.assert_not_called()
+
+    def test_close_posts_notice_archives_and_marks_closed(self):
+        result = self.call(
+            "close_help_ticket", channel_id=THREAD, reason="Fixed in #42"
+        )
+        self.assertFalse(result["isError"])
+        self.assertEqual(
+            result["structuredContent"]["ticket_id"], self.ticket.id
+        )
+        notice = self.post.call_args.args[1]
+        self.assertIn("Fixed in #42", notice["content"])
+        self.assertEqual(notice["allowed_mentions"], {"parse": []})
+        self.close.assert_called_once_with(THREAD)
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.status, HelpTicket.STATUS_CLOSED)
+        self.assertEqual(
+            self.ticket.close_reason, "[agent: test] Fixed in #42"
+        )
+        call = AgentDiscordCall.objects.get()
+        self.assertTrue(call.is_write and call.ok)
+
+    def test_close_without_a_ticket_row_still_archives(self):
+        self.ticket.delete()
+        result = self.call("close_help_ticket", channel_id=THREAD)
+        self.assertFalse(result["isError"])
+        self.assertIsNone(result["structuredContent"]["ticket_id"])
+        self.close.assert_called_once_with(THREAD)
+
+    def test_close_is_only_for_help_threads(self):
+        with override_settings(DISCORD_HELP_CHANNEL_ID=1):
+            result = self.call("close_help_ticket", channel_id=THREAD)
+        self.assertTrue(result["isError"])
+        self.close.assert_not_called()
+
+    def test_already_closed(self):
+        CHANNELS[THREAD]["thread_metadata"] = {
+            "archived": True,
+            "locked": True,
+        }
+        result = self.call("close_help_ticket", channel_id=THREAD)
+        self.assertTrue(result["isError"])
+        self.post.assert_not_called()
+
+    def test_close_needs_a_key_that_may_write(self):
+        self.key.can_write = False
+        self.key.save()
+        result = self.call("close_help_ticket", channel_id=THREAD)
+        self.assertTrue(result["isError"])
+        self.close.assert_not_called()
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.status, HelpTicket.STATUS_OPEN)
+
+    def test_blocked_help_channel_blocks_closing(self):
+        AgentDiscordReadBlock.objects.create(
+            guild_id=GUILD, channel_id=CHANNEL
+        )
+        self.assertTrue(
+            self.call("close_help_ticket", channel_id=THREAD)["isError"]
+        )
+        self.close.assert_not_called()
 
 
 class CommandTests(TestCase):

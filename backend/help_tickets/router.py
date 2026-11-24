@@ -1,7 +1,6 @@
 import logging
 
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from ninja import Router
 from ninja.errors import HttpError
 from pydantic import BaseModel
@@ -219,19 +218,10 @@ def close_help_ticket(
         )
         raise HttpError(502, "Could not close the Discord thread.") from exc
 
-    ticket.status = HelpTicket.STATUS_CLOSED
-    ticket.closed_at = timezone.now()
-    ticket.closed_by_discord_id = payload.closed_by_discord_id
-    ticket.closed_by = _resolve_user(payload.closed_by_discord_id)
-    ticket.close_reason = payload.close_reason
-    ticket.save(
-        update_fields=[
-            "status",
-            "closed_at",
-            "closed_by_discord_id",
-            "closed_by",
-            "close_reason",
-        ],
+    ticket.mark_closed(
+        closed_by_discord_id=payload.closed_by_discord_id,
+        closed_by=_resolve_user(payload.closed_by_discord_id),
+        close_reason=payload.close_reason,
     )
     return {
         "id": ticket.id,

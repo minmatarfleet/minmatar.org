@@ -102,8 +102,12 @@ Use the `discord` MCP (`get_channel_info`, `read_messages`,
 `get_attachment`, `send_message`). Claude Code loads it from `.mcp.json`:
 it is the backend's agent endpoint (`docs/auth/agent-discord-access.md`),
 which reaches every server the bot is in, including archived threads.
-Posting works only in channels with a post target (`can_post` in
-`get_channel_info`), and each `send_message` asks for approval. Cursor
+Posting works in every #help ticket thread (the threads under
+`DISCORD_HELP_CHANNEL_ID`) and in channels with a post target (`can_post`
+in `get_channel_info`); each `send_message` asks for approval.
+`close_help_ticket` `{ channel_id, reason }` closes a ticket the way its
+Close button does (notice in the thread, archive and lock, `HelpTicket`
+closed), and also asks for approval. Cursor
 still loads the older `mcps/run-discord-mcp.sh` jar as `discord-mcp`,
 with camelCase arguments (`channelId`). A thread can be archived mid-run
 when its ticket is closed; replying unarchives it unless it is locked.
@@ -267,6 +271,10 @@ cannot be archived. Still open the PR.
 | **1 Clarify** | What the product already does and why. Mention the opener. |
 | **2 Fix** | What was wrong, **PR URL**, what happens after deploy. Mention the opener. If you already replied without a PR, follow up with the link. |
 | **3 Decision** | Facts + the exact question. Mention the opener **and** BearThatCares. Do not invent a policy answer. |
+
+Close the ticket with `close_help_ticket` only when the opener confirmed
+it is resolved, or the person running the loop says to. A fix that is not
+deployed yet is not resolved.
 
 ### PR (always)
 
