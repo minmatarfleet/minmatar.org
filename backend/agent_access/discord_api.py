@@ -1,7 +1,7 @@
 """The only Discord HTTP the agent tools make.
 
 A small REST client with the bot token, deliberately separate from
-`discord.client.DiscordClient`: it exposes just GET and the two POST/PUT
+`discord.client.DiscordClient`: it exposes just GET and the POST/PUT/PATCH
 shapes the write tools need, makes one attempt with a short timeout and
 returns a rate limit to the agent (with Retry-After) instead of backing
 off inside a web request.
@@ -87,4 +87,13 @@ def put_reaction(channel_id: str, message_id: str, emoji: str) -> None:
     _request(
         "PUT",
         f"/channels/{channel_id}/messages/{message_id}/reactions/{encoded}/@me",
+    )
+
+
+def close_thread(thread_id: str) -> dict:
+    """Archive and lock a thread, as the bot's ticket Close button does."""
+    return _request(
+        "PATCH",
+        f"/channels/{thread_id}",
+        json={"archived": True, "locked": True},
     )

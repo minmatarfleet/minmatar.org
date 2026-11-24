@@ -118,6 +118,12 @@ DISCORD_INDUSTRY_CHANNEL_ID = env_int(
 DISCORD_AARS_FORUM_CHANNEL_ID = env_int(
     "DISCORD_AARS_FORUM_CHANNEL_ID", 1069380111897481256
 )
+# #help: the bot opens a private ticket thread here for each help request
+# (bot/app/settings.py reads the same variable). Agents may post in, and
+# close, the threads under it without a post target row.
+DISCORD_HELP_CHANNEL_ID = env_int(
+    "DISCORD_HELP_CHANNEL_ID", 1183401618943791186
+)
 # Parent channel for private fleet threads. Unset: the fleet audience's
 # channel (#pings for the alliance audience).
 DISCORD_PRIVATE_FLEET_CHANNEL_ID = env_int(

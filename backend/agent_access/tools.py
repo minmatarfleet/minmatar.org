@@ -1,10 +1,11 @@
 """The Discord tools an agent may call, and the rules around them.
 
 Reads reach every server the bot is in, except what `AgentDiscordReadBlock`
-excludes. Writes are two: send a message and add a reaction. They need a
-key that may write, writes switched on, the per-key rate limits, and an
-`AgentDiscordPostTarget` for the channel. Messages never ping @everyone,
-@here or roles. There are no tools for moderation, roles, permissions,
+excludes. Writes are three: send a message, add a reaction, and close a
+#help ticket. They need a key that may write, writes switched on, the
+per-key rate limits, and an `AgentDiscordPostTarget` for the channel; the
+ticket threads under `settings.DISCORD_HELP_CHANNEL_ID` count as one.
+Messages never ping @everyone, @here or roles. There are no tools for moderation, roles, permissions,
 webhooks, invites, edits or deletes, so the bot's other rights (including
 Administrator on some servers) are out of reach.
 """
@@ -13,7 +14,10 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import Callable
 
+from django.conf import settings as django_settings
 from django.utils import timezone
+
+from help_tickets.models import HelpTicket
 
 from . import discord_api
 from .discord_api import AgentDiscordError, snowflake
@@ -29,6 +33,7 @@ ADMINISTRATOR = 0x8
 THREAD_TYPES = {10, 11, 12}
 MAX_MESSAGE_LENGTH = 2000
 MAX_MENTIONS = 10
+MAX_CLOSE_REASON = 500
 
 
 class ToolRefused(Exception):
@@ -129,7 +134,18 @@ def check_channel(ctx: Context, channel_id) -> dict:
     return channel
 
 
+def is_help_thread(channel: dict) -> bool:
+    """A ticket thread under #help (not #help itself, where the panel is)."""
+    help_channel_id = str(django_settings.DISCORD_HELP_CHANNEL_ID or "")
+    return bool(help_channel_id) and (
+        channel.get("type") in THREAD_TYPES
+        and channel.get("parent_id") == help_channel_id
+    )
+
+
 def can_post(ctx: Context, channel: dict) -> bool:
+    if is_help_thread(channel):
+        return True
     for target in ctx.post_targets(channel.get("guild_id") or ""):
         if not target.channel_id or target.channel_id == channel["id"]:
             return True
@@ -471,6 +487,44 @@ def add_reaction(ctx: Context, args: dict) -> dict:
     return {"ok": True}
 
 
+def close_help_ticket(ctx: Context, args: dict) -> dict:
+    channel = check_channel(ctx, args.get("channel_id"))
+    if not is_help_thread(channel):
+        raise ToolRefused("Only ticket threads under #help can be closed")
+    reason = str(args.get("reason") or "").strip()
+    if len(reason) > MAX_CLOSE_REASON:
+        raise ToolRefused(f"reason is over {MAX_CLOSE_REASON} characters")
+    meta = channel.get("thread_metadata") or {}
+    if meta.get("archived") and meta.get("locked"):
+        raise ToolRefused("This ticket is already closed")
+    check_write(ctx, channel)
+    # Posting in an archived thread reopens it, so the notice goes first.
+    notice = discord_api.post_message(
+        channel["id"],
+        {
+            "content": (
+                "🔒 Ticket closed. "
+                f"**Reason:** {reason or 'No reason specified'}"
+            ),
+            "allowed_mentions": {"parse": []},
+        },
+    )
+    discord_api.close_thread(channel["id"])
+    ticket = HelpTicket.objects.filter(thread_id=int(channel["id"])).first()
+    if ticket and ticket.status != HelpTicket.STATUS_CLOSED:
+        ticket.mark_closed(
+            closed_by_discord_id=None,
+            closed_by=ctx.key.created_by,
+            close_reason=f"[agent: {ctx.key.name}] {reason}".strip(),
+        )
+    return {
+        "thread_id": channel["id"],
+        "closed": True,
+        "ticket_id": ticket.id if ticket else None,
+        "notice_message_id": (notice or {}).get("id"),
+    }
+
+
 # --- registry ----------------------------------------------------------------
 
 _ID = {"type": "string", "description": "A Discord id (snowflake)."}
@@ -612,6 +666,27 @@ TOOLS = [
         },
         ["channel_id", "message_id", "emoji"],
         add_reaction,
+        is_write=True,
+    ),
+    Tool(
+        "close_help_ticket",
+        "Close a #help ticket thread: post a closing notice with the "
+        "reason, then archive and lock the thread and mark the ticket "
+        "closed, as the ticket's Close button does. Only for threads "
+        "under #help.",
+        {
+            "channel_id": {
+                **_ID,
+                "description": "The ticket thread's id (a snowflake).",
+            },
+            "reason": {
+                "type": "string",
+                "maxLength": MAX_CLOSE_REASON,
+                "description": "Why it is closed; shown in the thread.",
+            },
+        },
+        ["channel_id"],
+        close_help_ticket,
         is_write=True,
     ),
 ]

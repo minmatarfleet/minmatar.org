@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
+from django.utils import timezone
 
 
 class HelpRequestCategory(models.Model):
@@ -56,7 +57,7 @@ class HelpRequestCategory(models.Model):
         return super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.title
+        return str(self.title)
 
 
 class HelpTicket(models.Model):
@@ -102,6 +103,29 @@ class HelpTicket(models.Model):
 
     def __str__(self):
         return f"HelpTicket #{self.pk} ({self.status}) — {self.thread_name}"
+
+    def mark_closed(
+        self,
+        *,
+        closed_by_discord_id: int | None,
+        closed_by: User | None,
+        close_reason: str,
+    ) -> None:
+        """Record the close, once the Discord thread is archived."""
+        self.status = self.STATUS_CLOSED
+        self.closed_at = timezone.now()
+        self.closed_by_discord_id = closed_by_discord_id
+        self.closed_by = closed_by
+        self.close_reason = close_reason
+        self.save(
+            update_fields=[
+                "status",
+                "closed_at",
+                "closed_by_discord_id",
+                "closed_by",
+                "close_reason",
+            ],
+        )
 
     class Meta:
         ordering = ["-opened_at"]
