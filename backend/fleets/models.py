@@ -470,9 +470,12 @@ class EveFleetInstance(models.Model):
 
         for esi_fleet_member in response:
             apply_esi_fleet_member(self, esi_fleet_member, resolved_ids)
-        mark_members_left(
-            self, {member["character_id"] for member in response}
-        )
+        # A live fleet always lists its boss, so an empty answer is a bad
+        # read, not everyone leaving at once.
+        if response:
+            mark_members_left(
+                self, {member["character_id"] for member in response}
+            )
 
         self.last_updated = timezone.now()
         self.save()
@@ -625,6 +628,11 @@ class EveFleetMiningSegment(models.Model):
     latest_totals = models.JSONField(null=True, blank=True)
     start_read_at = models.DateTimeField(null=True, blank=True)
     latest_read_at = models.DateTimeField(null=True, blank=True)
+    # ISO times of every ledger read ESI answered while the stint was open
+    # or closing, from any caller (the character-sync scheduler included),
+    # with or without new ore. The timeline spreads each "+X ore" row over
+    # the gap since the read before it.
+    read_times = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

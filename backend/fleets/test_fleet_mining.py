@@ -4,13 +4,22 @@ from datetime import date, timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
+from unittest.mock import MagicMock
+
 import factory
 from django.db.models import signals
+from django.test import override_settings
 from django.utils import timezone
 from eveuniverse.models import EveType
 
+from alliance.helpers.landing_pulse import UNDISCLOSED
+from alliance.tests.test_landing_pulse import _system
 from buyback.tests.helpers import ensure_type
-from eveonline.helpers.characters.mining import mining_totals_since
+from eveonline.helpers.characters.mining import (
+    mining_ledger_read,
+    mining_totals_since,
+    sync_character_mining,
+)
 from eveonline.models import EveCharacter
 from eveonline.models.characters import (
     EveCharacterMiningDelta,
@@ -37,7 +46,8 @@ VELD = 1230
 SCORDITE = 1228
 PILOT_A = 95000001
 PILOT_B = 95000002
-SYSTEM = 30002068
+SYSTEM = 30002068  # Amamake, low sec
+HIGH_SYSTEM = 30002510  # Rens, high sec
 SHIP = 32880
 
 
@@ -136,8 +146,8 @@ class MiningTestBase(GroupFleetTestBase):
         for segment in Segment.objects.all():
             take(segment.id)
 
-    def results(self, visible=lambda _: True):
-        return mining.fleet_mining_results(self.fleet, visible)
+    def results(self, name_pilot=lambda cid, name: (cid, name)):
+        return mining.fleet_mining_results(self.fleet, name_pilot)
 
 
 class StintTests(MiningTestBase):
@@ -292,7 +302,11 @@ class StintTests(MiningTestBase):
         self.ledger[PILOT_B] = {str(VELD): 30}
         self.read_all("poll")
 
-        result = self.results(visible=lambda cid: cid == PILOT_A)
+        result = self.results(
+            name_pilot=lambda cid, name: (
+                (cid, name) if cid == PILOT_A else (None, None)
+            )
+        )
         names = [p["character_name"] for p in result["pilots"]]
         self.assertEqual(names, [None, "Miner A"])
         self.assertIsNone(result["pilots"][0]["character_id"])
@@ -306,6 +320,11 @@ class DueSegmentsTests(MiningTestBase):
         now = timezone.now()
         Segment.objects.filter(pk=a.pk).update(
             started_at=now - timedelta(minutes=5)
+        )
+        # Still inside the start task's own retries.
+        self.assertEqual(mining.due_segments(now)["start"], [])
+        Segment.objects.filter(pk=a.pk).update(
+            started_at=now - timedelta(minutes=20)
         )
         self.assertEqual(mining.due_segments(now)["start"], [a.pk])
 
@@ -381,6 +400,15 @@ class TimelineTests(MiningTestBase):
             quantity=quantity,
             observed_at=self.t0 + timedelta(minutes=minutes),
         )
+        # The read that saw it is stamped a moment after the row is saved.
+        self.read(character_id, minutes, seconds=1)
+
+    def read(self, character_id, minutes, seconds=0):
+        """A ledger read at t0 + minutes, stamped on the pilot's stints."""
+        at = self.t0 + timedelta(minutes=minutes, seconds=seconds)
+        for segment in self.segments(character_id):
+            segment.read_times = list(segment.read_times) + [at.isoformat()]
+            segment.save(update_fields=["read_times"])
 
     def setUp(self):
         super().setUp()
@@ -402,16 +430,24 @@ class TimelineTests(MiningTestBase):
 
     def timeline(self):
         return mining.fleet_mining_timeline(
-            self.fleet, lambda _: True, now=self.t0 + timedelta(minutes=89)
+            self.fleet,
+            lambda cid, name: (cid, name),
+            now=self.t0 + timedelta(minutes=89),
         )
 
     def test_buckets_cells_and_idle(self):
         self.delta(PILOT_A, -5, 999)  # before the start reading: excluded
         self.delta(PILOT_A, 5, 1000)  # bucket 0
         self.delta(PILOT_A, 20, 1000)  # bucket 1
-        self.delta(PILOT_A, 80, 1000)  # bucket 5; 2-4 empty: idle
+        self.read(PILOT_A, 35)  # reads that found nothing
+        self.read(PILOT_A, 50)
+        self.read(PILOT_A, 65)
+        self.delta(PILOT_A, 80, 1000)  # spread over 65-80: buckets 4, 5
         self.delta(PILOT_B, 25, 500)  # before B's start reading: excluded
-        self.delta(PILOT_B, 40, 500)  # bucket 2
+        self.delta(PILOT_B, 40, 500)  # spread over 30-40: bucket 2
+        self.read(PILOT_B, 55)
+        self.read(PILOT_B, 70)
+        self.read(PILOT_B, 85)
 
         result = self.timeline()
 
@@ -419,26 +455,32 @@ class TimelineTests(MiningTestBase):
         self.assertEqual(len(result["buckets"]), 6)
         a, b = result["pilots"]
         self.assertEqual(a["character_name"], "Miner A")
+        # 20's ore covers 5-20, so it reaches into bucket 1; 2 and 3 had
+        # only empty reads.
         self.assertEqual(
-            a["cells"], ["ore", "ore", "idle", "idle", "idle", "ore"]
+            a["cells"], ["ore", "ore", "idle", "idle", "ore", "ore"]
         )
         self.assertEqual(a["volume_m3"], 300.0)
-        self.assertEqual(a["mining_pct"], 50)
+        self.assertEqual(a["mining_pct"], 67)
         self.assertEqual(
             b["cells"], ["out", "out", "ore", "idle", "idle", "idle"]
         )
         self.assertEqual(b["volume_m3"], 50.0)
-        self.assertEqual(result["totals_m3"][0], 100.0)
+        # 100 from 0-5, plus 10 of the 15 minutes 5-20 covers.
+        self.assertAlmostEqual(result["totals_m3"][0], 166.67, delta=0.5)
         self.assertEqual(result["totals_m3"][2], 50.0)
 
     def test_single_empty_bucket_is_quiet_not_idle(self):
         self.delta(PILOT_A, 5, 100)
-        self.delta(PILOT_A, 35, 100)
+        self.read(PILOT_A, 15)
+        self.read(PILOT_A, 30)
+        self.delta(PILOT_A, 40, 100)  # covers 30-40 only
         cells = self.timeline()["pilots"][0]["cells"]
         self.assertEqual(cells[:3], ["ore", "quiet", "ore"])
 
     def test_ore_after_leaving_is_cut_at_the_end_reading(self):
         self.delta(PILOT_A, 5, 100)
+        self.read(PILOT_A, 20)
         self.poll(PILOT_B)  # A leaves
         a = self.segments(PILOT_A)[0]
         Segment.objects.filter(pk=a.pk).update(
@@ -454,7 +496,9 @@ class TimelineTests(MiningTestBase):
             if p["character_name"] == "Miner A"
         )
         self.assertEqual(pilot["volume_m3"], 30.0)
-        self.assertEqual(pilot["cells"][2], "ore")  # drawn at the leave
+        # The end reading's ore covers 20 up to the leave at 30.
+        self.assertEqual(pilot["cells"][1], "ore")
+        self.assertEqual(pilot["cells"][2], "quiet")
         self.assertEqual(pilot["cells"][3:], ["out", "out", "out"])
 
     def test_log_is_newest_first_with_joins(self):
@@ -501,7 +545,8 @@ class TimelineMixedTests(TimelineTests):
             latest_totals={str(VELD): 1500},
             latest_read_at=self.t0 + timedelta(minutes=80),
         )
-        self.delta(PILOT_A, 70, 300)  # only the last 300 were timed
+        self.read(PILOT_A, 60)
+        self.delta(PILOT_A, 70, 300)  # only the last 500 were timed
         self.delta(PILOT_A, 80, 200)
         pilot = next(
             p
@@ -509,5 +554,243 @@ class TimelineMixedTests(TimelineTests):
             if p["character_name"] == "Miner A"
         )
         self.assertEqual(pilot["volume_m3"], 150.0)  # all 1500 units
-        self.assertEqual(pilot["cell_m3"][4], 130.0)  # 1000 untimed + 300
-        self.assertEqual(pilot["cell_m3"][5], 20.0)
+        # 1000 untimed at 70, 300 over 60-70, half of 200 over 70-80.
+        self.assertAlmostEqual(pilot["cell_m3"][4], 140.0, delta=0.5)
+        self.assertAlmostEqual(pilot["cell_m3"][5], 10.0, delta=0.5)
+
+
+class LedgerReadStampTests(MiningTestBase):
+    """Every ledger read, the scheduler's included, is stamped on stints."""
+
+    def setUp(self):
+        super().setUp()
+        self.poll(PILOT_A, PILOT_B)
+        self.ledger[PILOT_A] = {str(VELD): 100}
+        self.read_all("start")
+        self.character_a = EveCharacter.objects.get(character_id=PILOT_A)
+
+    def ledger_row(self, quantity):
+        EveCharacterMiningEntry.objects.update_or_create(
+            character=self.character_a,
+            eve_type_id=VELD,
+            date=timezone.now().date(),
+            solar_system_id=SYSTEM,
+            defaults={"quantity": quantity},
+        )
+
+    def test_an_open_stint_takes_the_read_as_its_latest_reading(self):
+        self.ledger_row(700)
+        at = timezone.now()
+        mining_ledger_read.send(
+            sender=None, character=self.character_a, read_at=at
+        )
+        a = self.segments(PILOT_A)[0]
+        self.assertEqual(a.read_times, [at.isoformat()])
+        self.assertEqual(a.latest_totals, {str(VELD): 700})
+        self.assertEqual(a.latest_read_at, at)
+        # So our own live poll isn't due.
+        self.assertNotIn(a.pk, mining.due_segments()["poll"])
+        # Other pilots aren't touched.
+        self.assertEqual(self.segments(PILOT_B)[0].read_times, [])
+
+    def test_a_closing_stint_is_stamped_but_keeps_its_totals(self):
+        self.poll(PILOT_B)  # A leaves
+        self.ledger_row(900)
+        mining_ledger_read.send(
+            sender=None, character=self.character_a, read_at=timezone.now()
+        )
+        a = self.segments(PILOT_A)[0]
+        self.assertEqual(a.status, Segment.STATUS_CLOSING)
+        self.assertEqual(len(a.read_times), 1)
+        self.assertEqual(a.latest_totals, {str(VELD): 100})
+
+    def test_no_stamp_once_track_mining_is_off(self):
+        self.fleet.track_mining = False
+        self.fleet.save()
+        mining_ledger_read.send(
+            sender=None, character=self.character_a, read_at=timezone.now()
+        )
+        self.assertEqual(self.segments(PILOT_A)[0].read_times, [])
+
+    def test_sync_sends_the_read_even_with_no_new_ore(self):
+        response = MagicMock()
+        response.success.return_value = True
+        response.results.return_value = []
+        received = []
+
+        def listener(sender, character, read_at, **kwargs):
+            received.append((character.character_id, read_at))
+
+        mining_ledger_read.connect(listener)
+        self.addCleanup(mining_ledger_read.disconnect, listener)
+        with patch("eveonline.helpers.characters.mining.EsiClient") as client:
+            client.return_value.get_character_mining_ledger.return_value = (
+                response
+            )
+            sync_character_mining(self.character_a)
+        self.assertEqual([r[0] for r in received], [PILOT_A])
+
+    def test_failed_sync_sends_nothing(self):
+        response = MagicMock()
+        response.success.return_value = False
+        received = []
+
+        def listener(sender, **kwargs):
+            received.append(kwargs)
+
+        mining_ledger_read.connect(listener)
+        self.addCleanup(mining_ledger_read.disconnect, listener)
+        with patch("eveonline.helpers.characters.mining.EsiClient") as client:
+            client.return_value.get_character_mining_ledger.return_value = (
+                response
+            )
+            self.assertIsNone(sync_character_mining(self.character_a))
+        self.assertEqual(received, [])
+
+
+class DueModeTests(MiningTestBase):
+    def setUp(self):
+        super().setUp()
+        self.poll(PILOT_A)
+        self.read_all("start")
+        self.a = self.segments(PILOT_A)[0]
+
+    def read_ago(self, minutes):
+        Segment.objects.filter(pk=self.a.pk).update(
+            latest_read_at=timezone.now() - timedelta(minutes=minutes)
+        )
+
+    @override_settings(CHARACTER_SYNC_MODE="scheduled")
+    def test_scheduled_mode_only_polls_as_a_fallback(self):
+        self.read_ago(20)  # the scheduler is due about now
+        self.assertEqual(mining.due_segments()["poll"], [])
+        self.read_ago(30)  # it missed this pilot
+        self.assertEqual(mining.due_segments()["poll"], [self.a.pk])
+
+    @override_settings(CHARACTER_SYNC_MODE="fanout")
+    def test_fanout_mode_polls_every_interval(self):
+        self.read_ago(20)
+        self.assertEqual(mining.due_segments()["poll"], [self.a.pk])
+
+    def test_track_mining_off_stops_polls(self):
+        self.read_ago(30)
+        self.fleet.track_mining = False
+        self.fleet.save()
+        self.assertEqual(mining.due_segments()["poll"], [])
+
+
+@patch("fleets.endpoints.helpers.queue_channel_message")
+class TrackMiningOffTests(MiningTestBase):
+    def test_switching_off_closes_open_stints(self, _):
+        self.poll(PILOT_A, PILOT_B)
+        self.read_all("start")
+        response = self.call(
+            "patch", f"/{self.fleet.id}", self.fc, {"track_mining": False}
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        statuses = set(Segment.objects.values_list("status", flat=True))
+        self.assertEqual(statuses, {Segment.STATUS_CLOSING})
+        # Members seen later don't open new stints.
+        self.instance = EveFleetInstance.objects.get(pk=self.instance.pk)
+        self.poll(PILOT_A, PILOT_B)
+        self.assertEqual(Segment.objects.count(), 2)
+
+
+class EmptyMemberPollTests(MiningTestBase):
+    def test_empty_answer_does_not_mark_everyone_left(self):
+        self.poll(PILOT_A, PILOT_B)
+        response = MagicMock()
+        response.success.return_value = True
+        response.results.return_value = []
+        with patch.object(EveFleetInstance, "esi_client") as esi_client, patch(
+            "fleets.models.EsiClient"
+        ) as names:
+            esi_client.return_value.get_fleet_members.return_value = response
+            names.return_value.resolve_universe_names.return_value.results.return_value = (
+                []
+            )
+            self.instance.update_fleet_members()
+        self.assertFalse(
+            EveFleetInstanceMember.objects.filter(
+                left_at__isnull=False
+            ).exists()
+        )
+        self.assertEqual(
+            Segment.objects.filter(ended_at__isnull=True).count(), 2
+        )
+
+
+class UnstampedSpreadTests(TimelineTests):
+    def test_rows_with_no_stamped_read_cover_at_most_the_fleet_interval(self):
+        EveCharacterMiningDelta.objects.create(
+            character=EveCharacter.objects.get(character_id=PILOT_A),
+            eve_type_id=VELD,
+            solar_system_id=SYSTEM,
+            quantity=1500,
+            observed_at=self.t0 + timedelta(minutes=60),
+        )
+        pilot = self.timeline()["pilots"][0]
+        # 45-60 only: buckets 0-2 stay empty.
+        self.assertEqual(pilot["cell_m3"][3], 150.0)
+        self.assertEqual(pilot["cells"][:3], ["idle", "idle", "idle"])
+
+
+class PilotNamerTests(MiningTestBase):
+    def setUp(self):
+        super().setUp()
+        _system(SYSTEM, "Amamake", 0.4, 10000042, "Heimatar")
+        _system(HIGH_SYSTEM, "Rens", 0.9, 10000030, "Heimatar")
+        self.poll(PILOT_A, PILOT_B)
+        self.ledger[PILOT_A] = {str(VELD): 0}
+        self.ledger[PILOT_B] = {str(VELD): 0}
+        self.read_all("start")
+        self.ledger[PILOT_A] = {str(VELD): 100}
+        self.ledger[PILOT_B] = {str(VELD): 100}
+        self.read_all("poll")
+        for character_id, system in (
+            (PILOT_A, SYSTEM),
+            (PILOT_B, HIGH_SYSTEM),
+        ):
+            EveCharacterMiningDelta.objects.create(
+                character=EveCharacter.objects.get(character_id=character_id),
+                eve_type_id=VELD,
+                solar_system_id=system,
+                quantity=100,
+                # Just after the start reading, so before "now".
+                observed_at=self.segments(character_id)[0].start_read_at
+                + timedelta(microseconds=100),
+            )
+
+    def namer(self, **kwargs):
+        options = {
+            "sees_everyone": False,
+            "roster_shown": True,
+            "own_ids": set(),
+        }
+        options.update(kwargs)
+        return mining.pilot_namer(self.fleet, **options)
+
+    def test_outside_high_sec_is_undisclosed(self):
+        name = self.namer()
+        self.assertEqual(name(PILOT_A, "Miner A"), (None, UNDISCLOSED))
+        self.assertEqual(name(PILOT_B, "Miner B"), (PILOT_B, "Miner B"))
+
+    def test_fc_and_own_pilots_see_the_real_name(self):
+        self.assertEqual(
+            self.namer(sees_everyone=True)(PILOT_A, "Miner A"),
+            (PILOT_A, "Miner A"),
+        )
+        self.assertEqual(
+            self.namer(own_ids={PILOT_A})(PILOT_A, "Miner A"),
+            (PILOT_A, "Miner A"),
+        )
+
+    def test_hidden_roster_hides_every_other_name(self):
+        name = self.namer(roster_shown=False)
+        self.assertEqual(name(PILOT_B, "Miner B"), (None, None))
+
+    def test_results_keep_undisclosed_ore_in_the_totals(self):
+        result = mining.fleet_mining_results(self.fleet, self.namer())
+        names = {p["character_name"] for p in result["pilots"]}
+        self.assertEqual(names, {UNDISCLOSED, "Miner B"})
+        self.assertEqual(result["ores"][0]["quantity"], 200)

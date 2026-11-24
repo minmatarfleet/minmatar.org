@@ -3,6 +3,7 @@
 import logging
 from datetime import date, timedelta
 
+from django.dispatch import Signal
 from django.utils import timezone
 
 from eveuniverse.models import EveType, EveTypeMaterial
@@ -15,6 +16,11 @@ from eveonline.models.characters import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Sent after every ledger read ESI answered, with or without new ore:
+# ``character`` and ``read_at``. A read that finds nothing new stores no
+# EveCharacterMiningDelta row, so this is the only record that it ran.
+mining_ledger_read = Signal()
 
 
 def _ensure_type_materials(eve_type: EveType) -> None:
@@ -96,7 +102,13 @@ def sync_character_mining(character: EveCharacter) -> int | None:
         )
         return None
 
-    return _store_ledger_entries(character, response.results() or [])
+    synced = _store_ledger_entries(character, response.results() or [])
+    mining_ledger_read.send(
+        sender=sync_character_mining,
+        character=character,
+        read_at=timezone.now(),
+    )
+    return synced
 
 
 def mining_totals_since(

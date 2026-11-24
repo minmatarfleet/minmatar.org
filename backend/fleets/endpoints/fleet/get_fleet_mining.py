@@ -7,8 +7,16 @@ from pydantic import BaseModel
 
 from authentication import AuthBearer
 from eveonline.helpers.characters import user_characters
-from fleets.endpoints.helpers import _fleet_authorized, sees_all_volunteers
-from fleets.helpers.mining import fleet_mining_results, fleet_mining_timeline
+from fleets.endpoints.helpers import (
+    _fleet_authorized,
+    is_strategic_fc,
+    sees_all_volunteers,
+)
+from fleets.helpers.mining import (
+    fleet_mining_results,
+    fleet_mining_timeline,
+    pilot_namer,
+)
 from fleets.models import EveFleet
 
 PATH = "/{fleet_id}/mining"
@@ -94,10 +102,12 @@ ROUTE_SPEC = {
         "readings land about every 15 minutes, and end "
         "readings about 11 minutes after a pilot leaves or the fleet ends "
         "(measuring stays true until then). Pilots without the mining scope "
-        "are listed as no_scope. When the fleet hides its roster, only its "
-        "FC and Strategic FCs see every name; others see their own pilots "
-        "by name and the rest without. Empty for a fleet that never tracked "
-        "mining."
+        "are listed as no_scope. The fleet's FC and Strategic FCs see every "
+        "pilot by name, and everyone sees their own. Otherwise: when the "
+        "fleet hides its roster, other pilots have no name; else they show "
+        "as their owner's main, or as 'Undisclosed Character' (no id) when "
+        "their ore came from outside high sec, like the homepage feed. "
+        "Empty for a fleet that never tracked mining."
     ),
 }
 
@@ -109,17 +119,19 @@ def get_fleet_mining(request, fleet_id: int):
     if not _fleet_authorized(request, fleet):
         return 403, None
 
-    see_all = sees_all_volunteers(request.user, fleet)
-    own_ids = (
-        set()
-        if see_all
-        else {c.character_id for c in user_characters(request.user)}
+    user = request.user
+    sees_everyone = user == fleet.created_by or is_strategic_fc(user)
+    name_pilot = pilot_namer(
+        fleet,
+        sees_everyone=sees_everyone,
+        roster_shown=sees_all_volunteers(user, fleet),
+        own_ids=(
+            set()
+            if sees_everyone
+            else {c.character_id for c in user_characters(user)}
+        ),
     )
-
-    def visible(character_id: int) -> bool:
-        return see_all or character_id in own_ids
-
     return FleetMiningResponse(
-        **fleet_mining_results(fleet, visible),
-        timeline=fleet_mining_timeline(fleet, visible),
+        **fleet_mining_results(fleet, name_pilot),
+        timeline=fleet_mining_timeline(fleet, name_pilot),
     )
