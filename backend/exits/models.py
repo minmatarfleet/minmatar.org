@@ -144,3 +144,23 @@ class RejoinFlag(models.Model):
 
     def __str__(self):
         return f"{self.character_id} can't rejoin ({self.corporation})"
+
+
+class FlagAcceptance(models.Model):
+    """A recruiter accepted an applicant despite active can't-rejoin flags."""
+
+    application = models.ForeignKey(
+        "applications.EveCorporationApplication",
+        on_delete=models.CASCADE,
+        related_name="flag_acceptances",
+    )
+    flag_ids = models.JSONField(default=list)
+    accepted_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, related_name="+"
+    )
+    accepted_at = models.DateTimeField()
+
+    def __str__(self):
+        return (
+            f"Application {self.application_id} accepted over {self.flag_ids}"
+        )

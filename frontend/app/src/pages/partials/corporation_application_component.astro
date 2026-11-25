@@ -49,7 +49,12 @@ if (Astro.request.method === "POST") {
 
     try {
         if (action == 'accept') {
-            await accept_corporation_applications(auth_token as string, corporation_id, application_id)
+            await accept_corporation_applications(
+                auth_token as string,
+                corporation_id,
+                application_id,
+                Astro.url.searchParams.get('confirm_flags') === 'true',
+            )
         } else if (action == 'deny') {
             await reject_corporation_applications(auth_token as string, corporation_id, application_id)
         } else if (action == 'transfer') {

@@ -53,3 +53,10 @@ class HistoryEntryResponse(Schema):
     answered_by_name: str
     # The entry carries a can't-rejoin flag that hasn't been cleared.
     flag_active: bool
+
+
+class FlaggedApplicantResponse(Schema):
+    """409 from accept: the applicant has can't-rejoin flags to confirm."""
+
+    detail: str
+    flags: list[HistoryEntryResponse]

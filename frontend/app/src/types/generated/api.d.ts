@@ -20330,6 +20330,16 @@ export interface components {
             /** Cleared */
             cleared: boolean;
         };
+        /**
+         * FlaggedApplicantResponse
+         * @description 409 from accept: the applicant has can't-rejoin flags to confirm.
+         */
+        FlaggedApplicantResponse: {
+            /** Detail */
+            detail: string;
+            /** Flags */
+            flags: components["schemas"]["HistoryEntryResponse"][];
+        };
         /** FleetBattleActivity */
         FleetBattleActivity: {
             /** Isk */
@@ -35649,7 +35659,9 @@ export interface operations {
     };
     applications_router_accept_corporation_application: {
         parameters: {
-            query?: never;
+            query?: {
+                confirm_flags?: boolean;
+            };
             header?: never;
             path: {
                 corporation_id: number;
@@ -35684,6 +35696,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlaggedApplicantResponse"];
                 };
             };
         };

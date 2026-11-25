@@ -20462,6 +20462,28 @@
         "title": "FlagClearResponse",
         "type": "object"
       },
+      "FlaggedApplicantResponse": {
+        "description": "409 from accept: the applicant has can't-rejoin flags to confirm.",
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "flags": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryEntryResponse"
+            },
+            "title": "Flags",
+            "type": "array"
+          }
+        },
+        "required": [
+          "detail",
+          "flags"
+        ],
+        "title": "FlaggedApplicantResponse",
+        "type": "object"
+      },
       "FleetBattleActivity": {
         "properties": {
           "isk": {
@@ -58182,6 +58204,16 @@
               "title": "Application Id",
               "type": "integer"
             }
+          },
+          {
+            "in": "query",
+            "name": "confirm_flags",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Confirm Flags",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -58214,6 +58246,16 @@
               }
             },
             "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlaggedApplicantResponse"
+                }
+              }
+            },
+            "description": "Conflict"
           }
         },
         "security": [
