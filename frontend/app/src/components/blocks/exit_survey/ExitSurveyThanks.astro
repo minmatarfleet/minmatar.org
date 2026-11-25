@@ -1,0 +1,26 @@
+---
+/** After an exit survey is sent (#3198, design 07). */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Button from '@components/blocks/Button.astro'
+
+interface Props {
+    [propName: string]: any;
+}
+
+const { ...attributes } = Astro.props
+delete attributes.class
+---
+
+<ComponentBlock class:list={['[ exit-survey ]', Astro.props.class]} {...attributes}>
+    <Flexblock gap="var(--space-s)">
+        <h2 role="status">{t('exit_survey.thanks_title')}</h2>
+        <p>{t('exit_survey.thanks_body')}</p>
+        <div>
+            <Button href={translatePath('/alliance/corporations/')} size="sm" color="transparent">{t('exit_survey.corporations_link')}</Button>
+        </div>
+    </Flexblock>
+</ComponentBlock>

@@ -18672,6 +18672,109 @@
         "title": "EventWhereKind",
         "type": "string"
       },
+      "ExitSurveyFormResponse": {
+        "description": "The no-login exit or alliance move survey behind a mailed link (#3198).",
+        "properties": {
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/BlockSchema"
+            },
+            "title": "Blocks",
+            "type": "array"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "corporation_id": {
+            "title": "Corporation Id",
+            "type": "integer"
+          },
+          "corporation_name": {
+            "title": "Corporation Name",
+            "type": "string"
+          },
+          "definition_key": {
+            "title": "Definition Key",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "member_from": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member From"
+          },
+          "member_to": {
+            "format": "date-time",
+            "title": "Member To",
+            "type": "string"
+          },
+          "new_corporation_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Corporation Name"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "definition_key",
+          "title",
+          "corporation_id",
+          "corporation_name",
+          "character_name",
+          "member_to",
+          "kind",
+          "blocks"
+        ],
+        "title": "ExitSurveyFormResponse",
+        "type": "object"
+      },
+      "ExitSurveySubmitRequest": {
+        "properties": {
+          "answers": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AnswerInput"
+            },
+            "title": "Answers",
+            "type": "array"
+          }
+        },
+        "title": "ExitSurveySubmitRequest",
+        "type": "object"
+      },
+      "ExitSurveySubmitResponse": {
+        "properties": {
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "title": "ExitSurveySubmitResponse",
+        "type": "object"
+      },
       "FacilityDetailSchema": {
         "properties": {
           "cost_indices": {
@@ -92492,6 +92595,128 @@
         "summary": "Get Active",
         "tags": [
           "Surveys",
+          "Surveys"
+        ]
+      }
+    },
+    "/api/surveys/exit/{token}": {
+      "get": {
+        "operationId": "surveys_endpoints_get_exit_survey_get_exit_survey",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExitSurveyFormResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Gone"
+          }
+        },
+        "summary": "An exit or alliance move survey, from its link (no login)",
+        "tags": [
+          "Surveys"
+        ]
+      },
+      "post": {
+        "operationId": "surveys_endpoints_post_exit_survey_post_exit_survey",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExitSurveySubmitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExitSurveySubmitResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Gone"
+          }
+        },
+        "summary": "Answer an exit or alliance move survey (no login, once)",
+        "tags": [
           "Surveys"
         ]
       }

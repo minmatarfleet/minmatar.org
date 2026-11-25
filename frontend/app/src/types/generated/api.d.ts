@@ -9564,6 +9564,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/surveys/exit/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An exit or alliance move survey, from its link (no login) */
+        get: operations["surveys_endpoints_get_exit_survey_get_exit_survey"];
+        put?: never;
+        /** Answer an exit or alliance move survey (no login, once) */
+        post: operations["surveys_endpoints_post_exit_survey_post_exit_survey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/surveys/{campaign_id}": {
         parameters: {
             query?: never;
@@ -19665,6 +19683,48 @@ export interface components {
          * @enum {string}
          */
         EventWhereKind: "voice" | "place";
+        /**
+         * ExitSurveyFormResponse
+         * @description The no-login exit or alliance move survey behind a mailed link (#3198).
+         */
+        ExitSurveyFormResponse: {
+            /** Blocks */
+            blocks: components["schemas"]["BlockSchema"][];
+            /** Character Name */
+            character_name: string;
+            /** Corporation Id */
+            corporation_id: number;
+            /** Corporation Name */
+            corporation_name: string;
+            /** Definition Key */
+            definition_key: string;
+            /** Kind */
+            kind: string;
+            /** Member From */
+            member_from?: string | null;
+            /**
+             * Member To
+             * Format: date-time
+             */
+            member_to: string;
+            /** New Corporation Name */
+            new_corporation_name?: string | null;
+            /** Title */
+            title: string;
+        };
+        /** ExitSurveySubmitRequest */
+        ExitSurveySubmitRequest: {
+            /**
+             * Answers
+             * @default []
+             */
+            answers?: components["schemas"]["AnswerInput"][];
+        };
+        /** ExitSurveySubmitResponse */
+        ExitSurveySubmitResponse: {
+            /** Ok */
+            ok: boolean;
+        };
         /** FacilityDetailSchema */
         FacilityDetailSchema: {
             cost_indices: components["schemas"]["CostIndicesSchema"];
@@ -58575,6 +58635,99 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ActiveSurveySchema"];
+                };
+            };
+        };
+    };
+    surveys_endpoints_get_exit_survey_get_exit_survey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExitSurveyFormResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Gone */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    surveys_endpoints_post_exit_survey_post_exit_survey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExitSurveySubmitRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExitSurveySubmitResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Gone */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

@@ -7,7 +7,7 @@ import type {
     TribeEventRowUI,
     TribeGroupRefUI,
 } from '@dtypes/layout_components'
-import type { CorporationLeadershipMember, DepartureGroup, FlaggedJoin, HistoryEntry, TrialProgress, TribeMembership } from '@dtypes/api.minmatar.org'
+import type { CorporationLeadershipMember, DepartureGroup, ExitSurveyForm, FlaggedJoin, HistoryEntry, TrialProgress, TribeMembership } from '@dtypes/api.minmatar.org'
 import { EVE } from '../../stories/_controls'
 
 // Corporations -----------------------------------------------------------------------------
@@ -290,3 +290,44 @@ export const flagged_joins: FlaggedJoin[] = [
     { id: 1, character_id: 2112000104, character_name: 'Dren Halvik', seen_at: '2026-11-22T12:00:00Z', removal_expected: false, flags: [history_flagged[0]] },
     { id: 2, character_id: 2112000109, character_name: 'Vex Arlen', seen_at: '2026-11-21T12:00:00Z', removal_expected: true, flags: [history_flagged[0]] },
 ]
+
+// Exit survey page (#3198): the questions of definition version 1.
+const survey_question = (key: string, type: string, label: string, fields: Record<string, unknown> = {}) => ({
+    key, type, label, help: '', choices: [] as string[], rows: [], required: false, trendable: false,
+    group: '', scale_labels: null as string[] | null, scale_kind: '', context: null, ...fields,
+})
+const survey_ratings = (corporation: string) => ({
+    key: 'exit.ratings', title: 'Your time in the corporation', description: '',
+    questions: [
+        survey_question('exit.enjoyment', 'scale5', `Overall, how much did you enjoy ${corporation}?`, { required: true, scale_labels: ['Not at all', 'A lot'] }),
+        survey_question('exit.leadership', 'scale5', 'Leadership', { required: true, scale_labels: ['Poor', 'Great'] }),
+        survey_question('exit.activity', 'scale5', 'Activity and content', { required: true, scale_labels: ['Poor', 'Great'] }),
+        survey_question('exit.welcome', 'scale5', 'Feeling welcome and included', { required: true, scale_labels: ['Poor', 'Great'] }),
+    ],
+})
+
+export const exit_survey_form = {
+    definition_key: 'exit', title: 'Exit survey', corporation_id: 98000001, corporation_name: 'Example Corp',
+    character_name: 'Kesh Varo', member_from: '2026-08-02T12:00:00Z', member_to: '2026-11-15T12:00:00Z',
+    kind: 'exit', new_corporation_name: null,
+    blocks: [
+        survey_ratings('Example Corp'),
+        { key: 'exit.leaving', title: 'Leaving', description: '', questions: [
+            survey_question('exit.why_left', 'multi', 'Why did you leave?', { help: 'Pick any that fit', choices: ['I was inactive in EVE', 'The corporation was inactive', 'Leadership issues', 'Timezone', 'I wanted different content', 'I joined friends elsewhere', "I'm quitting EVE", 'Other'] }),
+            survey_question('exit.problem', 'text', 'Was there a problem with the corporation we should know about?'),
+            survey_question('exit.anything_else', 'text', 'Anything else?'),
+        ] },
+    ],
+} as unknown as ExitSurveyForm
+
+export const alliance_move_survey_form = {
+    ...exit_survey_form, definition_key: 'alliance_move', title: 'Alliance move survey', kind: 'alliance_move',
+    new_corporation_name: 'Tribal Liberation Force', member_from: null,
+    blocks: [
+        survey_ratings('Example Corp'),
+        { key: 'move.moving', title: 'Moving', description: '', questions: [
+            survey_question('move.why', 'text', 'Why did you move to Tribal Liberation Force?'),
+            survey_question('move.onboarding', 'scale5', "What was Tribal Liberation Force's onboarding like?", { scale_labels: ['Poor', 'Great'] }),
+        ] },
+    ],
+} as unknown as ExitSurveyForm

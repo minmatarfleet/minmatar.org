@@ -3384,3 +3384,4 @@ export type DepartureGroup = ApiResponse<'DepartureGroupResponse'>
 export type DepartureAnswer = ApiRequest<'DepartureAnswerRequest'>
 export type HistoryEntry = ApiResponse<'HistoryEntryResponse'>
 export type FlaggedJoin = ApiResponse<'FlaggedJoinResponse'>
+export type ExitSurveyForm = ApiResponse<'ExitSurveyFormResponse'>
