@@ -98,3 +98,49 @@ class Departure(models.Model):
 
     def __str__(self):
         return f"{self.character_id} left {self.corporation} ({self.status})"
+
+
+class RejoinFlag(models.Model):
+    """A CEO's "can't rejoin" answer, seen by every alliance corporation's recruiters.
+
+    Keyed by character ID; ``user`` widens it to every character on the
+    account, alts added later included. Active while ``cleared_at`` is null.
+    """
+
+    character_id = models.BigIntegerField(db_index=True)
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="rejoin_flags",
+    )
+    departure = models.ForeignKey(
+        Departure, on_delete=models.CASCADE, related_name="flags"
+    )
+    corporation = models.ForeignKey(
+        EveCorporation, on_delete=models.CASCADE, related_name="rejoin_flags"
+    )
+    note = models.TextField()
+    set_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="rejoin_flags_set",
+    )
+    set_at = models.DateTimeField()
+    cleared_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="rejoin_flags_cleared",
+    )
+    cleared_at = models.DateTimeField(null=True, blank=True)
+
+    @property
+    def active(self) -> bool:
+        return self.cleared_at is None
+
+    def __str__(self):
+        return f"{self.character_id} can't rejoin ({self.corporation})"

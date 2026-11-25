@@ -1,6 +1,7 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 
-from exits.models import Departure, MemberSnapshot
+from exits.helpers.answers import AnswerError, clear_flag
+from exits.models import Departure, MemberSnapshot, RejoinFlag
 
 
 class ReadOnlyAdmin(admin.ModelAdmin):
@@ -31,3 +32,33 @@ class DepartureAdmin(ReadOnlyAdmin):
     )
     list_filter = ("status", "kind", "reason")
     search_fields = ("character_id", "corporation__name")
+
+
+@admin.register(RejoinFlag)
+class RejoinFlagAdmin(ReadOnlyAdmin):
+    list_display = (
+        "character_id",
+        "corporation",
+        "set_by",
+        "set_at",
+        "note",
+        "is_active",
+    )
+    list_filter = ("cleared_at",)
+    search_fields = ("character_id", "corporation__name", "note")
+    actions = ("clear_flags",)
+
+    @admin.display(boolean=True, description="Active")
+    def is_active(self, obj):
+        return obj.active
+
+    @admin.action(description="Clear the selected flags")
+    def clear_flags(self, request, queryset):
+        cleared = 0
+        for flag in queryset.filter(cleared_at__isnull=True):
+            try:
+                clear_flag(request.user, flag)
+                cleared += 1
+            except AnswerError as error:
+                self.message_user(request, error.message, messages.ERROR)
+        self.message_user(request, f"Cleared {cleared} flag(s)")
