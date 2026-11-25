@@ -3,8 +3,8 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
 > superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Status:** plan, not built. Issue #3198. When a part ships, its section moves to a current doc and this file's
-status in `docs/README.md` changes to historical.
+**Status:** historical: the build plan, carried out in one pull request (the four parts together). The current
+description is [exit-flow-design.md](exit-flow-design.md); deviations from this plan are listed in that pull request.
 
 **Goal:** Spot pilots who leave tracked corporations, have the CEO record why, warn other corporations about pilots
 who shouldn't rejoin, and send voluntary leavers one survey that only the Alliance Executor reads.

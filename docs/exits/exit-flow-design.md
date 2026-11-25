@@ -1,6 +1,6 @@
 # Corporation exit flow: design
 
-**Status:** design for review, not built. Issue #3198. Author keldar-atm, reviewer bearthatcares, drafted
+**Status:** built (all four parts, one pull request). Issue #3198. Author keldar-atm, reviewer bearthatcares, drafted
 24 Nov 2026. The build plan is [exit-flow-plan.md](exit-flow-plan.md); its "design 04", "design 06" and so on
 point at the numbered sections below.
 
