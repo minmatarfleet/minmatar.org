@@ -14,6 +14,7 @@ class Migration(migrations.Migration):
             model_name="evecorporation",
             name="track_exits",
             field=models.BooleanField(
+                db_default=False,
                 default=False,
                 help_text="Track pilots who leave, ask the CEO why, and survey those who left on their own.",
             ),
