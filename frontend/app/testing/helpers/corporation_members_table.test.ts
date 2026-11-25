@@ -16,14 +16,33 @@ import {
 
 function member(overrides: Partial<CorporationMemberDetails> & Pick<CorporationMemberDetails, 'character_id' | 'character_name'>): CorporationMemberDetails {
     return {
+        user_name: null,
+        primary_character_id: null,
+        primary_character_name: null,
         registered: false,
         exempt: false,
         esi_suspended: false,
+        needs_readd: false,
         token_count: 0,
         token_level: '',
         fleets_90d: 0,
         kills_90d: 0,
         voice_hours_90d: 0,
+        timezone: { brackets: [], secondary: [], weekend: [], source: null },
+        community_status: null,
+        corp_joined_at: null,
+        last_fleet_at: null,
+        person_fleets_90d: null,
+        weekly_fleets: [],
+        top_hull_id: null,
+        top_hull_name: null,
+        tribe_groups: [],
+        status_history: [],
+        trial_ready: false,
+        trial_reason: null,
+        has_alliance_history: false,
+        characters_hidden: false,
+        hidden_character_count: 0,
         ...overrides,
     }
 }

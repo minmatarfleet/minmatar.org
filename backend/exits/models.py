@@ -201,3 +201,48 @@ class RecruiterAlert(models.Model):
 
     def __str__(self):
         return f"Alert {self.reason} for application {self.application_id}"
+
+
+class FlaggedJoin(models.Model):
+    """A pilot with an active can't-rejoin flag showed up in a tracked
+    corporation, often through an in-game invite (design 06). Its CEO keeps
+    them with a note, or removes them in game and the next sync resolves it."""
+
+    OUTCOME_KEPT = "kept"
+    OUTCOME_REMOVED = "removed"
+    OUTCOME_CHOICES = (
+        ("", "Open"),
+        (OUTCOME_KEPT, "Kept with a note"),
+        (OUTCOME_REMOVED, "Removed"),
+    )
+
+    corporation = models.ForeignKey(
+        EveCorporation, on_delete=models.CASCADE, related_name="flagged_joins"
+    )
+    character_id = models.BigIntegerField(db_index=True)
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    flag_ids = models.JSONField(default=list)
+    seen_at = models.DateTimeField()
+    outcome = models.CharField(
+        max_length=16, choices=OUTCOME_CHOICES, default="", blank=True
+    )
+    note = models.TextField(blank=True)
+    # "I'll remove them": stays open until the sync no longer lists them.
+    removal_expected_at = models.DateTimeField(null=True, blank=True)
+    resolved_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.character_id} joined {self.corporation} ({self.outcome or 'open'})"

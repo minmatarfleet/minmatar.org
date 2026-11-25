@@ -3358,6 +3358,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/exits/corporations/{corporation_id}/flagged-joins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pilots marked can't rejoin who joined this corporation (CEO only) */
+        get: operations["exits_endpoints_get_flagged_joins_get_flagged_joins"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exits/corporations/{corporation_id}/members/{character_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A member's alliance history (the corporation's CEO and directors) */
+        get: operations["exits_endpoints_get_member_history_get_member_history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exits/flagged-joins/{join_id}/keep": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Keep a flagged pilot, with a note (CEO only) */
+        post: operations["exits_endpoints_post_flagged_join_keep_post_flagged_join_keep"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exits/flagged-joins/{join_id}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Say a flagged pilot will be removed in game (CEO only) */
+        post: operations["exits_endpoints_post_flagged_join_remove_post_flagged_join_remove"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/exits/flags/{flag_id}/clear": {
         parameters: {
             query?: never;
@@ -16159,6 +16227,11 @@ export interface components {
              */
             fleets_90d?: number;
             /**
+             * Has Alliance History
+             * @default false
+             */
+            has_alliance_history?: boolean;
+            /**
              * Hidden Character Count
              * @default 0
              */
@@ -20339,6 +20412,41 @@ export interface components {
             detail: string;
             /** Flags */
             flags: components["schemas"]["HistoryEntryResponse"][];
+        };
+        /** FlaggedJoinKeepRequest */
+        FlaggedJoinKeepRequest: {
+            /** Note */
+            note: string;
+        };
+        /**
+         * FlaggedJoinResponse
+         * @description A pilot marked can't rejoin who joined this corporation.
+         */
+        FlaggedJoinResponse: {
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /** Flags */
+            flags: components["schemas"]["HistoryEntryResponse"][];
+            /** Id */
+            id: number;
+            /** Removal Expected */
+            removal_expected: boolean;
+            /**
+             * Seen At
+             * Format: date-time
+             */
+            seen_at: string;
+        };
+        /** FlaggedJoinResultResponse */
+        FlaggedJoinResultResponse: {
+            /** Id */
+            id: number;
+            /** Outcome */
+            outcome: string;
+            /** Removal Expected */
+            removal_expected: boolean;
         };
         /** FleetBattleActivity */
         FleetBattleActivity: {
@@ -43381,6 +43489,207 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DepartureGroupResponse"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    exits_endpoints_get_flagged_joins_get_flagged_joins: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlaggedJoinResponse"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    exits_endpoints_get_member_history_get_member_history: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+                character_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryEntryResponse"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    exits_endpoints_post_flagged_join_keep_post_flagged_join_keep: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                join_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FlaggedJoinKeepRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlaggedJoinResultResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    exits_endpoints_post_flagged_join_remove_post_flagged_join_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                join_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlaggedJoinResultResponse"];
                 };
             };
             /** @description Bad Request */

@@ -10,6 +10,7 @@ from datetime import datetime
 from django.db import transaction
 
 from eveonline.models import EveCharacter, EveCorporation
+from exits.helpers import joins
 from exits.models import (
     STATUS_DROPPED,
     STATUS_PENDING,
@@ -110,6 +111,8 @@ def record_members(
     _drop_pending(corporation, members)
     _open_departures(corporation, left, now)
     _store(corporation, stored_ids, alliance_id, now)
+    joins.resolve_removed(corporation, members)
+    joins.record_flagged_joins(corporation, joined, now)
     return SnapshotResult(left=left, joined=joined)
 
 

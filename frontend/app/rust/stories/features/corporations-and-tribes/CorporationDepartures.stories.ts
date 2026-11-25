@@ -4,6 +4,7 @@ import {
     departures_answered,
     departures_open,
     departures_with_alts,
+    flagged_joins,
 } from '../../../fixtures/features/corporations-and-tribes'
 
 export default {
@@ -25,6 +26,7 @@ export default {
         state: { control: 'inline-radio', options: ['open', 'answered', 'all'] },
         partial_url: { control: 'text' },
         flash: { control: 'object' },
+        flagged_joins: { control: 'object', description: 'Pilots marked can\'t rejoin who joined: keep with a note, or remove in game.' },
     },
     args: {
         groups: departures_open,
@@ -88,5 +90,18 @@ export const NoDepartures = {
     play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
         const canvas = within(canvasElement)
         await expect(canvas.getByText('No departures yet')).toBeVisible()
+    },
+}
+
+export const WithFlaggedJoin = {
+    name: 'A flagged pilot joined',
+    args: { flagged_joins },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const canvas = within(canvasElement)
+        await expect(canvas.getByRole('heading', { name: 'Flagged pilots who joined' })).toBeVisible()
+        await expect(canvas.getByText('Dren Halvik', { selector: 'strong' })).toBeVisible()
+        await expect(canvas.getByRole('button', { name: 'Keep them' })).toBeVisible()
+        await expect(canvas.getByRole('button', { name: "I'll remove them" })).toBeVisible()
+        await expect(canvas.getByText(/Removal expected/)).toBeVisible()
     },
 }

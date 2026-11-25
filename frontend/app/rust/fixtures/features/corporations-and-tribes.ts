@@ -7,7 +7,7 @@ import type {
     TribeEventRowUI,
     TribeGroupRefUI,
 } from '@dtypes/layout_components'
-import type { CorporationLeadershipMember, DepartureGroup, HistoryEntry, TrialProgress, TribeMembership } from '@dtypes/api.minmatar.org'
+import type { CorporationLeadershipMember, DepartureGroup, FlaggedJoin, HistoryEntry, TrialProgress, TribeMembership } from '@dtypes/api.minmatar.org'
 import { EVE } from '../../stories/_controls'
 
 // Corporations -----------------------------------------------------------------------------
@@ -285,3 +285,8 @@ export const history_flagged: HistoryEntry[] = [
 ]
 
 export const history_inactive_only: HistoryEntry[] = [history_flagged[1]]
+
+export const flagged_joins: FlaggedJoin[] = [
+    { id: 1, character_id: 2112000104, character_name: 'Dren Halvik', seen_at: '2026-11-22T12:00:00Z', removal_expected: false, flags: [history_flagged[0]] },
+    { id: 2, character_id: 2112000109, character_name: 'Vex Arlen', seen_at: '2026-11-21T12:00:00Z', removal_expected: true, flags: [history_flagged[0]] },
+]

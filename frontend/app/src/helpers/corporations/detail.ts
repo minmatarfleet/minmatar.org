@@ -87,6 +87,8 @@ export interface CorporationMemberRow {
     tribe_groups: string[]
     status_history: { to_status: string, changed_at: string }[]
     trial_ready: boolean
+    // CEO and directors: someone on this account has alliance history (#3198).
+    has_alliance_history: boolean
     trial_reason: string | null
 }
 
@@ -213,6 +215,7 @@ function collapse_group(group: CorporationMemberDetails[]): CorporationMemberRow
         tribe_groups: group.find((member) => member.tribe_groups?.length)?.tribe_groups ?? [],
         status_history: group.find((member) => member.status_history?.length)?.status_history ?? [],
         trial_ready: group.some((member) => Boolean(member.trial_ready)),
+        has_alliance_history: group.some((member) => Boolean(member.has_alliance_history)),
         trial_reason: group.find((member) => member.trial_reason)?.trial_reason ?? null,
     }
 }

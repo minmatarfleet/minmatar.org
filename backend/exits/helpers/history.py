@@ -107,3 +107,26 @@ def active_flags_for(
         .select_related("corporation", "set_by")
         .order_by("-set_at")
     )
+
+
+def members_with_history(members) -> set[int]:
+    """Character IDs among ``members`` (EveCharacter rows) whose character or
+    account has an answered departure."""
+    by_character = {m.character_id: m.user_id for m in members}
+    rows = (
+        Departure.objects.filter(
+            Q(character_id__in=by_character)
+            | Q(user_id__in={u for u in by_character.values() if u})
+        )
+        .filter(status=STATUS_CONFIRMED)
+        .exclude(reason="")
+    )
+    characters = set(rows.values_list("character_id", flat=True))
+    users = set(
+        rows.exclude(user__isnull=True).values_list("user_id", flat=True)
+    )
+    return {
+        character_id
+        for character_id, user_id in by_character.items()
+        if character_id in characters or (user_id and user_id in users)
+    }

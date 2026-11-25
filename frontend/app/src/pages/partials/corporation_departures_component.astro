@@ -3,9 +3,9 @@ import { i18n } from '@helpers/i18n'
 import { get_request_user } from '@helpers/request_user'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { DepartureGroup } from '@dtypes/api.minmatar.org'
+import type { DepartureGroup, FlaggedJoin } from '@dtypes/api.minmatar.org'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
-import { get_departures, post_departure_answers, type DepartureState } from '@helpers/api.minmatar.org/exits'
+import { get_departures, get_flagged_joins, keep_flagged_join, post_departure_answers, remove_flagged_join, type DepartureState } from '@helpers/api.minmatar.org/exits'
 import { parse_departure_answer } from '@helpers/corporations/departures'
 import { query_string } from '@helpers/string'
 
@@ -32,8 +32,24 @@ const PARTIAL_URL = translatePath(`/partials/corporation_departures_component/?$
 let flash: { kind: 'success' | 'error', text: string } | null = null
 
 if (Astro.request.method === 'POST') {
-    const answer = parse_departure_answer(await Astro.request.formData())
-    if (!answer) {
+    const form = await Astro.request.formData()
+    const action = String(form.get('action') ?? '')
+    const join_id = parseInt(String(form.get('join_id') ?? ''))
+    const answer = action ? null : parse_departure_answer(form)
+    if ((action === 'keep' || action === 'remove') && join_id > 0) {
+        try {
+            if (action === 'keep')
+                await keep_flagged_join(auth_token, join_id, String(form.get('note') ?? '').trim())
+            else
+                await remove_flagged_join(auth_token, join_id)
+            flash = {
+                kind: 'success',
+                text: t(action === 'keep' ? 'corporations.departures.join_kept' : 'corporations.departures.join_marked_removal'),
+            }
+        } catch {
+            flash = { kind: 'error', text: t('corporations.departures.error_save') }
+        }
+    } else if (!answer) {
         flash = { kind: 'error', text: t('corporations.departures.error_save') }
     } else if (answer.departure_ids.length === 0) {
         flash = { kind: 'error', text: t('corporations.departures.pick_rows') }
@@ -48,9 +64,12 @@ if (Astro.request.method === 'POST') {
 }
 
 let groups: DepartureGroup[] | null = null
+let flagged_joins: FlaggedJoin[] = []
 let fetch_error: Error | false = false
 try {
+    const joins_request = get_flagged_joins(auth_token, corporation_id)
     groups = await get_departures(auth_token, corporation_id, 'all')
+    flagged_joins = (await joins_request) ?? []
 } catch (error) {
     fetch_error = error as Error
 }
@@ -74,5 +93,6 @@ const delay = parseInt(params.get('delay') ?? '0')
         state={state}
         partial_url={PARTIAL_URL}
         flash={flash}
+        flagged_joins={flagged_joins}
     />
 }

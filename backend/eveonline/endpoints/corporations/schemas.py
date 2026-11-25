@@ -265,6 +265,8 @@ class CorporationMemberDetails(Schema):
     # From the latest alliance health snapshot's trial review.
     trial_ready: bool = False
     trial_reason: Optional[str] = None
+    # CEO and directors: the member has alliance history (#3198).
+    has_alliance_history: bool = False
     # Set when the viewer may not see which characters belong to this person:
     # the row stands for the person and the rest are only counted.
     characters_hidden: bool = False

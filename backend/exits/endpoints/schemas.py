@@ -60,3 +60,25 @@ class FlaggedApplicantResponse(Schema):
 
     detail: str
     flags: list[HistoryEntryResponse]
+
+
+class FlaggedJoinResponse(Schema):
+    """A pilot marked can't rejoin who joined this corporation."""
+
+    id: int
+    character_id: int
+    character_name: str
+    seen_at: datetime
+    # "I'll remove them" was pressed; the next sync closes it once they're gone.
+    removal_expected: bool
+    flags: list[HistoryEntryResponse]
+
+
+class FlaggedJoinKeepRequest(Schema):
+    note: str
+
+
+class FlaggedJoinResultResponse(Schema):
+    id: int
+    outcome: str
+    removal_expected: bool

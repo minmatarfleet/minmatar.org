@@ -5,6 +5,10 @@ from ninja import Router
 from exits.endpoints import (
     get_application_history,
     get_departures,
+    get_flagged_joins,
+    get_member_history,
+    post_flagged_join_keep,
+    post_flagged_join_remove,
     post_departure_answers,
     post_flag_clear,
 )
@@ -16,6 +20,10 @@ for module in (
     post_departure_answers,
     post_flag_clear,
     get_application_history,
+    get_flagged_joins,
+    post_flagged_join_keep,
+    post_flagged_join_remove,
+    get_member_history,
 ):
     handler = getattr(module, module.__name__.rsplit(".", 1)[1])
     getattr(router, module.METHOD)(module.PATH, **module.ROUTE_SPEC)(handler)

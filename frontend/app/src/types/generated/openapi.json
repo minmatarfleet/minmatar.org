@@ -9848,6 +9848,11 @@
             "title": "Fleets 90D",
             "type": "integer"
           },
+          "has_alliance_history": {
+            "default": false,
+            "title": "Has Alliance History",
+            "type": "boolean"
+          },
           "hidden_character_count": {
             "default": 0,
             "title": "Hidden Character Count",
@@ -20482,6 +20487,85 @@
           "flags"
         ],
         "title": "FlaggedApplicantResponse",
+        "type": "object"
+      },
+      "FlaggedJoinKeepRequest": {
+        "properties": {
+          "note": {
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "FlaggedJoinKeepRequest",
+        "type": "object"
+      },
+      "FlaggedJoinResponse": {
+        "description": "A pilot marked can't rejoin who joined this corporation.",
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "flags": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryEntryResponse"
+            },
+            "title": "Flags",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "removal_expected": {
+            "title": "Removal Expected",
+            "type": "boolean"
+          },
+          "seen_at": {
+            "format": "date-time",
+            "title": "Seen At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "character_id",
+          "character_name",
+          "seen_at",
+          "removal_expected",
+          "flags"
+        ],
+        "title": "FlaggedJoinResponse",
+        "type": "object"
+      },
+      "FlaggedJoinResultResponse": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "outcome": {
+            "title": "Outcome",
+            "type": "string"
+          },
+          "removal_expected": {
+            "title": "Removal Expected",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "outcome",
+          "removal_expected"
+        ],
+        "title": "FlaggedJoinResultResponse",
         "type": "object"
       },
       "FleetBattleActivity": {
@@ -70034,6 +70118,301 @@
           }
         ],
         "summary": "Say why pilots left, for one row or many (CEO only)",
+        "tags": [
+          "Exits"
+        ]
+      }
+    },
+    "/api/exits/corporations/{corporation_id}/flagged-joins": {
+      "get": {
+        "operationId": "exits_endpoints_get_flagged_joins_get_flagged_joins",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FlaggedJoinResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Pilots marked can't rejoin who joined this corporation (CEO only)",
+        "tags": [
+          "Exits"
+        ]
+      }
+    },
+    "/api/exits/corporations/{corporation_id}/members/{character_id}/history": {
+      "get": {
+        "operationId": "exits_endpoints_get_member_history_get_member_history",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "title": "Character Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HistoryEntryResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "A member's alliance history (the corporation's CEO and directors)",
+        "tags": [
+          "Exits"
+        ]
+      }
+    },
+    "/api/exits/flagged-joins/{join_id}/keep": {
+      "post": {
+        "operationId": "exits_endpoints_post_flagged_join_keep_post_flagged_join_keep",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "join_id",
+            "required": true,
+            "schema": {
+              "title": "Join Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlaggedJoinKeepRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlaggedJoinResultResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Keep a flagged pilot, with a note (CEO only)",
+        "tags": [
+          "Exits"
+        ]
+      }
+    },
+    "/api/exits/flagged-joins/{join_id}/remove": {
+      "post": {
+        "operationId": "exits_endpoints_post_flagged_join_remove_post_flagged_join_remove",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "join_id",
+            "required": true,
+            "schema": {
+              "title": "Join Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlaggedJoinResultResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Say a flagged pilot will be removed in game (CEO only)",
         "tags": [
           "Exits"
         ]
