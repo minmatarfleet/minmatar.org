@@ -28,7 +28,7 @@ python3 scripts/ci_local.py --list
 
 `--all` runs every check, `--only backend-lint,frontend-types` picks some, and `--no-cache` ignores earlier passes. Checks run side by side. A passing check is remembered for that exact tree, so running it again on the same files is instant. The pass record and each check's full log are kept in the git directory, under ci_local/ (the worktree's own git directory in a worktree). A missing virtualenv (`pipenv sync --dev`) or `node_modules` (`npm ci`) is installed on first use. Hooks run without your login shell, so when the `node` on PATH is older than CI's Node 22, the checks use one from nvm (`~/.nvm/versions/node/`) instead.
 
-Backend tests never run on the cached database itself. `backend/ci_test_db.py migrate` keeps `backend/.test-db/template.sqlite3` migrated and nothing else, and each run copies it to `.test-db/run/` first, so rows a run leaves behind (a `TransactionTestCase` flush, a crashed worker, the migration tests) can't fail the next one. A warm run takes seconds to under a minute (the whole suite is about 40 seconds); the first run in a new worktree builds the template and takes about three.
+Backend tests never run on the cached database itself. `backend/ci_test_db.py migrate` keeps `backend/.test-db/template.sqlite3` migrated and nothing else, and each run empties `.test-db/run/` (the parallel workers' clones included) and copies it there first, so rows a run leaves behind (a `TransactionTestCase` flush, a crashed worker, the migration tests) can't fail the next one. A warm run takes seconds to under a minute (the whole suite is about 40 seconds); the first run in a new worktree builds the template and takes about three.
 
 ## The hooks
 

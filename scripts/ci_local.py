@@ -428,7 +428,10 @@ def _backend_tests(
     test_env = {"TEST_DB_NAME": TEST_DB, "SETUP_TEST_DATA": ""}
     manage = [py, "manage.py", "test", "--settings=app.settings_test"]
     keep = ["--keepdb", "--noinput"]
+    # The parallel workers' clones (test_db_1.sqlite3, ...) live in run/ too,
+    # and --keepdb reuses them: clear the folder so they start fresh as well.
     fresh_db = [
+        ["rm", "-rf", ".test-db/run"],
         ["mkdir", "-p", ".test-db/run"],
         [py, "ci_test_db.py", "check", TEMPLATE_DB],
         [py, "ci_test_db.py", "migrate", TEMPLATE_DB],

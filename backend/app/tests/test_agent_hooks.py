@@ -310,6 +310,11 @@ class CiLocalPlanTest(unittest.TestCase):
         self.assertIn(
             ["cp", self.ci.TEMPLATE_DB, self.ci.TEST_DB], tests.steps
         )
+        # The parallel clones from the last run are removed first.
+        self.assertLess(
+            tests.steps.index(["rm", "-rf", ".test-db/run"]),
+            tests.steps.index(["cp", self.ci.TEMPLATE_DB, self.ci.TEST_DB]),
+        )
         self.assertEqual(self.ci.TEST_DB, tests.env["TEST_DB_NAME"])
         self.assertNotEqual(self.ci.TEMPLATE_DB, self.ci.TEST_DB)
 
