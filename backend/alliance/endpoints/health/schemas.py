@@ -293,7 +293,8 @@ class HealthUnknownsResponse(BaseModel):
 
 class HealthStatusChangeRequest(BaseModel):
     user_id: int
-    action: Literal["promote", "leave", "restore"]
+    action: Literal["promote", "leave", "alumni", "restore"]
+    # Required for alumni: the CEO's write-up, sent to the pilot.
     reason: str = ""
 
 

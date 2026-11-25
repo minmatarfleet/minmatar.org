@@ -141,6 +141,23 @@ class AllianceHealthComputeTestCase(TestCase):
             join_time=self.now - timedelta(days=2)
         )
 
+    def test_alumni_leave_the_roster_and_its_counts(self):
+        UserCommunityStatus.objects.filter(user=self.user2).update(
+            status=UserCommunityStatus.STATUS_ALUMNI
+        )
+        payload = compute_alliance_health(now=self.now)
+        self.assertEqual(payload["roster_people"], 1)
+        self.assertEqual(payload["status"]["trial"], 0)
+        self.assertNotIn("alumni", payload["status"])
+        hygiene_ids = {
+            row.get("user_id")
+            for section in payload["hygiene"].values()
+            for rows in (section.get("buckets") or section).values()
+            if isinstance(rows, list)
+            for row in rows
+        }
+        self.assertNotIn(self.user2.id, hygiene_ids)
+
     def test_map_counts_fleet_attendee(self):
         payload = compute_alliance_health(now=self.now)
         self.assertEqual(payload["map_30d"], 1)

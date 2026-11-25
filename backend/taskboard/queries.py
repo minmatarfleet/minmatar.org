@@ -330,7 +330,7 @@ def paused_ids(user_ids: set[int]) -> set[int]:
     paused |= set(
         UserCommunityStatus.objects.filter(
             user_id__in=user_ids,
-            status=UserCommunityStatus.STATUS_ON_LEAVE,
+            status__in=UserCommunityStatus.AWAY_STATUSES,
         ).values_list("user_id", flat=True)
     )
     return paused

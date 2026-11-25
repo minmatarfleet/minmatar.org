@@ -3192,7 +3192,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Put a member on leave or take them off leave */
+        /** Put a member on leave, make them alumni, or restore them */
         post: operations["eveonline_endpoints_corporations_post_corp_member_status_post_corp_member_status"];
         delete?: never;
         options?: never;
@@ -16194,7 +16194,12 @@ export interface components {
              * Action
              * @enum {string}
              */
-            action: "leave" | "restore";
+            action: "leave" | "alumni" | "restore";
+            /**
+             * Reason
+             * @default
+             */
+            reason?: string;
         };
         /** CorporationMemberStatusResponse */
         CorporationMemberStatusResponse: {
@@ -22277,7 +22282,7 @@ export interface components {
              * Action
              * @enum {string}
              */
-            action: "promote" | "leave" | "restore";
+            action: "promote" | "leave" | "alumni" | "restore";
             /**
              * Reason
              * @default

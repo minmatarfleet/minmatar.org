@@ -8,6 +8,7 @@ from django.utils.text import slugify
 from ninja import Router
 
 from authentication import AuthBearer
+from groups.models import UserCommunityStatus
 from surveys.constants import (
     SEGMENT_ALL,
     STATUS_CLOSED,
@@ -406,7 +407,9 @@ def get_corp_progress(request, campaign_id: int):
             EvePlayer.objects.filter(
                 primary_character__corporation_id=corp.corporation_id
             )
-            .exclude(user__community_status__status="on_leave")
+            .exclude(
+                user__community_status__status__in=UserCommunityStatus.AWAY_STATUSES
+            )
             .count()
         )
         done = submitted.get(corp.corporation_id, 0) or submitted_by_name.get(

@@ -30,16 +30,26 @@ class AffiliationType(models.Model):
 
 
 class UserCommunityStatus(models.Model):
-    """Current community status for a user (trial, active, on_leave). Overrides effective group."""
+    """Current community status for a user (trial, active, on_leave, alumni). Overrides effective group.
+
+    Alumni are former members who aren't coming back, honoured with a
+    write-up from their CEO: like On Leave they lose the affiliation group,
+    and they are left out of community metrics and hygiene passes.
+    """
 
     STATUS_ACTIVE = "active"
     STATUS_TRIAL = "trial"
     STATUS_ON_LEAVE = "on_leave"
+    STATUS_ALUMNI = "alumni"
     STATUS_CHOICES = [
         (STATUS_ACTIVE, "Active"),
         (STATUS_TRIAL, "Trial"),
         (STATUS_ON_LEAVE, "On Leave"),
+        (STATUS_ALUMNI, "Alumni"),
     ]
+    # Statuses whose pilots are away: tasks pause, no reminders or messages,
+    # alliance features are closed.
+    AWAY_STATUSES = (STATUS_ON_LEAVE, STATUS_ALUMNI)
 
     user = models.OneToOneField(
         "auth.User",
@@ -70,10 +80,12 @@ class UserCommunityStatusHistory(models.Model):
     STATUS_ACTIVE = "active"
     STATUS_TRIAL = "trial"
     STATUS_ON_LEAVE = "on_leave"
+    STATUS_ALUMNI = "alumni"
     STATUS_CHOICES = [
         (STATUS_ACTIVE, "Active"),
         (STATUS_TRIAL, "Trial"),
         (STATUS_ON_LEAVE, "On Leave"),
+        (STATUS_ALUMNI, "Alumni"),
     ]
 
     user = models.ForeignKey(

@@ -10095,9 +10095,15 @@
           "action": {
             "enum": [
               "leave",
+              "alumni",
               "restore"
             ],
             "title": "Action",
+            "type": "string"
+          },
+          "reason": {
+            "default": "",
+            "title": "Reason",
             "type": "string"
           }
         },
@@ -25503,6 +25509,7 @@
             "enum": [
               "promote",
               "leave",
+              "alumni",
               "restore"
             ],
             "title": "Action",
@@ -69109,7 +69116,7 @@
             "AuthBearer": []
           }
         ],
-        "summary": "Put a member on leave or take them off leave",
+        "summary": "Put a member on leave, make them alumni, or restore them",
         "tags": [
           "Corporations",
           "Corporations"

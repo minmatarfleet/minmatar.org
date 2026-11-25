@@ -233,9 +233,14 @@ def ship_bucket(
 
 
 def _corp_characters(corporation):
-    rows = EveCharacter.objects.filter(
-        corporation_id=corporation.corporation_id
-    ).values_list("character_id", "user_id")
+    # Alumni still sitting in the corp don't count toward its facts.
+    rows = (
+        EveCharacter.objects.filter(corporation_id=corporation.corporation_id)
+        .exclude(
+            user__community_status__status=UserCommunityStatus.STATUS_ALUMNI
+        )
+        .values_list("character_id", "user_id")
+    )
     character_ids = []
     user_ids = set()
     char_to_user = {}

@@ -32,7 +32,7 @@ flowchart TD
     subgraph identity [Identity]
         DjangoUser --> Primary[Primary EVE character]
         Primary -->|Celery: corp/alliance/faction rules| Affiliation["UserAffiliation<br/>(Alliance / Associate / Militia / Guest)"]
-        DjangoUser --> Status["UserCommunityStatus<br/>(active / trial / on_leave)"]
+        DjangoUser --> Status["UserCommunityStatus<br/>(active / trial / on_leave / alumni)"]
         Affiliation -->|sync| AuthGroups["auth.Group<br/>(Discord roles)"]
         Status -->|sync| AuthGroups
     end

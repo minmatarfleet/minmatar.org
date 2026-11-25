@@ -85,6 +85,57 @@ class SyncUserCommunityGroupsTestCase(TestCase):
         self.assertNotIn("Trial", group_names)
         self.assertIn("On Leave", group_names)
 
+    def test_alumni_adds_alumni_group_only(self):
+        UserAffiliation.objects.create(
+            user=self.user, affiliation=self.affiliation_type
+        )
+        self.user.groups.add(self.affiliation_group)
+        UserCommunityStatus.objects.create(
+            user=self.user, status=UserCommunityStatus.STATUS_ALUMNI
+        )
+        sync_user_community_groups(self.user)
+        group_names = set(self.user.groups.values_list("name", flat=True))
+        self.assertEqual(group_names, {"Alumni"})
+
+    def test_alumni_back_to_active_drops_alumni_group(self):
+        UserAffiliation.objects.create(
+            user=self.user, affiliation=self.affiliation_type
+        )
+        ucs = UserCommunityStatus.objects.create(
+            user=self.user, status=UserCommunityStatus.STATUS_ALUMNI
+        )
+        ucs.status = UserCommunityStatus.STATUS_ACTIVE
+        ucs.save()
+        group_names = set(self.user.groups.values_list("name", flat=True))
+        self.assertEqual(group_names, {"Alliance"})
+
+    def test_alumni_survive_leaving_the_alliance(self):
+        """Most alumni have left in game: the status and its write-up stay."""
+        guest_group, _ = Group.objects.get_or_create(name="Guest")
+        guest_type = AffiliationType.objects.create(
+            name="Guest",
+            description="",
+            image_url="",
+            group=guest_group,
+            priority=0,
+            requires_trial=False,
+            default=True,
+        )
+        UserCommunityStatus.objects.create(
+            user=self.user, status=UserCommunityStatus.STATUS_ALUMNI
+        )
+        UserAffiliation.objects.create(user=self.user, affiliation=guest_type)
+
+        reconcile_community_status_for_affiliation(self.user)
+        sync_user_community_groups(self.user)
+
+        self.assertEqual(
+            UserCommunityStatus.objects.get(user=self.user).status,
+            UserCommunityStatus.STATUS_ALUMNI,
+        )
+        group_names = set(self.user.groups.values_list("name", flat=True))
+        self.assertEqual(group_names, {"Alumni"})
+
     def test_guest_on_leave_heals_to_active_guest(self):
         """Former alliance members stuck on leave become Guest, not On Leave."""
         guest_group, _ = Group.objects.get_or_create(name="Guest")

@@ -289,10 +289,16 @@ def compute_alliance_health(  # noqa: C901
     corp_by_id = {c["corporation_id"]: c for c in corps}
     corp_ids = list(corp_by_id)
 
+    # Alumni aren't coming back: they are left out of every count here,
+    # and so out of the hygiene lists too.
     roster_rows = list(
         EveCharacter.objects.filter(
             corporation_id__in=corp_ids, user_id__isnull=False
-        ).values_list(
+        )
+        .exclude(
+            user__community_status__status=UserCommunityStatus.STATUS_ALUMNI
+        )
+        .values_list(
             "user_id", "character_id", "id", "corporation_id", "character_name"
         )
     )

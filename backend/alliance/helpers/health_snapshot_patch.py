@@ -45,12 +45,13 @@ def _drop_user(rows: Any, user_id: int) -> Any:
 
 
 def _bump_status(
-    payload: dict[str, Any], from_status: str | None, to_status: str
+    payload: dict[str, Any], from_status: str | None, to_status: str | None
 ) -> None:
     status = payload.setdefault("status", {})
     if from_status:
         status[from_status] = max(0, int(status.get(from_status) or 0) - 1)
-    status[to_status] = int(status.get(to_status) or 0) + 1
+    if to_status:
+        status[to_status] = int(status.get(to_status) or 0) + 1
 
 
 def _recount_quiet(payload: dict[str, Any]) -> None:
@@ -123,10 +124,20 @@ def apply_status_change_to_latest_snapshot(
             from_status or UserCommunityStatus.STATUS_ACTIVE,
             UserCommunityStatus.STATUS_ON_LEAVE,
         )
+    elif action == "alumni":
+        # Alumni leave the roster: drop them from their old count only.
+        _bump_status(
+            payload, from_status or UserCommunityStatus.STATUS_ACTIVE, None
+        )
     elif action == "restore":
         _bump_status(
             payload,
-            UserCommunityStatus.STATUS_ON_LEAVE,
+            # Alumni weren't counted, so restoring one only adds.
+            (
+                None
+                if from_status == UserCommunityStatus.STATUS_ALUMNI
+                else UserCommunityStatus.STATUS_ON_LEAVE
+            ),
             UserCommunityStatus.STATUS_ACTIVE,
         )
 

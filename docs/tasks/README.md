@@ -28,7 +28,7 @@ To add a rule, write a `collect_*` function that returns `Item`s and add a `Rule
 ## Rules that keep it light
 
 - **Needs you or suggestion.** Only needs-you tasks count: in the Neocom badge, the masthead, and leaders' views. Suggestions sit under "When you have a minute", have "Not now", and stop asking after 30 days (`sweep`). A pilot can bring one back from "Stopped asking".
-- **The pilot is in control.** Snooze a week, hand an assigned or taken task back, hide suggestions, and pause everything (Account › Notifications). The On Leave community status also pauses tasks. Paused and On Leave pilots are left out of every leader count.
+- **The pilot is in control.** Snooze a week, hand an assigned or taken task back, hide suggestions, and pause everything (Account › Notifications). The On Leave and Alumni community statuses also pause tasks. Paused, On Leave and alumni pilots are left out of every leader count.
 - **Shared work is up for grabs.** A team task belongs to nobody until someone takes it, so it never lands on everyone. A taken task with no activity for 14 days goes back to the team (`claim_expires_days`, set per rule).
 - **Dates only when they are real.** New tasks default to "This week" or "No rush"; a date is opt-in. A task that waits on another shows "Waiting on …" instead of a date.
 - **Repeating tasks never stack.** A weekly task opens its next copy only when the current one closes (`services._open_next_copy`), so a missed week stays one task.

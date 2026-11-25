@@ -98,7 +98,15 @@ Implementation: `backend/groups/helpers/feature_access.py`.
 
 ### Community status
 
-Each feature carries `deny_community_statuses` (default: `["on_leave"]`). A matching `UserCommunityStatus` fails scope evaluation; the legacy permission fallback may still grant access. `tech.ops` uses an empty deny list so tech staff keep access while on leave.
+Each feature carries `deny_community_statuses` (default: `["on_leave", "alumni"]`). A matching `UserCommunityStatus` fails scope evaluation; the legacy permission fallback may still grant access. `tech.ops` uses an empty deny list so tech staff keep access while on leave.
+
+**Alumni** are former members who aren't coming back. Their corp's CEO (or a superuser) makes them alumni from the corp Members tab with a required write-up (what they did for the alliance, up to 1000 characters). The write-up is kept as the status history reason and sent to the pilot as a Discord DM (`alliance/helpers/status_change.py`). Like On Leave, alumni hold only the `Alumni` auth group (and its Discord role), not their affiliation group. Unlike On Leave:
+
+- the status survives leaving the alliance (`reconcile_community_status_for_affiliation` leaves it alone);
+- alumni are left out of the alliance health roster, so out of every health count and the trial/leave hygiene lists, and out of the corp page's community and fleet facts;
+- only the CEO or a superuser takes someone off alumni (back to active).
+
+Tasks, task reminders, ESI-health messages and surveys treat alumni like On Leave (`UserCommunityStatus.AWAY_STATUSES`).
 
 ## Identity inputs
 

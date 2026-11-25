@@ -6,6 +6,7 @@ from django.db import transaction
 from ninja import Router
 
 from authentication import AuthBearer
+from groups.models import UserCommunityStatus
 from surveys.constants import STATUS_OPEN
 from surveys.definitions.effective import build_effective_definition
 from surveys.endpoints.schemas import (
@@ -226,7 +227,7 @@ def post_response(request, campaign_id: int, payload: SubmitResponseRequest):
         return 404, {"detail": "Campaign not found."}
     if campaign.status != STATUS_OPEN:
         return 400, {"detail": "This survey is not open for responses."}
-    if community_status(request.user) == "on_leave":
+    if community_status(request.user) in UserCommunityStatus.AWAY_STATUSES:
         return 400, {"detail": "Members on leave can't fill out the survey."}
     definition = build_effective_definition(campaign)
     if not definition:
