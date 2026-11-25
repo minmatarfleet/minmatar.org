@@ -123,6 +123,7 @@ describe('ping_preview_request', () => {
         }))).toEqual({
             type: 'strategic', description: 'Form up', objective: 'Timer',
             location_id: 60003760, audience_id: 2, host_group_id: null,
+            voice_option_id: null, voice_channel_id: null, mumble_open: false,
         })
     })
 
@@ -130,6 +131,7 @@ describe('ping_preview_request', () => {
         expect(ping_preview_request(form({ host: '1', fleet_type: 'strategic', audience_id: '2' }))).toEqual({
             type: 'non_strategic', description: '', objective: null,
             location_id: null, audience_id: null, host_group_id: 1,
+            voice_option_id: null, voice_channel_id: null, mumble_open: false,
         })
     })
 
@@ -137,5 +139,15 @@ describe('ping_preview_request', () => {
         expect(ping_preview_request(form({ fleet_type: 'training', audience_id: '3' }))).toMatchObject({
             type: 'training', audience_id: 3, host_group_id: null,
         })
+    })
+})
+
+describe('ping_preview_request voice', () => {
+    it('sends the picked voice channel as a string and Mumble access', () => {
+        expect(ping_preview_request(form({
+            fleet_type: 'training', voice_option_id: '1', voice_channel_id: '1213929683603951696',
+        }))).toMatchObject({ voice_option_id: 1, voice_channel_id: '1213929683603951696', mumble_open: false })
+        expect(ping_preview_request(form({ fleet_type: 'training', voice_option_id: '2', mumble_open: 'open' })))
+            .toMatchObject({ voice_option_id: 2, voice_channel_id: null, mumble_open: true })
     })
 })

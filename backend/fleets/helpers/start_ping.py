@@ -35,6 +35,7 @@ def build_start_ping(
     description: str,
     doctrine=None,
     fc_alt=None,
+    voice: tuple[str | None, str | None] = (None, None),
 ) -> StartPing | None:
     """The start ping for these fleet details; None with no destination.
 
@@ -68,8 +69,9 @@ def build_start_ping(
         fleet_commander_id=fc_character.character_id if fc_character else 0,
         fleet_commander_in_game_name=fc_alt.character_name if fc_alt else None,
         fleet_description=description,
-        fleet_voice_channel=None,
-        fleet_voice_channel_link=None,
+        # (line, url) from fleets.helpers.voice_channels.ping_voice.
+        fleet_voice_channel=voice[0],
+        fleet_voice_channel_link=voice[1],
         fleet_doctrine=doctrine,
         content=content,
     )

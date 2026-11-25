@@ -1,6 +1,6 @@
 # Fleet voice on Mumble
 
-Fleets talk on Discord by default. An FC can pick **Mumble** as a fleet's voice when scheduling; that fleet then gets a channel branch on one alliance Mumble server (`voice.minmatar.org`), and its MOTD links `my.minmatar.org/voice`. Design and decisions: issue #3154. The old, removed stack is in [archive/mumble-removed-stack.md](archive/mumble-removed-stack.md).
+Fleets talk on Discord by default. An FC can pick **Mumble** as a fleet's voice when scheduling; that fleet then gets a channel branch on one alliance Mumble server (`voice.minmatar.org`), and its MOTD links `my.minmatar.org/voice`. For a Discord option the FC picks a voice channel on that server instead (see [Discord voice channels](#discord-voice-channels)). Design and decisions: issue #3154. The old, removed stack is in [archive/mumble-removed-stack.md](archive/mumble-removed-stack.md).
 
 **Django decides, the voice service obeys.** Every access rule lives in `backend/voice/access.py`. The voice service (`voice/`) only reads the records Django publishes to Redis and applies them to Murmur over Ice.
 
@@ -25,7 +25,7 @@ Worked out on read (`voice_record(character_id)`), never stored:
 
 | Access | Source | Gives |
 |---|---|---|
-| Community | feature `voice.join` (Alliance, Associate) | Lobby, Open 1-2 |
+| Community | feature `voice.join` (Alliance, Associate) | Lobby, Open 1-2, and Fleet 1's subchannels (not its Command), with or without a fleet |
 | Fleet commander | feature `voice.commander` (`pulse.fleet-commanders`) | Commanders in every Mumble fleet branch |
 | Capitals on standby | active member of any active group of tribe `capitals` | `capitals` in every branch |
 | Campaign ally | a character, corporation or alliance listed as an ally of the fleet's active campaign (factions never count) | that fleet's branch |
@@ -38,7 +38,11 @@ Stored as `VoiceGrant` rows (`backend/voice/grants.py`), so logins never join fl
 
 ## Leases
 
-Three branches (`Fleet 1`-`Fleet 3`) always exist. `backend/voice/leases.py`: a Mumble fleet leases a free branch when tracking starts, or from 2 hours before start once it has signups. With no tracking 30 minutes after start, or 30 minutes after it closes, or when the FC switches voice away from Mumble, the lease ends; the voice service kicks whoever is left and resets the branch. `voice.tasks.expire_grants` runs every minute; the 30-second fleet poll queues `voice.tasks.sync_fleet_grants` for Mumble fleets only.
+Three branches (`Fleet 1`-`Fleet 3`) always exist. **Fleet 1 is open**: any community member may enter its subchannels (`OPEN_BRANCH` in `backend/voice/channels.py` and `voice/voice_auth/layout.py`, pinned by `channels.json`). On the fleet form the FC picks **Fleet 1 · Open** (`EveFleet.mumble_open`) or **Fleet 2 or 3 · Restricted**. An open fleet leases Fleet 1, or a restricted branch when another open fleet holds it; a restricted fleet leases only Fleet 2 or 3, and a fleet switched to restricted gives Fleet 1 up (`access_changed`). `backend/voice/leases.py`: a Mumble fleet leases a free branch when tracking starts, or from 2 hours before start once it has signups. With no tracking 30 minutes after start, or 30 minutes after it closes, or when the FC switches voice away from Mumble, the lease ends; the voice service kicks whoever is left and resets the branch. `voice.tasks.expire_grants` runs every minute; the 30-second fleet poll queues `voice.tasks.sync_fleet_grants` for Mumble fleets only.
+
+## Discord voice channels
+
+A Discord option (`FleetVoiceOption`, kind `discord`) names its server in `discord_guild_id` and the channel the form starts on in `discord_channel_id` (set both in the admin; migration `fleets/0070` points the alliance Discord option at `DISCORD_GUILD_ID`). `GET /api/fleets/voice-options` lists each option's voice and stage channels from Discord, grouped by category and cached 5 minutes per server (`fleets/helpers/voice_channels.py`). A channel @everyone can't see or join is left out, and so is one with `hide_from_fleets` on its `DiscordChannel` row (admin: Discord channels). The fleet stores the pick (`voice_channel_id`, `voice_channel_name`). The start ping's VOICE CHANNEL line is a channel mention on the alliance server and a link for another server (Discord can't show a mention across servers), and Join Voice Channel opens it; the MOTD's Voice line links it. With Discord unreachable the form lists no channels and the fleet keeps the server's invite link.
 
 ## Signing in
 
@@ -66,7 +70,7 @@ Written by `backend/voice/publisher.py`, read by `voice/voice_auth/records.py`, 
 
 ## The server
 
-- Channels and ACLs: `voice/voice_auth/layout.py`. Root, Lobby (default channel), Open 1-2, and per branch: Command at the top, Mainline, Logistics, Auxiliary A-C below. Text is off; nobody gets `Ban` or `Write` (Ban shows IP addresses). Commanders are priority speakers.
+- Channels and ACLs: `voice/voice_auth/layout.py`. Root, Lobby (default channel), Open 1-2, and per branch: Command at the top, Mainline, Logistics, Auxiliary A-C below. Fleet 1 also lets the `community` group traverse Command and enter its subchannels; the reconciler leaves community members there without a lease (and moves them out of Command). ACLs are applied when voice-auth starts, so an ACL change needs voice-auth restarted. Text is off; nobody gets `Ban` or `Write` (Ban shows IP addresses). Commanders are priority speakers.
 - Placement (`voice/voice_auth/reconcile.py`): once per lease, by role (Command, Logistics, the FC's wing mapping, else Mainline); reconnects return to the last channel; a pilot's own moves are never overridden and nobody is pulled out of an Open channel or another fleet's branch.
 - Compose (`docker-compose-prod.yml`): `voice-murmur` (pinned image, settings as `MUMBLE_CONFIG_*`), `voice-auth` (built from `voice/`), `celery-voice`. The `voice` network is internal and carries only Ice. `/api/voice/internal/` is served only on the edge's `internal` entrypoint (no host port) and checks `VOICE_INTERNAL_SECRET`. Ordinary deploys don't recreate the voice services.
 - Hangs: calls into Murmur time out after 10 s, login decisions after 5 s, and a watchdog exits voice-auth when its main loop stalls for a minute so `restart: always` brings it back (`voice/README.md`, "When Murmur stops answering").

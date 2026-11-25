@@ -79,6 +79,12 @@ class EveFleetResponse(BaseModel):
     # Where the fleet talks (FleetVoiceOption); see /fleets/voice-options.
     voice_option_id: Optional[int] = None
     uses_mumble: bool = False
+    # A Discord option's voice channel (a string: snowflakes overflow a
+    # JavaScript number); null: the server's invite link.
+    voice_channel_id: Optional[str] = None
+    voice_channel_name: Optional[str] = None
+    # Mumble: Fleet 1, open to every community member.
+    mumble_open: bool = False
 
     tracking: Optional[EveFleetTrackingResponse] = None
 
@@ -167,6 +173,10 @@ class CreateEveFleetRequest(BaseModel):
     invite_only: bool = False
     # Empty: the default voice option (the alliance Discord).
     voice_option_id: Optional[int] = None
+    # One of the option's channels (GET /voice-options); empty: none.
+    voice_channel_id: Optional[str] = None
+    # Mumble only: talk in Fleet 1, open to every community member.
+    mumble_open: bool = False
 
 
 class CopyEveFleetRequest(BaseModel):
@@ -196,6 +206,9 @@ class UpdateEveFleetRequest(BaseModel):
     on_schedule: Optional[bool] = None
     # Left out: unchanged. Null: the default voice option.
     voice_option_id: Optional[int] = None
+    # Left out: unchanged, unless the voice option changes (then none).
+    voice_channel_id: Optional[str] = None
+    mumble_open: Optional[bool] = None
 
 
 class FleetPingPreviewRequest(BaseModel):
@@ -207,6 +220,9 @@ class FleetPingPreviewRequest(BaseModel):
     location_id: Optional[int] = None
     audience_id: Optional[int] = None
     host_group_id: Optional[int] = None
+    voice_option_id: Optional[int] = None
+    voice_channel_id: Optional[str] = None
+    mumble_open: bool = False
 
 
 class FleetPingPreviewResponse(BaseModel):

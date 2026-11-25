@@ -46,17 +46,37 @@ class LeaseTest(VoiceTestCase):
             )
         )
 
-    def test_only_three_branches(self):
-        fleets = [self.fleet(self.fc_user) for _ in range(4)]
+    def test_restricted_fleets_lease_fleet_2_and_3_only(self):
+        fleets = [self.fleet(self.fc_user) for _ in range(3)]
         got = [leases.acquire(fleet) for fleet in fleets]
-        self.assertEqual([lease.branch for lease in got[:3]], [1, 2, 3])
-        self.assertIsNone(got[3])
+        self.assertEqual([lease.branch for lease in got[:2]], [2, 3])
+        self.assertIsNone(got[2])
         # Asking again returns the same lease.
         self.assertEqual(leases.acquire(fleets[0]).id, got[0].id)
 
+    def test_open_fleets_take_fleet_1_then_a_restricted_branch(self):
+        first = self.fleet(self.fc_user, mumble_open=True)
+        second = self.fleet(self.fc_user, mumble_open=True)
+        self.assertEqual(leases.acquire(first).branch, 1)
+        self.assertEqual(leases.acquire(second).branch, 2)
+
+    def test_a_restricted_fleet_gives_up_fleet_1(self):
+        fleet = self.fleet(self.fc_user, mumble_open=True)
+        self.track(fleet)
+        lease = self.lease(fleet, branch=1)
+        self.assertIsNone(leases.release_reason(lease))
+        fleet.mumble_open = False
+        fleet.save()
+        lease.refresh_from_db()
+        self.assertEqual(leases.release_reason(lease), "access_changed")
+        # An open fleet that fell back to Fleet 2 keeps it.
+        other = self.fleet(self.fc_user, mumble_open=True)
+        self.track(other)
+        self.assertIsNone(leases.release_reason(self.lease(other, branch=2)))
+
     def test_no_tracking_thirty_minutes_after_start_releases(self):
         fleet = self.fleet(self.fc_user)
-        lease = self.lease(fleet)
+        lease = self.lease(fleet, branch=2)
         self.assertIsNone(leases.release_reason(lease))
         later = timezone.now() + timedelta(minutes=31)
         self.assertEqual(leases.release_reason(lease, later), "no_tracking")
@@ -64,7 +84,7 @@ class LeaseTest(VoiceTestCase):
     def test_closing_keeps_the_branch_thirty_more_minutes(self):
         fleet = self.fleet(self.fc_user)
         self.track(fleet)
-        lease = self.lease(fleet)
+        lease = self.lease(fleet, branch=2)
         leases.schedule_release(fleet)
         lease.refresh_from_db()
         self.assertIsNone(leases.release_reason(lease))

@@ -18,6 +18,7 @@
     "host_group": null,
     "id": 502,
     "location": "Test Location",
+    "mumble_open": false,
     "objective": null,
     "on_schedule": false,
     "open_to_alliance": false,
@@ -28,6 +29,8 @@
     "tracking": null,
     "type": "training",
     "uses_mumble": false,
+    "voice_channel_id": null,
+    "voice_channel_name": null,
     "voice_option_id": 1
   },
   {
@@ -49,6 +52,7 @@
     "host_group": null,
     "id": 501,
     "location": "Test Location",
+    "mumble_open": false,
     "objective": null,
     "on_schedule": false,
     "open_to_alliance": false,
@@ -66,6 +70,8 @@
     },
     "type": "non_strategic",
     "uses_mumble": false,
+    "voice_channel_id": null,
+    "voice_channel_name": null,
     "voice_option_id": 1
   }
 ]

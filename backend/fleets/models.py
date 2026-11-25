@@ -18,6 +18,7 @@ from fleets.helpers.member_ships import (
 from fleets.helpers.eft_items import fitting_href
 from fleets.motd import get_motd
 from fleets.helpers.start_ping import build_start_ping
+from fleets.helpers.voice_channels import ping_voice, voice_link
 from fleets.helpers.fleet_boss import (
     active_fleet_as_boss,
     find_fleet_boss,
@@ -61,8 +62,16 @@ class FleetVoiceOption(models.Model):
         default="",
         help_text="Link shown in the fleet MOTD, e.g. a Discord invite.",
     )
-    discord_guild_id = models.BigIntegerField(null=True, blank=True)
-    discord_channel_id = models.BigIntegerField(null=True, blank=True)
+    discord_guild_id = models.BigIntegerField(
+        null=True,
+        blank=True,
+        help_text="The server whose voice channels the fleet form lists.",
+    )
+    discord_channel_id = models.BigIntegerField(
+        null=True,
+        blank=True,
+        help_text="The voice channel the fleet form starts on.",
+    )
     is_default = models.BooleanField(
         default=False, help_text="Picked for new fleets. Keep exactly one."
     )
@@ -190,6 +199,15 @@ class EveFleet(models.Model):
         related_name="fleets",
         help_text="Where the fleet talks. Empty means the default option.",
     )
+    # A Discord option: the voice channel the FC picked on its server
+    # (fleets/helpers/voice_channels.py). Empty: the server's invite link.
+    voice_channel_id = models.BigIntegerField(null=True, blank=True)
+    voice_channel_name = models.CharField(
+        max_length=100, blank=True, default="", db_default=""
+    )
+    # A Mumble option: talk in Fleet 1, open to every community member,
+    # instead of a restricted branch (docs/mumble-architecture.md).
+    mumble_open = models.BooleanField(default=False, db_default=False)
 
     # A private fleet: only invited pilots, its FC and Strategic FCs know it
     # exists until it is declassified. See docs/fleets/private-fleets.md.
@@ -231,6 +249,9 @@ class EveFleet(models.Model):
             link = voice_url()
             host_and_path = link.split("://", 1)[-1]
             return link, f"Mumble — {host_and_path}"
+        channel = voice_link(self)
+        if channel:
+            return channel[1], f"{channel[0]} · {option.name}"
         return option.link or self.DEFAULT_VOICE_LINK, option.name
 
     @property
@@ -307,6 +328,7 @@ class EveFleet(models.Model):
             fc_alt=self.fleet_commander_alt,
             description=self.description,
             doctrine=None if self.type == "strategic" else self.doctrine,
+            voice=ping_voice(self),
         )
 
     def notify_discord(self) -> None:

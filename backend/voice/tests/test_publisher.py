@@ -144,6 +144,7 @@ class ContractTest(VoiceTestCase):
                 "command": channels.COMMAND,
                 "branch_subchannels": list(channels.BRANCH_SUBCHANNELS),
                 "branch_names": [channels.branch_name(n) for n in (1, 2, 3)],
+                "open_branch": channels.OPEN_BRANCH,
                 "groups": {
                     "fleet": channels.GROUP_FLEET,
                     "commanders": channels.GROUP_COMMANDERS,

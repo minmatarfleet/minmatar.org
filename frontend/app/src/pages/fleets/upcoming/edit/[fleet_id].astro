@@ -39,7 +39,7 @@ if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
 
 import { update_fleet, get_audiences, get_locations, start_fleet } from '@helpers/api.minmatar.org/fleets'
-import { fetch_voice_options, posted_voice_option } from '@helpers/fetching/voice_options'
+import { fetch_voice_options, posted_voice_option, posted_voice_fields } from '@helpers/fetching/voice_options'
 import type { FleetVoiceOption } from '@dtypes/api.minmatar.org'
 import type { FleetPatchRequest, FleetTypes, Audience, Location, CampaignListItem } from '@dtypes/api.minmatar.org'
 import type { DoctrineType, CharacterBasic, Alert } from '@dtypes/layout_components'
@@ -73,6 +73,7 @@ if (Astro.request.method === "POST") {
             doctrine_id: doctrine_id,
             ...(campaign_id !== undefined && { campaign_id: campaign_id }),
             ...(posted_voice_option(data) !== undefined && { voice_option_id: posted_voice_option(data) }),
+            ...posted_voice_fields(data),
             description: data.get('description') as string,
             objective: data.get('objective') as string,
             start_time: new Date(`${data.get('eve_date')}T${data.get('eve_time')}Z`).toJSON(),

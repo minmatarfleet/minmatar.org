@@ -12,6 +12,11 @@ from fleets.endpoints.schemas import (
 from fleets.helpers.fleet_location import resolve_scheduled_fleet_location
 from fleets.helpers.schedule_fleet import resolve_host_group
 from fleets.helpers.start_ping import build_start_ping
+from fleets.helpers.voice_channels import ping_voice
+from fleets.helpers.voice_options import (
+    resolve_fleet_voice,
+    resolve_voice_option,
+)
 from fleets.models import EveFleet, EveFleetAudience
 
 PATH = "/ping-preview"
@@ -33,6 +38,18 @@ ROUTE_SPEC = {
 }
 
 FLEET_TYPE_LABELS = dict(EveFleet.fleet_types)
+
+
+def _preview_voice(payload):
+    """The ping's (voice line, url) for the form's voice. A preview never
+    fails on it: an unknown channel or option previews without one."""
+    voice = resolve_fleet_voice(payload)
+    if isinstance(voice, tuple):
+        option = resolve_voice_option(payload.voice_option_id)
+        if isinstance(option, tuple):
+            return None, None
+        voice = {"voice_option": option}
+    return ping_voice(EveFleet(**voice))
 
 
 def post_ping_preview(request, payload: FleetPingPreviewRequest):
@@ -57,6 +74,7 @@ def post_ping_preview(request, payload: FleetPingPreviewRequest):
     if isinstance(location, tuple):
         location = None
 
+    voice = _preview_voice(payload)
     fleet_type = payload.type.value
     ping = build_start_ping(
         fleet_id=0,
@@ -66,6 +84,7 @@ def post_ping_preview(request, payload: FleetPingPreviewRequest):
         host_group=host_group,
         fc_character=user_primary_character(request.user),
         description=payload.description,
+        voice=voice,
     )
     if ping is None:
         return 400, ErrorResponse.new("Pick an audience or a tribe group")

@@ -61,7 +61,7 @@ Reading Murmur's connect lines:
 | New connection then Client version … then Authenticated | Normal login. voice-auth logs Voice login accepted (ok). |
 | Rejected connection … Wrong certificate or password | The authenticator refused (voice-auth logs refused (<reason>): unknown = spent/invalid token and no bound certificate, no_identity, superuser). Send the pilot to /voice for a fresh link. |
 | Client version … and then nothing | Murmur is frozen. See "Murmur stops answering". |
-| <name> not allowed to Enter in <channel> | ACLs working as designed (the pilot isn't in that fleet/branch). |
+| <name> not allowed to Enter in <channel> | ACLs working as designed (the pilot isn't in that fleet/branch). Fleet 1's subchannels are open to every community member; Fleet 2 and 3 are fleet only. |
 | Connection closed: The remote host closed the connection | The client left or timed out. |
 
 ## Diagnose by symptom
