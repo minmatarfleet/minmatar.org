@@ -37,8 +37,16 @@ def can_answer(user: User, corporation: EveCorporation) -> bool:
 
 def _locked_ids(departure_ids) -> set[int]:
     """Departures whose survey has gone out: their reason can't change."""
-    del departure_ids  # Surveys (Part 4) add the invites that lock a row.
-    return set()
+    # Imported here: surveys depends on exits, not the other way round.
+    from surveys.models import (  # pylint: disable=import-outside-toplevel
+        ExitSurveyInvite,
+    )
+
+    return set(
+        ExitSurveyInvite.objects.filter(
+            departure_id__in=departure_ids
+        ).values_list("departure_id", flat=True)
+    )
 
 
 def _validate(reason, can_rejoin, note):

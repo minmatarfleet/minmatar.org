@@ -80,6 +80,14 @@ CELERYBEAT_MARKET = [
 # Characters
 CELERYBEAT_CHARACTERS = [
     (
+        "[Exits] Send exit surveys",
+        {
+            "task": "surveys.tasks.send_exit_surveys",
+            "schedule": crontab(minute="*/15"),
+            "options": {"expire_seconds": 15 * 60},
+        },
+    ),
+    (
         "[Exits] Confirm departures",
         {
             "task": "exits.tasks.confirm_departures",

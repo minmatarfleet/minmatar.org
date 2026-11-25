@@ -31,9 +31,17 @@ def _months_in_corporation(character_id, corporation_id, left_at):
 
 
 def survey_sent_at(departure_ids) -> dict[int, object]:
-    """When each departure's survey went out (Part 4 fills this in)."""
-    del departure_ids
-    return {}
+    """When each departure's survey went out."""
+    # Imported here: surveys depends on exits, not the other way round.
+    from surveys.models import (  # pylint: disable=import-outside-toplevel
+        ExitSurveyInvite,
+    )
+
+    return dict(
+        ExitSurveyInvite.objects.filter(
+            departure_id__in=departure_ids
+        ).values_list("departure_id", "sent_at")
+    )
 
 
 def departure_groups(corporation: EveCorporation, state: str = STATE_OPEN):
