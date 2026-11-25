@@ -147,13 +147,13 @@ describe('connect', () => {
 describe('the signed-out page', () => {
     test('a first-time visitor is asked to sign in with EVE', async () => {
         const html = await (await render(Page, 'http://localhost:4321/voice', { cookie: '' })).text()
-        expect(html).toContain('Sign in with your EVE character')
+        expect(html).toContain('Sign in with your main')
         expect(html).not.toContain('then=connect')
     })
 
     test('a browser that connected before gets "Sign in and connect"', async () => {
         const html = await (await render(Page, 'http://localhost:4321/voice', { cookie: 'voice_returning=1' })).text()
         expect(html).toContain('/voice/sign-in?then=connect')
-        expect(html).not.toContain('Sign in with your EVE character')
+        expect(html).not.toContain('Sign in with your main')
     })
 })

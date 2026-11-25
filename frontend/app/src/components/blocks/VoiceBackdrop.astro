@@ -1,0 +1,115 @@
+---
+// The /voice backdrop, drawn behind the page over its cover image: a dark wash
+// that keeps the left-hand text readable, a faint gold grid, and a comms
+// waveform along the bottom of the screen. Decoration only; it stops moving
+// for pilots who ask for reduced motion.
+interface Props {
+    bars?:              number;
+    [propName: string]: any;
+}
+
+const {
+    bars = 72,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+// A fixed, irregular wave: the same shape on every render, so the server HTML
+// is stable and nothing jumps when htmx swaps the page.
+const wave = Array.from({ length: bars }, (_, index) => ({
+    height: `${Math.round((0.2 + Math.abs(Math.sin(index * 0.37) * Math.cos(index * 0.11)) * 0.8) * 100)}%`,
+    delay: `${((index * 0.083) % 1.6).toFixed(2)}s`,
+    accent: index % 9 === 4,
+}))
+---
+
+<div class:list={['[ viewport-cover voice-backdrop ]', Astro.props.class]} aria-hidden="true" {...attributes}>
+    <div class="[ voice-backdrop__wash ]"></div>
+    <div class="[ voice-backdrop__grid ]"></div>
+    <div class="[ voice-backdrop__wave ]">
+        {wave.map((bar) =>
+            <span
+                class:list={['[ voice-backdrop__bar ]', { accent: bar.accent }]}
+                style={`--bar-height: ${bar.height}; --bar-delay: ${bar.delay}`}
+            ></span>
+        )}
+    </div>
+</div>
+
+<style lang="scss">
+    .voice-backdrop {
+        pointer-events: none;
+        overflow: hidden;
+    }
+
+    .voice-backdrop__wash {
+        position: absolute;
+        inset: 0;
+        background:
+            linear-gradient(180deg, transparent 55%, var(--background) 100%),
+            linear-gradient(
+                90deg,
+                color-mix(in srgb, var(--background) var(--tint-dense), transparent) 0%,
+                color-mix(in srgb, var(--background) var(--tint-heavy), transparent) 42%,
+                color-mix(in srgb, var(--background) var(--tint-medium), transparent) 70%,
+                color-mix(in srgb, var(--background) var(--tint-heavy), transparent) 100%
+            );
+    }
+
+    .voice-backdrop__grid {
+        --grid-line: color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent);
+
+        position: absolute;
+        inset: 0;
+        opacity: 0.55;
+        background-image:
+            linear-gradient(var(--grid-line) 1px, transparent 1px),
+            linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+        background-size: var(--space-2xl) var(--space-2xl);
+    }
+
+    .voice-backdrop__wave {
+        position: absolute;
+        inset-inline: 0;
+        bottom: 0;
+        height: var(--space-3xl);
+        display: flex;
+        align-items: flex-end;
+        gap: var(--space-3xs);
+        padding-inline: var(--space-m);
+        opacity: 0.32;
+    }
+
+    .voice-backdrop__bar {
+        flex: 1 1 0;
+        min-width: 1px;
+        height: var(--bar-height);
+        background: var(--fleet-yellow);
+        transform-origin: bottom;
+        animation: voice-wave 1.6s ease-in-out infinite;
+        animation-delay: var(--bar-delay);
+
+        &.accent {
+            background: var(--fleet-red);
+        }
+    }
+
+    @keyframes voice-wave {
+        0%, 100% { transform: scaleY(0.25); }
+        50% { transform: scaleY(1); }
+    }
+
+    // Phones: half the bars, so each stays a bar rather than a hairline.
+    @media (max-width: 600px) {
+        .voice-backdrop__bar:nth-child(2n) {
+            display: none;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .voice-backdrop__bar {
+            animation: none;
+        }
+    }
+</style>

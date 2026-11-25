@@ -3,108 +3,206 @@ import { i18n } from '@helpers/i18n'
 const { t, lang, translatePath } = i18n(Astro.url)
 
 import { get_voice_session, VOICE_RETURNING_COOKIE } from '@helpers/voice_session'
-import { login_url } from '@helpers/http_responses'
+import type { VoiceProgressStep } from '@dtypes/layout_components'
 
 // No gate: guests (NPSI pilots, campaign allies) use this page too.
 const session = get_voice_session(Astro)
 const login_failed = Astro.url.searchParams.get('error') !== null
 // This browser connected before: a lapsed sign-in offers "Sign in and connect".
-const returning = Astro.cookies.get(VOICE_RETURNING_COOKIE)?.value === '1'
+const returning = !session && Astro.cookies.get(VOICE_RETURNING_COOKIE)?.value === '1'
 // Back from "Sign in and connect": open Mumble without another click.
 const auto_connect = Astro.url.searchParams.get('connect') === '1'
 
 const SIGN_IN_URL = translatePath('/voice/sign-in')
 const STATUS_PARTIAL_URL = `${translatePath('/partials/voice_status_component/')}${auto_connect ? '?connect=1' : ''}`
-const SITE_LOGIN_URL = login_url(Astro, new URL(translatePath('/voice'), Astro.url).href)
 const page_title = t('voice.page_title')
 
-const sign_in_points = [
-    { title: t('voice.sign_in.public'), text: t('voice.sign_in.public_text') },
-    { title: t('voice.sign_in.no_account'), text: t('voice.sign_in.no_account_text') },
-    { title: t('voice.sign_in.no_typing'), text: t('voice.sign_in.no_typing_text') },
+// Signed out: the headline beside the one action, stacking on narrow screens.
+// Signed in: the headline over the setup flow (the headline fills its row).
+const layout_width = session ? '100%' : '26rem'
+const layout_breakpoint = session ? '100%' : 'min(28rem, 100%)'
+
+// Signed out, the pilot is on the first of the setup steps the flow shows next.
+const sign_in_steps: VoiceProgressStep[] = [
+    { label: t('voice.step.sign_in'), state: 'now' },
+    { label: t('voice.step.access') },
+    { label: t('voice.step.install') },
+    { label: t('voice.step.connect') },
+    { label: t('voice.step.keys') },
 ]
 
 import Viewport from '@layouts/Viewport.astro'
 import PageLanding from '@components/page/PageLanding.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
-import Grid from '@components/compositions/Grid.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
+import FluidFixed from '@components/compositions/FluidFixed.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Button from '@components/blocks/Button.astro'
 import LazyPartial from '@components/blocks/LazyPartial.astro'
+import VoiceBackdrop from '@components/blocks/VoiceBackdrop.astro'
+import VoiceProgress from '@components/blocks/VoiceProgress.astro'
 ---
 
 <Viewport title={page_title} meta_description={t('voice.meta_description')}>
-<PageLanding lang={lang}>
-    <Flexblock gap="var(--space-xl)">
-        <Flexblock gap="var(--space-s)">
-            <h1>{page_title}</h1>
-            <p class="[ voice-lead ]">{t('voice.lead')}</p>
+<PageLanding
+    lang={lang}
+    wide={true}
+    cover={{
+        image: '/images/fleets-cover.jpg',
+        image_990: '/images/fleets-cover-900.jpg',
+        full_screen: true,
+        align: 'right',
+    }}
+>
+    <VoiceBackdrop slot="cover" />
+
+    <FluidFixed
+        class:list={['[ voice-page ]', { 'voice-page--flow': session }]}
+        gap="var(--space-2xl) var(--space-3xl)"
+        width={layout_width}
+        breakpoint={layout_breakpoint}
+    >
+        <Flexblock gap="var(--space-xl)">
+            <Flexblock gap="var(--space-s)">
+                <FlexInline gap="var(--space-xs)">
+                    <img class="[ voice-mark ]" src="/images/fleet-logo-square.svg" alt="" width="36" height="36" />
+                    <span class="[ voice-brand ]">{t('voice.brand')}</span>
+                </FlexInline>
+                <h1 class="[ voice-title ]">{page_title}</h1>
+                <p class="[ voice-lead ]">{returning ? t('voice.welcome_back') : t('voice.lead')}</p>
+            </Flexblock>
+
+            {login_failed &&
+                <p class="[ voice-error ]" role="alert">{t('voice.login.failed')}</p>
+            }
+
+            {!session && !returning && <VoiceProgress steps={sign_in_steps} />}
         </Flexblock>
 
-        {login_failed &&
-            <p class="[ voice-error ]" role="alert">{t('voice.login.failed')}</p>
-        }
-
         {session
-            ? <LazyPartial url={STATUS_PARTIAL_URL}>
-                <p>{t('loading')}</p>
-            </LazyPartial>
-            : returning
-                ? <ComponentBlock>
-                    <Flexblock gap="var(--space-m)">
-                        <Flexblock gap="var(--space-2xs)">
-                            <small>{t('voice.welcome_back')}</small>
-                            <h2>{t('voice.welcome_back.title')}</h2>
-                            <p>{t('voice.welcome_back.text')}</p>
-                        </Flexblock>
-                        <FlexInline gap="var(--space-m)">
-                            <Button href={`${SIGN_IN_URL}?then=connect`} color="green">{t('voice.welcome_back.title')}</Button>
-                            <img src="/images/mumble-logo.svg" alt="" width="40" height="40" />
-                        </FlexInline>
-                        <FlexInline gap="var(--space-m)">
-                            <a href={SIGN_IN_URL}>{t('voice.welcome_back.setup')}</a>
-                            <a href={SITE_LOGIN_URL}>{t('voice.sign_in.site')}</a>
-                        </FlexInline>
+            ? <div>
+                <LazyPartial url={STATUS_PARTIAL_URL}>
+                    <p>{t('loading')}</p>
+                </LazyPartial>
+            </div>
+            : <ComponentBlock class="[ voice-panel ]" padding_inline="var(--space-l)" aria-labelledby="voice-panel-title">
+                <span class="[ voice-corner voice-corner--start ]" aria-hidden="true"></span>
+                <span class="[ voice-corner voice-corner--end ]" aria-hidden="true"></span>
+                <Flexblock gap="var(--space-l)">
+                    <Flexblock gap="var(--space-2xs)">
+                        <h2 id="voice-panel-title">{returning ? t('voice.welcome_back.title') : t('voice.sign_in.title')}</h2>
+                        <p>{returning ? t('voice.welcome_back.text') : t('voice.sign_in.text')}</p>
                     </Flexblock>
-                </ComponentBlock>
-                : <ComponentBlock>
-                    <Flexblock gap="var(--space-m)">
-                        <Flexblock gap="var(--space-2xs)">
-                            <h2>{t('voice.sign_in.title')}</h2>
-                            <p>{t('voice.sign_in.text')}</p>
+                    {returning
+                        ? <Flexblock gap="var(--space-s)">
+                            <Button class="[ w-full text-center ]" href={`${SIGN_IN_URL}?then=connect`} color="green">{t('voice.welcome_back.title')}</Button>
+                            <a class="[ voice-secondary ]" href={SIGN_IN_URL}>{t('voice.welcome_back.setup')}</a>
                         </Flexblock>
-                        <FlexInline gap="var(--space-m)">
-                            <Button href={SIGN_IN_URL}>{t('voice.sign_in.button')}</Button>
-                            <a href={SITE_LOGIN_URL}>{t('voice.sign_in.site')}</a>
-                        </FlexInline>
-                        <Grid min_item_width="12rem" row_gap="var(--space-s)" column_gap="var(--space-s)">
-                            {sign_in_points.map((point) =>
-                                <Flexblock gap="var(--space-3xs)">
-                                    <strong class="[ voice-point ]">{point.title}</strong>
-                                    <small>{point.text}</small>
-                                </Flexblock>
-                            )}
-                        </Grid>
-                    </Flexblock>
-                </ComponentBlock>
+                        : <Flexblock gap="var(--space-s)">
+                            <Button class="[ w-full text-center ]" href={SIGN_IN_URL}>{t('voice.sign_in.button')}</Button>
+                            <small class="[ voice-secondary ]">{t('voice.sign_in.public')}</small>
+                        </Flexblock>
+                    }
+                </Flexblock>
+            </ComponentBlock>
         }
-    </Flexblock>
+    </FluidFixed>
 </PageLanding>
 </Viewport>
 
 <style lang="scss">
-    .voice-lead {
-        max-width: 60ch;
+    :global(.voice-page) {
+        align-items: center;
+        max-width: var(--max-col-width);
+        margin-inline: auto;
+        padding-block-end: var(--space-3xl);
+
+        :global(.voice-panel) {
+            position: relative;
+            max-width: 30rem;
+        }
+    }
+
+    :global(.voice-page.voice-page--flow) {
+        max-width: var(--max-text-width);
+    }
+
+    .voice-mark {
+        display: block;
+        width: var(--space-l);
+        height: var(--space-l);
+    }
+
+    .voice-brand {
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
         color: var(--faded);
-        font-size: var(--step-0);
+    }
+
+    .voice-title {
+        margin: 0;
+        max-width: 5ch;
+        font-size: clamp(var(--step-5), 10vw, calc(var(--step-5) * 1.75));
+        line-height: 0.88;
+        color: var(--highlight);
+    }
+
+    .voice-lead {
+        font-size: var(--step-1);
+        color: var(--foreground);
     }
 
     .voice-error {
         color: var(--fleet-red-text);
     }
 
-    .voice-point {
+    // Red corner brackets on the action panel. (Its ::before is the glass layer.)
+    .voice-corner {
+        position: absolute;
+        width: var(--space-m);
+        height: var(--space-m);
+        border: 2px solid var(--fleet-red);
+        pointer-events: none;
+    }
+
+    .voice-corner--start {
+        inset-block-start: -1px;
+        inset-inline-start: -1px;
+        border-inline-end: 0;
+        border-block-end: 0;
+    }
+
+    .voice-corner--end {
+        inset-block-end: -1px;
+        inset-inline-end: -1px;
+        border-inline-start: 0;
+        border-block-start: 0;
+    }
+
+    :global(.voice-page .voice-panel) h2 {
+        font-size: var(--step-2);
         color: var(--highlight);
+    }
+
+    .voice-secondary {
+        align-self: center;
+        text-align: center;
+        color: var(--faded);
+    }
+
+    // Phones: the action panel runs edge to edge.
+    @media (max-width: 600px) {
+        :global(.voice-page .voice-panel) {
+            flex-basis: 100%;
+            max-width: none;
+            margin-inline: calc(-1 * var(--space-2xs));
+            border-inline: 0;
+        }
+
+        .voice-corner {
+            display: none;
+        }
     }
 </style>
