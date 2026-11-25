@@ -6,8 +6,6 @@ They read the repo checkout, so they skip when only `backend/` is present
 
 import importlib.util
 import json
-import shutil
-import subprocess
 import sys
 import tempfile
 import unittest
