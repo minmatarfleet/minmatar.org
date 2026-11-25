@@ -155,12 +155,29 @@ def _copy_request(
             if fleet.voice_option_id and fleet.voice_option.is_active
             else None
         ),
+        voice_channel_id=_copied_voice_channel(fleet),
+        mumble_open=bool(fleet.mumble_open),
         host_group_id=fleet.host_group_id,
         open_to_alliance=open_to_alliance,
         on_schedule=open_to_alliance and bool(fleet.on_schedule),
         # Invites are never copied: the new fleet starts with nobody asked.
         invite_only=bool(fleet.invite_only),
     )
+
+
+def _copied_voice_channel(fleet: EveFleet) -> str | None:
+    """The fleet's voice channel, when the copy keeps its option and the
+    channel is still listed; otherwise the copy starts without one."""
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.voice_channels import voice_channels
+
+    option = fleet.voice_option
+    if not fleet.voice_channel_id or option is None or not option.is_active:
+        return None
+    listed = voice_channels(option) or []
+    if any(channel.id == fleet.voice_channel_id for channel in listed):
+        return str(fleet.voice_channel_id)
+    return None
 
 
 def copy_fleet_ships(source: EveFleet, copy: EveFleet) -> int:

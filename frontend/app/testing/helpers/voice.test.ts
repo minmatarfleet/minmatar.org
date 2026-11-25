@@ -3,7 +3,7 @@ import {
     parse_character_id, parse_wings, new_login_state, login_state_matches,
     detect_device, voice_step, parse_voice_view, parse_since, connected_since,
 } from '@helpers/voice_session'
-import { posted_voice_option } from '@helpers/fetching/voice_options'
+import { posted_voice_option, posted_voice_fields } from '@helpers/fetching/voice_options'
 import { voice_login_url } from '@helpers/api.minmatar.org/voice'
 
 describe('voice helpers', () => {
@@ -30,6 +30,18 @@ describe('voice helpers', () => {
         const picked = new FormData()
         picked.set('voice_option_id', '7')
         expect(posted_voice_option(picked)).toBe(7)
+    })
+
+    it('posted_voice_fields sends only the fields the picked option posted', () => {
+        expect(posted_voice_fields(new FormData())).toEqual({})
+        const discord = new FormData()
+        discord.set('voice_option_id', '1')
+        discord.set('voice_channel_id', '1213929683603951696')
+        expect(posted_voice_fields(discord)).toEqual({ voice_channel_id: '1213929683603951696' })
+        const mumble = new FormData()
+        mumble.set('voice_option_id', '2')
+        mumble.set('mumble_open', 'restricted')
+        expect(posted_voice_fields(mumble)).toEqual({ mumble_open: false })
     })
 
     it('voice_login_url encodes where EVE sends the pilot back, and the state', () => {

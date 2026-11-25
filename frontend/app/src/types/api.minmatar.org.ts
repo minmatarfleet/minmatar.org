@@ -921,6 +921,8 @@ export interface FleetRequest {
     open_to_alliance?:  boolean;
     on_schedule?:       boolean;
     voice_option_id?:   number | null;
+    voice_channel_id?:  string | null;
+    mumble_open?:       boolean;
 }
 
 export type FleetPatchRequest = ApiRequest<'UpdateEveFleetRequest'>

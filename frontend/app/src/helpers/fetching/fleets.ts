@@ -176,6 +176,8 @@ async function fleet_ui(access_token:string, fleet:FleetDetail):Promise<FleetUI>
         campaign_slug: fleet.campaign_slug ?? null,
         voice_option_id: fleet.voice_option_id ?? null,
         uses_mumble: fleet.uses_mumble ?? false,
+        voice_channel_id: fleet.voice_channel_id ?? null,
+        mumble_open: fleet.mumble_open ?? false,
         campaign_name: campaign_name,
         host_group: host_group_ref(fleet.host_group),
         open_to_alliance: fleet.open_to_alliance ?? false,

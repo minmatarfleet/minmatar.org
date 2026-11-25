@@ -17,6 +17,11 @@ BRANCH_SUBCHANNELS = (MAINLINE, LOGISTICS, *AUXILIARY)
 # Where placement may send a pilot inside a branch.
 PLACEMENT_CHANNELS = (COMMAND, *BRANCH_SUBCHANNELS)
 
+# Fleet 1 is open: any community member may enter its subchannels, with or
+# without a fleet (Command stays commanders only). Fleets the FC sets to
+# open lease it; restricted fleets lease the others (voice/leases.py).
+OPEN_BRANCH = 1
+
 # Groups the voice service adds on each branch channel.
 GROUP_FLEET = "fleet"
 GROUP_COMMANDERS = "commanders"

@@ -609,6 +609,8 @@ export interface FleetUI {
     aar_forum_url?:         string;
     voice_option_id?:       number | null;
     uses_mumble?:           boolean;
+    voice_channel_id?:      string | null;
+    mumble_open?:           boolean;
     campaign_id?:           number | null;
     campaign_slug?:         string | null;
     campaign_name?:         string | null;

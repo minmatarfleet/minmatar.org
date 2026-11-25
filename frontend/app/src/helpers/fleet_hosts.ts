@@ -154,5 +154,8 @@ export function ping_preview_request(data:FormValues):FleetPingPreviewRequest {
         location_id: int_or_null(data.get('location_id')),
         audience_id: host_group_id === null ? int_or_null(data.get('audience_id')) : null,
         host_group_id,
+        voice_option_id: int_or_null(data.get('voice_option_id')),
+        voice_channel_id: data.get('voice_channel_id') ? String(data.get('voice_channel_id')) : null,
+        mumble_open: data.get('mumble_open') === 'open',
     }
 }

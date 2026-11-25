@@ -407,6 +407,14 @@ class DiscordChannel(models.Model):
             "When enabled, the bot records voice presence in this channel each minute."
         ),
     )
+    hide_from_fleets = models.BooleanField(
+        default=False,
+        db_default=False,
+        help_text=(
+            "Voice channels only: leave it out of the fleet form's voice "
+            "channel list (AFK, Leadership)."
+        ),
+    )
     receive_capital_pings = models.BooleanField(
         default=False,
         help_text=(

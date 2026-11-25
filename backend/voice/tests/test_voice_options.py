@@ -5,12 +5,16 @@ from datetime import timedelta
 from unittest.mock import patch
 
 from django.contrib.auth.models import Permission
+from django.core.cache import cache
 from django.test import Client
 from django.utils import timezone
 
 from app.testing import make_token
+from discord.models import DiscordChannel, DiscordGuild
 from fleets.helpers.copy_fleet import _copy_request
-from fleets.models import EveFleetAudience, FleetVoiceOption
+from fleets.helpers.voice_channels import ping_voice
+from fleets.models import EveFleet, EveFleetAudience, FleetVoiceOption
+from fleets.notifications import get_fleet_discord_notification
 from fleets.motd import get_motd
 from fleets.tests import setup_fleet_reference_data
 from voice import store
@@ -19,7 +23,7 @@ from voice.models import VoiceChannelLease
 from voice.tests.helpers import VoiceTestCase
 
 
-class VoiceOptionTest(VoiceTestCase):
+class FleetFormCase(VoiceTestCase):
     def setUp(self):
         super().setUp()
         setup_fleet_reference_data()
@@ -47,6 +51,8 @@ class VoiceOptionTest(VoiceTestCase):
                 HTTP_AUTHORIZATION=f"Bearer {make_token(self.fc_user)}",
             )
 
+
+class VoiceOptionTest(FleetFormCase):
     def test_the_seed_keeps_discord_default_and_mumble_off(self):
         discord = FleetVoiceOption.objects.get(kind="discord")
         self.assertTrue(discord.is_default)
@@ -152,7 +158,8 @@ class VoiceTaskTest(VoiceTestCase):
             VoiceChannelLease.active().filter(fleet=fleet).exists()
         )
         leases = json.loads(store.memory_store().get(store.LEASES_KEY))
-        self.assertEqual(leases["1"]["fleet_id"], fleet.id)
+        # A restricted fleet: Fleet 1 is for open fleets.
+        self.assertEqual(leases["2"]["fleet_id"], fleet.id)
 
     def test_fleet_poll_queues_voice_work_for_mumble_fleets_only(self):
         fc_user, _ = self.pilot("fc", "Alliance")
@@ -171,3 +178,272 @@ class VoiceTaskTest(VoiceTestCase):
         queued = [call.kwargs["args"] for call in signature.call_args_list]
         self.assertEqual(queued, [[mumble.id]])
         del discord
+
+
+ALLIANCE_GUILD = 1  # settings_test.DISCORD_GUILD_ID
+FW_GUILD = 712126510374584320
+
+
+def _discord_channels(guild_id):
+    """A server's channels as Discord sends them."""
+    everyone_denied = [
+        {"id": str(guild_id), "type": 0, "allow": "0", "deny": str(1 << 10)}
+    ]
+    return [
+        {"id": "10", "type": 4, "name": "Voice", "position": 1},
+        {
+            "id": "11",
+            "type": 4,
+            "name": "Staff",
+            "position": 0,
+            "permission_overwrites": everyone_denied,
+        },
+        {
+            "id": "101",
+            "type": 2,
+            "name": "Fleet 2",
+            "parent_id": "10",
+            "position": 2,
+        },
+        {
+            "id": "100",
+            "type": 2,
+            "name": "Fleet 1",
+            "parent_id": "10",
+            "position": 1,
+        },
+        {
+            "id": "102",
+            "type": 2,
+            "name": "AFK",
+            "parent_id": "10",
+            "position": 3,
+        },
+        {
+            "id": "103",
+            "type": 2,
+            "name": "Leadership",
+            "parent_id": "10",
+            "position": 4,
+            "permission_overwrites": everyone_denied,
+        },
+        {
+            "id": "110",
+            "type": 2,
+            "name": "Officers",
+            "parent_id": "11",
+            "position": 0,
+        },
+        {
+            "id": "120",
+            "type": 0,
+            "name": "chat",
+            "parent_id": "10",
+            "position": 0,
+        },
+    ]
+
+
+class VoiceChannelTest(FleetFormCase):
+    """Picking a Discord voice channel, and the ping and MOTD linking it."""
+
+    def setUp(self):
+        super().setUp()
+        cache.clear()
+        guild, _ = DiscordGuild.objects.get_or_create(
+            guild_id=ALLIANCE_GUILD, defaults={"name": "MF"}
+        )
+        DiscordChannel.objects.create(
+            channel_id=102,
+            guild=guild,
+            name="AFK",
+            channel_type="voice",
+            hide_from_fleets=True,
+        )
+        self.discord.discord_guild_id = ALLIANCE_GUILD
+        self.discord.discord_channel_id = 101
+        self.discord.save()
+        self.fw = FleetVoiceOption.objects.create(
+            name="Minmatar Faction Warfare Discord",
+            kind="discord",
+            discord_guild_id=FW_GUILD,
+            order=1,
+        )
+        patcher = patch(
+            "fleets.helpers.voice_channels.DiscordClient.get_guild_channels_raw",
+            side_effect=_discord_channels,
+        )
+        self.discord_api = patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def options(self):
+        return {
+            o["name"]: o
+            for o in Client()
+            .get(
+                "/api/fleets/voice-options",
+                HTTP_AUTHORIZATION=f"Bearer {make_token(self.fc_user)}",
+            )
+            .json()
+        }
+
+    def test_lists_channels_people_can_join_in_discord_order(self):
+        options = self.options()
+        alliance = options["Minmatar Fleet Discord"]
+        self.assertEqual(
+            [
+                (c["id"], c["name"], c["category"])
+                for c in alliance["channels"]
+            ],
+            [("100", "Fleet 1", "Voice"), ("101", "Fleet 2", "Voice")],
+        )
+        self.assertEqual(alliance["default_channel_id"], "101")
+        # No default set: the first channel.
+        fw = options["Minmatar Faction Warfare Discord"]
+        self.assertEqual(fw["default_channel_id"], "100")
+        self.assertEqual(options["Mumble"]["channels"], [])
+        # Cached: one Discord call per server.
+        self.options()
+        self.assertEqual(self.discord_api.call_count, 2)
+
+    def test_discord_down_lists_no_channels(self):
+        self.discord_api.side_effect = RuntimeError("down")
+        options = self.options()
+        self.assertEqual(options["Minmatar Fleet Discord"]["channels"], [])
+        self.assertIsNone(
+            options["Minmatar Fleet Discord"]["default_channel_id"]
+        )
+
+    def test_scheduling_stores_the_channel(self):
+        body = self.create(voice_channel_id="100").json()
+        self.assertEqual(body["voice_channel_id"], "100")
+        self.assertEqual(body["voice_channel_name"], "Fleet 1")
+        fleet = EveFleet.objects.get(id=body["id"])
+        self.assertEqual(fleet.voice_channel_name, "Fleet 1")
+        for unknown in ("102", "110", "999", "x"):
+            self.assertEqual(
+                self.create(voice_channel_id=unknown).status_code, 400, unknown
+            )
+
+    def test_mumble_open_only_sticks_to_mumble(self):
+        body = self.create(
+            voice_option_id=self.mumble.id, mumble_open=True
+        ).json()
+        self.assertTrue(body["mumble_open"])
+        self.assertIsNone(body["voice_channel_id"])
+        body = self.create(mumble_open=True).json()
+        self.assertFalse(body["mumble_open"])
+
+    def test_changing_the_server_drops_the_old_channel(self):
+        fleet_id = self.create(voice_channel_id="100").json()["id"]
+
+        def patch_fleet(**body):
+            return Client().patch(
+                f"/api/fleets/{fleet_id}",
+                data=json.dumps(body),
+                content_type="application/json",
+                HTTP_AUTHORIZATION=f"Bearer {make_token(self.fc_user)}",
+            )
+
+        self.assertEqual(
+            patch_fleet(description="same voice").status_code, 200
+        )
+        self.assertEqual(
+            EveFleet.objects.get(id=fleet_id).voice_channel_id, 100
+        )
+        self.assertEqual(
+            patch_fleet(voice_option_id=self.fw.id).status_code, 200
+        )
+        fleet = EveFleet.objects.get(id=fleet_id)
+        self.assertEqual(fleet.voice_option_id, self.fw.id)
+        self.assertIsNone(fleet.voice_channel_id)
+        patch_fleet(voice_channel_id="101")
+        self.assertEqual(
+            EveFleet.objects.get(id=fleet_id).voice_channel_id, 101
+        )
+
+    def test_ping_and_motd_link_the_channel(self):
+        fleet = self.fleet(
+            self.fc_user,
+            mumble=False,
+            voice_channel_id=100,
+            voice_channel_name="Fleet 1",
+        )
+        line, url = ping_voice(fleet)
+        self.assertEqual(line, "<#100>")
+        self.assertEqual(url, "https://discord.com/channels/1/100")
+        self.assertEqual(
+            fleet.motd_voice(), (url, "Fleet 1 · Minmatar Fleet Discord")
+        )
+        fleet.voice_option = self.fw
+        line, url = ping_voice(fleet)
+        self.assertEqual(
+            line,
+            f"[Fleet 1](https://discord.com/channels/{FW_GUILD}/100)"
+            " on Minmatar Faction Warfare Discord",
+        )
+        payload = get_fleet_discord_notification(
+            fleet_id=1,
+            fleet_type="Roam",
+            fleet_location="Amamake",
+            fleet_audience="Alliance",
+            fleet_commander_name="FC",
+            fleet_commander_id=1,
+            fleet_description="x",
+            fleet_voice_channel=line,
+            fleet_voice_channel_link=url,
+        )
+        self.assertIn(
+            f"**VOICE CHANNEL**: {line}\n", payload["embeds"][0]["description"]
+        )
+        button = payload["components"][0]["components"][0]
+        self.assertEqual(button["url"], url)
+        self.assertFalse(button["disabled"])
+
+    def test_mumble_ping_says_whether_fleet_1_is_open(self):
+        fleet = self.fleet(self.fc_user, mumble_open=True)
+        line, url = ping_voice(fleet)
+        self.assertTrue(url.endswith("/voice"))
+        self.assertIn("Fleet 1, open to all members", line)
+        # Another open fleet held Fleet 1: the ping names the real branch.
+        self.lease(fleet, branch=2)
+        self.assertTrue(ping_voice(fleet)[0].endswith(": Fleet 2"))
+        restricted = self.fleet(self.fc_user)
+        self.assertIn("your fleet's branch", ping_voice(restricted)[0])
+        # A Discord fleet without a channel keeps the server's invite.
+        plain = self.fleet(self.fc_user, mumble=False)
+        self.assertEqual(
+            ping_voice(plain),
+            ("Minmatar Fleet Discord", "https://discord.gg/minmatar"),
+        )
+
+    def test_ping_preview_shows_the_picked_channel(self):
+        def preview(**voice):
+            return Client().post(
+                "/api/fleets/ping-preview",
+                data=json.dumps(
+                    {
+                        "type": "non_strategic",
+                        "audience_id": self.audience.id,
+                        **voice,
+                    }
+                ),
+                content_type="application/json",
+                HTTP_AUTHORIZATION=f"Bearer {make_token(self.fc_user)}",
+            )
+
+        response = preview(
+            voice_option_id=self.discord.id, voice_channel_id="100"
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        description = response.json()["payload"]["embeds"][0]["description"]
+        self.assertIn("**VOICE CHANNEL**: <#100>", description)
+        # An unknown channel previews without one rather than failing.
+        response = preview(
+            voice_option_id=self.discord.id, voice_channel_id="999"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            "**VOICE CHANNEL**: Minmatar Fleet Discord",
+            response.json()["payload"]["embeds"][0]["description"],
+        )
