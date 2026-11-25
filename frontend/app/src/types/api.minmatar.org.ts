@@ -3413,3 +3413,5 @@ export type VoiceConnect = ApiResponse<'VoiceConnectResponse'>
 export type VoiceCertificate = ApiResponse<'VoiceCertificateResponse'>
 export type VoiceFleet = ApiResponse<'VoiceFleetResponse'>
 export type FleetVoiceOption = ApiResponse<'FleetVoiceOptionResponse'>
+export type DepartureGroup = ApiResponse<'DepartureGroupResponse'>
+export type DepartureAnswer = ApiRequest<'DepartureAnswerRequest'>

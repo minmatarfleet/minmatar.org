@@ -7,7 +7,7 @@ import type {
     TribeEventRowUI,
     TribeGroupRefUI,
 } from '@dtypes/layout_components'
-import type { CorporationLeadershipMember, TrialProgress, TribeMembership } from '@dtypes/api.minmatar.org'
+import type { CorporationLeadershipMember, DepartureGroup, TrialProgress, TribeMembership } from '@dtypes/api.minmatar.org'
 import { EVE } from '../../stories/_controls'
 
 // Corporations -----------------------------------------------------------------------------
@@ -238,3 +238,41 @@ export const membership_no_rank: TribeMembership = {
     primary_character_name: 'Ashen Rattini-Sebiestor of the Seventh Convoy',
     characters: [],
 }
+
+
+// Departures tab (#3198): invented pilots; 1000167 is Pator Tech School, a real NPC corporation.
+const departure = (fields: Partial<DepartureGroup>): DepartureGroup => ({
+    departure_ids: [101],
+    character_id: 2112000101,
+    character_name: 'Arkan Veld',
+    alt_names: [],
+    registered: true,
+    months_in_corporation: 14,
+    first_missing_at: '2026-11-20T12:00:00Z',
+    destination_corporation_id: 1000167,
+    destination_name: 'Pator Tech School',
+    kind: 'exit',
+    destination_is_npc: true,
+    reason: '',
+    can_rejoin: null,
+    note: '',
+    flag_id: null,
+    survey_sent_at: null,
+    ...fields,
+})
+
+export const departures_open: DepartureGroup[] = [
+    departure({}),
+    departure({ departure_ids: [102], character_id: 2112000102, character_name: 'Mira Stonehand', registered: false, months_in_corporation: null, destination_name: 'Republic University', destination_corporation_id: 1000168 }),
+    departure({ departure_ids: [103], character_id: 2112000103, character_name: 'Kesh Varo', months_in_corporation: 3, kind: 'alliance_move', destination_is_npc: false, destination_corporation_id: 98000002, destination_name: 'Tribal Liberation Force', reason: 'left' }),
+    departure({ departure_ids: [104], character_id: 2112000104, character_name: 'Dren Halvik', months_in_corporation: 1, reason: 'kicked_other', can_rejoin: false, note: 'Awoxed a corp Orca', flag_id: 7 }),
+]
+
+export const departures_answered: DepartureGroup[] = [
+    departure({ reason: 'kicked_inactive', can_rejoin: true }),
+    departure({ departure_ids: [105], character_id: 2112000105, character_name: 'Lyss Corran', reason: 'left', survey_sent_at: '2026-11-06T12:00:00Z' }),
+]
+
+export const departures_with_alts: DepartureGroup[] = [
+    departure({ departure_ids: [106, 107, 108], character_id: 2112000106, character_name: 'Toren Ashblade', alt_names: ['Toren Alt', 'Toren Hauler'], kind: 'exit', destination_is_npc: false, destination_corporation_id: 98000003, destination_name: 'Brave Newbies Inc.' }),
+]
