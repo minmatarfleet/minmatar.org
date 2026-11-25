@@ -29,7 +29,8 @@ def get_fleet_discord_notification(
         description += f"**START TIME**: {fleet_start_time.strftime('%Y-%m-%d %H:%M')} EVE | <t:{int(fleet_start_time.timestamp())}> LOCAL\n"
     else:
         if fleet_voice_channel:
-            description += f"**VOICE CHANNEL**: MINMATAR FLEET | {fleet_voice_channel.upper()}\n"
+            # A channel mention or a markdown link: never upper-cased.
+            description += f"**VOICE CHANNEL**: {fleet_voice_channel}\n"
     description += f"**LOCATION**: {fleet_location.upper()}\n"
     description += f"**AUDIENCE**: {fleet_audience.upper()}\n"
     description += f"\n**OBJECTIVE**: {fleet_description}\n"

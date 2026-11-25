@@ -73,6 +73,8 @@ if (isNaN(tribe_id) || isNaN(group_id))
 const user_profile = user && user?.username ? await get_user_profile(user.username) : null
 const gates = await get_gates(Astro)
 const is_alliance_member = can(gates, 'tribes.roster.view')
+// Structure managers (People Team) rename, archive and restore the group.
+const can_manage_structure = Boolean(auth_token) && can(gates, 'tribes.structure.manage')
 const user_on_trial = user_profile?.community_status === 'trial'
 
 let tribe: Tribe | null = null
@@ -310,6 +312,8 @@ import TribeGroupDiscordSettings from '@components/blocks/TribeGroupDiscordSetti
 import TribeGroupPublishingSettings from '@components/blocks/TribeGroupPublishingSettings.astro'
 import LandingSwiper from '@components/blocks/LandingSwiper.astro'
 import Button from '@components/blocks/Button.astro'
+import TribeStructureButton from '@components/blocks/TribeStructureButton.astro'
+import Tag from '@components/blocks/Tag.astro'
 import SectionTabs from '@components/blocks/SectionTabs.astro'
 import TribeGroupInvitationBanner from '@components/blocks/TribeGroupInvitationBanner.astro'
 import TribeChiefHelpWanted from '@components/blocks/TribeChiefHelpWanted.astro'
@@ -372,10 +376,25 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
                             </Flexblock>
                         }
                         <PageTitle is_landing={true}>{page_title}</PageTitle>
+                        {tribe_group && !tribe_group.is_active && <Tag text={t('tribes.structure.archived')} color="fleet-yellow" />}
                     </FlexInline>
                 </Flexblock>
                 {tribe_group &&
                     <FlexInline gap="var(--space-xs)" class="[ items-start! ]">
+                        {can_manage_structure &&
+                            <>
+                                <TribeStructureButton mode="rename" tribe_id={tribe_id} group_id={group_id} name={tribe_group.name} />
+                                {/* A group is restored only in an active tribe (the API refuses otherwise). */}
+                                {(tribe_group.is_active || tribe?.is_active !== false) &&
+                                    <TribeStructureButton
+                                        mode={tribe_group.is_active ? 'archive' : 'restore'}
+                                        tribe_id={tribe_id}
+                                        group_id={group_id}
+                                        name={tribe_group.name}
+                                    />
+                                }
+                            </>
+                        }
                         {can_manage &&
                             <Button
                                 href={translatePath(`/alliance/tribes/${tribe_id}/${group_id}/members`)}

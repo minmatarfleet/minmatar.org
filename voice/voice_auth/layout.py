@@ -3,7 +3,9 @@
 Minmatar Fleet (root)
 ├─ Lobby          default channel; community members not in a fleet
 ├─ Open 1, Open 2 informal fleets: any community member
-└─ Fleet 1..3     Command; Mainline, Logistics, Auxiliary A-C below
+└─ Fleet 1..3     Command; Mainline, Logistics, Auxiliary A-C below.
+                  Fleet 1 is open: any community member may enter its
+                  subchannels; Fleet 2 and 3 are for their fleet only.
 
 Nobody gets Ban or Write: Ban shows pilots' IP addresses. Text is off.
 """
@@ -21,6 +23,7 @@ LOGISTICS = "Logistics"
 AUXILIARY = ("Auxiliary A", "Auxiliary B", "Auxiliary C")
 BRANCH_SUBCHANNELS = (MAINLINE, LOGISTICS, *AUXILIARY)
 BRANCH_COUNT = 3
+OPEN_BRANCH = 1
 
 GROUP_ALL = "all"
 GROUP_FLEET = "fleet"
@@ -103,6 +106,16 @@ COMMAND_RULES = (
     Rule(GROUP_VOICEADMIN, allow=MODERATE),
 )
 SUBCHANNEL_RULES = (Rule(GROUP_FLEET, allow=ENTER | SPEAK, subs=False),)
+# The open branch: community members may walk past Command into the
+# subchannels, never into Command itself.
+OPEN_COMMAND_RULES = (
+    *COMMAND_RULES,
+    Rule(GROUP_COMMUNITY, allow=TRAVERSE),
+)
+OPEN_SUBCHANNEL_RULES = (
+    *SUBCHANNEL_RULES,
+    Rule(GROUP_COMMUNITY, allow=ENTER | SPEAK, subs=False),
+)
 
 
 @dataclass
@@ -175,11 +188,16 @@ class Layout:
                 name: self._child(existing, name, command)
                 for name in BRANCH_SUBCHANNELS
             }
-            self.reset_branch(command, subchannels[branch])
+            self.reset_branch(command, subchannels[branch], branch=branch)
         return ChannelIds(root, lobby, opened, branches, subchannels)
 
-    def reset_branch(self, command: int, subchannels: dict[str, int]) -> None:
+    def reset_branch(
+        self, command: int, subchannels: dict[str, int], branch: int = 0
+    ) -> None:
         """Rewrite a branch's ACLs; this also clears its temporary groups."""
-        self.ice.set_acl(command, COMMAND_RULES, BRANCH_GROUPS, inherit=True)
+        is_open = branch == OPEN_BRANCH
+        command_rules = OPEN_COMMAND_RULES if is_open else COMMAND_RULES
+        sub_rules = OPEN_SUBCHANNEL_RULES if is_open else SUBCHANNEL_RULES
+        self.ice.set_acl(command, command_rules, BRANCH_GROUPS, inherit=True)
         for cid in subchannels.values():
-            self.ice.set_acl(cid, SUBCHANNEL_RULES, (), inherit=True)
+            self.ice.set_acl(cid, sub_rules, (), inherit=True)

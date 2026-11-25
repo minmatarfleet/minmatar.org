@@ -3192,7 +3192,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Put a member on leave or take them off leave */
+        /** Put a member on leave, make them alumni, or restore them */
         post: operations["eveonline_endpoints_corporations_post_corp_member_status_post_corp_member_status"];
         delete?: never;
         options?: never;
@@ -4156,7 +4156,7 @@ export interface paths {
         };
         /**
          * Get Fleet Voice Options
-         * @description The voice options the fleet form offers (active ones only). Same access as /types.
+         * @description The voice options the fleet form offers (active ones only), with each Discord option's voice channels. Same access as /types.
          */
         get: operations["fleets_endpoints_reference_get_fleet_voice_options_get_fleet_voice_options"];
         put?: never;
@@ -16358,7 +16358,12 @@ export interface components {
              * Action
              * @enum {string}
              */
-            action: "leave" | "restore";
+            action: "leave" | "alumni" | "restore";
+            /**
+             * Reason
+             * @default
+             */
+            reason?: string;
         };
         /** CorporationMemberStatusResponse */
         CorporationMemberStatusResponse: {
@@ -16934,6 +16939,11 @@ export interface components {
             invite_only?: boolean;
             /** Location Id */
             location_id?: number | null;
+            /**
+             * Mumble Open
+             * @default false
+             */
+            mumble_open?: boolean;
             /** Objective */
             objective?: string | null;
             /**
@@ -16956,6 +16966,8 @@ export interface components {
             /** Track Mining */
             track_mining?: boolean | null;
             type: components["schemas"]["EveFleetType"];
+            /** Voice Channel Id */
+            voice_channel_id?: string | null;
             /** Voice Option Id */
             voice_option_id?: number | null;
         };
@@ -18558,6 +18570,11 @@ export interface components {
             /** Location */
             location: string;
             /**
+             * Mumble Open
+             * @default false
+             */
+            mumble_open?: boolean;
+            /**
              * Not Copied
              * @default []
              */
@@ -18592,6 +18609,10 @@ export interface components {
              * @default false
              */
             uses_mumble?: boolean;
+            /** Voice Channel Id */
+            voice_channel_id?: string | null;
+            /** Voice Channel Name */
+            voice_channel_name?: string | null;
             /** Voice Option Id */
             voice_option_id?: number | null;
         };
@@ -18660,6 +18681,11 @@ export interface components {
             invite_only?: boolean;
             /** Location */
             location: string;
+            /**
+             * Mumble Open
+             * @default false
+             */
+            mumble_open?: boolean;
             /** My Invite Answer */
             my_invite_answer?: string | null;
             /** My Invite Source */
@@ -18696,6 +18722,10 @@ export interface components {
              * @default false
              */
             uses_mumble?: boolean;
+            /** Voice Channel Id */
+            voice_channel_id?: string | null;
+            /** Voice Channel Name */
+            voice_channel_name?: string | null;
             /** Voice Option Id */
             voice_option_id?: number | null;
         };
@@ -19065,6 +19095,11 @@ export interface components {
             id: number;
             /** Location */
             location: string;
+            /**
+             * Mumble Open
+             * @default false
+             */
+            mumble_open?: boolean;
             /** Objective */
             objective?: string | null;
             /**
@@ -19095,6 +19130,10 @@ export interface components {
              * @default false
              */
             uses_mumble?: boolean;
+            /** Voice Channel Id */
+            voice_channel_id?: string | null;
+            /** Voice Channel Name */
+            voice_channel_name?: string | null;
             /** Voice Option Id */
             voice_option_id?: number | null;
         };
@@ -21620,9 +21659,18 @@ export interface components {
             host_group_id?: number | null;
             /** Location Id */
             location_id?: number | null;
+            /**
+             * Mumble Open
+             * @default false
+             */
+            mumble_open?: boolean;
             /** Objective */
             objective?: string | null;
             type: components["schemas"]["EveFleetType"];
+            /** Voice Channel Id */
+            voice_channel_id?: string | null;
+            /** Voice Option Id */
+            voice_option_id?: number | null;
         };
         /**
          * FleetPingPreviewResponse
@@ -21715,8 +21763,24 @@ export interface components {
             /** Title */
             title: string;
         };
+        /** FleetVoiceChannelResponse */
+        FleetVoiceChannelResponse: {
+            /** Category */
+            category: string;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
         /** FleetVoiceOptionResponse */
         FleetVoiceOptionResponse: {
+            /**
+             * Channels
+             * @default []
+             */
+            channels?: components["schemas"]["FleetVoiceChannelResponse"][];
+            /** Default Channel Id */
+            default_channel_id?: string | null;
             /** Id */
             id: number;
             /** Is Default */
@@ -22588,7 +22652,7 @@ export interface components {
              * Action
              * @enum {string}
              */
-            action: "promote" | "leave" | "restore";
+            action: "promote" | "leave" | "alumni" | "restore";
             /**
              * Reason
              * @default
@@ -34531,6 +34595,8 @@ export interface components {
             host_group_id?: number | null;
             /** Location Id */
             location_id?: number | null;
+            /** Mumble Open */
+            mumble_open?: boolean | null;
             /** Objective */
             objective?: string | null;
             /** On Schedule */
@@ -34544,6 +34610,8 @@ export interface components {
             /** Track Mining */
             track_mining?: boolean | null;
             type?: components["schemas"]["EveFleetType"] | null;
+            /** Voice Channel Id */
+            voice_channel_id?: string | null;
             /** Voice Option Id */
             voice_option_id?: number | null;
         };
@@ -34778,10 +34846,19 @@ export interface components {
             branch_name: string;
             /** Commander */
             commander: boolean;
+            /** Fc Name */
+            fc_name?: string | null;
             /** Fleet Id */
             fleet_id: number;
+            /**
+             * Fleet Title
+             * @default
+             */
+            fleet_title?: string;
             /** Placement */
             placement: string;
+            /** Start Time */
+            start_time?: string | null;
         };
         /** VoiceFleetResponse */
         VoiceFleetResponse: {

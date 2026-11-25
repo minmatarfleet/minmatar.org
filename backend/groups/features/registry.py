@@ -16,7 +16,7 @@ class FeatureDefinition:
     default_affiliation_names: tuple[str, ...] = field(default_factory=tuple)
     default_tribe_group_codes: tuple[str, ...] = field(default_factory=tuple)
     default_auth_group_names: tuple[str, ...] = field(default_factory=tuple)
-    deny_community_statuses: tuple[str, ...] = ("on_leave",)
+    deny_community_statuses: tuple[str, ...] = ("on_leave", "alumni")
 
 
 def _aff(*names: str) -> tuple[str, ...]:

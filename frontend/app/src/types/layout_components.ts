@@ -150,6 +150,14 @@ export interface HXDialogOptions {
     swap?:      string;
 }
 
+/** One step of the /voice setup bar (VoiceProgress). `x_done` / `x_now` are Alpine expressions. */
+export interface VoiceProgressStep {
+    label:          string;
+    state?:         'done' | 'now' | 'todo';
+    x_done?:        string;
+    x_now?:         string;
+}
+
 export interface PageCoverOptions {
     image:          string;
     image_990:      string;
@@ -601,6 +609,8 @@ export interface FleetUI {
     aar_forum_url?:         string;
     voice_option_id?:       number | null;
     uses_mumble?:           boolean;
+    voice_channel_id?:      string | null;
+    mumble_open?:           boolean;
     campaign_id?:           number | null;
     campaign_slug?:         string | null;
     campaign_name?:         string | null;

@@ -461,7 +461,7 @@ def load_audiences(character_pks: Iterable[int] | None = None) -> Audiences:
 
     on_leave = _characters_of_users(
         UserCommunityStatus.objects.filter(
-            status=UserCommunityStatus.STATUS_ON_LEAVE
+            status__in=UserCommunityStatus.AWAY_STATUSES
         ).values_list("user_id", flat=True),
         pks,
     )

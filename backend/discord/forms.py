@@ -28,6 +28,7 @@ class DiscordChannelAdminForm(forms.ModelForm):
         model = DiscordChannel
         fields = (
             "track_voice_activity",
+            "hide_from_fleets",
             "receive_capital_pings",
             "receive_amarr_fleet_pings",
             "receive_lp_buyback",
@@ -136,6 +137,18 @@ class DiscordChannelAdminForm(forms.ModelForm):
                         )
                     }
                 )
+
+        if (
+            cleaned_data.get("hide_from_fleets")
+            and channel_type not in VOICE_TRACKING_CHANNEL_TYPES
+        ):
+            raise ValidationError(
+                {
+                    "hide_from_fleets": (
+                        "Only voice and stage channels are listed for fleets."
+                    )
+                }
+            )
 
         if (
             track_voice_activity

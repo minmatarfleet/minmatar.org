@@ -48,6 +48,7 @@ Claude Code reads the project config from **`.mcp.json`** in the repo root (Curs
 | ------ | --------- | ---- |
 | **sentry** | Remote HTTP | OAuth: run `/mcp` → `sentry` → **Authenticate** |
 | **discord** | Remote HTTP (`api.minmatar.org/api/agent/discord/mcp`) | Agent key: `MINMATAR_AGENT_KEY`, or a cloud network secret (`docs/auth/agent-discord-access.md`) |
+| **esi** | Remote HTTP (`api.minmatar.org/api/agent/esi/mcp`) | The same agent key, once given ESI access (every character, or granted ones) (`docs/auth/agent-esi-access.md`) |
 | **reddit** | Local JAR stdio | One-time `--init` / `--auth` (see Reddit (JAR) below) |
 
 Approve the project servers when Claude Code prompts on first launch. Composio is not wired into `.mcp.json`; add a stdio entry running `bash ${CLAUDE_PROJECT_DIR:-.}/mcps/run-composio-mcp.sh` if you need it.

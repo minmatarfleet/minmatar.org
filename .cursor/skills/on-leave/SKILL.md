@@ -35,6 +35,12 @@ clears `on_leave`/`trial` to `active`. Corp groups require Alliance or Associate
 
 Imposed leave only — do not invent declared LOA requests.
 
+**Alumni** (`alumni`) are pilots who aren't coming back, made alumni by their CEO
+with a write-up. They are immune to this pass: the health roster and
+`fetch_alliance_activity.py` (active pilots only) leave them out. Never put an
+alumni pilot on leave or back to active from a CSV; the CEO restores them from
+the corp Members tab.
+
 ## Quick start
 
 ```bash

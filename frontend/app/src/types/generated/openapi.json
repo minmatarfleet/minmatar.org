@@ -10105,9 +10105,15 @@
           "action": {
             "enum": [
               "leave",
+              "alumni",
               "restore"
             ],
             "title": "Action",
+            "type": "string"
+          },
+          "reason": {
+            "default": "",
+            "title": "Reason",
             "type": "string"
           }
         },
@@ -11697,6 +11703,11 @@
             ],
             "title": "Location Id"
           },
+          "mumble_open": {
+            "default": false,
+            "title": "Mumble Open",
+            "type": "boolean"
+          },
           "objective": {
             "anyOf": [
               {
@@ -11748,6 +11759,17 @@
           },
           "type": {
             "$ref": "#/components/schemas/EveFleetType"
+          },
+          "voice_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Channel Id"
           },
           "voice_option_id": {
             "anyOf": [
@@ -15633,6 +15655,11 @@
             "title": "Location",
             "type": "string"
           },
+          "mumble_open": {
+            "default": false,
+            "title": "Mumble Open",
+            "type": "boolean"
+          },
           "not_copied": {
             "default": [],
             "items": {
@@ -15718,6 +15745,28 @@
             "default": false,
             "title": "Uses Mumble",
             "type": "boolean"
+          },
+          "voice_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Channel Id"
+          },
+          "voice_channel_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Channel Name"
           },
           "voice_option_id": {
             "anyOf": [
@@ -15940,6 +15989,11 @@
             "title": "Location",
             "type": "string"
           },
+          "mumble_open": {
+            "default": false,
+            "title": "Mumble Open",
+            "type": "boolean"
+          },
           "my_invite_answer": {
             "anyOf": [
               {
@@ -16050,6 +16104,28 @@
             "default": false,
             "title": "Uses Mumble",
             "type": "boolean"
+          },
+          "voice_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Channel Id"
+          },
+          "voice_channel_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Channel Name"
           },
           "voice_option_id": {
             "anyOf": [
@@ -17011,6 +17087,11 @@
             "title": "Location",
             "type": "string"
           },
+          "mumble_open": {
+            "default": false,
+            "title": "Mumble Open",
+            "type": "boolean"
+          },
           "objective": {
             "anyOf": [
               {
@@ -17088,6 +17169,28 @@
             "default": false,
             "title": "Uses Mumble",
             "type": "boolean"
+          },
+          "voice_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Channel Id"
+          },
+          "voice_channel_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Channel Name"
           },
           "voice_option_id": {
             "anyOf": [
@@ -23509,6 +23612,11 @@
             ],
             "title": "Location Id"
           },
+          "mumble_open": {
+            "default": false,
+            "title": "Mumble Open",
+            "type": "boolean"
+          },
           "objective": {
             "anyOf": [
               {
@@ -23522,6 +23630,28 @@
           },
           "type": {
             "$ref": "#/components/schemas/EveFleetType"
+          },
+          "voice_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Channel Id"
+          },
+          "voice_option_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Option Id"
           }
         },
         "required": [
@@ -23790,8 +23920,50 @@
         "title": "FleetPublicKillsResponse",
         "type": "object"
       },
+      "FleetVoiceChannelResponse": {
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "category"
+        ],
+        "title": "FleetVoiceChannelResponse",
+        "type": "object"
+      },
       "FleetVoiceOptionResponse": {
         "properties": {
+          "channels": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/FleetVoiceChannelResponse"
+            },
+            "title": "Channels",
+            "type": "array"
+          },
+          "default_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Channel Id"
+          },
           "id": {
             "title": "Id",
             "type": "integer"
@@ -25906,6 +26078,7 @@
             "enum": [
               "promote",
               "leave",
+              "alumni",
               "restore"
             ],
             "title": "Action",
@@ -55600,6 +55773,17 @@
             ],
             "title": "Location Id"
           },
+          "mumble_open": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mumble Open"
+          },
           "objective": {
             "anyOf": [
               {
@@ -55677,6 +55861,17 @@
                 "type": "null"
               }
             ]
+          },
+          "voice_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Channel Id"
           },
           "voice_option_id": {
             "anyOf": [
@@ -56375,13 +56570,41 @@
             "title": "Commander",
             "type": "boolean"
           },
+          "fc_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fc Name"
+          },
           "fleet_id": {
             "title": "Fleet Id",
             "type": "integer"
           },
+          "fleet_title": {
+            "default": "",
+            "title": "Fleet Title",
+            "type": "string"
+          },
           "placement": {
             "title": "Placement",
             "type": "string"
+          },
+          "start_time": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Time"
           }
         },
         "required": [
@@ -69566,7 +69789,7 @@
             "AuthBearer": []
           }
         ],
-        "summary": "Put a member on leave or take them off leave",
+        "summary": "Put a member on leave, make them alumni, or restore them",
         "tags": [
           "Corporations",
           "Corporations"
@@ -72892,7 +73115,7 @@
     },
     "/api/fleets/voice-options": {
       "get": {
-        "description": "The voice options the fleet form offers (active ones only). Same access as /types.",
+        "description": "The voice options the fleet form offers (active ones only), with each Discord option's voice channels. Same access as /types.",
         "operationId": "fleets_endpoints_reference_get_fleet_voice_options_get_fleet_voice_options",
         "parameters": [],
         "responses": {

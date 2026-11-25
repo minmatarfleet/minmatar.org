@@ -14,7 +14,7 @@ interface Props {
     seat_name:              string;
     /** A group's timezone seat (US, EU, AU); null for the tribe seat. */
     region?:                string | null;
-    /** The API's `can_set_chief`: only superusers. */
+    /** The API's `can_set_chief`: structure managers (tribes.structure.manage). */
     can_set:                boolean;
     /** True when there is no portrait to click. */
     empty?:                 boolean;

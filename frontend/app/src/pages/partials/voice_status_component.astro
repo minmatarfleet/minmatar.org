@@ -1,15 +1,45 @@
 ---
-import { i18n } from '@helpers/i18n'
+// The /voice flow: one screen at a time, picked from the voice status.
+// Refusals (banned, alt, no fleet yet) first; then first-time setup until
+// the pilot has a Mumble certificate; then just Connect. `?view=` opens the
+// key guide, the troubleshooting list or the setup again.
+import { i18n, t_key } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
-import { get_voice_session, parse_positive_id } from '@helpers/voice_session'
+import {
+    get_voice_session,
+    parse_positive_id,
+    parse_voice_view,
+    voice_step,
+    detect_device,
+    VOICE_DEVICES,
+    VOICE_RETURNING_COOKIE,
+    VOICE_RETURNING_DAYS,
+} from '@helpers/voice_session'
 import {
     get_voice_status,
     get_voice_certificates,
     delete_voice_certificate,
 } from '@helpers/api.minmatar.org/voice'
 import type { VoiceStatus, VoiceCertificate } from '@dtypes/api.minmatar.org'
+import type { VoiceProgressStep } from '@dtypes/layout_components'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Grid from '@components/compositions/Grid.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro'
+import OptionCard from '@components/blocks/OptionCard.astro'
+import Button from '@components/blocks/Button.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
+import Tag from '@components/blocks/Tag.astro'
+import Kbd from '@components/blocks/Kbd.astro'
+import Markdown from '@components/blocks/Markdown.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import LocalTime from '@components/blocks/LocalTime.astro'
+import VoiceProgress from '@components/blocks/VoiceProgress.astro'
 
 const session = get_voice_session(Astro)
 if (!session)
@@ -29,6 +59,7 @@ if (Astro.request.method === 'POST') {
 
 const STATUS_PARTIAL_URL = translatePath('/partials/voice_status_component/')
 const CONNECT_PARTIAL_URL = translatePath('/partials/voice_connect_component/')
+const view_url = (view: string) => `${STATUS_PARTIAL_URL}?view=${view}`
 
 let status: VoiceStatus | null = null
 let certificates: VoiceCertificate[] = []
@@ -42,100 +73,565 @@ try {
 }
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+const view = parse_voice_view(Astro.url.searchParams.get('view'))
+const auto_connect = Astro.url.searchParams.get('connect') === '1'
+const step = status ? voice_step(status) : null
 
-// Poll only while waiting for access. Without an explicit trigger htmx would
-// refresh the panel on every click inside it (and wipe the Connect link).
-const poll_attributes = status && !status.admitted
+// Refusals always win; otherwise the asked-for view, else setup or Connect.
+const screen = !status ? null
+    : step === 'banned' || step === 'not_main' ? step
+    : view === 'setup' ? 'setup'
+    : step === 'waiting' ? 'waiting'
+    : view ?? step
+
+// Remember this browser has connected, so a lapsed sign-in offers "Sign in and connect".
+if (status && status.certificate_count > 0)
+    Astro.cookies.set(VOICE_RETURNING_COOKIE, '1', {
+        path: '/',
+        httpOnly: true,
+        secure: import.meta.env.PROD,
+        sameSite: 'lax',
+        maxAge: VOICE_RETURNING_DAYS * 24 * 60 * 60,
+    })
+
+// Waiting: check access again every 30 seconds. Admitted: show the key guide
+// once the connect watcher (voice_connected_component) sees the pilot arrive.
+// An explicit trigger keeps htmx from refreshing on every click inside.
+const root_attributes = screen === 'waiting'
     ? { 'hx-get': STATUS_PARTIAL_URL, 'hx-trigger': 'every 30s', 'hx-swap': 'outerHTML' }
-    : {}
+    : status?.admitted
+        ? { 'hx-get': view_url('keys'), 'hx-trigger': 'voice-connected from:body', 'hx-swap': 'outerHTML' }
+        : {}
+const swap_flow = (url: string) => ({ 'hx-get': url, 'hx-target': '#voice-flow', 'hx-swap': 'outerHTML' })
 
-import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
-import Button from '@components/blocks/Button.astro'
-import Tag from '@components/blocks/Tag.astro'
-import EmptyState from '@components/blocks/EmptyState.astro'
-import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-import LocalTime from '@components/blocks/LocalTime.astro'
+const fleet = status?.fleets[0] ?? null
+const commander = status?.fleets.some((access) => access.commander) ?? false
+const device = detect_device(Astro.request.headers.get('user-agent'))
+const download_url = (target: string) => target === 'android'
+    ? 'https://play.google.com/store/apps/details?id=se.lublin.mumla'
+    : 'https://www.mumble.info/downloads/'
+
+const setup_steps = ['device', 'install', 'first_launch', 'connect']
+const progress: VoiceProgressStep[] = [
+    { label: t('voice.step.sign_in'), state: 'done' },
+    { label: t('voice.step.access'), state: 'done' },
+    { label: t('voice.step.install'), state: 'now', x_done: "step === 'connect'", x_now: "step !== 'connect'" },
+    { label: t('voice.step.connect'), x_now: "step === 'connect'" },
+    { label: t('voice.step.keys') },
+]
+
 ---
 
 {fetching_error || !status
     ? <ErrorRefetch args={{ partial: STATUS_PARTIAL_URL, error: fetching_error || new Error('No status'), delay }} />
-    : <div
-        id="voice-status"
-        {...poll_attributes}
-    >
+    : <div id="voice-flow" class="[ voice-flow ]" {...root_attributes}>
         <Flexblock gap="var(--space-m)">
-            <ComponentBlock>
-                <Flexblock gap="var(--space-s)">
-                    <h2>{t('voice.status.title')}</h2>
+            <FlexInline justification="space-between">
+                <small>
+                    {t('voice.signed_in_as').replace('{name}', status.display_name)}
+                    {session.kind === 'guest' && <span> · <a href={translatePath('/voice/logout')}>{t('voice.not_you')}</a></span>}
+                </small>
+            </FlexInline>
+
+            {fleet && screen !== 'banned' && screen !== 'not_main' &&
+                <ComponentBlock>
+                    <Flexblock gap="var(--space-2xs)">
+                        <FlexInline gap="var(--space-xs)">
+                            <Tag text={fleet.branch_name} color="militia-purple" />
+                            <small>
+                                {fleet.commander
+                                    ? t('voice.fleet.commander').replace('{branch}', fleet.branch_name)
+                                    : t('voice.fleet.placement').replace('{placement}', fleet.placement)}
+                            </small>
+                        </FlexInline>
+                        {fleet.fleet_title && <h2 class="[ voice-fleet-title ]">{fleet.fleet_title}</h2>}
+                        <small>
+                            {fleet.fc_name && <>FC {fleet.fc_name}</>}
+                            {fleet.start_time && <> · <LocalTime eve_time={new Date(fleet.start_time)} format="time" show_label={true} /></>}
+                        </small>
+                    </Flexblock>
+                </ComponentBlock>
+            }
+
+            {screen === 'banned' &&
+                <ComponentBlock>
+                    <Flexblock gap="var(--space-s)">
+                        <h2>{t('voice.banned.title')}</h2>
+                        <p>{t('voice.banned.text')}</p>
+                        <p class="[ voice-note ]">{t('voice.banned.help')}</p>
+                    </Flexblock>
+                </ComponentBlock>
+            }
+
+            {screen === 'not_main' &&
+                <ComponentBlock>
                     <Flexblock gap="var(--space-m)">
-                        <p><strong>{status.display_name}</strong></p>
+                        <Flexblock gap="var(--space-2xs)">
+                            <FlexInline><Tag text={t('voice.not_main.tag')} /></FlexInline>
+                            <h2>{t('voice.not_main.title')}</h2>
+                            <p>{t('voice.not_main.text')}</p>
+                        </Flexblock>
+                        <FlexInline>
+                            <Button href={translatePath('/voice/sign-in?switch=1')}>{t('voice.not_main.button')}</Button>
+                        </FlexInline>
+                        <CollapsibleBlock>
+                            <span slot="head">{t('voice.not_main.make_main')}</span>
+                            <p>{t('voice.not_main.make_main_text')}</p>
+                        </CollapsibleBlock>
+                    </Flexblock>
+                </ComponentBlock>
+            }
 
-                        {status.banned &&
-                            <EmptyState title={t('voice.status.banned')} hint={t('voice.status.banned_hint')} />
-                        }
-                        {!status.banned && !status.admitted && status.reason === 'not_main' &&
-                            <EmptyState title={t('voice.status.not_main')} hint={t('voice.status.not_main_hint')} />
-                        }
-                        {!status.banned && !status.admitted && status.reason !== 'not_main' &&
-                            <EmptyState title={t('voice.status.no_access')} hint={t('voice.status.no_access_hint')} />
-                        }
-                        {status.admitted &&
-                            <Flexblock>
-                                <FlexInline>
-                                    <Tag text={t('voice.status.admitted')} color="green" />
-                                </FlexInline>
-                                {status.community && <p>{t('voice.status.community')}</p>}
-                                {status.fleets.map((fleet) =>
-                                    <p>{(fleet.commander ? t('voice.status.fleet_commander') : t('voice.status.fleet'))
-                                        .replace('{branch}', fleet.branch_name)
-                                        .replace('{placement}', fleet.placement)}</p>
-                                )}
-                                <form
-                                    hx-post={CONNECT_PARTIAL_URL}
-                                    hx-target="#voice-connect"
-                                    hx-swap="innerHTML"
-                                    hx-disabled-elt="find button"
-                                >
-                                    <Button type="submit" size="sm">{t('voice.connect')}</Button>
-                                </form>
-                                <div id="voice-connect" aria-live="polite"></div>
+            {screen === 'waiting' &&
+                <Flexblock gap="var(--space-m)">
+                    <ComponentBlock>
+                        <Flexblock gap="var(--space-m)">
+                            <Flexblock gap="var(--space-2xs)">
+                                <small role="status" class="[ voice-live ]">{t('voice.waiting.checking')}</small>
+                                <h2>{t('voice.waiting.title')}</h2>
+                                <Markdown markdown={t('voice.waiting.text')} />
                             </Flexblock>
-                        }
-                    </Flexblock>
+                            {session.kind === 'member' &&
+                                <FlexInline>
+                                    <Button href={translatePath('/fleets/')}>{t('voice.waiting.fleets')}</Button>
+                                </FlexInline>
+                            }
+                            <small class="[ voice-note ]">{t('voice.waiting.delay')}</small>
+                        </Flexblock>
+                    </ComponentBlock>
+                    <ComponentBlock>
+                        <Flexblock gap="var(--space-s)">
+                            <FlexInline gap="var(--space-s)">
+                                <img src="/images/mumble-logo.svg" alt="" width="48" height="48" />
+                                <h3>{t('voice.waiting.prepare')}</h3>
+                            </FlexInline>
+                            <p>{t('voice.waiting.prepare_text')}</p>
+                            <FlexInline>
+                                <Button outline={true} {...swap_flow(view_url('setup'))}>{t('voice.waiting.prepare_button')}</Button>
+                            </FlexInline>
+                        </Flexblock>
+                    </ComponentBlock>
                 </Flexblock>
-            </ComponentBlock>
+            }
 
-            <ComponentBlock>
-                <Flexblock gap="var(--space-s)">
-                    <h2>{t('voice.certificates.title')}</h2>
-                    <Flexblock>
-                        <p>{t('voice.certificates.hint')}</p>
-                        {certificates.length === 0
-                            ? <EmptyState title={t('voice.certificates.empty')} />
-                            : certificates.map((certificate) =>
-                                <form
-                                    hx-post={STATUS_PARTIAL_URL}
-                                    hx-target="#voice-status"
-                                    hx-swap="outerHTML"
-                                >
-                                    <FlexInline justification="space-between">
-                                        <span>
-                                            <code>{certificate.fingerprint}</code>
-                                            · {t('voice.certificates.added')} <LocalTime eve_time={new Date(certificate.created_at)} />
-                                            {certificate.last_used_at && <>· {t('voice.certificates.last_used')} <LocalTime eve_time={new Date(certificate.last_used_at)} /></>}
-                                        </span>
-                                        <input type="hidden" name="action" value="remove_certificate" />
-                                        <input type="hidden" name="certificate_id" value={certificate.id} />
-                                        <Button type="submit" size="sm" color="transparent">{t('voice.certificates.remove')}</Button>
-                                    </FlexInline>
-                                </form>
-                            )
+            {screen === 'setup' &&
+                <div x-data={`{ step: 'device', device: '${device}' }`}>
+                    <Flexblock gap="var(--space-m)">
+                        <VoiceProgress steps={progress} />
+
+                        {status.admitted &&
+                            <div class="[ voice-admitted ]" x-show="step === 'device'">
+                                <strong>{t('voice.setup.admitted')}</strong>
+                                <span>{t('voice.setup.admitted_text')}</span>
+                            </div>
                         }
+
+                        <ComponentBlock x-show="step === 'device'">
+                            <Flexblock gap="var(--space-m)">
+                                <Flexblock gap="var(--space-2xs)">
+                                    <h2>{t('voice.device.title')}</h2>
+                                    <p>{t('voice.device.text')}</p>
+                                </Flexblock>
+                                <div role="radiogroup" aria-label={t('voice.device.title')}>
+                                    <Grid min_item_width="12rem" row_gap="var(--space-xs)" column_gap="var(--space-xs)">
+                                        {VOICE_DEVICES.map((option) =>
+                                            <OptionCard
+                                                name="voice_device"
+                                                value={option}
+                                                checked={option === device}
+                                                input_attributes={{ 'x-model': 'device', disabled: option === 'ios' ? true : undefined }}
+                                            >
+                                                <Flexblock gap="var(--space-3xs)">
+                                                    <strong>{t(t_key('voice.device.', option))}</strong>
+                                                    {option === device && option !== 'ios' && <FlexInline><Tag text={t('voice.device.detected')} color="fleet-yellow" /></FlexInline>}
+                                                    {option === 'ios' && <small>{t('voice.device.ios_hint')}</small>}
+                                                </Flexblock>
+                                            </OptionCard>
+                                        )}
+                                    </Grid>
+                                </div>
+                                <FlexInline gap="var(--space-m)">
+                                    <Button type="button" x-on:click="step = 'install'" x-bind:disabled="device === 'ios'">{t('voice.device.continue')}</Button>
+                                    <StylessButton type="button" class="[ voice-link ]" x-on:click="step = 'connect'">{t('voice.device.have_mumble')}</StylessButton>
+                                </FlexInline>
+                            </Flexblock>
+                        </ComponentBlock>
+
+                        <ComponentBlock x-show="step === 'install'" x-cloak>
+                            <Flexblock gap="var(--space-m)">
+                                <Flexblock gap="var(--space-2xs)">
+                                    <FlexInline>
+                                        <StylessButton type="button" class="[ voice-link ]" x-on:click="step = 'device'">{t('voice.install.change_device')}</StylessButton>
+                                    </FlexInline>
+                                    <h2>{t('voice.install.title')}</h2>
+                                </Flexblock>
+                                {VOICE_DEVICES.filter((option) => option !== 'ios').map((option) =>
+                                    <ol class="[ voice-steps ]" x-show={`device === '${option}'`}>
+                                        <li>
+                                            <Flexblock gap="var(--space-xs)">
+                                                <strong>{t('voice.install.step_download')}</strong>
+                                                <div class="[ voice-download ]">
+                                                    <img src="/images/mumble-logo.svg" alt={t('voice.page_title')} width="56" height="56" />
+                                                    <div class="[ voice-download-text ]">
+                                                        <strong class="[ voice-download-name ]">{option === 'android' ? 'Mumla' : 'Mumble'}</strong>
+                                                        <small>{t(t_key('voice.device.', option))} · {option === 'android' ? t('voice.install.source_android') : t('voice.install.source')}</small>
+                                                    </div>
+                                                    <Button href={download_url(option)} external={true} new_tab={true} size="sm">{t('voice.install.download')}</Button>
+                                                </div>
+                                            </Flexblock>
+                                        </li>
+                                        <li><Markdown markdown={t(option === 'linux' ? 'voice.install.step_linux' : 'voice.install.step_run')} /></li>
+                                        <li><Markdown markdown={t('voice.install.step_wait')} /></li>
+                                    </ol>
+                                )}
+                                <FlexInline gap="var(--space-m)">
+                                    <Button type="button" x-on:click="step = 'first_launch'">{t('voice.install.done')}</Button>
+                                    <small class="[ voice-note ]">{t('voice.install.restart')}</small>
+                                </FlexInline>
+                            </Flexblock>
+                        </ComponentBlock>
+
+                        <ComponentBlock x-show="step === 'first_launch'" x-cloak>
+                            <Flexblock gap="var(--space-m)">
+                                <Flexblock gap="var(--space-2xs)">
+                                    <h2>{t('voice.first_launch.title')}</h2>
+                                    <p>{t('voice.first_launch.text')}</p>
+                                </Flexblock>
+                                <ol class="[ voice-steps ]">
+                                    <li><Markdown markdown={t('voice.first_launch.audio')} /></li>
+                                    <li><Markdown markdown={t('voice.first_launch.certificate')} /></li>
+                                    <li><Markdown markdown={t('voice.first_launch.server_list')} /></li>
+                                </ol>
+                                <FlexInline gap="var(--space-m)">
+                                    <Button type="button" x-on:click="step = 'connect'">{t('voice.first_launch.done')}</Button>
+                                    <StylessButton type="button" class="[ voice-link ]" x-on:click="step = 'install'">{t('voice.back')}</StylessButton>
+                                </FlexInline>
+                            </Flexblock>
+                        </ComponentBlock>
+
+                        <ComponentBlock x-show="step === 'connect'" x-cloak>
+                            {status.admitted
+                                ? <Flexblock gap="var(--space-m)">
+                                    <Flexblock gap="var(--space-2xs)">
+                                        <h2>{t('voice.connect.title')}</h2>
+                                        <p>{t('voice.connect.text')}</p>
+                                    </Flexblock>
+                                    <form
+                                        hx-post={CONNECT_PARTIAL_URL}
+                                        hx-target="#voice-connect"
+                                        hx-swap="innerHTML"
+                                        hx-disabled-elt="find button"
+                                    >
+                                        <FlexInline gap="var(--space-m)">
+                                            <Button type="submit" color="green">{t('voice.connect')}</Button>
+                                            <FlexInline gap="var(--space-2xs)">
+                                                <img src="/images/mumble-logo.svg" alt="" width="32" height="32" />
+                                                <small>{t('voice.connect.opens_in')}</small>
+                                            </FlexInline>
+                                        </FlexInline>
+                                    </form>
+                                    <div id="voice-connect" aria-live="polite"></div>
+                                    <Markdown class="[ voice-note ]" markdown={t('voice.connect.browser_prompt')} />
+                                </Flexblock>
+                                : <Flexblock gap="var(--space-s)">
+                                    <h2>{t('voice.waiting.title')}</h2>
+                                    <Markdown markdown={t('voice.waiting.text')} />
+                                    <FlexInline>
+                                        <Button outline={true} {...swap_flow(STATUS_PARTIAL_URL)}>{t('voice.back')}</Button>
+                                    </FlexInline>
+                                </Flexblock>
+                            }
+                        </ComponentBlock>
                     </Flexblock>
+                </div>
+            }
+
+            {screen === 'ready' &&
+                <ComponentBlock>
+                    <Flexblock gap="var(--space-m)">
+                        <Flexblock gap="var(--space-2xs)">
+                            <FlexInline><Tag text={t('voice.setup.admitted')} color="green" /></FlexInline>
+                            <h2>{t('voice.ready.title')}</h2>
+                            {!fleet && <p>{t('voice.ready.no_fleet')}</p>}
+                            {fleet && status.community && <small class="[ voice-note ]">{t('voice.community')}</small>}
+                        </Flexblock>
+                        <form
+                            hx-post={CONNECT_PARTIAL_URL}
+                            hx-target="#voice-connect"
+                            hx-swap="innerHTML"
+                            hx-disabled-elt="find button"
+                            hx-trigger={auto_connect ? 'submit, load' : 'submit'}
+                        >
+                            <FlexInline gap="var(--space-m)">
+                                <Button type="submit" color="green">{t('voice.connect')}</Button>
+                                <FlexInline gap="var(--space-2xs)">
+                                    <img src="/images/mumble-logo.svg" alt="" width="32" height="32" />
+                                    <small>{t('voice.connect.opens_in')}</small>
+                                </FlexInline>
+                            </FlexInline>
+                        </form>
+                        <div id="voice-connect" aria-live="polite"></div>
+                        <FlexInline gap="var(--space-m)">
+                            <StylessButton class="[ voice-link ]" {...swap_flow(view_url('setup'))}>{t('voice.ready.new_computer')}</StylessButton>
+                            <StylessButton class="[ voice-link ]" {...swap_flow(view_url('keys'))}>{t('voice.ready.key_guide')}</StylessButton>
+                            <StylessButton class="[ voice-link ]" {...swap_flow(view_url('trouble'))}>{t('voice.ready.not_working')}</StylessButton>
+                        </FlexInline>
+                        <CollapsibleBlock>
+                            <span slot="head">{t('voice.certificates.title').replace('{count}', String(certificates.length))}</span>
+                            <Flexblock gap="var(--space-xs)">
+                                <small>{t('voice.certificates.hint')}</small>
+                                {certificates.map((certificate) =>
+                                    <form hx-post={STATUS_PARTIAL_URL} hx-target="#voice-flow" hx-swap="outerHTML">
+                                        <FlexInline justification="space-between">
+                                            <small>
+                                                {t('voice.certificates.added')} <LocalTime eve_time={new Date(certificate.created_at)} format="datetime" />
+                                                {certificate.last_used_at && <> · {t('voice.certificates.last_used')} <LocalTime eve_time={new Date(certificate.last_used_at)} format="datetime" /></>}
+                                            </small>
+                                            <input type="hidden" name="action" value="remove_certificate" />
+                                            <input type="hidden" name="certificate_id" value={certificate.id} />
+                                            <Button type="submit" size="sm" outline={true}>{t('voice.certificates.remove')}</Button>
+                                        </FlexInline>
+                                    </form>
+                                )}
+                            </Flexblock>
+                        </CollapsibleBlock>
+                    </Flexblock>
+                </ComponentBlock>
+            }
+
+            {screen === 'keys' &&
+                <Flexblock gap="var(--space-m)">
+                    <div class="[ voice-admitted ]" role="status">
+                        <FlexInline><Tag text={t('voice.connected.tag')} color="green" /></FlexInline>
+                        <h2>{fleet
+                            ? t('voice.connected.title_fleet').replace('{branch}', fleet.branch_name).replace('{placement}', fleet.placement)
+                            : t('voice.connected.title')}</h2>
+                        <span>{t('voice.connected.text')}</span>
+                    </div>
+                    <ComponentBlock>
+                        <Flexblock gap="var(--space-m)">
+                            <h2>{t('voice.keys.title')}</h2>
+                            <div class="[ voice-key ]">
+                                <Kbd>Mouse 4</Kbd>
+                                <Flexblock gap="var(--space-3xs)">
+                                    <strong>{t('voice.keys.ptt')}</strong>
+                                    <Markdown markdown={t('voice.keys.ptt_text')} />
+                                    <small class="[ voice-note ]">{t('voice.keys.ptt_hint')}</small>
+                                </Flexblock>
+                            </div>
+                            <Grid min_item_width="16rem" row_gap="var(--space-s)" column_gap="var(--space-s)">
+                                {commander &&
+                                    <div class="[ voice-key-card ]">
+                                        <FlexInline justification="space-between"><strong>{t('voice.keys.broadcast')}</strong><Tag text={t('voice.keys.broadcast_tag')} color="alliance-blue" /></FlexInline>
+                                        <Markdown markdown={t('voice.keys.broadcast_text')} />
+                                    </div>
+                                }
+                                <div class="[ voice-key-card ]">
+                                    <FlexInline justification="space-between"><strong>{t('voice.keys.priority')}</strong><Tag text={t('voice.keys.priority_tag')} variant="outline" /></FlexInline>
+                                    <Markdown markdown={t('voice.keys.priority_text')} />
+                                </div>
+                                {!commander &&
+                                    <div class="[ voice-key-card ]">
+                                        <FlexInline justification="space-between"><strong>{t('voice.keys.report')}</strong><Tag text={t('voice.keys.report_tag')} variant="outline" /></FlexInline>
+                                        <Markdown markdown={t('voice.keys.report_text')} />
+                                    </div>
+                                }
+                                <div class="[ voice-key-card ]">
+                                    <FlexInline justification="space-between"><strong>{t('voice.keys.capitals')}</strong><Tag text={t('voice.keys.capitals_tag')} color="militia-purple" /></FlexInline>
+                                    <Markdown markdown={t('voice.keys.capitals_text')} />
+                                </div>
+                            </Grid>
+                            <EmptyState title={t('voice.keys.text_chat')} />
+                            <FlexInline>
+                                <Button outline={true} {...swap_flow(STATUS_PARTIAL_URL)}>{t('voice.keys.done')}</Button>
+                            </FlexInline>
+                        </Flexblock>
+                    </ComponentBlock>
                 </Flexblock>
-            </ComponentBlock>
+            }
+
+            {screen === 'trouble' &&
+                <ComponentBlock>
+                    <Flexblock gap="var(--space-m)">
+                        <Flexblock gap="var(--space-2xs)">
+                            <FlexInline><Tag text={t('voice.trouble.tag')} variant="outline" color="fleet-red" /></FlexInline>
+                            <h2>{t('voice.trouble.title')}</h2>
+                            <p>{t('voice.trouble.text')}</p>
+                        </Flexblock>
+                        <Flexblock gap="var(--space-xs)">
+                            <CollapsibleBlock expanded={true}>
+                                <strong slot="head">{t('voice.trouble.nothing')}</strong>
+                                <Flexblock gap="var(--space-xs)">
+                                    <p>{t('voice.trouble.nothing_text')}</p>
+                                    <FlexInline>
+                                        <Button size="sm" outline={true} {...swap_flow(view_url('setup'))}>{t('voice.trouble.install')}</Button>
+                                    </FlexInline>
+                                </Flexblock>
+                            </CollapsibleBlock>
+                            <CollapsibleBlock>
+                                <strong slot="head">{t('voice.trouble.cancelled')}</strong>
+                                <Markdown markdown={t('voice.trouble.cancelled_text')} />
+                            </CollapsibleBlock>
+                            <CollapsibleBlock>
+                                <strong slot="head">{t('voice.trouble.certificate')}</strong>
+                                <Markdown markdown={t('voice.trouble.certificate_text')} />
+                            </CollapsibleBlock>
+                            <CollapsibleBlock>
+                                <strong slot="head">{t('voice.trouble.silent')}</strong>
+                                <Markdown markdown={t('voice.trouble.silent_text')} />
+                            </CollapsibleBlock>
+                            <CollapsibleBlock>
+                                <strong slot="head">{t('voice.trouble.other')}</strong>
+                                <p>{t('voice.trouble.other_text')}</p>
+                            </CollapsibleBlock>
+                        </Flexblock>
+                        <form
+                            hx-post={CONNECT_PARTIAL_URL}
+                            hx-target="#voice-connect"
+                            hx-swap="innerHTML"
+                            hx-disabled-elt="find button"
+                        >
+                            <FlexInline gap="var(--space-m)">
+                                <Button type="submit" color="green">{t('voice.trouble.again')}</Button>
+                                <small class="[ voice-note ]">{t('voice.trouble.again_hint')}</small>
+                            </FlexInline>
+                        </form>
+                        <div id="voice-connect" aria-live="polite"></div>
+                    </Flexblock>
+                </ComponentBlock>
+            }
         </Flexblock>
     </div>
 }
+
+<style lang="scss">
+    .voice-flow :global([x-cloak]) {
+        display: none !important;
+    }
+
+    .voice-fleet-title {
+        margin: 0;
+    }
+
+    .voice-note {
+        color: var(--faded);
+    }
+
+    .voice-live::before {
+        content: '';
+        display: inline-block;
+        width: var(--space-2xs);
+        height: var(--space-2xs);
+        margin-inline-end: var(--space-2xs);
+        border-radius: 50%;
+        background: var(--fleet-yellow);
+        animation: voice-pulse 1.6s ease-in-out infinite;
+    }
+
+    @keyframes voice-pulse {
+        50% { opacity: 0.25; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .voice-live::before {
+            animation: none;
+        }
+    }
+
+    .voice-admitted {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-s) var(--space-m);
+        border: 1px solid var(--green-700);
+        background: color-mix(in srgb, var(--green) var(--tint-subtle), transparent);
+
+        strong, h2 {
+            color: var(--highlight);
+        }
+    }
+
+    .voice-steps {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        counter-reset: voice-step;
+        border: 1px solid var(--border-color-hover);
+
+        > li {
+            counter-increment: voice-step;
+            display: grid;
+            grid-template-columns: var(--space-xl) minmax(0, 1fr);
+            gap: var(--space-s);
+            padding: var(--space-s);
+            border-bottom: 1px solid var(--border-color-hover);
+
+            &:last-child {
+                border-bottom: 0;
+            }
+
+            &::before {
+                content: counter(voice-step);
+                font-family: var(--heading-font);
+                font-size: var(--step-2);
+                line-height: 1;
+                color: var(--fleet-red-text);
+            }
+        }
+    }
+
+    .voice-download {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-s);
+        padding: var(--space-s);
+        border: 1px solid var(--border-color-hover);
+        background: var(--surface-sunken);
+
+        img {
+            flex: none;
+        }
+    }
+
+    .voice-download-text {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        flex: 1 1 12rem;
+        min-width: 0;
+    }
+
+    .voice-download-name {
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        text-transform: uppercase;
+        color: var(--highlight);
+    }
+
+    .voice-link {
+        color: var(--fleet-yellow);
+        text-decoration: underline;
+    }
+
+    .voice-key {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: var(--space-m);
+        align-items: center;
+        padding: var(--space-m);
+        border: 1px solid var(--fleet-red-700);
+        background: color-mix(in srgb, var(--fleet-red) var(--tint-subtle), transparent);
+    }
+
+    .voice-key-card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding: var(--space-s);
+        border: 1px solid var(--border-color-hover);
+        min-width: 0;
+    }
+</style>

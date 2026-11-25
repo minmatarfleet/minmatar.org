@@ -9,7 +9,7 @@ from tribes.helpers.permissions import user_can_manage_group
 
 from fleets.helpers.voice_options import (
     fleet_voice_fields,
-    resolve_voice_option,
+    resolve_fleet_voice,
 )
 from fleets.endpoints.helpers import (
     _fleet_apply_optional_scalar_updates,
@@ -111,18 +111,25 @@ def _private_fleet_error(fleet, payload):
 
 
 def _apply_voice_option(fleet, payload):
-    """Set a changed voice option. True if it changed, or (400, error)."""
-    if "voice_option_id" not in payload.model_fields_set:
-        return False
-    if payload.voice_option_id == fleet.voice_option_id:
-        return False
-    option = resolve_voice_option(
-        payload.voice_option_id, fleet.voice_option_id
-    )
-    if isinstance(option, tuple):
-        return 400, option[1]
-    fleet.voice_option = option
-    return True
+    """Apply the voice option, channel and Mumble access. True if any
+    changed, or (400, error)."""
+    voice = resolve_fleet_voice(payload, fleet)
+    if isinstance(voice, tuple):
+        return 400, voice[1]
+    changed = False
+    option = voice.pop("voice_option")
+    # An unset option is the default: picking the default isn't a change.
+    effective = fleet.effective_voice_option
+    if option is not None and option.id != (
+        effective.id if effective else None
+    ):
+        fleet.voice_option = option
+        changed = True
+    for field, value in voice.items():
+        if getattr(fleet, field) != value:
+            setattr(fleet, field, value)
+            changed = True
+    return changed
 
 
 def _apply_campaign_and_voice(fleet, payload, user):

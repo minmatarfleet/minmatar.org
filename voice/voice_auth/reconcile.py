@@ -4,7 +4,8 @@ Runs every few seconds and whenever Django announces a change on
 ``voice:changed``. Each tick:
 
 1. Ends branches whose lease changed or went away: kicks whoever is left,
-   with a message, and resets the branch.
+   with a message, and resets the branch. Fleet 1 is open (layout.py), so
+   community members may stay in it without a lease.
 2. Runs queued commands (kicks from the website).
 3. For every connected pilot: refuses those who lost access, keeps their
    branch groups (fleet, commanders, capitals) in step, places them once
@@ -62,7 +63,7 @@ class Reconciler:
             if self.ids.branch_of(user.channel) == branch:
                 self.ice.kick(user.session, MSG_ENDED)
         self.layout.reset_branch(
-            self.ids.branches[branch], self.ids.subchannels[branch]
+            self.ids.branches[branch], self.ids.subchannels[branch], branch=branch
         )
         for key in list(self.applied):
             if key[1] == branch:
@@ -106,8 +107,17 @@ class Reconciler:
         if branch is None:
             return True
         access = self._access(record, branch, leases)
+        community = L.GROUP_COMMUNITY in (record.get("server_groups") or [])
+        if access is None and community and branch == L.OPEN_BRANCH:
+            # The open branch: any community member, but not in Command.
+            if user.channel == self.ids.branches[branch]:
+                mainline = self.ids.subchannels[branch][L.MAINLINE]
+                self.ice.move(user.session, mainline)
+                self.ice.message(user.session, MSG_LOST_CHANNEL.format(L.MAINLINE))
+                user.channel = mainline
+            return True
         if access is None:
-            if L.GROUP_COMMUNITY in (record.get("server_groups") or []):
+            if community:
                 self.ice.move(user.session, self.ids.lobby)
                 self.ice.message(user.session, MSG_LOST_CHANNEL.format(L.LOBBY))
                 user.channel = self.ids.lobby

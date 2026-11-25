@@ -92,6 +92,8 @@ describe('fetch_fleet_by_id', () => {
             campaign_name: 'Tama push',
             voice_option_id: null,
             uses_mumble: false,
+            voice_channel_id: null,
+            mumble_open: false,
             host_group: null,
             open_to_alliance: false,
             on_schedule: false,

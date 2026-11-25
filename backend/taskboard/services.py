@@ -42,11 +42,11 @@ def preferences(user) -> TaskPreferences:
 
 
 def is_paused(user) -> bool:
-    """A pilot's tasks pause while they say so or are On Leave."""
+    """A pilot's tasks pause while they say so or are On Leave or alumni."""
     if TaskPreferences.objects.filter(user=user, paused=True).exists():
         return True
     return UserCommunityStatus.objects.filter(
-        user=user, status=UserCommunityStatus.STATUS_ON_LEAVE
+        user=user, status__in=UserCommunityStatus.AWAY_STATUSES
     ).exists()
 
 

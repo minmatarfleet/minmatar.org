@@ -238,6 +238,29 @@ const show_voice_picker = voice_options.length > 1 || (
     default_voice_option !== null && !voice_options.some((option) => option.id === default_voice_option)
 )
 
+// Each Discord option's voice channels, by category. The fleet's own
+// channel is kept selected; otherwise the option's default.
+const voice_channel_pickers = voice_options
+    .filter((option) => option.kind !== 'mumble' && option.channels.length > 0)
+    .map((option) => {
+        const own = fleet?.voice_option_id === option.id ? fleet?.voice_channel_id : null
+        const ids = option.channels.map((channel) => channel.id)
+        const groups: { category: string, channels: typeof option.channels }[] = []
+        for (const channel of option.channels) {
+            const last = groups[groups.length - 1]
+            if (last && last.category === channel.category) last.channels.push(channel)
+            else groups.push({ category: channel.category, channels: [channel] })
+        }
+        return {
+            option_id: String(option.id),
+            selected: own && ids.includes(own) ? own : option.default_channel_id,
+            groups,
+        }
+    })
+const mumble_option = voice_options.find((option) => option.kind === 'mumble') ?? null
+// A new Mumble fleet starts open (Fleet 1); a fleet keeps its choice.
+const initial_mumble_open = fleet ? Boolean(fleet.mumble_open) : true
+
 // The fleet's own campaign wins; a new fleet takes the one the page asked for.
 const wanted_campaign_id = fleet?.campaign_id ?? default_campaign_id
 const default_campaign = campaigns_select_options.find(
@@ -266,6 +289,7 @@ import Button from '@components/blocks/Button.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import Select from '@components/blocks/Select.astro';
+import OptionCard from '@components/blocks/OptionCard.astro';
 import FlatPicker from '@components/blocks/FlatPicker.astro';
 import Switch from '@components/blocks/Switch.astro';
 import StylessButton from '@components/blocks/StylessButton.astro';
@@ -483,17 +507,78 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                 </Select>
                             </FixedFluid>
 
-                            {show_voice_picker &&
-                                <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                    <label for="voice_option" data-tippy-content={t('fleets.voice.hint')}>{t('fleets.voice.label')}</label>
-                                    <Select id="voice_option" name="voice_option_id">
-                                        {voice_options.map((option) =>
-                                            <option value={option.id} selected={option.id === default_voice_option}>
-                                                {option.name}
-                                            </option>
-                                        )}
-                                    </Select>
-                                </FixedFluid>
+                            {voice_options.length > 0 &&
+                                <Flexblock gap="var(--space-s)" x-data={`{ voice: ${JSON.stringify(String(default_voice_option ?? ''))} }`}>
+                                    {show_voice_picker &&
+                                        <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                            <label for="voice_option" data-tippy-content={t('fleets.voice.hint')}>{t('fleets.voice.label')}</label>
+                                            <Select id="voice_option" name="voice_option_id" x-model="voice">
+                                                {voice_options.map((option) =>
+                                                    <option value={option.id} selected={option.id === default_voice_option}>
+                                                        {option.name}
+                                                    </option>
+                                                )}
+                                            </Select>
+                                        </FixedFluid>
+                                    }
+
+                                    {voice_channel_pickers.map((picker) =>
+                                        <FixedFluid
+                                            class="[ w-full items-center ]"
+                                            gap="var(--space-3xs)"
+                                            width="250px"
+                                            breakpoint="60%"
+                                            x-show={`voice === '${picker.option_id}'`}
+                                            {...(picker.option_id === String(default_voice_option) ? {} : { 'x-cloak': true })}
+                                        >
+                                            <label for={`voice_channel_${picker.option_id}`}>{t('fleets.voice.channel')}</label>
+                                            <Select
+                                                id={`voice_channel_${picker.option_id}`}
+                                                name="voice_channel_id"
+                                                disabled={picker.option_id !== String(default_voice_option)}
+                                                x-bind:disabled={`voice !== '${picker.option_id}'`}
+                                            >
+                                                {picker.groups.map((group) =>
+                                                    group.category
+                                                        ? <optgroup label={group.category}>
+                                                            {group.channels.map((channel) =>
+                                                                <option value={channel.id} selected={channel.id === picker.selected}>{channel.name}</option>
+                                                            )}
+                                                        </optgroup>
+                                                        : group.channels.map((channel) =>
+                                                            <option value={channel.id} selected={channel.id === picker.selected}>{channel.name}</option>
+                                                        )
+                                                )}
+                                            </Select>
+                                        </FixedFluid>
+                                    )}
+
+                                    {mumble_option &&
+                                        <fieldset
+                                            class="[ fleet-mumble-access ]"
+                                            x-show={`voice === '${mumble_option.id}'`}
+                                            {...(mumble_option.id === default_voice_option ? {} : { 'x-cloak': true })}
+                                            disabled={mumble_option.id !== default_voice_option}
+                                            x-bind:disabled={`voice !== '${mumble_option.id}'`}
+                                        >
+                                            <legend>{t('fleets.voice.mumble_channel')}</legend>
+                                            <Flexblock gap="var(--space-2xs)">
+                                                <OptionCard name="mumble_open" value="open" checked={initial_mumble_open}>
+                                                    <Flexblock gap="var(--space-3xs)">
+                                                        <b>{t('fleets.voice.mumble_open')}</b>
+                                                        <small>{t('fleets.voice.mumble_open_hint')}</small>
+                                                    </Flexblock>
+                                                </OptionCard>
+                                                <OptionCard name="mumble_open" value="restricted" checked={!initial_mumble_open}>
+                                                    <Flexblock gap="var(--space-3xs)">
+                                                        <b>{t('fleets.voice.mumble_restricted')}</b>
+                                                        <small>{t('fleets.voice.mumble_restricted_hint')}</small>
+                                                    </Flexblock>
+                                                </OptionCard>
+                                            </Flexblock>
+                                        </fieldset>
+                                    }
+                                </Flexblock>
                             }
 
                             {show_campaign_picker &&
@@ -829,6 +914,31 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
 </div>
 
 <style lang="scss">
+    /* Hidden until Alpine starts; x-show takes over after. */
+    [x-cloak] {
+        display: none !important;
+    }
+
+    .fleet-mumble-access {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        margin: 0;
+        padding: 0;
+        border: 0;
+        min-width: 0;
+
+        legend {
+            padding: 0;
+            margin-bottom: var(--space-2xs);
+            color: var(--highlight);
+        }
+
+        small {
+            color: var(--foreground);
+        }
+    }
+
     .fleet-private-changes {
         display: flex;
         flex-direction: column;

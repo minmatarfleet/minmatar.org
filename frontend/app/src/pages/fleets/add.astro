@@ -39,7 +39,7 @@ import type { FleetRequest, FleetTypes, Audience, Location, CampaignListItem } f
 import { ALLIANCE_HOST, fleet_host_fields, parse_host_param, ping_preview_request, tribe_group_path } from '@helpers/fleet_hosts'
 import { fetch_fleet_ping_preview, type FleetPingPreviewUI } from '@helpers/fetching/fleet_ping_preview'
 import { staging_location } from '@helpers/fleet_form_up'
-import { posted_voice_option } from '@helpers/fetching/voice_options'
+import { posted_voice_option, posted_voice_fields } from '@helpers/fetching/voice_options'
 import type { DoctrineType, CharacterBasic, Alert } from '@dtypes/layout_components'
 import { send_active_fleet_notification } from '@helpers/notifications'
 
@@ -75,6 +75,7 @@ if (Astro.request.method === "POST") {
             doctrine_id: doctrine_id,
             campaign_id: campaign_id,
             voice_option_id: posted_voice_option(data) ?? null,
+            ...posted_voice_fields(data),
             description: data.get('description') as string,
             objective: data.get('objective') as string,
             start_time: start_time,

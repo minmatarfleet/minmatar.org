@@ -203,6 +203,11 @@
             "feature": "tribes.roster.view",
             "legacy": { "perms": ["eveonline.add_evecharactertag"], "superuser": true }
         },
+        "tribes.structure.manage": {
+            "feature": "tribes.structure.manage",
+            "legacy": { "perms": ["tribes.change_tribe"], "superuser": true },
+            "note": "Create, rename and archive tribes and groups (People Team)."
+        },
         "characters.readiness#strict": {
             "feature": "characters.readiness",
             "legacy": { "perms": ["eveonline.add_evecharactertag"], "superuser": false },

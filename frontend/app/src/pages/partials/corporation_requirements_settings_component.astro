@@ -17,13 +17,6 @@ import {
 import { over_asks, requirement_from_form } from '@helpers/corporations/requirements'
 import { query_string } from '@helpers/string'
 
-import Button from '@components/blocks/Button.astro'
-import ChipGroup from '@components/blocks/ChipGroup.astro'
-import FilterChip from '@components/blocks/FilterChip.astro'
-import EmptyState from '@components/blocks/EmptyState.astro'
-import Input from '@components/blocks/Input.astro'
-import CorporationRequirementForm from '@components/blocks/CorporationRequirementForm.astro'
-
 const ROOT_ID = 'corporation-requirements'
 const TARGET = `#${ROOT_ID}`
 
@@ -94,9 +87,6 @@ if (!data) return HTTP_403_Forbidden()
 
 const rules = data.rules
 const at_max = rules.length >= data.max_rules
-const summary = rules.length
-    ? t('corporations.requirements.summary_count').replace('COUNT', String(rules.length))
-    : t('corporations.requirements.summary_none')
 const tag = (kind: string) => ({
     ships: t('corporations.requirements.tag_ships'),
     kills: t('corporations.requirements.tag_kills'),
@@ -105,30 +95,43 @@ const tag = (kind: string) => ({
     prime_time: t('corporations.requirements.tag_prime_time'),
 } as Record<string, string>)[kind] ?? kind
 const who = (value: string, kind: string) => kind === 'prime_time'
-    ? '—'
+    ? null
     : ({
         main: t('corporations.requirements.who_main'),
         any: t('corporations.requirements.who_any'),
         other_account: t('corporations.requirements.who_other_account'),
     } as Record<string, string>)[value] ?? value
+// One quiet line under the rule: what it checks, on whom, and how many members pass.
+const meta = (rule: typeof rules[number]) => [
+    tag(rule.kind),
+    who(rule.who, rule.kind),
+    rule.members_pass === null ? null : t('corporations.requirements.members_pass').replace('PERCENT', String(rule.members_pass)),
+].filter(Boolean).join(' · ')
+const importance_label = (value: 'required' | 'preferred') => t(value === 'required'
+    ? 'corporations.requirements.importance_required'
+    : 'corporations.requirements.importance_preferred')
+
+import Button from '@components/blocks/Button.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import Input from '@components/blocks/Input.astro'
 import StylessButton from '@components/blocks/StylessButton.astro'
+import SettingsGroup from '@components/blocks/SettingsGroup.astro'
+import SettingRow from '@components/blocks/SettingRow.astro'
+import CorporationRequirementForm from '@components/blocks/CorporationRequirementForm.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 ---
 
 <div id={ROOT_ID} class="[ corp-req ]">
     <FlexInline class="[ settings-head ]" justification="space-between" gap="var(--space-2xs) var(--space-s)">
         <h2>{t('corporations.settings.requirements_section')}</h2>
-        <small class="[ settings-head__summary ]">{summary}</small>
+        <a class="[ corp-req__preview ]" href="#apply">{t('corporations.requirements.preview')}</a>
     </FlexInline>
 
     {error && <p class="[ corp-req__error ]" role="alert">{error}</p>}
 
-    <section class="[ corp-req__card ]" aria-labelledby="corp-req-checked">
-        <div class="[ corp-req__head ]">
-            <h3 id="corp-req-checked">{t('corporations.requirements.settings_checked')}</h3>
-            <a href="#apply">{t('corporations.requirements.preview')}</a>
-        </div>
-
+    <SettingsGroup title={t('corporations.requirements.settings_checked')}>
         {rules.length === 0 && editing !== 'new' &&
             <EmptyState
                 title={t('corporations.requirements.empty')}
@@ -136,142 +139,130 @@ import FlexInline from '@components/compositions/FlexInline.astro'
             />
         }
 
-        {rules.length > 0 &&
-            <div class="[ corp-req__table ]" role="table" aria-labelledby="corp-req-checked">
-                <div class="[ corp-req__row corp-req__row--head ]" role="row">
-                    <span role="columnheader">{t('corporations.requirements.col_rule')}</span>
-                    <span role="columnheader">{t('corporations.requirements.col_who')}</span>
-                    <span role="columnheader" class="[ corp-req__num ]">{t('corporations.requirements.col_members')}</span>
-                    <span role="columnheader">{t('corporations.requirements.col_importance')}</span>
-                    <span role="columnheader"><span class="[ visually-hidden ]">{t('corporations.requirements.edit')}</span></span>
-                </div>
-                {rules.map((rule) => {
-                    const warn = over_asks(rule)
-                    const open = editing === String(rule.id)
-                    return (
-                        <div class="[ corp-req__item ]" role="rowgroup">
-                            <div class="[ corp-req__row ]" role="row">
-                                <span role="cell" class="[ corp-req__rule ]">
-                                    <span class="[ corp-req__tag ]">{tag(rule.kind)}</span>
-                                    <span class="[ corp-req__text ]">{rule.text}</span>
-                                </span>
-                                <span role="cell" class="[ corp-req__who ]">{who(rule.who, rule.kind)}</span>
-                                <span role="cell" class:list={['[ corp-req__num ]', { 'is-attention': warn }]}>
-                                    {rule.members_pass === null ? '—' : `${rule.members_pass}%`}
-                                </span>
-                                <span role="cell">
-                                    <ChipGroup variant="segmented" selected_fill={true} aria_label={t('corporations.requirements.col_importance')}>
-                                        {(['required', 'preferred'] as const).map((value) => (
-                                            <FilterChip
-                                                active={rule.importance === value}
-                                                hx-post={PARTIAL_URL}
-                                                hx-target={TARGET}
-                                                hx-swap="outerHTML"
-                                                hx-vals={JSON.stringify({ action: 'importance', rule_id: String(rule.id), importance: value })}
-                                            >{t(value === 'required' ? 'corporations.requirements.importance_required' : 'corporations.requirements.importance_preferred')}</FilterChip>
-                                        ))}
-                                    </ChipGroup>
-                                </span>
-                                <span role="cell">
-                                    <StylessButton
-                                        type="button"
-                                        class="[ corp-req__icon-button ]"
-                                        aria-label={t('corporations.requirements.edit')}
-                                        aria-expanded={open ? 'true' : 'false'}
-                                        hx-get={open ? PARTIAL_URL : partial_url({ edit: String(rule.id) })}
-                                        hx-target={TARGET}
-                                        hx-swap="outerHTML"
-                                    >
-                                        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z" /></svg>
-                                    </StylessButton>
-                                </span>
-                            </div>
-                            {warn && <p class="[ corp-req__nudge ]">{t('corporations.requirements.over_ask')}</p>}
-                            {open &&
-                                <CorporationRequirementForm
-                                    options={data.options}
-                                    partial_url={PARTIAL_URL}
-                                    target={TARGET}
-                                    rule={rule}
-                                    class="[ corp-req__editor ]"
-                                />
-                            }
+        {rules.map((rule) => {
+            const warn = over_asks(rule)
+            const open = editing === String(rule.id)
+            return (
+                <>
+                    <SettingRow
+                        title={rule.text}
+                        description={meta(rule)}
+                        class:list={['[ corp-req__rule ]', { 'is-open': open, 'is-attention': warn }]}
+                    >
+                        <ChipGroup
+                            variant="segmented"
+                            class="[ corp-req__importance ]"
+                            aria_label={`${t('corporations.requirements.col_importance')}: ${rule.text}`}
+                        >
+                            {(['required', 'preferred'] as const).map((value) => (
+                                <FilterChip
+                                    active={rule.importance === value}
+                                    hx-post={PARTIAL_URL}
+                                    hx-target={TARGET}
+                                    hx-swap="outerHTML"
+                                    hx-vals={JSON.stringify({ action: 'importance', rule_id: String(rule.id), importance: value })}
+                                >{importance_label(value)}</FilterChip>
+                            ))}
+                        </ChipGroup>
+                        <Button
+                            size="sm"
+                            color="transparent"
+                            aria-label={`${t('corporations.requirements.edit')}: ${rule.text}`}
+                            aria-expanded={open ? 'true' : 'false'}
+                            hx-get={open ? PARTIAL_URL : partial_url({ edit: String(rule.id) })}
+                            hx-target={TARGET}
+                            hx-swap="outerHTML"
+                        >{t('corporations.requirements.edit_short')}</Button>
+                    </SettingRow>
+                    {warn &&
+                        <div class="[ corp-req__nudge ]">
+                            <span>{t('corporations.requirements.over_ask')}</span>
+                            <StylessButton
+                                type="button"
+                                class="[ corp-req__nudge-action ]"
+                                hx-post={PARTIAL_URL}
+                                hx-target={TARGET}
+                                hx-swap="outerHTML"
+                                hx-vals={JSON.stringify({ action: 'importance', rule_id: String(rule.id), importance: 'preferred' })}
+                            >{t('corporations.requirements.over_ask_action')}</StylessButton>
                         </div>
-                    )
-                })}
-            </div>
-        }
+                    }
+                    {open &&
+                        <CorporationRequirementForm
+                            options={data.options}
+                            partial_url={PARTIAL_URL}
+                            target={TARGET}
+                            rule={rule}
+                            class="[ corp-req__editor ]"
+                        />
+                    }
+                </>
+            )
+        })}
 
         {editing === 'new' && !at_max &&
             <CorporationRequirementForm
                 options={data.options}
                 partial_url={PARTIAL_URL}
                 target={TARGET}
+                class="[ corp-req__editor corp-req__editor--new ]"
             />
         }
 
-        {editing !== 'new' && (at_max
-            ? <small class="[ corp-req__muted ]">{t('corporations.requirements.max_reached').replace('COUNT', String(data.max_rules))}</small>
-            : <div>
-                <Button
-                    size="sm"
-                    color="transparent"
-                    hx-get={partial_url({ edit: 'new' })}
+        {editing !== 'new' &&
+            <div class="[ corp-req__footer ]">
+                {at_max
+                    ? <small class="[ corp-req__muted ]">{t('corporations.requirements.max_reached').replace('COUNT', String(data.max_rules))}</small>
+                    : <Button
+                        size="sm"
+                        hx-get={partial_url({ edit: 'new' })}
+                        hx-target={TARGET}
+                        hx-swap="outerHTML"
+                    >{t('corporations.requirements.add')}</Button>
+                }
+            </div>
+        }
+    </SettingsGroup>
+
+    <SettingsGroup title={t('corporations.requirements.settings_interview')}>
+        {data.interview_topics.length === 0 &&
+            <EmptyState title={t('corporations.requirements.topics_empty')} />
+        }
+        {data.interview_topics.map((topic, index) => (
+            <SettingRow title={topic} class="[ corp-req__topic ]">
+                <StylessButton
+                    type="button"
+                    class="[ corp-req__remove ]"
+                    aria-label={`${t('corporations.requirements.remove_topic')}: ${topic}`}
+                    hx-post={PARTIAL_URL}
                     hx-target={TARGET}
                     hx-swap="outerHTML"
-                >{t('corporations.requirements.add')}</Button>
-            </div>
-        )}
-    </section>
-
-    <section class="[ corp-req__card ]" aria-labelledby="corp-req-interview">
-        <h3 id="corp-req-interview">{t('corporations.requirements.settings_interview')}</h3>
-        {data.interview_topics.length === 0
-            ? <EmptyState title={t('corporations.requirements.topics_empty')} />
-            : <ul class="[ corp-req__topics ]" role="list">
-                {data.interview_topics.map((topic, index) => (
-                    <li>
-                        <span>{topic}</span>
-                        <StylessButton
-                            type="button"
-                            class="[ corp-req__icon-button ]"
-                            aria-label={`${t('corporations.requirements.remove_topic')}: ${topic}`}
-                            hx-post={PARTIAL_URL}
-                            hx-target={TARGET}
-                            hx-swap="outerHTML"
-                            hx-vals={JSON.stringify({ action: 'remove_topic', index: String(index) })}
-                        >
-                            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
-                        </StylessButton>
-                    </li>
-                ))}
-            </ul>
-        }
-        <form class="[ corp-req__topic-form ]" hx-post={PARTIAL_URL} hx-target={TARGET} hx-swap="outerHTML">
+                    hx-vals={JSON.stringify({ action: 'remove_topic', index: String(index) })}
+                >
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                </StylessButton>
+            </SettingRow>
+        ))}
+        <form hx-post={PARTIAL_URL} hx-target={TARGET} hx-swap="outerHTML">
             <input type="hidden" name="action" value="add_topic" />
-            <label class="[ visually-hidden ]" for="corp-req-topic">{t('corporations.requirements.topic_label')}</label>
-            <Input id="corp-req-topic" name="topic" maxlength="200" placeholder={t('corporations.requirements.topic_placeholder')} />
-            <Button type="submit" size="sm" color="transparent">{t('corporations.requirements.add_topic')}</Button>
+            <SettingRow title={t('corporations.requirements.topic_label')} for="corp-req-topic" wide={true} class="[ corp-req__topic-add ]">
+                <Input id="corp-req-topic" name="topic" maxlength="200" required placeholder={t('corporations.requirements.topic_placeholder')} />
+                <Button type="submit" size="sm">{t('corporations.requirements.add_topic')}</Button>
+            </SettingRow>
         </form>
-    </section>
+    </SettingsGroup>
 </div>
 
 <style lang="scss">
-    .settings-head__summary {
-        color: var(--faded);
-    }
-
     .corp-req {
         display: flex;
         flex-direction: column;
-        gap: var(--space-m);
+        gap: var(--space-l);
         padding-block: var(--space-s);
+    }
 
-        h3 {
-            margin: 0;
-            font-size: var(--step-0);
-            color: var(--highlight);
-        }
+    .corp-req__preview {
+        font-size: var(--step--1);
     }
 
     .corp-req__error {
@@ -279,107 +270,39 @@ import FlexInline from '@components/compositions/FlexInline.astro'
         color: var(--fleet-red);
     }
 
-    .corp-req__card {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-s);
+    // The importance toggle stays one line; the row wraps it under the rule on narrow screens.
+    .corp-req :global(.corp-req__importance) {
+        flex-wrap: nowrap;
     }
 
-    .corp-req__head {
+    .corp-req :global(.corp-req__importance .filter-chip) {
+        min-width: 6.5em;
+        justify-content: center;
+    }
+
+    // A rule most members fail: the pass rate line turns yellow, the nudge sits under it.
+    .corp-req :global(.corp-req__rule.is-attention small) {
+        color: var(--fleet-yellow);
+    }
+
+    .corp-req :global(.corp-req__rule.is-attention) {
+        padding-block-end: var(--space-2xs);
+    }
+
+    .corp-req__nudge {
         display: flex;
         flex-wrap: wrap;
         align-items: baseline;
-        justify-content: space-between;
-        gap: var(--space-3xs) var(--space-m);
-
-        a {
-            font-size: var(--step--1);
-        }
-    }
-
-    .corp-req__row {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 10rem 7rem 13rem var(--space-xl);
-        gap: var(--space-s);
-        align-items: center;
-        min-height: var(--space-xl);
-        border-top: solid 1px var(--border-color);
-
-        @media (max-width: 56rem) {
-            grid-template-columns: minmax(0, 1fr) auto auto;
-
-            > :nth-child(2) {
-                display: none;
-            }
-
-            > :nth-child(3) {
-                display: none;
-            }
-        }
-    }
-
-    .corp-req__row--head {
-        min-height: auto;
-        padding-block: var(--space-2xs);
-        border-top: 0;
-        font-size: var(--step--2);
-        font-weight: 600;
-        letter-spacing: 0.04em;
-        color: var(--faded);
-    }
-
-    .corp-req__rule {
-        display: flex;
-        align-items: center;
-        gap: var(--space-s);
-        min-width: 0;
-    }
-
-    .corp-req__tag {
-        flex: none;
-        width: 6rem;
-        font-size: var(--step--2);
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: var(--faded);
-    }
-
-    .corp-req__text {
-        min-width: 0;
-        color: var(--highlight);
-    }
-
-    .corp-req__who {
+        gap: var(--space-3xs) var(--space-xs);
+        padding-block-end: var(--space-s);
         font-size: var(--step--1);
-        color: var(--faded);
+        color: var(--foreground);
     }
 
-    .corp-req__num {
-        text-align: end;
-        font-weight: 600;
-        font-variant-numeric: tabular-nums;
-        color: var(--highlight);
-
-        &.is-attention {
-            color: var(--fleet-yellow);
-        }
-    }
-
-    .corp-req__row--head .corp-req__num {
-        font-weight: 600;
-        color: var(--faded);
-    }
-
-    .corp-req__icon-button {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: var(--space-xl);
-        height: var(--space-xl);
-        background: none;
-        border: 0;
-        color: var(--faded);
+    .corp-req :global(.corp-req__nudge-action) {
+        color: var(--fleet-yellow);
+        text-decoration: underline;
+        text-underline-offset: 0.2em;
         cursor: pointer;
 
         &:hover {
@@ -387,40 +310,64 @@ import FlexInline from '@components/compositions/FlexInline.astro'
         }
     }
 
-    .corp-req__nudge {
-        margin: 0 0 var(--space-xs);
-        padding-inline-start: calc(6rem + var(--space-s));
-        font-size: var(--step--1);
-        color: var(--fleet-yellow);
+    // The open editor reads as part of its rule: inset under it, before the next rule's rule line.
+    .corp-req :global(.corp-req__editor) {
+        margin-block-end: var(--space-s);
     }
 
-    .corp-req__editor {
-        margin: 0 0 var(--space-s);
+    .corp-req :global(.corp-req__editor--new) {
+        margin-block-start: var(--space-s);
+    }
+
+    .corp-req__footer {
+        padding-block: var(--space-s);
+        border-block-start: 1px solid var(--border-color);
     }
 
     .corp-req__muted {
         color: var(--faded);
     }
 
-    .corp-req__topics {
-        margin: 0;
-        padding: 0;
-        list-style: none;
-
-        li {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: var(--space-s);
-            min-height: var(--space-xl);
-            border-top: solid 1px var(--border-color);
-            color: var(--highlight);
-        }
+    // A topic is one line of text with its remove button beside it, at every width.
+    .corp-req :global(.corp-req__topic) {
+        flex-wrap: nowrap;
+        padding-block: var(--space-xs);
     }
 
-    .corp-req__topic-form {
-        display: flex;
-        gap: var(--space-xs);
+    .corp-req :global(.corp-req__topic .setting-row__text) {
+        flex-basis: 0;
+    }
+
+    .corp-req :global(.corp-req__topic strong) {
+        font-weight: 400;
+    }
+
+    // The new topic field fills the row, its Add button stays beside it.
+    .corp-req :global(.corp-req__topic-add .input-group) {
+        flex: 1 1 12rem;
+        min-width: 0;
+    }
+
+    .corp-req :global(.corp-req__topic-add input) {
+        width: 100%;
+    }
+
+    .corp-req :global(.corp-req__remove) {
+        display: inline-flex;
         align-items: center;
+        justify-content: center;
+        width: var(--space-l);
+        height: var(--space-l);
+        color: var(--faded);
+        cursor: pointer;
+
+        svg {
+            width: var(--step-0);
+            height: var(--step-0);
+        }
+
+        &:hover {
+            color: var(--fleet-red);
+        }
     }
 </style>

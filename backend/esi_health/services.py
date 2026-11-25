@@ -290,7 +290,8 @@ def _statuses(user_ids: Iterable[int]) -> dict[int, str]:
 
 
 def _on_leave(status: Optional[str]) -> bool:
-    return status == UserCommunityStatus.STATUS_ON_LEAVE
+    # Alumni are treated as On Leave here: never messaged, tasks paused.
+    return status in UserCommunityStatus.AWAY_STATUSES
 
 
 def last_messages(user_ids: Iterable[int]) -> dict[int, datetime]:

@@ -2,7 +2,7 @@
 
 Reference for every feature in `backend/groups/features/registry.py`. The registry is the source of truth. `groups/tests/test_feature_catalog_doc.py` fails when a registry code is missing here or its scope, legacy permission or `on_leave` note disagrees, so add the row in the same PR as the code. Default wiring is seeded only when a feature's M2M sets are empty; live wiring may differ (check Django admin → Pilot features).
 
-Unless noted, features deny community status `on_leave` on the scope path. The optional `legacy_permission` column is the Django permission used as a fallback by `can_use_feature`.
+Unless noted, features deny community statuses `on_leave` and `alumni` on the scope path. The optional `legacy_permission` column is the Django permission used as a fallback by `can_use_feature`.
 
 ## Tribes
 

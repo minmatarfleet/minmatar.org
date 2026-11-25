@@ -1,8 +1,11 @@
-"""Keys, limits and the audit log for AI agents (Claude) reaching Discord.
+"""Keys, limits and the audit log for AI agents (Claude) reaching Discord
+and ESI.
 
 The agent never holds the bot token. It calls the backend's MCP endpoint
 (`agent_access/views.py`) with an `AgentKey`, and the backend makes the
 Discord call itself, only through the tools in `agent_access/tools.py`.
+ESI works the same way (`agent_access/esi_tools.py`): the agent never holds
+a character's token, and reaches only the characters granted to its key.
 """
 
 from django.contrib.auth.models import User
@@ -31,6 +34,20 @@ class AgentKey(models.Model):
         help_text=(
             "May use the write tools (send a message, react). Writes still "
             "need an allowed post target."
+        ),
+    )
+    can_use_esi = models.BooleanField(
+        default=False,
+        help_text=(
+            "May use the ESI endpoint, for the characters granted to this "
+            "key under Agent ESI characters."
+        ),
+    )
+    esi_all_characters = models.BooleanField(
+        default=False,
+        help_text=(
+            "With ESI access: may use every character with a stored ESI "
+            "token, not only the granted ones."
         ),
     )
     created_by = models.ForeignKey(
@@ -164,4 +181,117 @@ class AgentDiscordCall(models.Model):
     def __str__(self):
         return (
             f"{self.tool} by {self.key_id} at {self.created_at:%Y-%m-%d %H:%M}"
+        )
+
+
+class AgentEsiSettings(models.Model):
+    """Kill switch and limits for the ESI endpoint. A single row (pk=1)."""
+
+    enabled = models.BooleanField(
+        default=True,
+        help_text="Off: the agent ESI endpoint refuses every request.",
+    )
+    calls_per_minute = models.PositiveIntegerField(
+        default=30, help_text="Per key."
+    )
+    calls_per_day = models.PositiveIntegerField(
+        default=1000, help_text="Per key."
+    )
+    blocked_paths = models.TextField(
+        default="/mail",
+        blank=True,
+        help_text=(
+            "One per line. A route containing any of these is refused, "
+            'e.g. "/mail" blocks every character mail route.'
+        ),
+    )
+
+    class Meta:
+        verbose_name = "Agent ESI settings"
+        verbose_name_plural = "Agent ESI settings"
+
+    def __str__(self):
+        return "Agent ESI settings"
+
+    @classmethod
+    def get(cls) -> "AgentEsiSettings":
+        row, _ = cls.objects.get_or_create(pk=1)
+        return row
+
+    def blocked_fragments(self) -> list[str]:
+        return [
+            line.strip()
+            for line in (self.blocked_paths or "").splitlines()
+            if line.strip()
+        ]
+
+
+class AgentEsiCharacter(models.Model):
+    """A character whose ESI token a key may use."""
+
+    key = models.ForeignKey(
+        AgentKey, on_delete=models.CASCADE, related_name="esi_characters"
+    )
+    character_id = models.BigIntegerField()
+    note = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text='Why, e.g. "Debugging asset sync for help ticket #123".',
+    )
+    created_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="The grant stops working after this time. Empty: never.",
+    )
+
+    class Meta:
+        verbose_name = "Agent ESI character"
+        unique_together = [("key", "character_id")]
+
+    def __str__(self):
+        return f"{self.character_id} for {self.key}"
+
+    @property
+    def is_active(self) -> bool:
+        return self.expires_at is None or self.expires_at > timezone.now()
+
+
+class AgentEsiCall(models.Model):
+    """One ESI tool call, allowed or refused."""
+
+    key = models.ForeignKey(
+        AgentKey, on_delete=models.CASCADE, related_name="esi_calls"
+    )
+    tool = models.CharField(max_length=64)
+    character_id = models.BigIntegerField(null=True, blank=True)
+    method = models.CharField(max_length=8, blank=True)
+    path = models.CharField(max_length=300, blank=True)
+    arguments = models.JSONField(default=dict)
+    esi_status = models.PositiveIntegerField(null=True, blank=True)
+    ok = models.BooleanField(default=False)
+    error = models.CharField(max_length=300, blank=True)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=300, blank=True)
+    duration_ms = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=["key", "created_at"], name="agent_esi_call_rate"
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.tool} {self.path} by {self.key_id} "
+            f"at {self.created_at:%Y-%m-%d %H:%M}"
         )

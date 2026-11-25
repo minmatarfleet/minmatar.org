@@ -1,8 +1,10 @@
 """POST /corporations/{corporation_id}/members/{character_id}/status
 
-Puts a member on leave or takes them off leave from the corp Members tab.
-Same rules as the alliance health lists: the corp's CEO (or a superuser)
-puts people on leave; the CEO, directors and the People team take them off.
+Puts a member on leave, makes them alumni, or restores them to active from
+the corp Members tab. Same rules as the alliance health lists: the corp's CEO
+(or a superuser) puts people on leave and makes them alumni, with a write-up
+that is sent to the pilot; the CEO, directors and the People team take them
+off leave; only the CEO or a superuser takes someone off alumni.
 """
 
 from typing import Literal
@@ -25,7 +27,9 @@ router = Router(tags=["Corporations"])
 
 
 class CorporationMemberStatusRequest(Schema):
-    action: Literal["leave", "restore"]
+    action: Literal["leave", "alumni", "restore"]
+    # Required for alumni: why they are alumni, sent to them on Discord.
+    reason: str = ""
 
 
 class CorporationMemberStatusResponse(Schema):
@@ -41,7 +45,7 @@ class CorporationMemberStatusResponse(Schema):
         404: ErrorResponse,
     },
     auth=AuthBearer(),
-    summary="Put a member on leave or take them off leave",
+    summary="Put a member on leave, make them alumni, or restore them",
 )
 def post_corp_member_status(
     request,
@@ -65,12 +69,13 @@ def post_corp_member_status(
         or not in_corporation(character, corporation_id)
     ):
         return 404, ErrorResponse(detail="Member not found")
-    verb = "Put on" if payload.action == "leave" else "Taken off"
+    if payload.action == "alumni":
+        reason = payload.reason
+    else:
+        done = "Put on leave" if payload.action == "leave" else "Restored"
+        reason = f"{done} on the {corporation.ticker} Members tab"
     result = change_community_status(
-        request.user,
-        character.user,
-        payload.action,
-        f"{verb} leave on the {corporation.ticker} Members tab",
+        request.user, character.user, payload.action, reason
     )
     if result.error:
         return result.code, ErrorResponse(detail=result.error)

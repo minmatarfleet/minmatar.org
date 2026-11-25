@@ -6,6 +6,11 @@ tracking 30 minutes after start, the lease is released. It ends 30 minutes
 after the fleet closes, when the fleet is cancelled, or when the FC switches
 its voice away from Mumble. The voice service then kicks whoever is left in
 the branch and resets it.
+
+Fleet 1 is the open branch: any community member may join it. A fleet the
+FC set to open (``mumble_open``) leases Fleet 1, or a restricted branch
+when another open fleet holds it. A restricted fleet leases only Fleet 2 or
+3, and loses Fleet 1 if it holds it (``access_changed``).
 """
 
 from __future__ import annotations
@@ -22,6 +27,7 @@ from fleets.models import (
     EveFleetInvite,
     FleetVoiceOption,
 )
+from voice.channels import OPEN_BRANCH
 from voice.models import (
     BRANCH_COUNT,
     VoiceAuditEvent,
@@ -73,6 +79,9 @@ def release_reason(lease: VoiceChannelLease, now=None) -> str | None:
         return "voice_changed"
     if fleet.status == "cancelled":
         return "cancelled"
+    if lease.branch == OPEN_BRANCH and not fleet.mumble_open:
+        # Switched to restricted: a branch everyone can enter won't do.
+        return "access_changed"
     if lease.release_after is not None:
         return "closed" if now >= lease.release_after else None
     if _is_tracking(fleet):
@@ -96,13 +105,20 @@ def release_reason(lease: VoiceChannelLease, now=None) -> str | None:
     return None
 
 
+def branch_order(fleet: EveFleet) -> list[int]:
+    """The branches a fleet may lease, best first."""
+    restricted = [b for b in range(1, BRANCH_COUNT + 1) if b != OPEN_BRANCH]
+    return [OPEN_BRANCH, *restricted] if fleet.mumble_open else restricted
+
+
 def acquire(fleet: EveFleet) -> VoiceChannelLease | None:
-    """Lease a free branch for the fleet. None when all three are taken."""
+    """Lease a free branch for the fleet (``branch_order``). None when the
+    branches it may use are taken."""
     existing = VoiceChannelLease.active().filter(fleet=fleet).first()
     if existing:
         return existing
     taken = set(VoiceChannelLease.active().values_list("branch", flat=True))
-    for branch in range(1, BRANCH_COUNT + 1):
+    for branch in branch_order(fleet):
         if branch in taken:
             continue
         try:

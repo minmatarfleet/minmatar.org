@@ -93,6 +93,9 @@ export type TribeEventStatus = ApiResponse<'EventStatus'>
 export type TribeEvent = ApiResponse<'TribeEventSchema'>
 export type TribeEventCreate = ApiRequest<'TribeEventCreate'>
 export type TribeEventPatch = ApiRequest<'TribeEventPatch'>
+export type TribeCreate = ApiRequest<'TribeCreateRequest'>
+export type TribeGroupCreate = ApiRequest<'TribeGroupCreateRequest'>
+export type TribeStructurePatch = ApiRequest<'StructurePatchRequest'>
 export type TribeEventPreview = ApiResponse<'TribeEventPreviewSchema'>
 export type TribeEventAnnouncementPreview = ApiResponse<'TribeEventAnnouncementPreview'>
 
@@ -885,6 +888,8 @@ export interface FleetRequest {
     open_to_alliance?:  boolean;
     on_schedule?:       boolean;
     voice_option_id?:   number | null;
+    voice_channel_id?:  string | null;
+    mumble_open?:       boolean;
 }
 
 export type FleetPatchRequest = ApiRequest<'UpdateEveFleetRequest'>

@@ -1,0 +1,109 @@
+---
+// The /voice setup steps (Sign in, Access, Install, Connect, Keys) as a row of
+// dots joined by hairlines. A step is done, the current one, or still to come.
+// Inside an Alpine flow, `x_done` / `x_now` are expressions that move the marker
+// without a round trip; `state` is the server-rendered starting point.
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { VoiceProgressStep } from '@dtypes/layout_components'
+
+interface Props {
+    steps:              VoiceProgressStep[];
+    label?:             string;
+    [propName: string]: any;
+}
+
+const {
+    steps,
+    label = t('voice.progress'),
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+<ol class:list={['[ voice-progress ]', Astro.props.class]} aria-label={label} style={`--voice-steps: ${steps.length}`} {...attributes}>
+    {steps.map((step) => {
+        const alpine = step.x_done || step.x_now
+        return (
+            <li
+                class:list={[{ done: step.state === 'done', now: step.state === 'now' }]}
+                aria-current={!alpine && step.state === 'now' ? 'step' : undefined}
+                x-bind:class={alpine ? `{ 'done': ${step.x_done ?? 'false'}, 'now': ${step.x_now ?? 'false'} }` : undefined}
+                x-bind:aria-current={alpine ? `${step.x_now ?? 'false'} ? 'step' : null` : undefined}
+            >
+                <span class="[ voice-progress__mark ]" aria-hidden="true"></span>
+                <span class="[ voice-progress__label ]">{step.label}</span>
+            </li>
+        )
+    })}
+</ol>
+
+<style lang="scss">
+    .voice-progress {
+        display: grid;
+        grid-template-columns: repeat(var(--voice-steps), minmax(0, 1fr));
+        column-gap: var(--space-3xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        max-width: var(--max-landing-width);
+
+        li {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2xs);
+            min-width: 0;
+        }
+
+        // The dot, then a hairline running to the next step.
+        .voice-progress__mark {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2xs);
+
+            &::before {
+                content: '';
+                flex: 0 0 auto;
+                width: var(--space-2xs);
+                aspect-ratio: 1;
+                background: var(--neutral-700);
+            }
+
+            &::after {
+                content: '';
+                flex: 1 1 auto;
+                height: 1px;
+                margin-inline-end: var(--space-2xs);
+                background: var(--border-color-hover);
+            }
+        }
+
+        li:last-child .voice-progress__mark::after {
+            visibility: hidden;
+        }
+
+        .voice-progress__label {
+            font-size: var(--step--2);
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            overflow-wrap: anywhere;
+            color: var(--faded);
+        }
+
+        li.done .voice-progress__mark::before {
+            background: var(--green);
+        }
+
+        li.now .voice-progress__mark::before {
+            background: var(--fleet-red);
+        }
+
+        li.done .voice-progress__label,
+        li.now .voice-progress__label {
+            color: var(--highlight);
+        }
+    }
+</style>

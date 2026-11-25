@@ -156,6 +156,40 @@ class StatusConnectTest(VoiceApiTestCase):
         self.assertEqual(body["reason"], "not_main")
         self.assertEqual(self.call("post", "/connect", token).status_code, 403)
 
+    def test_status_names_the_fleets_a_pilot_can_join(self):
+        fc_user, fc = self.pilot("Liam Varn", "Alliance")
+        _, guest = self.pilot("guest", user=False)
+        fleet = self.fleet(fc_user, objective="Amamake defence")
+        self.lease(fleet, branch=1)
+        VoiceGrant.objects.create(
+            character_id=guest.character_id,
+            fleet=fleet,
+            source=VoiceGrant.SOURCE_VOLUNTEER,
+        )
+        token = issue_voice_jwt(self.identity(guest))
+        (access,) = self.call("get", "/status", token).json()["fleets"]
+        self.assertEqual(access["fleet_title"], "Amamake defence")
+        self.assertEqual(access["fc_name"], fc.character_name)
+        self.assertIsNotNone(access["start_time"])
+        self.assertEqual(access["branch_name"], "Fleet 1")
+
+    def test_standing_access_does_not_name_the_fleet(self):
+        fc_user, _ = self.pilot("Liam Varn", "Alliance")
+        _, guest = self.pilot("guest", user=False)
+        fleet = self.fleet(fc_user, objective="Amamake defence")
+        self.lease(fleet, branch=1)
+        VoiceGrant.objects.create(
+            character_id=guest.character_id,
+            fleet=fleet,
+            source=VoiceGrant.SOURCE_CAPITAL,
+            role=VoiceGrant.ROLE_CAPITAL,
+        )
+        token = issue_voice_jwt(self.identity(guest))
+        (access,) = self.call("get", "/status", token).json()["fleets"]
+        self.assertEqual(access["fleet_title"], "")
+        self.assertIsNone(access["fc_name"])
+        self.assertIsNone(access["start_time"])
+
     @override_settings(VOICE_HOST="voice.example", VOICE_PORT=64738)
     def test_connect_returns_a_one_time_mumble_link(self):
         user, character = self.pilot("O'Neil Test", "Alliance")

@@ -12,6 +12,11 @@ class VoiceFleetAccess(Schema):
     branch_name: str
     placement: str
     commander: bool
+    # The fleet's tagline, else its type ("Strategic Operation")
+    fleet_title: str = ""
+    start_time: Optional[datetime] = None
+    # The FC's main; None when the fleet has no creator
+    fc_name: Optional[str] = None
 
 
 class VoiceStatusResponse(Schema):

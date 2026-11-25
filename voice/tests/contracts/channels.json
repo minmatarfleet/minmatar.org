@@ -24,6 +24,7 @@
     "Open 1",
     "Open 2"
   ],
+  "open_branch": 1,
   "redis_keys": {
     "cert": "voice:cert:{}",
     "changed": "voice:changed",

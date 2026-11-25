@@ -76,6 +76,7 @@ class ContractTest(unittest.TestCase):
         self.assertEqual(names["command"], L.COMMAND)
         self.assertEqual(names["branch_subchannels"], list(L.BRANCH_SUBCHANNELS))
         self.assertEqual(names["branch_names"], [L.branch_name(n) for n in (1, 2, 3)])
+        self.assertEqual(names["open_branch"], L.OPEN_BRANCH)
         self.assertEqual(
             names["groups"],
             {
@@ -194,6 +195,26 @@ class LayoutTest(unittest.TestCase):
         self.assertEqual(len(report), 1)
         self.assertFalse(report[0].subs)
 
+    def test_only_the_open_branch_lets_community_in(self):
+        murmur = FakeMurmur()
+        ids = L.Layout(murmur).ensure()
+
+        def community_allowed(channel_id):
+            return {
+                rule.allow
+                for rule in murmur.acls[channel_id][0]
+                if rule.group == L.GROUP_COMMUNITY
+            }
+
+        open_command = ids.branches[L.OPEN_BRANCH]
+        self.assertEqual(community_allowed(open_command), {L.TRAVERSE})
+        for cid in ids.subchannels[L.OPEN_BRANCH].values():
+            self.assertEqual(community_allowed(cid), {L.ENTER | L.SPEAK})
+        for branch in (2, 3):
+            self.assertEqual(community_allowed(ids.branches[branch]), set())
+            for cid in ids.subchannels[branch].values():
+                self.assertEqual(community_allowed(cid), set())
+
 
 class ReconcileTest(unittest.TestCase):
     def setUp(self):
@@ -260,6 +281,28 @@ class ReconcileTest(unittest.TestCase):
         publish(self.redis, {**self.pilot, "admitted": False, "branches": {}})
         self.reconciler.tick()
         self.assertIn(11, [s for s, _ in self.murmur.kicked])
+
+    def test_community_stays_in_the_open_branch_without_a_fleet(self):
+        member = {
+            **self.pilot,
+            "identity_id": 3,
+            "character_id": 3,
+            "branches": {},
+            "preferred_branch": None,
+            "server_groups": ["community"],
+        }
+        publish(self.redis, member)
+        self.redis.put_json(LEASES_KEY, {})
+        mainline = self.ids.subchannels[L.OPEN_BRANCH][L.MAINLINE]
+        self.murmur.connect(30, 3, mainline)
+        self.murmur.connect(31, 3, self.ids.subchannels[2][L.MAINLINE])
+        self.murmur.connect(32, 3, self.ids.branches[L.OPEN_BRANCH])
+        self.reconciler.tick()
+        users = self.murmur.users()
+        self.assertEqual(users[30].channel, mainline)
+        self.assertEqual(users[31].channel, self.ids.lobby)
+        self.assertEqual(users[32].channel, mainline)
+        self.assertEqual(self.murmur.kicked, [])
 
     def test_losing_commander_moves_out_of_command(self):
         self.murmur.connect(10, self.fc["identity_id"], self.ids.lobby)

@@ -43,3 +43,16 @@ of each transaction, after every database write and the audit entry. If
 Discord fails, nothing is saved and the API answers 502. If the database
 commit itself fails after Discord succeeded, the role is left created or
 renamed on Discord; fix it in the admin.
+
+## On the site
+
+The `tribes.structure.manage` gate (`frontend/app/src/json/feature_gates.json`)
+shows the controls. Each opens a dialog (`TribeStructureButton`) that posts to
+`/partials/tribe_structure_component`, which sends the pilot to the changed
+page, or shows the API's reason inside the dialog.
+
+- `/alliance/tribes/`: **New tribe**, and links to the archived tribes.
+- A tribe page: **Rename**, **New group** and **Archive** (or **Restore** on an
+  archived tribe, tagged Archived), plus links to its archived groups.
+- A group page: **Rename** and **Archive** (or **Restore**).
+- Chiefs: click the chief's portrait, as before (`TribeChiefSwap`).

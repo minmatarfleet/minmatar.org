@@ -25,6 +25,16 @@ After appending, **fold any new durable rule into [SKILL.md](SKILL.md)**
 (Known failure classes or the workflow). If the rule already lives there,
 do not duplicate it — one clarifying clause at most.
 
+## 2026-11-24 — Mentor feature requests, plus "at least an hour" on Change time
+
+**Category:** pulse.technology
+**Verdict:** needs-decision (user feedback issues)
+**Discord:** issue links in the thread
+**PR:** skill-only
+**Symptom vs cause:** One ticket carried three asks across follow-ups: a calendar invite on the booked-class DM, Minmatar standings on Corporation Health, and (with a screenshot) Change time refusing a class 15 minutes out. An earlier run had opened the issue for the first two without replying in the thread. The refusal is `_bookable_start` in `learning/mentors/service.py` (more than one hour and at most 30 days out), shared by accept and reschedule and pinned by a test.
+**Durable rule:** Before opening an issue, search for one already opened from the same ticket and reuse it. Read follow-ups posted after the starter: a later message can be a new ask. Opening an issue is not the end of the ticket; the thread reply is.
+**Skill update:** extended the booked-mentor row with the lead-time rule; added the reuse-the-issue step.
+
 ## 2026-11-24 — Universe structures list empty for an Associate pilot
 
 **Category:** pulse.technology
