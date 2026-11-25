@@ -36,7 +36,7 @@ import ExitSurveyGone from '@components/blocks/exit_survey/ExitSurveyGone.astro'
     robots="noindex, nofollow"
     analytics={false}
 >
-    <Wrapper max_width="var(--max-text-width)" padding_block="var(--space-xl)">
+    <Wrapper max_width="var(--max-text-width)" padding_block="var(--space-xl)" padding_inline="var(--space-s)">
         {form
             ? <ExitSurveyForm form={form} token={token} partial_url={partial_url} />
             : <ExitSurveyGone message={failed ? t('exit_survey.load_error') : undefined} />
