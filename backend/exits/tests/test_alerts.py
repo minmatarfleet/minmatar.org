@@ -4,14 +4,17 @@ from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
+import applications.signals as application_signals
 from applications.models import EveCorporationApplication
 from eveonline.models import EveCharacter, EveCorporation
 from exits.helpers import alerts
 from exits.helpers.answers import answer
 from exits.models import Departure, RecruiterAlert
-from exits.tasks import alert_application
 
 CHANNEL = 4242
+# The real one, kept before the class-level patch replaces it.
+# pylint: disable-next=protected-access
+REAL_ENQUEUE = application_signals._enqueue_after_commit
 
 
 @override_settings(DISCORD_RECRUITER_ALERTS_CHANNEL_ID=CHANNEL)
@@ -146,15 +149,23 @@ class RecruiterAlertTest(TestCase):
         self.assertNotIn("kicked", message.lower())
         self.assertIn("/alliance/corporations/application/98000002/", message)
 
-    def test_new_application_queues_the_alert(self, enqueue):
-        application = self._apply()
-        queued = [c.args for c in enqueue.call_args_list]
-        self.assertIn((alert_application, application.pk), queued)
-        enqueue.reset_mock()
-        application.description = "edited"
-        application.save()
-        queued = [c.args for c in enqueue.call_args_list]
-        self.assertNotIn((alert_application, application.pk), queued)
+    def test_new_application_queues_the_alert(self, enqueue_mock):
+        del enqueue_mock  # replaced below by the real enqueue
+        with patch(
+            "applications.signals.alert_application"
+        ) as alert_mock, patch(
+            "applications.signals.sync_application_thread_task"
+        ), patch(
+            "applications.signals._enqueue_after_commit", REAL_ENQUEUE
+        ):
+            with self.captureOnCommitCallbacks(execute=True):
+                application = self._apply()
+            alert_mock.delay.assert_called_once_with(application.pk)
+            alert_mock.delay.reset_mock()
+            with self.captureOnCommitCallbacks(execute=True):
+                application.description = "edited"
+                application.save()
+            alert_mock.delay.assert_not_called()
 
     @override_settings(DISCORD_RECRUITER_ALERTS_CHANNEL_ID=0)
     def test_no_channel_logs_and_sends_nothing(self, enqueue_mock):

@@ -1,14 +1,22 @@
 import json
+from datetime import timedelta
 
 from django.contrib.auth.models import User
+from django.db import connection
 from django.test import Client
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
 from app.test import TestCase
 from app.testing import auth_headers
 from applications.models import EveCorporationApplication
-from eveonline.models import EveCharacter, EveCorporation
+from eveonline.models import (
+    EveCharacter,
+    EveCharacterCorporationHistory,
+    EveCorporation,
+)
 from exits.helpers.answers import answer
+from exits.helpers.listing import departure_groups
 from exits.models import Departure, RejoinFlag
 
 BASE = "/api/exits/corporations/98000001/departures"
@@ -211,3 +219,42 @@ class ApplicationHistoryEndpointTest(TestCase):
             self.url, **auth_headers(self.other_recruiter)
         )
         self.assertEqual(response.status_code, 403)
+
+
+class ListingScaleTest(TestCase):
+    def test_listing_queries_do_not_grow_with_rows(self):
+        corporation = EveCorporation.objects.create(
+            corporation_id=98000001, name="Example Corp", track_exits=True
+        )
+        now = timezone.now()
+
+        def add(n):
+            for i in range(n):
+                character_id = 5000 + Departure.objects.count()
+                character = EveCharacter.objects.create(
+                    character_id=character_id,
+                    character_name=f"P{character_id}",
+                )
+                EveCharacterCorporationHistory.objects.create(
+                    character=character,
+                    record_id=character_id,
+                    corporation_id=98000001,
+                    start_date=now - timedelta(days=100 + i),
+                )
+                Departure.objects.create(
+                    corporation=corporation,
+                    character_id=character_id,
+                    first_missing_at=now,
+                    status="confirmed",
+                    confirmed_at=now,
+                    kind="exit",
+                )
+
+        add(2)
+        with CaptureQueriesContext(connection) as few:
+            rows = departure_groups(corporation, "all")
+        self.assertEqual(rows[0]["months_in_corporation"], 3)
+        add(20)
+        with CaptureQueriesContext(connection) as many:
+            departure_groups(corporation, "all")
+        self.assertEqual(len(many), len(few))

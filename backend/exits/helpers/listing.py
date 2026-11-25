@@ -14,17 +14,24 @@ STATE_ALL = "all"
 STATES = (STATE_OPEN, STATE_ANSWERED, STATE_ALL)
 
 
-def _months_in_corporation(character_id, corporation_id, left_at):
-    joined = (
+def _joined_dates(character_ids, corporation_id) -> dict[int, list]:
+    """Each character's start dates in this corporation, newest first, in one query."""
+    joined: dict[int, list] = {}
+    for character_id, start in (
         EveCharacterCorporationHistory.objects.filter(
-            character__character_id=character_id,
+            character__character_id__in=character_ids,
             corporation_id=corporation_id,
-            start_date__lte=left_at,
         )
         .order_by("-start_date")
-        .values_list("start_date", flat=True)
-        .first()
-    )
+        .values_list("character__character_id", "start_date")
+    ):
+        joined.setdefault(character_id, []).append(start)
+    return joined
+
+
+def _months_in_corporation(starts, left_at):
+    """Months since the last time they joined before leaving."""
+    joined = next((start for start in starts if start <= left_at), None)
     if joined is None:
         return None
     return max(0, (left_at - joined).days // 30)
@@ -70,6 +77,7 @@ def departure_groups(corporation: EveCorporation, state: str = STATE_OPEN):
         ).values_list("corporation_id", "name")
     )
     sent = survey_sent_at([d.pk for d in departures])
+    joined = _joined_dates(character_ids, corporation.corporation_id)
 
     rows = []
     for members in group(departures):
@@ -94,9 +102,7 @@ def departure_groups(corporation: EveCorporation, state: str = STATE_OPEN):
                 ],
                 "registered": lead.user_id is not None,
                 "months_in_corporation": _months_in_corporation(
-                    lead.character_id,
-                    corporation.corporation_id,
-                    lead.first_missing_at,
+                    joined.get(lead.character_id, []), lead.first_missing_at
                 ),
                 "first_missing_at": lead.first_missing_at,
                 "destination_corporation_id": lead.destination_corporation_id,
