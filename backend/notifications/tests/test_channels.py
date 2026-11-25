@@ -5,7 +5,13 @@ from django.contrib.auth.models import User
 from django.test import SimpleTestCase, TestCase, override_settings
 
 from discord.models import DiscordUser
-from notifications.channels import ChannelSendError, ChannelSkip, send_channel
+from notifications.channels import (
+    ChannelSendError,
+    ChannelSkip,
+    EveMailRefused,
+    send_channel,
+    send_eve_mail_to_character,
+)
 from notifications.models import NotificationChannel
 from notifications.types.fleets import render_fleet_invite_feedback
 from notifications.rate_limit import acquire
@@ -124,3 +130,64 @@ class DiscordChannelErrorTestCase(TestCase):
         embed = sent["embeds"][0]
         self.assertNotIn("url", embed)
         self.assertNotIn("example.test", embed["description"])
+
+
+@override_settings(NOTIFICATIONS_EVE_MAIL_CHARACTER_ID=634915984)
+@patch("notifications.channels.acquire", return_value=(True, 0))
+class EveMailToCharacterTestCase(TestCase):
+    def _esi(self, success=True, code=201, error=""):
+        response = MagicMock()
+        response.success.return_value = success
+        response.response_code = code
+        response.error_text.return_value = error
+        response.results.return_value = 123
+        client = MagicMock()
+        client.send_evemail.return_value = response
+        return client
+
+    def test_mail_goes_to_given_character(self, acquire_mock):
+        client = self._esi()
+        with patch(
+            "notifications.channels.EsiClient", return_value=client
+        ) as esi:
+            send_eve_mail_to_character(2112000031, "Subject", "Body")
+        esi.assert_called_once_with(634915984)
+        mail = client.send_evemail.call_args.args[0]
+        self.assertEqual(
+            mail["recipients"],
+            [{"recipient_id": 2112000031, "recipient_type": "character"}],
+        )
+        self.assertEqual(mail["subject"], "Subject")
+
+    def test_cspa_refusal_is_not_retried(self, acquire_mock):
+        # Unconfirmed on a real send: ESI's documented refusal for a CSPA charge.
+        client = self._esi(False, 520, '{"error": "ContactCostNotApproved"}')
+        with patch("notifications.channels.EsiClient", return_value=client):
+            with self.assertRaises(EveMailRefused) as caught:
+                send_eve_mail_to_character(2112000031, "Subject", "Body")
+        self.assertFalse(caught.exception.retryable)
+
+    def test_other_server_errors_still_retry(self, acquire_mock):
+        client = self._esi(False, 502, "Bad gateway")
+        with patch("notifications.channels.EsiClient", return_value=client):
+            with self.assertRaises(ChannelSendError) as caught:
+                send_eve_mail_to_character(2112000031, "Subject", "Body")
+        self.assertNotIsInstance(caught.exception, EveMailRefused)
+        self.assertTrue(caught.exception.retryable)
+
+    def test_user_mail_still_goes_to_the_main(self, acquire_mock):
+        user = User.objects.create(username="pilot")
+        main = MagicMock(character_id=2112000040)
+        client = self._esi()
+        with patch(
+            "notifications.channels.EsiClient", return_value=client
+        ), patch(
+            "notifications.channels.user_primary_character", return_value=main
+        ):
+            send_channel(
+                NotificationChannel.EVE_MAIL,
+                user,
+                {"subject": "S", "body": "B"},
+            )
+        mail = client.send_evemail.call_args.args[0]
+        self.assertEqual(mail["recipients"][0]["recipient_id"], 2112000040)
