@@ -23,6 +23,7 @@ import {
     delete_voice_certificate,
 } from '@helpers/api.minmatar.org/voice'
 import type { VoiceStatus, VoiceCertificate } from '@dtypes/api.minmatar.org'
+import type { VoiceProgressStep } from '@dtypes/layout_components'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
@@ -38,6 +39,7 @@ import Markdown from '@components/blocks/Markdown.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import LocalTime from '@components/blocks/LocalTime.astro'
+import VoiceProgress from '@components/blocks/VoiceProgress.astro'
 
 const session = get_voice_session(Astro)
 if (!session)
@@ -110,12 +112,12 @@ const download_url = (target: string) => target === 'android'
     : 'https://www.mumble.info/downloads/'
 
 const setup_steps = ['device', 'install', 'first_launch', 'connect']
-const progress = [
-    { label: t('voice.step.sign_in'), done: 'true', now: 'false' },
-    { label: t('voice.step.access'), done: 'true', now: 'false' },
-    { label: t('voice.step.install'), done: "step === 'connect'", now: "step !== 'connect'" },
-    { label: t('voice.step.connect'), done: 'false', now: "step === 'connect'" },
-    { label: t('voice.step.keys'), done: 'false', now: 'false' },
+const progress: VoiceProgressStep[] = [
+    { label: t('voice.step.sign_in'), state: 'done' },
+    { label: t('voice.step.access'), state: 'done' },
+    { label: t('voice.step.install'), state: 'now', x_done: "step === 'connect'", x_now: "step !== 'connect'" },
+    { label: t('voice.step.connect'), x_now: "step === 'connect'" },
+    { label: t('voice.step.keys') },
 ]
 
 ---
@@ -215,13 +217,7 @@ const progress = [
             {screen === 'setup' &&
                 <div x-data={`{ step: 'device', device: '${device}' }`}>
                     <Flexblock gap="var(--space-m)">
-                        <ol class="[ voice-progress ]" aria-label={t('voice.progress')}>
-                            {progress.map((item) =>
-                                <li x-bind:class={`{ 'done': ${item.done}, 'now': ${item.now} }`} x-bind:aria-current={`${item.now} ? 'step' : null`}>
-                                    {item.label}
-                                </li>
-                            )}
-                        </ol>
+                        <VoiceProgress steps={progress} />
 
                         {status.admitted &&
                             <div class="[ voice-admitted ]" x-show="step === 'device'">
@@ -539,34 +535,6 @@ const progress = [
     @media (prefers-reduced-motion: reduce) {
         .voice-live::before {
             animation: none;
-        }
-    }
-
-    .voice-progress {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(min(6rem, 100%), 1fr));
-        gap: var(--space-3xs);
-        margin: 0;
-        padding: 0;
-        list-style: none;
-        font-family: var(--heading-font);
-        font-size: var(--step--1);
-        text-transform: uppercase;
-
-        li {
-            padding-top: var(--space-2xs);
-            border-top: var(--space-3xs) solid var(--neutral-700);
-            color: var(--faded);
-        }
-
-        li.done {
-            border-top-color: var(--green);
-            color: var(--highlight);
-        }
-
-        li.now {
-            border-top-color: var(--fleet-red);
-            color: var(--highlight);
         }
     }
 

@@ -150,6 +150,14 @@ export interface HXDialogOptions {
     swap?:      string;
 }
 
+/** One step of the /voice setup bar (VoiceProgress). `x_done` / `x_now` are Alpine expressions. */
+export interface VoiceProgressStep {
+    label:          string;
+    state?:         'done' | 'now' | 'todo';
+    x_done?:        string;
+    x_now?:         string;
+}
+
 export interface PageCoverOptions {
     image:          string;
     image_990:      string;

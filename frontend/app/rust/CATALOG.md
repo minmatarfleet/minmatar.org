@@ -1009,3 +1009,5 @@ Not reusable components: the site's feature blocks rendered from typed fixtures,
 - **Ships/TrainingCharacterRow**: `frontend/app/rust/stories/features/ships/TrainingCharacterRow.stories.ts`, fixtures `frontend/app/rust/fixtures/features/ships`. Scenarios: In Training, Many Ready Ships, New Character, Not For Fleets, Long Names
 - **Ships/TrainingOverview**: `frontend/app/rust/stories/features/ships/TrainingOverview.stories.ts`, fixtures `frontend/app/rust/fixtures/features/ships`. Scenarios: Two Accounts And Unplaced, Unplaced Group Toggles, Single Seat No Accounts, No Characters
 - **Ships/UsefulForShips**: `frontend/app/rust/stories/features/ships/UsefulForShips.stories.ts`, fixtures `frontend/app/rust/fixtures/features/ships`. Scenarios: Few Ships, Many Ships Collapsed, Custom Limit And Size, No Ships
+- **Voice/VoiceBackdrop**: `frontend/app/rust/stories/features/voice/VoiceBackdrop.stories.ts`. Scenarios: Default, Sparse
+- **Voice/VoiceProgress**: `frontend/app/rust/stories/features/voice/VoiceProgress.stories.ts`, fixtures `frontend/app/rust/fixtures/features/voice`. Scenarios: Sign In Next, Installing, Ready To Connect
