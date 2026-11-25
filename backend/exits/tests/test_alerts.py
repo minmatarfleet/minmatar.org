@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock, patch
 
 from django.contrib.auth.models import User
+from django.db.models.signals import post_save
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
@@ -151,6 +152,13 @@ class RecruiterAlertTest(TestCase):
 
     def test_new_application_queues_the_alert(self, enqueue_mock):
         del enqueue_mock  # replaced below by the real enqueue
+        # Other application tests disconnect this receiver and leave it off;
+        # connecting with its dispatch_uid is a no-op when it's already on.
+        post_save.connect(
+            application_signals.eve_corporation_application_post_save,
+            sender=EveCorporationApplication,
+            dispatch_uid="eve_corporation_application_post_save",
+        )
         with patch(
             "applications.signals.alert_application"
         ) as alert_mock, patch(
