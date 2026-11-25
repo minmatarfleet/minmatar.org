@@ -188,6 +188,17 @@ class AlumniFromRosterTestCase(TestCase):
             self._post(self.ceo, "alumni", WRITE_UP).status_code, 200
         )
 
+    def test_pilot_without_status_row_is_offered_alumni_only(self, queue_dm):
+        UserCommunityStatus.objects.filter(user=self.user).delete()
+        data = self.client.get(
+            INSIGHTS_URL, HTTP_AUTHORIZATION=f"Bearer {make_token(self.ceo)}"
+        ).json()
+        self.assertEqual(data["status_actions"], ["alumni"])
+        self.assertEqual(
+            self._post(self.ceo, "alumni", WRITE_UP).status_code, 200
+        )
+        self.assertEqual(self._status(), "alumni")
+
     def test_alumni_twice_is_refused(self, queue_dm):
         self._post(self.ceo, "alumni", WRITE_UP)
         self.assertEqual(

@@ -100,13 +100,15 @@ def can_change_status(
 def available_actions(
     actor: User, target: User, status: str | None
 ) -> list[str]:
-    """Leave/alumni/restore actions the actor may take on the target now."""
-    if status is None:
-        status = UserCommunityStatus.STATUS_ACTIVE
+    """Leave/alumni/restore actions the actor may take on the target now.
+
+    A pilot with no status row reads as active for alumni, but is still not
+    offered leave (as before alumni existed)."""
     offered = {
         "restore": status in _FROM_STATUSES["restore"],
         "leave": status in _OFFER_LEAVE_FROM,
-        "alumni": status in _FROM_STATUSES["alumni"],
+        "alumni": (status or UserCommunityStatus.STATUS_ACTIVE)
+        in _FROM_STATUSES["alumni"],
     }
     return [
         action
