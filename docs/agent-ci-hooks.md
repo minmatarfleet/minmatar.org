@@ -28,16 +28,15 @@ python3 scripts/ci_local.py --list
 
 `--all` runs every check, `--only backend-lint,frontend-types` picks some, and `--no-cache` ignores earlier passes. Checks run side by side. A passing check is remembered for that exact tree, so running it again on the same files is instant. The pass record and each check's full log are kept in the git directory, under ci_local/ (the worktree's own git directory in a worktree). A missing virtualenv (`pipenv sync --dev`) or `node_modules` (`npm ci`) is installed on first use. Hooks run without your login shell, so when the `node` on PATH is older than CI's Node 22, the checks use one from nvm (`~/.nvm/versions/node/`) instead.
 
-Backend tests never run on the cached database itself. `backend/ci_test_db.py migrate` keeps `backend/.test-db/template.sqlite3` migrated and nothing else, and each run copies it to `.test-db/run/` first, so rows a run leaves behind (a `TransactionTestCase` flush, a crashed worker, the migration tests) can't fail the next one. A warm run takes seconds to under a minute (the whole suite is about 40 seconds); the first run in a new worktree builds the template and takes about three.
+Backend tests never run on the cached database itself. `backend/ci_test_db.py migrate` keeps `backend/.test-db/template.sqlite3` migrated and nothing else, and each run empties `.test-db/run/` (the parallel workers' clones included) and copies it there first, so rows a run leaves behind (a `TransactionTestCase` flush, a crashed worker, the migration tests) can't fail the next one. A warm run takes seconds to under a minute (the whole suite is about 40 seconds); the first run in a new worktree builds the template and takes about three.
 
 ## The hooks
 
 `scripts/agent_hooks.py` holds both hooks, for both clients. They are registered in `.claude/settings.json`, and `scripts/sync_agent_config.py` generates `.cursor/hooks.json` from it (edit the Claude file, then run the sync).
 
-- **Before a shell command** (Claude `PreToolUse` on Bash, Cursor `beforeShellExecution`):
+- **Before a shell command** (Claude `PreToolUse` on Bash, Cursor `beforeShellExecution`). Claude starts the hook only for the commands it checks: each handler has an `if` filter (`Bash(git push*)`, `Bash(git -C *)`, `Bash(gh pr *)`, `Bash(gh issue create*)`) and passes its kind (`push`, `pr`, `issue`), so a compound `git push && gh pr create` is checked once per part. Cursor has no `if`, so `sync_agent_config.py` turns these into one unfiltered hook that checks every kind:
   - `git push` runs `ci_local.py`. Deleting a branch, pushing tags and dry runs are not checked.
-  - In a Claude cloud session (`CLAUDE_CODE_REMOTE=true`), the first `git push` of a branch with the session's random name (`claude/quirky-ramanujan-mezmg0`) is blocked, before the checks run, until the agent renames it to say what the change does: `claude/<three to six words>-mezmg0`. The claude prefix and the session id stay, because the cloud git proxy only accepts pushes to those. A branch already on the remote keeps its name, so an open pull request never loses its branch.
-  - `gh pr create` and `gh pr ready` also run `scripts/check_pull_request.py` on the description. Drafts skip the description, as CI does.
+  - `gh pr create` and `gh pr ready` run `scripts/check_pull_request.py` on the description, not the CI checks: the push before them already ran those. Drafts skip the description, as CI does.
   - `gh pr edit --body ...` checks only the description, and not on a draft.
   - `gh issue create` runs `scripts/check_issue.py` on its `--label`s and body: at least one type label from `.github/labels.json`, and for a significant feature a design link or a person's sign-off (`.claude/rules/issues.md`). `--web` isn't checked; the browser form sets the labels.
   - A failure blocks the command and tells the agent what failed.
@@ -47,7 +46,9 @@ Backend tests never run on the cached database itself. `backend/ci_test_db.py mi
   - **Before `gh pr create`**, every open issue the description closes or refers to must be claimed by the person opening it (assigned, or a comment of theirs); the hook blocks with the command to run. When someone else looks to be on one, the person is asked to confirm (`ask`) instead of the command running straight away.
   - The issues are looked up on the `upstream` remote's repository when there is one (a fork), otherwise `origin`'s. Both `github.com` URLs and SSH host aliases (`git@github-work:owner/repo.git`) are understood.
   - When `gh` is missing, signed out or offline, the claim checks say nothing and block nothing.
-- **After a file edit** (Claude `PostToolUse` on Edit/Write, Cursor `postToolUse` on Write): a backend `.py` file is formatted with black, and a backend or bot `.py` file is checked with flake8 (`bot/` isn't black-formatted). Errors go back to the agent.
+- **After a file edit** (Claude `PostToolUse` on Edit/Write, Cursor `postToolUse` on Write): a backend `.py` file is formatted with black, silently, and a backend or bot `.py` file is checked with flake8 (`bot/` isn't black-formatted). Only flake8 errors go back to the agent. The hook doesn't tell it to re-read a reformatted file: Claude Code notices the change and asks for a re-read only when the next edit needs one.
+
+Hook output goes into the agent's context, so it is kept short: nothing on success, the last 40 lines of a failing check (with the path to its full log), and one line when a virtualenv or pipenv is missing.
 
 To push without the checks (for a person, not an agent), prefix the command with `CI_LOCAL_SKIP=1`.
 

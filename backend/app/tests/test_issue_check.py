@@ -1,4 +1,4 @@
-"""scripts/check_issue.py, scripts/pr_screenshots.py and the issue forms.
+"""scripts/check_issue.py and the issue forms.
 
 They read the repo checkout, so they skip when only `backend/` is present
 (the backend Docker image).
@@ -152,39 +152,3 @@ class IssueFormsTest(unittest.TestCase):
             self.assertRegex(label["color"], r"^[0-9A-F]{6}$")
             self.assertIn(label["group"], ("type", "status"))
             self.assertLessEqual(len(label["description"]), 100)
-
-
-@unittest.skipUnless(HAS_REPO, "needs the full repository checkout")
-class PullRequestScreenshotsTest(unittest.TestCase):
-    def setUp(self):
-        self.module = _load("pr_screenshots")
-
-    def test_names_are_url_and_tree_safe(self):
-        self.assertEqual(
-            self.module.safe_name("feat/fleet tabs"), "feat-fleet-tabs"
-        )
-        self.assertEqual(self.module.safe_name("../x.png"), "x.png")
-        self.assertEqual(self.module.safe_name("///"), "screenshot")
-
-    def test_repo_slug_from_https_and_ssh(self):
-        for url in (
-            "https://github.com/minmatarfleet/minmatar.org.git",
-            "git@github.com:minmatarfleet/minmatar.org.git",
-            "https://github.com/minmatarfleet/minmatar.org",
-        ):
-            self.assertEqual(
-                self.module.repo_slug(url), "minmatarfleet/minmatar.org"
-            )
-
-    def test_markdown_links_the_raw_file(self):
-        lines = self.module.markdown("o/r", "feat-x", ["fleet-390px.png"])
-        self.assertEqual(
-            lines,
-            [
-                "![fleet 390px](https://raw.githubusercontent.com/o/r/"
-                "pr-screenshots/feat-x/fleet-390px.png)"
-            ],
-        )
-        # The pull request check accepts what the script prints.
-        check = _load("check_pull_request")
-        self.assertTrue(check.IMAGE.search(lines[0]))

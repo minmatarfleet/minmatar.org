@@ -7,9 +7,6 @@ fails when a control that applies is missing:
 
 - Issue: every pull request says which issue it closes ("Closes #123") or
   refers to ("Refs #123"), or ticks "No issue for this change" and says why.
-- Screenshots: a change to what the website (`frontend/app/src/`) or the
-  desktop app (`desktop/src/renderer/`) shows needs "Screenshots below"
-  ticked and at least one image, or "No visible change" and a reason.
 - Frontend review: a change under `frontend/app/` needs "Ran the frontend
   review on the final diff" ticked and the frontend-review skill's result.
 - Backend review: a change under `backend/` or `bot/` needs "Ran the backend
@@ -43,7 +40,6 @@ ROOT = Path(__file__).resolve().parent.parent
 
 FRONTEND_PREFIXES = ("frontend/app/",)
 BACKEND_PREFIXES = ("backend/", "bot/")
-VISIBLE_PREFIXES = ("frontend/app/src/", "desktop/src/renderer/")
 RUST_LIBRARY = "frontend/app/rust/library.ts"
 COMPONENTS = "frontend/app/src/components/"
 COMPOSITIONS = "frontend/app/src/components/compositions/"
@@ -77,18 +73,12 @@ REFERS = re.compile(
     re.I,
 )
 BARE_ISSUE = re.compile(ISSUE_REF)
-IMAGE = re.compile(
-    r"!\[[^\]]*\]\(\s*\S+?\s*\)|<img\b[^>]*\bsrc\s*=|"
-    r"https://github\.com/user-attachments/assets/\S+",
-    re.I,
-)
 MIN_REASON = 10
 
 # Labels in the order they appear, per section, so a field's text runs up to
 # the next label.
 LABELS = {
     "issue": ["Issue"],
-    "screenshots": ["Screenshots"],
     "frontend review": ["Result"],
     "backend review": ["Result"],
     "rust component library": [
@@ -99,9 +89,6 @@ LABELS = {
     "documentation": ["Docs updated, or why none needed"],
 }
 MIN_JUSTIFICATION = 40
-# Sections only a pull request that needs them must have, so a description
-# written before the section existed still passes when it doesn't apply.
-OPTIONAL_SECTIONS = {"screenshots"}
 
 
 # --- Description parsing ---------------------------------------------------
@@ -221,10 +208,7 @@ def check(
     notices: list[str] = []
     found = sections(body)
 
-    visible = [p for p in changed if p.startswith(VISIBLE_PREFIXES)]
     for heading in LABELS:
-        if heading in OPTIONAL_SECTIONS and not visible:
-            continue
         if heading not in found:
             errors.append(
                 f'The description has no "## {heading.title()}" section. '
@@ -234,8 +218,6 @@ def check(
         return errors, notices
 
     _issue(errors, found["issue"])
-    if visible:
-        _screenshots(errors, found["screenshots"], visible)
     _review(
         errors,
         found["frontend review"],
@@ -284,29 +266,6 @@ def _issue(errors, section):
             'Issue: under "Issue:" write "Closes #123" when this pull '
             'request finishes the issue, or "Refs #123" when it is part of '
             'one; or tick "No issue for this change" and say why.' + hint
-        )
-
-
-def _screenshots(errors, section, visible):
-    sample = ", ".join(visible[:3]) + (" ..." if len(visible) > 3 else "")
-    shown = ticked(section, "Screenshots below")
-    invisible = ticked(section, "No visible change")
-    text = field(section, "Screenshots", LABELS["screenshots"])
-    if shown == invisible:
-        errors.append(
-            'Screenshots: tick exactly one of "Screenshots below" and "No '
-            f'visible change" (the pull request changes {sample}).'
-        )
-    elif shown and not IMAGE.search(text):
-        errors.append(
-            'Screenshots: "Screenshots below" is ticked, but there is no '
-            'image under "Screenshots:". Upload them with '
-            "scripts/pr_screenshots.py and paste the markdown it prints."
-        )
-    elif invisible and len(IMAGE.sub("", text).strip()) < MIN_REASON:
-        errors.append(
-            'Screenshots: say on the "Screenshots:" line why nothing '
-            f"visible changes (the pull request changes {sample})."
         )
 
 

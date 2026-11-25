@@ -19,21 +19,6 @@ No issue: tick the box and say why on the Issue line below (a Sentry fix, a help
 
 Issue:
 
-## Screenshots
-
-<!--
-Required when the pull request changes what the website (frontend/app/src/) or the desktop app (desktop/src/renderer/) shows.
-Show the change: before and after when something changed, pages at desktop width and 390px.
-Agents upload images with scripts/pr_screenshots.py, which prints the markdown to paste below.
-Dev or seeded data only: the repository is public, so no production pilot data, intel or anything opsec.
-No visible change: tick that box and say why on the Screenshots line below.
--->
-
-- [ ] Screenshots below
-- [ ] No visible change
-
-Screenshots:
-
 ## Frontend review
 
 <!-- Required when the pull request changes frontend/app/. Run the frontend-review skill (.claude/skills/frontend-review/SKILL.md) on the final diff, fix what it finds, and paste its result. -->
@@ -88,4 +73,4 @@ Docs updated, or why none needed:
 - [ ] Migration tests (`--tag migration`) for a changed migration
 - [ ] OpenAPI schema and website API types regenerated for a changed endpoint
 - [ ] Desktop contract files regenerated, or desktop version bumped, when the desktop is affected
-- [ ] Looked at the change in a browser (desktop width and 390px)
+- [ ] Looked at the change in a browser

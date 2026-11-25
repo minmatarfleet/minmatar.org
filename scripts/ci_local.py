@@ -57,7 +57,7 @@ ROOT = Path(__file__).resolve().parent.parent
 # Migrated by ci_test_db.py and never tested on; each run gets a copy.
 TEMPLATE_DB = ".test-db/template.sqlite3"
 TEST_DB = ".test-db/run/test_db.sqlite3"
-EXCERPT_LINES = 80
+EXCERPT_LINES = 40
 
 # Changes outside backend/ that backend tests read: docs (test_docs), the PR
 # template and its checker, agent config, contract and schema files.
@@ -143,6 +143,8 @@ def pipenv_bin(project: str, sync: bool = True) -> Path | None:
     """The bin/ of a pipenv project's venv, synced on first use."""
     cwd = ROOT / project
     env = {**os.environ, "PIPENV_VERBOSITY": "-1"}
+    if not shutil.which("pipenv"):
+        return None
     for attempt in (1, 2):
         found = subprocess.run(
             ["pipenv", "--venv"], cwd=cwd, env=env, capture_output=True
@@ -426,7 +428,10 @@ def _backend_tests(
     test_env = {"TEST_DB_NAME": TEST_DB, "SETUP_TEST_DATA": ""}
     manage = [py, "manage.py", "test", "--settings=app.settings_test"]
     keep = ["--keepdb", "--noinput"]
+    # The parallel workers' clones (test_db_1.sqlite3, ...) live in run/ too,
+    # and --keepdb reuses them: clear the folder so they start fresh as well.
     fresh_db = [
+        ["rm", "-rf", ".test-db/run"],
         ["mkdir", "-p", ".test-db/run"],
         [py, "ci_test_db.py", "check", TEMPLATE_DB],
         [py, "ci_test_db.py", "migrate", TEMPLATE_DB],
@@ -771,6 +776,20 @@ def main(argv: list[str] | None = None) -> int:
             venvs["backend"] = pipenv_bin("backend")
         if args.all or any(p.startswith("bot/") for p in changed):
             venvs["bot"] = pipenv_bin("bot")
+        missing = [name for name, path in venvs.items() if path is None]
+        if missing:
+            # One line, not a traceback: this goes back to an agent.
+            print(
+                "ci_local: no virtualenv for "
+                + ", ".join(missing)
+                + (
+                    ". Run `pipenv sync --dev` there."
+                    if shutil.which("pipenv")
+                    else ". pipenv isn't installed: `pip install pipenv`, "
+                    "then `pipenv sync --dev` there."
+                )
+            )
+            return 1
     checks = plan(
         changed, args.all, args.rust, venvs, args.full_backend, args.base
     )
