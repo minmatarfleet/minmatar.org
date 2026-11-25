@@ -53,6 +53,7 @@ from groups.helpers import (
     ensure_corporation_groups_for_corp,
     offboard_corporation_groups,
 )
+from exits.helpers.snapshots import stop_tracking
 import eveonline.admin_history  # noqa: F401  # pylint: disable=unused-import
 
 admin.site.unregister(CallbackRedirect)
@@ -522,6 +523,8 @@ class EveCorporationAdmin(admin.ModelAdmin):
                 and not obj.generate_corporation_groups
             ):
                 offboard_corporation_groups(old)
+            if old.track_exits and not obj.track_exits:
+                stop_tracking(old)
             if "discord_guild" in form.changed_data:
                 # A hand-picked server ends the bot's link: its invite
                 # and channel belong to the old one.
