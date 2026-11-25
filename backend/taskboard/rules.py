@@ -37,6 +37,8 @@ from eveonline.models import (
     EvePlayer,
     FwPayoutEventCode,
 )
+from exits.models import STATUS_CONFIRMED as DEPARTURE_CONFIRMED
+from exits.models import Departure
 from fittings.models import EveDoctrineChangeRequest, EveFittingChangeRequest
 from fleets.models import EveFleetInvite, NpsiEventSource
 from manage_hub.summary import npsi_feeds, payout_codes, reddit_posts
@@ -496,6 +498,37 @@ def collect_corp_director_token(user_ids=None) -> list[Item]:
     return items
 
 
+def collect_exit_departures(user_ids=None) -> list[Item]:
+    """A tracked corporation with confirmed departures its CEO hasn't explained."""
+    del user_ids  # a team rule collects for everyone
+
+    rows = (
+        Departure.objects.filter(status=DEPARTURE_CONFIRMED, reason="")
+        .values("corporation__corporation_id", "corporation__name")
+        .annotate(n=Count("id"), first=Min("confirmed_at"))
+    )
+    items = []
+    for row in rows:
+        corporation_id = row["corporation__corporation_id"]
+        count = row["n"]
+        items.append(
+            Item(
+                source_key=f"corporation:{corporation_id}",
+                title=(
+                    f"Tell us why {count} pilot{'s' if count != 1 else ''} left"
+                ),
+                link_url=f"/alliance/corporations/{corporation_id}/#departures",
+                link_label="Answer",
+                team_kind=TeamKind.CORPORATION,
+                team_id=corporation_id,
+                team_role="ceo",
+                team_label=row["corporation__name"],
+                since=row["first"],
+            )
+        )
+    return items
+
+
 def collect_corp_unlinked(user_ids=None) -> list[Item]:
     """Characters in a corporation that nobody added to the site.
 
@@ -765,6 +798,16 @@ RULES: dict[str, Rule] = {
             Weight.NEEDS_YOU,
             collect_corp_director_token,
             claim_expires_days=14,
+        ),
+        Rule(
+            "exit_departures",
+            "Say why pilots left",
+            "Opens when pilots have left a tracked corporation and its CEO "
+            "hasn't said why",
+            AUDIENCE_CEO,
+            Weight.NEEDS_YOU,
+            collect_exit_departures,
+            watch=(Departure,),
         ),
         Rule(
             "corp_unlinked",
