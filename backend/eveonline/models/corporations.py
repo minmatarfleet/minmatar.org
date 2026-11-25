@@ -37,6 +37,10 @@ class EveCorporation(models.Model):
         default=False,
         help_text="Whether this corporation is on trial with the alliance.",
     )
+    track_exits = models.BooleanField(
+        default=False,
+        help_text="Track pilots who leave, ask the CEO why, and survey those who left on their own.",
+    )
     generate_corporation_groups = models.BooleanField(
         default=False,
         help_text="When enabled, create and sync Corp <TICKER>, Recruiter, Director, and Gunner groups.",

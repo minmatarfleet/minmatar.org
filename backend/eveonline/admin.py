@@ -439,10 +439,16 @@ class EveCorporationAdmin(admin.ModelAdmin):
         "alliance",
         "alliance_override_to",
         "trial",
+        "track_exits",
         "generate_corporation_groups",
     )
     search_fields = ("name", "ticker")
-    list_filter = ("alliance", "trial", "generate_corporation_groups")
+    list_filter = (
+        "alliance",
+        "trial",
+        "track_exits",
+        "generate_corporation_groups",
+    )
     filter_horizontal = ("directors", "recruiters", "stewards")
     autocomplete_fields = (
         "discord_guild",

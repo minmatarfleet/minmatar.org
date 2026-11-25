@@ -188,6 +188,7 @@ ROUTES: dict[str, str] = {
     "creators.": "community",
     "reminders.": "community",
     "surveys.": "community",
+    "exits.": "community",
     "alliance.": "community",
     "fittings.": "community",
     "capabilities.": "community",

@@ -89,6 +89,8 @@ INSTALLED_APPS = [
     "help_tickets.apps.HelpTicketsConfig",
     # Quarterly community surveys
     "surveys.apps.SurveysConfig",
+    # Pilots leaving tracked corporations (#3198)
+    "exits.apps.ExitsConfig",
     # Live multi-system Faction Warfare campaigns
     "campaigns.apps.CampaignsConfig",
     "capabilities.apps.CapabilitiesConfig",
