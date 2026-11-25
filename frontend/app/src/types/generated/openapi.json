@@ -9774,6 +9774,11 @@
             "title": "Can View Characters",
             "type": "boolean"
           },
+          "can_view_departures": {
+            "default": false,
+            "title": "Can View Departures",
+            "type": "boolean"
+          },
           "can_view_members": {
             "title": "Can View Members",
             "type": "boolean"
@@ -12908,6 +12913,182 @@
           "message"
         ],
         "title": "DeleteStatus",
+        "type": "object"
+      },
+      "DepartureAnswerRequest": {
+        "properties": {
+          "can_rejoin": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Can Rejoin"
+          },
+          "departure_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Departure Ids",
+            "type": "array"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "departure_ids",
+          "reason"
+        ],
+        "title": "DepartureAnswerRequest",
+        "type": "object"
+      },
+      "DepartureGroupResponse": {
+        "description": "One person who left: a character, with alts that left with them.",
+        "properties": {
+          "alt_names": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Alt Names",
+            "type": "array"
+          },
+          "can_rejoin": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Can Rejoin"
+          },
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "departure_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Departure Ids",
+            "type": "array"
+          },
+          "destination_corporation_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Corporation Id"
+          },
+          "destination_is_npc": {
+            "title": "Destination Is Npc",
+            "type": "boolean"
+          },
+          "destination_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Name"
+          },
+          "first_missing_at": {
+            "format": "date-time",
+            "title": "First Missing At",
+            "type": "string"
+          },
+          "flag_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flag Id"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "months_in_corporation": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Months In Corporation"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "registered": {
+            "title": "Registered",
+            "type": "boolean"
+          },
+          "survey_sent_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Survey Sent At"
+          }
+        },
+        "required": [
+          "departure_ids",
+          "character_id",
+          "character_name",
+          "alt_names",
+          "registered",
+          "months_in_corporation",
+          "first_missing_at",
+          "destination_corporation_id",
+          "destination_name",
+          "kind",
+          "destination_is_npc",
+          "reason",
+          "can_rejoin",
+          "note",
+          "flag_id",
+          "survey_sent_at"
+        ],
+        "title": "DepartureGroupResponse",
         "type": "object"
       },
       "DesktopSettingsPatchSchema": {
@@ -20266,6 +20447,19 @@
           "refits"
         ],
         "title": "FittingResponse",
+        "type": "object"
+      },
+      "FlagClearResponse": {
+        "properties": {
+          "cleared": {
+            "title": "Cleared",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "cleared"
+        ],
+        "title": "FlagClearResponse",
         "type": "object"
       },
       "FleetBattleActivity": {
@@ -69505,6 +69699,235 @@
         "tags": [
           "Eve Online",
           "Players"
+        ]
+      }
+    },
+    "/api/exits/corporations/{corporation_id}/departures": {
+      "get": {
+        "operationId": "exits_endpoints_get_departures_get_departures",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "state",
+            "required": false,
+            "schema": {
+              "default": "open",
+              "title": "State",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DepartureGroupResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Pilots who left a tracked corporation (CEO only)",
+        "tags": [
+          "Exits"
+        ]
+      }
+    },
+    "/api/exits/corporations/{corporation_id}/departures/answers": {
+      "post": {
+        "operationId": "exits_endpoints_post_departure_answers_post_departure_answers",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepartureAnswerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DepartureGroupResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Say why pilots left, for one row or many (CEO only)",
+        "tags": [
+          "Exits"
+        ]
+      }
+    },
+    "/api/exits/flags/{flag_id}/clear": {
+      "post": {
+        "operationId": "exits_endpoints_post_flag_clear_post_flag_clear",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "flag_id",
+            "required": true,
+            "schema": {
+              "title": "Flag Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlagClearResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Clear a can't-rejoin flag (the setting corporation's CEO)",
+        "tags": [
+          "Exits"
         ]
       }
     },

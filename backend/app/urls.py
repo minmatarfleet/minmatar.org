@@ -72,6 +72,7 @@ from capabilities.endpoints import router as training_router
 from intel.router import router as intel_router
 from manage_hub.router import router as manage_router
 from taskboard.router import router as tasks_router
+from exits.router import router as exits_router
 from esi_health.router import router as esi_health_router
 
 api = NinjaAPI(title="Minmatar Fleet API", version="1.0.0")
@@ -115,6 +116,7 @@ api.add_router("training", training_router)
 api.add_router("intel", intel_router)
 api.add_router("manage", manage_router)
 api.add_router("tasks", tasks_router)
+api.add_router("exits", exits_router)
 api.add_router("voice", voice_router)
 api.add_router("esi-health", esi_health_router)
 

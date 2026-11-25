@@ -287,6 +287,8 @@ class CorporationMemberAccess(Schema):
     # Projects tab: corp leadership sees it; CEO and directors attach.
     can_view_projects: bool = False
     can_manage_projects: bool = False
+    # Departures tab: the CEO of a tracked corporation (#3198).
+    can_view_departures: bool = False
 
 
 class CorporationDiscordBot(Schema):

@@ -3307,6 +3307,57 @@ export interface paths {
         patch: operations["eveonline_endpoints_characters_players_patch_current_patch_current_player"];
         trace?: never;
     };
+    "/api/exits/corporations/{corporation_id}/departures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pilots who left a tracked corporation (CEO only) */
+        get: operations["exits_endpoints_get_departures_get_departures"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exits/corporations/{corporation_id}/departures/answers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Say why pilots left, for one row or many (CEO only) */
+        post: operations["exits_endpoints_post_departure_answers_post_departure_answers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exits/flags/{flag_id}/clear": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Clear a can't-rejoin flag (the setting corporation's CEO) */
+        post: operations["exits_endpoints_post_flag_clear_post_flag_clear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/feed/": {
         parameters: {
             query?: never;
@@ -16047,6 +16098,11 @@ export interface components {
             can_manage_projects?: boolean;
             /** Can View Characters */
             can_view_characters: boolean;
+            /**
+             * Can View Departures
+             * @default false
+             */
+            can_view_departures?: boolean;
             /** Can View Members */
             can_view_members: boolean;
             /**
@@ -17311,6 +17367,61 @@ export interface components {
             deleted: boolean;
             /** Message */
             message: string;
+        };
+        /** DepartureAnswerRequest */
+        DepartureAnswerRequest: {
+            /** Can Rejoin */
+            can_rejoin?: boolean | null;
+            /** Departure Ids */
+            departure_ids: number[];
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * DepartureGroupResponse
+         * @description One person who left: a character, with alts that left with them.
+         */
+        DepartureGroupResponse: {
+            /** Alt Names */
+            alt_names: string[];
+            /** Can Rejoin */
+            can_rejoin: boolean | null;
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /** Departure Ids */
+            departure_ids: number[];
+            /** Destination Corporation Id */
+            destination_corporation_id: number | null;
+            /** Destination Is Npc */
+            destination_is_npc: boolean;
+            /** Destination Name */
+            destination_name: string | null;
+            /**
+             * First Missing At
+             * Format: date-time
+             */
+            first_missing_at: string;
+            /** Flag Id */
+            flag_id: number | null;
+            /** Kind */
+            kind: string;
+            /** Months In Corporation */
+            months_in_corporation: number | null;
+            /** Note */
+            note: string;
+            /** Reason */
+            reason: string;
+            /** Registered */
+            registered: boolean;
+            /** Survey Sent At */
+            survey_sent_at: string | null;
         };
         /** DesktopSettingsPatchSchema */
         DesktopSettingsPatchSchema: {
@@ -20196,6 +20307,11 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /** FlagClearResponse */
+        FlagClearResponse: {
+            /** Cleared */
+            cleared: boolean;
         };
         /** FleetBattleActivity */
         FleetBattleActivity: {
@@ -43066,6 +43182,159 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    exits_endpoints_get_departures_get_departures: {
+        parameters: {
+            query?: {
+                state?: string;
+            };
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartureGroupResponse"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    exits_endpoints_post_departure_answers_post_departure_answers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DepartureAnswerRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartureGroupResponse"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    exits_endpoints_post_flag_clear_post_flag_clear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                flag_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlagClearResponse"];
+                };
             };
             /** @description Forbidden */
             403: {

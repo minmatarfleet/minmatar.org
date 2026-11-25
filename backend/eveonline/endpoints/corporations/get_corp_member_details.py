@@ -23,6 +23,7 @@ from eveonline.helpers.corporations.permissions import (
 from eveonline.helpers.corporations.profile import load_corporation
 from eveonline.helpers.corporations.stats_cache import corporation_stats
 from eveonline.models import EveCharacter, EvePlayer
+from exits.helpers.answers import can_answer
 from groups.models import UserCommunityStatus, UserCommunityStatusHistory
 from timezones.schemas import TimezoneTag
 from timezones.services import timezone_tags_for
@@ -83,6 +84,9 @@ def get_corp_member_access(request, corporation_id: int):
         ),
         "can_manage_projects": can_manage_corporation_projects(
             request.user, corporation
+        ),
+        "can_view_departures": bool(
+            corporation.track_exits and can_answer(request.user, corporation)
         ),
     }
 
