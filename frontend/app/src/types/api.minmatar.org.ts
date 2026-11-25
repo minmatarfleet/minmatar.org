@@ -3415,3 +3415,4 @@ export type VoiceFleet = ApiResponse<'VoiceFleetResponse'>
 export type FleetVoiceOption = ApiResponse<'FleetVoiceOptionResponse'>
 export type DepartureGroup = ApiResponse<'DepartureGroupResponse'>
 export type DepartureAnswer = ApiRequest<'DepartureAnswerRequest'>
+export type HistoryEntry = ApiResponse<'HistoryEntryResponse'>

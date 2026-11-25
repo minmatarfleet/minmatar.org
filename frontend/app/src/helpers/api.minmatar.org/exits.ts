@@ -1,4 +1,4 @@
-import type { DepartureAnswer, DepartureGroup } from '@dtypes/api.minmatar.org'
+import type { DepartureAnswer, DepartureGroup, HistoryEntry } from '@dtypes/api.minmatar.org'
 import { api_request } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/exits`
@@ -24,5 +24,13 @@ export async function clear_rejoin_flag(access_token: string, flag_id: number) {
     return await api_request<{ cleared: boolean }>(
         `${API_ENDPOINT}/flags/${flag_id}/clear`,
         { method: 'POST', token: access_token },
+    )
+}
+
+/** An applicant's alliance history, for the corporation's recruiters. Null for anyone else. */
+export async function get_application_history(access_token: string, application_id: number) {
+    return await api_request<HistoryEntry[] | null>(
+        `${API_ENDPOINT}/applications/${application_id}/history`,
+        { token: access_token, allow: [403, 404] },
     )
 }

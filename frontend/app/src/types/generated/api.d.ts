@@ -3307,6 +3307,23 @@ export interface paths {
         patch: operations["eveonline_endpoints_characters_players_patch_current_patch_current_player"];
         trace?: never;
     };
+    "/api/exits/applications/{application_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An applicant's alliance history (the corporation's recruiters only) */
+        get: operations["exits_endpoints_get_application_history_get_application_history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/exits/corporations/{corporation_id}/departures": {
         parameters: {
             query?: never;
@@ -22583,6 +22600,33 @@ export interface components {
             taken: boolean;
             /** Tribe Name */
             tribe_name: string;
+        };
+        /**
+         * HistoryEntryResponse
+         * @description What a CEO said when this pilot (or an alt) left their corporation.
+         */
+        HistoryEntryResponse: {
+            /** Answered By Name */
+            answered_by_name: string;
+            /** Can Rejoin */
+            can_rejoin: boolean | null;
+            /** Corporation Id */
+            corporation_id: number;
+            /** Corporation Name */
+            corporation_name: string;
+            /** Departure Id */
+            departure_id: number;
+            /** Flag Active */
+            flag_active: boolean;
+            /**
+             * Left At
+             * Format: date-time
+             */
+            left_at: string;
+            /** Note */
+            note: string;
+            /** Reason */
+            reason: string;
         };
         /** HoldingItem */
         HoldingItem: {
@@ -43182,6 +43226,46 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    exits_endpoints_get_application_history_get_application_history: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryEntryResponse"][];
+                };
             };
             /** @description Forbidden */
             403: {

@@ -26255,6 +26255,68 @@
         "title": "HelpTribeGroupOption",
         "type": "object"
       },
+      "HistoryEntryResponse": {
+        "description": "What a CEO said when this pilot (or an alt) left their corporation.",
+        "properties": {
+          "answered_by_name": {
+            "title": "Answered By Name",
+            "type": "string"
+          },
+          "can_rejoin": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Can Rejoin"
+          },
+          "corporation_id": {
+            "title": "Corporation Id",
+            "type": "integer"
+          },
+          "corporation_name": {
+            "title": "Corporation Name",
+            "type": "string"
+          },
+          "departure_id": {
+            "title": "Departure Id",
+            "type": "integer"
+          },
+          "flag_active": {
+            "title": "Flag Active",
+            "type": "boolean"
+          },
+          "left_at": {
+            "format": "date-time",
+            "title": "Left At",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "departure_id",
+          "corporation_id",
+          "corporation_name",
+          "left_at",
+          "reason",
+          "can_rejoin",
+          "note",
+          "answered_by_name",
+          "flag_active"
+        ],
+        "title": "HistoryEntryResponse",
+        "type": "object"
+      },
       "HoldingItem": {
         "properties": {
           "count": {
@@ -69699,6 +69761,67 @@
         "tags": [
           "Eve Online",
           "Players"
+        ]
+      }
+    },
+    "/api/exits/applications/{application_id}/history": {
+      "get": {
+        "operationId": "exits_endpoints_get_application_history_get_application_history",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "application_id",
+            "required": true,
+            "schema": {
+              "title": "Application Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HistoryEntryResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "An applicant's alliance history (the corporation's recruiters only)",
+        "tags": [
+          "Exits"
         ]
       }
     },

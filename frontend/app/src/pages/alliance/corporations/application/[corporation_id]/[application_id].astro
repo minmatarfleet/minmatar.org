@@ -42,6 +42,12 @@ try {
     get_corporation_application_error = error
 }
 
+// Recruiters of the corporation see the applicant's alliance history (#3198).
+import { get_application_history } from '@helpers/api.minmatar.org/exits'
+const history = application
+    ? await get_application_history(auth_token as string, application_id).catch(() => null)
+    : null
+
 import { query_string } from '@helpers/string';
 const corporation:CorporationBasic = {
     id: corporation_id,
@@ -129,6 +135,7 @@ const page_title = `${application?.character_name ?? ''} ${t('application').toLo
                         application={application as ApplicationDetail }
                         corporation_id={corporation_id}
                         corporation_name={corporation_eve?.name as string}
+                        history={history}
                     />
                 </ComponentBlock>
                 </>

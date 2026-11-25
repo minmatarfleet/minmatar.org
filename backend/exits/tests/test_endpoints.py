@@ -6,7 +6,9 @@ from django.utils import timezone
 
 from app.test import TestCase
 from app.testing import auth_headers
+from applications.models import EveCorporationApplication
 from eveonline.models import EveCharacter, EveCorporation
+from exits.helpers.answers import answer
 from exits.models import Departure, RejoinFlag
 
 BASE = "/api/exits/corporations/98000001/departures"
@@ -129,3 +131,83 @@ class DepartureEndpointsTest(TestCase):
         director = self.client.get(url, **auth_headers(self.director)).json()
         self.assertTrue(ceo["can_view_departures"])
         self.assertFalse(director["can_view_departures"])
+
+
+class ApplicationHistoryEndpointTest(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.client = Client()
+        ceo = User.objects.create(username="old ceo")
+        old_corp = EveCorporation.objects.create(
+            corporation_id=98000001,
+            name="Example Corp",
+            track_exits=True,
+            ceo=EveCharacter.objects.create(
+                character_id=2112000001, character_name="Arkan Veld", user=ceo
+            ),
+        )
+        self.applicant = User.objects.create(username="applicant")
+        EveCharacter.objects.create(
+            character_id=31, character_name="Dren Halvik", user=self.applicant
+        )
+        now = timezone.now()
+        departure = Departure.objects.create(
+            corporation=old_corp,
+            character_id=31,
+            user=self.applicant,
+            first_missing_at=now,
+            status="confirmed",
+            confirmed_at=now,
+            kind="exit",
+        )
+        answer(
+            ceo,
+            old_corp,
+            [departure.pk],
+            reason="kicked_other",
+            can_rejoin=False,
+            note="Awoxed",
+        )
+
+        self.recruiter = User.objects.create(username="recruiter")
+        recruiter_character = EveCharacter.objects.create(
+            character_id=32, character_name="Recruiter", user=self.recruiter
+        )
+        self.new_corp = EveCorporation.objects.create(
+            corporation_id=98000002, name="Other Corp"
+        )
+        self.new_corp.recruiters.add(recruiter_character)
+        self.other_recruiter = User.objects.create(username="other recruiter")
+        other_corp = EveCorporation.objects.create(
+            corporation_id=98000003, name="Third Corp"
+        )
+        other_corp.recruiters.add(
+            EveCharacter.objects.create(
+                character_id=33,
+                character_name="Other",
+                user=self.other_recruiter,
+            )
+        )
+        self.application = EveCorporationApplication.objects.create(
+            corporation_id=98000002, user=self.applicant, status="pending"
+        )
+        self.url = f"/api/exits/applications/{self.application.pk}/history"
+
+    def test_recruiter_sees_history(self):
+        response = self.client.get(self.url, **auth_headers(self.recruiter))
+        self.assertEqual(response.status_code, 200)
+        [entry] = response.json()
+        self.assertEqual(entry["corporation_name"], "Example Corp")
+        self.assertEqual(entry["note"], "Awoxed")
+        self.assertTrue(entry["flag_active"])
+        self.assertEqual(entry["answered_by_name"], "Arkan Veld")
+
+    def test_applicant_gets_403_for_history(self):
+        response = self.client.get(self.url, **auth_headers(self.applicant))
+        self.assertEqual(response.status_code, 403)
+
+    def test_other_corporation_recruiter_gets_403(self):
+        response = self.client.get(
+            self.url, **auth_headers(self.other_recruiter)
+        )
+        self.assertEqual(response.status_code, 403)

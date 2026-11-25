@@ -3,6 +3,7 @@
 from ninja import Router
 
 from exits.endpoints import (
+    get_application_history,
     get_departures,
     post_departure_answers,
     post_flag_clear,
@@ -10,6 +11,11 @@ from exits.endpoints import (
 
 router = Router(tags=["Exits"])
 
-for module in (get_departures, post_departure_answers, post_flag_clear):
+for module in (
+    get_departures,
+    post_departure_answers,
+    post_flag_clear,
+    get_application_history,
+):
     handler = getattr(module, module.__name__.rsplit(".", 1)[1])
     getattr(router, module.METHOD)(module.PATH, **module.ROUTE_SPEC)(handler)

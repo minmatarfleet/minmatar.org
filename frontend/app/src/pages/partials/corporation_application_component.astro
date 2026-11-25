@@ -35,6 +35,7 @@ import {
     transfer_corporation_application,
 } from '@helpers/api.minmatar.org/applications'
 import { query_string } from '@helpers/string'
+import { get_application_history } from '@helpers/api.minmatar.org/exits'
 
 let application_action_error
 let action
@@ -91,6 +92,11 @@ try {
 } catch (error) {
     get_corporation_application_error = error
 }
+
+// Recruiters of the corporation see the applicant's alliance history (#3198).
+const history = application
+    ? await get_application_history(auth_token as string, application_id).catch(() => null)
+    : null
 
 if (application_action_error) {
     const dialog_title = action === 'accept'
@@ -153,5 +159,6 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         corporation_name={display_corporation.name}
         alert={alert}
         redirect_url={redirect_url}
+        history={history}
     />
 }

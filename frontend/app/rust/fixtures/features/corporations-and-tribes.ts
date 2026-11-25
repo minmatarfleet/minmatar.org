@@ -7,7 +7,7 @@ import type {
     TribeEventRowUI,
     TribeGroupRefUI,
 } from '@dtypes/layout_components'
-import type { CorporationLeadershipMember, DepartureGroup, TrialProgress, TribeMembership } from '@dtypes/api.minmatar.org'
+import type { CorporationLeadershipMember, DepartureGroup, HistoryEntry, TrialProgress, TribeMembership } from '@dtypes/api.minmatar.org'
 import { EVE } from '../../stories/_controls'
 
 // Corporations -----------------------------------------------------------------------------
@@ -276,3 +276,12 @@ export const departures_answered: DepartureGroup[] = [
 export const departures_with_alts: DepartureGroup[] = [
     departure({ departure_ids: [106, 107, 108], character_id: 2112000106, character_name: 'Toren Ashblade', alt_names: ['Toren Alt', 'Toren Hauler'], kind: 'exit', destination_is_npc: false, destination_corporation_id: 98000003, destination_name: 'Brave Newbies Inc.' }),
 ]
+
+// Alliance history on the application page (#3198): invented corporations and pilots.
+export const history_flagged: HistoryEntry[] = [
+    { departure_id: 1, corporation_id: 98000001, corporation_name: 'Example Corp', left_at: '2026-11-09T12:00:00Z', reason: 'kicked_other', can_rejoin: false, note: 'Awoxed a corp Orca', answered_by_name: 'Arkan Veld', flag_active: true },
+    { departure_id: 2, corporation_id: 98000002, corporation_name: 'Second Corp', left_at: '2026-09-02T12:00:00Z', reason: 'kicked_inactive', can_rejoin: true, note: 'Gone 3 months, no word', answered_by_name: 'Sela Morn', flag_active: false },
+    { departure_id: 3, corporation_id: 98000003, corporation_name: 'Third Corp', left_at: '2026-05-14T12:00:00Z', reason: 'left', can_rejoin: null, note: '', answered_by_name: 'Toma Vey', flag_active: false },
+]
+
+export const history_inactive_only: HistoryEntry[] = [history_flagged[1]]

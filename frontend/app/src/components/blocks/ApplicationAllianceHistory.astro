@@ -1,0 +1,83 @@
+---
+/**
+ * An applicant's alliance history on the recruiter's application page (#3198,
+ * design 06): one line per corporation they left, newest first, with what its
+ * CEO said. Renders nothing for an empty list; the page only passes entries
+ * to recruiters of the corporation applied to.
+ */
+import { i18n, t_key } from '@helpers/i18n'
+const { t, lang } = i18n(Astro.url)
+
+import type { HistoryEntry } from '@dtypes/api.minmatar.org'
+import { history_tag } from '@helpers/corporations/departures'
+import { format_date } from '@helpers/date'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Tag from '@components/blocks/Tag.astro'
+
+interface Props {
+    entries: HistoryEntry[];
+    [propName: string]: any;
+}
+
+const { entries, ...attributes } = Astro.props
+delete attributes.class
+
+const tag_color = {
+    cant_rejoin: 'fleet-red',
+    inactive_kick: 'fleet-yellow',
+    other_kick: 'fleet-yellow',
+    left: 'green',
+} as const
+---
+
+{entries.length > 0 &&
+    <ComponentBlock class:list={['[ application-history ]', Astro.props.class]} {...attributes}>
+        <Flexblock gap="var(--space-s)">
+            <Flexblock gap="var(--space-3xs)">
+                <h3>{t('applications.history.title')}</h3>
+                <small class="[ application-history__muted ]">{t('applications.history.hint')}</small>
+            </Flexblock>
+            <ul class="[ application-history__list ]" role="list">
+                {entries.map((entry) => {
+                    const tag = history_tag(entry)
+                    return (
+                        <li>
+                            <Flexblock gap="0">
+                                <FlexInline gap="var(--space-2xs)" class="[ items-center ]">
+                                    <Tag text={t(t_key('applications.history.tag_', tag))} color={tag_color[tag]} narrow={true} />
+                                    <strong>{entry.corporation_name}</strong>
+                                    <small class="[ application-history__muted ]">{format_date(lang, entry.left_at)}</small>
+                                </FlexInline>
+                                {entry.reason !== 'left' &&
+                                    <small class="[ application-history__muted ]">
+                                        {[
+                                            tag === 'cant_rejoin' ? t('corporations.departures.reason_kicked_other') : (entry.can_rejoin ? t('applications.history.can_rejoin') : t(t_key('corporations.departures.reason_', entry.reason))),
+                                            entry.answered_by_name ? t('applications.history.by').replace('{name}', entry.answered_by_name) : '',
+                                        ].filter(Boolean).join(' · ')}
+                                        {entry.note && <>: “{entry.note}”</>}
+                                    </small>
+                                }
+                            </Flexblock>
+                        </li>
+                    )
+                })}
+            </ul>
+        </Flexblock>
+    </ComponentBlock>
+}
+
+<style lang="scss">
+    .application-history__muted {
+        color: var(--faded);
+    }
+
+    .application-history__list {
+        display: grid;
+        gap: var(--space-xs);
+        padding: 0;
+        margin: 0;
+    }
+</style>

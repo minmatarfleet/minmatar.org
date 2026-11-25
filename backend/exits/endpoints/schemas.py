@@ -37,3 +37,19 @@ class DepartureAnswerRequest(Schema):
 
 class FlagClearResponse(Schema):
     cleared: bool
+
+
+class HistoryEntryResponse(Schema):
+    """What a CEO said when this pilot (or an alt) left their corporation."""
+
+    departure_id: int
+    corporation_id: int
+    corporation_name: str
+    left_at: datetime
+    # kicked_inactive, kicked_other or left
+    reason: str
+    can_rejoin: Optional[bool]
+    note: str
+    answered_by_name: str
+    # The entry carries a can't-rejoin flag that hasn't been cleared.
+    flag_active: bool

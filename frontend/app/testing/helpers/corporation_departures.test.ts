@@ -76,3 +76,18 @@ test('an unknown reason parses to null', () => {
     form.append('reason', 'bored')
     expect(parse_departure_answer(form)).toBeNull()
 })
+
+test('history tags: a flag beats the reason', async () => {
+    const { history_tag, has_active_flag } = await import('@helpers/corporations/departures')
+    const entry = {
+        departure_id: 1, corporation_id: 98000001, corporation_name: 'Example Corp',
+        left_at: '2026-11-09T12:00:00Z', reason: 'kicked_other', can_rejoin: false,
+        note: 'Awoxed', answered_by_name: 'Arkan Veld', flag_active: true,
+    }
+    expect(history_tag(entry)).toBe('cant_rejoin')
+    expect(history_tag({ ...entry, flag_active: false })).toBe('other_kick')
+    expect(history_tag({ ...entry, flag_active: false, reason: 'kicked_inactive' })).toBe('inactive_kick')
+    expect(history_tag({ ...entry, flag_active: false, reason: 'left' })).toBe('left')
+    expect(has_active_flag([entry])).toBe(true)
+    expect(has_active_flag(null)).toBe(false)
+})

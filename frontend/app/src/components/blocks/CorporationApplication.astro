@@ -3,6 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { ApplicationDetail, CharacterBasic, CorporationBasic, Alert } from '@dtypes/layout_components'
+import type { HistoryEntry } from '@dtypes/api.minmatar.org'
 
 interface Props {
     application:        ApplicationDetail;
@@ -10,6 +11,8 @@ interface Props {
     corporation_name:   string;
     alert?:             Alert | false;
     redirect_url?:      string | false;
+    /** The applicant's alliance history; only passed for the corporation's recruiters (#3198). */
+    history?:           HistoryEntry[] | null;
 }
 
 const {
@@ -18,6 +21,7 @@ const {
     corporation_name,
     alert = false,
     redirect_url = false,
+    history = null,
 } = Astro.props
 
 const character:CharacterBasic = {
@@ -49,6 +53,7 @@ import CorporationBadge from '@components/blocks/CorporationBadge.astro';
 import PilotBadge from '@components/blocks/PilotBadge.astro';
 import Button from '@components/blocks/Button.astro';
 import Tag from '@components/blocks/Tag.astro';
+import ApplicationAllianceHistory from '@components/blocks/ApplicationAllianceHistory.astro';
 ---
 
 <Flexblock
@@ -210,6 +215,8 @@ import Tag from '@components/blocks/Tag.astro';
         </Context>
 
         <Flexblock gap='var(--space-l)'>
+            {history && <ApplicationAllianceHistory entries={history} />}
+
             <FlexInline>
                 <Flexblock gap='var(--space-3xs)' class="[ basis-[250px] ]">
                     <label>{t('application_created')}</label>
