@@ -18,9 +18,9 @@ Two hooks, registered in `.claude/settings.json` (and generated into
   already working on it, and tell the agent to claim it (assign or comment)
   before changing code.
 - post-edit: after an agent edits a backend or bot Python file, report
-  flake8 errors; a backend file is formatted with black first.
+  flake8 errors; a backend file is formatted with black first, silently.
 
-    python3 scripts/agent_hooks.py claude pre-shell   # JSON on stdin
+    python3 scripts/agent_hooks.py claude pre-shell [push|pr|issue]  # JSON on stdin
     python3 scripts/agent_hooks.py cursor post-edit
     python3 scripts/agent_hooks.py claude prompt
 
@@ -267,8 +267,13 @@ def _issue_problems(command: str, blank: str, cwd: Path) -> list[str]:
     return problems
 
 
-def gate(command: str, cwd: Path) -> str | None:
-    """Why the command must not run yet, or None to let it run."""
+def gate(command: str, cwd: Path, only: str | None = None) -> str | None:
+    """Why the command must not run yet, or None to let it run.
+
+    `only` ("push", "pr" or "issue") limits the gate to that kind of
+    command: Claude runs one filtered hook per kind (`if` in
+    .claude/settings.json), so a compound command is checked once.
+    """
     if SKIP in command:
         return None
     blank = _blank(command)
@@ -286,7 +291,7 @@ def gate(command: str, cwd: Path) -> str | None:
                 + text
             )
 
-    for match in GIT_PUSH.finditer(blank):
+    for match in GIT_PUSH.finditer(blank) if only in (None, "push") else ():
         rest = match.group(2)
         if re.search(r"(^|\s)(--delete|-d|--tags|--dry-run|-n)(\s|$)", rest):
             continue
@@ -296,7 +301,7 @@ def gate(command: str, cwd: Path) -> str | None:
         if repo:
             ci(repo)
 
-    for match in GH_PR.finditer(blank):
+    for match in GH_PR.finditer(blank) if only in (None, "pr") else ():
         verb, rest = match.group(1), match.group(2)
         where = _directory(blank, match, cwd)
         repo = _repo(where)
@@ -333,7 +338,8 @@ def gate(command: str, cwd: Path) -> str | None:
                     ".github/pull_request_template.md):\n" + text
                 )
 
-    problems.extend(_issue_problems(command, blank, cwd))
+    if only in (None, "issue"):
+        problems.extend(_issue_problems(command, blank, cwd))
 
     if not problems:
         return None
@@ -501,9 +507,10 @@ def post_edit(path_text: str) -> tuple[str | None, bool]:
     notes, act = [], False
 
     # Only backend/ is black-formatted; bot/ is checked by flake8 alone.
+    # Formatting is silent: Claude Code notices the file changed and asks for
+    # a re-read only when the next edit needs one.
     black = _tool(repo, "black") if rel.startswith("backend/") else None
     if black:
-        before = path.read_bytes()
         subprocess.run(
             [
                 black,
@@ -514,10 +521,6 @@ def post_edit(path_text: str) -> tuple[str | None, bool]:
             ],
             capture_output=True,
         )
-        if path.read_bytes() != before:
-            notes.append(
-                f"black reformatted {rel}; read it before editing it again."
-            )
 
     flake8 = _tool(repo, "flake8")
     if flake8:
@@ -549,10 +552,11 @@ def _edited_path(data: dict) -> str | None:
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) != 3 or argv[1] not in ("claude", "cursor"):
+    if len(argv) not in (3, 4) or argv[1] not in ("claude", "cursor"):
         print(__doc__, file=sys.stderr)
         return 1
     client, event = argv[1], argv[2]
+    only = argv[3] if len(argv) == 4 else None
     try:
         data = json.load(sys.stdin)
     except ValueError:
@@ -563,9 +567,15 @@ def main(argv: list[str]) -> int:
         command = data.get("command")
         if command is None:
             command = (data.get("tool_input") or {}).get("command", "")
-        claim_block, ask = claims_gate(command or "", cwd.resolve())
+        claim_block, ask = (
+            claims_gate(command or "", cwd.resolve())
+            if only in (None, "pr")
+            else (None, None)
+        )
         reason = "\n\n".join(
-            r for r in (claim_block, gate(command or "", cwd.resolve())) if r
+            r
+            for r in (claim_block, gate(command or "", cwd.resolve(), only))
+            if r
         )
         if client == "claude":
             if reason:

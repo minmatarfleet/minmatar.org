@@ -13,8 +13,27 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/agent_hooks.py\" claude pre-shell",
+            "if": "Bash(git push*)",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/agent_hooks.py\" claude pre-shell push",
             "timeout": 1800
+          },
+          {
+            "type": "command",
+            "if": "Bash(git -C *)",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/agent_hooks.py\" claude pre-shell push",
+            "timeout": 1800
+          },
+          {
+            "type": "command",
+            "if": "Bash(gh pr *)",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/agent_hooks.py\" claude pre-shell pr",
+            "timeout": 1800
+          },
+          {
+            "type": "command",
+            "if": "Bash(gh issue create*)",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/agent_hooks.py\" claude pre-shell issue",
+            "timeout": 60
           }
         ]
       }

@@ -134,6 +134,18 @@ class GateTest(unittest.TestCase):
         self.assertIn("Frontend review missing", reason)
         self.ci_mock.assert_called_once()
 
+    def test_each_filtered_hook_checks_only_its_kind(self):
+        command = "git push -u origin HEAD && " + HEREDOC_CREATE
+        self.body_mock.return_value = (False, "- Frontend review missing")
+        push = self.hooks.gate(command, REPO, "push")
+        self.assertIn("FAIL backend-tests", push)
+        self.assertNotIn("Frontend review", push)
+        self.ci_mock.reset_mock()
+        pr = self.hooks.gate(command, REPO, "pr")
+        self.assertIn("Frontend review missing", pr)
+        self.ci_mock.assert_not_called()
+        self.assertIsNone(self.hooks.gate(command, REPO, "issue"))
+
     def test_create_checks_only_the_body(self):
         self.assertIsNone(self.gate(HEREDOC_CREATE))
         self.ci_mock.assert_not_called()
@@ -334,6 +346,25 @@ class CursorHooksTest(unittest.TestCase):
             for entry in entries:
                 self.assertIn(" cursor ", entry["command"])
                 self.assertNotIn("CLAUDE_PROJECT_DIR", entry["command"])
+        # The kinds Claude filters with `if` are one unfiltered Cursor hook.
+        self.assertEqual(
+            cursor["hooks"]["beforeShellExecution"],
+            [
+                {
+                    "command": "python3 scripts/agent_hooks.py cursor pre-shell",
+                    "timeout": 1800,
+                }
+            ],
+        )
+
+    def test_claude_shell_hooks_are_filtered(self):
+        settings = json.loads((REPO / ".claude" / "settings.json").read_text())
+        (group,) = settings["hooks"]["PreToolUse"]
+        for hook in group["hooks"]:
+            self.assertTrue(hook["if"].startswith("Bash("), hook)
+            self.assertIn(
+                hook["command"].rsplit(" ", 1)[1], ("push", "pr", "issue")
+            )
 
 
 PARALLEL_FAILURE = """Preserving test database for alias 'default'...

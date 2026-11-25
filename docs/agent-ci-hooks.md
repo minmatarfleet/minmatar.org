@@ -34,7 +34,7 @@ Backend tests never run on the cached database itself. `backend/ci_test_db.py mi
 
 `scripts/agent_hooks.py` holds both hooks, for both clients. They are registered in `.claude/settings.json`, and `scripts/sync_agent_config.py` generates `.cursor/hooks.json` from it (edit the Claude file, then run the sync).
 
-- **Before a shell command** (Claude `PreToolUse` on Bash, Cursor `beforeShellExecution`):
+- **Before a shell command** (Claude `PreToolUse` on Bash, Cursor `beforeShellExecution`). Claude starts the hook only for the commands it checks: each handler has an `if` filter (`Bash(git push*)`, `Bash(git -C *)`, `Bash(gh pr *)`, `Bash(gh issue create*)`) and passes its kind (`push`, `pr`, `issue`), so a compound `git push && gh pr create` is checked once per part. Cursor has no `if`, so `sync_agent_config.py` turns these into one unfiltered hook that checks every kind:
   - `git push` runs `ci_local.py`. Deleting a branch, pushing tags and dry runs are not checked.
   - `gh pr create` and `gh pr ready` run `scripts/check_pull_request.py` on the description, not the CI checks: the push before them already ran those. Drafts skip the description, as CI does.
   - `gh pr edit --body ...` checks only the description, and not on a draft.
@@ -46,7 +46,9 @@ Backend tests never run on the cached database itself. `backend/ci_test_db.py mi
   - **Before `gh pr create`**, every open issue the description closes or refers to must be claimed by the person opening it (assigned, or a comment of theirs); the hook blocks with the command to run. When someone else looks to be on one, the person is asked to confirm (`ask`) instead of the command running straight away.
   - The issues are looked up on the `upstream` remote's repository when there is one (a fork), otherwise `origin`'s. Both `github.com` URLs and SSH host aliases (`git@github-work:owner/repo.git`) are understood.
   - When `gh` is missing, signed out or offline, the claim checks say nothing and block nothing.
-- **After a file edit** (Claude `PostToolUse` on Edit/Write, Cursor `postToolUse` on Write): a backend `.py` file is formatted with black, and a backend or bot `.py` file is checked with flake8 (`bot/` isn't black-formatted). Errors go back to the agent.
+- **After a file edit** (Claude `PostToolUse` on Edit/Write, Cursor `postToolUse` on Write): a backend `.py` file is formatted with black, silently, and a backend or bot `.py` file is checked with flake8 (`bot/` isn't black-formatted). Only flake8 errors go back to the agent. The hook doesn't tell it to re-read a reformatted file: Claude Code notices the change and asks for a re-read only when the next edit needs one.
+
+Hook output goes into the agent's context, so it is kept short: nothing on success, the last 40 lines of a failing check (with the path to its full log), and one line when a virtualenv or pipenv is missing.
 
 To push without the checks (for a person, not an agent), prefix the command with `CI_LOCAL_SKIP=1`.
 
