@@ -101,7 +101,7 @@ const alpine_state = JSON.stringify({
         <template x-if="kind === 'ships'">
             <div class="[ req-form__group ]">
                 <span class="[ req-form__label ]">{t('corporations.requirements.field_target')}</span>
-                <ChipGroup wrap={true} role="radiogroup" aria_label={t('corporations.requirements.field_target')}>
+                <ChipGroup variant="segmented" role="radiogroup" aria_label={t('corporations.requirements.field_target')}>
                     <FilterChip type="radio" name="target" value="doctrine" checked={values.target !== 'capability'} input_attributes={{ 'x-model': 'target' }}>{t('corporations.requirements.target_doctrine')}</FilterChip>
                     <FilterChip type="radio" name="target" value="capability" checked={values.target === 'capability'} input_attributes={{ 'x-model': 'target' }}>{t('corporations.requirements.target_capability')}</FilterChip>
                 </ChipGroup>
@@ -125,7 +125,7 @@ const alpine_state = JSON.stringify({
                 </div>
 
                 <span class="[ req-form__label ]">{t('corporations.requirements.field_level')}</span>
-                <ChipGroup wrap={true} role="radiogroup" aria_label={t('corporations.requirements.field_level')}>
+                <ChipGroup variant="segmented" role="radiogroup" aria_label={t('corporations.requirements.field_level')}>
                     {SHIP_LEVELS.map((level) => (
                         <FilterChip type="radio" name="level" value={level} checked={values.level === level} x-show={level === 'flown' ? "target === 'capability'" : 'true'}>{level_label[level]}</FilterChip>
                     ))}
@@ -159,7 +159,7 @@ const alpine_state = JSON.stringify({
         <template x-if="kind === 'prime_time'">
             <div class="[ req-form__group ]">
                 <span class="[ req-form__label ]">{t('corporations.requirements.field_brackets')}</span>
-                <ChipGroup wrap={true} role="group" aria_label={t('corporations.requirements.field_brackets')}>
+                <ChipGroup variant="segmented" role="group" aria_label={t('corporations.requirements.field_brackets')}>
                     {options.brackets.map((bracket) => (
                         <FilterChip type="checkbox" name="brackets" value={bracket} checked={values.brackets.includes(bracket)}>{bracket}</FilterChip>
                     ))}
@@ -168,14 +168,14 @@ const alpine_state = JSON.stringify({
         </template>
 
         <span class="[ req-form__label ]" x-show="!person_kinds.includes(kind)">{t('corporations.requirements.field_who')}</span>
-        <ChipGroup wrap={true} role="radiogroup" aria_label={t('corporations.requirements.field_who')} x-show="!person_kinds.includes(kind)">
+        <ChipGroup variant="segmented" role="radiogroup" aria_label={t('corporations.requirements.field_who')} x-show="!person_kinds.includes(kind)">
             {REQUIREMENT_WHO.map((who) => (
                 <FilterChip type="radio" name="who" value={who} checked={values.who === who} input_attributes={{ 'x-model': 'who' }} x-show={who === 'other_account' ? '!no_other_account_kinds.includes(kind)' : 'true'}>{who_label[who]}</FilterChip>
             ))}
         </ChipGroup>
 
         <span class="[ req-form__label ]">{t('corporations.requirements.field_importance')}</span>
-        <ChipGroup wrap={true} role="radiogroup" aria_label={t('corporations.requirements.field_importance')}>
+        <ChipGroup variant="segmented" role="radiogroup" aria_label={t('corporations.requirements.field_importance')}>
             <FilterChip type="radio" name="importance" value="required" checked={values.importance === 'required'}>{t('corporations.requirements.importance_required')}</FilterChip>
             <FilterChip type="radio" name="importance" value="preferred" checked={values.importance !== 'required'}>{t('corporations.requirements.importance_preferred')}</FilterChip>
         </ChipGroup>
@@ -227,6 +227,28 @@ const alpine_state = JSON.stringify({
 
     .req-form__group {
         grid-column: 1 / -1;
+    }
+
+    // Choices are segmented controls sized to their options, not stretched across the column.
+    .req-form :global(.chip-group--segmented) {
+        justify-self: start;
+    }
+
+    // On phones a control takes the full width and its options share it, so a wrapped line fills evenly.
+    @media (max-width: 40rem) {
+        .req-form {
+            padding: var(--space-xs);
+        }
+
+        .req-form :global(.chip-group--segmented) {
+            justify-self: stretch;
+        }
+
+        .req-form :global(.chip-group--segmented .filter-chip) {
+            flex: 1 1 auto;
+            justify-content: center;
+            padding-inline: var(--space-xs);
+        }
     }
 
     .req-form__label {
