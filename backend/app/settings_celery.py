@@ -80,6 +80,14 @@ CELERYBEAT_MARKET = [
 # Characters
 CELERYBEAT_CHARACTERS = [
     (
+        "[Exits] Confirm departures",
+        {
+            "task": "exits.tasks.confirm_departures",
+            "schedule": crontab(minute="*/15"),
+            "options": {"expire_seconds": 15 * 60},
+        },
+    ),
+    (
         "[Characters] Update Affiliations",
         {
             "task": "eveonline.tasks.affiliations.update_character_affilliations",
