@@ -340,7 +340,6 @@ const RULE_DEFINITIONS: ConventionRule[] = [
             'src/components/blocks/structures/StructureRigChip.astro': 'tooltip table: a small key/value table inside a Tippy popover, styled by global popover rules',
             'src/pages/list_data.astro': 'in-flight landing work (owner: keep untouched)',
             'src/pages/partials/corporation_members_table_component.astro': 'bulk-select header is swapped by Alpine and column headers sort by htmx (hx-get on th); DataGrid owns neither',
-            'src/pages/partials/corporation_requirements_settings_component.astro': 'inline editor with row groups that expand into forms; not a plain data grid',
         },
         find: (file) => {
             if (!is_astro(file) || COMPONENT_FILES('blocks/DataGrid', 'blocks/DataTable', 'blocks/RowList', 'blocks/campaigns/etherium-reach/CampaignDataTable', 'blocks/manage/ManageTable', 'blocks/manage/RowSwapFrame').includes(file.path)) return []
