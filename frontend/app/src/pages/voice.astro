@@ -18,11 +18,9 @@ const STATUS_PARTIAL_URL = `${translatePath('/partials/voice_status_component/')
 const page_title = t('voice.page_title')
 
 // Signed out: the headline beside the one action, stacking on narrow screens.
-// Signed in: the headline over the setup flow.
-const Layout = session ? Flexblock : FluidFixed
-const layout_props = session
-    ? { gap: 'var(--space-xl)' }
-    : { gap: 'var(--space-2xl) var(--space-3xl)', width: '26rem', breakpoint: 'min(28rem, 100%)' }
+// Signed in: the headline over the setup flow (the headline fills its row).
+const layout_width = session ? '100%' : '26rem'
+const layout_breakpoint = session ? '100%' : 'min(28rem, 100%)'
 
 // Signed out, the pilot is on the first of the setup steps the flow shows next.
 const sign_in_steps: VoiceProgressStep[] = [
@@ -58,7 +56,12 @@ import VoiceProgress from '@components/blocks/VoiceProgress.astro'
 >
     <VoiceBackdrop slot="cover" />
 
-    <Layout class:list={['[ voice-page ]', { 'voice-page--flow': session }]} {...layout_props}>
+    <FluidFixed
+        class:list={['[ voice-page ]', { 'voice-page--flow': session }]}
+        gap="var(--space-2xl) var(--space-3xl)"
+        width={layout_width}
+        breakpoint={layout_breakpoint}
+    >
         <Flexblock gap="var(--space-xl)">
             <Flexblock gap="var(--space-s)">
                 <FlexInline gap="var(--space-xs)">
@@ -103,7 +106,7 @@ import VoiceProgress from '@components/blocks/VoiceProgress.astro'
                 </Flexblock>
             </ComponentBlock>
         }
-    </Layout>
+    </FluidFixed>
 </PageLanding>
 </Viewport>
 
