@@ -441,8 +441,14 @@ def collect_corp_director_token(user_ids=None) -> list[Item]:
     """
     del user_ids  # a team rule collects for everyone
 
+    # Tracked corporations outside the alliance need one too (#3198).
     corporations = list(
-        alliance_corporations().values("corporation_id", "name")
+        (
+            alliance_corporations()
+            | EveCorporation.objects.filter(track_exits=True)
+        )
+        .distinct()
+        .values("corporation_id", "name", "track_exits")
     )
     statuses = director_statuses(
         [row["corporation_id"] for row in corporations]
@@ -461,7 +467,11 @@ def collect_corp_director_token(user_ids=None) -> list[Item]:
                 _corporation_item(
                     corporation,
                     title="Add a director token",
-                    detail="The member list stops updating without one",
+                    detail=(
+                        "Departures can't be tracked without it"
+                        if corporation["track_exits"]
+                        else "The member list stops updating without one"
+                    ),
                     link_url=members_url,
                     link_label="Add",
                 )

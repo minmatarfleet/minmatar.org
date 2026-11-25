@@ -158,6 +158,17 @@ class AutomaticTaskTestCase(TestCase):
         )
 
 
+class DirectorTokenRuleTestCase(TestCase):
+    def test_director_token_task_for_tracked_corporation(self):
+        EveCorporation.objects.create(
+            corporation_id=98000077, name="Mining Corp", track_exits=True
+        )
+        items = RULES["corp_director_token"].collect(None)
+        [item] = [i for i in items if i.team_id == 98000077]
+        self.assertEqual(item.title, "Add a director token")
+        self.assertEqual(item.detail, "Departures can't be tracked without it")
+
+
 class MyTasksTestCase(TestCase):
     def setUp(self):
         super().setUp()
