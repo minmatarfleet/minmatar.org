@@ -195,7 +195,6 @@ class LayoutTest(unittest.TestCase):
         self.assertEqual(len(report), 1)
         self.assertFalse(report[0].subs)
 
-
     def test_only_the_open_branch_lets_community_in(self):
         murmur = FakeMurmur()
         ids = L.Layout(murmur).ensure()
