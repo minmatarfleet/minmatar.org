@@ -164,3 +164,40 @@ class FlagAcceptance(models.Model):
         return (
             f"Application {self.application_id} accepted over {self.flag_ids}"
         )
+
+
+class RecruiterAlert(models.Model):
+    """One alert in the recruiter alerts channel (design 06).
+
+    At most one per application, corporation and reason: a transfer is a new
+    application for the receiving corporation, and a later flag can follow a
+    "kicked for another reason" alert once.
+    """
+
+    REASON_FLAG = "flag"
+    REASON_KICKED_OTHER = "kicked_other"
+    REASON_CHOICES = (
+        (REASON_FLAG, "Can't-rejoin flag"),
+        (REASON_KICKED_OTHER, "Kicked for another reason"),
+    )
+
+    application = models.ForeignKey(
+        "applications.EveCorporationApplication",
+        on_delete=models.CASCADE,
+        related_name="recruiter_alerts",
+    )
+    corporation_id = models.BigIntegerField()
+    reason = models.CharField(max_length=16, choices=REASON_CHOICES)
+    sent_at = models.DateTimeField()
+    message_id = models.BigIntegerField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["application", "corporation_id", "reason"],
+                name="exits_one_alert_per_application_reason",
+            )
+        ]
+
+    def __str__(self):
+        return f"Alert {self.reason} for application {self.application_id}"

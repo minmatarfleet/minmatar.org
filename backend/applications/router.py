@@ -16,6 +16,7 @@ from eveonline.helpers.corporations.applications import (
 from eveonline.models import EveCharacter, EveCorporation
 
 from exits.endpoints.schemas import FlaggedApplicantResponse
+from exits.tasks import alert_application
 from exits.helpers.acceptance import (
     flagged_response,
     flags_blocking,
@@ -384,6 +385,9 @@ def transfer_corporation_application(
     previous_corporation_id = application.corporation_id
     application.corporation_id = target_corporation_id
     application.save()
+    # A transfer is a new application for the receiving corporation's
+    # recruiters: they get their own alliance history alert (#3198).
+    transaction.on_commit(lambda: alert_application.delay(application.pk))
 
     transferred_by_username = request.user.username
     transaction.on_commit(

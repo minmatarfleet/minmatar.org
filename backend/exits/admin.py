@@ -1,7 +1,13 @@
 from django.contrib import admin, messages
 
 from exits.helpers.answers import AnswerError, clear_flag
-from exits.models import Departure, MemberSnapshot, RejoinFlag
+from exits.models import (
+    Departure,
+    FlagAcceptance,
+    MemberSnapshot,
+    RecruiterAlert,
+    RejoinFlag,
+)
 
 
 class ReadOnlyAdmin(admin.ModelAdmin):
@@ -62,3 +68,14 @@ class RejoinFlagAdmin(ReadOnlyAdmin):
             except AnswerError as error:
                 self.message_user(request, error.message, messages.ERROR)
         self.message_user(request, f"Cleared {cleared} flag(s)")
+
+
+@admin.register(FlagAcceptance)
+class FlagAcceptanceAdmin(ReadOnlyAdmin):
+    list_display = ("application", "flag_ids", "accepted_by", "accepted_at")
+
+
+@admin.register(RecruiterAlert)
+class RecruiterAlertAdmin(ReadOnlyAdmin):
+    list_display = ("application", "corporation_id", "reason", "sent_at")
+    list_filter = ("reason",)

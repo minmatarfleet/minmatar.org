@@ -4,6 +4,8 @@ from django.db import transaction
 from django.db.models import signals
 from django.dispatch import receiver
 
+from exits.tasks import alert_application
+
 from .models import EveCorporationApplication
 from .tasks import (
     close_deleted_application_thread_task,
@@ -37,6 +39,10 @@ def eve_corporation_application_post_save(
     """Queue the forum thread (created on first save) and the accepted /
     rejected notice. Discord is called from Celery after the save commits,
     not from the web request."""
+    if created and instance.status == "pending":
+        # Recruiters hear about an applicant's alliance history (#3198);
+        # the transfer endpoint queues it for the receiving corporation.
+        _enqueue_after_commit(alert_application, instance.pk)
     needs_thread = instance.discord_thread_id is None
     if not needs_thread and instance.status not in ("accepted", "rejected"):
         return

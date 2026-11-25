@@ -50,6 +50,24 @@ def _validate(reason, can_rejoin, note):
         raise AnswerError("A note is required for a pilot who can't rejoin")
 
 
+def _alert_open_applications(departure: Departure) -> None:
+    """A new flag alerts recruiters of the pilot's pending applications."""
+    # Imported here: exits.tasks imports the helpers that import this module.
+    from exits.helpers.alerts import (  # pylint: disable=import-outside-toplevel
+        open_applications_for,
+    )
+    from exits.tasks import (  # pylint: disable=import-outside-toplevel
+        alert_application,
+    )
+
+    for application_id in open_applications_for(
+        departure.user, [departure.character_id]
+    ):
+        transaction.on_commit(
+            lambda pk=application_id: alert_application.delay(pk)
+        )
+
+
 def _sync_flag(departure: Departure, by: User, now) -> None:
     active = departure.flags.filter(cleared_at__isnull=True).first()
     if departure.can_rejoin is False:
@@ -67,6 +85,7 @@ def _sync_flag(departure: Departure, by: User, now) -> None:
             set_by=by,
             set_at=now,
         )
+        _alert_open_applications(departure)
     elif active:
         active.cleared_by = by
         active.cleared_at = now
