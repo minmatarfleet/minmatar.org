@@ -23,6 +23,7 @@ import Textarea from '@components/blocks/Textarea.astro'
 import Button from '@components/blocks/Button.astro'
 import Tag from '@components/blocks/Tag.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 
 interface Props {
     /** Every confirmed departure, answered or not: the counts come from it. */
@@ -116,7 +117,7 @@ const confirm = JSON.stringify({
         }
 
         {flagged_joins.length > 0 &&
-            <section class="[ corporation-departures__joins ]" aria-labelledby={`${root_id}-joins`}>
+            <ComponentBlock class="[ corporation-departures__joins ]" aria-labelledby={`${root_id}-joins`}>
                 <Flexblock gap="var(--space-s)">
                     <Flexblock gap="var(--space-3xs)">
                         <h4 id={`${root_id}-joins`}>{t('corporations.departures.joins_title')}</h4>
@@ -174,7 +175,7 @@ const confirm = JSON.stringify({
                         )
                     })}
                 </Flexblock>
-            </section>
+            </ComponentBlock>
         }
 
         {total === 0 && <EmptyState title={t('corporations.departures.empty')} />}
@@ -284,6 +285,17 @@ const confirm = JSON.stringify({
                                                     </small>
                                                 }
                                                 {group.note && <small class="[ corporation-departures__muted ]">“{group.note}”</small>}
+                                                {group.flag_id &&
+                                                    <Button
+                                                        type="submit"
+                                                        form={`${root_id}-clear-${group.flag_id}`}
+                                                        size="sm"
+                                                        color="transparent"
+                                                        narrow={true}
+                                                    >
+                                                        {t('corporations.departures.clear_flag')}
+                                                    </Button>
+                                                }
                                                 {group.survey_sent_at &&
                                                     <small class="[ corporation-departures__muted ]">
                                                         {t('corporations.departures.survey_sent').replace('{when}', from_now_diff(lang, new Date(group.survey_sent_at)))}
@@ -297,6 +309,7 @@ const confirm = JSON.stringify({
                             )}
                         </DataTable>
 
+                        <ComponentBlock>
                         <fieldset class="[ corporation-departures__answer ]">
                             <legend>{t('corporations.departures.answer_label')}</legend>
                             <Flexblock gap="var(--space-s)">
@@ -337,9 +350,25 @@ const confirm = JSON.stringify({
                                 </div>
                             </Flexblock>
                         </fieldset>
+                        </ComponentBlock>
                     </Flexblock>
                 </form>
             }
+
+            {shown.filter(({ group }) => group.flag_id).map(({ group }) =>
+                <form
+                    id={`${root_id}-clear-${group.flag_id}`}
+                    method="post"
+                    action={form_url}
+                    hx-post={form_url}
+                    hx-target={`#${root_id}`}
+                    hx-swap="outerHTML"
+                    hidden
+                >
+                    <input type="hidden" name="action" value="clear_flag" />
+                    <input type="hidden" name="flag_id" value={group.flag_id} />
+                </form>
+            )}
         </>}
     </Flexblock>
 </div>
@@ -361,13 +390,9 @@ const confirm = JSON.stringify({
     }
 
     .corporation-departures__answer {
-        border: 1px solid var(--border-color);
-        padding: var(--space-s);
-    }
-
-    .corporation-departures__joins {
-        border: 1px solid var(--fleet-red);
-        padding: var(--space-s);
+        border: 0;
+        padding: 0;
+        margin: 0;
     }
 
     .corporation-departures__join + .corporation-departures__join {

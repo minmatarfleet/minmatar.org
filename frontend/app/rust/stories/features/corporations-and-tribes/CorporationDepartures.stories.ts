@@ -60,6 +60,10 @@ export const Answered = {
         await expect(canvas.getByText('Alliance move')).toBeVisible()
         await expect(canvasElement.querySelector('.is-flagged')?.textContent).toContain("Can't rejoin")
         await expect(canvas.getByText('“Awoxed a corp Orca”')).toBeVisible()
+        const clear = canvas.getByRole('button', { name: 'Clear the flag' })
+        await expect(clear.getAttribute('form')).toBe('corporation-departures-clear-7')
+        const target = canvasElement.querySelector('#corporation-departures-clear-7 input[name="action"]') as HTMLInputElement
+        await expect(target.value).toBe('clear_flag')
     },
 }
 

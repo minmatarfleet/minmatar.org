@@ -5,7 +5,7 @@ const { t, translatePath } = i18n(Astro.url)
 
 import type { DepartureGroup, FlaggedJoin } from '@dtypes/api.minmatar.org'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
-import { get_departures, get_flagged_joins, keep_flagged_join, post_departure_answers, remove_flagged_join, type DepartureState } from '@helpers/api.minmatar.org/exits'
+import { clear_rejoin_flag, get_departures, get_flagged_joins, keep_flagged_join, post_departure_answers, remove_flagged_join, type DepartureState } from '@helpers/api.minmatar.org/exits'
 import { parse_departure_answer } from '@helpers/corporations/departures'
 import { query_string } from '@helpers/string'
 
@@ -36,7 +36,15 @@ if (Astro.request.method === 'POST') {
     const action = String(form.get('action') ?? '')
     const join_id = parseInt(String(form.get('join_id') ?? ''))
     const answer = action ? null : parse_departure_answer(form)
-    if ((action === 'keep' || action === 'remove') && join_id > 0) {
+    const flag_id = parseInt(String(form.get('flag_id') ?? ''))
+    if (action === 'clear_flag' && flag_id > 0) {
+        try {
+            await clear_rejoin_flag(auth_token, flag_id)
+            flash = { kind: 'success', text: t('corporations.departures.flag_cleared') }
+        } catch {
+            flash = { kind: 'error', text: t('corporations.departures.error_save') }
+        }
+    } else if ((action === 'keep' || action === 'remove') && join_id > 0) {
         try {
             if (action === 'keep')
                 await keep_flagged_join(auth_token, join_id, String(form.get('note') ?? '').trim())
