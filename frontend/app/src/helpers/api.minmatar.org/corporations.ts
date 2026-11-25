@@ -1,4 +1,4 @@
-import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication, CorporationProjects, CorporationDiscordSettings, CorporationDiscordInvitePreview, CorporationMemberPromote, CorporationMemberStatus, CorporationMemberStatusAction, MemberInsights, CorporationPageText, CorporationPageTextUpdate, DiscordRoleMappingUpdate, DiscordMemberAccessUpdate } from '@dtypes/api.minmatar.org' // pragma: allowlist secret
+import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication, CorporationProjects, AcademyGraduationPipeline, AcademyGraduationReviewRequest, CorporationDiscordSettings, CorporationDiscordInvitePreview, CorporationMemberPromote, CorporationMemberStatus, CorporationMemberStatusAction, MemberInsights, CorporationPageText, CorporationPageTextUpdate, DiscordRoleMappingUpdate, DiscordMemberAccessUpdate } from '@dtypes/api.minmatar.org' // pragma: allowlist secret
 import { api_request, api_response, type ApiToken } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/eveonline/corporations`
@@ -76,6 +76,7 @@ export async function get_corporation_member_access(access_token: string, id: nu
         can_edit_settings?: boolean,
         can_view_projects?: boolean,
         can_manage_projects?: boolean,
+        can_view_graduation?: boolean,
     } | null>(endpoint, {
         token: access_token,
         allow: [403, 404],
@@ -95,6 +96,26 @@ export async function get_corporation_projects(access_token: string, id: number)
         token: access_token,
         allow: [403, 404],
     })
+}
+
+/** The Academy's graduation pipeline; null when the viewer can't see it or
+ *  the corporation isn't the Academy. */
+export async function get_corporation_graduation(access_token: string, id: number) {
+    return await api_request<AcademyGraduationPipeline | null>(`${API_ENDPOINT}/corporations/${id}/graduation`, {
+        token: access_token,
+        allow: [403, 404],
+    })
+}
+
+/** Record a graduation decision. Resolves to the API status: 201 saved, 400 rejected. */
+export async function post_corporation_graduation_review(access_token: string, id: number, body: AcademyGraduationReviewRequest) {
+    const response = await api_response(`${API_ENDPOINT}/corporations/${id}/graduation/reviews`, {
+        method: 'POST',
+        token: access_token,
+        body,
+        allow: [400],
+    })
+    return response.status
 }
 
 /** Queue a sync from ESI. Resolves to the API status: 202 queued, 409 no token, 429 already pending. */

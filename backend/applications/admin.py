@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from applications.models import (
+    AcademyGraduationReview,
     CorporationRequirement,
     EveCorporationApplication,
 )
@@ -30,3 +31,18 @@ class CorporationRequirementAdmin(admin.ModelAdmin):
     list_filter = ("kind", "importance")
     search_fields = ("corporation__name",)
     raw_id_fields = ("corporation", "created_by")
+
+
+@admin.register(AcademyGraduationReview)
+class AcademyGraduationReviewAdmin(admin.ModelAdmin):
+    date_hierarchy = "created_at"
+    list_display = (
+        "user",
+        "character_id",
+        "decision",
+        "reviewed_by",
+        "created_at",
+    )
+    list_filter = ("decision",)
+    search_fields = ("user__username", "character_id")
+    raw_id_fields = ("user", "reviewed_by")

@@ -1,0 +1,973 @@
+---
+import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
+const { t, lang } = i18n(Astro.url)
+
+import type { AcademyGraduationPilot, AcademyGraduationPipeline } from '@dtypes/api.minmatar.org'
+import type { ui } from '@i18n/ui'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { get_corporation_graduation, post_corporation_graduation_review } from '@helpers/api.minmatar.org/corporations'
+import {
+    COLUMN_PREVIEW,
+    TIMEZONE_FILTERS,
+    fill,
+    group_pilots,
+    parse_review_form,
+    pipeline_tsv,
+    reason_label,
+    review_target,
+    timeline_dots,
+    timeline_percent,
+    timezone_label,
+    timezone_tokens,
+} from '@helpers/corporations/graduation'
+import { format_date } from '@helpers/date'
+import { query_string } from '@helpers/string'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Grid from '@components/compositions/Grid.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+import Button from '@components/blocks/Button.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import CorporationPicture from '@components/blocks/CorporationPicture.astro'
+import Tag from '@components/blocks/Tag.astro'
+import Select from '@components/blocks/Select.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+
+type UiKey = keyof typeof ui['en']
+type Timezone = typeof TIMEZONE_FILTERS[number]
+type Column = 'due' | 'training' | 'kept' | 'graduated'
+
+const ROOT_ID = 'corporation-graduation'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const params = Astro.url.searchParams
+const corporation_id = parseInt(params.get('corporation_id') ?? '')
+if (!corporation_id) return HTTP_403_Forbidden()
+
+const tz_param = params.get('tz') ?? ''
+const tz: Timezone | null = (TIMEZONE_FILTERS as readonly string[]).includes(tz_param) ? tz_param as Timezone : null
+const ready_only = params.get('ready') === '1'
+const expanded = params.get('all') as Column | null
+let show_review = params.get('view') === 'review'
+let asked_character: number | null = parseInt(params.get('character_id') ?? '') || null
+
+function partial_url(extra: Record<string, string> = {}) {
+    return `/partials/corporation_graduation_component/?${query_string({ corporation_id: String(corporation_id), ...extra })}`
+}
+function board_url(changes: { tz?: Timezone | null, ready?: boolean, all?: Column | null } = {}) {
+    const next_tz = 'tz' in changes ? changes.tz : tz
+    const next_ready = 'ready' in changes ? changes.ready : ready_only
+    const next_all = 'all' in changes ? changes.all : expanded
+    return partial_url({
+        ...(next_tz ? { tz: next_tz } : {}),
+        ...(next_ready ? { ready: '1' } : {}),
+        ...(next_all ? { all: next_all } : {}),
+    })
+}
+const review_url = (character_id?: number) => partial_url({ view: 'review', ...(character_id ? { character_id: String(character_id) } : {}) })
+const swap = { 'hx-target': `#${ROOT_ID}`, 'hx-swap': 'outerHTML' }
+
+let flash: { kind: 'success' | 'error', text: string } | null = null
+let saved_decision: { decision: string, corporation_id: number | null, name: string } | null = null
+
+if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    const request = parse_review_form(form)
+    const name = String(form.get('character_name') ?? '')
+    show_review = true
+    if (!request) {
+        flash = { kind: 'error', text: t('corporations.graduation.error_save') }
+        asked_character = parseInt(String(form.get('character_id') ?? '')) || null
+    } else {
+        try {
+            const status = await post_corporation_graduation_review(auth_token, corporation_id, request)
+            if (status === 201) {
+                saved_decision = { decision: request.decision, corporation_id: request.corporation_ids?.[0] ?? null, name }
+                asked_character = null
+            } else {
+                flash = { kind: 'error', text: t('corporations.graduation.error_save') }
+                asked_character = request.character_id
+            }
+        } catch {
+            flash = { kind: 'error', text: t('corporations.graduation.error_save') }
+            asked_character = request.character_id
+        }
+    }
+}
+
+let data: AcademyGraduationPipeline | null = null
+let fetch_error: Error | false = false
+try {
+    data = await get_corporation_graduation(auth_token, corporation_id)
+} catch (error) {
+    fetch_error = error as Error
+}
+if (!data && !fetch_error) return HTTP_403_Forbidden()
+
+const pilots = data?.pilots ?? []
+const corporations = data?.corporations ?? []
+const ticker_of = (id: number | null) => corporations.find((corporation) => corporation.corporation_id === id)?.ticker ?? ''
+
+if (saved_decision) {
+    const key: UiKey = saved_decision.decision === 'graduate'
+        ? 'corporations.graduation.saved_graduate'
+        : saved_decision.decision === 'keep' ? 'corporations.graduation.saved_keep' : 'corporations.graduation.saved_release'
+    flash = { kind: 'success', text: fill(t(key), { name: saved_decision.name, ticker: ticker_of(saved_decision.corporation_id) }) }
+}
+
+const target = review_target(pilots, asked_character)
+if (show_review && !target.pilot) {
+    // Nothing left to review: back to the board, saying so.
+    show_review = false
+    if (saved_decision) flash = { kind: 'success', text: `${flash?.text ?? ''} ${t('corporations.graduation.queue_done')}`.trim() }
+    else if (asked_character) flash = { kind: 'error', text: t('corporations.graduation.not_found') }
+}
+
+// Board
+const matches = (pilot: AcademyGraduationPilot) =>
+    (!tz || timezone_tokens(pilot.prime_time).includes(tz)) && (!ready_only || pilot.ready)
+const board = group_pilots(pilots.filter(matches))
+const all_due = pilots.filter((pilot) => pilot.stage === 'due')
+const ready_due = all_due.filter((pilot) => pilot.ready)
+const graduates = data?.graduates ?? []
+const dots = timeline_dots(pilots.filter((pilot) => pilot.stage !== 'released'))
+const shown_ids = new Set(pilots.filter(matches).map((pilot) => pilot.character_id))
+const training_count = pilots.filter((pilot) => pilot.stage !== 'released' && pilot.days_in_academy < (data?.bar.review_after_days ?? 180)).length
+const past_review_count = pilots.filter((pilot) => pilot.stage !== 'released').length - training_count
+const review_mark = timeline_percent(data?.bar.review_after_days ?? 180)
+const tsv_href = `data:text/tab-separated-values;charset=utf-8,${encodeURIComponent(pipeline_tsv(pilots))}`
+
+const count_for = (filter: { tz?: Timezone | null, ready?: boolean }) => pilots.filter((pilot) =>
+    pilot.stage !== 'released'
+    && (!filter.tz || timezone_tokens(pilot.prime_time).includes(filter.tz))
+    && (!filter.ready || pilot.ready)).length
+
+function pilot_meta(pilot: AcademyGraduationPilot, upcoming: boolean) {
+    const tz_text = timezone_label(pilot.prime_time, t('corporations.graduation.no_tz'))
+    if (upcoming) {
+        const left = Math.max(0, (data?.bar.review_after_days ?? 180) - pilot.days_in_academy)
+        return `${fill(t('corporations.graduation.review_in'), { count: left })} · ${tz_text}`
+    }
+    const days = fill(t('corporations.graduation.days'), { count: pilot.days_in_academy })
+    return `${pilot.join_estimated ? '~' : ''}${days} · ${tz_text}`
+}
+
+function card_tag(pilot: AcademyGraduationPilot, column: Column): { text: string, color?: string, variant: 'fill' | 'outline' } | null {
+    if (column === 'training')
+        return pilot.inactive ? { text: t('corporations.graduation.tag_inactive'), variant: 'outline' } : null
+    if (column === 'graduated') {
+        const ticker = ticker_of(pilot.last_review?.corporation_ids[0] ?? null)
+        return { text: fill(t('corporations.graduation.moving_to'), { ticker }), color: 'alliance-blue', variant: 'fill' }
+    }
+    if (pilot.ready) return { text: t('corporations.graduation.tag_ready'), color: 'green', variant: 'fill' }
+    if (pilot.inactive) return { text: t('corporations.graduation.tag_inactive'), variant: 'outline' }
+    return { text: t('corporations.graduation.tag_not_ready'), variant: 'outline' }
+}
+
+const columns: { id: Column, title: string, rows: AcademyGraduationPilot[], empty: UiKey, hint?: UiKey }[] = [
+    { id: 'due', title: t('corporations.graduation.col_due'), rows: board.due, empty: 'corporations.graduation.empty_due', hint: 'corporations.graduation.empty_due_hint' },
+    { id: 'training', title: t('corporations.graduation.col_training'), rows: board.training, empty: 'corporations.graduation.empty_training', hint: 'corporations.graduation.empty_training_hint' },
+    { id: 'kept', title: t('corporations.graduation.col_kept'), rows: board.kept, empty: 'corporations.graduation.empty_kept', hint: 'corporations.graduation.empty_kept_hint' },
+]
+
+// Review
+const pilot = show_review ? target.pilot : null
+const suggestion = pilot?.suggestions[0] ?? null
+const default_corporation = suggestion?.corporation_id ?? corporations[0]?.corporation_id ?? null
+const can_review = data?.can_review ?? false
+const reason_text = pilot && suggestion
+    ? fill(t(reason_label(suggestion.reason)), {
+        count: suggestion.reason === 'fleet_regular' ? pilot.fleets_90d : suggestion.reason === 'killboard' ? pilot.kills_30d : pilot.kills_90d,
+        large: pilot.large_gang_kills,
+    })
+    : ''
+const last_review = pilot?.last_review ?? null
+const verdict = !pilot ? null
+    : pilot.ready ? 'ready'
+    : pilot.days_in_academy < (data?.bar.review_after_days ?? 180) ? 'early' : 'not_ready'
+const checks = pilot && data ? [
+    { met: pilot.fleets_90d >= data.bar.fleets, text: fill(t('corporations.graduation.check_fleets'), { count: pilot.fleets_90d }), hint: fill(t('corporations.graduation.needs'), { count: data.bar.fleets }) },
+    { met: pilot.kills_90d >= data.bar.kills, text: fill(t('corporations.graduation.check_kills'), { count: pilot.kills_90d }), hint: fill(t('corporations.graduation.needs'), { count: data.bar.kills }) },
+    { met: pilot.voice_hours_90d >= data.bar.voice_hours, text: fill(t('corporations.graduation.check_voice'), { count: pilot.voice_hours_90d }), hint: fill(t('corporations.graduation.needs'), { count: `${data.bar.voice_hours}h` }) },
+    pilot.inactive
+        ? { met: false, text: t('corporations.graduation.check_inactive'), hint: t('corporations.graduation.inactive_hint') }
+        : { met: true, text: t('corporations.graduation.check_active'), hint: pilot.kills_30d > 0
+            ? fill(t('corporations.graduation.active_hint'), { count: pilot.kills_30d })
+            : fill(t('corporations.graduation.active_fleets_hint'), { count: pilot.fleets_30d }) },
+] : []
+// The graduate button names the corp picked in the dropdown (Alpine `ticker`).
+const [graduate_before, graduate_after = ''] = t('corporations.graduation.graduate_to').split('{ticker}')
+const graduate_label_js = `${JSON.stringify(graduate_before)} + ticker + ${JSON.stringify(graduate_after)}`
+const decision_label = (decision: string) => t(`corporations.graduation.decision.${decision}` as UiKey)
+---
+
+{fetch_error &&
+    <ErrorRefetch args={{ partial: show_review ? review_url(asked_character ?? undefined) : board_url(), error: fetch_error, delay: 0 }} />
+}
+
+{data && !pilot &&
+<div id={ROOT_ID} class="[ graduation ]">
+    <Flexblock gap="var(--space-l)">
+        <FlexInline justification="space-between" gap="var(--space-s)" class="[ items-end ]">
+            <p class="[ graduation__lede ]">
+                {all_due.length === 0
+                    ? t('corporations.graduation.none_due')
+                    : <>
+                        <strong>{all_due.length === 1 ? t('corporations.graduation.due_lede_one') : fill(t('corporations.graduation.due_lede'), { count: all_due.length })}</strong>
+                        {' '}{fill(t('corporations.graduation.ready_lede'), { count: ready_due.length })}
+                    </>
+                }
+            </p>
+            {all_due.length > 0 &&
+                <Button href="#graduation" hx-get={review_url()} {...swap} off_disable={true}>
+                    {all_due.length === 1 ? t('corporations.graduation.start_one') : fill(t('corporations.graduation.start'), { count: all_due.length })}
+                </Button>
+            }
+        </FlexInline>
+
+        {flash &&
+            <p class:list={['[ graduation__flash ]', { 'is-error': flash.kind === 'error' }]} role={flash.kind === 'error' ? 'alert' : 'status'}>
+                {flash.text}
+            </p>
+        }
+
+        <section aria-labelledby="graduation-timeline" class="[ graduation__timeline ]">
+            <Flexblock gap="var(--space-xs)">
+                <FlexInline justification="space-between" gap="var(--space-xs)">
+                    <h3 id="graduation-timeline">{t('corporations.graduation.timeline_title')}</h3>
+                    <ul class="[ graduation__legend ]">
+                        <li><i class="[ dot--ready ]"></i>{t('corporations.graduation.legend_ready')}</li>
+                        <li><i class="[ dot--active ]"></i>{t('corporations.graduation.legend_active')}</li>
+                        <li><i class="[ dot--inactive ]"></i>{t('corporations.graduation.legend_inactive')}</li>
+                    </ul>
+                </FlexInline>
+                <XFadeScroll>
+                    <div class="[ graduation__axis-wrap ]">
+                        <div
+                            class="[ graduation__track ]"
+                            role="img"
+                            aria-label={fill(t('corporations.graduation.timeline_label'), { count: dots.length, due: past_review_count })}
+                            style={`--review-mark: ${review_mark}%`}
+                        >
+                            <span class="[ graduation__zone ]">{fill(t('corporations.graduation.zone_training'), { count: training_count })}</span>
+                            <span class="[ graduation__zone graduation__zone--due ]">{fill(t('corporations.graduation.zone_due'), { count: past_review_count })}</span>
+                            {dots.map((dot) =>
+                                <span
+                                    class:list={['[ graduation__dot ]', `dot--${dot.tone}`, { 'is-dimmed': !shown_ids.has(dot.character_id) }]}
+                                    style={`--left: ${dot.left}%; --stack: ${dot.stack}`}
+                                    title={`${dot.character_name} · ${fill(t('corporations.graduation.days'), { count: dot.days })}`}
+                                ></span>
+                            )}
+                        </div>
+                        <div class="[ graduation__axis ]" aria-hidden="true">
+                            <span style="--at: 0%">0</span>
+                            <span style={`--at: ${review_mark}%`}>{t('corporations.graduation.axis_6mo')}</span>
+                            <span style={`--at: ${timeline_percent(365)}%`}>{t('corporations.graduation.axis_1yr')}</span>
+                            <span style={`--at: ${timeline_percent(730)}%`}>{t('corporations.graduation.axis_2yr')}</span>
+                        </div>
+                    </div>
+                </XFadeScroll>
+            </Flexblock>
+        </section>
+
+        <FlexInline justification="space-between" gap="var(--space-xs)" class="[ items-center ]">
+            <ChipGroup aria_label={t('corporations.graduation.filters_label')} wrap={true}>
+                <FilterChip active={!tz} count={count_for({ ready: ready_only })} hx-get={board_url({ tz: null })} {...swap}>
+                    {t('corporations.graduation.everyone')}
+                </FilterChip>
+                {TIMEZONE_FILTERS.map((zone) =>
+                    <FilterChip active={tz === zone} count={count_for({ tz: zone, ready: ready_only })} hx-get={board_url({ tz: zone })} {...swap}>
+                        {zone}
+                    </FilterChip>
+                )}
+                <FilterChip tone="green" active={ready_only} count={count_for({ tz, ready: true })} hx-get={board_url({ ready: !ready_only })} {...swap}>
+                    {t('corporations.graduation.ready_filter')}
+                </FilterChip>
+            </ChipGroup>
+            <a class="[ graduation__link ]" href={tsv_href} download="academy-graduation.tsv">{t('corporations.graduation.export')}</a>
+        </FlexInline>
+
+        <Grid min_item_width="16rem" column_gap="var(--space-s)" row_gap="var(--space-s)" class="[ items-start ]">
+            {columns.map((column) =>
+                <ComponentBlock padding_block="var(--space-xs)" padding_inline="var(--space-xs)">
+                <section class:list={['[ graduation__column ]', `graduation__column--${column.id}`]} aria-labelledby={`graduation-col-${column.id}`}>
+                    <div class="[ graduation__column-head ]">
+                        <h3 id={`graduation-col-${column.id}`}>{column.title}</h3>
+                        <span class="[ graduation__count ]">{column.rows.length}</span>
+                    </div>
+                    {column.rows.length === 0
+                        ? <EmptyState title={t(column.empty)} hint={column.hint ? t(column.hint) : undefined} />
+                        : <ul class="[ graduation__cards ]">
+                            {(expanded === column.id ? column.rows : column.rows.slice(0, COLUMN_PREVIEW)).map((row) => {
+                                const tag = card_tag(row, column.id)
+                                const route = column.id === 'due' && row.ready ? row.suggestions[0] : null
+                                return (
+                                    <li>
+                                        <a
+                                            class="[ graduation__card ]"
+                                            href="#graduation"
+                                            hx-get={review_url(row.character_id)}
+                                            {...swap}
+                                            aria-label={fill(t('corporations.graduation.open_review'), { name: row.character_name })}
+                                        >
+                                            <CharacterPicture character_id={row.character_id} character_name={row.character_name} size={32} inert={true} />
+                                            <span class="[ graduation__card-text ]">
+                                                <span class="[ graduation__name ]">{row.character_name}</span>
+                                                <span class="[ graduation__sub ]">
+                                                    <span class="[ graduation__meta ]" title={row.join_estimated ? t('corporations.graduation.estimated') : undefined}>
+                                                        {pilot_meta(row, column.id === 'training')}
+                                                    </span>
+                                                    {tag && <Tag text={tag.text} color={tag.color} variant={tag.variant} narrow={true} />}
+                                                    {route &&
+                                                        <span class="[ graduation__route ]">
+                                                            <CorporationPicture corporation_id={route.corporation_id} corporation_name={route.ticker} size={16} icon_quality={32} nested={true} />
+                                                            {route.ticker}
+                                                        </span>
+                                                    }
+                                                </span>
+                                            </span>
+                                            <span class="[ graduation__chevron ]" aria-hidden="true">›</span>
+                                        </a>
+                                    </li>
+                                )
+                            })}
+                        </ul>
+                    }
+                    {column.rows.length > COLUMN_PREVIEW &&
+                        <a class="[ graduation__link ]" href="#graduation" hx-get={board_url({ all: expanded === column.id ? null : column.id })} {...swap}>
+                            {expanded === column.id ? t('corporations.graduation.see_fewer') : `${fill(t('corporations.graduation.see_all'), { count: column.rows.length })} ›`}
+                        </a>
+                    }
+                </section>
+                </ComponentBlock>
+            )}
+
+            <ComponentBlock padding_block="var(--space-xs)" padding_inline="var(--space-xs)">
+            <section class="[ graduation__column graduation__column--graduated ]" aria-labelledby="graduation-col-graduated">
+                <div class="[ graduation__column-head ]">
+                    <h3 id="graduation-col-graduated">{t('corporations.graduation.col_graduated')}</h3>
+                    <span class="[ graduation__count ]">{board.graduating.length + graduates.length}</span>
+                </div>
+                {board.graduating.length + graduates.length === 0
+                    ? <EmptyState title={t('corporations.graduation.empty_graduated')} />
+                    : <ul class="[ graduation__cards ]">
+                        {board.graduating.map((row) => {
+                            const tag = card_tag(row, 'graduated')
+                            return (
+                                <li>
+                                    <a class="[ graduation__card ]" href="#graduation" hx-get={review_url(row.character_id)} {...swap} aria-label={fill(t('corporations.graduation.open_review'), { name: row.character_name })}>
+                                        <CharacterPicture character_id={row.character_id} character_name={row.character_name} size={32} inert={true} />
+                                        <span class="[ graduation__card-text ]">
+                                            <span class="[ graduation__name ]">{row.character_name}</span>
+                                            <span class="[ graduation__sub ]">
+                                                <span class="[ graduation__meta ]">{pilot_meta(row, false)}</span>
+                                                {tag && <Tag text={tag.text} color={tag.color} variant={tag.variant} narrow={true} />}
+                                            </span>
+                                        </span>
+                                        <span class="[ graduation__chevron ]" aria-hidden="true">›</span>
+                                    </a>
+                                </li>
+                            )
+                        })}
+                        {(expanded === 'graduated' ? graduates : graduates.slice(0, COLUMN_PREVIEW)).map((graduate) =>
+                            <li class="[ graduation__card graduation__card--static ]">
+                                <CharacterPicture character_id={graduate.character_id} character_name={graduate.character_name} size={32} />
+                                <span class="[ graduation__card-text ]">
+                                    <span class="[ graduation__name ]">{graduate.character_name}</span>
+                                    <span class="[ graduation__meta ]">
+                                        {fill(t('corporations.graduation.graduated_meta'), { date: format_date(lang, new Date(graduate.graduated_at)), days: graduate.days_in_academy })}
+                                    </span>
+                                </span>
+                                <span class="[ graduation__route ]">
+                                    <CorporationPicture corporation_id={graduate.corporation_id} corporation_name={graduate.ticker} size={16} icon_quality={32} />
+                                    {graduate.ticker}
+                                </span>
+                            </li>
+                        )}
+                    </ul>
+                }
+                {graduates.length > COLUMN_PREVIEW &&
+                    <a class="[ graduation__link ]" href="#graduation" hx-get={board_url({ all: expanded === 'graduated' ? null : 'graduated' })} {...swap}>
+                        {expanded === 'graduated' ? t('corporations.graduation.see_fewer') : `${fill(t('corporations.graduation.see_all'), { count: graduates.length })} ›`}
+                    </a>
+                }
+            </section>
+            </ComponentBlock>
+        </Grid>
+    </Flexblock>
+</div>
+}
+
+{data && pilot &&
+<div id={ROOT_ID} class="[ graduation graduation--review ]">
+    <Flexblock gap="var(--space-m)">
+        <div class="[ graduation__crumbs ]">
+            <nav aria-label={t('corporations.graduation.breadcrumb_label')}>
+                <a href="#graduation" hx-get={board_url()} {...swap}>{t('corporations.graduation.breadcrumb')}</a>
+                <span aria-hidden="true"> › </span>
+                <span aria-current="page">{t('corporations.graduation.review')}</span>
+            </nav>
+            {target.position && <span>{fill(t('corporations.graduation.position'), { position: target.position, total: target.total })}</span>}
+        </div>
+
+        {flash &&
+            <p class:list={['[ graduation__flash ]', { 'is-error': flash.kind === 'error' }]} role={flash.kind === 'error' ? 'alert' : 'status'}>
+                {flash.text}
+            </p>
+        }
+
+        <ComponentBlock padding_block="0" padding_inline="0" width="narrow">
+        <section aria-labelledby="graduation-pilot">
+            <div class="[ graduation__review-head ]">
+                <CharacterPicture character_id={pilot.character_id} character_name={pilot.character_name} size={64} icon_quality={128} />
+                <div>
+                    <h3 id="graduation-pilot" class="[ graduation__pilot ]">{pilot.character_name}</h3>
+                    <p class="[ graduation__meta ]">
+                        {[
+                            `${pilot.join_estimated ? '~' : ''}${fill(t('corporations.graduation.meta_days'), { count: pilot.days_in_academy })}`,
+                            timezone_label(pilot.prime_time, t('corporations.graduation.no_tz')),
+                            ...(pilot.skill_points ? [fill(t('corporations.graduation.meta_sp'), { count: Math.round(pilot.skill_points / 1_000_000) })] : []),
+                        ].join(' · ')}
+                    </p>
+                </div>
+            </div>
+
+            <div class="[ graduation__review-body ]">
+                <div class:list={['[ graduation__verdict ]', { 'is-ready': verdict === 'ready' }]}>
+                    <h4 class="[ graduation__verdict-title ]">
+                        {verdict === 'ready' && <Tag text={t('corporations.graduation.tag_ready')} color="green" />}
+                        {verdict === 'ready' ? t('corporations.graduation.verdict_ready') : verdict === 'early' ? t('corporations.graduation.verdict_early') : t('corporations.graduation.verdict_not_ready')}
+                    </h4>
+                    <ul class="[ graduation__checks ]" aria-label={t('corporations.graduation.bar_label')}>
+                        {checks.map((check) =>
+                            <li class:list={{ 'is-met': check.met }}>{check.text} <small>{check.hint}</small></li>
+                        )}
+                    </ul>
+                    {suggestion &&
+                        <p class="[ graduation__fit ]">
+                            <CorporationPicture corporation_id={suggestion.corporation_id} corporation_name={suggestion.ticker} size={32} />
+                            <span><strong>{fill(t('corporations.graduation.best_fit'), { ticker: suggestion.ticker })}</strong>{' '}{reason_text}</span>
+                        </p>
+                    }
+                    {!pilot.ready && can_review && <p class="[ graduation__muted ]">{t('corporations.graduation.not_ready_hint')}</p>}
+                    {last_review &&
+                        <p class="[ graduation__muted ]">
+                            {fill(t('corporations.graduation.last_review'), {
+                                decision: decision_label(last_review.decision),
+                                who: last_review.reviewed_by ?? '—',
+                                date: format_date(lang, new Date(last_review.created_at)),
+                            })}
+                        </p>
+                    }
+                </div>
+
+                {can_review
+                    ? <form
+                        method="post"
+                        action={partial_url()}
+                        class="[ graduation__form ]"
+                        x-data={`{ ticker: ${JSON.stringify(ticker_of(default_corporation))} }`}
+                    >
+                        <input type="hidden" name="character_id" value={pilot.character_id} />
+                        <input type="hidden" name="character_name" value={pilot.character_name} />
+                        <div class="[ graduation__actions ]">
+                            {pilot.ready && suggestion
+                                ? <>
+                                    <Button type="submit" name="decision" value="graduate" hx-post={partial_url()} {...swap} off_disable={true}>
+                                        <span x-text={graduate_label_js}>
+                                            {fill(t('corporations.graduation.graduate_to'), { ticker: suggestion.ticker })}
+                                        </span>
+                                    </Button>
+                                    <Button type="submit" name="decision" value="keep" outline={true} hx-post={partial_url()} {...swap} off_disable={true}>
+                                        {t('corporations.graduation.keep')}
+                                    </Button>
+                                </>
+                                : <>
+                                    <Button type="submit" name="decision" value="keep" hx-post={partial_url()} {...swap} off_disable={true}>
+                                        {t('corporations.graduation.keep')}
+                                    </Button>
+                                    <Button type="submit" name="decision" value="graduate" outline={true} hx-post={partial_url()} {...swap} off_disable={true} disabled={corporations.length === 0}>
+                                        <span x-text={graduate_label_js}>
+                                            {fill(t('corporations.graduation.graduate_to'), { ticker: ticker_of(default_corporation) })}
+                                        </span>
+                                    </Button>
+                                </>
+                            }
+                            <StylessButton
+                                type="submit"
+                                name="decision"
+                                value="release"
+                                data-release
+                                hx-post={partial_url()}
+                                hx-confirm={fill(t('corporations.graduation.release_confirm'), { name: pilot.character_name })}
+                                {...swap}
+                            >
+                                {t('corporations.graduation.release')}
+                            </StylessButton>
+                        </div>
+                        <div class="[ graduation__fields ]">
+                            <div>
+                                <label class="[ graduation__label ]" for="graduation-corp">{t('corporations.graduation.other_corp')}</label>
+                                <Select
+                                    id="graduation-corp"
+                                    name="corporation_id"
+                                    size="sm"
+                                    x-on:change="ticker = $event.target.selectedOptions[0].dataset.ticker"
+                                >
+                                    {corporations.map((corporation) =>
+                                        <option value={corporation.corporation_id} data-ticker={corporation.ticker} selected={corporation.corporation_id === default_corporation}>
+                                            {corporation.ticker} · {corporation.name}{suggestion?.corporation_id === corporation.corporation_id ? ` (${t('corporations.graduation.recommended')})` : ''}
+                                        </option>
+                                    )}
+                                </Select>
+                            </div>
+                            <div>
+                                <label class="[ graduation__label ]" for="graduation-note">
+                                    {t('corporations.graduation.note')}{' '}<span class="[ graduation__muted ]">{t('corporations.graduation.optional')}</span>
+                                </label>
+                                <Textarea id="graduation-note" name="note" rows="1" maxlength="1000" />
+                            </div>
+                        </div>
+                    </form>
+                    : <p class="[ graduation__muted ]">{t('corporations.graduation.view_only')}</p>
+                }
+
+                {target.next &&
+                    <p class="[ graduation__muted ]">
+                        {fill(t('corporations.graduation.next_up'), { name: target.next.character_name })}{' '}
+                        <a class="[ graduation__link ]" href="#graduation" hx-get={review_url(target.next.character_id)} {...swap}>{t('corporations.graduation.skip')}</a>
+                    </p>
+                }
+            </div>
+        </section>
+        </ComponentBlock>
+    </Flexblock>
+</div>
+}
+
+<style lang="scss">
+    .graduation {
+        container-type: inline-size;
+
+        h3,
+        h4,
+        p,
+        ul {
+            margin: 0;
+        }
+    }
+
+    .graduation__lede {
+        max-width: var(--max-text-width);
+        color: var(--foreground);
+
+        strong {
+            color: var(--highlight);
+            font-weight: 600;
+        }
+    }
+
+    .graduation__flash {
+        padding: var(--space-xs) var(--space-s);
+        border-left: solid var(--space-3xs) var(--green);
+        background-color: var(--component-background);
+        color: var(--highlight);
+
+        &.is-error {
+            border-left-color: var(--fleet-red);
+        }
+    }
+
+    .graduation__muted {
+        color: var(--faded);
+        font-size: var(--step--1);
+    }
+
+    .graduation__link {
+        color: var(--fleet-yellow);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-decoration: underline;
+        text-underline-offset: var(--space-3xs);
+
+        @media (hover: hover) {
+            &:hover {
+                color: var(--highlight);
+            }
+        }
+    }
+
+    // Timeline
+    .graduation__legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+        padding: 0;
+        list-style: none;
+        font-size: var(--step--2);
+        color: var(--faded);
+
+        li {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-3xs);
+        }
+
+        i {
+            display: inline-block;
+            width: var(--space-2xs);
+            height: var(--space-2xs);
+            border-radius: var(--radius-round, 50%);
+        }
+    }
+
+    .dot--ready {
+        background: var(--green);
+    }
+
+    .dot--active {
+        background: var(--fleet-yellow);
+    }
+
+    .dot--inactive {
+        background: var(--border-color-hover);
+    }
+
+    .graduation__axis-wrap {
+        min-width: 40rem;
+    }
+
+    .graduation__track {
+        --dot: var(--space-2xs);
+
+        position: relative;
+        height: calc(var(--space-2xl) * 2.75);
+        border-bottom: 1px solid var(--border-color);
+        background: linear-gradient(
+            to right,
+            transparent var(--review-mark),
+            color-mix(in srgb, var(--fleet-yellow) var(--tint-subtle), transparent) var(--review-mark)
+        );
+
+        &::before {
+            content: '';
+            position: absolute;
+            inset-block: 0;
+            left: var(--review-mark);
+            border-left: 1px dashed var(--fleet-yellow);
+        }
+    }
+
+    .graduation__zone {
+        position: absolute;
+        top: 0;
+        left: 0;
+        padding: var(--space-3xs) var(--space-2xs);
+        font: var(--step--2) var(--heading-font);
+        text-transform: uppercase;
+        color: var(--faded);
+    }
+
+    .graduation__zone--due {
+        left: var(--review-mark);
+        color: var(--fleet-yellow);
+    }
+
+    .graduation__dot {
+        position: absolute;
+        left: var(--left);
+        bottom: calc(var(--space-3xs) + var(--stack) * (var(--dot) + var(--space-3xs)));
+        width: var(--dot);
+        height: var(--dot);
+        margin-left: calc(var(--dot) / -2);
+        border-radius: 50%;
+
+        &.is-dimmed {
+            opacity: 0.12;
+        }
+    }
+
+    .graduation__axis {
+        position: relative;
+        height: var(--space-m);
+        font-size: var(--step--2);
+        color: var(--faded);
+        font-variant-numeric: tabular-nums;
+
+        span {
+            position: absolute;
+            top: var(--space-3xs);
+            left: var(--at);
+        }
+    }
+
+    // Board
+    .graduation__column {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 0;
+    }
+
+    .graduation__column-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: var(--space-2xs);
+        padding-bottom: var(--space-2xs);
+        border-bottom: 2px solid var(--border-color-hover);
+
+        h3 {
+            font-size: var(--step-0);
+        }
+    }
+
+    .graduation__column--due .graduation__column-head {
+        border-bottom-color: var(--fleet-yellow);
+    }
+
+    .graduation__column--graduated .graduation__column-head {
+        border-bottom-color: var(--alliance-blue);
+    }
+
+    .graduation__count {
+        font: var(--step-0) var(--heading-font);
+        color: var(--faded);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .graduation__cards {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: 0;
+        list-style: none;
+    }
+
+    .graduation__card {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-height: var(--space-xl);
+        padding: var(--space-2xs);
+        background: var(--component-background);
+        border: 1px solid var(--border-color-hover);
+        color: var(--foreground);
+        text-decoration: none;
+        transition: border-color var(--fast-transition);
+
+        &:focus-visible {
+            outline: 1px solid var(--highlight);
+            outline-offset: 2px;
+        }
+
+        @media (hover: hover) {
+            &:not(.graduation__card--static):hover {
+                border-color: color-mix(in srgb, var(--fleet-yellow) var(--tint-strong), transparent);
+            }
+        }
+    }
+
+    .graduation__card-text {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .graduation__name {
+        overflow: hidden;
+        color: var(--highlight);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .graduation__meta {
+        color: var(--faded);
+        font-size: var(--step--2);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .graduation__sub {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-3xs) var(--space-2xs);
+    }
+
+    .graduation__route {
+        display: inline-flex;
+        flex: none;
+        align-items: center;
+        gap: var(--space-3xs);
+        color: var(--highlight);
+        font-size: var(--step--2);
+        font-weight: 600;
+    }
+
+    .graduation__chevron {
+        flex: none;
+        color: var(--faded);
+        font-size: var(--step-1);
+        line-height: 1;
+    }
+
+    // Review
+    .graduation__crumbs {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: var(--space-xs);
+        color: var(--faded);
+        font-size: var(--step--1);
+
+        a {
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .graduation__review-head {
+        display: flex;
+        align-items: center;
+        gap: var(--space-s);
+        padding: var(--space-s);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .graduation__pilot {
+        font-size: var(--step-2);
+    }
+
+    .graduation__review-body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        padding: var(--space-s);
+    }
+
+    .graduation__verdict {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        padding: var(--space-s);
+        border: 2px solid var(--border-color-hover);
+
+        &.is-ready {
+            border-color: var(--green);
+            background: color-mix(in srgb, var(--green) 10%, var(--component-background));
+        }
+    }
+
+    .graduation__verdict-title {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs);
+        font: var(--step-1) var(--heading-font);
+        text-transform: uppercase;
+        color: var(--highlight);
+    }
+
+    .graduation__checks {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+        gap: var(--space-2xs) var(--space-s);
+        padding: 0;
+        list-style: none;
+
+        li {
+            display: flex;
+            align-items: baseline;
+            gap: var(--space-3xs);
+            color: var(--faded);
+
+            &::before {
+                content: '–';
+            }
+
+            &.is-met {
+                color: var(--highlight);
+
+                &::before {
+                    content: '✓';
+                    color: var(--green-text);
+                    font-weight: 700;
+                }
+            }
+        }
+
+        small {
+            color: var(--faded);
+        }
+    }
+
+    .graduation__fit {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+
+        strong {
+            color: var(--highlight);
+        }
+    }
+
+    .graduation__form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .graduation__actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs);
+
+        @container (max-width: 30rem) {
+            :global(.button) {
+                flex: 1 1 100%;
+            }
+        }
+    }
+
+    .graduation :global([data-release]) {
+        padding: var(--space-2xs);
+        border: 0;
+        background: none;
+        color: var(--fleet-red-text);
+        font: 600 var(--step--1) var(--default-font);
+        text-decoration: underline;
+        text-underline-offset: var(--space-3xs);
+        cursor: pointer;
+
+        &:focus-visible {
+            outline: 1px solid var(--highlight);
+            outline-offset: 2px;
+        }
+    }
+
+    .graduation__fields {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+        gap: var(--space-s);
+    }
+
+    .graduation__label {
+        display: block;
+        margin-bottom: var(--space-3xs);
+        color: var(--highlight);
+        font-size: var(--step--1);
+    }
+</style>

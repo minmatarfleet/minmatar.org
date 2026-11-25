@@ -15,6 +15,7 @@ from eveonline.endpoints.corporations.schemas import (
 )
 from eveonline.helpers.corporations.permissions import (
     can_edit_corporation_settings,
+    can_view_academy_graduation,
     can_manage_corporation_projects,
     can_view_corporation_members,
     can_view_corporation_projects,
@@ -82,6 +83,9 @@ def get_corp_member_access(request, corporation_id: int):
             request.user, corporation
         ),
         "can_manage_projects": can_manage_corporation_projects(
+            request.user, corporation
+        ),
+        "can_view_graduation": can_view_academy_graduation(
             request.user, corporation
         ),
     }

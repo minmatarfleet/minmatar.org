@@ -45,6 +45,12 @@ from eveonline.endpoints.corporations.get_corporation_by_id import (
 from eveonline.endpoints.corporations.get_corporation_by_slug import (
     router as get_corporation_by_slug_router,
 )
+from eveonline.endpoints.corporations.get_corporation_graduation import (
+    router as get_corporation_graduation_router,
+)
+from eveonline.endpoints.corporations.post_corporation_graduation_review import (
+    router as post_corporation_graduation_review_router,
+)
 from eveonline.endpoints.corporations.get_corporation_projects import (
     router as get_corporation_projects_router,
 )
@@ -72,6 +78,8 @@ router.add_router("", get_corporation_admin_router)
 router.add_router("", get_corporation_applications_open_router)
 router.add_router("", get_managed_corp_ids_router)
 router.add_router("", get_corporation_projects_router)
+router.add_router("", get_corporation_graduation_router)
+router.add_router("", post_corporation_graduation_review_router)
 
 # The Discord endpoints share a path, so they go on one router: ninja answers
 # 405 when a second router repeats a path with another method.
