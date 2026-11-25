@@ -36,8 +36,7 @@ Backend tests never run on the cached database itself. `backend/ci_test_db.py mi
 
 - **Before a shell command** (Claude `PreToolUse` on Bash, Cursor `beforeShellExecution`):
   - `git push` runs `ci_local.py`. Deleting a branch, pushing tags and dry runs are not checked.
-  - In a Claude cloud session (`CLAUDE_CODE_REMOTE=true`), the first `git push` of a branch with the session's random name (`claude/quirky-ramanujan-mezmg0`) is blocked, before the checks run, until the agent renames it to say what the change does: `claude/<three to six words>-mezmg0`. The claude prefix and the session id stay, because the cloud git proxy only accepts pushes to those. A branch already on the remote keeps its name, so an open pull request never loses its branch.
-  - `gh pr create` and `gh pr ready` also run `scripts/check_pull_request.py` on the description. Drafts skip the description, as CI does.
+  - `gh pr create` and `gh pr ready` run `scripts/check_pull_request.py` on the description, not the CI checks: the push before them already ran those. Drafts skip the description, as CI does.
   - `gh pr edit --body ...` checks only the description, and not on a draft.
   - `gh issue create` runs `scripts/check_issue.py` on its `--label`s and body: at least one type label from `.github/labels.json`, and for a significant feature a design link or a person's sign-off (`.claude/rules/issues.md`). `--web` isn't checked; the browser form sets the labels.
   - A failure blocks the command and tells the agent what failed.

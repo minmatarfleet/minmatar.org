@@ -91,9 +91,6 @@ class GateTest(unittest.TestCase):
         self.body = mock.patch.object(
             self.hooks, "_check_body", return_value=(True, "")
         )
-        mock.patch.object(
-            self.hooks, "_cloud_session", return_value=False
-        ).start()
         self.ci_mock = self.ci.start()
         self.body_mock = self.body.start()
         self.addCleanup(mock.patch.stopall)
@@ -138,6 +135,11 @@ class GateTest(unittest.TestCase):
         reason = self.gate("git push -u origin HEAD && " + HEREDOC_CREATE)
         self.assertIn("Frontend review missing", reason)
         self.ci_mock.assert_called_once()
+
+    def test_create_checks_only_the_body(self):
+        self.assertIsNone(self.gate(HEREDOC_CREATE))
+        self.ci_mock.assert_not_called()
+        self.body_mock.assert_called_once()
 
     def test_create_without_a_readable_body_is_blocked(self):
         self.ci_mock.return_value = (True, "")
@@ -187,69 +189,6 @@ class GateTest(unittest.TestCase):
         self.ci_mock.return_value = (True, "")
         self.assertIsNone(self.gate("gh pr create --draft --fill"))
         self.body_mock.assert_not_called()
-
-
-@unittest.skipUnless(HAS_REPO, "needs the full repository checkout")
-@unittest.skipUnless(HAS_REPO, "needs the full repository checkout")
-class CloudBranchNameTest(unittest.TestCase):
-    def setUp(self):
-        self.hooks = _load("agent_hooks")
-        self.ci_mock = mock.patch.object(
-            self.hooks, "_ci", return_value=(True, "")
-        ).start()
-        mock.patch.object(
-            self.hooks, "_cloud_session", return_value=True
-        ).start()
-        self.addCleanup(mock.patch.stopall)
-        self.repo = Path(tempfile.mkdtemp())
-        self.addCleanup(shutil.rmtree, self.repo, True)
-        (self.repo / "scripts").mkdir()
-        (self.repo / "scripts" / "ci_local.py").write_text("")
-        self.git("init", "-q", "-b", "main")
-        self.git(
-            "-c",
-            "user.name=t",
-            "-c",
-            "user.email=t@t",
-            "commit",
-            "-q",
-            "--allow-empty",
-            "-m",
-            "start",
-        )
-
-    def git(self, *args):
-        subprocess.run(["git", *args], cwd=self.repo, check=True)
-
-    def push(self):
-        return self.hooks.gate("git push -u origin HEAD", self.repo)
-
-    def test_a_random_cloud_branch_is_renamed_before_ci(self):
-        self.git("checkout", "-q", "-b", "claude/quirky-ramanujan-mezmg0")
-        reason = self.push()
-        self.assertIn("git branch -m claude/<what-it-does>-mezmg0", reason)
-        self.ci_mock.assert_not_called()
-
-    def test_a_descriptive_branch_pushes(self):
-        self.git("checkout", "-q", "-b", "claude/esi-scope-update-mezmg0")
-        self.assertIsNone(self.push())
-        self.ci_mock.assert_called_once()
-
-    def test_a_branch_already_on_the_remote_keeps_its_name(self):
-        self.git("checkout", "-q", "-b", "claude/quirky-ramanujan-mezmg0")
-        self.git(
-            "update-ref",
-            "refs/remotes/origin/claude/" "quirky-ramanujan-mezmg0",
-            "HEAD",
-        )
-        self.assertIsNone(self.push())
-
-    def test_only_cloud_sessions_are_asked(self):
-        self.git("checkout", "-q", "-b", "claude/quirky-ramanujan-mezmg0")
-        with mock.patch.object(
-            self.hooks, "_cloud_session", return_value=False
-        ):
-            self.assertIsNone(self.push())
 
 
 class ClientOutputTest(unittest.TestCase):
