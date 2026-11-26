@@ -25,6 +25,16 @@ After appending, **fold any new durable rule into [SKILL.md](SKILL.md)**
 (Known failure classes or the workflow). If the rule already lives there,
 do not duplicate it — one clarifying clause at most.
 
+## 2026-11-26 — Rejoined the academy, no corp role and a `[?]` nickname
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** reply with PR link
+**PR:** fix+skill
+**Symptom vs cause:** A pilot back in a corp they had left for an NPC corp long ago got no corp Discord role after refreshing. Public ESI affiliation had the corp; the cached corporation history still ended on the NPC corp. The stale-ESI guard read "ESI equals the previous history row" as stale ESI and stored the NPC corp, so the nickname showed `[?]`.
+**Durable rule:** A history row only beats ESI when the join is recent (ESI affiliation catches up within hours). Check both public routes when roles are missing after a rejoin. The production DB was not reachable this run; the diagnosis came from public ESI and the Discord member record.
+**Skill update:** new rejoin row; the Trial row now names the window.
+
 ## 2026-11-24 — Mentor feature requests, plus "at least an hour" on Change time
 
 **Category:** pulse.technology

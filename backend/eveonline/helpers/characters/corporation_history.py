@@ -22,6 +22,10 @@ logger = logging.getLogger(__name__)
 
 CORPORATION_HISTORY_TTL = timedelta(hours=24)
 ALLIANCE_HISTORY_TTL = timedelta(hours=1)
+# How long ESI affiliation can plausibly still report the previous
+# corporation after a join. Past this, ESI is current and the history is
+# what lags (a pilot rejoining a corporation they left).
+STALE_ESI_AFFILIATION_WINDOW = timedelta(days=3)
 
 
 def corporation_id_preferring_history_over_stale_esi(
@@ -31,13 +35,18 @@ def corporation_id_preferring_history_over_stale_esi(
     ESI character public data and /characters/affiliation/ often lag a corp
     join. If history already records a newer membership and ESI still reports
     the previous corporation, keep the history corporation.
+
+    Only a recent join counts. ESI catches up within hours, so when the
+    latest history row is older than STALE_ESI_AFFILIATION_WINDOW, ESI is
+    right and the history has not recorded a rejoin of the previous
+    corporation yet.
     """
     if not esi_corporation_id:
         return esi_corporation_id
     rows = list(
         character.corporation_history.order_by(
             "-start_date", "-record_id"
-        ).only("corporation_id")[:2]
+        ).only("corporation_id", "start_date")[:2]
     )
     if len(rows) < 2:
         return esi_corporation_id
@@ -45,6 +54,7 @@ def corporation_id_preferring_history_over_stale_esi(
     if (
         esi_corporation_id != latest.corporation_id
         and esi_corporation_id == previous.corporation_id
+        and timezone.now() - latest.start_date < STALE_ESI_AFFILIATION_WINDOW
     ):
         logger.info(
             "Ignoring stale ESI corporation %s for character %s; "

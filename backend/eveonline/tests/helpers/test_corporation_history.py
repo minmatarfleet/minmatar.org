@@ -427,6 +427,42 @@ class StaleEsiCorporationOverrideTests(TestCase):
             ),
         )
 
+    def _left_for_npc_corp_long_ago(self):
+        now = timezone.now()
+        EveCharacterCorporationHistory.objects.filter(
+            character=self.character, record_id=1
+        ).update(start_date=now - timedelta(days=500))
+        EveCharacterCorporationHistory.objects.filter(
+            character=self.character, record_id=2
+        ).update(corporation_id=1000045, start_date=now - timedelta(days=400))
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    def test_applies_esi_when_history_has_not_recorded_a_rejoin(self):
+        # Left the corp for an NPC corp long ago, then rejoined it. ESI
+        # affiliation has the rejoin; the cached history does not yet.
+        self._left_for_npc_corp_long_ago()
+        self.assertEqual(
+            98838034,
+            corporation_id_preferring_history_over_stale_esi(
+                self.character, 98838034
+            ),
+        )
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    def test_affiliations_apply_a_rejoin_of_the_previous_corp(self):
+        self._left_for_npc_corp_long_ago()
+        EveCharacter.objects.filter(pk=self.character.pk).update(
+            corporation_id=1000045
+        )
+        updated = update_character_with_affiliations(
+            character_id=self.character.character_id,
+            corporation_id=98838034,
+            alliance_id=99000001,
+        )
+        self.character.refresh_from_db()
+        self.assertTrue(updated)
+        self.assertEqual(98838034, self.character.corporation_id)
+
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     def test_affiliations_do_not_revert_to_previous_corp(self):
         updated = update_character_with_affiliations(
