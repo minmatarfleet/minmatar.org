@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from ninja import Field, Schema
 
@@ -287,6 +287,8 @@ class CorporationMemberAccess(Schema):
     # Projects tab: corp leadership sees it; CEO and directors attach.
     can_view_projects: bool = False
     can_manage_projects: bool = False
+    # Graduation tab: the Academy only, for whoever sees its Members tab.
+    can_view_graduation: bool = False
 
 
 class CorporationDiscordBot(Schema):
@@ -553,3 +555,88 @@ class CorporationPageTextError(Schema):
     field: Optional[str] = None
     # The words that tripped the profanity check.
     words: List[str] = []
+
+
+class AcademyGraduationBar(Schema):
+    """The bar a pilot meets to be ready to graduate: past review_after_days
+    in the Academy and any one of these over the last 90 days."""
+
+    review_after_days: int
+    fleets: int
+    kills: int
+    voice_hours: int
+    voice_kills: int
+
+
+class AcademyGraduationCorporation(Schema):
+    corporation_id: int
+    name: str
+    ticker: str
+
+
+class AcademyGraduationSuggestion(Schema):
+    corporation_id: int
+    ticker: str
+    # eu_skirmish, killboard, large_gang, fleet_regular, building or
+    # all_timezones: why the routing rules picked this corporation.
+    reason: str
+
+
+class AcademyGraduationReviewOut(Schema):
+    decision: Literal["graduate", "keep", "release"]
+    corporation_ids: list[int]
+    note: str
+    reviewed_by: Optional[str] = None
+    created_at: datetime
+
+
+class AcademyGraduationPilot(Schema):
+    user_id: int
+    character_id: int
+    character_name: str
+    prime_time: Optional[str] = None
+    # When the main joined the Academy; join_estimated when the corporation
+    # history doesn't have it and this is when they registered instead.
+    joined_at: Optional[datetime] = None
+    join_estimated: bool
+    days_in_academy: int
+    skill_points: Optional[int] = None
+    fleets_90d: int
+    fleets_30d: int
+    kills_90d: int
+    kills_30d: int
+    small_gang_kills: int
+    medium_gang_kills: int
+    large_gang_kills: int
+    voice_hours_90d: int
+    ready: bool
+    # No fleets and no kills in the last 30 days.
+    inactive: bool
+    stage: Literal["training", "due", "kept", "graduating", "released"]
+    suggestions: list[AcademyGraduationSuggestion]
+    last_review: Optional[AcademyGraduationReviewOut] = None
+
+
+class AcademyGraduate(Schema):
+    character_id: int
+    character_name: str
+    corporation_id: int
+    ticker: str
+    graduated_at: datetime
+    days_in_academy: int
+
+
+class AcademyGraduationPipeline(Schema):
+    bar: AcademyGraduationBar
+    can_review: bool
+    # The review queue first (due, ready first), then everyone else.
+    pilots: list[AcademyGraduationPilot]
+    graduates: list[AcademyGraduate]
+    corporations: list[AcademyGraduationCorporation]
+
+
+class AcademyGraduationReviewRequest(Schema):
+    character_id: int
+    decision: Literal["graduate", "keep", "release"]
+    corporation_ids: list[int] = []
+    note: str = ""

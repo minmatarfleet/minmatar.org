@@ -35,6 +35,16 @@ do not duplicate it — one clarifying clause at most.
 **Durable rule:** Affiliation (15-minute refresh) is the source of truth for the current corporation; corporation history is cached about a day and only serves join dates and tenure. The guard was removed. The 2026-09-09 "history over stale ESI" rule below is superseded: that bounce is explained by an alt in the old corp or corp groups not being recomputed.
 **Skill update:** rewrote the previous-ticker, rejoin and Trial rows.
 
+## 2026-11-25 — Report who owns a Metenox drill on a moon
+
+**Category:** pulse.technology
+**Verdict:** needs-decision (user feedback issue)
+**Discord:** issue link in the thread
+**PR:** skill-only
+**Symptom vs cause:** A pilot asked for a "report a drill" action on `/universe/#moons` that records the owning corporation and alliance. `EveMoon` has contents, scans and `MetenoxKill` history but no current owner. The structure report already takes a Metenox Moon Drill (`REPORTABLE_TYPES` 81826) with an owner, but a reported `EveStructure` has a solar system and no moon, so the moons tab cannot show it.
+**Durable rule:** Before calling a "report X" request new, check whether the structure report already accepts that type. The gap is often the link to the thing the pilot was looking at, not the report itself.
+**Skill update:** added the moon-drill row. This run also auto-closed four tickets whose 24-hour notice had no reply.
+
 ## 2026-11-24 — Mentor feature requests, plus "at least an hour" on Change time
 
 **Category:** pulse.technology

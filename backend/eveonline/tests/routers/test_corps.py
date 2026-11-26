@@ -545,6 +545,7 @@ class CorporationRouterTestCase(TestCase):
                 # directors put projects toward campaigns.
                 "can_view_projects": True,
                 "can_manage_projects": False,
+                "can_view_graduation": False,
             },
             access,
         )
@@ -576,6 +577,7 @@ class CorporationRouterTestCase(TestCase):
                 "can_edit_settings": True,
                 "can_view_projects": True,
                 "can_manage_projects": True,
+                "can_view_graduation": False,
             },
             access,
         )
