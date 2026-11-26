@@ -304,6 +304,8 @@ def cmd_warp_intro(a):
 # --- assemble ---------------------------------------------------------------
 
 def escape(text):
+    # With expansion=none on every drawtext, % is literal; only quoting and
+    # the filter-graph separators need escaping.
     return text.replace("\\", "\\\\").replace(":", "\\:").replace("'", "’")
 
 
@@ -318,7 +320,7 @@ def cmd_assemble(a):
         cap = tmp / "setup.txt"
         cap.write_text(a.setup_text.replace("\\n", "\n"))
         setup_font = font_file(s["caption_font"])
-        caption = (f"drawtext=fontfile='{setup_font}':textfile='{cap}':fontsize={s['caption_size']}:"
+        caption = (f"drawtext=fontfile='{setup_font}':textfile='{cap}':expansion=none:fontsize={s['caption_size']}:"
                    f"fontcolor=white:line_spacing=8:text_align=C:shadowcolor=black@0.7:"
                    f"shadowx=3:shadowy=3:x=(w-tw)/2:y={s['caption_y']}")
         if Path(a.setup).is_dir():
@@ -334,13 +336,13 @@ def cmd_assemble(a):
         step_font = font_file(p["step_font"])
         x, y, w, h = p["clip_box"]
         filters = [f"pad={W}:{H}:{x}:{y}:black",
-                   f"drawtext=fontfile='{label_font}':text='{escape(a.label)}':fontsize={p['label_size']}:"
+                   f"drawtext=fontfile='{label_font}':text='{escape(a.label)}':expansion=none:fontsize={p['label_size']}:"
                    f"fontcolor=white:x=(w-tw)/2:y={p['label_baseline']}-th"]
         for step in a.step:
             span, text = step.split(":", 1)
             first, last = span.split("-")
             enable = f"between(n,{int(first) - 1},{int(last) - 1})"
-            filters.append(f"drawtext=fontfile='{step_font}':text='{escape(text)}':fontsize={p['step_size']}:"
+            filters.append(f"drawtext=fontfile='{step_font}':text='{escape(text)}':expansion=none:fontsize={p['step_size']}:"
                            f"fontcolor=white:x=(w-tw)/2:y={p['step_y']}:enable='{enable}'")
         run(["ffmpeg", "-v", "error", "-y", "-framerate", str(fps), "-i", str(Path(a.punchline) / "%04d.png"),
              "-vf", ",".join(filters), "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p", str(tmp / "b.mp4")])
