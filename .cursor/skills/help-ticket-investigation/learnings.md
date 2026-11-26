@@ -25,6 +25,16 @@ After appending, **fold any new durable rule into [SKILL.md](SKILL.md)**
 (Known failure classes or the workflow). If the rule already lives there,
 do not duplicate it — one clarifying clause at most.
 
+## 2026-11-26 — Morning triage: cleanup DMs, paused Water, freight stop
+
+**Category:** pulse.technology (three tickets)
+**Verdict:** needs-decision (issue) / clarify / clarify
+**Discord:** replies with the auto-close line
+**PR:** skill only
+**Symptom vs cause:** (1) A chief kept getting "External Discord cleanup failed" DMs: permission-denied kicks re-alert once a day per stuck seat, and with no alert channel they go straight to chiefs by DM, outside the notification system. Filed as a feature (task plus a notifications-tab setting). (2) Water refused on the buyback: deliberate oversupply pause. (3) No freight route from a system: the location is not an active freight stop; routes and stops are settings for freight managers.
+**Durable rule:** The cleanup-alert row said "alert once"; the code re-alerts per retry window. Read the retry path before telling a chief the DMs will stop on their own. A maintainer comment in the thread is context for the issue, not an instruction to implement.
+**Skill update:** corrected the cleanup DM row; added the freight stop row.
+
 ## 2026-11-24 — Mentor feature requests, plus "at least an hour" on Change time
 
 **Category:** pulse.technology
