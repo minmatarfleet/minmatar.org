@@ -597,6 +597,12 @@ export type TribeDiscordMappingUpdate = ApiRequest<'TribeDiscordMappingUpdate'>
 export type CorporationDiscordInvitePreview = ApiResponse<'CorporationDiscordInvitePreview'>
 export type CorporationPageText = ApiResponse<'CorporationPageText'>
 export type CorporationPageTextUpdate = ApiRequest<'CorporationPageTextUpdate'>
+export type AcademyGraduationPipeline = ApiResponse<'AcademyGraduationPipeline'>
+export type AcademyGraduationPilot = ApiResponse<'AcademyGraduationPilot'>
+export type AcademyGraduate = ApiResponse<'AcademyGraduate'>
+export type AcademyGraduationCorporation = ApiResponse<'AcademyGraduationCorporation'>
+export type AcademyGraduationReview = ApiResponse<'AcademyGraduationReviewOut'>
+export type AcademyGraduationReviewRequest = ApiRequest<'AcademyGraduationReviewRequest'>
 export type CorporationDiscordInviteRequest = ApiRequest<'CorporationDiscordInviteRequest'>
 
 export interface CorporationPublicSummary {
