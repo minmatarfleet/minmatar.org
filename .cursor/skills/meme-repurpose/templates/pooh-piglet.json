@@ -1,0 +1,48 @@
+{
+  "name": "pooh-piglet",
+  "description": "Two-part reel: a question captioned over a short clip, a hard cut on the beat, then 'me and my dog:' over the Soviet Winnie-the-Pooh walking with Piglet. Pooh stays unedited (the poster); Piglet carries the overlay (the group).",
+  "source_url": "https://www.instagram.com/reel/DfroqVIRgiW/",
+  "size": [1080, 1920],
+  "fps": 30,
+  "cut_seconds": 3.4333,
+  "setup": {
+    "frames": 103,
+    "caption_font": "Inter:bold",
+    "caption_size": 62,
+    "caption_y": 130
+  },
+  "punchline": {
+    "clip_box": [0, 498, 1080, 924],
+    "band_height": 497,
+    "label_font": "Caladea",
+    "label_size": 86,
+    "label_baseline": 470,
+    "step_font": "Caladea",
+    "step_size": 70,
+    "step_y": 1500,
+    "frames": 183
+  },
+  "scenes": [
+    {"frames": [1, 26], "what": "room, Pooh in a chair, Piglet walks over"},
+    {"frames": [27, 56], "what": "at the vase, washing up"},
+    {"frames": [57, 84], "what": "dinner table, Piglet's body hidden"},
+    {"frames": [85, 109], "what": "dinner table, napkins on"},
+    {"frames": [110, 136], "what": "garden by the bridge"},
+    {"frames": [137, 171], "what": "garden, walking up the hill"},
+    {"frames": [172, 183], "what": "white forest, walking off"}
+  ],
+  "tracks": {
+    "piglet": {
+      "note": "Centre of Piglet's shirt (or napkin at the table) in clip-box pixels, and a badge size. Frame numbers are 1-based within the punchline clip. Frames before a scene's first keyframe get no overlay.",
+      "keyframes": [
+        [[4, 235, 555, 62], [9, 210, 687, 64], [13, 205, 756, 66], [17, 281, 812, 66], [21, 425, 814, 66], [25, 551, 814, 66], [26, 560, 814, 66]],
+        [[27, 449, 728, 64], [29, 447, 722, 64], [41, 447, 722, 64], [45, 453, 742, 64], [49, 454, 734, 64], [56, 454, 734, 64]],
+        [[57, 135, 690, 80], [84, 135, 690, 80]],
+        [[85, 170, 660, 92], [89, 248, 678, 92], [93, 302, 670, 92], [97, 324, 691, 92], [101, 238, 691, 92], [105, 151, 687, 92], [109, 162, 674, 92]],
+        [[110, 34, 652, 52], [113, 48, 642, 52], [117, 114, 505, 52], [121, 222, 559, 52], [125, 281, 570, 52], [129, 324, 469, 52], [133, 415, 343, 52], [136, 440, 320, 52]],
+        [[137, 900, 360, 50], [141, 864, 350, 50], [145, 788, 421, 50], [149, 767, 378, 50], [153, 644, 354, 50], [157, 594, 322, 50], [161, 540, 264, 50], [165, 486, 235, 50], [169, 454, 181, 50], [171, 440, 160, 50]],
+        [[172, 878, 797, 84], [173, 875, 797, 84], [177, 864, 797, 84], [181, 842, 797, 84], [183, 875, 799, 84]]
+      ]
+    }
+  }
+}
