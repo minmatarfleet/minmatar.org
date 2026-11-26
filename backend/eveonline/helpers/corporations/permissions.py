@@ -139,3 +139,32 @@ def can_edit_corporation_settings(
     return user_is_ceo(user, corporation) or user_is_director(
         user, corporation
     )
+
+
+def _is_academy(corporation: EveCorporation) -> bool:
+    # Imported here: applications imports eveonline at load time.
+    from applications.l3arn import (  # pylint: disable=import-outside-toplevel
+        is_l3arn_corporation,
+    )
+
+    return is_l3arn_corporation(corporation)
+
+
+def can_view_academy_graduation(
+    user: User, corporation: EveCorporation
+) -> bool:
+    """The Academy's Graduation tab: whoever sees its Members tab (corp
+    leadership, recruiters, People and Tech teams, superusers)."""
+    return _is_academy(corporation) and can_view_corporation_members(
+        user, corporation
+    )
+
+
+def can_review_academy_graduation(
+    user: User, corporation: EveCorporation
+) -> bool:
+    """Recording a graduation decision: the Academy's CEO and directors, the
+    People team and superusers (the people who move trials to active)."""
+    return _is_academy(corporation) and can_promote_corporation_trials(
+        user, corporation
+    )

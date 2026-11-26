@@ -131,3 +131,48 @@ class CorporationRequirement(models.Model):
 
     def __str__(self):
         return f"{self.corporation.name}: {self.kind} ({self.importance})"
+
+
+class AcademyGraduationReview(models.Model):
+    """One decision at an Academy pilot's graduation review.
+
+    The Academy reviews each pilot once they have been in L3ARN for six
+    months (applications.graduation). The latest review for a person is the
+    one that counts; older rows stay as their history.
+    """
+
+    DECISION_GRADUATE = "graduate"
+    DECISION_KEEP = "keep"
+    DECISION_RELEASE = "release"
+    DECISION_CHOICES = [
+        (DECISION_GRADUATE, "Graduate"),
+        (DECISION_KEEP, "Keep in Academy"),
+        (DECISION_RELEASE, "Release"),
+    ]
+
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="academy_reviews"
+    )
+    # The main at the time of the review, so the history reads right after
+    # the person changes main.
+    character_id = models.BigIntegerField()
+    decision = models.CharField(max_length=16, choices=DECISION_CHOICES)
+    # Corporations a graduate is routed to (EVE corporation ids), first is
+    # the one picked; empty for keep and release.
+    corporation_ids = models.JSONField(default=list, blank=True)
+    note = models.TextField(blank=True, max_length=1000)
+    reviewed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="academy_reviews_given",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        indexes = [models.Index(fields=["user", "-created_at"])]
+
+    def __str__(self):
+        return f"{self.user} - {self.decision} ({self.created_at:%Y-%m-%d})"

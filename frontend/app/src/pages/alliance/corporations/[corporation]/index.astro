@@ -92,7 +92,7 @@ if (apply_corporation_promise) {
     apply_corporation = apply_result.value ?? { ...apply_corporation, status: 'error' }
 }
 
-type CorporationTab = 'about' | 'activity' | 'leadership' | 'members' | 'projects' | 'apply' | 'settings'
+type CorporationTab = 'about' | 'activity' | 'leadership' | 'members' | 'projects' | 'graduation' | 'apply' | 'settings'
 
 const has_activity = Boolean(corporation.activity_summary)
 const has_about = Boolean(biography)
@@ -177,12 +177,19 @@ const projects_partial = translatePath(`/partials/corporation_projects_component
     corporation: corporation_slug(corporation.corporation_name),
 })}`)
 
+// The Academy only: its graduation pipeline, for whoever sees its roster.
+const can_view_graduation = member_access?.can_view_graduation ?? false
+const graduation_partial = translatePath(`/partials/corporation_graduation_component/?${new URLSearchParams({
+    corporation_id: String(corporation_id),
+})}`)
+
 const tabs: CorporationTab[] = [
     ...(has_about ? ['about' as const] : []),
     ...(has_activity ? ['activity' as const] : []),
     'apply' as const,
     ...(can_view_members ? ['members' as const] : []),
     ...(can_view_projects ? ['projects' as const] : []),
+    ...(can_view_graduation ? ['graduation' as const] : []),
     ...(has_leadership ? ['leadership' as const] : []),
     ...(can_edit_settings ? ['settings' as const] : []),
 ]
@@ -200,6 +207,8 @@ function tab_label(tab: CorporationTab) {
             return t('corporations.detail.members')
         case 'projects':
             return t('corporations.detail.projects')
+        case 'graduation':
+            return t('corporations.detail.graduation')
         case 'apply':
             return t('corporations.detail.application_process')
         case 'settings':
@@ -323,6 +332,14 @@ const breadcrumbs = [
                         >
                             <p class="corp-loading">{t('corporations.projects.loading')}</p>
                         </div>
+                    </SectionTabPanel>
+                }
+
+                {can_view_graduation &&
+                    <SectionTabPanel id="graduation" id_prefix="corporation" is_default={default_tab === 'graduation'}>
+                        <LazyPartial url={graduation_partial} trigger="reveal">
+                            <p class="corp-loading">{t('corporations.detail.loading_graduation')}</p>
+                        </LazyPartial>
                     </SectionTabPanel>
                 }
 

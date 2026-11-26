@@ -3081,6 +3081,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/eveonline/corporations/corporations/{corporation_id}/graduation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The Academy's graduation pipeline (Academy leadership only) */
+        get: operations["eveonline_endpoints_corporations_get_corporation_graduation_get_corporation_graduation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/eveonline/corporations/corporations/{corporation_id}/graduation/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record a graduation decision for an Academy pilot */
+        post: operations["eveonline_endpoints_corporations_post_corporation_graduation_review_post_corporation_graduation_review"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/eveonline/corporations/corporations/{corporation_id}/info": {
         parameters: {
             query?: never;
@@ -11937,6 +11971,157 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AcademyGraduate */
+        AcademyGraduate: {
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /** Corporation Id */
+            corporation_id: number;
+            /** Days In Academy */
+            days_in_academy: number;
+            /**
+             * Graduated At
+             * Format: date-time
+             */
+            graduated_at: string;
+            /** Ticker */
+            ticker: string;
+        };
+        /**
+         * AcademyGraduationBar
+         * @description The bar a pilot meets to be ready to graduate: past review_after_days
+         *     in the Academy and any one of these over the last 90 days.
+         */
+        AcademyGraduationBar: {
+            /** Fleets */
+            fleets: number;
+            /** Kills */
+            kills: number;
+            /** Review After Days */
+            review_after_days: number;
+            /** Voice Hours */
+            voice_hours: number;
+            /** Voice Kills */
+            voice_kills: number;
+        };
+        /** AcademyGraduationCorporation */
+        AcademyGraduationCorporation: {
+            /** Corporation Id */
+            corporation_id: number;
+            /** Name */
+            name: string;
+            /** Ticker */
+            ticker: string;
+        };
+        /** AcademyGraduationPilot */
+        AcademyGraduationPilot: {
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /** Days In Academy */
+            days_in_academy: number;
+            /** Fleets 30D */
+            fleets_30d: number;
+            /** Fleets 90D */
+            fleets_90d: number;
+            /** Inactive */
+            inactive: boolean;
+            /** Join Estimated */
+            join_estimated: boolean;
+            /** Joined At */
+            joined_at?: string | null;
+            /** Kills 30D */
+            kills_30d: number;
+            /** Kills 90D */
+            kills_90d: number;
+            /** Large Gang Kills */
+            large_gang_kills: number;
+            last_review?: components["schemas"]["AcademyGraduationReviewOut"] | null;
+            /** Medium Gang Kills */
+            medium_gang_kills: number;
+            /** Prime Time */
+            prime_time?: string | null;
+            /** Ready */
+            ready: boolean;
+            /** Skill Points */
+            skill_points?: number | null;
+            /** Small Gang Kills */
+            small_gang_kills: number;
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "training" | "due" | "kept" | "graduating" | "released";
+            /** Suggestions */
+            suggestions: components["schemas"]["AcademyGraduationSuggestion"][];
+            /** User Id */
+            user_id: number;
+            /** Voice Hours 90D */
+            voice_hours_90d: number;
+        };
+        /** AcademyGraduationPipeline */
+        AcademyGraduationPipeline: {
+            bar: components["schemas"]["AcademyGraduationBar"];
+            /** Can Review */
+            can_review: boolean;
+            /** Corporations */
+            corporations: components["schemas"]["AcademyGraduationCorporation"][];
+            /** Graduates */
+            graduates: components["schemas"]["AcademyGraduate"][];
+            /** Pilots */
+            pilots: components["schemas"]["AcademyGraduationPilot"][];
+        };
+        /** AcademyGraduationReviewOut */
+        AcademyGraduationReviewOut: {
+            /** Corporation Ids */
+            corporation_ids: number[];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Decision
+             * @enum {string}
+             */
+            decision: "graduate" | "keep" | "release";
+            /** Note */
+            note: string;
+            /** Reviewed By */
+            reviewed_by?: string | null;
+        };
+        /** AcademyGraduationReviewRequest */
+        AcademyGraduationReviewRequest: {
+            /** Character Id */
+            character_id: number;
+            /**
+             * Corporation Ids
+             * @default []
+             */
+            corporation_ids?: number[];
+            /**
+             * Decision
+             * @enum {string}
+             */
+            decision: "graduate" | "keep" | "release";
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+        };
+        /** AcademyGraduationSuggestion */
+        AcademyGraduationSuggestion: {
+            /** Corporation Id */
+            corporation_id: number;
+            /** Reason */
+            reason: string;
+            /** Ticker */
+            ticker: string;
+        };
         /** AcceptInvitationRequest */
         AcceptInvitationRequest: {
             /** Character Ids */
@@ -16047,6 +16232,11 @@ export interface components {
             can_manage_projects?: boolean;
             /** Can View Characters */
             can_view_characters: boolean;
+            /**
+             * Can View Graduation
+             * @default false
+             */
+            can_view_graduation?: boolean;
             /** Can View Members */
             can_view_members: boolean;
             /**
@@ -42536,6 +42726,99 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CorporationDiscordSettings"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    eveonline_endpoints_corporations_get_corporation_graduation_get_corporation_graduation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcademyGraduationPipeline"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    eveonline_endpoints_corporations_post_corporation_graduation_review_post_corporation_graduation_review: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcademyGraduationReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcademyGraduationReviewOut"];
                 };
             };
             /** @description Bad Request */

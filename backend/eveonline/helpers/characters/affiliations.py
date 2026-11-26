@@ -1,6 +1,3 @@
-from eveonline.helpers.characters.corporation_history import (
-    corporation_id_preferring_history_over_stale_esi,
-)
 from eveonline.models import EveCharacter, EveCorporation
 
 
@@ -11,9 +8,6 @@ def update_character_with_affiliations(
     faction_id: int | None = None,
 ) -> bool:
     character = EveCharacter.objects.get(character_id=character_id)
-    corporation_id = corporation_id_preferring_history_over_stale_esi(
-        character, corporation_id
-    )
     # A corporation alliance override (BUILD -> FL33T) holds only while
     # ESI still has the character in the "from" alliance.
     override_alliance_id = (
