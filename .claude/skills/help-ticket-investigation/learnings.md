@@ -31,9 +31,9 @@ do not duplicate it — one clarifying clause at most.
 **Verdict:** bug
 **Discord:** reply with PR link
 **PR:** fix+skill
-**Symptom vs cause:** A pilot back in a corp they had left for an NPC corp long ago got no corp Discord role after refreshing. Public ESI affiliation had the corp; the cached corporation history still ended on the NPC corp. The stale-ESI guard read "ESI equals the previous history row" as stale ESI and stored the NPC corp, so the nickname showed `[?]`.
-**Durable rule:** A history row only beats ESI when the join is recent (ESI affiliation catches up within hours). Check both public routes when roles are missing after a rejoin. The production DB was not reachable this run; the diagnosis came from public ESI and the Discord member record.
-**Skill update:** new rejoin row; the Trial row now names the window.
+**Symptom vs cause:** A pilot back in a corp they had left for an NPC corp long ago got no corp Discord role after refreshing. Public ESI affiliation had the corp; the cached corporation history still ended on the NPC corp. A guard added on 2026-09-09 preferred history over ESI when ESI matched the previous history row, so it stored the NPC corp and the nickname showed `[?]`.
+**Durable rule:** Affiliation (15-minute refresh) is the source of truth for the current corporation; corporation history is cached about a day and only serves join dates and tenure. The guard was removed. The 2026-09-09 "history over stale ESI" rule below is superseded: that bounce is explained by an alt in the old corp or corp groups not being recomputed.
+**Skill update:** rewrote the previous-ticker, rejoin and Trial rows.
 
 ## 2026-11-24 — Mentor feature requests, plus "at least an hour" on Change time
 
@@ -774,7 +774,7 @@ corp; bulk ESI affiliation still returned the old corp and overwrote
 `corporation_id`. Corp-group sync then re-applied the old ticker.
 Refresh-Discord-roles used to mirror `user.groups` without a per-user
 corp-group recompute. `DiscordRole.name` can lag a Django group rename.
-**Durable rule:** History over stale ESI. Dump primary `corporation_id`,
+**Durable rule:** (Superseded 2026-11-26: ESI affiliation wins, history lags.) Dump primary `corporation_id`,
 latest two `corporation_history` rows, `user.groups` `Corp *`, and
 `DiscordRole.name`. Local Discord client is the dev guild.
 **Skill update:** failure-class row + “fix means PR from origin/main.”
