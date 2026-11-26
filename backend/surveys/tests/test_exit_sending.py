@@ -9,7 +9,7 @@ from discord.models import DiscordUser
 from eveonline.models import EveCharacter, EveCorporation, EvePlayer
 from exits.helpers.answers import AnswerError, answer
 from exits.models import Departure
-from notifications.channels import EveMailRefused
+from notifications.channels import ChannelSendError, EveMailRefused
 from surveys.helpers import exit_tokens
 from surveys.helpers.exit_sending import send_due
 from surveys.models import ExitSurveyInvite
@@ -191,6 +191,47 @@ class ExitSendingTest(TestCase):
         self.assertEqual(invite.status, "not_delivered")
         self.assertEqual(invite.channel, "")
         self.dm.assert_not_called()
+
+    def test_permanent_mail_failure_is_not_retried(self):
+        departure = self._left(82)
+        self._due(departure)
+        self.mail.side_effect = ChannelSendError("404", retryable=False)
+        send_due(self.now)
+        invite = ExitSurveyInvite.objects.get()
+        self.assertEqual(invite.status, "not_delivered")
+        self.assertEqual(invite.channel, "")
+        departure.refresh_from_db()
+        self.assertIsNone(departure.survey_due_at)
+        self.assertEqual(send_due(self.now + timedelta(minutes=15)), 0)
+        self.assertEqual(self.mail.call_count, 1)
+
+    def test_retryable_mail_failure_is_retried(self):
+        departure = self._left(83)
+        self._due(departure)
+        self.mail.side_effect = ChannelSendError("timeout", retryable=True)
+        self.assertEqual(send_due(self.now), 0)
+        self.assertFalse(ExitSurveyInvite.objects.exists())
+        departure.refresh_from_db()
+        self.assertIsNotNone(departure.survey_due_at)
+        self.mail.side_effect = None
+        self.assertEqual(send_due(self.now + timedelta(minutes=15)), 1)
+        self.assertEqual(ExitSurveyInvite.objects.get().status, "sent")
+
+    def test_permanent_discord_failure_after_cspa_is_not_retried(self):
+        user = self._pilot("Tarn Esk", 84, discord=True)
+        departure = self._left(84, user=user)
+        self._due(departure)
+        self.mail.side_effect = EveMailRefused("refused")
+        self.dm.side_effect = ChannelSendError("403", retryable=False)
+        send_due(self.now)
+        invite = ExitSurveyInvite.objects.get()
+        self.assertEqual(invite.status, "not_delivered")
+        self.assertEqual(invite.channel, "")
+        departure.refresh_from_db()
+        self.assertIsNone(departure.survey_due_at)
+        self.assertEqual(send_due(self.now + timedelta(minutes=15)), 0)
+        self.assertEqual(self.mail.call_count, 1)
+        self.assertEqual(self.dm.call_count, 1)
 
     def test_reason_locked_after_invite(self):
         departure = self._left(91)

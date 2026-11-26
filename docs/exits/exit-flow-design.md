@@ -259,6 +259,10 @@ closes once the next sync no longer lists them.
 - **Accept on the site:** if the applicant is flagged, the accept endpoint answers 409 with the flags unless the
   request confirms them. The page shows the confirm dialog and resends. The confirmation is stored (who, when,
   which flags). **[spec]**
+- **Known gap: a failed alert post isn't retried.** `send_alert` records the `RecruiterAlert` row before it posts,
+  so when the Discord post fails, that application's alert is never posted (the failure is in the task's log and
+  Sentry). Until `DISCORD_RECRUITER_ALERTS_CHANNEL_ID` is set, alerts are only logged. Either way, the history still
+  shows on the application page. **[agreed]**
 - **Several flags** from different corporations can stack, and recruiters see all of them, newest first.
   **[proposal]**
 - **Clearing a flag:** the current CEO of the corporation that set it (from its Departures tab, so a CEO change
@@ -317,7 +321,9 @@ Their questions are the issue's drafts, unchanged.
   it, keeping its rate bucket. **[spec]**
 - **Refused mail:** if ESI refuses it (a CSPA charge) and the character is on an account with Discord linked, the
   same text goes as a Discord DM through the notifications Discord adapter. Otherwise the invite is marked "not
-  delivered". Transient ESI errors retry as notifications already do. **[agreed]**
+  delivered". Transient ESI errors retry as notifications already do. A permanent failure (an ESI 4xx such as a
+  deleted recipient, a refusal whose text isn't recognised as CSPA, or a Discord DM refused because the pilot closed
+  DMs) also marks the invite "not delivered" and is never retried. **[agreed]**
 - **Which character, for an account:** alts that left together get one survey, addressed to the account's main if
   it's among them, otherwise the first character that left. **[proposal]**
 - **One survey per person, ever:** no second invite for any character on the same account; one per character when

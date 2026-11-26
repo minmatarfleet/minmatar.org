@@ -111,7 +111,23 @@ def survey_texts(departure: Departure, url: str) -> tuple[str, str, str]:
     return subject, mail, discord
 
 
+def _not_delivered(
+    invite: ExitSurveyInvite, departure: Departure, error: Exception | None
+) -> None:
+    invite.channel = ""
+    invite.status = STATUS_NOT_DELIVERED
+    if error is not None:
+        logger.warning(
+            "Exit survey for departure %s not delivered: %s",
+            departure.pk,
+            error,
+        )
+
+
 def _deliver(invite: ExitSurveyInvite, departure: Departure) -> None:
+    """Send the survey. A retryable failure raises (the caller rolls back and
+    tries again next run); a permanent one marks the invite not delivered, so
+    it is never attempted again."""
     url = exit_tokens.survey_url(exit_tokens.mint(invite))
     subject, mail, discord = survey_texts(departure, url)
     try:
@@ -121,12 +137,20 @@ def _deliver(invite: ExitSurveyInvite, departure: Departure) -> None:
     except EveMailRefused:
         user = departure.user
         if user and DiscordUser.objects.filter(user=user).exists():
-            _send_discord(user, {"title": subject, "body": discord})
-            invite.channel = CHANNEL_DISCORD_DM
-            invite.status = STATUS_SENT
+            try:
+                _send_discord(user, {"title": subject, "body": discord})
+                invite.channel = CHANNEL_DISCORD_DM
+                invite.status = STATUS_SENT
+            except ChannelSendError as error:
+                if error.retryable:
+                    raise
+                _not_delivered(invite, departure, error)
         else:
-            invite.channel = ""
-            invite.status = STATUS_NOT_DELIVERED
+            _not_delivered(invite, departure, None)
+    except ChannelSendError as error:
+        if error.retryable:
+            raise
+        _not_delivered(invite, departure, error)
     invite.save(update_fields=["channel", "status"])
 
 
@@ -148,6 +172,7 @@ def _send_group(members: list[Departure], now: datetime) -> bool:
             expires_at=now + exit_tokens.MAX_AGE,
         )
         # A retryable failure raises and rolls the invite back: next run.
+        # A permanent one is kept as not delivered and never retried.
         _deliver(invite, target)
         Departure.objects.filter(pk__in=ids).update(survey_due_at=None)
     return True
