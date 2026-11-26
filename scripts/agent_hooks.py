@@ -4,15 +4,10 @@
 Two hooks, registered in `.claude/settings.json` (and generated into
 `.cursor/hooks.json` by `scripts/sync_agent_config.py`):
 
-- pre-shell: before `git push`, `gh pr create` or `gh pr ready`, run
-  `scripts/ci_local.py` (the CI checks this diff needs), and for a pull
-  request also `scripts/check_pull_request.py` on its description. A
-  failure blocks the command and tells the agent why. `gh pr edit --body`
-  checks only the description.
-  In a Claude cloud session, the first push of a branch the session was
-  given a random name for (`claude/quirky-ramanujan-mezmg0`) is blocked
-  until the agent renames it to say what it does
-  (`claude/esi-scope-update-task-mezmg0`).
+- pre-shell: before `git push`, run `scripts/ci_local.py` (the CI checks
+  this diff needs). `gh pr create`, `gh pr ready` and `gh pr edit --body`
+  run `scripts/check_pull_request.py` on the description (the push already
+  ran the CI checks). A failure blocks the command and tells the agent why.
   `gh issue create` runs `scripts/check_issue.py` on its labels and body: a
   type label, and for a significant feature a design or a person's sign-off.
 - pre-shell, `gh pr create`: every open issue the description closes or
@@ -23,9 +18,9 @@ Two hooks, registered in `.claude/settings.json` (and generated into
   already working on it, and tell the agent to claim it (assign or comment)
   before changing code.
 - post-edit: after an agent edits a backend or bot Python file, report
-  flake8 errors; a backend file is formatted with black first.
+  flake8 errors; a backend file is formatted with black first, silently.
 
-    python3 scripts/agent_hooks.py claude pre-shell   # JSON on stdin
+    python3 scripts/agent_hooks.py claude pre-shell [push|pr|issue]  # JSON on stdin
     python3 scripts/agent_hooks.py cursor post-edit
     python3 scripts/agent_hooks.py claude prompt
 
@@ -69,10 +64,6 @@ LABEL = re.compile(
     r"(?:^|\s)(?:--label|-l)(?:=|\s+)('[^']*'|\"(?:\\.|[^\"\\])*\"|\S+)"
 )
 CD = re.compile(SEPARATOR + r"cd\s+(\S+)", re.M)
-# Claude cloud sessions name their branch claude/<adjective>-<name>-<id>.
-# The cloud git proxy only accepts pushes to claude/...-<id>, so a rename
-# keeps both ends and puts at least three words of summary in between.
-CLOUD_BRANCH = re.compile(r"^claude/([a-z]+)-([a-z]+)-([a-z0-9]{4,})$")
 
 
 # --- Reading a shell command -------------------------------------------------
@@ -249,62 +240,6 @@ def _ci(repo: Path) -> tuple[bool, str]:
     return _run(repo, ["python3", "scripts/ci_local.py"])
 
 
-def _cloud_session() -> bool:
-    return os.environ.get("CLAUDE_CODE_REMOTE", "").lower() == "true"
-
-
-def branch_name_problem(repo: Path) -> str | None:
-    """Why a cloud session's random branch name should change before push.
-
-    Only a branch that isn't on the remote yet: renaming a pushed branch
-    would orphan its pull request.
-    """
-    ok, branch = _run(repo, ["git", "rev-parse", "--abbrev-ref", "HEAD"])
-    branch = branch.strip()
-    match = CLOUD_BRANCH.match(branch) if ok else None
-    if not match:
-        return None
-    pushed, _ = _run(
-        repo,
-        [
-            "git",
-            "rev-parse",
-            "--verify",
-            "-q",
-            f"refs/remotes/origin/{branch}",
-        ],
-    )
-    tracked, _ = _run(
-        repo,
-        ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"],
-    )
-    if pushed or tracked:
-        return None
-    suffix = match.group(3)
-    return (
-        f"The branch `{branch}` has the session's random name. Rename it to "
-        "say what the change does (three to six lowercase words, kebab "
-        f"case), keeping `claude/` and the session id `-{suffix}` so the "
-        "cloud git proxy accepts the push, then push again:\n\n"
-        f"    git branch -m claude/<what-it-does>-{suffix}\n"
-        "    git push -u origin HEAD\n\n"
-        f"For example `claude/esi-scope-update-task-{suffix}`."
-    )
-
-
-def _cloud_branch_gate(blank: str, cwd: Path) -> str | None:
-    if not _cloud_session():
-        return None
-    for match in GIT_PUSH.finditer(blank):
-        if re.search(r"(^|\s)(--delete|-d|--tags)(\s|$)", match.group(2)):
-            continue
-        repo = _repo(_directory(blank, match, cwd))
-        problem = repo and branch_name_problem(repo)
-        if problem:
-            return problem
-    return None
-
-
 def _issue_problems(command: str, blank: str, cwd: Path) -> list[str]:
     """Why a `gh issue create` in the command must not run yet."""
     problems: list[str] = []
@@ -332,17 +267,17 @@ def _issue_problems(command: str, blank: str, cwd: Path) -> list[str]:
     return problems
 
 
-def gate(command: str, cwd: Path) -> str | None:
-    """Why the command must not run yet, or None to let it run."""
+def gate(command: str, cwd: Path, only: str | None = None) -> str | None:
+    """Why the command must not run yet, or None to let it run.
+
+    `only` ("push", "pr" or "issue") limits the gate to that kind of
+    command: Claude runs one filtered hook per kind (`if` in
+    .claude/settings.json), so a compound command is checked once.
+    """
     if SKIP in command:
         return None
     blank = _blank(command)
     problems: list[str] = []
-
-    problem = _cloud_branch_gate(blank, cwd)
-    if problem:
-        # Before CI: the checks would only run again after the rename.
-        return problem
     ran_ci: set[Path] = set()
 
     def ci(repo: Path) -> None:
@@ -356,7 +291,7 @@ def gate(command: str, cwd: Path) -> str | None:
                 + text
             )
 
-    for match in GIT_PUSH.finditer(blank):
+    for match in GIT_PUSH.finditer(blank) if only in (None, "push") else ():
         rest = match.group(2)
         if re.search(r"(^|\s)(--delete|-d|--tags|--dry-run|-n)(\s|$)", rest):
             continue
@@ -366,7 +301,7 @@ def gate(command: str, cwd: Path) -> str | None:
         if repo:
             ci(repo)
 
-    for match in GH_PR.finditer(blank):
+    for match in GH_PR.finditer(blank) if only in (None, "pr") else ():
         verb, rest = match.group(1), match.group(2)
         where = _directory(blank, match, cwd)
         repo = _repo(where)
@@ -402,10 +337,9 @@ def gate(command: str, cwd: Path) -> str | None:
                     "(scripts/check_pull_request.py, "
                     ".github/pull_request_template.md):\n" + text
                 )
-        if verb in ("create", "ready"):
-            ci(repo)
 
-    problems.extend(_issue_problems(command, blank, cwd))
+    if only in (None, "issue"):
+        problems.extend(_issue_problems(command, blank, cwd))
 
     if not problems:
         return None
@@ -573,9 +507,10 @@ def post_edit(path_text: str) -> tuple[str | None, bool]:
     notes, act = [], False
 
     # Only backend/ is black-formatted; bot/ is checked by flake8 alone.
+    # Formatting is silent: Claude Code notices the file changed and asks for
+    # a re-read only when the next edit needs one.
     black = _tool(repo, "black") if rel.startswith("backend/") else None
     if black:
-        before = path.read_bytes()
         subprocess.run(
             [
                 black,
@@ -586,10 +521,6 @@ def post_edit(path_text: str) -> tuple[str | None, bool]:
             ],
             capture_output=True,
         )
-        if path.read_bytes() != before:
-            notes.append(
-                f"black reformatted {rel}; read it before editing it again."
-            )
 
     flake8 = _tool(repo, "flake8")
     if flake8:
@@ -621,10 +552,11 @@ def _edited_path(data: dict) -> str | None:
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) != 3 or argv[1] not in ("claude", "cursor"):
+    if len(argv) not in (3, 4) or argv[1] not in ("claude", "cursor"):
         print(__doc__, file=sys.stderr)
         return 1
     client, event = argv[1], argv[2]
+    only = argv[3] if len(argv) == 4 else None
     try:
         data = json.load(sys.stdin)
     except ValueError:
@@ -635,9 +567,15 @@ def main(argv: list[str]) -> int:
         command = data.get("command")
         if command is None:
             command = (data.get("tool_input") or {}).get("command", "")
-        claim_block, ask = claims_gate(command or "", cwd.resolve())
+        claim_block, ask = (
+            claims_gate(command or "", cwd.resolve())
+            if only in (None, "pr")
+            else (None, None)
+        )
         reason = "\n\n".join(
-            r for r in (claim_block, gate(command or "", cwd.resolve())) if r
+            r
+            for r in (claim_block, gate(command or "", cwd.resolve(), only))
+            if r
         )
         if client == "claude":
             if reason:

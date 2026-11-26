@@ -35,6 +35,17 @@ Refresh corp names/tickers from API before routing:
 GET https://api.minmatar.org/api/eveonline/corporations/corporations?corporation_type=alliance
 ```
 
+## On the site
+
+The Academy corporation page has a **Graduation** tab (CEO, directors,
+recruiters, People team) that runs this pipeline live: every main by days in
+L3ARN from corporation history, a review due at 180 days, and Graduate / Keep /
+Release decisions stored as `applications.AcademyGraduationReview`. Its bar and
+routing are `backend/applications/graduation.py` (`meets_bar`,
+`suggest_corporations`). When you change the graduation gate or the routing
+table below, change that module and its tests (`applications/test_graduation.py`)
+to match. Check recorded decisions there before recommending a pilot again.
+
 ## Workflow
 
 ```

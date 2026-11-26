@@ -25,6 +25,36 @@ After appending, **fold any new durable rule into [SKILL.md](SKILL.md)**
 (Known failure classes or the workflow). If the rule already lives there,
 do not duplicate it — one clarifying clause at most.
 
+## 2026-11-26 — Morning triage: cleanup DMs, paused Water, freight stop
+
+**Category:** pulse.technology (three tickets)
+**Verdict:** needs-decision (issue) / clarify / clarify
+**Discord:** replies with the auto-close line
+**PR:** skill only
+**Symptom vs cause:** (1) A chief kept getting "External Discord cleanup failed" DMs: permission-denied kicks re-alert once a day per stuck seat, and with no alert channel they go straight to chiefs by DM, outside the notification system. Filed as a feature (task plus a notifications-tab setting). (2) Water refused on the buyback: deliberate oversupply pause. (3) No freight route from a system: the location is not an active freight stop; routes and stops are settings for freight managers.
+**Durable rule:** The cleanup-alert row said "alert once"; the code re-alerts per retry window. Read the retry path before telling a chief the DMs will stop on their own. A maintainer comment in the thread is context for the issue, not an instruction to implement.
+**Skill update:** corrected the cleanup DM row; added the freight stop row.
+
+## 2026-11-26 — Rejoined the academy, no corp role and a `[?]` nickname
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** reply with PR link
+**PR:** fix+skill
+**Symptom vs cause:** A pilot back in a corp they had left for an NPC corp long ago got no corp Discord role after refreshing. Public ESI affiliation had the corp; the cached corporation history still ended on the NPC corp. A guard added on 2026-09-09 preferred history over ESI when ESI matched the previous history row, so it stored the NPC corp and the nickname showed `[?]`.
+**Durable rule:** Affiliation (15-minute refresh) is the source of truth for the current corporation; corporation history is cached about a day and only serves join dates and tenure. The guard was removed. The 2026-09-09 "history over stale ESI" rule below is superseded: that bounce is explained by an alt in the old corp or corp groups not being recomputed.
+**Skill update:** rewrote the previous-ticker, rejoin and Trial rows.
+
+## 2026-11-25 — Report who owns a Metenox drill on a moon
+
+**Category:** pulse.technology
+**Verdict:** needs-decision (user feedback issue)
+**Discord:** issue link in the thread
+**PR:** skill-only
+**Symptom vs cause:** A pilot asked for a "report a drill" action on `/universe/#moons` that records the owning corporation and alliance. `EveMoon` has contents, scans and `MetenoxKill` history but no current owner. The structure report already takes a Metenox Moon Drill (`REPORTABLE_TYPES` 81826) with an owner, but a reported `EveStructure` has a solar system and no moon, so the moons tab cannot show it.
+**Durable rule:** Before calling a "report X" request new, check whether the structure report already accepts that type. The gap is often the link to the thing the pilot was looking at, not the report itself.
+**Skill update:** added the moon-drill row. This run also auto-closed four tickets whose 24-hour notice had no reply.
+
 ## 2026-11-24 — Mentor feature requests, plus "at least an hour" on Change time
 
 **Category:** pulse.technology
@@ -764,7 +794,7 @@ corp; bulk ESI affiliation still returned the old corp and overwrote
 `corporation_id`. Corp-group sync then re-applied the old ticker.
 Refresh-Discord-roles used to mirror `user.groups` without a per-user
 corp-group recompute. `DiscordRole.name` can lag a Django group rename.
-**Durable rule:** History over stale ESI. Dump primary `corporation_id`,
+**Durable rule:** (Superseded 2026-11-26: ESI affiliation wins, history lags.) Dump primary `corporation_id`,
 latest two `corporation_history` rows, `user.groups` `Corp *`, and
 `DiscordRole.name`. Local Discord client is the dev guild.
 **Skill update:** failure-class row + “fix means PR from origin/main.”

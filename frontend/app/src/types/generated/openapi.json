@@ -1,6 +1,397 @@
 {
   "components": {
     "schemas": {
+      "AcademyGraduate": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "corporation_id": {
+            "title": "Corporation Id",
+            "type": "integer"
+          },
+          "days_in_academy": {
+            "title": "Days In Academy",
+            "type": "integer"
+          },
+          "graduated_at": {
+            "format": "date-time",
+            "title": "Graduated At",
+            "type": "string"
+          },
+          "ticker": {
+            "title": "Ticker",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "character_name",
+          "corporation_id",
+          "ticker",
+          "graduated_at",
+          "days_in_academy"
+        ],
+        "title": "AcademyGraduate",
+        "type": "object"
+      },
+      "AcademyGraduationBar": {
+        "description": "The bar a pilot meets to be ready to graduate: past review_after_days\nin the Academy and any one of these over the last 90 days.",
+        "properties": {
+          "fleets": {
+            "title": "Fleets",
+            "type": "integer"
+          },
+          "kills": {
+            "title": "Kills",
+            "type": "integer"
+          },
+          "review_after_days": {
+            "title": "Review After Days",
+            "type": "integer"
+          },
+          "voice_hours": {
+            "title": "Voice Hours",
+            "type": "integer"
+          },
+          "voice_kills": {
+            "title": "Voice Kills",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "review_after_days",
+          "fleets",
+          "kills",
+          "voice_hours",
+          "voice_kills"
+        ],
+        "title": "AcademyGraduationBar",
+        "type": "object"
+      },
+      "AcademyGraduationCorporation": {
+        "properties": {
+          "corporation_id": {
+            "title": "Corporation Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ticker": {
+            "title": "Ticker",
+            "type": "string"
+          }
+        },
+        "required": [
+          "corporation_id",
+          "name",
+          "ticker"
+        ],
+        "title": "AcademyGraduationCorporation",
+        "type": "object"
+      },
+      "AcademyGraduationPilot": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "days_in_academy": {
+            "title": "Days In Academy",
+            "type": "integer"
+          },
+          "fleets_30d": {
+            "title": "Fleets 30D",
+            "type": "integer"
+          },
+          "fleets_90d": {
+            "title": "Fleets 90D",
+            "type": "integer"
+          },
+          "inactive": {
+            "title": "Inactive",
+            "type": "boolean"
+          },
+          "join_estimated": {
+            "title": "Join Estimated",
+            "type": "boolean"
+          },
+          "joined_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Joined At"
+          },
+          "kills_30d": {
+            "title": "Kills 30D",
+            "type": "integer"
+          },
+          "kills_90d": {
+            "title": "Kills 90D",
+            "type": "integer"
+          },
+          "large_gang_kills": {
+            "title": "Large Gang Kills",
+            "type": "integer"
+          },
+          "last_review": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AcademyGraduationReviewOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "medium_gang_kills": {
+            "title": "Medium Gang Kills",
+            "type": "integer"
+          },
+          "prime_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prime Time"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "skill_points": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skill Points"
+          },
+          "small_gang_kills": {
+            "title": "Small Gang Kills",
+            "type": "integer"
+          },
+          "stage": {
+            "enum": [
+              "training",
+              "due",
+              "kept",
+              "graduating",
+              "released"
+            ],
+            "title": "Stage",
+            "type": "string"
+          },
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/AcademyGraduationSuggestion"
+            },
+            "title": "Suggestions",
+            "type": "array"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "integer"
+          },
+          "voice_hours_90d": {
+            "title": "Voice Hours 90D",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "user_id",
+          "character_id",
+          "character_name",
+          "join_estimated",
+          "days_in_academy",
+          "fleets_90d",
+          "fleets_30d",
+          "kills_90d",
+          "kills_30d",
+          "small_gang_kills",
+          "medium_gang_kills",
+          "large_gang_kills",
+          "voice_hours_90d",
+          "ready",
+          "inactive",
+          "stage",
+          "suggestions"
+        ],
+        "title": "AcademyGraduationPilot",
+        "type": "object"
+      },
+      "AcademyGraduationPipeline": {
+        "properties": {
+          "bar": {
+            "$ref": "#/components/schemas/AcademyGraduationBar"
+          },
+          "can_review": {
+            "title": "Can Review",
+            "type": "boolean"
+          },
+          "corporations": {
+            "items": {
+              "$ref": "#/components/schemas/AcademyGraduationCorporation"
+            },
+            "title": "Corporations",
+            "type": "array"
+          },
+          "graduates": {
+            "items": {
+              "$ref": "#/components/schemas/AcademyGraduate"
+            },
+            "title": "Graduates",
+            "type": "array"
+          },
+          "pilots": {
+            "items": {
+              "$ref": "#/components/schemas/AcademyGraduationPilot"
+            },
+            "title": "Pilots",
+            "type": "array"
+          }
+        },
+        "required": [
+          "bar",
+          "can_review",
+          "pilots",
+          "graduates",
+          "corporations"
+        ],
+        "title": "AcademyGraduationPipeline",
+        "type": "object"
+      },
+      "AcademyGraduationReviewOut": {
+        "properties": {
+          "corporation_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Corporation Ids",
+            "type": "array"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "decision": {
+            "enum": [
+              "graduate",
+              "keep",
+              "release"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "reviewed_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed By"
+          }
+        },
+        "required": [
+          "decision",
+          "corporation_ids",
+          "note",
+          "created_at"
+        ],
+        "title": "AcademyGraduationReviewOut",
+        "type": "object"
+      },
+      "AcademyGraduationReviewRequest": {
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "corporation_ids": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "title": "Corporation Ids",
+            "type": "array"
+          },
+          "decision": {
+            "enum": [
+              "graduate",
+              "keep",
+              "release"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "character_id",
+          "decision"
+        ],
+        "title": "AcademyGraduationReviewRequest",
+        "type": "object"
+      },
+      "AcademyGraduationSuggestion": {
+        "properties": {
+          "corporation_id": {
+            "title": "Corporation Id",
+            "type": "integer"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "ticker": {
+            "title": "Ticker",
+            "type": "string"
+          }
+        },
+        "required": [
+          "corporation_id",
+          "ticker",
+          "reason"
+        ],
+        "title": "AcademyGraduationSuggestion",
+        "type": "object"
+      },
       "AcceptInvitationRequest": {
         "properties": {
           "character_ids": {
@@ -9777,6 +10168,11 @@
           "can_view_departures": {
             "default": false,
             "title": "Can View Departures",
+            "type": "boolean"
+          },
+          "can_view_graduation": {
+            "default": false,
+            "title": "Can View Graduation",
             "type": "boolean"
           },
           "can_view_members": {
@@ -69323,6 +69719,142 @@
           }
         ],
         "summary": "Approve a held pass that would remove all roles from many people at once (CEO and directors)",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      }
+    },
+    "/api/eveonline/corporations/corporations/{corporation_id}/graduation": {
+      "get": {
+        "operationId": "eveonline_endpoints_corporations_get_corporation_graduation_get_corporation_graduation",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcademyGraduationPipeline"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "The Academy's graduation pipeline (Academy leadership only)",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      }
+    },
+    "/api/eveonline/corporations/corporations/{corporation_id}/graduation/reviews": {
+      "post": {
+        "operationId": "eveonline_endpoints_corporations_post_corporation_graduation_review_post_corporation_graduation_review",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcademyGraduationReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcademyGraduationReviewOut"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Record a graduation decision for an Academy pilot",
         "tags": [
           "Corporations",
           "Corporations"

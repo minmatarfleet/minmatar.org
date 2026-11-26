@@ -546,6 +546,7 @@ class CorporationRouterTestCase(TestCase):
                 "can_view_projects": True,
                 "can_manage_projects": False,
                 "can_view_departures": False,
+                "can_view_graduation": False,
             },
             access,
         )
@@ -578,6 +579,7 @@ class CorporationRouterTestCase(TestCase):
                 "can_view_projects": True,
                 "can_manage_projects": True,
                 "can_view_departures": False,
+                "can_view_graduation": False,
             },
             access,
         )

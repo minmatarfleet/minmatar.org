@@ -289,11 +289,7 @@ def report(repo: Path, numbers: list[int], slug: str | None = None) -> Report:
         if busy:
             result.warnings.append(f"#{number} {issue.title}: " + "; ".join(busy) + ".")
         if claimed_by(issue, me):
-            result.context.append(
-                f"Issue #{number} is already claimed by @{me} (assigned or "
-                "commented)."
-            )
-            continue
+            continue  # nothing for the agent to do
         if assign is None:
             assign = can_assign(repo, slug, me)
         command = claim_command(issue, assign)

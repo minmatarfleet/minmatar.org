@@ -128,12 +128,26 @@ def render_hooks(settings_text: str) -> str:
                 command = re.sub(
                     r'"\$CLAUDE_PROJECT_DIR/([^"]+)"', r"\1", hook["command"]
                 )
-                entry = {"command": command.replace(" claude ", " cursor ")}
+                command = command.replace(" claude ", " cursor ")
+                # Cursor has no `if` filter: a Claude hook split by `if`
+                # into kinds (`pre-shell push`, `pre-shell pr`) becomes one
+                # entry that checks every kind.
+                if "if" in hook:
+                    command = command.rsplit(" ", 1)[0]
+                entries = cursor.setdefault(cursor_event, [])
+                same = [e for e in entries if e["command"] == command]
+                if same:
+                    if "timeout" in hook:
+                        same[0]["timeout"] = max(
+                            same[0].get("timeout", 0), hook["timeout"]
+                        )
+                    continue
+                entry = {"command": command}
                 if matcher:
                     entry["matcher"] = matcher
                 if "timeout" in hook:
                     entry["timeout"] = hook["timeout"]
-                cursor.setdefault(cursor_event, []).append(entry)
+                entries.append(entry)
     return json.dumps({"version": 1, "hooks": cursor}, indent=2) + "\n"
 
 

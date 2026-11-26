@@ -17,7 +17,6 @@ from eveonline.helpers.characters.affiliations import (
 from eveonline.helpers.characters.corporation_history import (
     alliance_id_at,
     character_corporation_history_is_stale,
-    corporation_id_preferring_history_over_stale_esi,
     ensure_corporation_alliance_history,
     sync_character_corporation_history,
 )
@@ -387,48 +386,34 @@ class CorporationHistorySyncTests(TestCase):
         sync_history.assert_called_once()
 
 
-class StaleEsiCorporationOverrideTests(TestCase):
+class EsiCorporationIsAuthoritativeTests(TestCase):
+    """The current corporation comes from ESI, never from cached history."""
+
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     def setUp(self):
         self.character = EveCharacter.objects.create(
             character_id=91000011,
             character_name="Corp Mover",
-            corporation_id=98741376,
+            corporation_id=1000045,
         )
         now = timezone.now()
+        # Cached history: was in 98838034, left for an NPC corp. It has not
+        # recorded the rejoin that ESI affiliation already reports.
         EveCharacterCorporationHistory.objects.create(
             character=self.character,
             record_id=2,
-            corporation_id=98741376,
-            start_date=now,
+            corporation_id=1000045,
+            start_date=now - timedelta(days=400),
         )
         EveCharacterCorporationHistory.objects.create(
             character=self.character,
             record_id=1,
             corporation_id=98838034,
-            start_date=now - timedelta(days=10),
+            start_date=now - timedelta(days=500),
         )
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    def test_keeps_history_corp_when_esi_still_reports_previous(self):
-        self.assertEqual(
-            98741376,
-            corporation_id_preferring_history_over_stale_esi(
-                self.character, 98838034
-            ),
-        )
-
-    @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    def test_applies_esi_when_it_reports_a_new_corporation(self):
-        self.assertEqual(
-            1000045,
-            corporation_id_preferring_history_over_stale_esi(
-                self.character, 1000045
-            ),
-        )
-
-    @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    def test_affiliations_do_not_revert_to_previous_corp(self):
+    def test_affiliations_apply_esi_corp_over_lagging_history(self):
         updated = update_character_with_affiliations(
             character_id=self.character.character_id,
             corporation_id=98838034,
@@ -436,11 +421,32 @@ class StaleEsiCorporationOverrideTests(TestCase):
         )
         self.character.refresh_from_db()
         self.assertTrue(updated)
-        self.assertEqual(98741376, self.character.corporation_id)
+        self.assertEqual(98838034, self.character.corporation_id)
         self.assertEqual(99000001, self.character.alliance_id)
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    def test_public_data_does_not_revert_to_previous_corp(self):
+    def test_affiliations_apply_esi_corp_when_history_shows_a_newer_join(self):
+        # History has a join ESI does not report yet. ESI still wins: the
+        # next affiliation run picks up the join within minutes.
+        EveCharacterCorporationHistory.objects.create(
+            character=self.character,
+            record_id=3,
+            corporation_id=98741376,
+            start_date=timezone.now(),
+        )
+        EveCharacter.objects.filter(pk=self.character.pk).update(
+            corporation_id=98741376
+        )
+        updated = update_character_with_affiliations(
+            character_id=self.character.character_id,
+            corporation_id=1000045,
+        )
+        self.character.refresh_from_db()
+        self.assertTrue(updated)
+        self.assertEqual(1000045, self.character.corporation_id)
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    def test_public_data_applies_esi_corp_over_lagging_history(self):
         updated = apply_character_public_data(
             self.character,
             {
@@ -450,5 +456,5 @@ class StaleEsiCorporationOverrideTests(TestCase):
             },
         )
         self.assertTrue(updated)
-        self.assertEqual(98741376, self.character.corporation_id)
+        self.assertEqual(98838034, self.character.corporation_id)
         self.assertEqual(1.0, self.character.security_status)
