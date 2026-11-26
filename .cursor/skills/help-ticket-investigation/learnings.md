@@ -25,6 +25,16 @@ After appending, **fold any new durable rule into [SKILL.md](SKILL.md)**
 (Known failure classes or the workflow). If the rule already lives there,
 do not duplicate it — one clarifying clause at most.
 
+## 2026-11-25 — Report who owns a Metenox drill on a moon
+
+**Category:** pulse.technology
+**Verdict:** needs-decision (user feedback issue)
+**Discord:** issue link in the thread
+**PR:** skill-only
+**Symptom vs cause:** A pilot asked for a "report a drill" action on `/universe/#moons` that records the owning corporation and alliance. `EveMoon` has contents, scans and `MetenoxKill` history but no current owner. The structure report already takes a Metenox Moon Drill (`REPORTABLE_TYPES` 81826) with an owner, but a reported `EveStructure` has a solar system and no moon, so the moons tab cannot show it.
+**Durable rule:** Before calling a "report X" request new, check whether the structure report already accepts that type. The gap is often the link to the thing the pilot was looking at, not the report itself.
+**Skill update:** added the moon-drill row. This run also auto-closed four tickets whose 24-hour notice had no reply.
+
 ## 2026-11-24 — Mentor feature requests, plus "at least an hour" on Change time
 
 **Category:** pulse.technology
