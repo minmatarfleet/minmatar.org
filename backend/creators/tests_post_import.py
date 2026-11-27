@@ -16,6 +16,7 @@ from creators.post_import import (
     apply_imports,
     candidate_from_reddit,
     classify_reddit,
+    collect_candidates,
     fetch_youtube_window,
     import_recent_creator_posts,
     parse_youtube_playlist_item,
@@ -377,6 +378,24 @@ class CreatorPostImportTestCase(TestCase):
         result = fetch_youtube_window(account, cutoff=_published())
         rss_window.assert_called_once_with("UCexample", _published())
         self.assertEqual(result, [{"id": "SK0jimasEuc"}])
+
+    @patch("creators.post_import.fetch_youtube_window", return_value=[])
+    def test_import_start_raises_the_cutoff(self, fetch_window):
+        user = User.objects.create(username="fleet-channel")
+        start = datetime(2026, 9, 1, tzinfo=dt_timezone.utc)
+        account = CreatorAccount.objects.create(
+            user=user,
+            provider=CreatorProvider.YOUTUBE,
+            platform_user_id="UCstart",
+            import_start_at=start,
+        )
+        collect_candidates([account], cutoff=_published(), reddit_token=None)
+        fetch_window.assert_called_once_with(account, cutoff=start)
+
+        account.import_start_at = datetime(2026, 1, 1, tzinfo=dt_timezone.utc)
+        fetch_window.reset_mock()
+        collect_candidates([account], cutoff=_published(), reddit_token=None)
+        fetch_window.assert_called_once_with(account, cutoff=_published())
 
     def test_playlist_item_skips_unlisted_and_private_videos(self):
         def item(privacy):

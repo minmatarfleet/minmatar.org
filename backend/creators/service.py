@@ -11,6 +11,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
+from creators.announce import announce_new_items
 from creators.clients.reddit import (
     list_user_submitted,
     normalize_reddit_username,
@@ -304,6 +305,9 @@ def sync_twitch_videos(account: CreatorAccount) -> int:
         external_id = str(video.get("id") or "")
         if not external_id:
             continue
+        published_at = _parse_ts(video.get("published_at"))
+        if account.is_before_import_start(published_at):
+            continue
         CreatorItem.objects.update_or_create(
             provider=CreatorProvider.TWITCH,
             external_id=external_id,
@@ -313,12 +317,13 @@ def sync_twitch_videos(account: CreatorAccount) -> int:
                 "title": (video.get("title") or "")[:512],
                 "url": video.get("url") or "",
                 "thumbnail_url": _twitch_thumbnail(video.get("thumbnail_url")),
-                "published_at": _parse_ts(video.get("published_at")),
+                "published_at": published_at,
             },
         )
         count += 1
     account.last_synced_at = timezone.now()
     account.save(update_fields=["last_synced_at", "updated_at"])
+    announce_new_items(account)
     return count
 
 
@@ -358,6 +363,11 @@ def sync_youtube_videos(account: CreatorAccount) -> int:
                 provider=CreatorProvider.YOUTUBE, external_id=video_id
             ).delete()
             continue
+        published_at = _parse_ts(
+            content.get("videoPublishedAt") or snippet.get("publishedAt")
+        )
+        if account.is_before_import_start(published_at):
+            continue
         thumbs = snippet.get("thumbnails") or {}
         thumb = (
             thumbs.get("high")
@@ -374,15 +384,13 @@ def sync_youtube_videos(account: CreatorAccount) -> int:
                 "title": (snippet.get("title") or "")[:512],
                 "url": f"https://www.youtube.com/watch?v={video_id}",
                 "thumbnail_url": thumb,
-                "published_at": _parse_ts(
-                    content.get("videoPublishedAt")
-                    or snippet.get("publishedAt")
-                ),
+                "published_at": published_at,
             },
         )
         count += 1
     account.last_synced_at = timezone.now()
     account.save(update_fields=["last_synced_at", "updated_at"])
+    announce_new_items(account)
     return count
 
 
@@ -403,6 +411,8 @@ def sync_reddit_posts(account: CreatorAccount) -> int:
                 )
             except (TypeError, ValueError, OSError):
                 published_at = None
+        if account.is_before_import_start(published_at):
+            continue
         CreatorItem.objects.update_or_create(
             provider=CreatorProvider.REDDIT,
             external_id=external_id,
@@ -418,6 +428,7 @@ def sync_reddit_posts(account: CreatorAccount) -> int:
         count += 1
     account.last_synced_at = timezone.now()
     account.save(update_fields=["last_synced_at", "updated_at"])
+    announce_new_items(account)
     return count
 
 

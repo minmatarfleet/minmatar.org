@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.validators import RegexValidator
 from django.db import models
 
 
@@ -50,6 +51,24 @@ class CreatorAccount(models.Model):
     live_started_at = models.DateTimeField(null=True, blank=True)
     live_title = models.CharField(max_length=512, blank=True)
     last_synced_at = models.DateTimeField(null=True, blank=True)
+    # Media published before this is never imported: not into the creator
+    # feed, not as a site post, not to Discord. Blank: no limit.
+    import_start_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Ignore media published before this date and time.",
+    )
+    # Discord channel that new media from this account is shared in
+    # (creators.announce). Blank: not shared.
+    discord_channel_id = models.CharField(
+        max_length=32,
+        blank=True,
+        validators=[
+            RegexValidator(r"^\d+$", "A Discord channel id is digits only.")
+        ],
+        help_text="Discord channel id to post new videos/posts in "
+        "(e.g. #propaganda). Leave blank to not post.",
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -68,6 +87,12 @@ class CreatorAccount(models.Model):
 
     def __str__(self) -> str:
         return f"{self.provider}:{self.platform_username or self.platform_user_id}"
+
+    def is_before_import_start(self, published_at) -> bool:
+        """True when media published then should not be imported."""
+        if self.import_start_at is None:
+            return False
+        return published_at is None or published_at < self.import_start_at
 
 
 class CreatorItem(models.Model):
@@ -88,6 +113,8 @@ class CreatorItem(models.Model):
     hidden = models.BooleanField(default=False)
     featured = models.BooleanField(default=False)
     published_at = models.DateTimeField(null=True, blank=True)
+    # When it was posted to the account's Discord channel.
+    announced_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
