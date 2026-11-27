@@ -13,8 +13,10 @@ file disagree, fix one of them in the same change.
    lists, same visibility, same Discord messages, same metrics, same
    `#schedule` message byte for byte.
 2. A members-only group item is never shown, listed, counted in alliance
-   metrics, pinged or scheduled outside the group. Its existence may be
-   revealed (the gate page names the group), its content may not.
+   metrics, pinged or scheduled outside the group, except in a
+   corporation's Discord channel the group's chiefs approved (rule 3). Its
+   existence may be revealed (the gate page names the group), its content
+   may not.
 3. Group fleets never ping `@everyone`. The ping that notifies members is
    the start ping from `EveFleet.notify_discord`, with the group's role. A
    group fleet may also send a **quiet pre-ping** so members know a fleet is
@@ -23,6 +25,12 @@ file disagree, fix one of them in the same change.
    fleet time. It goes to the group's channel (else its tribe's), mentions
    nobody and is sent as a Discord silent message (flag 4096), so nobody is
    notified. Alliance fleets still have no pre-ping controls on the site.
+   A group may also post a silent **daily roundup** of its fleets in the
+   next 5 days to the same channel, at an hour its chiefs pick. The
+   roundup, the quiet pre-ping and the start ping are copied to each
+   corporation channel the group's chiefs approved: silently, and the start
+   ping with `@here` instead of the group's role
+   (`docs/tribes/group-fleet-roundup.md`).
 4. "Open to the alliance" only makes a group fleet visible. Its ping still
    goes to the group's channel with the group's role.
 5. Strategic fleets are alliance-only. A group fleet's type is
