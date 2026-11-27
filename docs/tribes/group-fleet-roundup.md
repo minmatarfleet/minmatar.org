@@ -67,6 +67,8 @@ channel. The fleet posts should reach that channel too.
 | Start ping | group role | `@here` |
 
 - Private (invite-only) fleets are never forwarded.
+- Corporation copies drop our custom fleet-type emoji: they live in the
+  alliance server and would show as `:name:` text elsewhere.
 - A corporation gets the roundup only when the group has it turned on, at
   the group's hour.
 - A pre-ping or start ping still needs the group's own channel (else its

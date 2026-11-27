@@ -119,6 +119,25 @@ class FleetPostDestinationTests(TestCase):
                 self.assertEqual(payload["embeds"], PRE_PING["embeds"])
         self.assertTrue(follow.is_forwarding())
 
+    def test_corp_roundup_drops_custom_emoji(self):
+        # Our fleet-type emoji live in the alliance server; a corporation's
+        # server would show them as ":name:" text.
+        self.follow()
+        roundup = {
+            "content": "### Mining fleets\n- <:ns:42> 18:00 EVE · x\n"
+            "- <a:spin:7> 19:00 EVE · y\n- 20:00 EVE · z\n",
+            "flags": 4096,
+        }
+        group_dest, corp_dest = group_post_destinations(self.group, "roundup")
+        self.assertEqual(
+            group_dest.apply(roundup, "roundup")["content"], roundup["content"]
+        )
+        self.assertEqual(
+            corp_dest.apply(roundup, "roundup")["content"],
+            "### Mining fleets\n- 18:00 EVE · x\n- 19:00 EVE · y\n"
+            "- 20:00 EVE · z\n",
+        )
+
     def test_start_ping_role_in_group_here_in_corp(self):
         self.follow()
         group_dest, corp_dest = group_post_destinations(

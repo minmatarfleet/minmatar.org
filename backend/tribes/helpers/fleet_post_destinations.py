@@ -14,6 +14,7 @@ corporation channel the group's managers approved
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Literal
 
@@ -26,6 +27,10 @@ PostKind = Literal["roundup", "pre_ping", "start_ping"]
 SILENT_MESSAGE_FLAG = 4096
 SILENT_KINDS = ("roundup", "pre_ping")
 CORPORATION_START_PING_CONTENT = "@here"
+# A custom emoji (<:name:id>, animated <a:name:id>) and the space after it.
+# Ours live in the alliance server, so a corporation's server would show
+# them as ":name:" text.
+CUSTOM_EMOJI = re.compile(r"<a?:\w+:\d+> ?")
 
 
 @dataclass(frozen=True)
@@ -37,6 +42,8 @@ class Destination:
     def apply(self, payload: dict, kind: PostKind) -> dict:
         """A copy of the payload with this destination's mention rule."""
         payload = dict(payload)
+        if self.follow_id is not None and payload.get("content"):
+            payload["content"] = CUSTOM_EMOJI.sub("", payload["content"])
         if kind in SILENT_KINDS:
             payload["flags"] = SILENT_MESSAGE_FLAG
             payload["allowed_mentions"] = {"parse": []}
