@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from creators.models import CreatorAccount, CreatorItem, YouTubeAnnouncement
+from creators.models import CreatorAccount, CreatorItem
 
 
 @admin.register(CreatorAccount)
@@ -13,6 +13,7 @@ class CreatorAccountAdmin(admin.ModelAdmin):
         "platform_user_id",
         "is_live",
         "token_invalid",
+        "discord_channel_id",
         "last_synced_at",
         "updated_at",
     )
@@ -48,6 +49,7 @@ class CreatorItemAdmin(admin.ModelAdmin):
         "title",
         "account",
         "published_at",
+        "announced_at",
         "external_id",
     )
     list_filter = ("provider", "kind")
@@ -61,17 +63,3 @@ def _truncate_token(value: str | None) -> str:
     if len(value) <= 12:
         return "***"
     return f"{value[:4]}…{value[-4:]}"
-
-
-@admin.register(YouTubeAnnouncement)
-class YouTubeAnnouncementAdmin(admin.ModelAdmin):
-    list_display = (
-        "video_id",
-        "title",
-        "is_short",
-        "published_at",
-        "announced_at",
-    )
-    list_filter = ("is_short",)
-    search_fields = ("video_id", "title")
-    readonly_fields = ("created_at",)

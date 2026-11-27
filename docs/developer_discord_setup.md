@@ -208,9 +208,6 @@ DISCORD_CLIENT_SECRET=your_client_secret_here
 DISCORD_GUILD_ID=your_server_id_here
 DISCORD_PEOPLE_TEAM_CHANNEL_ID=your_people_channel_id_here
 DISCORD_TECHNOLOGY_TEAM_CHANNEL_ID=your_tech_channel_id_here
-# New alliance YouTube videos and Shorts are shared here (#propaganda in
-# production). Use a test channel, or 0 to turn it off.
-DISCORD_YOUTUBE_ANNOUNCE_CHANNEL_ID=your_test_channel_id_here
 ... others
 ```
 

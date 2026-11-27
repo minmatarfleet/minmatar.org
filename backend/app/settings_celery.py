@@ -652,14 +652,6 @@ CELERYBEAT_OTHER = [
         },
     ),
     (
-        "[Creators] Share new alliance YouTube uploads in #propaganda",
-        {
-            "task": "creators.tasks.announce_youtube_uploads",
-            "schedule": crontab(minute="*/10"),
-            "options": {"expire_seconds": 10 * 60},
-        },
-    ),
-    (
         "[Discord] Reconcile corporation and tribe role mappings",
         {
             "task": "discord.tasks.reconcile_guild_role_mappings",

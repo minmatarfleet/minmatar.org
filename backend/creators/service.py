@@ -11,6 +11,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
+from creators.announce import announce_new_items
 from creators.clients.reddit import (
     list_user_submitted,
     normalize_reddit_username,
@@ -319,6 +320,7 @@ def sync_twitch_videos(account: CreatorAccount) -> int:
         count += 1
     account.last_synced_at = timezone.now()
     account.save(update_fields=["last_synced_at", "updated_at"])
+    announce_new_items(account)
     return count
 
 
@@ -383,6 +385,7 @@ def sync_youtube_videos(account: CreatorAccount) -> int:
         count += 1
     account.last_synced_at = timezone.now()
     account.save(update_fields=["last_synced_at", "updated_at"])
+    announce_new_items(account)
     return count
 
 
@@ -418,6 +421,7 @@ def sync_reddit_posts(account: CreatorAccount) -> int:
         count += 1
     account.last_synced_at = timezone.now()
     account.save(update_fields=["last_synced_at", "updated_at"])
+    announce_new_items(account)
     return count
 
 

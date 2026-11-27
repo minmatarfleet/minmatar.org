@@ -1,7 +1,6 @@
 from app.celery import app
 from creators.post_import import import_recent_creator_posts
 from creators.service import poll_twitch_live, sync_all_media
-from creators.youtube_announce import announce_new_uploads
 
 
 @app.task(exclusive=10 * 60)
@@ -18,9 +17,3 @@ def sync_creator_media():
 def import_creator_posts():
     """Promote recent linked Reddit/YouTube posts into EvePosts."""
     return import_recent_creator_posts(days=7, state="published")
-
-
-@app.task(exclusive=10 * 60, expires=10 * 60)
-def announce_youtube_uploads():
-    """Share new alliance YouTube videos and Shorts in #propaganda."""
-    return announce_new_uploads()

@@ -50,6 +50,14 @@ class CreatorAccount(models.Model):
     live_started_at = models.DateTimeField(null=True, blank=True)
     live_title = models.CharField(max_length=512, blank=True)
     last_synced_at = models.DateTimeField(null=True, blank=True)
+    # Discord channel that new media from this account is shared in
+    # (creators.announce). Blank: not shared.
+    discord_channel_id = models.CharField(
+        max_length=32,
+        blank=True,
+        help_text="Discord channel id to post new videos/posts in "
+        "(e.g. #propaganda). Leave blank to not post.",
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -88,6 +96,8 @@ class CreatorItem(models.Model):
     hidden = models.BooleanField(default=False)
     featured = models.BooleanField(default=False)
     published_at = models.DateTimeField(null=True, blank=True)
+    # When it was posted to the account's Discord channel.
+    announced_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -102,28 +112,3 @@ class CreatorItem(models.Model):
 
     def __str__(self) -> str:
         return f"{self.provider}:{self.kind}:{self.title or self.external_id}"
-
-
-class YouTubeAnnouncement(models.Model):
-    """A video or short from an announced YouTube channel, posted to Discord once.
-
-    A row means the video was seen: announced, or recorded without a post
-    the first time the channel was polled (so old uploads don't flood
-    the Discord channel).
-    """
-
-    youtube_channel_id = models.CharField(max_length=64, db_index=True)
-    video_id = models.CharField(max_length=32, unique=True)
-    title = models.CharField(max_length=512, blank=True)
-    url = models.URLField(max_length=255)
-    is_short = models.BooleanField(default=False)
-    published_at = models.DateTimeField(null=True, blank=True)
-    # Null when the video was recorded as already seen, without a post.
-    announced_at = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["-published_at", "-id"]
-
-    def __str__(self) -> str:
-        return f"{self.video_id}: {self.title}"
