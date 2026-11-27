@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ping_preview_warning } from '@helpers/fetching/fleet_ping_preview'
+import { also_posted_to_line, ping_preview_warning } from '@helpers/fetching/fleet_ping_preview'
 
 describe('ping_preview_warning', () => {
     it('never warns for an alliance fleet', () => {
@@ -19,5 +19,16 @@ describe('ping_preview_warning', () => {
         // Even when the channel's name is unknown (Discord unreachable, not
         // cached yet): has_channel comes from the backend, and the ping goes out.
         expect(ping_preview_warning(true, true, '<@&123>')).toBeNull()
+    })
+})
+
+describe('also_posted_to_line', () => {
+    it('is empty without corporations', () => {
+        expect(also_posted_to_line([], 'Also posted to {names}')).toBe('')
+        expect(also_posted_to_line(undefined, 'Also posted to {names}')).toBe('')
+    })
+
+    it('names the corporations', () => {
+        expect(also_posted_to_line(['M-EXC', 'Other'], 'Also posted to {names}')).toBe('Also posted to M-EXC, Other')
     })
 })

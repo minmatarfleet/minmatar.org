@@ -37,10 +37,25 @@ const character_ids = (values: FormDataEntryValue[]): number[] => [
  */
 export function discord_settings_patch(form: FormValues): TribeGroupPublishingPatch {
     const channel = String(form.get('discord_channel_id') ?? '').trim()
-    return {
+    const patch: TribeGroupPublishingPatch = {
         discord_channel_id: (/^\d+$/.test(channel) ? channel : null) as unknown as number | null,
     }
+    // The daily roundup (docs/tribes/group-fleet-roundup.md): only when the
+    // form has its fields, so a form without them changes nothing.
+    if (form.get('roundup_hour') !== null) {
+        patch.roundup_enabled = form.get('roundup_enabled') === 'on'
+        const hour = String(form.get('roundup_hour')).trim()
+        if (/^\d{1,2}$/.test(hour) && parseInt(hour) <= 23)
+            patch.roundup_hour = parseInt(hour)
+    }
+    return patch
 }
+
+/** The roundup's hour picker: 00:00 to 23:00 EVE. */
+export const ROUNDUP_HOURS = Array.from({ length: 24 }, (_, hour) => ({
+    value: hour,
+    label: `${String(hour).padStart(2, '0')}:00`,
+}))
 
 /**
  * Publishing section: the three policies (`post_policy`, ...), the chosen

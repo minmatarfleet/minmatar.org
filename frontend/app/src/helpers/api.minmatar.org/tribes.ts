@@ -1,4 +1,6 @@
 import type {
+    GroupCorporationFollow,
+    GroupCorporationFollowDecision,
     TribeAbout,
     TribeGroupAbout,
     Tribe,
@@ -555,4 +557,34 @@ export async function set_chief(access_token:string, tribe_id:number, group_id:n
         body: { user_id, ...(region ? { region } : {}) },
         error: 'Error changing the chief',
     })
+}
+
+export class GroupFollowError extends Error {}
+
+/** Corporations that asked for the group's fleet posts in their own Discord (managers only). */
+export async function get_group_corporation_follows(access_token:string, group_id:number) {
+    return await api_request<GroupCorporationFollow[]>(`${API_ENDPOINT}/groups/${group_id}/corporation-follows`, {
+        token: access_token,
+        error: 'Error loading corporation follows',
+    })
+}
+
+/** Approve or revoke a corporation's follow; returns the group's follows. */
+export async function decide_group_corporation_follow(
+    access_token:string,
+    group_id:number,
+    follow_id:number,
+    payload:GroupCorporationFollowDecision,
+) {
+    const response = await api_response(`${API_ENDPOINT}/groups/${group_id}/corporation-follows/${follow_id}`, {
+        method: 'POST',
+        token: access_token,
+        body: payload,
+        allow: [403, 404],
+    })
+    if (!response.ok) {
+        const body = await response.json().catch(() => ({}))
+        throw new GroupFollowError(body.detail ?? `HTTP ${response.status}`)
+    }
+    return await response.json() as GroupCorporationFollow[]
 }

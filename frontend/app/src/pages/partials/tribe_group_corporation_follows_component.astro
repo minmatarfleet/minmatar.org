@@ -1,0 +1,154 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { GroupCorporationFollow } from '@dtypes/api.minmatar.org'
+import { get_request_user } from '@helpers/request_user'
+import { HTTP_400_Bad_Request, HTTP_403_Forbidden } from '@helpers/http_responses'
+import {
+    decide_group_corporation_follow,
+    get_group_corporation_follows,
+} from '@helpers/api.minmatar.org/tribes'
+import { fleet_follow_status_key, group_follow_decision } from '@helpers/corporations/fleet_follows_settings'
+import { query_string } from '@helpers/string'
+
+// Chiefs tab: corporations that asked for the group's fleet posts in their own
+// Discord (docs/tribes/group-fleet-roundup.md). POST approves or revokes one,
+// then renders the list again.
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const params = Astro.url.searchParams
+const tribe_id = parseInt(params.get('tribe_id') ?? '')
+const group_id = parseInt(params.get('group_id') ?? '')
+const group_name = params.get('group_name') ?? ''
+if (!Number.isFinite(tribe_id) || !Number.isFinite(group_id))
+    return HTTP_400_Bad_Request()
+
+const PARTIAL_URL = translatePath(`/partials/tribe_group_corporation_follows_component/?${query_string({
+    tribe_id: String(tribe_id),
+    group_id: String(group_id),
+    group_name,
+})}`)
+const ROOT_ID = `tribe-group-follows-${group_id}`
+
+let follows: GroupCorporationFollow[] | null = null
+let save_error: string | null = null
+let load_error: Error | false = false
+
+if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    const decision = group_follow_decision(form.get('decision'))
+    const follow_id = parseInt(String(form.get('follow_id') ?? ''))
+    if (!decision || !Number.isFinite(follow_id)) return HTTP_400_Bad_Request()
+    try {
+        follows = await decide_group_corporation_follow(auth_token, group_id, follow_id, { decision })
+    } catch (error) {
+        save_error = t('tribes.settings.follows.error').replace('{error}', (error as Error).message)
+    }
+}
+
+if (!follows) {
+    try {
+        follows = await get_group_corporation_follows(auth_token, group_id)
+    } catch (error) {
+        load_error = error as Error
+    }
+}
+
+const delay = parseInt(params.get('delay') ?? '0')
+
+import Button from '@components/blocks/Button.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import Tag from '@components/blocks/Tag.astro'
+import BlockList from '@components/compositions/BlockList.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+const STATUS_COLOR: Record<string, string> = {
+    requested: 'fleet-yellow',
+    approved: 'green',
+    revoked: 'fleet-red',
+}
+---
+
+{load_error || !follows ?
+    <ErrorRefetch args={{ partial: PARTIAL_URL, error: load_error as Error, delay }} />
+    :
+    <section id={ROOT_ID} class="[ tribe-group-follows ]" aria-labelledby={`${ROOT_ID}-title`}>
+        <ComponentBlock padding_block="var(--space-m)" padding_inline="var(--space-m)">
+            <Flexblock gap="var(--space-s)">
+                <div>
+                    <h2 id={`${ROOT_ID}-title`}>{t('tribes.settings.follows.title')}</h2>
+                    <p class="[ tribe-group-follows__lead ]">{t('tribes.settings.follows.lead').replace('{group}', group_name)}</p>
+                </div>
+
+                {save_error && <p class="[ tribe-group-follows__error ]" role="alert">{save_error}</p>}
+
+                {follows.length === 0 ?
+                    <EmptyState title={t('tribes.settings.follows.empty')} />
+                    :
+                    <BlockList gap="var(--space-xs)">
+                        {follows.map((follow) =>
+                            <FlexInline class="[ tribe-group-follows__row ]" justification="space-between" gap="var(--space-xs)">
+                                <Flexblock gap="var(--space-3xs)">
+                                    <FlexInline gap="var(--space-2xs)">
+                                        <b>{follow.corporation_name}</b>
+                                        <Tag text={t(fleet_follow_status_key(follow.status))} color={STATUS_COLOR[follow.status] ?? 'fleet-yellow'} narrow={true} />
+                                    </FlexInline>
+                                    <small>{t('tribes.settings.follows.channel').replace('{channel}', follow.channel_name || '?')}</small>
+                                    {follow.decided_by_name &&
+                                        <small>{t('tribes.settings.follows.decided_by')
+                                            .replace('{status}', t(fleet_follow_status_key(follow.status)))
+                                            .replace('{name}', follow.decided_by_name)}</small>
+                                    }
+                                    {follow.status === 'approved' && follow.last_delivery_ok === false &&
+                                        <small class="[ tribe-group-follows__error ]">{t('tribes.settings.follows.last_failed')}</small>
+                                    }
+                                </Flexblock>
+                                <form
+                                    hx-post={PARTIAL_URL}
+                                    hx-target={`#${ROOT_ID}`}
+                                    hx-swap="outerHTML"
+                                    hx-indicator=".loader"
+                                >
+                                    <input type="hidden" name="follow_id" value={follow.follow_id} />
+                                    <FlexInline gap="var(--space-2xs)">
+                                        {follow.status !== 'approved' &&
+                                            <Button type="submit" name="decision" value="approve" size="sm">{t('tribes.settings.follows.approve')}</Button>
+                                        }
+                                        {follow.status !== 'revoked' &&
+                                            <Button type="submit" name="decision" value="revoke" size="sm" color="transparent">{t('tribes.settings.follows.revoke')}</Button>
+                                        }
+                                    </FlexInline>
+                                </form>
+                            </FlexInline>
+                        )}
+                    </BlockList>
+                }
+            </Flexblock>
+        </ComponentBlock>
+    </section>
+}
+
+<style lang="scss">
+    .tribe-group-follows__lead {
+        margin: 0;
+        color: var(--faded);
+    }
+
+    .tribe-group-follows__row {
+        padding-block: var(--space-2xs);
+        border-block-end: solid 1px var(--border-color);
+
+        small {
+            color: var(--faded);
+        }
+    }
+
+    .tribe-group-follows__error {
+        color: var(--fleet-red);
+    }
+</style>

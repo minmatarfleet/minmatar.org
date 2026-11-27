@@ -128,6 +128,9 @@ for (const key of ['discord_bot', 'discord_bot_error']) {
     if (value) discord_params.set(key, value)
 }
 const discord_partial = translatePath(`/partials/corporation_discord_component/?${discord_params}`)
+const fleet_follows_partial = translatePath(`/partials/corporation_fleet_follows_component/?${new URLSearchParams({
+    corporation_id: String(corporation_id),
+})}`)
 const page_text_partial = translatePath(`/partials/corporation_page_text_component/?${new URLSearchParams({
     corporation_id: String(corporation_id),
 })}`)
@@ -157,6 +160,7 @@ const settings_groups: SettingsNavGroup[] = [
             { id: 'reddit', label: t('corporations.settings.reddit_section'), href: settings_href('reddit'), url: settings_partial },
             { id: 'forum', label: t('corporations.settings.forum_section'), href: settings_href('forum'), url: forum_post_partial },
             { id: 'discord', label: t('corporations.settings.discord_section'), href: settings_href('discord'), url: discord_partial },
+            { id: 'fleet_pings', label: t('corporations.settings.fleet_pings_section'), href: settings_href('fleet_pings'), url: fleet_follows_partial },
         ],
     },
 ]

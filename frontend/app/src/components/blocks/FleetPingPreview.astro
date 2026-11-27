@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import type { FleetPingPreviewUI } from '@helpers/fetching/fleet_ping_preview'
+import { also_posted_to_line, type FleetPingPreviewUI } from '@helpers/fetching/fleet_ping_preview'
 
 /**
  * The fleet form's Discord start ping preview. The form page renders it once
@@ -14,6 +14,7 @@ interface Props {
 }
 
 const { preview } = Astro.props
+const also_posted = also_posted_to_line(preview.also_posted_to, t('fleets.host.preview_also_posted'))
 
 import DiscordEmbedPreview from '@components/blocks/DiscordEmbedPreview.astro'
 ---
@@ -27,6 +28,9 @@ import DiscordEmbedPreview from '@components/blocks/DiscordEmbedPreview.astro'
     role_name={preview.role_name}
     payload={preview.payload}
 />
+{also_posted &&
+    <small class="[ fleet-ping-preview__also ]">{also_posted}</small>
+}
 {preview.error &&
     <small class="[ fleet-ping-preview__error ]">{t('fleets.host.preview_error')}</small>
 }
@@ -35,6 +39,12 @@ import DiscordEmbedPreview from '@components/blocks/DiscordEmbedPreview.astro'
     .fleet-ping-preview__warning {
         margin-block-end: var(--space-2xs);
         color: var(--fleet-red);
+    }
+
+    .fleet-ping-preview__also {
+        display: block;
+        margin-block-start: var(--space-3xs);
+        color: var(--faded);
     }
 
     .fleet-ping-preview__error {

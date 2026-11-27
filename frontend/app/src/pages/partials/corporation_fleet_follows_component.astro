@@ -1,0 +1,203 @@
+---
+import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { CorporationFleetFollows } from '@dtypes/api.minmatar.org'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import {
+    FleetFollowError,
+    get_corporation_fleet_follows,
+    remove_corporation_fleet_follow,
+    save_corporation_fleet_follow,
+} from '@helpers/api.minmatar.org/corporations'
+import {
+    fleet_follow_error_key,
+    fleet_follow_status_key,
+    fleet_follow_warning_key,
+    parse_fleet_follow_action,
+} from '@helpers/corporations/fleet_follows_settings'
+import { query_string } from '@helpers/string'
+
+// Settings > Fleet pings: the tribe groups whose roundup, quiet pre-pings and
+// start pings (with @here) go to a channel of the corporation's own Discord
+// (docs/tribes/group-fleet-roundup.md). A group chief approves each one.
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id') ?? '')
+if (!corporation_id) return HTTP_403_Forbidden()
+
+const PARTIAL_URL = translatePath(`/partials/corporation_fleet_follows_component/?${query_string({
+    corporation_id: String(corporation_id),
+})}`)
+const ROOT_ID = 'corporation-fleet-follows'
+
+let data: CorporationFleetFollows | null = null
+let flash: { kind: 'success' | 'error', message: string } | null = null
+let load_error: Error | false = false
+
+if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    const action = parse_fleet_follow_action(form.get('action'))
+    const tribe_group_id = parseInt(String(form.get('tribe_group_id') ?? ''))
+    const channel_id = String(form.get('channel_id') ?? '').trim()
+    try {
+        if (!Number.isFinite(tribe_group_id)) throw new FleetFollowError('unknown_group')
+        data = action === 'remove'
+            ? await remove_corporation_fleet_follow(auth_token, corporation_id, tribe_group_id)
+            : await save_corporation_fleet_follow(auth_token, corporation_id, tribe_group_id, channel_id)
+        flash = {
+            kind: 'success',
+            message: t(action === 'remove' ? 'corporations.fleet_pings.removed' : 'corporations.fleet_pings.saved'),
+        }
+    } catch (error) {
+        flash = {
+            kind: 'error',
+            message: t(error instanceof FleetFollowError ? fleet_follow_error_key(error.message) : 'corporations.settings.error_save'),
+        }
+    }
+}
+
+if (!data) {
+    try {
+        data = await get_corporation_fleet_follows(auth_token, corporation_id)
+    } catch (error) {
+        if (error instanceof FleetFollowError && error.message === 'Not authorised') return HTTP_403_Forbidden()
+        load_error = error as Error
+    }
+}
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+const followed = new Set((data?.follows ?? []).map((follow) => follow.tribe_group_id))
+const open_groups = (data?.followable_groups ?? []).filter((group) => !followed.has(group.tribe_group_id))
+
+const STATUS_COLOR: Record<string, string> = {
+    requested: 'fleet-yellow',
+    approved: 'green',
+    revoked: 'fleet-red',
+}
+
+import Button from '@components/blocks/Button.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import Select from '@components/blocks/Select.astro'
+import SettingRow from '@components/blocks/SettingRow.astro'
+import SettingsGroup from '@components/blocks/SettingsGroup.astro'
+import Tag from '@components/blocks/Tag.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+---
+
+{load_error || !data ?
+<ErrorRefetch args={{ partial: PARTIAL_URL, error: load_error as Error, delay }} />
+:
+<div id={ROOT_ID} class="[ corp-fleet-follows ]">
+    <Flexblock gap="var(--space-l)">
+        <Flexblock gap="var(--space-3xs)">
+            <h2>{t('corporations.settings.fleet_pings_section')}</h2>
+            <small class="[ corp-fleet-follows__muted ]">{t('corporations.fleet_pings.lead')}</small>
+        </Flexblock>
+
+        {flash &&
+            <p
+                class:list={['[ corp-fleet-follows__flash ]', { 'is-error': flash.kind === 'error' }]}
+                role={flash.kind === 'error' ? 'alert' : 'status'}
+            >{flash.message}</p>
+        }
+
+        {!data.bot_ready ?
+            <EmptyState title={t('corporations.fleet_pings.empty')} hint={t('corporations.fleet_pings.not_connected')} />
+            :
+            <>
+                <SettingsGroup>
+                    {data.follows.length === 0 &&
+                        <EmptyState title={t('corporations.fleet_pings.empty')} />
+                    }
+                    {data.follows.map((follow) =>
+                        <SettingRow
+                            title={`${follow.group_name} (${follow.tribe_name})`}
+                            description={`#${follow.channel_name || follow.channel_id}`}
+                        >
+                            <Flexblock gap="var(--space-3xs)">
+                                <FlexInline gap="var(--space-2xs)">
+                                    <Tag text={t(fleet_follow_status_key(follow.status))} color={STATUS_COLOR[follow.status] ?? 'fleet-yellow'} narrow={true} />
+                                    <form
+                                        hx-post={PARTIAL_URL}
+                                        hx-target={`#${ROOT_ID}`}
+                                        hx-swap="outerHTML"
+                                    >
+                                        <input type="hidden" name="tribe_group_id" value={follow.tribe_group_id} />
+                                        <Button type="submit" name="action" value="remove" color="transparent" size="sm" narrow={true}>
+                                            {t('corporations.fleet_pings.remove')}
+                                        </Button>
+                                    </form>
+                                </FlexInline>
+                                {follow.warnings.map((warning) =>
+                                    <small class="[ corp-fleet-follows__warning ]" role="status">{t(fleet_follow_warning_key(warning))}</small>
+                                )}
+                                {follow.last_delivery_ok === false &&
+                                    <small class="[ corp-fleet-follows__warning ]">{t('corporations.fleet_pings.last_failed')}</small>
+                                }
+                            </Flexblock>
+                        </SettingRow>
+                    )}
+                </SettingsGroup>
+
+                {open_groups.length > 0 && data.channels.length > 0 &&
+                    <form
+                        hx-post={PARTIAL_URL}
+                        hx-target={`#${ROOT_ID}`}
+                        hx-swap="outerHTML"
+                    >
+                        <SettingsGroup>
+                            <SettingRow title={t('corporations.fleet_pings.group')} for="corp-fleet-follow-group">
+                                <Select id="corp-fleet-follow-group" name="tribe_group_id" size="sm">
+                                    {open_groups.map((group) =>
+                                        <option value={group.tribe_group_id}>{group.name} ({group.tribe_name})</option>
+                                    )}
+                                </Select>
+                            </SettingRow>
+                            <SettingRow
+                                title={t('corporations.fleet_pings.channel')}
+                                description={t('corporations.fleet_pings.channel_help')}
+                                for="corp-fleet-follow-channel"
+                            >
+                                <Select id="corp-fleet-follow-channel" name="channel_id" size="sm">
+                                    {data.channels.map((channel) =>
+                                        <option value={channel.id}>#{channel.name}</option>
+                                    )}
+                                </Select>
+                            </SettingRow>
+                            <SettingRow title={t('corporations.fleet_pings.save')}>
+                                <Button type="submit" name="action" value="save" size="sm">{t('corporations.fleet_pings.save')}</Button>
+                            </SettingRow>
+                        </SettingsGroup>
+                    </form>
+                }
+            </>
+        }
+    </Flexblock>
+</div>
+}
+
+<style lang="scss">
+    .corp-fleet-follows__muted {
+        color: var(--faded);
+    }
+
+    .corp-fleet-follows__warning {
+        color: var(--fleet-red);
+    }
+
+    .corp-fleet-follows__flash {
+        padding: var(--space-xs) var(--space-s);
+        border-left: solid var(--space-3xs) var(--green);
+        background-color: var(--component-background);
+        color: var(--highlight);
+
+        &.is-error {
+            border-left-color: var(--fleet-red);
+        }
+    }
+</style>
