@@ -9396,6 +9396,131 @@
         "title": "CorporationDiscordSettings",
         "type": "object"
       },
+      "CorporationFleetFollow": {
+        "description": "A tribe group whose fleet posts this corporation's Discord gets.",
+        "properties": {
+          "channel_id": {
+            "title": "Channel Id",
+            "type": "string"
+          },
+          "channel_name": {
+            "title": "Channel Name",
+            "type": "string"
+          },
+          "group_name": {
+            "title": "Group Name",
+            "type": "string"
+          },
+          "last_delivery_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Delivery At"
+          },
+          "last_delivery_error": {
+            "default": "",
+            "title": "Last Delivery Error",
+            "type": "string"
+          },
+          "last_delivery_ok": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Delivery Ok"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "tribe_group_id": {
+            "title": "Tribe Group Id",
+            "type": "integer"
+          },
+          "tribe_name": {
+            "title": "Tribe Name",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "tribe_group_id",
+          "group_name",
+          "tribe_name",
+          "channel_id",
+          "channel_name",
+          "status",
+          "warnings"
+        ],
+        "title": "CorporationFleetFollow",
+        "type": "object"
+      },
+      "CorporationFleetFollowUpdate": {
+        "properties": {
+          "channel_id": {
+            "title": "Channel Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "channel_id"
+        ],
+        "title": "CorporationFleetFollowUpdate",
+        "type": "object"
+      },
+      "CorporationFleetFollows": {
+        "properties": {
+          "bot_ready": {
+            "title": "Bot Ready",
+            "type": "boolean"
+          },
+          "channels": {
+            "items": {
+              "$ref": "#/components/schemas/FleetFollowChannel"
+            },
+            "title": "Channels",
+            "type": "array"
+          },
+          "followable_groups": {
+            "items": {
+              "$ref": "#/components/schemas/FleetFollowableGroup"
+            },
+            "title": "Followable Groups",
+            "type": "array"
+          },
+          "follows": {
+            "items": {
+              "$ref": "#/components/schemas/CorporationFleetFollow"
+            },
+            "title": "Follows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "bot_ready",
+          "channels",
+          "followable_groups",
+          "follows"
+        ],
+        "title": "CorporationFleetFollows",
+        "type": "object"
+      },
       "CorporationFleetParticipationSummary": {
         "properties": {
           "fleet_instances": {
@@ -22518,6 +22643,47 @@
           "isk_pending"
         ],
         "title": "FleetFightTotals",
+        "type": "object"
+      },
+      "FleetFollowChannel": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "FleetFollowChannel",
+        "type": "object"
+      },
+      "FleetFollowableGroup": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "tribe_group_id": {
+            "title": "Tribe Group Id",
+            "type": "integer"
+          },
+          "tribe_name": {
+            "title": "Tribe Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tribe_group_id",
+          "name",
+          "tribe_name"
+        ],
+        "title": "FleetFollowableGroup",
         "type": "object"
       },
       "FleetInvitesResponse": {
@@ -69323,6 +69489,217 @@
           }
         ],
         "summary": "Check a Discord invite before saving it (CEO and directors)",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      }
+    },
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord/fleet-follows": {
+      "get": {
+        "operationId": "eveonline_endpoints_corporations_get_corporation_fleet_follows_get_corporation_fleet_follows",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationFleetFollows"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Tribe groups whose fleet posts go to this corporation's Discord (CEO and directors)",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      }
+    },
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord/fleet-follows/{tribe_group_id}": {
+      "delete": {
+        "operationId": "eveonline_endpoints_corporations_delete_corporation_fleet_follow_delete_corporation_fleet_follow",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "tribe_group_id",
+            "required": true,
+            "schema": {
+              "title": "Tribe Group Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationFleetFollows"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Stop a tribe group's fleet posts in this corporation's Discord (CEO and directors)",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      },
+      "put": {
+        "description": "A new follow, or a new channel, waits for a group chief's approval. Errors: not_eligible (not an Alliance or Associate corporation), not_connected (the bot isn't in the server), unknown_channel, discord_unreachable, unknown_group (404).",
+        "operationId": "eveonline_endpoints_corporations_put_corporation_fleet_follow_put_corporation_fleet_follow",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "tribe_group_id",
+            "required": true,
+            "schema": {
+              "title": "Tribe Group Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorporationFleetFollowUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationFleetFollows"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Ask for a tribe group's fleet posts in a channel of this corporation's Discord (CEO and directors)",
         "tags": [
           "Corporations",
           "Corporations"

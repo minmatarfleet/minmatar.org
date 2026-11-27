@@ -2979,6 +2979,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord/fleet-follows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tribe groups whose fleet posts go to this corporation's Discord (CEO and directors) */
+        get: operations["eveonline_endpoints_corporations_get_corporation_fleet_follows_get_corporation_fleet_follows"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/eveonline/corporations/corporations/{corporation_id}/discord/fleet-follows/{tribe_group_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Ask for a tribe group's fleet posts in a channel of this corporation's Discord (CEO and directors)
+         * @description A new follow, or a new channel, waits for a group chief's approval. Errors: not_eligible (not an Alliance or Associate corporation), not_connected (the bot isn't in the server), unknown_channel, discord_unreachable, unknown_group (404).
+         */
+        put: operations["eveonline_endpoints_corporations_put_corporation_fleet_follow_put_corporation_fleet_follow"];
+        post?: never;
+        /** Stop a tribe group's fleet posts in this corporation's Discord (CEO and directors) */
+        delete: operations["eveonline_endpoints_corporations_delete_corporation_fleet_follow_delete_corporation_fleet_follow"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/eveonline/corporations/corporations/{corporation_id}/discord/members": {
         parameters: {
             query?: never;
@@ -16098,6 +16136,51 @@ export interface components {
             /** Status */
             status?: string | null;
         };
+        /**
+         * CorporationFleetFollow
+         * @description A tribe group whose fleet posts this corporation's Discord gets.
+         */
+        CorporationFleetFollow: {
+            /** Channel Id */
+            channel_id: string;
+            /** Channel Name */
+            channel_name: string;
+            /** Group Name */
+            group_name: string;
+            /** Last Delivery At */
+            last_delivery_at?: string | null;
+            /**
+             * Last Delivery Error
+             * @default
+             */
+            last_delivery_error?: string;
+            /** Last Delivery Ok */
+            last_delivery_ok?: boolean | null;
+            /** Status */
+            status: string;
+            /** Tribe Group Id */
+            tribe_group_id: number;
+            /** Tribe Name */
+            tribe_name: string;
+            /** Warnings */
+            warnings: string[];
+        };
+        /** CorporationFleetFollowUpdate */
+        CorporationFleetFollowUpdate: {
+            /** Channel Id */
+            channel_id: string;
+        };
+        /** CorporationFleetFollows */
+        CorporationFleetFollows: {
+            /** Bot Ready */
+            bot_ready: boolean;
+            /** Channels */
+            channels: components["schemas"]["FleetFollowChannel"][];
+            /** Followable Groups */
+            followable_groups: components["schemas"]["FleetFollowableGroup"][];
+            /** Follows */
+            follows: components["schemas"]["CorporationFleetFollow"][];
+        };
         /** CorporationFleetParticipationSummary */
         CorporationFleetParticipationSummary: {
             /**
@@ -21267,6 +21350,22 @@ export interface components {
             ships_destroyed: number;
             /** Ships Lost */
             ships_lost: number;
+        };
+        /** FleetFollowChannel */
+        FleetFollowChannel: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** FleetFollowableGroup */
+        FleetFollowableGroup: {
+            /** Name */
+            name: string;
+            /** Tribe Group Id */
+            tribe_group_id: number;
+            /** Tribe Name */
+            tribe_name: string;
         };
         /** FleetInvitesResponse */
         FleetInvitesResponse: {
@@ -42797,6 +42896,141 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    eveonline_endpoints_corporations_get_corporation_fleet_follows_get_corporation_fleet_follows: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationFleetFollows"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    eveonline_endpoints_corporations_put_corporation_fleet_follow_put_corporation_fleet_follow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+                tribe_group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CorporationFleetFollowUpdate"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationFleetFollows"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    eveonline_endpoints_corporations_delete_corporation_fleet_follow_delete_corporation_fleet_follow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+                tribe_group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationFleetFollows"];
                 };
             };
             /** @description Forbidden */

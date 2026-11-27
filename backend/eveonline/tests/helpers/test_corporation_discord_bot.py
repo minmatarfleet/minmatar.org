@@ -102,8 +102,10 @@ class AuthorizeUrlTestCase(SimpleTestCase):
     def test_asks_for_invites_and_manage_roles(self):
         url = authorize_url("state-1")
         self.assertIn("scope=bot", url)
-        # Create Instant Invite | View Channel | Manage Roles.
-        self.assertIn("permissions=402654211", url)
+        # Create Instant Invite | View Channel | Manage Roles | Manage
+        # Nicknames | Kick Members, plus Send Messages | Embed Links |
+        # Mention @everyone for group fleet posts.
+        self.assertIn("permissions=402803715", url)
         self.assertIn("state=state-1", url)
         self.assertIn("redirect_uri=https%3A%2F%2Fapi.example%2Fcb", url)
 
