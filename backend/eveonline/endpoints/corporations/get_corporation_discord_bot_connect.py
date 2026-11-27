@@ -12,6 +12,7 @@ from django.shortcuts import redirect
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from eveonline.helpers.corporations.discord_bot import (
+    CORPORATION_INSTALL_PERMISSIONS,
     authorize_url,
     bot_configured,
 )
@@ -59,4 +60,6 @@ def get_corporation_discord_bot_connect(
         "user_id": user.id,
     }
     request.session.modified = True
-    return redirect(authorize_url(state))
+    return redirect(
+        authorize_url(state, permissions=CORPORATION_INSTALL_PERMISSIONS)
+    )

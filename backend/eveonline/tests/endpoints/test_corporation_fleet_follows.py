@@ -13,7 +13,10 @@ from discord.models import DiscordGuild
 from eveonline.constants import (
     MINMATAR_FLEET_ASSOCIATES_ALLIANCE_ID,
 )
-from eveonline.helpers.corporations.discord_bot import authorize_url
+from eveonline.helpers.corporations.discord_bot import (
+    CORPORATION_INSTALL_PERMISSIONS,
+    authorize_url,
+)
 from eveonline.helpers.corporations.fleet_follows import (
     EMBED_LINKS,
     MENTION_EVERYONE,
@@ -243,7 +246,19 @@ class CorporationFleetFollowTests(TestCase):
         DISCORD_CORP_BOT_REDIRECT_URL="https://api.example/cb",
     )
     def test_install_url_asks_send_and_here(self):
-        url = authorize_url("state")
+        url = authorize_url(
+            "state", permissions=CORPORATION_INSTALL_PERMISSIONS
+        )
         permissions = int(url.split("permissions=")[1].split("&")[0])
         for bit in (SEND_MESSAGES, EMBED_LINKS, MENTION_EVERYONE):
             self.assertTrue(permissions & bit, bit)
+
+    @override_settings(
+        DISCORD_CLIENT_ID="client-1",
+        DISCORD_CORP_BOT_REDIRECT_URL="https://api.example/cb",
+    )
+    def test_tribe_install_url_keeps_its_permissions(self):
+        # Tribe servers share authorize_url; only corporations follow
+        # groups, so only they are asked for Mention @everyone.
+        url = authorize_url("state", "https://api.example/tribe")
+        self.assertIn("permissions=402654211", url)
