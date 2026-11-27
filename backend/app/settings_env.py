@@ -133,10 +133,21 @@ DISCORD_AARS_FORUM_CHANNEL_ID = env_int(
 DISCORD_HELP_CHANNEL_ID = env_int(
     "DISCORD_HELP_CHANNEL_ID", 1183401618943791186
 )
+# #propaganda: new videos and Shorts from YOUTUBE_ANNOUNCE_CHANNEL_ID are
+# shared here (creators.youtube_announce). 0 turns the announcements off.
+DISCORD_YOUTUBE_ANNOUNCE_CHANNEL_ID = env_int(
+    "DISCORD_YOUTUBE_ANNOUNCE_CHANNEL_ID", 1062202114140557412
+)
 # Parent channel for private fleet threads. Unset: the fleet audience's
 # channel (#pings for the alliance audience).
 DISCORD_PRIVATE_FLEET_CHANNEL_ID = env_int(
     "DISCORD_PRIVATE_FLEET_CHANNEL_ID", 0
+)
+
+# The alliance YouTube channel (@MinmatarFleet) whose uploads are announced
+# in DISCORD_YOUTUBE_ANNOUNCE_CHANNEL_ID. Empty turns the announcements off.
+YOUTUBE_ANNOUNCE_CHANNEL_ID = os.environ.get(
+    "YOUTUBE_ANNOUNCE_CHANNEL_ID", "UCOpoQXgiKXG_Mur08LfFlrQ"
 )
 
 # ESI
