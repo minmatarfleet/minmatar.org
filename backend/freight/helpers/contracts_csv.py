@@ -21,7 +21,7 @@ from freight.helpers.contract_display import (
     resolve_characters,
     resolve_location_names,
 )
-from freight.models import FREIGHT_CORPORATION_ID, FreightContract
+from freight.models import FREIGHT_CORPORATION_ID
 
 CSV_COLUMNS = (
     "contract_id",
@@ -472,13 +472,8 @@ def build_freight_history_csv_rows(contracts) -> list[dict[str, str]]:
     ]
 
 
-def render_freight_history_csv(contracts=None) -> str:
-    """Return CSV text for finished freight contracts."""
-    if contracts is None:
-        contracts = list(
-            FreightContract.objects.finished().order_by("-date_completed")
-        )
-
+def render_freight_history_csv(contracts) -> str:
+    """Return CSV text for the caller's visible finished freight contracts."""
     rows = build_freight_history_csv_rows(contracts)
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=CSV_COLUMNS, lineterminator="\n")

@@ -7,6 +7,7 @@ from typing import List
 from django.utils import timezone
 from ninja import Router
 
+from authentication import AuthLenient
 from eveonline.helpers.characters.identity import (
     owner_user_ids,
     primary_refs_for_users,
@@ -19,6 +20,7 @@ router = Router(tags=["Freight"])
 
 @router.get(
     "/character-statistics",
+    auth=AuthLenient(),
     description="Fetch character statistics: users with completed freight contracts in the past 30 days, keyed by primary character.",
     response=List[FreightCharacterStatResponse],
 )
@@ -26,7 +28,8 @@ def get_character_statistics(request):
     since = timezone.now() - timedelta(days=30)
 
     contracts = (
-        FreightContract.objects.finished()
+        FreightContract.objects.visible_to(request.auth)
+        .finished()
         .filter(
             date_completed__gte=since,
             acceptor_id__isnull=False,

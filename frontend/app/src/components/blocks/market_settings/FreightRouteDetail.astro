@@ -24,6 +24,7 @@ const { t, translatePath } = i18n(Astro.url)
 import { query_string } from '@helpers/string'
 
 import Button from '@components/blocks/Button.astro'
+import ManageSwitch from '@components/blocks/manage/ManageSwitch.astro'
 import FreightPricingFields from '@components/blocks/market_settings/FreightPricingFields.astro'
 import FreightQuote from '@components/blocks/market_settings/FreightQuote.astro'
 
@@ -43,6 +44,13 @@ const quote = route.quote ?? null
     hx-include="#freight-filters"
 >
     <FreightPricingFields key={key} route={route} />
+    <ManageSwitch
+        name="shadow_contracts"
+        label={t('manage.freight.shadow_contracts')}
+        checked={route.shadow_contracts}
+        aria-describedby={`${key}-shadow-hint`}
+    />
+    <p id={`${key}-shadow-hint`} class="[ manage-muted ]">{t('manage.freight.shadow_hint')}</p>
     {/* The server prices the unsaved boxes as they change. */}
     <div
         hx-post={partial_url({ part: 'quote', id })}

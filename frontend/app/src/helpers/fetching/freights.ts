@@ -2,6 +2,7 @@ import type { FreightRoutesData } from '@dtypes/layout_components'
 import type { FreightContract } from '@dtypes/api.minmatar.org'
 
 import { get_routes, get_contracts } from '@helpers/api.minmatar.org/freights'
+import type { ApiToken } from '@helpers/api.minmatar.org/client'
 
 const STATUS_SORT_ORDER: Record<string, number> = {
     outstanding: 0,
@@ -13,8 +14,8 @@ export function freight_route_label(start: string, end: string): string {
     return `${start} → ${end}`
 }
 
-export async function fetch_freight_routes() {
-    const api_freight_routes = await get_routes()
+export async function fetch_freight_routes(token?: ApiToken) {
+    const api_freight_routes = await get_routes(token)
     const freight_routes_data: FreightRoutesData = {
         routes: [],
         route_translation: {},
@@ -43,8 +44,8 @@ export async function fetch_freight_routes() {
     return freight_routes_data
 }
 
-export async function fetch_freight_contracts(history: boolean = false): Promise<FreightContract[]> {
-    const contracts = await get_contracts(history)
+export async function fetch_freight_contracts(history: boolean = false, token?: ApiToken): Promise<FreightContract[]> {
+    const contracts = await get_contracts(history, token)
     const valid_contracts = contracts.filter(contract => (contract.issuer_id ?? 0) > 0)
 
     return valid_contracts.sort((a, b) => {

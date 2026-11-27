@@ -92,7 +92,7 @@ def find_inbound_freight_route(
     facility_key: str,
 ) -> Optional[EveFreightRoute]:
     """
-    Active route from the price-baseline hub into the facility system.
+    Active public route from the price-baseline hub into the facility system.
 
     Returns None when no matching route exists (do not invent rates).
     """
@@ -103,6 +103,7 @@ def find_inbound_freight_route(
 
     qs = (
         EveFreightRoute.objects.available()
+        .visible_to(None)
         .filter(destination_location__solar_system_id=dest_system_id)
         .select_related("origin_location", "destination_location")
     )

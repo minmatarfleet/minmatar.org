@@ -136,6 +136,11 @@ class FreightCostsTestCase(TestCase):
     def test_find_inbound_route_basgerin_none(self):
         self.assertIsNone(find_inbound_freight_route("basgerin"))
 
+    def test_shared_estimate_does_not_use_a_shadow_route(self):
+        self.route.shadow_contracts = True
+        self.route.save(update_fields=["shadow_contracts"])
+        self.assertIsNone(find_inbound_freight_route("amamake"))
+
     def test_estimate_freight_cost_with_route(self):
         # 10.1 m³ → billable 11; collateral 1_000_000
         # 600*11 + ceil(0.015 * 1_000_000) = 6600 + 15000 = 21600

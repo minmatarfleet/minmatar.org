@@ -12,7 +12,10 @@ import {
 import { get_characters_statistics, get_contracts_stats } from '@helpers/api.minmatar.org/freights'
 import { query_string } from '@helpers/string'
 import { from_now_diff } from '@helpers/date'
+import { get_request_user } from '@helpers/request_user'
 
+const { auth_token } = get_request_user(Astro)
+Astro.response.headers.set('Cache-Control', 'private, no-store')
 const history = Boolean(JSON.parse(Astro.url.searchParams.get('is_history') ?? 'false'))
 const location_name = Astro.url.searchParams.get('location_name')
 
@@ -23,7 +26,7 @@ let contracts_stats: FreightContractsStats | null = null
 
 try {
     contracts = filter_freight_contracts_by_location(
-        await fetch_freight_contracts(history),
+        await fetch_freight_contracts(history, auth_token),
         location_name,
     )
 } catch (error) {
@@ -32,7 +35,7 @@ try {
 
 if (fetching_error === false) {
     try {
-        space_truckers = await get_characters_statistics()
+        space_truckers = await get_characters_statistics(auth_token)
     } catch (error) {
         console.log(error)
         space_truckers = []
@@ -40,7 +43,7 @@ if (fetching_error === false) {
 
     if (!history) {
         try {
-            contracts_stats = await get_contracts_stats()
+            contracts_stats = await get_contracts_stats(auth_token)
         } catch (error) {
             console.log(error)
             contracts_stats = null

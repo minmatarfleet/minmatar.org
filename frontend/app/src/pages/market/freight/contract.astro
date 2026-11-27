@@ -4,6 +4,7 @@ const { lang, t, translatePath } = i18n(Astro.url)
 
 import { get_route_cost } from '@helpers/api.minmatar.org/freights'
 import { fetch_freight_routes } from '@helpers/fetching/freights'
+import { get_request_user } from '@helpers/request_user'
 import type { FreightRoutesData } from '@dtypes/layout_components'
 
 let freight_routes_data:FreightRoutesData
@@ -22,8 +23,11 @@ const DEFAULT_MAX_M3 = 350000
 if (Astro.request.method !== "POST")
     return Astro.redirect(translatePath('/market/freight/calculator'))
 
+const { auth_token } = get_request_user(Astro)
+Astro.response.headers.set('Cache-Control', 'private, no-store')
+
 try {
-    freight_routes_data = await fetch_freight_routes()
+    freight_routes_data = await fetch_freight_routes(auth_token)
     
     const data = await Astro.request.formData();
     
@@ -47,8 +51,10 @@ try {
         throw new Error(t('invalid_collateral'), { cause: 400 })
     
     const route_id = freight_routes_data.route_translation[route]
+    if (typeof route_id !== 'number')
+        throw new Error(t('freight.calculator.route_unavailable'), { cause: 404 })
 
-    const route_cost = await get_route_cost(route_id, contract_size, collateral)
+    const route_cost = await get_route_cost(route_id, contract_size, collateral, auth_token)
 
     cost = route_cost.cost
     origin = freight_routes_data.stations[route][0]

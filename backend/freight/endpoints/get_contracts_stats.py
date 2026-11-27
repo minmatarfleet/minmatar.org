@@ -7,6 +7,7 @@ from django.db.models import Q
 from django.utils import timezone
 from ninja import Router
 
+from authentication import AuthLenient
 from eveonline.helpers.characters.identity import owner_user_ids
 from freight.models import FreightContract, FREIGHT_CORPORATION_ID
 from freight.endpoints.schemas import FreightContractsStatsResponse
@@ -16,7 +17,7 @@ router = Router(tags=["Freight"])
 METRICS_WINDOW_DAYS = 30
 
 
-def _active_haulers_count(since) -> int:
+def _active_haulers_count(contracts, since) -> int:
     """Distinct haulers active in the metrics window.
 
     Prefer collapsing alts to one User when linked. Acceptors without a site
@@ -25,7 +26,7 @@ def _active_haulers_count(since) -> int:
     """
     acceptor_ids = {
         int(aid)
-        for aid in FreightContract.objects.filter(acceptor_id__isnull=False)
+        for aid in contracts.filter(acceptor_id__isnull=False)
         .exclude(acceptor_id=FREIGHT_CORPORATION_ID)
         .exclude(acceptor_id=0)
         .filter(
@@ -49,10 +50,10 @@ def _active_haulers_count(since) -> int:
     return len(hauler_keys)
 
 
-def _average_delivery_seconds(since) -> Optional[int]:
+def _average_delivery_seconds(contracts, since) -> Optional[int]:
     """Mean (date_completed - date_issued) for finished contracts in the window."""
     pairs = (
-        FreightContract.objects.finished()
+        contracts.finished()
         .filter(
             date_completed__gte=since,
             date_issued__isnull=False,
@@ -71,19 +72,21 @@ def _average_delivery_seconds(since) -> Optional[int]:
     return int(round(sum(durations) / len(durations)))
 
 
-def compute_contracts_stats() -> FreightContractsStatsResponse:
+def compute_contracts_stats(user=None) -> FreightContractsStatsResponse:
     since = timezone.now() - timedelta(days=METRICS_WINDOW_DAYS)
+    contracts = FreightContract.objects.visible_to(user)
 
     return FreightContractsStatsResponse(
-        active_count=FreightContract.objects.active().count(),
-        average_delivery_seconds=_average_delivery_seconds(since),
-        active_haulers_count=_active_haulers_count(since),
+        active_count=contracts.active().count(),
+        average_delivery_seconds=_average_delivery_seconds(contracts, since),
+        active_haulers_count=_active_haulers_count(contracts, since),
         window_days=METRICS_WINDOW_DAYS,
     )
 
 
 @router.get(
     "/stats",
+    auth=AuthLenient(),
     description=(
         "Aggregate freight metrics: active contract count (outstanding + "
         "in progress), average delivery time over the last "
@@ -93,4 +96,4 @@ def compute_contracts_stats() -> FreightContractsStatsResponse:
     response=FreightContractsStatsResponse,
 )
 def get_contracts_stats(request):
-    return compute_contracts_stats()
+    return compute_contracts_stats(request.auth)

@@ -3,6 +3,7 @@
 import type {
     BuybackContract,
     FreightContract,
+    FreightManageRoute,
     Product,
     ProductBuild,
     ProductBuildMaterial,
@@ -10,7 +11,7 @@ import type {
     ProductOrderLine,
     ProductRunningJob,
 } from '@dtypes/api.minmatar.org'
-import type { CargoItem, IndustryOrderUI, OrderLocation } from '@dtypes/layout_components'
+import type { CargoItem, FreightRoutesData, IndustryOrderUI, OrderLocation } from '@dtypes/layout_components'
 import { EVE } from '../../stories/_controls'
 
 // Dates are relative to "now" so deadlines and claim windows stay in the state the story is about.
@@ -31,6 +32,63 @@ export const builders = [
     { id: 2112954537, name: 'Vard Miner' },
 ]
 const [kel, rattini, hek, amamake, auga, vard] = builders
+
+// Freight route editor and calculator
+const freight_origin = {
+    location_id: 60003760,
+    name: 'Jita IV - Moon 4 - Caldari Navy Assembly Plant',
+    short_name: 'Jita',
+}
+const freight_destination = {
+    location_id: 1022167642188,
+    name: 'Amamake - Rattini Tribe Freeport',
+    short_name: 'Amamake',
+}
+export const public_freight_route: FreightManageRoute = {
+    route_id: 12,
+    origin: freight_origin,
+    destination: freight_destination,
+    route_type: 'rate',
+    isk_per_m3: 650,
+    collateral_modifier: 0,
+    fixed_fee_millions: 0,
+    xl_fee_millions: 0,
+    max_m3: null,
+    max_collateral: null,
+    expiration_days: 3,
+    days_to_complete: 3,
+    active: true,
+    shadow_contracts: false,
+    fee_never_applies: false,
+    quote: null,
+}
+export const shadow_freight_route: FreightManageRoute = {
+    ...public_freight_route,
+    shadow_contracts: true,
+}
+
+export const freight_calculator_route_key = `${freight_origin.location_id}-${freight_destination.location_id}`
+export const freight_calculator_routes: FreightRoutesData = {
+    routes: [{ label: 'Jita → Amamake', value: freight_calculator_route_key }],
+    route_translation: { [freight_calculator_route_key]: public_freight_route.route_id },
+    stations: { [freight_calculator_route_key]: [freight_origin.name, freight_destination.name] },
+    route_details: {
+        [freight_calculator_route_key]: {
+            route_type: 'rate',
+            collateral_modifier: 0,
+            expiration_days: 3,
+            days_to_complete: 3,
+            max_m3: 350_000,
+            max_collateral: null,
+        },
+    },
+}
+export const no_freight_calculator_routes: FreightRoutesData = {
+    routes: [],
+    route_translation: {},
+    stations: {},
+    route_details: {},
+}
 
 // ---------------------------------------------------------------------------
 // Product build (one run at Jita prices): ProductBuildCost, ProductBuildMaterials

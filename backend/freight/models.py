@@ -7,7 +7,32 @@ FREIGHT_CORPORATION_ID = 98705678
 FREIGHT_CONTRACT_TYPE = "courier"
 
 
+def _visible_freight_records(
+    records, user, *, origin_field, destination_field
+):
+    # pylint: disable=import-outside-toplevel
+    from freight.helpers.permissions import can_view_shadow_contracts
+
+    if can_view_shadow_contracts(user):
+        return records
+    # Keep matching retired routes so retirement preserves visibility.
+    shadow_route = EveFreightRoute.objects.filter(
+        origin_location_id=models.OuterRef(origin_field),
+        destination_location_id=models.OuterRef(destination_field),
+        shadow_contracts=True,
+    )
+    return records.filter(~models.Exists(shadow_route))
+
+
 class FreightContractQuerySet(models.QuerySet):
+    def visible_to(self, user):
+        return _visible_freight_records(
+            self,
+            user,
+            origin_field="start_location_id",
+            destination_field="end_location_id",
+        )
+
     def active(self):
         return self.filter(status__in=["outstanding", "in_progress"])
 
@@ -48,6 +73,14 @@ class EveFreightRouteQuerySet(models.QuerySet):
             active=True,
             origin_location__freight_active=True,
             destination_location__freight_active=True,
+        )
+
+    def visible_to(self, user):
+        return _visible_freight_records(
+            self,
+            user,
+            origin_field="origin_location_id",
+            destination_field="destination_location_id",
         )
 
 
@@ -122,6 +155,12 @@ class EveFreightRoute(models.Model):
         help_text="Days allowed to complete the contract after acceptance.",
     )
     active = models.BooleanField(default=True)
+    shadow_contracts = models.BooleanField(
+        default=False,
+        db_default=False,
+        verbose_name="Shadow contracts",
+        help_text="Hide this route and its contracts from public freight pages.",
+    )
 
     def clean(self):
         super().clean()

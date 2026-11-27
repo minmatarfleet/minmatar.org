@@ -48,6 +48,7 @@ def patch_manage_route(request, route_id: int, payload: RoutePatchRequest):
     ):
         return 400, ErrorResponse.new("Unknown route type")
     changes = []
+    updated_fields = []
     sent = payload.model_fields_set
     for field in FIELDS:
         if field not in sent:
@@ -58,6 +59,7 @@ def patch_manage_route(request, route_id: int, payload: RoutePatchRequest):
             continue
         if value != getattr(route, field):
             changes.append(f"{field} {getattr(route, field)} -> {value}")
+            updated_fields.append(field)
             setattr(route, field, value)
     if not changes:
         return 200, route_schema(route)
@@ -65,7 +67,7 @@ def patch_manage_route(request, route_id: int, payload: RoutePatchRequest):
         route.full_clean()
     except ValidationError as error:
         return 400, ErrorResponse.new("; ".join(error.messages))
-    route.save()
+    route.save(update_fields=updated_fields)
     record_change(
         request.user, f"Freight route {route}: " + "; ".join(changes)
     )

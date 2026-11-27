@@ -111,6 +111,32 @@ class FreightManageTestCase(TestCase):
         self.assertIsNone(body["max_m3"])
         self.assertIsNone(body["max_collateral"])
 
+    def test_create_and_toggle_shadow_route(self):
+        response = self._call(
+            "post",
+            "",
+            self.manager,
+            {
+                "origin_location_id": self.jita.pk,
+                "destination_location_id": self.amo.pk,
+                "shadow_contracts": True,
+            },
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        route_id = response.json()["route_id"]
+        listing = self._call("get", "", self.manager).json()
+        self.assertTrue(listing["routes"][0]["shadow_contracts"])
+
+        response = self._call(
+            "patch", f"/{route_id}", self.manager, {"shadow_contracts": False}
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertFalse(response.json()["shadow_contracts"])
+        self.assertTrue(response.json()["active"])
+        self.assertFalse(
+            EveFreightRoute.objects.get(pk=route_id).shadow_contracts
+        )
+
     def test_same_origin_and_destination_is_rejected(self):
         response = self._call(
             "post",

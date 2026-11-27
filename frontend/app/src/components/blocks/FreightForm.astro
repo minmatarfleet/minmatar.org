@@ -26,8 +26,10 @@ import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import Button from '@components/blocks/Button.astro';
 import Select from '@components/blocks/Select.astro';
 import NumberInput from '@components/blocks/NumberInput.astro';
+import EmptyState from '@components/blocks/EmptyState.astro';
 ---
 
+{freight_routes_data.routes.length === 0 ? <EmptyState title={t('freight.calculator.no_routes')} /> : (
 <form
     id="freight-calculator-form"
     method="POST"
@@ -196,6 +198,7 @@ import NumberInput from '@components/blocks/NumberInput.astro';
         <Button x-bind:disabled="submitted" type="submit" class="[ w-full ]">{t('calculate')}</Button>
     </Flexblock>
 </form>
+)}
 
 <style lang="scss">
     .freight-field-error {

@@ -25677,6 +25677,8 @@ export interface components {
             route_id: number;
             /** Route Type */
             route_type: string;
+            /** Shadow Contracts */
+            shadow_contracts: boolean;
             /** Xl Fee Millions */
             xl_fee_millions: number;
         };
@@ -31215,6 +31217,11 @@ export interface components {
              */
             route_type?: string;
             /**
+             * Shadow Contracts
+             * @default false
+             */
+            shadow_contracts?: boolean;
+            /**
              * Xl Fee Millions
              * @default 0
              */
@@ -31249,6 +31256,8 @@ export interface components {
             max_m3?: number | null;
             /** Route Type */
             route_type?: string | null;
+            /** Shadow Contracts */
+            shadow_contracts?: boolean | null;
             /** Xl Fee Millions */
             xl_fee_millions?: number | null;
         };
