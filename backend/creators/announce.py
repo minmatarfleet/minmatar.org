@@ -48,12 +48,15 @@ def announce_new_items(account: CreatorAccount) -> list[int]:
     if not channel_id or account.status != CreatorAccountStatus.APPROVED:
         return []
     now = timezone.now()
+    since = now - MAX_AGE
+    if account.import_start_at and account.import_start_at > since:
+        since = account.import_start_at
     items = (
         CreatorItem.objects.filter(
             account=account,
             announced_at__isnull=True,
             hidden=False,
-            published_at__gte=now - MAX_AGE,
+            published_at__gte=since,
         )
         .exclude(Q(url="") | Q(url__isnull=True))
         .order_by("published_at", "id")

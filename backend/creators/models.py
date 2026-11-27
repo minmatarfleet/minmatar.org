@@ -50,6 +50,13 @@ class CreatorAccount(models.Model):
     live_started_at = models.DateTimeField(null=True, blank=True)
     live_title = models.CharField(max_length=512, blank=True)
     last_synced_at = models.DateTimeField(null=True, blank=True)
+    # Media published before this is never imported: not into the creator
+    # feed, not as a site post, not to Discord. Blank: no limit.
+    import_start_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Ignore media published before this date and time.",
+    )
     # Discord channel that new media from this account is shared in
     # (creators.announce). Blank: not shared.
     discord_channel_id = models.CharField(
@@ -76,6 +83,12 @@ class CreatorAccount(models.Model):
 
     def __str__(self) -> str:
         return f"{self.provider}:{self.platform_username or self.platform_user_id}"
+
+    def is_before_import_start(self, published_at) -> bool:
+        """True when media published then should not be imported."""
+        if self.import_start_at is None:
+            return False
+        return published_at is None or published_at < self.import_start_at
 
 
 class CreatorItem(models.Model):

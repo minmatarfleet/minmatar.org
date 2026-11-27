@@ -13,6 +13,7 @@ class CreatorAccountAdmin(admin.ModelAdmin):
         "platform_user_id",
         "is_live",
         "token_invalid",
+        "import_start_at",
         "discord_channel_id",
         "last_synced_at",
         "updated_at",

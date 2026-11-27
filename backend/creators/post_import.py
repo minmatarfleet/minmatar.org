@@ -69,6 +69,9 @@ def collect_candidates(
     candidates: list[ImportCandidate] = []
     warned_reddit = False
     for account in accounts:
+        account_cutoff = cutoff
+        if account.import_start_at and account.import_start_at > cutoff:
+            account_cutoff = account.import_start_at
         if account.provider == CreatorProvider.REDDIT:
             if not reddit_token:
                 if not warned_reddit:
@@ -78,13 +81,13 @@ def collect_candidates(
             raw_items = fetch_reddit_window(
                 account.platform_username or account.platform_user_id,
                 reddit_token,
-                cutoff=cutoff,
+                cutoff=account_cutoff,
             )
             username = account.user.username
             for item in raw_items:
                 candidates.append(candidate_from_reddit(item, username))
         elif account.provider == CreatorProvider.YOUTUBE:
-            raw_items = fetch_youtube_window(account, cutoff=cutoff)
+            raw_items = fetch_youtube_window(account, cutoff=account_cutoff)
             username = account.user.username
             for item in raw_items:
                 candidates.append(candidate_from_youtube(item, username))

@@ -84,6 +84,43 @@ class AnnounceNewItemsTestCase(TestCase):
         self.assertEqual(announce_new_items(self.account), [])
         queue.assert_not_called()
 
+    def test_skips_items_before_import_start(self, queue):
+        self.account.import_start_at = timezone.now() - timedelta(hours=2)
+        self.item("before", age=timedelta(hours=3))
+        after = self.item("after", age=timedelta(hours=1))
+        self.assertEqual(announce_new_items(self.account), [after.id])
+        queue.assert_called_once()
+
+    @patch("creators.service.ensure_valid_access_token", return_value="tok")
+    @patch("creators.service.YouTubeClient")
+    def test_youtube_sync_skips_media_before_import_start(
+        self, client, token, queue
+    ):
+        self.account.extra = {"uploads_playlist_id": "UUfleet"}
+        self.account.import_start_at = timezone.now() - timedelta(days=1)
+        self.account.save()
+        old = (timezone.now() - timedelta(days=3)).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        )
+        new = timezone.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+        client.return_value.list_playlist_items.return_value = [
+            {
+                "contentDetails": {"videoId": vid, "videoPublishedAt": ts},
+                "snippet": {"title": vid},
+                "status": {"privacyStatus": "public"},
+            }
+            for vid, ts in (("old", old), ("new", new))
+        ]
+
+        self.assertEqual(sync_youtube_videos(self.account), 1)
+
+        token.assert_called()
+        self.assertEqual(
+            list(CreatorItem.objects.values_list("external_id", flat=True)),
+            ["new"],
+        )
+        queue.assert_called_once()
+
     @patch("creators.service.ensure_valid_access_token", return_value="tok")
     @patch("creators.service.YouTubeClient")
     def test_youtube_sync_posts_new_upload(self, client, token, queue):
