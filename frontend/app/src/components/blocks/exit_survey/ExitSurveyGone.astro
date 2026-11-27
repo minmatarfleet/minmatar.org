@@ -1,0 +1,20 @@
+---
+/** A used, expired or bad exit survey link: says nothing about the survey (#3198). */
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+
+interface Props {
+    /** Override the message, e.g. for a load error. */
+    message?: string;
+    [propName: string]: any;
+}
+
+const { message, ...attributes } = Astro.props
+delete attributes.class
+---
+
+<ComponentBlock class:list={['[ exit-survey ]', Astro.props.class]} {...attributes}>
+    <p role="status">{message ?? t('exit_survey.gone')}</p>
+</ComponentBlock>

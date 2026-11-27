@@ -61,7 +61,7 @@ Cancelling from the site, Django admin or the sweep posts who cancelled and why 
 ## Discord
 
 - Order threads go to the forum channel flagged `receive_lp_buyback` on `DiscordChannel`; the weekly digest goes to the channel flagged `receive_lp_conversion_alerts`. Without a flagged channel the sweep skips that part.
-- Status changes are announced after the database commit, from Celery (`notify_lp_buyback_order_status_changed_task`), so a Discord delay never holds a web request.
+- Status changes, claims and claim releases are announced after the database commit, from Celery (`notify_lp_buyback_order_status_changed_task`, `notify_lp_buyback_order_claimed_task`, `notify_lp_buyback_order_claims_released_task`), so a Discord delay never holds a web request and the worker never reads the order before the change is saved. Before that fix a full claim could lose its Awaiting LP post; migration `industry 0057` reposts it once for orders still waiting on LP, only where the thread has none (`repost_missing_awaiting_lp`).
 - The thread buttons (**LP sent**, **ISK sent**) call `POST /api/industry/loyalty/orders/{id}/discord-ack` through the bot.
 
 ## Stats

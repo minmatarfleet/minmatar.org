@@ -44,6 +44,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 import EmptyState from '@components/blocks/EmptyState.astro'
 import TimezoneTags from '@components/blocks/TimezoneTags.astro'
 import LazyPartial from '@components/blocks/LazyPartial.astro'
+import DialogButton from '@components/blocks/DialogButton.astro'
 import XFadeScroll from '@components/compositions/XFadeScroll.astro'
 
 const BODY_ID = 'corporation-members-body'
@@ -461,6 +462,18 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                                                 </span>
                                             </span>
                                         </StylessButton>
+                                        {member.has_alliance_history &&
+                                            <DialogButton size="sm" color="transparent" narrow={true} class="cm-history">
+                                                {t('corporations.members.history_tag')}
+                                                <h3 slot="header">{t('corporations.members.history_open').replace('~NAME', primary.character_name)}</h3>
+                                                <LazyPartial slot="dialog" url={translatePath(`/partials/corporation_member_history_component/?${query_string({
+                                                    corporation_id: String(corporation_id),
+                                                    character_id: String(member.character_id),
+                                                })}`)}>
+                                                    <p>{t('corporations.members.history_loading')}</p>
+                                                </LazyPartial>
+                                            </DialogButton>
+                                        }
                                     </td>
                                     <td class="col-status">
                                         <span class="cm-status" data-status={member.community_status ?? 'none'}>{status_label(member.community_status)}</span>
@@ -501,7 +514,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
                                                 class="cm-insights"
                                                 url={translatePath(`/partials/corporation_member_insights_component/?${query_string({
                                                     corporation_id: String(corporation_id),
-                                                    character_id: String(primary.character_id),
+                                                    character_id: String(member.character_id),
                                                     name: primary.character_name,
                                                 })}`)}
                                                 trigger="reveal"

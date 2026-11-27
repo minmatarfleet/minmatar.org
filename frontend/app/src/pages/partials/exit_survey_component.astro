@@ -1,0 +1,44 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+// The exit survey form posts here (#3198). No login: the signed token in
+// the form is the only key.
+// no-error-refetch: a form post; a failure shows the "didn't load" message
+// in place of the form, and the pilot sends again from the same link.
+import { get_exit_survey, submit_exit_survey } from '@helpers/api.minmatar.org/exit_survey'
+import { exit_survey_answers } from '@helpers/exit_survey'
+import type { ExitSurveyForm as ExitSurveyFormData } from '@dtypes/api.minmatar.org'
+
+import ExitSurveyForm from '@components/blocks/exit_survey/ExitSurveyForm.astro'
+import ExitSurveyThanks from '@components/blocks/exit_survey/ExitSurveyThanks.astro'
+import ExitSurveyGone from '@components/blocks/exit_survey/ExitSurveyGone.astro'
+
+Astro.response.headers.set('Cache-Control', 'no-store')
+Astro.response.headers.set('Referrer-Policy', 'no-referrer')
+
+const partial_url = translatePath('/partials/exit_survey_component/')
+const data = Astro.request.method === 'POST' ? await Astro.request.formData() : new FormData()
+const token = String(data.get('token') ?? '')
+
+let state: 'thanks' | 'gone' | 'form' | 'error' = 'gone'
+let form: ExitSurveyFormData | null = null
+let error: string | null = null
+try {
+    const loaded = await get_exit_survey(token)
+    if (loaded.ok) {
+        form = loaded.data
+        const sent = await submit_exit_survey(token, exit_survey_answers(data, loaded.data))
+        if (sent.ok) state = 'thanks'
+        else if (sent.status === 400) { state = 'form'; error = t('exit_survey.save_error') }
+        else state = 'gone'
+    }
+} catch {
+    state = 'error'
+}
+---
+
+{state === 'thanks' && <ExitSurveyThanks id="exit-survey" />}
+{state === 'form' && form && <ExitSurveyForm form={form} token={token} partial_url={partial_url} error={error} />}
+{state === 'gone' && <ExitSurveyGone id="exit-survey" />}
+{state === 'error' && <ExitSurveyGone id="exit-survey" message={t('exit_survey.load_error')} />}

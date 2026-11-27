@@ -767,6 +767,72 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
         cancelled_notify.assert_called_once_with(order_id, self.user.pk, "")
 
     @patch("industry.tasks.notify_lp_buyback_order_claims_released_task.delay")
+    @patch("industry.tasks.notify_lp_buyback_order_claimed_task.delay")
+    @patch("industry.tasks.notify_lp_buyback_order_status_changed_task.delay")
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
+    def test_claim_and_release_notify_only_after_commit(
+        self, unused_created, status_notify, claimed_notify, released_notify
+    ):
+        """A worker that ran before commit saw the order still open and
+        posted nothing, so the thread never showed the claim."""
+        create = self.client.post(
+            "/api/industry/loyalty/orders",
+            data=json.dumps(
+                {
+                    "loyalty_point_id": self.currency.pk,
+                    "side": "sell",
+                    "quantity": 200_000,
+                }
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        order_id = create.json()["id"]
+
+        def claim(amount):
+            return self.client.post(
+                f"/api/industry/loyalty/orders/{order_id}/claim",
+                data=json.dumps(
+                    {
+                        "amount": amount,
+                        "destination_corporation_name": "Claim Corp",
+                    }
+                ),
+                content_type="application/json",
+                HTTP_AUTHORIZATION=f"Bearer {self.manager_token}",
+            )
+
+        with self.captureOnCommitCallbacks(execute=False) as partial_cbs:
+            partial = claim(100_000)
+        self.assertEqual(partial.status_code, 200, partial.content)
+        claimed_notify.assert_not_called()
+        for callback in partial_cbs:
+            callback()
+        claim_id = partial.json()["claims"][0]["id"]
+        claimed_notify.assert_called_once_with(order_id, claim_id)
+
+        with self.captureOnCommitCallbacks(execute=False) as full_cbs:
+            full = claim(100_000)
+        self.assertEqual(full.json()["status"], "awaiting_lp")
+        status_notify.assert_not_called()
+        for callback in full_cbs:
+            callback()
+        status_notify.assert_called_once_with(order_id)
+
+        with self.captureOnCommitCallbacks(execute=False) as release_cbs:
+            release = self.client.delete(
+                f"/api/industry/loyalty/orders/{order_id}/claim",
+                HTTP_AUTHORIZATION=f"Bearer {self.manager_token}",
+            )
+        self.assertEqual(release.status_code, 200, release.content)
+        released_notify.assert_not_called()
+        for callback in release_cbs:
+            callback()
+        released_notify.assert_called_once_with(
+            order_id, self.manager.pk, 200_000
+        )
+
+    @patch("industry.tasks.notify_lp_buyback_order_claims_released_task.delay")
     @patch("industry.tasks.notify_lp_buyback_order_status_changed_task.delay")
     @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
     def test_manager_can_release_claim_and_reopen(

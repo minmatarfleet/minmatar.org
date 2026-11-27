@@ -10165,6 +10165,11 @@
             "title": "Can View Characters",
             "type": "boolean"
           },
+          "can_view_departures": {
+            "default": false,
+            "title": "Can View Departures",
+            "type": "boolean"
+          },
           "can_view_graduation": {
             "default": false,
             "title": "Can View Graduation",
@@ -10238,6 +10243,11 @@
             "default": 0,
             "title": "Fleets 90D",
             "type": "integer"
+          },
+          "has_alliance_history": {
+            "default": false,
+            "title": "Has Alliance History",
+            "type": "boolean"
           },
           "hidden_character_count": {
             "default": 0,
@@ -13326,6 +13336,182 @@
           "message"
         ],
         "title": "DeleteStatus",
+        "type": "object"
+      },
+      "DepartureAnswerRequest": {
+        "properties": {
+          "can_rejoin": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Can Rejoin"
+          },
+          "departure_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Departure Ids",
+            "type": "array"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "departure_ids",
+          "reason"
+        ],
+        "title": "DepartureAnswerRequest",
+        "type": "object"
+      },
+      "DepartureGroupResponse": {
+        "description": "One person who left: a character, with alts that left with them.",
+        "properties": {
+          "alt_names": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Alt Names",
+            "type": "array"
+          },
+          "can_rejoin": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Can Rejoin"
+          },
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "departure_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Departure Ids",
+            "type": "array"
+          },
+          "destination_corporation_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Corporation Id"
+          },
+          "destination_is_npc": {
+            "title": "Destination Is Npc",
+            "type": "boolean"
+          },
+          "destination_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Name"
+          },
+          "first_missing_at": {
+            "format": "date-time",
+            "title": "First Missing At",
+            "type": "string"
+          },
+          "flag_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flag Id"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "months_in_corporation": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Months In Corporation"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "registered": {
+            "title": "Registered",
+            "type": "boolean"
+          },
+          "survey_sent_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Survey Sent At"
+          }
+        },
+        "required": [
+          "departure_ids",
+          "character_id",
+          "character_name",
+          "alt_names",
+          "registered",
+          "months_in_corporation",
+          "first_missing_at",
+          "destination_corporation_id",
+          "destination_name",
+          "kind",
+          "destination_is_npc",
+          "reason",
+          "can_rejoin",
+          "note",
+          "flag_id",
+          "survey_sent_at"
+        ],
+        "title": "DepartureGroupResponse",
         "type": "object"
       },
       "DesktopSettingsPatchSchema": {
@@ -18985,6 +19171,109 @@
         "title": "EventWhereKind",
         "type": "string"
       },
+      "ExitSurveyFormResponse": {
+        "description": "The no-login exit or alliance move survey behind a mailed link (#3198).",
+        "properties": {
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/BlockSchema"
+            },
+            "title": "Blocks",
+            "type": "array"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "corporation_id": {
+            "title": "Corporation Id",
+            "type": "integer"
+          },
+          "corporation_name": {
+            "title": "Corporation Name",
+            "type": "string"
+          },
+          "definition_key": {
+            "title": "Definition Key",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "member_from": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member From"
+          },
+          "member_to": {
+            "format": "date-time",
+            "title": "Member To",
+            "type": "string"
+          },
+          "new_corporation_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Corporation Name"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "definition_key",
+          "title",
+          "corporation_id",
+          "corporation_name",
+          "character_name",
+          "member_to",
+          "kind",
+          "blocks"
+        ],
+        "title": "ExitSurveyFormResponse",
+        "type": "object"
+      },
+      "ExitSurveySubmitRequest": {
+        "properties": {
+          "answers": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/AnswerInput"
+            },
+            "title": "Answers",
+            "type": "array"
+          }
+        },
+        "title": "ExitSurveySubmitRequest",
+        "type": "object"
+      },
+      "ExitSurveySubmitResponse": {
+        "properties": {
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "title": "ExitSurveySubmitResponse",
+        "type": "object"
+      },
       "FacilityDetailSchema": {
         "properties": {
           "cost_indices": {
@@ -20765,6 +21054,120 @@
           "refits"
         ],
         "title": "FittingResponse",
+        "type": "object"
+      },
+      "FlagClearResponse": {
+        "properties": {
+          "cleared": {
+            "title": "Cleared",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "cleared"
+        ],
+        "title": "FlagClearResponse",
+        "type": "object"
+      },
+      "FlaggedApplicantResponse": {
+        "description": "409 from accept: the applicant has can't-rejoin flags to confirm.",
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "flags": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryEntryResponse"
+            },
+            "title": "Flags",
+            "type": "array"
+          }
+        },
+        "required": [
+          "detail",
+          "flags"
+        ],
+        "title": "FlaggedApplicantResponse",
+        "type": "object"
+      },
+      "FlaggedJoinKeepRequest": {
+        "properties": {
+          "note": {
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "FlaggedJoinKeepRequest",
+        "type": "object"
+      },
+      "FlaggedJoinResponse": {
+        "description": "A pilot marked can't rejoin who joined this corporation.",
+        "properties": {
+          "character_id": {
+            "title": "Character Id",
+            "type": "integer"
+          },
+          "character_name": {
+            "title": "Character Name",
+            "type": "string"
+          },
+          "flags": {
+            "items": {
+              "$ref": "#/components/schemas/HistoryEntryResponse"
+            },
+            "title": "Flags",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "removal_expected": {
+            "title": "Removal Expected",
+            "type": "boolean"
+          },
+          "seen_at": {
+            "format": "date-time",
+            "title": "Seen At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "character_id",
+          "character_name",
+          "seen_at",
+          "removal_expected",
+          "flags"
+        ],
+        "title": "FlaggedJoinResponse",
+        "type": "object"
+      },
+      "FlaggedJoinResultResponse": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "outcome": {
+            "title": "Outcome",
+            "type": "string"
+          },
+          "removal_expected": {
+            "title": "Removal Expected",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "outcome",
+          "removal_expected"
+        ],
+        "title": "FlaggedJoinResultResponse",
         "type": "object"
       },
       "FleetBattleActivity": {
@@ -26628,6 +27031,68 @@
           "taken"
         ],
         "title": "HelpTribeGroupOption",
+        "type": "object"
+      },
+      "HistoryEntryResponse": {
+        "description": "What a CEO said when this pilot (or an alt) left their corporation.",
+        "properties": {
+          "answered_by_name": {
+            "title": "Answered By Name",
+            "type": "string"
+          },
+          "can_rejoin": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Can Rejoin"
+          },
+          "corporation_id": {
+            "title": "Corporation Id",
+            "type": "integer"
+          },
+          "corporation_name": {
+            "title": "Corporation Name",
+            "type": "string"
+          },
+          "departure_id": {
+            "title": "Departure Id",
+            "type": "integer"
+          },
+          "flag_active": {
+            "title": "Flag Active",
+            "type": "boolean"
+          },
+          "left_at": {
+            "format": "date-time",
+            "title": "Left At",
+            "type": "string"
+          },
+          "note": {
+            "title": "Note",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "departure_id",
+          "corporation_id",
+          "corporation_name",
+          "left_at",
+          "reason",
+          "can_rejoin",
+          "note",
+          "answered_by_name",
+          "flag_active"
+        ],
+        "title": "HistoryEntryResponse",
         "type": "object"
       },
       "HoldingItem": {
@@ -58545,6 +59010,16 @@
               "title": "Application Id",
               "type": "integer"
             }
+          },
+          {
+            "in": "query",
+            "name": "confirm_flags",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Confirm Flags",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -58577,6 +59052,16 @@
               }
             },
             "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlaggedApplicantResponse"
+                }
+              }
+            },
+            "description": "Conflict"
           }
         },
         "security": [
@@ -70260,6 +70745,591 @@
         "tags": [
           "Eve Online",
           "Players"
+        ]
+      }
+    },
+    "/api/exits/applications/{application_id}/history": {
+      "get": {
+        "operationId": "exits_endpoints_get_application_history_get_application_history",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "application_id",
+            "required": true,
+            "schema": {
+              "title": "Application Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HistoryEntryResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "An applicant's alliance history (the corporation's recruiters only)",
+        "tags": [
+          "Exits"
+        ]
+      }
+    },
+    "/api/exits/corporations/{corporation_id}/departures": {
+      "get": {
+        "operationId": "exits_endpoints_get_departures_get_departures",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "state",
+            "required": false,
+            "schema": {
+              "default": "open",
+              "title": "State",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DepartureGroupResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Pilots who left a tracked corporation (CEO only)",
+        "tags": [
+          "Exits"
+        ]
+      }
+    },
+    "/api/exits/corporations/{corporation_id}/departures/answers": {
+      "post": {
+        "operationId": "exits_endpoints_post_departure_answers_post_departure_answers",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepartureAnswerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DepartureGroupResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Say why pilots left, for one row or many (CEO only)",
+        "tags": [
+          "Exits"
+        ]
+      }
+    },
+    "/api/exits/corporations/{corporation_id}/flagged-joins": {
+      "get": {
+        "operationId": "exits_endpoints_get_flagged_joins_get_flagged_joins",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FlaggedJoinResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Pilots marked can't rejoin who joined this corporation (CEO only)",
+        "tags": [
+          "Exits"
+        ]
+      }
+    },
+    "/api/exits/corporations/{corporation_id}/members/{character_id}/history": {
+      "get": {
+        "operationId": "exits_endpoints_get_member_history_get_member_history",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "character_id",
+            "required": true,
+            "schema": {
+              "title": "Character Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/HistoryEntryResponse"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "A member's alliance history (the corporation's CEO and directors)",
+        "tags": [
+          "Exits"
+        ]
+      }
+    },
+    "/api/exits/flagged-joins/{join_id}/keep": {
+      "post": {
+        "operationId": "exits_endpoints_post_flagged_join_keep_post_flagged_join_keep",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "join_id",
+            "required": true,
+            "schema": {
+              "title": "Join Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlaggedJoinKeepRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlaggedJoinResultResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Keep a flagged pilot, with a note (CEO only)",
+        "tags": [
+          "Exits"
+        ]
+      }
+    },
+    "/api/exits/flagged-joins/{join_id}/remove": {
+      "post": {
+        "operationId": "exits_endpoints_post_flagged_join_remove_post_flagged_join_remove",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "join_id",
+            "required": true,
+            "schema": {
+              "title": "Join Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlaggedJoinResultResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Say a flagged pilot will be removed in game (CEO only)",
+        "tags": [
+          "Exits"
+        ]
+      }
+    },
+    "/api/exits/flags/{flag_id}/clear": {
+      "post": {
+        "operationId": "exits_endpoints_post_flag_clear_post_flag_clear",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "flag_id",
+            "required": true,
+            "schema": {
+              "title": "Flag Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FlagClearResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Clear a can't-rejoin flag (the setting corporation's CEO)",
+        "tags": [
+          "Exits"
         ]
       }
     },
@@ -92280,6 +93350,128 @@
         "summary": "Get Active",
         "tags": [
           "Surveys",
+          "Surveys"
+        ]
+      }
+    },
+    "/api/surveys/exit/{token}": {
+      "get": {
+        "operationId": "surveys_endpoints_get_exit_survey_get_exit_survey",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExitSurveyFormResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Gone"
+          }
+        },
+        "summary": "An exit or alliance move survey, from its link (no login)",
+        "tags": [
+          "Surveys"
+        ]
+      },
+      "post": {
+        "operationId": "surveys_endpoints_post_exit_survey_post_exit_survey",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "title": "Token",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExitSurveySubmitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExitSurveySubmitResponse"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "410": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Gone"
+          }
+        },
+        "summary": "Answer an exit or alliance move survey (no login, once)",
+        "tags": [
           "Surveys"
         ]
       }

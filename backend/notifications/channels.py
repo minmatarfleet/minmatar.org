@@ -60,6 +60,14 @@ class ChannelSendError(Exception):
         self.retry_after = retry_after
 
 
+class EveMailRefused(ChannelSendError):
+    """ESI refused the Eve mail because the recipient charges for mail from
+    strangers (CSPA). Never retried; the caller may try another channel."""
+
+    def __init__(self, message: str):
+        super().__init__(message, retryable=False)
+
+
 class ChannelSkip(Exception):
     """Prerequisite missing; mark delivery skipped (not failed)."""
 
@@ -216,11 +224,28 @@ def _send_discord(
     }
 
 
+# ESI's refusal when the recipient charges for mail from strangers (CSPA).
+# Not retried: the same mail is refused every time.
+CSPA_REFUSAL_MARKERS = ("ContactCostNotApproved", "CSPA")
+
+
 def _send_eve_mail(user, payload: dict[str, Any]) -> None:
     primary = user_primary_character(user)
     if not primary:
         raise ChannelSkip("No primary character")
+    subject = (
+        payload.get("subject") or payload.get("title") or "Minmatar Fleet"
+    )
+    body = payload.get("eve_mail_body") or payload.get("body") or ""
+    send_eve_mail_to_character(primary.character_id, subject, body)
 
+
+def send_eve_mail_to_character(
+    character_id: int, subject: str, body: str
+) -> None:
+    """Eve mail from the notifications mail character to any character,
+    registered or not (#3198). Same rate bucket and error mapping as every
+    other Eve mail; a CSPA refusal raises ``EveMailRefused``."""
     rate = float(
         getattr(settings, "NOTIFICATIONS_EVE_MAIL_RATE_PER_SECOND", 0.5)
     )
@@ -236,11 +261,6 @@ def _send_eve_mail(user, payload: dict[str, Any]) -> None:
             retryable=True,
             retry_after=max(retry_after, 2.0),
         )
-
-    subject = (
-        payload.get("subject") or payload.get("title") or "Minmatar Fleet"
-    )
-    body = payload.get("eve_mail_body") or payload.get("body") or ""
     if not body:
         raise ChannelSendError("Empty Eve mail body", retryable=False)
 
@@ -252,7 +272,7 @@ def _send_eve_mail(user, payload: dict[str, Any]) -> None:
         "body": body,
         "recipients": [
             {
-                "recipient_id": primary.character_id,
+                "recipient_id": int(character_id),
                 "recipient_type": "character",
             }
         ],
@@ -260,6 +280,9 @@ def _send_eve_mail(user, payload: dict[str, Any]) -> None:
     response = EsiClient(mail_character_id).send_evemail(mail)
     if not response.success():
         code = int(response.response_code)
+        error = str(response.error_text() or "")
+        if any(marker in error for marker in CSPA_REFUSAL_MARKERS):
+            raise EveMailRefused(f"Eve mail refused (CSPA charge): {code}")
         # Auth / client / 4xx are permanent; 5xx and transport (906) retry.
         retryable = code >= 500 or code == ERROR_CALLING_ESI or code == 429
         raise ChannelSendError(

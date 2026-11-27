@@ -1,0 +1,414 @@
+---
+/**
+ * The CEO's Departures tab (#3198, design 04): pilots who left a tracked
+ * corporation, filtered by whether they have an answer, and one answer form
+ * for the ticked rows. Rendered by `corporation_departures_component`, which
+ * fetches the rows and posts the form; this block only renders.
+ */
+import { i18n, t_key } from '@helpers/i18n'
+const { t, lang } = i18n(Astro.url)
+
+import type { DepartureGroup, FlaggedJoin } from '@dtypes/api.minmatar.org'
+import type { DepartureState } from '@helpers/api.minmatar.org/exits'
+import { DEPARTURE_REASONS, departure_row_view } from '@helpers/corporations/departures'
+import { from_now_diff } from '@helpers/date'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ChipGroup from '@components/blocks/ChipGroup.astro'
+import FilterChip from '@components/blocks/FilterChip.astro'
+import DataTable from '@components/blocks/DataTable.astro'
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+import Button from '@components/blocks/Button.astro'
+import Tag from '@components/blocks/Tag.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+
+interface Props {
+    /** Every confirmed departure, answered or not: the counts come from it. */
+    groups:           DepartureGroup[];
+    corporation_name: string;
+    state?:           DepartureState;
+    /** The partial's URL; the filters and the form go back to it. */
+    partial_url:      string;
+    root_id?:         string;
+    flash?:           { kind: 'success' | 'error', text: string } | null;
+    /** Pilots marked can't rejoin who joined (design 06, screen 4). */
+    flagged_joins?:   FlaggedJoin[];
+    [propName: string]: any;
+}
+
+const {
+    groups,
+    corporation_name,
+    state = 'open',
+    partial_url,
+    root_id = 'corporation-departures',
+    flash = null,
+    flagged_joins = [],
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const views = groups.map((group) => ({ group, view: departure_row_view(group) }))
+const answered_count = views.filter(({ view }) => view.answered).length
+const total = groups.length
+const counts: Record<DepartureState, number> = {
+    open: total - answered_count,
+    answered: answered_count,
+    all: total,
+}
+const shown = views.filter(({ view }) =>
+    state === 'all' ? true : state === 'answered' ? view.answered : !view.answered
+)
+
+const filter_url = (to: DepartureState) => {
+    const url = new URL(partial_url, 'http://x')
+    url.searchParams.set('state', to)
+    return `${url.pathname}${url.search}`
+}
+const form_url = filter_url(state)
+
+const title = total === 1
+    ? t('corporations.departures.title_one').replace('{corporation}', corporation_name)
+    : t('corporations.departures.title').replace('{n}', String(total)).replace('{corporation}', corporation_name)
+
+const tag_color = { npc: 'fleet-yellow', exit: 'fleet-red', alliance_move: 'green' } as const
+const reason_label = (reason: string) => t(t_key('corporations.departures.reason_', reason))
+
+const columns = [
+    { key: 'select', label: t('corporations.departures.col_select'), hidden_label: true },
+    { key: 'pilot', label: t('corporations.departures.col_pilot') },
+    { key: 'left', label: t('corporations.departures.col_left') },
+    { key: 'went_to', label: t('corporations.departures.col_went_to') },
+    { key: 'answer', label: t('corporations.departures.col_answer') },
+]
+
+const confirm = JSON.stringify({
+    title: t('corporations.departures.confirm_title'),
+    content: t('corporations.departures.confirm_body'),
+})
+---
+
+<div
+    id={root_id}
+    class:list={['[ corporation-departures ]', Astro.props.class]}
+    {...attributes}
+>
+    <Flexblock gap="var(--space-m)">
+        <Flexblock gap="var(--space-2xs)">
+            <h3>{title}</h3>
+            <p class="[ corporation-departures__muted ]">{t('corporations.departures.lead')}</p>
+        </Flexblock>
+
+        <p class="[ corporation-departures__notice ]">
+            <strong>{t('corporations.departures.notice_title')}</strong> {t('corporations.departures.notice')}
+        </p>
+
+        {flash &&
+            <p
+                class:list={['[ corporation-departures__flash ]', { 'is-error': flash.kind === 'error' }]}
+                role={flash.kind === 'error' ? 'alert' : 'status'}
+            >
+                {flash.text}
+            </p>
+        }
+
+        {flagged_joins.length > 0 &&
+            <ComponentBlock class="[ corporation-departures__joins ]" aria-labelledby={`${root_id}-joins`}>
+                <Flexblock gap="var(--space-s)">
+                    <Flexblock gap="var(--space-3xs)">
+                        <h4 id={`${root_id}-joins`}>{t('corporations.departures.joins_title')}</h4>
+                        <small class="[ corporation-departures__muted ]">{t('corporations.departures.joins_lead')}</small>
+                    </Flexblock>
+                    {flagged_joins.map((join) => {
+                        const flag = join.flags[0]
+                        return (
+                            <Flexblock gap="var(--space-2xs)" class="[ corporation-departures__join ]">
+                                <FlexInline gap="var(--space-2xs)" class="[ items-center ]">
+                                    <Tag text={t('corporations.departures.can_rejoin_no')} color="fleet-red" narrow={true} />
+                                    <strong>{join.character_name}</strong>
+                                    <small class="[ corporation-departures__muted ]">
+                                        {t('corporations.departures.join_seen').replace('{when}', from_now_diff(lang, new Date(join.seen_at)))}
+                                    </small>
+                                </FlexInline>
+                                {flag &&
+                                    <small class="[ corporation-departures__muted ]">
+                                        {flag.answered_by_name ? `${flag.answered_by_name} ` : ''}({flag.corporation_name}): “{flag.note}”
+                                    </small>
+                                }
+                                {join.removal_expected
+                                    ? <small role="status">{t('corporations.departures.join_removal_expected')}</small>
+                                    : <FlexInline gap="var(--space-s)" class="[ items-end ]">
+                                        <form
+                                            method="post"
+                                            action={form_url}
+                                            hx-post={form_url}
+                                            hx-target={`#${root_id}`}
+                                            hx-swap="outerHTML"
+                                            class="[ corporation-departures__keep ]"
+                                        >
+                                            <input type="hidden" name="action" value="keep" />
+                                            <input type="hidden" name="join_id" value={join.id} />
+                                            <label class="[ corporation-departures__note ]">
+                                                <small>{t('corporations.departures.join_keep_note')}</small>
+                                                <Textarea name="note" rows="1" required />
+                                            </label>
+                                            <Button type="submit" size="sm" color="green">{t('corporations.departures.join_keep')}</Button>
+                                        </form>
+                                        <form
+                                            method="post"
+                                            action={form_url}
+                                            hx-post={form_url}
+                                            hx-target={`#${root_id}`}
+                                            hx-swap="outerHTML"
+                                        >
+                                            <input type="hidden" name="action" value="remove" />
+                                            <input type="hidden" name="join_id" value={join.id} />
+                                            <Button type="submit" size="sm" color="transparent">{t('corporations.departures.join_remove')}</Button>
+                                        </form>
+                                    </FlexInline>
+                                }
+                            </Flexblock>
+                        )
+                    })}
+                </Flexblock>
+            </ComponentBlock>
+        }
+
+        {total === 0 && <EmptyState title={t('corporations.departures.empty')} />}
+
+        {total > 0 && <>
+            <FlexInline gap="var(--space-s)" class="[ items-center ]">
+                <ChipGroup aria_label={t('corporations.departures.filters_label')} variant="default" wrap={true}>
+                    {(['open', 'answered', 'all'] as DepartureState[]).map((to) =>
+                        <FilterChip
+                            href={filter_url(to)}
+                            active={state === to}
+                            count={counts[to]}
+                            hx-get={filter_url(to)}
+                            hx-target={`#${root_id}`}
+                            hx-swap="outerHTML"
+                        >
+                            {t(t_key('corporations.departures.filter_', to))}
+                        </FilterChip>
+                    )}
+                </ChipGroup>
+                <small class="[ corporation-departures__muted ]">
+                    {t('corporations.departures.progress').replace('{answered}', String(answered_count)).replace('{total}', String(total))}
+                </small>
+            </FlexInline>
+
+            {shown.length === 0 &&
+                <EmptyState
+                    title={t('corporations.departures.empty_open')}
+                    hint={t('corporations.departures.empty_open_hint')}
+                />
+            }
+
+            {shown.length > 0 &&
+                <form
+                    method="post"
+                    action={form_url}
+                    hx-post={form_url}
+                    hx-target={`#${root_id}`}
+                    hx-swap="outerHTML"
+                    hx-trigger="departures-send"
+                    x-data={`{
+                        reason: '',
+                        can_rejoin: '',
+                        confirm: ${confirm},
+                        send() {
+                            const form = this.$el
+                            if (this.reason !== 'left' && this.can_rejoin === 'no') {
+                                show_confirm_dialog(this.confirm).then((ok) => {
+                                    if (ok) htmx.trigger(form, 'departures-send')
+                                })
+                                return
+                            }
+                            htmx.trigger(form, 'departures-send')
+                        },
+                    }`}
+                    x-on:submit.prevent="send()"
+                >
+                    <Flexblock gap="var(--space-m)">
+                        <DataTable columns={columns} caption={t('corporations.departures.table_caption')}>
+                            {shown.map(({ group, view }) =>
+                                <tr>
+                                    <td>
+                                        <RadioCheckInput
+                                            type="checkbox"
+                                            name="rows"
+                                            value={view.row_value}
+                                            aria-label={t('corporations.departures.select_row').replace('{name}', group.character_name || String(group.character_id))}
+                                        />
+                                    </td>
+                                    <td>
+                                        <Flexblock gap="0">
+                                            <span>
+                                                <strong>{group.character_name || group.character_id}</strong>
+                                                {group.alt_names.length > 0 &&
+                                                    <small class="[ corporation-departures__muted ]" title={group.alt_names.join(', ')}>
+                                                        {' '}{group.alt_names.length === 1
+                                                            ? t('corporations.departures.alts_one')
+                                                            : t('corporations.departures.alts').replace('{n}', String(group.alt_names.length))}
+                                                    </small>
+                                                }
+                                            </span>
+                                            <small class="[ corporation-departures__muted ]">
+                                                {group.registered ? t('corporations.departures.registered') : t('corporations.departures.not_registered')}
+                                                {group.alt_names.length > 0
+                                                    ? ` · ${t('corporations.departures.one_answer')}`
+                                                    : group.months_in_corporation !== null
+                                                        ? ` · ${t('corporations.departures.months_in_corp').replace('{n}', String(group.months_in_corporation))}`
+                                                        : ''}
+                                            </small>
+                                        </Flexblock>
+                                    </td>
+                                    <td>{from_now_diff(lang, new Date(group.first_missing_at))}</td>
+                                    <td>
+                                        <FlexInline gap="var(--space-3xs)" class="[ items-center ]">
+                                            <span>{group.destination_name ?? t('corporations.departures.unknown_destination')}</span>
+                                            <Tag text={t(t_key('corporations.departures.tag_', view.tag))} color={tag_color[view.tag]} narrow={true} />
+                                        </FlexInline>
+                                    </td>
+                                    <td>
+                                        {view.answered
+                                            ? <Flexblock gap="0">
+                                                <span>{reason_label(group.reason)}</span>
+                                                {view.shows_can_rejoin &&
+                                                    <small class:list={['[ corporation-departures__muted ]', { 'is-flagged': group.can_rejoin === false }]}>
+                                                        {group.can_rejoin ? t('corporations.departures.can_rejoin_yes') : t('corporations.departures.can_rejoin_no')}
+                                                    </small>
+                                                }
+                                                {group.note && <small class="[ corporation-departures__muted ]">“{group.note}”</small>}
+                                                {group.flag_id &&
+                                                    <Button
+                                                        type="submit"
+                                                        form={`${root_id}-clear-${group.flag_id}`}
+                                                        size="sm"
+                                                        color="transparent"
+                                                        narrow={true}
+                                                    >
+                                                        {t('corporations.departures.clear_flag')}
+                                                    </Button>
+                                                }
+                                                {group.survey_sent_at &&
+                                                    <small class="[ corporation-departures__muted ]">
+                                                        {t('corporations.departures.survey_sent').replace('{when}', from_now_diff(lang, new Date(group.survey_sent_at)))}
+                                                    </small>
+                                                }
+                                            </Flexblock>
+                                            : <small class="[ corporation-departures__muted ]">{t('corporations.departures.not_answered')}</small>
+                                        }
+                                    </td>
+                                </tr>
+                            )}
+                        </DataTable>
+
+                        <ComponentBlock>
+                        <fieldset class="[ corporation-departures__answer ]">
+                            <legend>{t('corporations.departures.answer_label')}</legend>
+                            <Flexblock gap="var(--space-s)">
+                                <ChipGroup aria_label={t('corporations.departures.reason_label')} wrap={true}>
+                                    {DEPARTURE_REASONS.map((reason) =>
+                                        <FilterChip
+                                            type="radio"
+                                            name="reason"
+                                            value={reason}
+                                            input_attributes={{ 'x-model': 'reason', required: true }}
+                                        >
+                                            {reason_label(reason)}
+                                        </FilterChip>
+                                    )}
+                                </ChipGroup>
+                                <div x-show="reason && reason !== 'left'" x-cloak>
+                                    <ChipGroup aria_label={t('corporations.departures.rejoin_label')}>
+                                        <FilterChip type="radio" name="can_rejoin" value="yes" input_attributes={{ 'x-model': 'can_rejoin' }}>
+                                            {t('corporations.departures.can_rejoin_yes')}
+                                        </FilterChip>
+                                        <FilterChip type="radio" name="can_rejoin" value="no" tone="red" input_attributes={{ 'x-model': 'can_rejoin' }}>
+                                            {t('corporations.departures.can_rejoin_no')}
+                                        </FilterChip>
+                                    </ChipGroup>
+                                </div>
+                                <label class="[ corporation-departures__note ]">
+                                    <small>{t('corporations.departures.note_label')}</small>
+                                    <Textarea
+                                        name="note"
+                                        rows="2"
+                                        x-bind:required="reason !== 'left' && can_rejoin === 'no'"
+                                        aria-describedby={`${root_id}-note-hint`}
+                                    />
+                                    <small id={`${root_id}-note-hint`} class="[ corporation-departures__muted ]">{t('corporations.departures.note_hint')}</small>
+                                </label>
+                                <div>
+                                    <Button type="submit" color="fleet-red" size="sm">{t('corporations.departures.save')}</Button>
+                                </div>
+                            </Flexblock>
+                        </fieldset>
+                        </ComponentBlock>
+                    </Flexblock>
+                </form>
+            }
+
+            {shown.filter(({ group }) => group.flag_id).map(({ group }) =>
+                <form
+                    id={`${root_id}-clear-${group.flag_id}`}
+                    method="post"
+                    action={form_url}
+                    hx-post={form_url}
+                    hx-target={`#${root_id}`}
+                    hx-swap="outerHTML"
+                    hidden
+                >
+                    <input type="hidden" name="action" value="clear_flag" />
+                    <input type="hidden" name="flag_id" value={group.flag_id} />
+                </form>
+            )}
+        </>}
+    </Flexblock>
+</div>
+
+<style lang="scss">
+    .corporation-departures__muted {
+        color: var(--faded);
+    }
+
+    .corporation-departures__notice {
+        border-inline-start: var(--space-3xs) solid var(--fleet-yellow);
+        background-color: var(--surface-sunken);
+        padding: var(--space-2xs) var(--space-s);
+    }
+
+    .corporation-departures__flash.is-error,
+    .is-flagged {
+        color: var(--fleet-red);
+    }
+
+    .corporation-departures__answer {
+        border: 0;
+        padding: 0;
+        margin: 0;
+    }
+
+    .corporation-departures__join + .corporation-departures__join {
+        border-block-start: 1px solid var(--border-color);
+        padding-block-start: var(--space-s);
+    }
+
+    .corporation-departures__keep {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: end;
+        gap: var(--space-s);
+    }
+
+    .corporation-departures__note {
+        display: grid;
+        gap: var(--space-3xs);
+        max-inline-size: var(--max-text-width);
+    }
+</style>

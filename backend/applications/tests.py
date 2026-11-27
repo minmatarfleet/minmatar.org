@@ -755,17 +755,22 @@ class EveCorporationApplicationSignalTest(TestCase):
     def test_save_queues_thread_instead_of_calling_discord(self):
         with patch(
             "applications.signals.sync_application_thread_task"
-        ) as task_mock:
+        ) as task_mock, patch(
+            "applications.signals.alert_application"
+        ) as alert_mock:
             with self.captureOnCommitCallbacks(execute=False) as callbacks:
                 application = self._create()
 
             self.assertEqual([], self.discord_mock.mock_calls)
             task_mock.delay.assert_not_called()
             callbacks = other_callbacks(callbacks)
-            self.assertEqual(1, len(callbacks))
+            # The thread, and the recruiter alert check (#3198).
+            self.assertEqual(2, len(callbacks))
 
-            callbacks[0]()
+            for callback in callbacks:
+                callback()
         task_mock.delay.assert_called_once_with(application.pk, "pending")
+        alert_mock.delay.assert_called_once_with(application.pk)
 
     def test_thread_is_created_once_with_the_same_starter_message(self):
         with self.captureOnCommitCallbacks(execute=True):

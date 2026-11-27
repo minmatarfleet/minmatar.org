@@ -5,6 +5,7 @@ from collections import defaultdict
 from decimal import Decimal
 
 from django.db import models
+from django.utils import timezone
 from esi.models import Token
 
 from eveonline.client import EsiClient
@@ -20,6 +21,8 @@ from eveonline.models import (
     EveCorporationIndustryJob,
     EveCorporationWalletJournalEntry,
 )
+
+from exits.helpers import snapshots
 
 logger = logging.getLogger(__name__)
 
@@ -248,11 +251,10 @@ def update_corporation_members_and_roles(corporation_id: int) -> None:
             "Corporation %s not found, skipping members/roles", corporation_id
         )
         return
-    if not corporation.active or corporation.type not in [
-        "alliance",
-        "associate",
-        "militia",
-    ]:
+    if not corporation.track_exits and (
+        not corporation.active
+        or corporation.type not in ["alliance", "associate", "militia"]
+    ):
         logger.debug(
             "Corporation %s (%s) not active or not alliance/associate/militia, skipping members/roles",
             corporation.name,
@@ -297,6 +299,9 @@ def update_corporation_members_and_roles(corporation_id: int) -> None:
                 corporation.name,
             )
             EveCharacter.objects.create(character_id=member_id)
+
+    if corporation.track_exits:
+        snapshots.record_members(corporation, member_ids, timezone.now())
 
     esi_roles = EsiClient(character).get_corporation_roles(
         corporation.corporation_id

@@ -57,7 +57,6 @@
       "CorporationTenureBand": "closest backend schema CorporationTenureBand, no field or null drift found; alias it when its domain is next changed",
       "CorporationLeaderRow": "closest backend schema CorporationLeader, no field or null drift found; alias it when its domain is next changed",
       "CorporationAbout": "closest backend schema CorporationAbout, no field or null drift found; alias it when its domain is next changed",
-      "CorporationMemberDetails": "closest backend schema CorporationMemberDetails, no field or null drift found; alias it when its domain is next changed",
       "CorporationApplication": "closest backend schema CorporationApplicationResponse, no field or null drift found; alias it when its domain is next changed",
       "OpenCorporationApplication": "closest backend schema OpenCorporationApplicationResponse, no field or null drift found; alias it when its domain is next changed",
       "CorporationApplicationDetails": "closest backend schema CorporationApplicationDetailResponse, no field or null drift found; alias it when its domain is next changed",

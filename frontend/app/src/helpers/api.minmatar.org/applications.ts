@@ -52,8 +52,10 @@ export async function get_corporation_applications_by_id(access_token:string, co
     })
 }
 
-export async function accept_corporation_applications(access_token:string, corporation_id:number, application_id) {
-    return await api_request<CorporationApplication[]>(`${API_ENDPOINT}/${corporation_id}/applications/${application_id}/accept`, {
+/** confirm_flags: accept a pilot marked can't rejoin anyway (the API answers 409 without it). */
+export async function accept_corporation_applications(access_token:string, corporation_id:number, application_id, confirm_flags = false) {
+    const query = confirm_flags ? '?confirm_flags=true' : ''
+    return await api_request<CorporationApplication[]>(`${API_ENDPOINT}/${corporation_id}/applications/${application_id}/accept${query}`, {
         method: 'POST',
         token: access_token,
         error: 'Error accepting corporation application',

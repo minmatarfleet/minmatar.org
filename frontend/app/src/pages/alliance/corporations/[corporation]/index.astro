@@ -92,7 +92,7 @@ if (apply_corporation_promise) {
     apply_corporation = apply_result.value ?? { ...apply_corporation, status: 'error' }
 }
 
-type CorporationTab = 'about' | 'activity' | 'leadership' | 'members' | 'projects' | 'graduation' | 'apply' | 'settings'
+type CorporationTab = 'about' | 'activity' | 'leadership' | 'members' | 'projects' | 'departures' | 'graduation' | 'apply' | 'settings'
 
 const has_activity = Boolean(corporation.activity_summary)
 const has_about = Boolean(biography)
@@ -177,6 +177,13 @@ const projects_partial = translatePath(`/partials/corporation_projects_component
     corporation: corporation_slug(corporation.corporation_name),
 })}`)
 
+// Departures: the CEO of a tracked corporation says why pilots left (#3198).
+const can_view_departures = member_access?.can_view_departures ?? false
+const departures_partial = translatePath(`/partials/corporation_departures_component/?${new URLSearchParams({
+    corporation_id: String(corporation_id),
+    corporation_name: corporation.corporation_name,
+})}`)
+
 // The Academy only: its graduation pipeline, for whoever sees its roster.
 const can_view_graduation = member_access?.can_view_graduation ?? false
 const graduation_partial = translatePath(`/partials/corporation_graduation_component/?${new URLSearchParams({
@@ -189,6 +196,7 @@ const tabs: CorporationTab[] = [
     'apply' as const,
     ...(can_view_members ? ['members' as const] : []),
     ...(can_view_projects ? ['projects' as const] : []),
+    ...(can_view_departures ? ['departures' as const] : []),
     ...(can_view_graduation ? ['graduation' as const] : []),
     ...(has_leadership ? ['leadership' as const] : []),
     ...(can_edit_settings ? ['settings' as const] : []),
@@ -207,6 +215,8 @@ function tab_label(tab: CorporationTab) {
             return t('corporations.detail.members')
         case 'projects':
             return t('corporations.detail.projects')
+        case 'departures':
+            return t('corporations.detail.departures')
         case 'graduation':
             return t('corporations.detail.graduation')
         case 'apply':
@@ -332,6 +342,14 @@ const breadcrumbs = [
                         >
                             <p class="corp-loading">{t('corporations.projects.loading')}</p>
                         </div>
+                    </SectionTabPanel>
+                }
+
+                {can_view_departures &&
+                    <SectionTabPanel id="departures" id_prefix="corporation" is_default={default_tab === 'departures'}>
+                        <LazyPartial url={departures_partial}>
+                            <p class="corp-loading">{t('corporations.departures.loading')}</p>
+                        </LazyPartial>
                     </SectionTabPanel>
                 }
 

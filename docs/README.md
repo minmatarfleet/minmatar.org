@@ -44,6 +44,8 @@ Other entry points: the [root README](../README.md) (local setup, quickstart), [
 | [tribes/tribe-invitations.md](tribes/tribe-invitations.md) | current | Chiefs inviting pilots to a tribe group: Discord DM, join without review, API |
 | [tribes/interim-chiefs.md](tribes/interim-chiefs.md) | current | Chiefless tribes and groups: interim chief fallback, Help wanted, volunteers the executor appoints |
 | [tribes/tribe-structure.md](tribes/tribe-structure.md) | current | Creating, renaming and archiving tribes and groups, and changing chiefs, on the site: who (People Team), the API, Discord roles |
+| [exits/exit-flow-design.md](exits/exit-flow-design.md) | current | Corporation exit flow (#3198): departures, CEO answers, can't-rejoin flags, recruiter alerts, exit surveys |
+| [exits/exit-flow-plan.md](exits/exit-flow-plan.md) | historical | Corporation exit flow (#3198): the build plan |
 | [tasks/README.md](tasks/README.md) | current | Tasks: what waits on each pilot, team work up for grabs, projects and templates, and the rules that keep it light |
 | [esi_health.md](esi_health.md) | current | ESI health: characters to re-add, director tokens, scope changes and the Discord message superusers send |
 | [timezones.md](timezones.md) | current | Pilot timezones (declared and inferred from activity) and the USTZ/EUTZ/AUTZ Discord roles |
