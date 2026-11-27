@@ -21867,6 +21867,11 @@ export interface components {
          * @description The start ping exactly as the bot would post it.
          */
         FleetPingPreviewResponse: {
+            /**
+             * Also Posted To
+             * @default []
+             */
+            also_posted_to?: string[];
             /** Channel Name */
             channel_name?: string | null;
             /**
@@ -33990,6 +33995,10 @@ export interface components {
             post_policy?: components["schemas"]["PublishingPolicy"] | null;
             /** Post Publisher Character Ids */
             post_publisher_character_ids?: number[] | null;
+            /** Roundup Enabled */
+            roundup_enabled?: boolean | null;
+            /** Roundup Hour */
+            roundup_hour?: number | null;
             /** Track Mining By Default */
             track_mining_by_default?: boolean | null;
         };
@@ -34028,6 +34037,16 @@ export interface components {
             post_policy: components["schemas"]["PublishingPolicy"];
             /** Post Publishers */
             post_publishers: components["schemas"]["PublisherSchema"][];
+            /**
+             * Roundup Enabled
+             * @default false
+             */
+            roundup_enabled?: boolean;
+            /**
+             * Roundup Hour
+             * @default 20
+             */
+            roundup_hour?: number;
             /**
              * Track Mining By Default
              * @default false

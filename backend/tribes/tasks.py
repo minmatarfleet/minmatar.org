@@ -17,6 +17,7 @@ Tasks:
 
 import logging
 from collections import defaultdict
+from datetime import timezone as dt_timezone
 
 from app.celery import app
 from django.contrib.auth.models import User
@@ -457,3 +458,42 @@ def post_forwarded_fleet_message(
         ]
     )
     return not error
+
+
+@app.task(exclusive=30 * 60)
+def post_group_fleet_roundups() -> int:
+    """Post each group's daily fleet roundup once its EVE hour has come.
+
+    Runs hourly. A group posts at most once per EVE day: a run missed at
+    the group's hour posts at the next run that day. A day without fleets
+    in the window counts as done. Returns how many roundups were sent.
+    """
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.group_roundup import (
+        build_roundup_payload,
+        roundup_fleets,
+    )
+    from tribes.helpers.fleet_post_destinations import send_group_post
+
+    now = timezone.now().astimezone(dt_timezone.utc)
+    today = now.date()
+    groups = (
+        TribeGroup.objects.filter(
+            roundup_enabled=True, roundup_hour__lte=now.hour
+        )
+        .exclude(roundup_last_sent_on=today)
+        .select_related("tribe")
+    )
+    sent = 0
+    for group in groups:
+        payload = build_roundup_payload(
+            group, roundup_fleets(group, today), today
+        )
+        if payload is not None:
+            send_group_post(
+                group, "roundup", payload, f"group {group.id} fleet roundup"
+            )
+            sent += 1
+        group.roundup_last_sent_on = today
+        group.save(update_fields=["roundup_last_sent_on"])
+    return sent

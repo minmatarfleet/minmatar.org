@@ -24059,6 +24059,14 @@
       "FleetPingPreviewResponse": {
         "description": "The start ping exactly as the bot would post it.",
         "properties": {
+          "also_posted_to": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Also Posted To",
+            "type": "array"
+          },
           "channel_name": {
             "anyOf": [
               {
@@ -54361,6 +54369,30 @@
             ],
             "title": "Post Publisher Character Ids"
           },
+          "roundup_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roundup Enabled"
+          },
+          "roundup_hour": {
+            "anyOf": [
+              {
+                "maximum": 23,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roundup Hour"
+          },
           "track_mining_by_default": {
             "anyOf": [
               {
@@ -54473,6 +54505,16 @@
             },
             "title": "Post Publishers",
             "type": "array"
+          },
+          "roundup_enabled": {
+            "default": false,
+            "title": "Roundup Enabled",
+            "type": "boolean"
+          },
+          "roundup_hour": {
+            "default": 20,
+            "title": "Roundup Hour",
+            "type": "integer"
           },
           "track_mining_by_default": {
             "default": false,

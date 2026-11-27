@@ -71,8 +71,16 @@ def group_post_destinations(group, kind: PostKind) -> list[Destination]:
     return destinations
 
 
-def send_group_post(group, kind: PostKind, payload: dict, context: str) -> int:
-    """Queue the post for every destination after commit; how many."""
+def send_group_post(
+    group, kind: PostKind, payload: dict, context: str, *, queue=None
+) -> int:
+    """Queue the post for every destination after commit; how many.
+
+    ``queue`` posts to the group's own channel (``queue_channel_message``
+    by default); callers pass theirs so the group's post goes out exactly
+    as it did before forwarding existed.
+    """
+    queue = queue or queue_channel_message
     # pylint: disable-next=import-outside-toplevel
     from tribes.tasks import post_forwarded_fleet_message
 
@@ -80,9 +88,7 @@ def send_group_post(group, kind: PostKind, payload: dict, context: str) -> int:
     for destination in destinations:
         body = destination.apply(payload, kind)
         if destination.follow_id is None:
-            queue_channel_message(
-                destination.channel_id, payload=body, context=context
-            )
+            queue(destination.channel_id, payload=body, context=context)
         else:
             on_commit_enqueue(
                 post_forwarded_fleet_message,
