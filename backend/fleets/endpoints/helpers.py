@@ -188,11 +188,17 @@ def _send_group_pre_ping(fleet: EveFleet) -> bool:
         fleet_start_time=fleet.start_time,
         content="",
     )
-    notification["flags"] = SILENT_MESSAGE_FLAG
-    queue_channel_message(
-        channel_id,
-        payload=notification,
-        context=f"group pre-ping for fleet {fleet.id}",
+    # pylint: disable-next=import-outside-toplevel
+    from tribes.helpers.fleet_post_destinations import send_group_post
+
+    # Silent everywhere, also in the corporation channels that follow the
+    # group (docs/tribes/group-fleet-roundup.md).
+    send_group_post(
+        group,
+        "pre_ping",
+        notification,
+        f"group pre-ping for fleet {fleet.id}",
+        queue=queue_channel_message,
     )
     return True
 

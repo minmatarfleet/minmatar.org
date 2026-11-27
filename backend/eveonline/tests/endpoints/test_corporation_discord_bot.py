@@ -79,8 +79,10 @@ class CorporationDiscordBotEndpointTestCase(TestCase):
         self.assertEqual("discord.com", location.netloc)
         query = parse_qs(location.query)
         self.assertEqual(["bot"], query["scope"])
-        # Create Instant Invite | View Channel | Manage Roles.
-        self.assertEqual(["402654211"], query["permissions"])
+        # Create Instant Invite | View Channel | Manage Roles | Manage
+        # Nicknames | Kick Members, plus Send Messages | Embed Links |
+        # Mention @everyone for group fleet posts.
+        self.assertEqual(["402803715"], query["permissions"])
 
     def test_connect_needs_settings_access_and_configuration(self):
         self.assertEqual(403, self.connect(self.member_user).status_code)

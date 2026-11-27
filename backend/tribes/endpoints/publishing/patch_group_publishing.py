@@ -96,10 +96,13 @@ def _apply_settings(group: TribeGroup, payload) -> None:
         "fleets_enabled",
         "events_enabled",
         "track_mining_by_default",
+        "roundup_enabled",
     ):
         value = getattr(payload, flag)
         if value is not None:
             setattr(group, flag, value)
+    if payload.roundup_hour is not None:
+        group.roundup_hour = payload.roundup_hour
     if "discord_channel_id" in payload.model_fields_set:
         group.discord_channel_id = payload.discord_channel_id
 

@@ -1,4 +1,4 @@
-import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication, CorporationProjects, AcademyGraduationPipeline, AcademyGraduationReviewRequest, CorporationDiscordSettings, CorporationDiscordInvitePreview, CorporationMemberPromote, CorporationMemberStatus, CorporationMemberStatusAction, MemberInsights, CorporationPageText, CorporationPageTextUpdate, DiscordRoleMappingUpdate, DiscordMemberAccessUpdate } from '@dtypes/api.minmatar.org' // pragma: allowlist secret
+import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication, CorporationProjects, AcademyGraduationPipeline, AcademyGraduationReviewRequest, CorporationDiscordSettings, CorporationDiscordInvitePreview, CorporationMemberPromote, CorporationMemberStatus, CorporationMemberStatusAction, MemberInsights, CorporationPageText, CorporationPageTextUpdate, DiscordRoleMappingUpdate, DiscordMemberAccessUpdate, CorporationFleetFollows, CorporationFleetFollowUpdate } from '@dtypes/api.minmatar.org' // pragma: allowlist secret
 import { api_request, api_response, type ApiToken } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/eveonline/corporations`
@@ -302,5 +302,40 @@ export async function disconnect_corporation_discord_bot(access_token: string, c
 export async function retry_corporation_discord_bot(access_token: string, corporation_id: number) {
     return await discord_invite_request<CorporationDiscordSettings>(
         access_token, `${API_ENDPOINT}/corporations/${corporation_id}/discord/bot/refresh`, 'POST',
+    )
+}
+
+/** A fleet pings save or removal the backend refused, with its error code. */
+export class FleetFollowError extends Error {}
+
+async function fleet_follow_request(access_token: string, endpoint: string, method: string, body?: CorporationFleetFollowUpdate) {
+    const response = await api_response(endpoint, { method, token: access_token, body, allow: [400, 403, 404] })
+    if (!response.ok) {
+        const detail = await response.json().then((json) => json.detail).catch(() => null)
+        throw new FleetFollowError(detail ?? `HTTP ${response.status}`)
+    }
+    return await response.json() as CorporationFleetFollows
+}
+
+/** Settings > Fleet pings: the tribe groups whose fleet posts go to the corporation's Discord. */
+export async function get_corporation_fleet_follows(access_token: string, corporation_id: number) {
+    return await fleet_follow_request(access_token, `${API_ENDPOINT}/corporations/${corporation_id}/discord/fleet-follows`, 'GET')
+}
+
+/** Ask to follow a group in a channel; a group chief approves it. */
+export async function save_corporation_fleet_follow(access_token: string, corporation_id: number, tribe_group_id: number, channel_id: string) {
+    return await fleet_follow_request(
+        access_token,
+        `${API_ENDPOINT}/corporations/${corporation_id}/discord/fleet-follows/${tribe_group_id}`,
+        'PUT',
+        { channel_id },
+    )
+}
+
+export async function remove_corporation_fleet_follow(access_token: string, corporation_id: number, tribe_group_id: number) {
+    return await fleet_follow_request(
+        access_token,
+        `${API_ENDPOINT}/corporations/${corporation_id}/discord/fleet-follows/${tribe_group_id}`,
+        'DELETE',
     )
 }

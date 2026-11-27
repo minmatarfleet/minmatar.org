@@ -124,7 +124,8 @@ Do this while logged in as the discord user you wish to act as 'admin' (likely y
 A corporation's CEO or a director adds the bot from the corporation Settings
 tab. A tribe chief does the same from the tribe page. The install asks for
 Create Instant Invite, View Channel, Manage Roles, and Manage Nicknames (and
-Kick Members for a corporation). The bot keeps one
+Kick Members, Send Messages, Embed Links and Mention @everyone for a
+corporation, for group fleet posts: `docs/tribes/group-fleet-roundup.md`). The bot keeps one
 7-day invite fresh for a corporation page, and on either kind of server it
 adds or removes existing roles that a director or chief mapped
 (`discord/guild_roles.py`). The same pass sets each linked member's nickname

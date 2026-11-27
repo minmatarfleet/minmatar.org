@@ -234,6 +234,8 @@ class FleetPingPreviewResponse(BaseModel):
     # the ping still goes out, so warn on this, not on channel_name.
     has_channel: bool = False
     payload: Dict[str, Any]
+    # Corporations whose own Discord also gets this ping (with @here).
+    also_posted_to: List[str] = []
 
 
 class EveFleetMetric(BaseModel):

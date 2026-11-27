@@ -371,6 +371,20 @@ class EveFleet(models.Model):
             self.id,
             ping.channel_id,
         )
+        if self.host_group_id:
+            # pylint: disable-next=import-outside-toplevel
+            from tribes.helpers.fleet_post_destinations import send_group_post
+
+            # The group's role in its channel, @here in each corporation
+            # channel that follows the group.
+            send_group_post(
+                self.host_group,
+                "start_ping",
+                ping.payload,
+                f"fleet {self.id} start ping",
+                queue=queue_channel_message,
+            )
+            return
         queue_channel_message(
             ping.channel_id,
             context=f"fleet {self.id} start ping",

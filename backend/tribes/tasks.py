@@ -17,10 +17,13 @@ Tasks:
 
 import logging
 from collections import defaultdict
+from datetime import timezone as dt_timezone
 
 from app.celery import app
 from django.contrib.auth.models import User
-from discord.client import DiscordClient
+from django.db import transaction
+from django.utils import timezone
+from discord.client import DiscordClient, discord_error_code
 from notifications.models import NotificationChannel, NotificationDelivery
 from notifications.types.tribes import (
     TRIBE_CHIEF_VOLUNTEERED_KEY,
@@ -54,6 +57,7 @@ from tribes.models import (
     Tribe,
     TribeChiefVolunteer,
     TribeGroup,
+    TribeGroupCorporationFollow,
     TribeGroupInvitation,
     TribeGroupMembership,
 )
@@ -396,3 +400,117 @@ def update_chief_volunteer_dm(volunteer_id: int):
                 volunteer_id,
                 exc_info=True,
             )
+
+
+# Discord JSON error codes a forwarded post records on its follow.
+_DELIVERY_ERRORS = {
+    10003: "unknown_channel",
+    50001: "missing_access",
+    50013: "missing_permissions",
+}
+
+
+def _delivery_error(exc: Exception) -> str:
+    response = getattr(exc, "response", None)
+    code = discord_error_code(exc) if response is not None else None
+    return _DELIVERY_ERRORS.get(code, "error")
+
+
+@app.task(expires=60 * 60)
+def post_forwarded_fleet_message(
+    follow_id: int, payload: dict, context: str = ""
+) -> bool:
+    """Post one group fleet post in a corporation's channel.
+
+    Rechecks the follow first, so a post queued before a chief revoked it
+    (or the bot left the server) is dropped. Never raises: the result is
+    recorded on the follow for the corporation's Settings tab.
+    """
+    follow = (
+        TribeGroupCorporationFollow.objects.filter(pk=follow_id)
+        .select_related("corporation__alliance", "corporation__faction")
+        .first()
+    )
+    if follow is None or not follow.is_forwarding():
+        return False
+    error = ""
+    try:
+        DiscordClient().create_message(
+            channel_id=follow.channel_id, payload=payload
+        )
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        error = _delivery_error(exc)
+        logger.warning(
+            "Forwarded fleet post to corporation %s failed: %s (%s)",
+            follow.corporation_id,
+            error,
+            context or "no context",
+            exc_info=True,
+        )
+    follow.last_delivery_at = timezone.now()
+    follow.last_delivery_ok = not error
+    follow.last_delivery_error = error
+    follow.save(
+        update_fields=[
+            "last_delivery_at",
+            "last_delivery_ok",
+            "last_delivery_error",
+            "updated_at",
+        ]
+    )
+    return not error
+
+
+@app.task(exclusive=30 * 60)
+def post_group_fleet_roundups() -> int:
+    """Post each group's daily fleet roundup once its EVE hour has come.
+
+    Runs hourly. A group posts at most once per EVE day: a run missed at
+    the group's hour posts at the next run that day. A day without fleets
+    in the window counts as done. Returns how many roundups were sent.
+    """
+    # pylint: disable=import-outside-toplevel
+    from fleets.helpers.group_roundup import (
+        build_roundup_payload,
+        roundup_fleets,
+    )
+    from tribes.helpers.fleet_post_destinations import send_group_post
+
+    now = timezone.now().astimezone(dt_timezone.utc)
+    today = now.date()
+    groups = (
+        TribeGroup.objects.filter(
+            roundup_enabled=True,
+            roundup_hour__lte=now.hour,
+            # An archived group, or one with fleets switched off, posts none.
+            is_active=True,
+            tribe__is_active=True,
+            fleets_enabled=True,
+        )
+        .exclude(roundup_last_sent_on=today)
+        .select_related("tribe")
+    )
+    sent = 0
+    for group in groups:
+        try:
+            # The day is marked before the post is queued (on commit), so a
+            # crash between the two never posts the roundup twice.
+            with transaction.atomic():
+                payload = build_roundup_payload(
+                    group, roundup_fleets(group, today), today
+                )
+                group.roundup_last_sent_on = today
+                group.save(update_fields=["roundup_last_sent_on"])
+                if payload is not None:
+                    send_group_post(
+                        group,
+                        "roundup",
+                        payload,
+                        f"group {group.id} fleet roundup",
+                    )
+                    sent += 1
+        except Exception:  # pylint: disable=broad-exception-caught
+            # One bad group never costs the others their roundup; it is
+            # retried next hour.
+            logger.exception("Fleet roundup failed for group %s", group.id)
+    return sent

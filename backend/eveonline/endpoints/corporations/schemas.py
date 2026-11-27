@@ -644,3 +644,46 @@ class AcademyGraduationReviewRequest(Schema):
     decision: Literal["graduate", "keep", "release"]
     corporation_ids: list[int] = []
     note: str = ""
+
+
+class FleetFollowChannel(Schema):
+    # Discord ids are strings: they don't fit a JavaScript number.
+    id: str
+    name: str
+
+
+class FleetFollowableGroup(Schema):
+    tribe_group_id: int
+    name: str
+    tribe_name: str
+
+
+class CorporationFleetFollow(Schema):
+    """A tribe group whose fleet posts this corporation's Discord gets."""
+
+    tribe_group_id: int
+    group_name: str
+    tribe_name: str
+    channel_id: str
+    channel_name: str
+    # requested (waiting for a group chief), approved or revoked.
+    status: str
+    # channel_missing, or what the bot lacks there: cant_post, no_embeds,
+    # no_here.
+    warnings: List[str]
+    last_delivery_ok: Optional[bool] = None
+    # unknown_channel, missing_access, missing_permissions or error.
+    last_delivery_error: str = ""
+    last_delivery_at: Optional[datetime] = None
+
+
+class CorporationFleetFollows(Schema):
+    # False until the bot is in the corporation's server.
+    bot_ready: bool
+    channels: List[FleetFollowChannel]
+    followable_groups: List[FleetFollowableGroup]
+    follows: List[CorporationFleetFollow]
+
+
+class CorporationFleetFollowUpdate(Schema):
+    channel_id: str

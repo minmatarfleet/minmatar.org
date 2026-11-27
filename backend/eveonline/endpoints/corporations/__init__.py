@@ -3,7 +3,9 @@ from ninja import Router
 from eveonline.endpoints.corporations import (
     delete_corporation_discord,
     delete_corporation_discord_bot,
+    delete_corporation_fleet_follow,
     get_corporation_discord,
+    get_corporation_fleet_follows,
     get_corporation_page_text,
     get_corporation_discord_bot_callback,
     get_corporation_discord_bot_connect,
@@ -16,6 +18,7 @@ from eveonline.endpoints.corporations import (
     put_corporation_discord,
     put_corporation_discord_members,
     put_corporation_discord_roles,
+    put_corporation_fleet_follow,
     put_corporation_page_text,
 )
 from eveonline.endpoints.corporations.get_corp_member_details import (
@@ -99,6 +102,9 @@ for endpoint in (
     post_corporation_discord_members_exempt,
     post_corporation_discord_members_approve,
     post_corporation_discord_roles_strip_approve,
+    get_corporation_fleet_follows,
+    put_corporation_fleet_follow,
+    delete_corporation_fleet_follow,
 ):
     view = getattr(endpoint, endpoint.__name__.rsplit(".", 1)[-1])
     getattr(discord_router, endpoint.METHOD)(

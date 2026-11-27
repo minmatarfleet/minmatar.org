@@ -7,7 +7,8 @@ import factory
 
 from discord.models import DiscordRole
 from eveonline.helpers.characters import set_primary_character
-from eveonline.models import EveCharacter
+from eveonline.constants import MINMATAR_FLEET_ASSOCIATES_ALLIANCE_ID
+from eveonline.models import EveAlliance, EveCharacter
 from tribes.models import Tribe, TribeGroup, TribeGroupMembership
 
 ROLE_ID = 777000111
@@ -74,3 +75,12 @@ def add_member(group, user, status=TribeGroupMembership.STATUS_ACTIVE):
         return TribeGroupMembership.objects.create(
             user=user, tribe_group=group, status=status
         )
+
+
+def associates():
+    """The Associates alliance: its corporations may follow a group."""
+    alliance, _ = EveAlliance.objects.get_or_create(
+        alliance_id=MINMATAR_FLEET_ASSOCIATES_ALLIANCE_ID,
+        defaults={"name": "Minmatar Fleet Associates"},
+    )
+    return alliance

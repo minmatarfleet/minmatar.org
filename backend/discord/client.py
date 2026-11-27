@@ -676,6 +676,10 @@ class DiscordClient(DiscordBaseClient):
         parents and permission overwrites)."""
         return self.get(f"{BASE_URL}/guilds/{guild_id}/channels")
 
+    def get_guild_member_raw(self, guild_id, user_id) -> dict:
+        """One member of a guild as Discord sends it (with role ids)."""
+        return self.get(f"{BASE_URL}/guilds/{guild_id}/members/{user_id}")
+
     def delete_invite(self, code: str):
         """Revoke an invite; a missing one is already gone."""
         return self.delete(f"{BASE_URL}/invites/{_quote_all(code)}")

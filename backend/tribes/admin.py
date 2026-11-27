@@ -9,6 +9,7 @@ from tribes.models import (
     TribeExternalGuildSeat,
     TribeGroup,
     TribeGroupChief,
+    TribeGroupCorporationFollow,
     TribeGroupMembership,
     TribeGroupMembershipCharacter,
     TribeGroupMembershipHistory,
@@ -69,6 +70,26 @@ class TribeExternalGuildAdmin(admin.ModelAdmin):
     list_filter = ("is_active",)
     search_fields = ("tribe_group__name", "tribe_group__code", "guild__name")
     raw_id_fields = ("tribe_group", "guild")
+
+
+@admin.register(TribeGroupCorporationFollow)
+class TribeGroupCorporationFollowAdmin(admin.ModelAdmin):
+    list_display = (
+        "tribe_group",
+        "corporation",
+        "channel_name",
+        "status",
+        "last_delivery_ok",
+        "updated_at",
+    )
+    list_filter = ("status",)
+    search_fields = ("tribe_group__name", "corporation__name")
+    raw_id_fields = (
+        "tribe_group",
+        "corporation",
+        "requested_by",
+        "decided_by",
+    )
 
 
 @admin.register(TribeExternalGuildSeat)

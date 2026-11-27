@@ -10,7 +10,8 @@ from django.utils import timezone
 
 from app.test import TestCase
 from app.testing import make_token
-from eveonline.models import EveLocation
+from discord.models import DiscordGuild
+from eveonline.models import EveCorporation, EveLocation
 from fleets.endpoints.helpers import (
     SILENT_MESSAGE_FLAG,
     send_discord_pre_ping,
@@ -19,9 +20,10 @@ from fleets.helpers.metrics import led_fleets
 from fleets.models import EveFleet, EveFleetAudience
 from fleets.tasks import update_fleet_schedule
 from fleets.tests import setup_fleet_reference_data
-from tribes.models import TribeGroup
+from tribes.models import TribeGroup, TribeGroupCorporationFollow
 from tribes.models import TribeGroupChief
 from tribes.tests.publishing_fixtures import (
+    associates,
     GROUP_CHANNEL_ID,
     ROLE_ID,
     TRIBE_CHANNEL_ID,
@@ -586,3 +588,109 @@ class GroupFleetMetricsTests(GroupFleetTestBase):
             row["user_id"]: row["fleet_count"] for row in response.json()
         }
         self.assertEqual(counts[self.fc.id], 1)
+
+
+FORWARD = "tribes.helpers.fleet_post_destinations.on_commit_enqueue"
+CORP_CHANNEL_ID = 880000111
+
+
+class GroupFleetForwardingTests(GroupFleetTestBase):
+    """Approved corporation follows get the group's pre-ping and start ping
+    (docs/tribes/group-fleet-roundup.md)."""
+
+    def setUp(self):
+        super().setUp()
+        self.corporation = EveCorporation.objects.create(
+            corporation_id=98838663,
+            name="M-EXC",
+            discord_guild=DiscordGuild.objects.create(guild_id=4100, name="M"),
+            discord_bot_status=EveCorporation.DISCORD_BOT_OK,
+            alliance=associates(),
+        )
+        self.follow = TribeGroupCorporationFollow.objects.create(
+            tribe_group=self.group,
+            corporation=self.corporation,
+            channel_id=CORP_CHANNEL_ID,
+            status=TribeGroupCorporationFollow.STATUS_APPROVED,
+        )
+
+    def forwarded(self, enqueue):
+        follow_id, payload, _ = enqueue.call_args.args[1]
+        self.assertEqual(follow_id, self.follow.id)
+        return payload
+
+    @patch(FORWARD)
+    @patch("fleets.endpoints.helpers.queue_channel_message")
+    def test_pre_ping_forwarded_silently(self, queue, enqueue):
+        self.assertTrue(send_discord_pre_ping(self.group_fleet()))
+        self.assertEqual(queue.call_args.args[0], GROUP_CHANNEL_ID)
+        payload = self.forwarded(enqueue)
+        self.assertEqual(payload["content"], "")
+        self.assertEqual(payload["flags"], SILENT_MESSAGE_FLAG)
+        self.assertEqual(payload["allowed_mentions"], {"parse": []})
+        self.assertEqual(payload["embeds"][0]["title"], "FLEET PRE-PING")
+
+    @patch(FORWARD)
+    @patch("fleets.models.queue_channel_message")
+    def test_start_ping_forwarded_with_here(self, queue, enqueue):
+        self.group_fleet().notify_discord()
+        self.assertEqual(
+            queue.call_args.kwargs["payload"]["content"], f"<@&{ROLE_ID}>"
+        )
+        payload = self.forwarded(enqueue)
+        self.assertEqual(payload["content"], "@here")
+        self.assertEqual(payload["allowed_mentions"], {"parse": ["everyone"]})
+        self.assertNotIn(str(ROLE_ID), payload["content"])
+
+    @patch(FORWARD)
+    @patch("fleets.models.queue_channel_message")
+    @patch("fleets.endpoints.helpers.queue_channel_message")
+    def test_private_fleet_never_forwarded(self, pre_queue, queue, enqueue):
+        fleet = self.group_fleet(invite_only=True)
+        self.assertFalse(send_discord_pre_ping(fleet))
+        with patch("discord.outbox.on_commit_enqueue"):
+            fleet.notify_discord()
+        enqueue.assert_not_called()
+        queue.assert_not_called()
+
+    @patch(FORWARD)
+    @patch("fleets.models.queue_channel_message")
+    def test_alliance_start_ping_unchanged(self, queue, enqueue):
+        self.alliance_fleet().notify_discord()
+        self.assertEqual(queue.call_args.args[0], 4242)
+        self.assertEqual(
+            queue.call_args.kwargs["payload"]["content"], "@everyone"
+        )
+        enqueue.assert_not_called()
+
+    def test_ping_preview_lists_corporations(self):
+        with patch(
+            "tribes.helpers.discord_channels.guild_channels", return_value=[]
+        ):
+            body = self.call(
+                "post",
+                "/ping-preview",
+                self.chief,
+                {
+                    "type": "non_strategic",
+                    "description": "Mining op",
+                    "host_group_id": self.group.id,
+                },
+            ).json()
+        self.assertEqual(body["also_posted_to"], ["M-EXC"])
+        self.follow.status = TribeGroupCorporationFollow.STATUS_REQUESTED
+        self.follow.save()
+        with patch(
+            "tribes.helpers.discord_channels.guild_channels", return_value=[]
+        ):
+            body = self.call(
+                "post",
+                "/ping-preview",
+                self.chief,
+                {
+                    "type": "non_strategic",
+                    "description": "Mining op",
+                    "host_group_id": self.group.id,
+                },
+            ).json()
+        self.assertEqual(body["also_posted_to"], [])

@@ -4,10 +4,11 @@ const { t, translatePath } = i18n(Astro.url)
 
 import type { TribeGroupPublishing } from '@dtypes/api.minmatar.org'
 import type { DiscordChannelUI } from '@dtypes/layout_components'
+import { ROUNDUP_HOURS } from '@helpers/tribe_group_settings'
 
 /**
- * Chiefs tab, Discord: the group's channel (empty = the tribe's) and the
- * role it mentions, read only. Saves on its own through the settings partial,
+ * Chiefs tab, Discord: the group's channel (empty = the tribe's), the
+ * role it mentions (read only) and the daily fleet roundup in that channel. Saves on its own through the settings partial,
  * which swaps this form back with the result.
  */
 interface Props {
@@ -53,6 +54,7 @@ const PARTIAL_URL = translatePath(`/partials/tribe_group_settings_component?sect
 
 import Button from '@components/blocks/Button.astro'
 import Select from '@components/blocks/Select.astro'
+import Switch from '@components/blocks/Switch.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 ---
@@ -104,6 +106,27 @@ import Flexblock from '@components/compositions/Flexblock.astro'
                 <span class="[ tribe-settings-section__value ]">
                     {settings.discord_role_name ? `@${settings.discord_role_name}` : t('tribes.settings.discord.role_none')}
                 </span>
+            </div>
+
+            <Switch shape="square"
+                name="roundup_enabled"
+                checked={settings.roundup_enabled}
+                label={t('tribes.settings.discord.roundup')}
+                description={t('tribes.settings.discord.roundup_help')}
+            />
+
+            <div class="[ tribe-settings-section__row ]">
+                <label class="[ tribe-settings-section__label ]" for="tribe-settings-roundup-hour">
+                    <b>{t('tribes.settings.discord.roundup_hour')}</b>
+                    <small>{t('tribes.settings.discord.roundup_hour_help')}</small>
+                </label>
+                <div class="[ tribe-settings-section__control ]">
+                    <Select id="tribe-settings-roundup-hour" name="roundup_hour" size="sm">
+                        {ROUNDUP_HOURS.map((hour) =>
+                            <option value={hour.value} selected={hour.value === settings.roundup_hour}>{hour.label}</option>
+                        )}
+                    </Select>
+                </div>
             </div>
 
             <div class="[ tribe-settings-section__foot ]">

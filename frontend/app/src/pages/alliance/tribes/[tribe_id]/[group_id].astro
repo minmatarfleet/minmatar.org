@@ -192,6 +192,11 @@ const activity = tribe_group?.code
 const TRIBE_GROUP_PARTIAL_URL = translatePath(
     `/alliance/tribes/${tribe_id}/${group_id}/`,
 )
+const CORPORATION_FOLLOWS_PARTIAL_URL = translatePath(`/partials/tribe_group_corporation_follows_component/?${new URLSearchParams({
+    tribe_id: String(tribe_id),
+    group_id: String(group_id),
+    group_name: tribe_group?.name ?? '',
+})}`)
 const tribes_url = translatePath('/alliance/tribes/')
 const tribe_url = translatePath(`/alliance/tribes/${tribe_id}/`)
 const cover = tribe_group_cover(group_id)
@@ -309,6 +314,7 @@ import TribeGroupFleets from '@components/blocks/TribeGroupFleets.astro'
 import TribeGroupEvents from '@components/blocks/TribeGroupEvents.astro'
 import TribeGroupPosts from '@components/blocks/TribeGroupPosts.astro'
 import TribeGroupDiscordSettings from '@components/blocks/TribeGroupDiscordSettings.astro'
+import LazyPartial from '@components/blocks/LazyPartial.astro'
 import TribeGroupPublishingSettings from '@components/blocks/TribeGroupPublishingSettings.astro'
 import LandingSwiper from '@components/blocks/LandingSwiper.astro'
 import Button from '@components/blocks/Button.astro'
@@ -645,6 +651,11 @@ import SectionTabPanel from '@components/blocks/SectionTabPanel.astro'
                                                 tribe_name={tribe?.name ?? tribe_group.tribe_name}
                                                 group_name={tribe_group.name}
                                             />
+                                        }
+                                        {show_publishing_settings && publishing &&
+                                            <LazyPartial url={CORPORATION_FOLLOWS_PARTIAL_URL} trigger="reveal">
+                                                <p>{t('loading')}</p>
+                                            </LazyPartial>
                                         }
                                         {show_publishing_settings && publishing &&
                                             <TribeGroupPublishingSettings

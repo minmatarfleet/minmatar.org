@@ -374,6 +374,13 @@ CELERYBEAT_GROUPS = [
 # Tribes
 CELERYBEAT_TRIBES = [
     (
+        "[Tribes] Post group fleet roundups",
+        {
+            "task": "tribes.tasks.post_group_fleet_roundups",
+            "schedule": crontab(minute=0),
+        },
+    ),
+    (
         "[Tribes] Ensure tribe chiefs are group members",
         {
             "task": "tribes.tasks.ensure_tribe_chiefs_have_group_memberships",

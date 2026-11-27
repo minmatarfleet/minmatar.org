@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { TribeGroupPublishing } from '@dtypes/api.minmatar.org'
 import {
     discord_settings_patch,
+    ROUNDUP_HOURS,
     parse_settings_section,
     policy_of,
     publishers_of,
@@ -84,5 +85,36 @@ describe('Publishing settings readers', () => {
         expect(policy_of(settings, 'post')).toBe('chosen')
         expect(policy_of(settings, 'event')).toBe('members')
         expect(publishers_of(settings, 'post')).toEqual([{ character_id: 1, character_name: 'Guth' }])
+    })
+})
+
+describe('discord_settings_patch: daily roundup', () => {
+    it('sends the roundup switch and hour when the form has them', () => {
+        expect(discord_settings_patch(form([
+            ['discord_channel_id', ''],
+            ['roundup_enabled', 'on'],
+            ['roundup_hour', '18'],
+        ]))).toEqual({ discord_channel_id: null, roundup_enabled: true, roundup_hour: 18 })
+    })
+
+    it('turns the roundup off when the switch is not sent', () => {
+        expect(discord_settings_patch(form([['roundup_hour', '20']]))).toMatchObject({
+            roundup_enabled: false,
+            roundup_hour: 20,
+        })
+    })
+
+    it('leaves the hour out when it is not 0-23', () => {
+        for (const hour of ['24', '-1', 'x', '']) {
+            const patch = discord_settings_patch(form([['roundup_enabled', 'on'], ['roundup_hour', hour]]))
+            expect(patch.roundup_enabled).toBe(true)
+            expect(patch).not.toHaveProperty('roundup_hour')
+        }
+    })
+
+    it('lists the 24 EVE hours', () => {
+        expect(ROUNDUP_HOURS).toHaveLength(24)
+        expect(ROUNDUP_HOURS[0]).toEqual({ value: 0, label: '00:00' })
+        expect(ROUNDUP_HOURS[20]).toEqual({ value: 20, label: '20:00' })
     })
 })

@@ -25,6 +25,10 @@ from tribes.models.tribe_external_guild import (
     TribeExternalGuildSeat,
 )
 
+from tribes.models.tribe_group_corporation_follow import (
+    TribeGroupCorporationFollow,
+)
+
 __all__ = [
     "Tribe",
     "TribeGroup",
@@ -42,4 +46,5 @@ __all__ = [
     "TribeEvent",
     "TribeGroupInvitation",
     "TribeChiefVolunteer",
+    "TribeGroupCorporationFollow",
 ]

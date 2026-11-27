@@ -90,13 +90,22 @@ def post_ping_preview(request, payload: FleetPingPreviewRequest):
         return 400, ErrorResponse.new("Pick an audience or a tribe group")
 
     channel_name = ping.channel_name
+    also_posted_to = []
     if host_group is not None and ping.channel_id:
         # pylint: disable=import-outside-toplevel
         from tribes.helpers.discord_channels import channel_name as lookup
+        from tribes.helpers.fleet_post_destinations import (
+            forwarding_follows,
+        )
 
         channel_name = lookup(ping.channel_id)
+        also_posted_to = sorted(
+            follow.corporation.name
+            for follow in forwarding_follows(host_group)
+        )
     return FleetPingPreviewResponse(
         channel_name=channel_name if ping.channel_id else None,
         has_channel=ping.channel_id is not None,
         payload=ping.payload,
+        also_posted_to=also_posted_to,
     )

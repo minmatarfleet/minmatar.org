@@ -85,6 +85,13 @@ export type TribeGroupPublisher = ApiResponse<'PublisherSchema'>
 export type TribeGroupPublishing = ApiResponse<'TribeGroupPublishingSchema'>
 export type TribeGroupPublishingPatch = ApiRequest<'TribeGroupPublishingPatch'>
 export type PublishableGroup = ApiResponse<'PublishableGroupSchema'>
+/** A corporation that follows a group's fleet posts in its own Discord. */
+export type GroupCorporationFollow = ApiResponse<'GroupCorporationFollowSchema'>
+export type GroupCorporationFollowDecision = ApiRequest<'CorporationFollowDecisionRequest'>
+/** A corporation's Settings > Fleet pings: its follows and its server's channels. */
+export type CorporationFleetFollows = ApiResponse<'CorporationFleetFollows'>
+export type CorporationFleetFollow = ApiResponse<'CorporationFleetFollow'>
+export type CorporationFleetFollowUpdate = ApiRequest<'CorporationFleetFollowUpdate'>
 export type DiscordChannelKind = ApiResponse<'DiscordChannelKind'>
 export type DiscordChannel = ApiResponse<'DiscordChannelSchema'>
 export type TribeEventRecurrence = ApiResponse<'EventRecurrence'>
