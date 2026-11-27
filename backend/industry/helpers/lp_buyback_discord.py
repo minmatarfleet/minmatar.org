@@ -660,3 +660,59 @@ def post_stale_open_orders_digest(orders, *, now) -> bool:
         logger.error("Failed posting stale LP order digest: %s", exc)
         return False
     return True
+
+
+AWAITING_LP_MARKER = ":package: Awaiting LP transfer"
+CLAIM_RELEASED_MARKER = ":arrows_counterclockwise: Claim released"
+
+
+def awaiting_lp_already_posted(thread_id: int) -> bool | None:
+    """Whether the thread's latest claim cycle has its Awaiting LP post.
+
+    Walks newest first: an Awaiting LP post newer than any claim release
+    means it is there. None when the thread can't be read.
+    """
+    try:
+        messages = discord.get_messages(thread_id, limit=100)
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        logger.warning(
+            "Could not read LP buyback thread %s: %s", thread_id, exc
+        )
+        return None
+    for message in messages or []:
+        content = message.get("content") or ""
+        if AWAITING_LP_MARKER in content:
+            return True
+        if CLAIM_RELEASED_MARKER in content:
+            return False
+    return False
+
+
+def repost_missing_awaiting_lp(order_id: int) -> bool:
+    """Post the Awaiting LP update a claim lost to the pre-commit race.
+
+    Claims used to queue their Discord task before the claim committed, so
+    a fully claimed order could reach awaiting_lp with nothing in its
+    thread. Posts only when the thread has no Awaiting LP post for the
+    current claim; safe to run twice. True when it posted.
+    """
+    order = (
+        IndustryLoyaltyPointMarketOrder.objects.select_related(
+            "loyalty_point", "created_by", "claimed_by"
+        )
+        .filter(pk=order_id)
+        .first()
+    )
+    if (
+        order is None
+        or order.status != order.Status.AWAITING_LP
+        or not order.discord_thread_id
+    ):
+        return False
+    if awaiting_lp_already_posted(order.discord_thread_id) is not False:
+        return False
+    return post_order_status_update(
+        order,
+        message=_awaiting_lp_message(order),
+        components=lp_sent_components(order.pk),
+    )
