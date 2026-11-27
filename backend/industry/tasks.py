@@ -130,6 +130,15 @@ def notify_lp_buyback_order_status_changed_task(order_id: int) -> None:
 
 
 @app.task()
+def repost_missing_lp_buyback_awaiting_lp_task(order_id: int) -> None:
+    """One-off: post an Awaiting LP update a claim lost before commit."""
+    # pylint: disable=import-outside-toplevel
+    from industry.helpers.lp_buyback_discord import repost_missing_awaiting_lp
+
+    repost_missing_awaiting_lp(order_id)
+
+
+@app.task()
 def notify_lp_buyback_order_claims_released_task(
     order_id: int, released_by_user_id: int, released_amount: int
 ) -> None:
