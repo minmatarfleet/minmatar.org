@@ -25,6 +25,16 @@ After appending, **fold any new durable rule into [SKILL.md](SKILL.md)**
 (Known failure classes or the workflow). If the rule already lives there,
 do not duplicate it — one clarifying clause at most.
 
+## 2026-11-27 — LP buyback claims not shown in the order thread
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL in the thread
+**PR:** fix+skill
+**Symptom vs cause:** A Conversion Team member claimed orders on the site and the order threads never showed the claim. New order threads were still being created, so the fast-lane worker was running. `claim_order` queued its Discord task inside the transaction; a worker that ran before commit read the order as still `open` and posted nothing. Production data was not reachable this run, so the specific orders were not checked.
+**Durable rule:** Any `.delay()` whose task reads the row just written must run in `transaction.on_commit`. When threads appear but follow-up posts don't, look for a task queued before commit.
+**Skill update:** added the LP claim row.
+
 ## 2026-11-26 — Morning triage: cleanup DMs, paused Water, freight stop
 
 **Category:** pulse.technology (three tickets)

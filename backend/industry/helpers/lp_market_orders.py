@@ -265,10 +265,19 @@ def claim_order(
         notify_lp_buyback_order_status_changed_task,
     )
 
+    # Queue after commit: a worker that reads the order before the claim
+    # commits sees it still open and posts nothing in the thread.
+    order_id, claim_id = locked.pk, claim.pk
     if locked.status == AWAITING_LP:
-        notify_lp_buyback_order_status_changed_task.delay(locked.pk)
+        transaction.on_commit(
+            lambda: notify_lp_buyback_order_status_changed_task.delay(order_id)
+        )
     else:
-        notify_lp_buyback_order_claimed_task.delay(locked.pk, claim.pk)
+        transaction.on_commit(
+            lambda: notify_lp_buyback_order_claimed_task.delay(
+                order_id, claim_id
+            )
+        )
     return locked
 
 
@@ -336,8 +345,11 @@ def release_order_claims(
     # pylint: disable=import-outside-toplevel
     from industry.tasks import notify_lp_buyback_order_claims_released_task
 
-    notify_lp_buyback_order_claims_released_task.delay(
-        locked.pk, user.pk, released_amount
+    order_id, user_id = locked.pk, user.pk
+    transaction.on_commit(
+        lambda: notify_lp_buyback_order_claims_released_task.delay(
+            order_id, user_id, released_amount
+        )
     )
     return locked
 
