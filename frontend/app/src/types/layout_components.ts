@@ -279,6 +279,8 @@ export interface CorporationObject {
     timezones?:             string[] | null;
     requirements?:          string[] | null;
     open_application_corporation_name?: string;
+    /** The viewer fails a required recruitment rule (they can still apply anyway). */
+    requirements_blocked?: boolean;
 }
 
 export interface CorporationBasic {

@@ -509,16 +509,12 @@ class ApplyAnywayTest(RequirementsTestCase):
                 f"{self.url}/requirements/me", **self._auth()
             ).json()
         self.assertFalse(me["can_apply"])
-        self.assertTrue(me["skills_refreshing"])
         queued = sorted(call.args[0] for call in self.delay.call_args_list)
         self.assertEqual(queued, sorted([self.main.pk, self.alt.pk]))
 
         self.delay.reset_mock()
         with self.captureOnCommitCallbacks(execute=True):
-            me = self.client.get(
-                f"{self.url}/requirements/me", **self._auth()
-            ).json()
-        self.assertFalse(me["skills_refreshing"])
+            self.client.get(f"{self.url}/requirements/me", **self._auth())
         self.delay.assert_not_called()
 
     def test_recently_synced_skills_are_not_fetched_again(self):
@@ -531,10 +527,7 @@ class ApplyAnywayTest(RequirementsTestCase):
             )
         self.assertEqual(stale_skill_characters(self.user.id), [])
         with self.captureOnCommitCallbacks(execute=True):
-            me = self.client.get(
-                f"{self.url}/requirements/me", **self._auth()
-            ).json()
-        self.assertFalse(me["skills_refreshing"])
+            self.client.get(f"{self.url}/requirements/me", **self._auth())
         self.delay.assert_not_called()
 
     def test_passing_pilot_is_not_refreshed(self):
@@ -544,7 +537,7 @@ class ApplyAnywayTest(RequirementsTestCase):
             f"{self.url}/requirements/me", **self._auth()
         ).json()
         self.assertTrue(me["can_apply"])
-        self.assertFalse(me["skills_refreshing"])
+        self.delay.assert_not_called()
 
     def test_apply_anyway_creates_the_application_and_warns(self):
         self.assertEqual(self._apply().status_code, 400)

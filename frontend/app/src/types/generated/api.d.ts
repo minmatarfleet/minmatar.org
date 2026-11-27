@@ -27079,11 +27079,6 @@ export interface components {
             corporation_id: number;
             /** Interview Topics */
             interview_topics: string[];
-            /**
-             * Skills Refreshing
-             * @default false
-             */
-            skills_refreshing?: boolean;
         };
         /**
          * MyFleetFittingResponse

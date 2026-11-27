@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { ButtonColors, CorporationObject } from '@dtypes/layout_components'
+import type { CorporationObject } from '@dtypes/layout_components'
 import { isL3arnCorporation } from '@helpers/corporations/l3arn_application'
 import {
     corporationApplicationAlpineState,
@@ -12,24 +12,16 @@ import {
 interface Props {
     corporation:            CorporationObject;
     hidden?:                boolean;
-    /** Button text; defaults to "Enlist today". */
-    label?:                 string;
-    color?:                 ButtonColors;
-    /** Apply although a required rule isn't met (the recruiter is warned). */
-    override_requirements?: boolean;
 }
 
 const {
     corporation,
     hidden = false,
-    label,
-    color = 'green',
-    override_requirements = false,
 } = Astro.props
 
 const is_l3arn = isL3arnCorporation(corporation)
 
-const CORPORATION_REQUEST_STATUS_PARTIAL_URL = `${translatePath('/partials/corporation_slide_request_status_item/')}?corporation_id=${corporation.corporation_id}${override_requirements ? '&override_requirements=1' : ''}`
+const CORPORATION_REQUEST_STATUS_PARTIAL_URL = `${translatePath('/partials/corporation_slide_request_status_item/')}?corporation_id=${corporation.corporation_id}`
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -43,7 +35,7 @@ import CorporationApplicationForm from '@components/blocks/CorporationApplicatio
 ---
 
 <DialogButton
-    color={color}
+    color='green'
     hidden={hidden}
     max_width='100%'
     transparent={true}
@@ -51,7 +43,7 @@ import CorporationApplicationForm from '@components/blocks/CorporationApplicatio
     non_centered={false}
     close_button={false}
 >
-    {label ?? t('enlist_today')}
+    {t('enlist_today')}
 
     <form
         slot="dialog" 
@@ -88,6 +80,14 @@ import CorporationApplicationForm from '@components/blocks/CorporationApplicatio
                     )}
                 </Flexblock>
 
+                {corporation.requirements_blocked &&
+                    <>
+                        {/* The pilot fails a required rule: they apply anyway and the recruiter is told. */}
+                        <input type="hidden" name="override_requirements" value="1" />
+                        <small class="[ blocked-note ]">{t('corporations.requirements.apply_anyway_note')}</small>
+                    </>
+                }
+
                 <FlexInline justification='flex-end'>
                     <Button
                         size='sm'
@@ -95,7 +95,7 @@ import CorporationApplicationForm from '@components/blocks/CorporationApplicatio
                         color='green'
                         x-bind:disabled="error"
                     >
-                        {t('apply')}
+                        {corporation.requirements_blocked ? t('corporations.requirements.apply_anyway') : t('apply')}
                     </Button>
                     <Button
                         type="button"
@@ -114,5 +114,10 @@ import CorporationApplicationForm from '@components/blocks/CorporationApplicatio
 <style lang="scss">
     h2 {
         font-size: var(--step-2);
+    }
+
+    .blocked-note {
+        align-self: flex-end;
+        color: var(--faded);
     }
 </style>

@@ -66,9 +66,6 @@ class MyCorporationRequirements(Schema):
     can_apply: bool
     characters: int
     accounts: Optional[int] = None
-    # True when this request queued a skills sync for characters with old
-    # skills; the checks update a minute or two later.
-    skills_refreshing: bool = False
 
 
 class RequirementDoctrineOption(Schema):
@@ -178,6 +175,10 @@ def get_my_corporation_requirements(request, corporation_id: int):
     checks = S.checks_for(corporation, request.user.id)
     characters, accounts = account_counts(request.user.id)
     blocked = any(check.blocks for check in checks)
+    if blocked:
+        # A blocked pilot's skills may just be old: fetch them again, so the
+        # next look (or the recruiter) sees current skills.
+        S.refresh_stale_skills(request.user.id)
     return {
         "corporation_id": corporation_id,
         "checks": [check.as_dict() for check in checks],
@@ -185,10 +186,6 @@ def get_my_corporation_requirements(request, corporation_id: int):
         "can_apply": not blocked,
         "characters": characters,
         "accounts": accounts,
-        # A blocked pilot's skills may just be old: fetch them again.
-        "skills_refreshing": (
-            S.refresh_stale_skills(request.user.id) if blocked else False
-        ),
     }
 
 
