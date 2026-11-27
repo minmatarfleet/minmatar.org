@@ -73,14 +73,20 @@ class TribeGroupCorporationFollow(models.Model):
     def __str__(self) -> str:
         return f"{self.corporation} follows {self.tribe_group}"
 
+    # Corporation types (EveCorporation.type) whose follows forward.
+    FORWARDING_TYPES = ("alliance", "associate")
+
     def is_forwarding(self) -> bool:
-        """Approved, and the corporation's bot is still in its server."""
+        """Approved, the corporation is still Alliance or Associate, and its
+        bot is still in its server. A corporation that leaves stops getting
+        the group's posts at once."""
         # pylint: disable-next=import-outside-toplevel
         from eveonline.models import EveCorporation
 
         corporation = self.corporation
         return (
             self.status == self.STATUS_APPROVED
+            and corporation.type in self.FORWARDING_TYPES
             and corporation.discord_guild_id is not None
             and corporation.discord_bot_status == EveCorporation.DISCORD_BOT_OK
         )

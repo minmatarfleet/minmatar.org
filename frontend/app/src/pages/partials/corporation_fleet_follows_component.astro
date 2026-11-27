@@ -12,6 +12,7 @@ import {
     save_corporation_fleet_follow,
 } from '@helpers/api.minmatar.org/corporations'
 import {
+    fleet_follow_delivery_error_key,
     fleet_follow_error_key,
     fleet_follow_status_key,
     fleet_follow_warning_key,
@@ -137,7 +138,31 @@ import FlexInline from '@components/compositions/FlexInline.astro'
                                     <small class="[ corp-fleet-follows__warning ]" role="status">{t(fleet_follow_warning_key(warning))}</small>
                                 )}
                                 {follow.last_delivery_ok === false &&
-                                    <small class="[ corp-fleet-follows__warning ]">{t('corporations.fleet_pings.last_failed')}</small>
+                                    <small class="[ corp-fleet-follows__warning ]">{t(fleet_follow_delivery_error_key(follow.last_delivery_error))}</small>
+                                }
+                                {data.channels.length > 0 &&
+                                    <form
+                                        hx-post={PARTIAL_URL}
+                                        hx-target={`#${ROOT_ID}`}
+                                        hx-swap="outerHTML"
+                                    >
+                                        <input type="hidden" name="tribe_group_id" value={follow.tribe_group_id} />
+                                        <FlexInline gap="var(--space-2xs)">
+                                            <Select
+                                                name="channel_id"
+                                                size="sm"
+                                                aria-label={t('corporations.fleet_pings.change_channel')}
+                                                title={t('corporations.fleet_pings.change_channel_help')}
+                                            >
+                                                {data.channels.map((channel) =>
+                                                    <option value={channel.id} selected={channel.id === follow.channel_id}>#{channel.name}</option>
+                                                )}
+                                            </Select>
+                                            <Button type="submit" name="action" value="save" color="transparent" size="sm" narrow={true}>
+                                                {t('corporations.fleet_pings.change_channel')}
+                                            </Button>
+                                        </FlexInline>
+                                    </form>
                                 }
                             </Flexblock>
                         </SettingRow>

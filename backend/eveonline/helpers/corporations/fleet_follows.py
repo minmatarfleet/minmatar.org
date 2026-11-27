@@ -150,6 +150,16 @@ class _GuildView:
         )
 
 
+def _warnings(view: _GuildView | None, follow) -> list[str]:
+    """What stops the follow's posts arriving: the channel is gone, or the
+    bot lacks a permission there. Nothing when Discord didn't answer."""
+    if view is None or not view.reachable:
+        return []
+    if follow.channel_id not in view.channels:
+        return ["channel_missing"]
+    return follow_warnings(view.permissions(follow.channel_id))
+
+
 def _followable_groups():
     # pylint: disable-next=import-outside-toplevel
     from tribes.models import TribeGroup
@@ -201,11 +211,7 @@ def fleet_follows_response(
                 "channel_id": str(follow.channel_id),
                 "channel_name": follow.channel_name,
                 "status": follow.status,
-                "warnings": (
-                    follow_warnings(view.permissions(follow.channel_id))
-                    if ready and view
-                    else []
-                ),
+                "warnings": _warnings(view if ready else None, follow),
                 "last_delivery_ok": follow.last_delivery_ok,
                 "last_delivery_error": follow.last_delivery_error,
                 "last_delivery_at": follow.last_delivery_at,

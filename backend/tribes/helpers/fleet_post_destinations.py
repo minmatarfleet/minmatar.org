@@ -52,7 +52,7 @@ def forwarding_follows(group) -> list[TribeGroupCorporationFollow]:
     follows = TribeGroupCorporationFollow.objects.filter(
         tribe_group=group,
         status=TribeGroupCorporationFollow.STATUS_APPROVED,
-    ).select_related("corporation")
+    ).select_related("corporation__alliance", "corporation__faction")
     return [follow for follow in follows if follow.is_forwarding()]
 
 

@@ -42,6 +42,7 @@ export function fleet_follow_status_key(status: string): UiKey {
 }
 
 const WARNINGS: Record<string, UiKey> = {
+    channel_missing: 'corporations.fleet_pings.warning_channel_missing',
     cant_post: 'corporations.fleet_pings.warning_cant_post',
     no_embeds: 'corporations.fleet_pings.warning_no_embeds',
     no_here: 'corporations.fleet_pings.warning_no_here',
@@ -49,4 +50,16 @@ const WARNINGS: Record<string, UiKey> = {
 
 export function fleet_follow_warning_key(warning: string): UiKey {
     return WARNINGS[warning] ?? 'corporations.fleet_pings.warning_cant_post'
+}
+
+// Why the last forwarded post failed (TribeGroupCorporationFollow.last_delivery_error).
+const DELIVERY_ERRORS: Record<string, UiKey> = {
+    unknown_channel: 'corporations.fleet_pings.delivery_unknown_channel',
+    missing_access: 'corporations.fleet_pings.delivery_missing_access',
+    missing_permissions: 'corporations.fleet_pings.delivery_missing_permissions',
+    error: 'corporations.fleet_pings.delivery_error',
+}
+
+export function fleet_follow_delivery_error_key(code: string): UiKey {
+    return DELIVERY_ERRORS[code] ?? 'corporations.fleet_pings.delivery_error'
 }

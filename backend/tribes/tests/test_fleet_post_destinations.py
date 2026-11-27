@@ -16,6 +16,7 @@ from tribes.helpers.fleet_post_destinations import (
 from tribes.models import TribeGroupCorporationFollow
 from tribes.tasks import post_forwarded_fleet_message
 from tribes.tests.publishing_fixtures import (
+    associates,
     GROUP_CHANNEL_ID,
     ROLE_ID,
     make_tribe_group,
@@ -45,6 +46,7 @@ class FleetPostDestinationTests(TestCase):
             name="M-EXC",
             discord_guild=guild,
             discord_bot_status=EveCorporation.DISCORD_BOT_OK,
+            alliance=associates(),
         )
 
     def follow(self, status="approved", **fields):
@@ -80,6 +82,7 @@ class FleetPostDestinationTests(TestCase):
             name="Other",
             discord_guild=DiscordGuild.objects.create(guild_id=4200, name="O"),
             discord_bot_status=EveCorporation.DISCORD_BOT_OK,
+            alliance=associates(),
         )
         self.follow(status="revoked", corporation=other)
         self.assertEqual(
@@ -91,6 +94,16 @@ class FleetPostDestinationTests(TestCase):
         self.corporation.discord_bot_status = (
             EveCorporation.DISCORD_BOT_REMOVED
         )
+        self.corporation.save()
+        self.assertEqual(
+            len(group_post_destinations(self.group, "roundup")), 1
+        )
+
+    def test_follow_skipped_when_corp_leaves_the_alliance(self):
+        # Approved while an Associate; the corporation then leaves, so the
+        # members-only group's posts stop going to its server.
+        self.follow()
+        self.corporation.alliance = None
         self.corporation.save()
         self.assertEqual(
             len(group_post_destinations(self.group, "roundup")), 1

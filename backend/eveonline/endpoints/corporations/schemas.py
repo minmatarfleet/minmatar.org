@@ -668,7 +668,8 @@ class CorporationFleetFollow(Schema):
     channel_name: str
     # requested (waiting for a group chief), approved or revoked.
     status: str
-    # cant_post, no_embeds, no_here: what the bot lacks in the channel.
+    # channel_missing, or what the bot lacks there: cant_post, no_embeds,
+    # no_here.
     warnings: List[str]
     last_delivery_ok: Optional[bool] = None
     # unknown_channel, missing_access, missing_permissions or error.

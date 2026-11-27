@@ -21,6 +21,7 @@ from datetime import timezone as dt_timezone
 
 from app.celery import app
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.utils import timezone
 from discord.client import DiscordClient, discord_error_code
 from notifications.models import NotificationChannel, NotificationDelivery
@@ -427,7 +428,7 @@ def post_forwarded_fleet_message(
     """
     follow = (
         TribeGroupCorporationFollow.objects.filter(pk=follow_id)
-        .select_related("corporation")
+        .select_related("corporation__alliance", "corporation__faction")
         .first()
     )
     if follow is None or not follow.is_forwarding():
@@ -479,21 +480,37 @@ def post_group_fleet_roundups() -> int:
     today = now.date()
     groups = (
         TribeGroup.objects.filter(
-            roundup_enabled=True, roundup_hour__lte=now.hour
+            roundup_enabled=True,
+            roundup_hour__lte=now.hour,
+            # An archived group, or one with fleets switched off, posts none.
+            is_active=True,
+            tribe__is_active=True,
+            fleets_enabled=True,
         )
         .exclude(roundup_last_sent_on=today)
         .select_related("tribe")
     )
     sent = 0
     for group in groups:
-        payload = build_roundup_payload(
-            group, roundup_fleets(group, today), today
-        )
-        if payload is not None:
-            send_group_post(
-                group, "roundup", payload, f"group {group.id} fleet roundup"
-            )
-            sent += 1
-        group.roundup_last_sent_on = today
-        group.save(update_fields=["roundup_last_sent_on"])
+        try:
+            # The day is marked before the post is queued (on commit), so a
+            # crash between the two never posts the roundup twice.
+            with transaction.atomic():
+                payload = build_roundup_payload(
+                    group, roundup_fleets(group, today), today
+                )
+                group.roundup_last_sent_on = today
+                group.save(update_fields=["roundup_last_sent_on"])
+                if payload is not None:
+                    send_group_post(
+                        group,
+                        "roundup",
+                        payload,
+                        f"group {group.id} fleet roundup",
+                    )
+                    sent += 1
+        except Exception:  # pylint: disable=broad-exception-caught
+            # One bad group never costs the others their roundup; it is
+            # retried next hour.
+            logger.exception("Fleet roundup failed for group %s", group.id)
     return sent

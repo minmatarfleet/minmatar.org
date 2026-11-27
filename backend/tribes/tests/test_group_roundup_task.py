@@ -10,9 +10,11 @@ from app.test import TestCase
 from discord.models import DiscordGuild
 from eveonline.models import EveCorporation
 from fleets.models import EveFleet
-from tribes.models import TribeGroupCorporationFollow
+from fleets.helpers.group_roundup import roundup_fleets
+from tribes.models import TribeGroup, TribeGroupCorporationFollow
 from tribes.tasks import post_group_fleet_roundups
 from tribes.tests.publishing_fixtures import (
+    associates,
     GROUP_CHANNEL_ID,
     add_member,
     make_tribe_group,
@@ -100,6 +102,54 @@ class GroupRoundupTaskTests(TestCase):
         self.run_at(eve(1, 20))
         queue.assert_not_called()
 
+    def test_archived_or_fleetless_group_never_posts(self, queue, enqueue):
+        for fields in ({"is_active": False}, {"fleets_enabled": False}):
+            with self.subTest(**fields):
+                TribeGroup.objects.filter(pk=self.group.pk).update(
+                    **{"is_active": True, "fleets_enabled": True, **fields}
+                )
+                self.run_at(eve(1, 20))
+                queue.assert_not_called()
+        TribeGroup.objects.filter(pk=self.group.pk).update(
+            is_active=True, fleets_enabled=True
+        )
+        self.group.tribe.is_active = False
+        self.group.tribe.save()
+        self.run_at(eve(1, 20))
+        queue.assert_not_called()
+
+    def test_one_failing_group_does_not_stop_the_others(self, queue, enqueue):
+        other = make_tribe_group(
+            name="Ice",
+            code="industry.ice",
+            role_id=None,
+            group_channel_id=555000333,
+            roundup_enabled=True,
+            roundup_hour=20,
+        )
+        EveFleet.objects.create(
+            type="non_strategic",
+            description="Ice op",
+            start_time=eve(2, 19),
+            host_group=other,
+            status="pending",
+        )
+        real = roundup_fleets
+
+        def flaky(group, today):
+            if group.pk == self.group.pk:
+                raise RuntimeError("bad group")
+            return real(group, today)
+
+        with patch("fleets.helpers.group_roundup.roundup_fleets", flaky):
+            self.run_at(eve(1, 20))
+        queue.assert_called_once()
+        self.assertEqual(queue.call_args.args[0], 555000333)
+        # The failing group isn't marked, so the next run retries it.
+        self.assertIsNone(self.group.roundup_last_sent_on)
+        other.refresh_from_db()
+        self.assertEqual(other.roundup_last_sent_on, date(2026, 12, 1))
+
     def test_no_fleets_marks_day_without_post(self, queue, enqueue):
         self.run_at(eve(3, 20))
         queue.assert_not_called()
@@ -111,6 +161,7 @@ class GroupRoundupTaskTests(TestCase):
             name="M-EXC",
             discord_guild=DiscordGuild.objects.create(guild_id=4100, name="M"),
             discord_bot_status=EveCorporation.DISCORD_BOT_OK,
+            alliance=associates(),
         )
         follow = TribeGroupCorporationFollow.objects.create(
             tribe_group=self.group,

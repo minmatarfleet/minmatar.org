@@ -73,7 +73,11 @@ channel. The fleet posts should reach that channel too.
   tribe's); it is never sent only to corporations.
 - The start ping preview on the fleet form names the corporations it also
   goes to (`also_posted_to`).
-- Changing the channel of a follow needs a new approval.
+- Changing the channel of a follow (on the corporation's Settings) needs a
+  new approval.
+- A follow stops forwarding at once when the corporation is no longer
+  Alliance or Associate, or its bot leaves the server
+  (`TribeGroupCorporationFollow.is_forwarding`).
 - Any Alliance or Associate corporation with the bot linked can ask to
   follow a group.
 - **A group's chiefs approve it.** The corporation's request does nothing
@@ -94,7 +98,7 @@ notifies anyone with **Mention @everyone, @here and All Roles**.
 - Servers linked before this (M-EXC) grant them to the bot in the chosen
   channel, or reconnect the bot.
 - Settings > Fleet pings computes the bot's permissions in each followed
-  channel and warns: `cant_post`, `no_embeds`, `no_here`. A failed post
+  channel and warns: `channel_missing`, `cant_post`, `no_embeds`, `no_here`. A failed post
   (unknown channel, missing access or permissions) is recorded on the
   follow and shown there and on the group's list.
 
@@ -127,7 +131,10 @@ Data and code:
 - The message: `fleets/helpers/group_roundup.py`. The task
   `tribes.tasks.post_group_fleet_roundups` runs hourly and posts once per
   EVE day, at the first run at or after the group's hour, so a missed run
-  posts later that day. A day without fleets counts as done.
+  posts later that day. A day without fleets counts as done. Archived
+  groups, groups in an archived tribe and groups with fleets switched off
+  post none. One failing group is logged and retried next hour without
+  stopping the others.
 - Corporation posts go through `tribes.tasks.post_forwarded_fleet_message`,
   which rechecks the follow before posting and records the result. The
   group's own posts go through the outbox (`discord/outbox.py`).

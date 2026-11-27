@@ -23,6 +23,7 @@ from fleets.tests import setup_fleet_reference_data
 from tribes.models import TribeGroup, TribeGroupCorporationFollow
 from tribes.models import TribeGroupChief
 from tribes.tests.publishing_fixtures import (
+    associates,
     GROUP_CHANNEL_ID,
     ROLE_ID,
     TRIBE_CHANNEL_ID,
@@ -604,6 +605,7 @@ class GroupFleetForwardingTests(GroupFleetTestBase):
             name="M-EXC",
             discord_guild=DiscordGuild.objects.create(guild_id=4100, name="M"),
             discord_bot_status=EveCorporation.DISCORD_BOT_OK,
+            alliance=associates(),
         )
         self.follow = TribeGroupCorporationFollow.objects.create(
             tribe_group=self.group,

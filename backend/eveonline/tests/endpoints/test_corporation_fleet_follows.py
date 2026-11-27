@@ -232,6 +232,22 @@ class CorporationFleetFollowTests(TestCase):
         row = self.call("get").json()["follows"][0]
         self.assertEqual(row["warnings"], ["cant_post"])
 
+    @patch(CLIENT)
+    def test_deleted_channel_warns(self, client):
+        fake_discord(client)
+        self.request_follow()
+        TribeGroupCorporationFollow.objects.update(channel_id=880000999)
+        row = self.call("get").json()["follows"][0]
+        self.assertEqual(row["warnings"], ["channel_missing"])
+
+    @patch(CLIENT)
+    def test_unreachable_discord_warns_nothing(self, client):
+        fake_discord(client)
+        self.request_follow()
+        client.return_value.get_guild_channels_raw.side_effect = RuntimeError
+        row = self.call("get").json()["follows"][0]
+        self.assertEqual(row["warnings"], [])
+
     def test_follow_warnings(self):
         self.assertEqual(follow_warnings(ALL_NEEDED), [])
         self.assertEqual(follow_warnings(None), [])

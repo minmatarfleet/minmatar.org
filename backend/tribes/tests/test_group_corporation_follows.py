@@ -9,6 +9,7 @@ from discord.models import DiscordGuild
 from eveonline.models import EveCorporation
 from tribes.models import TribeGroupChief, TribeGroupCorporationFollow
 from tribes.tests.publishing_fixtures import (
+    associates,
     add_member,
     make_tribe_group,
     make_user,
@@ -30,6 +31,7 @@ class GroupCorporationFollowTests(TestCase):
             name="M-EXC",
             discord_guild=DiscordGuild.objects.create(guild_id=4100, name="M"),
             discord_bot_status=EveCorporation.DISCORD_BOT_OK,
+            alliance=associates(),
         )
         self.follow = TribeGroupCorporationFollow.objects.create(
             tribe_group=self.group,
