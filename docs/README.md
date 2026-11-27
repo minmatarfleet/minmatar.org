@@ -41,6 +41,7 @@ Other entry points: the [root README](../README.md) (local setup, quickstart), [
 | [fleets/private-fleets.md](fleets/private-fleets.md) | current | Private (invite-only) fleets: waves of Discord invites, the coordination thread, ship targets, declassifying |
 | [fleets/fleet-role-training-plan.md](fleets/fleet-role-training-plan.md) | current | Fleet Roles guides: the template, simulators, certificates, Training tab links, and what is not built yet |
 | [tribes/tribe-publishing.md](tribes/tribe-publishing.md) | current | Tribe groups publishing posts, fleets and Discord events: rules, data, permissions, API |
+| [tribes/group-fleet-roundup.md](tribes/group-fleet-roundup.md) | concept | Daily 5-day roundup of a group's fleets, and forwarding group fleet posts to a corporation's own Discord |
 | [tribes/tribe-invitations.md](tribes/tribe-invitations.md) | current | Chiefs inviting pilots to a tribe group: Discord DM, join without review, API |
 | [tribes/interim-chiefs.md](tribes/interim-chiefs.md) | current | Chiefless tribes and groups: interim chief fallback, Help wanted, volunteers the executor appoints |
 | [tribes/tribe-structure.md](tribes/tribe-structure.md) | current | Creating, renaming and archiving tribes and groups, and changing chiefs, on the site: who (People Team), the API, Discord roles |
