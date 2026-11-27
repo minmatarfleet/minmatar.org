@@ -450,6 +450,15 @@ class DiscordChannel(models.Model):
             "enabled."
         ),
     )
+    receive_recruiter_alerts = models.BooleanField(
+        default=False,
+        db_default=False,
+        help_text=(
+            "When enabled, recruiters are told here when an applicant has "
+            "alliance exit history. Recruiters only: never a channel the "
+            "applicant can see. Only one channel should have this enabled."
+        ),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -470,6 +479,10 @@ class DiscordChannel(models.Model):
             type(self).objects.filter(
                 receive_lp_conversion_alerts=True
             ).exclude(pk=self.pk).update(receive_lp_conversion_alerts=False)
+        if self.receive_recruiter_alerts:
+            type(self).objects.filter(receive_recruiter_alerts=True).exclude(
+                pk=self.pk
+            ).update(receive_recruiter_alerts=False)
 
     def __str__(self) -> str:
         return f"{self.name} ({self.get_channel_type_display()})"

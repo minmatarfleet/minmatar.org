@@ -429,15 +429,16 @@ Test:   backend/exits/tests/test_accept.py
 Create: backend/exits/models.py (RecruiterAlert), migration; backend/exits/helpers/alerts.py
 Modify: backend/exits/tasks.py, backend/applications/signals.py, backend/applications/router.py (transfer),
         backend/exits/helpers/answers.py (alert open applications on a new flag),
-        backend/app/settings_env.py (DISCORD_RECRUITER_ALERTS_CHANNEL_ID)
+        backend/discord/models.py (DiscordChannel.receive_recruiter_alerts), migration
 Test:   backend/exits/tests/test_alerts.py
 ```
 
 **Interfaces:**
 - `RecruiterAlert`: `application` (FK), `reason` (`flag` · `kicked_other`), `sent_at`, `message_id`; unique
   `(application, reason)`.
-- `DISCORD_RECRUITER_ALERTS_CHANNEL_ID = env_int("DISCORD_RECRUITER_ALERTS_CHANNEL_ID", 0)`; 0 means alerts are
-  logged and not sent.
+- `DiscordChannel.receive_recruiter_alerts`: the one text channel alerts go to (read with `flagged_channel_row`).
+  With no flagged channel, alerts are logged and not sent. (First shipped as the `DISCORD_RECRUITER_ALERTS_CHANNEL_ID`
+  setting; replaced by the flag.)
 - `alert_reason(application) -> str | None`: `flag` if any active flag, else `kicked_other` if any history entry has
   that reason, else None.
 - `send_alert(application_id: int) -> bool`: posts once per `(application, reason)` in the channel:

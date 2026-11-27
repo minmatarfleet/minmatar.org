@@ -103,11 +103,6 @@ VOICE_HOST = os.environ.get("VOICE_HOST", "voice.minmatar.org")
 VOICE_PORT = env_int("VOICE_PORT", 64738)
 
 # DISCORD channel IDs
-# Recruiter-only channel for applicants with alliance history (#3198).
-# 0: alerts are logged, not sent.
-DISCORD_RECRUITER_ALERTS_CHANNEL_ID = env_int(
-    "DISCORD_RECRUITER_ALERTS_CHANNEL_ID", 0
-)
 DISCORD_PEOPLE_TEAM_CHANNEL_ID = env_int(
     "DISCORD_PEOPLE_TEAM_CHANNEL_ID", 1098974756356771870
 )

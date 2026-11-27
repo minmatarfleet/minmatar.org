@@ -81,6 +81,7 @@ class DiscordChannelAdmin(admin.ModelAdmin):
         "receive_lp_buyback",
         "receive_buyback",
         "receive_lp_conversion_alerts",
+        "receive_recruiter_alerts",
         "channel_id",
         "updated_at",
     )
@@ -94,6 +95,7 @@ class DiscordChannelAdmin(admin.ModelAdmin):
         "receive_lp_buyback",
         "receive_buyback",
         "receive_lp_conversion_alerts",
+        "receive_recruiter_alerts",
     )
     search_fields = ("name", "channel_id", "guild__name")
     readonly_fields = (
@@ -118,6 +120,7 @@ class DiscordChannelAdmin(admin.ModelAdmin):
                 "receive_lp_buyback",
                 "receive_buyback",
                 "receive_lp_conversion_alerts",
+                "receive_recruiter_alerts",
                 "created_at",
                 "updated_at",
             )
@@ -130,6 +133,7 @@ class DiscordChannelAdmin(admin.ModelAdmin):
             "receive_lp_buyback",
             "receive_buyback",
             "receive_lp_conversion_alerts",
+            "receive_recruiter_alerts",
         )
 
     def save_model(self, request, obj, form, change):
