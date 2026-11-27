@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.validators import RegexValidator
 from django.db import models
 
 
@@ -62,6 +63,9 @@ class CreatorAccount(models.Model):
     discord_channel_id = models.CharField(
         max_length=32,
         blank=True,
+        validators=[
+            RegexValidator(r"^\d+$", "A Discord channel id is digits only.")
+        ],
         help_text="Discord channel id to post new videos/posts in "
         "(e.g. #propaganda). Leave blank to not post.",
     )
