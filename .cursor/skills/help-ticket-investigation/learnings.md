@@ -25,6 +25,16 @@ After appending, **fold any new durable rule into [SKILL.md](SKILL.md)**
 (Known failure classes or the workflow). If the rule already lives there,
 do not duplicate it — one clarifying clause at most.
 
+## 2026-11-27 — Morning triage: frozen skill points, two follow-ups
+
+**Category:** pulse.technology (three tickets)
+**Verdict:** bug (issue) / clarify / clarify
+**Discord:** replies with the auto-close line
+**PR:** skill only
+**Symptom vs cause:** (1) A former academy pilot saw their old skill points and could not pass a corp's SP requirement. Character sync skips accounts with no character in a tracked alliance, so skills froze when they left; the requirement check reads stored skills. Filed as a bug with three options. (2) The chief getting cleanup-failed DMs fixed the bot's role; the next per-seat retry (within a day) kicks and the DMs stop. (3) The freight-route ticket got a reply from the freight team saying they are adding the route; confirmed nothing is needed in code.
+**Durable rule:** Before trusting stored ESI data for a pilot outside the alliance, check the sync scope: it may not have refreshed since they left. A human reply after the auto-close notice resets the ticket, even when it only confirms someone else is handling it.
+**Skill update:** added the frozen-skills row and the reply-after-notice rule.
+
 ## 2026-11-26 — Morning triage: cleanup DMs, paused Water, freight stop
 
 **Category:** pulse.technology (three tickets)
