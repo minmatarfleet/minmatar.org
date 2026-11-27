@@ -1,3 +1,4 @@
+from django.core.validators import MaxValueValidator
 from django.db import models
 
 from eveonline.scopes import TokenType
@@ -142,6 +143,23 @@ class TribeGroup(models.Model):
             "turn it off."
         ),
     )
+
+    roundup_enabled = models.BooleanField(
+        default=False,
+        db_default=False,
+        help_text=(
+            "Post a silent daily roundup of the group's fleets in the next "
+            "5 days to its Discord channel."
+        ),
+    )
+    roundup_hour = models.PositiveSmallIntegerField(
+        default=20,
+        db_default=20,
+        validators=[MaxValueValidator(23)],
+        help_text="EVE hour (0-23) the daily roundup is posted.",
+    )
+    # The EVE day the roundup last ran, so a run is never repeated that day.
+    roundup_last_sent_on = models.DateField(null=True, blank=True)
 
     @property
     def effective_discord_channel_id(self) -> int | None:
