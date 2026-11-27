@@ -46,6 +46,21 @@ def sync_character_sections(character_id: int) -> dict:
     return sync.run_character_sync(character)
 
 
+@app.task(expires=30 * 60)
+def refresh_character_skills_now(character_pk: int) -> dict:
+    """Sync one character's skills now, whatever its schedule.
+
+    For flows where a pilot is waiting on fresh skills, such as a corp
+    application blocked on a ships or skill points rule.
+    """
+    character = EveCharacter.objects.filter(pk=character_pk).first()
+    if character is None or character.esi_deleted:
+        return {"skipped": "missing"}
+    return sync.run_character_sync(
+        character, sections=[sync.SKILLS], force=True
+    )
+
+
 @app.task(expires=TICK_SECONDS)
 def queue_due_character_syncs() -> dict:
     """Queue characters with due sections, oldest first, within the budget.

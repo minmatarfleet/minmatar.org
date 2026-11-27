@@ -1,4 +1,5 @@
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -7,6 +8,7 @@ from django.test import Client
 from django.utils import timezone
 
 from app.test import TestCase
+from applications.discord import application_starter_message
 from applications.models import (
     CorporationRequirement as Rule,
     EveCorporationApplication,
@@ -24,6 +26,7 @@ from applications.requirements.services import (
     interview_topics,
     member_pass_rates,
     save_interview_topics,
+    stale_skill_characters,
 )
 from capabilities.models import (
     CharacterAccount,
@@ -31,12 +34,20 @@ from capabilities.models import (
     CharacterFittingReadiness,
     FittingRequirementSet,
 )
-from eveonline.models import EveCharacter, EveCorporation, EvePlayer
+from discord.models import DiscordUser
+from eveonline.character_sync import SKILLS
+from eveonline.models import (
+    EveCharacter,
+    EveCharacterSyncState,
+    EveCorporation,
+    EvePlayer,
+)
 from eveonline.models.characters import (
     EveCharacterCorporationHistory,
     EveCharacterKillmail,
     EveCharacterSkill,
 )
+from eveonline.tasks.character_sync import refresh_character_skills_now
 from fittings.models import EveDoctrine, EveDoctrineFitting, EveFitting
 
 BASE_URL = "/api/applications/"
@@ -461,3 +472,121 @@ class EndpointsTest(RequirementsTestCase):
         body = response.json()
         self.assertEqual(body["preferred_total"], 1)
         self.assertEqual(body["checks"][0]["status"], "training")
+
+
+class ApplyAnywayTest(RequirementsTestCase):
+    """A blocked pilot can apply anyway, the recruiter is warned, and old
+    skills are fetched again."""
+
+    def setUp(self):
+        super().setUp()
+        self.rule = self._rule(
+            "ships", {"target": "doctrine", "doctrine_id": self.doctrine.pk}
+        )
+        fit = self._fitting(VAGABOND, doctrine=self.doctrine)
+        self._ready(self.main, fit, hard=False, days=2)
+        self.url = f"{BASE_URL}corporations/{self.corporation.corporation_id}"
+        DiscordUser.objects.create(
+            id=4242, discord_tag="pilot", user=self.user
+        )
+        patcher = patch(
+            "eveonline.tasks.character_sync.refresh_character_skills_now.delay"
+        )
+        self.delay = patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def _apply(self, **extra):
+        return self.client.post(
+            f"{self.url}/applications",
+            {"description": "Hi", **extra},
+            content_type="application/json",
+            **self._auth(),
+        )
+
+    def test_blocked_check_refreshes_stale_skills_once(self):
+        with self.captureOnCommitCallbacks(execute=True):
+            me = self.client.get(
+                f"{self.url}/requirements/me", **self._auth()
+            ).json()
+        self.assertFalse(me["can_apply"])
+        self.assertTrue(me["skills_refreshing"])
+        queued = sorted(call.args[0] for call in self.delay.call_args_list)
+        self.assertEqual(queued, sorted([self.main.pk, self.alt.pk]))
+
+        self.delay.reset_mock()
+        with self.captureOnCommitCallbacks(execute=True):
+            me = self.client.get(
+                f"{self.url}/requirements/me", **self._auth()
+            ).json()
+        self.assertFalse(me["skills_refreshing"])
+        self.delay.assert_not_called()
+
+    def test_recently_synced_skills_are_not_fetched_again(self):
+        for character in (self.main, self.alt):
+            EveCharacterSyncState.objects.create(
+                character=character,
+                section=SKILLS,
+                next_due_at=timezone.now() + timedelta(hours=20),
+                synced_at=timezone.now() - timedelta(hours=1),
+            )
+        self.assertEqual(stale_skill_characters(self.user.id), [])
+        with self.captureOnCommitCallbacks(execute=True):
+            me = self.client.get(
+                f"{self.url}/requirements/me", **self._auth()
+            ).json()
+        self.assertFalse(me["skills_refreshing"])
+        self.delay.assert_not_called()
+
+    def test_passing_pilot_is_not_refreshed(self):
+        self.rule.importance = "preferred"
+        self.rule.save()
+        me = self.client.get(
+            f"{self.url}/requirements/me", **self._auth()
+        ).json()
+        self.assertTrue(me["can_apply"])
+        self.assertFalse(me["skills_refreshing"])
+
+    def test_apply_anyway_creates_the_application_and_warns(self):
+        self.assertEqual(self._apply().status_code, 400)
+        self.assertFalse(EveCorporationApplication.objects.exists())
+
+        response = self._apply(override_requirements=True)
+        self.assertEqual(response.status_code, 200)
+        application = EveCorporationApplication.objects.get(
+            pk=response.json()["application_id"]
+        )
+
+        body = self.client.get(
+            f"{self.url}/applications/{application.pk}/requirements",
+            **self._auth(),
+        ).json()
+        self.assertEqual(body["required_total"], 1)
+        self.assertEqual(body["required_blocking"], 1)
+
+        message = application_starter_message(application, self.corporation)
+        self.assertIn("Applied without meeting 1 required rule", message)
+
+    def test_starter_message_has_no_warning_when_requirements_met(self):
+        self.rule.importance = "preferred"
+        self.rule.save()
+        response = self._apply()
+        application = EveCorporationApplication.objects.get(
+            pk=response.json()["application_id"]
+        )
+        message = application_starter_message(application, self.corporation)
+        self.assertNotIn("Applied without meeting", message)
+
+
+class RefreshCharacterSkillsNowTest(RequirementsTestCase):
+    def test_forces_the_skills_section(self):
+        with patch(
+            "eveonline.tasks.character_sync.sync.run_character_sync",
+            return_value={},
+        ) as run:
+            refresh_character_skills_now(self.main.pk)
+        run.assert_called_once_with(self.main, sections=[SKILLS], force=True)
+
+    def test_missing_character_is_skipped(self):
+        self.assertEqual(
+            refresh_character_skills_now(999999), {"skipped": "missing"}
+        )

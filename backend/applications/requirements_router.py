@@ -66,6 +66,9 @@ class MyCorporationRequirements(Schema):
     can_apply: bool
     characters: int
     accounts: Optional[int] = None
+    # True when this request queued a skills sync for characters with old
+    # skills; the checks update a minute or two later.
+    skills_refreshing: bool = False
 
 
 class RequirementDoctrineOption(Schema):
@@ -119,6 +122,9 @@ class ApplicationRequirements(Schema):
     checks: List[RequirementCheck]
     required_met: int
     required_total: int
+    # Required rules the applicant doesn't meet right now: they applied
+    # anyway, or the corp's rules changed since.
+    required_blocking: int = 0
     preferred_met: int
     preferred_total: int
 
@@ -171,13 +177,18 @@ def get_my_corporation_requirements(request, corporation_id: int):
         return 404, ErrorResponse(detail="Corporation not found")
     checks = S.checks_for(corporation, request.user.id)
     characters, accounts = account_counts(request.user.id)
+    blocked = any(check.blocks for check in checks)
     return {
         "corporation_id": corporation_id,
         "checks": [check.as_dict() for check in checks],
         "interview_topics": S.interview_topics(corporation),
-        "can_apply": not any(check.blocks for check in checks),
+        "can_apply": not blocked,
         "characters": characters,
         "accounts": accounts,
+        # A blocked pilot's skills may just be old: fetch them again.
+        "skills_refreshing": (
+            S.refresh_stale_skills(request.user.id) if blocked else False
+        ),
     }
 
 
@@ -357,6 +368,7 @@ def get_application_requirements(
         "checks": [check.as_dict() for check in checks],
         "required_met": sum(c.status == "met" for c in required),
         "required_total": len(required),
+        "required_blocking": sum(c.blocks for c in required),
         "preferred_met": sum(c.status == "met" for c in preferred),
         "preferred_total": len(preferred),
     }

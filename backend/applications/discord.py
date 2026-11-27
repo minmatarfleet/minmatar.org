@@ -11,6 +11,7 @@ from eveonline.models import EveCorporation
 from groups.models import EveCorporationGroup
 
 from .l3arn import application_discord_description
+from .requirements.services import apply_blockers
 
 logger = logging.getLogger(__name__)
 discord = DiscordClient()
@@ -86,6 +87,13 @@ def application_starter_message(application, corporation=None) -> str:
     message += "\n\n"
     message += f"Main Character: {character_name}\n"
     message += f"Applying to: {corp_name}\n"
+    blockers = apply_blockers(corporation, user.id) if corporation else []
+    if blockers:
+        # Short: the description's length budget leaves ~300 characters.
+        message += (
+            f":warning: Applied without meeting {len(blockers)} required "
+            "rule(s); skills are being refreshed, see the application page.\n"
+        )
     description = application_discord_description(application.description)
     message += f"Description: {description}\n"
     message += f"{application_url(application)}\n"

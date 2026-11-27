@@ -12603,6 +12603,11 @@ export interface components {
             preferred_met: number;
             /** Preferred Total */
             preferred_total: number;
+            /**
+             * Required Blocking
+             * @default 0
+             */
+            required_blocking?: number;
             /** Required Met */
             required_met: number;
             /** Required Total */
@@ -15957,6 +15962,11 @@ export interface components {
         CorporationApplicationRequest: {
             /** Description */
             description: string;
+            /**
+             * Override Requirements
+             * @default false
+             */
+            override_requirements?: boolean;
         };
         /** CorporationApplicationResponse */
         CorporationApplicationResponse: {
@@ -27069,6 +27079,11 @@ export interface components {
             corporation_id: number;
             /** Interview Topics */
             interview_topics: string[];
+            /**
+             * Skills Refreshing
+             * @default false
+             */
+            skills_refreshing?: boolean;
         };
         /**
          * MyFleetFittingResponse

@@ -51,6 +51,7 @@ const summary = data
             : null,
     ].filter(Boolean).join(' · ')
     : ''
+const blocking = data?.required_blocking ?? 0
 const all_required = data !== null && data.required_total > 0 && data.required_met === data.required_total
 ---
 
@@ -70,6 +71,13 @@ const all_required = data !== null && data.required_total > 0 && data.required_m
                 <h2 id="app-req-title">{t('corporations.requirements.review_title')}</h2>
                 <span class:list={['[ app-req__summary ]', { 'is-met': all_required }]}>{summary}</span>
             </div>
+            {blocking > 0 &&
+                <p class="[ app-req__warning ]" role="note">
+                    {(blocking === 1
+                        ? t('corporations.requirements.review_applied_anyway_one')
+                        : t('corporations.requirements.review_applied_anyway_many').replace('COUNT', String(blocking)))}
+                </p>
+            }
             <CorporationRequirementChecks checks={data.checks} mode="recruiter" />
         </section>
     </ComponentBlock>
@@ -93,6 +101,14 @@ const all_required = data !== null && data.required_total > 0 && data.required_m
             margin: 0;
             font-size: var(--step-1);
         }
+    }
+
+    .app-req__warning {
+        margin: 0;
+        padding: var(--space-2xs) var(--space-s);
+        border-inline-start: solid 2px var(--fleet-yellow);
+        background: color-mix(in srgb, var(--fleet-yellow) var(--tint-medium), transparent);
+        color: var(--highlight);
     }
 
     .app-req__summary {
