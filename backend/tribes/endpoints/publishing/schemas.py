@@ -1,5 +1,6 @@
 """Schemas for tribe group publishing settings and pickers."""
 
+from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
@@ -87,3 +88,29 @@ class DiscordChannelSchema(BaseModel):
     id: str
     name: str
     type: str
+
+
+class CorporationFollowDecision(str, Enum):
+    APPROVE = "approve"
+    REVOKE = "revoke"
+
+
+class CorporationFollowDecisionRequest(BaseModel):
+    decision: CorporationFollowDecision
+
+
+class GroupCorporationFollowSchema(BaseModel):
+    """A corporation that asked for (or gets) the group's fleet posts in
+    its own Discord."""
+
+    follow_id: int
+    corporation_id: int
+    corporation_name: str
+    channel_name: str
+    # requested, approved or revoked.
+    status: str
+    requested_at: datetime
+    decided_by_name: Optional[str] = None
+    decided_at: Optional[datetime] = None
+    # False when the last forwarded post failed (None: nothing sent yet).
+    last_delivery_ok: Optional[bool] = None

@@ -10910,6 +10910,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tribes/groups/{group_id}/corporation-follows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Corporations that follow the group's fleet posts.
+         * @description Managers of the group only. A follow forwards the roundup, the quiet pre-ping and the start ping once it is approved.
+         */
+        get: operations["tribes_endpoints_publishing_get_group_corporation_follows_get_group_corporation_follows"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tribes/groups/{group_id}/corporation-follows/{follow_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve or revoke a corporation's follow of the group.
+         * @description Managers of the group only. Approved: the group's roundup, quiet pre-ping and start ping (with @here) are copied to the corporation's channel. Revoked: nothing more is copied.
+         */
+        post: operations["tribes_endpoints_publishing_post_group_corporation_follow_decision_post_group_corporation_follow_decision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tribes/groups/{group_id}/events": {
         parameters: {
             query?: never;
@@ -16211,6 +16251,15 @@ export interface components {
              * @default []
              */
             slices?: components["schemas"]["CorporationSummarySlice"][];
+        };
+        /**
+         * CorporationFollowDecision
+         * @enum {string}
+         */
+        CorporationFollowDecision: "approve" | "revoke";
+        /** CorporationFollowDecisionRequest */
+        CorporationFollowDecisionRequest: {
+            decision: components["schemas"]["CorporationFollowDecision"];
         };
         /** CorporationForumPost */
         CorporationForumPost: {
@@ -22680,6 +22729,34 @@ export interface components {
             target: string;
             /** Unlocked */
             unlocked: boolean;
+        };
+        /**
+         * GroupCorporationFollowSchema
+         * @description A corporation that asked for (or gets) the group's fleet posts in
+         *     its own Discord.
+         */
+        GroupCorporationFollowSchema: {
+            /** Channel Name */
+            channel_name: string;
+            /** Corporation Id */
+            corporation_id: number;
+            /** Corporation Name */
+            corporation_name: string;
+            /** Decided At */
+            decided_at?: string | null;
+            /** Decided By Name */
+            decided_by_name?: string | null;
+            /** Follow Id */
+            follow_id: number;
+            /** Last Delivery Ok */
+            last_delivery_ok?: boolean | null;
+            /**
+             * Requested At
+             * Format: date-time
+             */
+            requested_at: string;
+            /** Status */
+            status: string;
         };
         /** GroupStat */
         GroupStat: {
@@ -62297,6 +62374,91 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    tribes_endpoints_publishing_get_group_corporation_follows_get_group_corporation_follows: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupCorporationFollowSchema"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    tribes_endpoints_publishing_post_group_corporation_follow_decision_post_group_corporation_follow_decision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: number;
+                follow_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CorporationFollowDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupCorporationFollowSchema"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

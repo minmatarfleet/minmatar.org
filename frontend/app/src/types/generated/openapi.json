@@ -9564,6 +9564,26 @@
         "title": "CorporationFleetShipSummary",
         "type": "object"
       },
+      "CorporationFollowDecision": {
+        "enum": [
+          "approve",
+          "revoke"
+        ],
+        "title": "CorporationFollowDecision",
+        "type": "string"
+      },
+      "CorporationFollowDecisionRequest": {
+        "properties": {
+          "decision": {
+            "$ref": "#/components/schemas/CorporationFollowDecision"
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "title": "CorporationFollowDecisionRequest",
+        "type": "object"
+      },
       "CorporationForumPost": {
         "properties": {
           "corporation_id": {
@@ -26062,6 +26082,80 @@
           "target"
         ],
         "title": "GoalResponse",
+        "type": "object"
+      },
+      "GroupCorporationFollowSchema": {
+        "description": "A corporation that asked for (or gets) the group's fleet posts in\nits own Discord.",
+        "properties": {
+          "channel_name": {
+            "title": "Channel Name",
+            "type": "string"
+          },
+          "corporation_id": {
+            "title": "Corporation Id",
+            "type": "integer"
+          },
+          "corporation_name": {
+            "title": "Corporation Name",
+            "type": "string"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "decided_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided By Name"
+          },
+          "follow_id": {
+            "title": "Follow Id",
+            "type": "integer"
+          },
+          "last_delivery_ok": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Delivery Ok"
+          },
+          "requested_at": {
+            "format": "date-time",
+            "title": "Requested At",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "follow_id",
+          "corporation_id",
+          "corporation_name",
+          "channel_name",
+          "status",
+          "requested_at"
+        ],
+        "title": "GroupCorporationFollowSchema",
         "type": "object"
       },
       "GroupStat": {
@@ -98395,6 +98489,151 @@
         "tags": [
           "Tribes - External Guild",
           "Tribes - External Guild"
+        ]
+      }
+    },
+    "/api/tribes/groups/{group_id}/corporation-follows": {
+      "get": {
+        "description": "Managers of the group only. A follow forwards the roundup, the quiet pre-ping and the start ping once it is approved.",
+        "operationId": "tribes_endpoints_publishing_get_group_corporation_follows_get_group_corporation_follows",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/GroupCorporationFollowSchema"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Corporations that follow the group's fleet posts.",
+        "tags": [
+          "Tribes - Publishing",
+          "Tribes - Publishing"
+        ]
+      }
+    },
+    "/api/tribes/groups/{group_id}/corporation-follows/{follow_id}": {
+      "post": {
+        "description": "Managers of the group only. Approved: the group's roundup, quiet pre-ping and start ping (with @here) are copied to the corporation's channel. Revoked: nothing more is copied.",
+        "operationId": "tribes_endpoints_publishing_post_group_corporation_follow_decision_post_group_corporation_follow_decision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "follow_id",
+            "required": true,
+            "schema": {
+              "title": "Follow Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorporationFollowDecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/GroupCorporationFollowSchema"
+                  },
+                  "title": "Response",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Approve or revoke a corporation's follow of the group.",
+        "tags": [
+          "Tribes - Publishing",
+          "Tribes - Publishing"
         ]
       }
     },
