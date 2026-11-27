@@ -2,11 +2,12 @@ from unittest.mock import MagicMock, patch
 
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from django.utils import timezone
 
 import applications.signals as application_signals
 from applications.models import EveCorporationApplication
+from discord.models import DiscordChannel, DiscordGuild
 from eveonline.models import EveCharacter, EveCorporation
 from exits.helpers import alerts
 from exits.helpers.answers import answer
@@ -18,10 +19,18 @@ CHANNEL = 4242
 REAL_ENQUEUE = application_signals._enqueue_after_commit
 
 
-@override_settings(DISCORD_RECRUITER_ALERTS_CHANNEL_ID=CHANNEL)
 @patch("applications.signals._enqueue_after_commit")
 class RecruiterAlertTest(TestCase):
     def setUp(self):
+        self.channel = DiscordChannel.objects.create(
+            channel_id=CHANNEL,
+            guild=DiscordGuild.objects.get_or_create(
+                guild_id=4243, defaults={"name": "Alliance"}
+            )[0],
+            name="recruiter-alerts",
+            channel_type=DiscordChannel.TEXT,
+            receive_recruiter_alerts=True,
+        )
         self.ceo = User.objects.create(username="old ceo")
         self.old_corp = EveCorporation.objects.create(
             corporation_id=98000001,
@@ -175,9 +184,17 @@ class RecruiterAlertTest(TestCase):
                 application.save()
             alert_mock.delay.assert_not_called()
 
-    @override_settings(DISCORD_RECRUITER_ALERTS_CHANNEL_ID=0)
     def test_no_channel_logs_and_sends_nothing(self, enqueue_mock):
+        self.channel.receive_recruiter_alerts = False
+        self.channel.save()
         self._answer()
         self.assertFalse(alerts.send_alert(self._apply().pk))
         self.discord.create_message.assert_not_called()
         self.assertFalse(RecruiterAlert.objects.exists())
+
+    def test_channel_on_inactive_guild_sends_nothing(self, enqueue_mock):
+        self.channel.guild.is_active = False
+        self.channel.guild.save()
+        self._answer()
+        self.assertFalse(alerts.send_alert(self._apply().pk))
+        self.discord.create_message.assert_not_called()

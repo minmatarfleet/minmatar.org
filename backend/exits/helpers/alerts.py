@@ -7,13 +7,13 @@ the recruiter-gated application page.
 
 import logging
 
-from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from applications.discord import _recruiter_role_mention, application_url
 from applications.models import EveCorporationApplication
 from discord.client import DiscordClient
+from discord.forum_threads import flagged_channel_row
 from eveonline.helpers.characters import user_primary_character
 from eveonline.models import EveCharacter, EveCorporation
 from exits.helpers.history import active_flags_for, history_for
@@ -87,8 +87,8 @@ def send_alert(application_id: int) -> bool:
     ).first()
     if corporation is None:
         return False
-    channel_id = settings.DISCORD_RECRUITER_ALERTS_CHANNEL_ID
-    if not channel_id:
+    channel = flagged_channel_row("receive_recruiter_alerts")
+    if channel is None:
         logger.info(
             "No recruiter alerts channel: not alerting on application %s (%s)",
             application.pk,
@@ -106,7 +106,7 @@ def send_alert(application_id: int) -> bool:
     except IntegrityError:
         return False
     response = discord.create_message(
-        channel_id=channel_id,
+        channel_id=channel[0],
         message=alert_message(application, corporation, reason),
     )
     try:

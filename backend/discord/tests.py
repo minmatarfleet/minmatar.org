@@ -1032,6 +1032,51 @@ class DiscordChannelAdminFormTestCase(TestCase):
 
     @patch("discord.forms.fetch_active_guild_channels")
     @patch("discord.forms.get_guild_channel")
+    def test_receive_recruiter_alerts_rejected_for_forum_channel(
+        self, mock_get_channel, mock_fetch_active
+    ):
+        mock_fetch_active.return_value = [
+            {
+                "id": 791,
+                "name": "applications",
+                "type": "forum",
+                "guild_id": self.guild.guild_id,
+            },
+        ]
+        mock_get_channel.return_value = mock_fetch_active.return_value[0]
+        form = DiscordChannelAdminForm(
+            data={
+                "discord_channel_pick": "791",
+                "track_voice_activity": False,
+                "receive_recruiter_alerts": True,
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("receive_recruiter_alerts", form.errors)
+
+    def test_receive_recruiter_alerts_is_unique(self):
+        first = DiscordChannel.objects.create(
+            channel_id=1542652883026186330,
+            guild=self.guild,
+            name="recruiter-alerts",
+            channel_type=DiscordChannel.TEXT,
+            receive_recruiter_alerts=True,
+        )
+        other = DiscordChannel.objects.create(
+            channel_id=1542652883026186331,
+            guild=self.guild,
+            name="recruiter-alerts-2",
+            channel_type=DiscordChannel.TEXT,
+            receive_recruiter_alerts=True,
+        )
+        first.refresh_from_db()
+        other.refresh_from_db()
+        self.assertFalse(first.receive_recruiter_alerts)
+        self.assertTrue(other.receive_recruiter_alerts)
+
+    @patch("discord.forms.fetch_active_guild_channels")
+    @patch("discord.forms.get_guild_channel")
     def test_duplicate_channel_id_rejected(
         self, mock_get_channel, mock_fetch_active
     ):

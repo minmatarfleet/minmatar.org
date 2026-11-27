@@ -8,12 +8,57 @@ from discord.channels import (
     CAPITAL_PING_CHANNEL_TYPES,
     LP_BUYBACK_CHANNEL_TYPES,
     LP_CONVERSION_ALERT_CHANNEL_TYPES,
+    RECRUITER_ALERT_CHANNEL_TYPES,
     VOICE_TRACKING_CHANNEL_TYPES,
     admin_picker_guilds,
     fetch_active_guild_channels,
     get_guild_channel,
 )
 from discord.models import DiscordChannel, DiscordGuild
+
+# (flag, channel types it allows, error when set on another type)
+CHANNEL_FLAG_TYPES = (
+    (
+        "hide_from_fleets",
+        VOICE_TRACKING_CHANNEL_TYPES,
+        "Only voice and stage channels are listed for fleets.",
+    ),
+    (
+        "track_voice_activity",
+        VOICE_TRACKING_CHANNEL_TYPES,
+        "Voice activity tracking is only supported for voice and stage channels.",
+    ),
+    (
+        "receive_capital_pings",
+        CAPITAL_PING_CHANNEL_TYPES,
+        "Capital pings are only supported for text and forum channels.",
+    ),
+    (
+        "receive_amarr_fleet_pings",
+        AMARR_FLEET_PING_CHANNEL_TYPES,
+        "Amarr fleet pings are only supported for text and forum channels.",
+    ),
+    (
+        "receive_lp_buyback",
+        LP_BUYBACK_CHANNEL_TYPES,
+        "LP buyback order threads require a forum channel.",
+    ),
+    (
+        "receive_buyback",
+        BUYBACK_CHANNEL_TYPES,
+        "Hangar buyback purchase-order threads require a forum channel.",
+    ),
+    (
+        "receive_lp_conversion_alerts",
+        LP_CONVERSION_ALERT_CHANNEL_TYPES,
+        "Conversion Team alerts require a text channel.",
+    ),
+    (
+        "receive_recruiter_alerts",
+        RECRUITER_ALERT_CHANNEL_TYPES,
+        "Recruiter alerts require a text channel.",
+    ),
+)
 
 
 class DiscordChannelAdminForm(forms.ModelForm):
@@ -34,6 +79,7 @@ class DiscordChannelAdminForm(forms.ModelForm):
             "receive_lp_buyback",
             "receive_buyback",
             "receive_lp_conversion_alerts",
+            "receive_recruiter_alerts",
         )
 
     def __init__(self, *args, **kwargs):
@@ -85,19 +131,16 @@ class DiscordChannelAdminForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        track_voice_activity = cleaned_data.get("track_voice_activity", False)
-        receive_capital_pings = cleaned_data.get(
-            "receive_capital_pings", False
-        )
-        receive_amarr_fleet_pings = cleaned_data.get(
-            "receive_amarr_fleet_pings", False
-        )
-        receive_lp_buyback = cleaned_data.get("receive_lp_buyback", False)
-        receive_buyback = cleaned_data.get("receive_buyback", False)
-        receive_lp_conversion_alerts = cleaned_data.get(
-            "receive_lp_conversion_alerts", False
-        )
+        channel_type = self._channel_type(cleaned_data)
+        for flag, allowed_types, message in CHANNEL_FLAG_TYPES:
+            if cleaned_data.get(flag, False) and (
+                channel_type not in allowed_types
+            ):
+                raise ValidationError({flag: message})
+        return cleaned_data
 
+    def _channel_type(self, cleaned_data) -> str:
+        """Type of the edited channel, or of the picked one (validated)."""
         if self.instance.pk:
             channel_type = self.instance.channel_type
         else:
@@ -137,87 +180,7 @@ class DiscordChannelAdminForm(forms.ModelForm):
                         )
                     }
                 )
-
-        if (
-            cleaned_data.get("hide_from_fleets")
-            and channel_type not in VOICE_TRACKING_CHANNEL_TYPES
-        ):
-            raise ValidationError(
-                {
-                    "hide_from_fleets": (
-                        "Only voice and stage channels are listed for fleets."
-                    )
-                }
-            )
-
-        if (
-            track_voice_activity
-            and channel_type not in VOICE_TRACKING_CHANNEL_TYPES
-        ):
-            raise ValidationError(
-                {
-                    "track_voice_activity": (
-                        "Voice activity tracking is only supported for voice and stage channels."
-                    )
-                }
-            )
-
-        if (
-            receive_capital_pings
-            and channel_type not in CAPITAL_PING_CHANNEL_TYPES
-        ):
-            raise ValidationError(
-                {
-                    "receive_capital_pings": (
-                        "Capital pings are only supported for text and forum channels."
-                    )
-                }
-            )
-
-        if (
-            receive_amarr_fleet_pings
-            and channel_type not in AMARR_FLEET_PING_CHANNEL_TYPES
-        ):
-            raise ValidationError(
-                {
-                    "receive_amarr_fleet_pings": (
-                        "Amarr fleet pings are only supported for text and forum channels."
-                    )
-                }
-            )
-
-        if receive_lp_buyback and channel_type not in LP_BUYBACK_CHANNEL_TYPES:
-            raise ValidationError(
-                {
-                    "receive_lp_buyback": (
-                        "LP buyback order threads require a forum channel."
-                    )
-                }
-            )
-
-        if receive_buyback and channel_type not in BUYBACK_CHANNEL_TYPES:
-            raise ValidationError(
-                {
-                    "receive_buyback": (
-                        "Hangar buyback purchase-order threads require a "
-                        "forum channel."
-                    )
-                }
-            )
-
-        if (
-            receive_lp_conversion_alerts
-            and channel_type not in LP_CONVERSION_ALERT_CHANNEL_TYPES
-        ):
-            raise ValidationError(
-                {
-                    "receive_lp_conversion_alerts": (
-                        "Conversion Team alerts require a text channel."
-                    )
-                }
-            )
-
-        return cleaned_data
+        return channel_type
 
     def save(self, commit=True):
         instance = super().save(commit=False)

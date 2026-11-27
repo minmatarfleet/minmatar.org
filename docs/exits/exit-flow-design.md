@@ -246,7 +246,8 @@ closes once the next sync no longer lists them.
 
 - **Never in the applicant's thread.** The application's Discord thread mentions the applicant
   (`application_starter_message`), so they're in it. Alerts go to a new recruiter-only channel
-  (`DISCORD_RECRUITER_ALERTS_CHANNEL_ID`; ops sets its permissions to the recruiter roles). **[agreed]**
+  (the text channel flagged `receive_recruiter_alerts` on its `DiscordChannel` row, set in the admin under Discord
+  channels; ops sets its permissions to the recruiter roles). **[agreed]**
 - **Each alert** pings the recruiter role of the corporation applied to (`_recruiter_role_mention`) and links that
   application (`application_url`). Recruiters from other corporations who share the channel see only that history
   exists, not what it says. **[agreed]**
@@ -261,7 +262,7 @@ closes once the next sync no longer lists them.
   which flags). **[spec]**
 - **Known gap: a failed alert post isn't retried.** `send_alert` records the `RecruiterAlert` row before it posts,
   so when the Discord post fails, that application's alert is never posted (the failure is in the task's log and
-  Sentry). Until `DISCORD_RECRUITER_ALERTS_CHANNEL_ID` is set, alerts are only logged. Either way, the history still
+  Sentry). Until a channel is flagged `receive_recruiter_alerts` (on an active server), alerts are only logged. Either way, the history still
   shows on the application page. **[agreed]**
 - **Several flags** from different corporations can stack, and recruiters see all of them, newest first.
   **[proposal]**
