@@ -1,8 +1,11 @@
 import logging
 
+from django.utils import timezone
+
 from app.celery import app
 from surveys.constants import STATUS_OPEN
 from surveys.helpers.aggregation import compute_aggregates
+from surveys.helpers.exit_sending import send_due
 from surveys.models import SurveyCampaign
 
 logger = logging.getLogger(__name__)
@@ -26,3 +29,11 @@ def snapshot_survey_aggregates(campaign_id: int | None = None):
         except Exception:  # pragma: no cover - defensive
             logger.exception("aggregate snapshot failed for %s", campaign.pk)
     return total
+
+
+@app.task(exclusive=15 * 60)
+def send_exit_surveys():
+    """Send exit and alliance move surveys that are due (#3198)."""
+    sent = send_due(timezone.now())
+    logger.info("Sent %d exit surveys", sent)
+    return sent

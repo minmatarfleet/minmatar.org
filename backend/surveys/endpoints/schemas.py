@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from ninja import Field, Schema
@@ -193,3 +194,27 @@ class UpdateCampaignRequest(Schema):
     status: Optional[str] = None
     opens_at: Optional[str] = None
     closes_at: Optional[str] = None
+
+
+class ExitSurveyFormResponse(Schema):
+    """The no-login exit or alliance move survey behind a mailed link (#3198)."""
+
+    definition_key: str
+    title: str
+    corporation_id: int
+    corporation_name: str
+    character_name: str
+    member_from: Optional[datetime] = None
+    member_to: datetime
+    # exit or alliance_move
+    kind: str
+    new_corporation_name: Optional[str] = None
+    blocks: List[BlockSchema]
+
+
+class ExitSurveySubmitRequest(Schema):
+    answers: List[AnswerInput] = []
+
+
+class ExitSurveySubmitResponse(Schema):
+    ok: bool

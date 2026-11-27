@@ -1,0 +1,91 @@
+---
+/**
+ * The no-login exit or alliance move survey (#3198, design 07): who it's
+ * about, the Executor-only notice, and the questions rendered by SurveyField.
+ * Posts to `exit_survey_component` with the link's token; renders only.
+ */
+import { i18n } from '@helpers/i18n'
+const { t, lang } = i18n(Astro.url)
+
+import type { ExitSurveyForm } from '@dtypes/api.minmatar.org'
+import type { SurveyQuestion } from '@dtypes/survey'
+import { format_date } from '@helpers/date'
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Button from '@components/blocks/Button.astro'
+import SurveyField from '@components/blocks/survey/SurveyField.astro'
+
+interface Props {
+    form:        ExitSurveyForm;
+    token:       string;
+    partial_url: string;
+    root_id?:    string;
+    error?:      string | null;
+    [propName: string]: any;
+}
+
+const { form, token, partial_url, root_id = 'exit-survey', error = null, ...attributes } = Astro.props
+delete attributes.class
+
+const to = format_date(lang, form.member_to)
+const member_line = form.member_from
+    ? t('exit_survey.member_range')
+        .replace('{character}', form.character_name)
+        .replace('{from}', format_date(lang, form.member_from))
+        .replace('{to}', to)
+    : t('exit_survey.member_until').replace('{character}', form.character_name).replace('{to}', to)
+---
+
+<ComponentBlock id={root_id} class:list={['[ exit-survey ]', Astro.props.class]} {...attributes}>
+    <form
+        method="post"
+        action={partial_url}
+        hx-post={partial_url}
+        hx-target={`#${root_id}`}
+        hx-swap="outerHTML"
+    >
+        <input type="hidden" name="token" value={token} />
+        <Flexblock gap="var(--space-l)">
+            <Flexblock gap="var(--space-3xs)">
+                <h2>{t('exit_survey.title').replace('{corporation}', form.corporation_name)}</h2>
+                <small class="[ exit-survey__muted ]">{member_line}</small>
+            </Flexblock>
+
+            <p class="[ exit-survey__trust ]">{t('exit_survey.trust').replace('{corporation}', form.corporation_name)}</p>
+
+            {error && <p class="[ exit-survey__error ]" role="alert">{error}</p>}
+
+            {form.blocks.map((block) =>
+                <Flexblock gap="var(--space-m)">
+                    {block.questions.map((question) =>
+                        <SurveyField question={question as unknown as SurveyQuestion} hide_context={true} />
+                    )}
+                </Flexblock>
+            )}
+
+            <Flexblock gap="var(--space-3xs)">
+                <div>
+                    <Button type="submit" color="green" size="sm">{t('exit_survey.send')}</Button>
+                </div>
+                <small class="[ exit-survey__muted ]">{t('exit_survey.required_hint')}</small>
+            </Flexblock>
+        </Flexblock>
+    </form>
+</ComponentBlock>
+
+<style lang="scss">
+    .exit-survey__muted {
+        color: var(--faded);
+    }
+
+    .exit-survey__trust {
+        border-inline-start: var(--space-3xs) solid var(--alliance-blue);
+        background-color: var(--surface-sunken);
+        padding: var(--space-2xs) var(--space-s);
+    }
+
+    .exit-survey__error {
+        color: var(--fleet-red);
+    }
+</style>

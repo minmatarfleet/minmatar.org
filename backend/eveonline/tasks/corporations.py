@@ -33,9 +33,18 @@ logger = logging.getLogger(__name__)
 
 @app.task
 def update_corporations():
-    """Queue update_corporation for each allied corporation."""
-    for corporation in member_corporations():
-        update_corporation.apply_async(args=[corporation.corporation_id])
+    """Queue update_corporation for each allied corporation, and each
+    corporation whose exits are tracked (#3198)."""
+    corporation_ids = [c.corporation_id for c in member_corporations()]
+    corporation_ids += [
+        corporation_id
+        for corporation_id in EveCorporation.objects.filter(
+            track_exits=True
+        ).values_list("corporation_id", flat=True)
+        if corporation_id not in corporation_ids
+    ]
+    for corporation_id in corporation_ids:
+        update_corporation.apply_async(args=[corporation_id])
 
 
 @app.task
@@ -159,10 +168,12 @@ def update_corporation(corporation_id):
             SCOPE_CORPORATION_WALLET,
         ],
     )
-    if (
-        corporation.active
-        and corporation.type in ["alliance", "associate"]
-        and directors[tuple(SCOPE_CORPORATION_MEMBERSHIP)]
+    if directors[tuple(SCOPE_CORPORATION_MEMBERSHIP)] and (
+        corporation.track_exits
+        or (
+            corporation.active
+            and corporation.type in ["alliance", "associate"]
+        )
     ):
         refresh_corporation_members_and_roles(corporation_id)
     if directors[tuple(SCOPE_CORPORATION_CONTRACTS)]:

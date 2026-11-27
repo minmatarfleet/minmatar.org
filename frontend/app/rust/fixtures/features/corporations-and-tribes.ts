@@ -7,7 +7,7 @@ import type {
     TribeEventRowUI,
     TribeGroupRefUI,
 } from '@dtypes/layout_components'
-import type { CorporationLeadershipMember, TrialProgress, TribeMembership } from '@dtypes/api.minmatar.org'
+import type { CorporationLeadershipMember, DepartureGroup, ExitSurveyForm, FlaggedJoin, HistoryEntry, TrialProgress, TribeMembership } from '@dtypes/api.minmatar.org'
 import { EVE } from '../../stories/_controls'
 
 // Corporations -----------------------------------------------------------------------------
@@ -238,3 +238,96 @@ export const membership_no_rank: TribeMembership = {
     primary_character_name: 'Ashen Rattini-Sebiestor of the Seventh Convoy',
     characters: [],
 }
+
+
+// Departures tab (#3198): invented pilots; 1000167 is Pator Tech School, a real NPC corporation.
+const departure = (fields: Partial<DepartureGroup>): DepartureGroup => ({
+    departure_ids: [101],
+    character_id: 2112000101,
+    character_name: 'Arkan Veld',
+    alt_names: [],
+    registered: true,
+    months_in_corporation: 14,
+    first_missing_at: '2026-11-20T12:00:00Z',
+    destination_corporation_id: 1000167,
+    destination_name: 'Pator Tech School',
+    kind: 'exit',
+    destination_is_npc: true,
+    reason: '',
+    can_rejoin: null,
+    note: '',
+    flag_id: null,
+    survey_sent_at: null,
+    ...fields,
+})
+
+export const departures_open: DepartureGroup[] = [
+    departure({}),
+    departure({ departure_ids: [102], character_id: 2112000102, character_name: 'Mira Stonehand', registered: false, months_in_corporation: null, destination_name: 'Republic University', destination_corporation_id: 1000168 }),
+    departure({ departure_ids: [103], character_id: 2112000103, character_name: 'Kesh Varo', months_in_corporation: 3, kind: 'alliance_move', destination_is_npc: false, destination_corporation_id: 98000002, destination_name: 'Tribal Liberation Force', reason: 'left' }),
+    departure({ departure_ids: [104], character_id: 2112000104, character_name: 'Dren Halvik', months_in_corporation: 1, reason: 'kicked_other', can_rejoin: false, note: 'Awoxed a corp Orca', flag_id: 7 }),
+]
+
+export const departures_answered: DepartureGroup[] = [
+    departure({ reason: 'kicked_inactive', can_rejoin: true }),
+    departure({ departure_ids: [105], character_id: 2112000105, character_name: 'Lyss Corran', reason: 'left', survey_sent_at: '2026-11-06T12:00:00Z' }),
+]
+
+export const departures_with_alts: DepartureGroup[] = [
+    departure({ departure_ids: [106, 107, 108], character_id: 2112000106, character_name: 'Toren Ashblade', alt_names: ['Toren Alt', 'Toren Hauler'], kind: 'exit', destination_is_npc: false, destination_corporation_id: 98000003, destination_name: 'Brave Newbies Inc.' }),
+]
+
+// Alliance history on the application page (#3198): invented corporations and pilots.
+export const history_flagged: HistoryEntry[] = [
+    { departure_id: 1, corporation_id: 98000001, corporation_name: 'Example Corp', left_at: '2026-11-09T12:00:00Z', reason: 'kicked_other', can_rejoin: false, note: 'Awoxed a corp Orca', answered_by_name: 'Arkan Veld', flag_active: true },
+    { departure_id: 2, corporation_id: 98000002, corporation_name: 'Second Corp', left_at: '2026-09-02T12:00:00Z', reason: 'kicked_inactive', can_rejoin: true, note: 'Gone 3 months, no word', answered_by_name: 'Sela Morn', flag_active: false },
+    { departure_id: 3, corporation_id: 98000003, corporation_name: 'Third Corp', left_at: '2026-05-14T12:00:00Z', reason: 'left', can_rejoin: null, note: '', answered_by_name: 'Toma Vey', flag_active: false },
+]
+
+export const history_inactive_only: HistoryEntry[] = [history_flagged[1]]
+
+export const flagged_joins: FlaggedJoin[] = [
+    { id: 1, character_id: 2112000104, character_name: 'Dren Halvik', seen_at: '2026-11-22T12:00:00Z', removal_expected: false, flags: [history_flagged[0]] },
+    { id: 2, character_id: 2112000109, character_name: 'Vex Arlen', seen_at: '2026-11-21T12:00:00Z', removal_expected: true, flags: [history_flagged[0]] },
+]
+
+// Exit survey page (#3198): the questions of definition version 1.
+const survey_question = (key: string, type: string, label: string, fields: Record<string, unknown> = {}) => ({
+    key, type, label, help: '', choices: [] as string[], rows: [], required: false, trendable: false,
+    group: '', scale_labels: null as string[] | null, scale_kind: '', context: null, ...fields,
+})
+const survey_ratings = (corporation: string) => ({
+    key: 'exit.ratings', title: 'Your time in the corporation', description: '',
+    questions: [
+        survey_question('exit.enjoyment', 'scale5', `Overall, how much did you enjoy ${corporation}?`, { required: true, scale_labels: ['Not at all', 'A lot'] }),
+        survey_question('exit.leadership', 'scale5', 'Leadership', { required: true, scale_labels: ['Poor', 'Great'] }),
+        survey_question('exit.activity', 'scale5', 'Activity and content', { required: true, scale_labels: ['Poor', 'Great'] }),
+        survey_question('exit.welcome', 'scale5', 'Feeling welcome and included', { required: true, scale_labels: ['Poor', 'Great'] }),
+    ],
+})
+
+export const exit_survey_form = {
+    definition_key: 'exit', title: 'Exit survey', corporation_id: 98000001, corporation_name: 'Example Corp',
+    character_name: 'Kesh Varo', member_from: '2026-08-02T12:00:00Z', member_to: '2026-11-15T12:00:00Z',
+    kind: 'exit', new_corporation_name: null,
+    blocks: [
+        survey_ratings('Example Corp'),
+        { key: 'exit.leaving', title: 'Leaving', description: '', questions: [
+            survey_question('exit.why_left', 'multi', 'Why did you leave?', { help: 'Pick any that fit', choices: ['I was inactive in EVE', 'The corporation was inactive', 'Leadership issues', 'Timezone', 'I wanted different content', 'I joined friends elsewhere', "I'm quitting EVE", 'Other'] }),
+            survey_question('exit.problem', 'text', 'Was there a problem with the corporation we should know about?'),
+            survey_question('exit.anything_else', 'text', 'Anything else?'),
+        ] },
+    ],
+} as unknown as ExitSurveyForm
+
+export const alliance_move_survey_form = {
+    ...exit_survey_form, definition_key: 'alliance_move', title: 'Alliance move survey', kind: 'alliance_move',
+    new_corporation_name: 'Tribal Liberation Force', member_from: null,
+    blocks: [
+        survey_ratings('Example Corp'),
+        { key: 'move.moving', title: 'Moving', description: '', questions: [
+            survey_question('move.why', 'text', 'Why did you move to Tribal Liberation Force?'),
+            survey_question('move.onboarding', 'scale5', "What was Tribal Liberation Force's onboarding like?", { scale_labels: ['Poor', 'Great'] }),
+        ] },
+    ],
+} as unknown as ExitSurveyForm

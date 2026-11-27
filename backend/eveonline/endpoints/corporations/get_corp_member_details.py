@@ -24,6 +24,9 @@ from eveonline.helpers.corporations.permissions import (
 from eveonline.helpers.corporations.profile import load_corporation
 from eveonline.helpers.corporations.stats_cache import corporation_stats
 from eveonline.models import EveCharacter, EvePlayer
+from exits.helpers.answers import can_answer
+from exits.helpers.history import members_with_history
+from exits.helpers.joins import can_lead
 from groups.models import UserCommunityStatus, UserCommunityStatusHistory
 from timezones.schemas import TimezoneTag
 from timezones.services import timezone_tags_for
@@ -50,13 +53,19 @@ def get_corp_member_details(request, corporation_id: int):
         return 404, ErrorResponse(detail="Corporation not found")
     if not can_view_corporation_members(request.user, corporation):
         return 403, ErrorResponse(detail="Not authorised")
-    return member_details(
-        corporation_members(corporation),
+    members = corporation_members(corporation)
+    rows = member_details(
+        members,
         reveal_characters=can_view_member_characters(
             request.user, corporation
         ),
         stats=corporation_stats(corporation.corporation_id),
     )
+    if can_lead(request.user, corporation):
+        with_history = members_with_history(members)
+        for row in rows:
+            row.has_alliance_history = row.character_id in with_history
+    return rows
 
 
 @router.get(
@@ -84,6 +93,9 @@ def get_corp_member_access(request, corporation_id: int):
         ),
         "can_manage_projects": can_manage_corporation_projects(
             request.user, corporation
+        ),
+        "can_view_departures": bool(
+            corporation.track_exits and can_answer(request.user, corporation)
         ),
         "can_view_graduation": can_view_academy_graduation(
             request.user, corporation

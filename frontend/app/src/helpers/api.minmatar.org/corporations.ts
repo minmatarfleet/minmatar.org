@@ -76,6 +76,7 @@ export async function get_corporation_member_access(access_token: string, id: nu
         can_edit_settings?: boolean,
         can_view_projects?: boolean,
         can_manage_projects?: boolean,
+        can_view_departures?: boolean,
         can_view_graduation?: boolean,
     } | null>(endpoint, {
         token: access_token,

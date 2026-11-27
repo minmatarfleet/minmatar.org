@@ -664,40 +664,7 @@ export type Corporation = ApiResponse<'CorporationResponse'>
 
 export type CorporationInfo = ApiResponse<'CorporationInfoResponse'>
 
-export interface CorporationMemberDetails {
-    character_id:           number;
-    character_name:         string;
-    user_name?:             string | null;
-    primary_character_id?:  number | null;
-    primary_character_name?: string | null;
-    registered:             boolean;
-    exempt:                 boolean;
-    esi_suspended:          boolean;
-    // The owner has to log in again; absent from older APIs.
-    needs_readd?:           boolean;
-    token_count:            number;
-    token_level:            string;
-    fleets_90d:             number;
-    kills_90d:              number;
-    voice_hours_90d:        number;
-    timezone?:              TimezoneTag | null;
-    community_status?:      string | null;
-    corp_joined_at?:        string | null;
-    last_fleet_at?:         string | null;
-    /** Distinct fleets for the person (alts folded), repeated on each of their characters. */
-    person_fleets_90d?:     number | null;
-    /** The person's distinct fleets per week, oldest first, ending this week. */
-    weekly_fleets?:         number[];
-    top_hull_id?:           number | null;
-    top_hull_name?:         string | null;
-    tribe_groups?:          string[];
-    status_history?:        { to_status: string; changed_at: string }[];
-    /** The latest alliance health trial review would approve them. */
-    trial_ready?:           boolean;
-    trial_reason?:          string | null;
-    characters_hidden?:     boolean;
-    hidden_character_count?: number;
-}
+export type CorporationMemberDetails = ApiResponse<'CorporationMemberDetails'>
 
 export type CharacterCorp = ApiResponse<'CorporationMemberResponse'>
 
@@ -3424,3 +3391,8 @@ export type VoiceConnect = ApiResponse<'VoiceConnectResponse'>
 export type VoiceCertificate = ApiResponse<'VoiceCertificateResponse'>
 export type VoiceFleet = ApiResponse<'VoiceFleetResponse'>
 export type FleetVoiceOption = ApiResponse<'FleetVoiceOptionResponse'>
+export type DepartureGroup = ApiResponse<'DepartureGroupResponse'>
+export type DepartureAnswer = ApiRequest<'DepartureAnswerRequest'>
+export type HistoryEntry = ApiResponse<'HistoryEntryResponse'>
+export type FlaggedJoin = ApiResponse<'FlaggedJoinResponse'>
+export type ExitSurveyForm = ApiResponse<'ExitSurveyFormResponse'>

@@ -92,7 +92,7 @@ class Task(models.Model):
         max_length=16, choices=TeamKind.choices, blank=True, default=""
     )
     team_id = models.BigIntegerField(null=True, blank=True)
-    # Who in the team: "leaders", "recruiters", or a manage screen key.
+    # Who in the team: "leaders", "recruiters", "ceo", or a manage screen key.
     team_role = models.CharField(max_length=64, blank=True, default="")
     team_label = models.CharField(max_length=128, blank=True, default="")
     claimed_at = models.DateTimeField(null=True, blank=True)

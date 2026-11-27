@@ -30,13 +30,18 @@ from esi_health.services import (
     token_scopes,
 )
 from eveonline.helpers.alliances import alliance_corporations
-from eveonline.helpers.characters.identity import owned_by_q
+from eveonline.helpers.characters.identity import (
+    owned_by_q,
+    primary_characters_for_users,
+)
 from eveonline.models import (
     EveCharacter,
     EveCorporation,
     EvePlayer,
     FwPayoutEventCode,
 )
+from exits.models import STATUS_CONFIRMED as DEPARTURE_CONFIRMED
+from exits.models import Departure, FlaggedJoin, RejoinFlag
 from fittings.models import EveDoctrineChangeRequest, EveFittingChangeRequest
 from fleets.models import EveFleetInvite, NpsiEventSource
 from manage_hub.summary import npsi_feeds, payout_codes, reddit_posts
@@ -441,8 +446,14 @@ def collect_corp_director_token(user_ids=None) -> list[Item]:
     """
     del user_ids  # a team rule collects for everyone
 
+    # Tracked corporations outside the alliance need one too (#3198).
     corporations = list(
-        alliance_corporations().values("corporation_id", "name")
+        (
+            alliance_corporations()
+            | EveCorporation.objects.filter(track_exits=True)
+        )
+        .distinct()
+        .values("corporation_id", "name", "track_exits")
     )
     statuses = director_statuses(
         [row["corporation_id"] for row in corporations]
@@ -461,7 +472,11 @@ def collect_corp_director_token(user_ids=None) -> list[Item]:
                 _corporation_item(
                     corporation,
                     title="Add a director token",
-                    detail="The member list stops updating without one",
+                    detail=(
+                        "Departures can't be tracked without it"
+                        if corporation["track_exits"]
+                        else "The member list stops updating without one"
+                    ),
                     link_url=members_url,
                     link_label="Add",
                 )
@@ -481,6 +496,103 @@ def collect_corp_director_token(user_ids=None) -> list[Item]:
                 ),
                 link_url=members_url,
                 link_label="Update",
+            )
+        )
+    return items
+
+
+def collect_exit_departures(user_ids=None) -> list[Item]:
+    """A tracked corporation with confirmed departures its CEO hasn't explained."""
+    del user_ids  # a team rule collects for everyone
+
+    rows = (
+        Departure.objects.filter(status=DEPARTURE_CONFIRMED, reason="")
+        .values("corporation__corporation_id", "corporation__name")
+        .annotate(n=Count("id"), first=Min("confirmed_at"))
+    )
+    items = []
+    for row in rows:
+        corporation_id = row["corporation__corporation_id"]
+        count = row["n"]
+        items.append(
+            Item(
+                source_key=f"corporation:{corporation_id}",
+                title=(
+                    f"Tell us why {count} pilot{'s' if count != 1 else ''} left"
+                ),
+                link_url=f"/alliance/corporations/{corporation_id}/#departures",
+                link_label="Answer",
+                team_kind=TeamKind.CORPORATION,
+                team_id=corporation_id,
+                team_role="ceo",
+                team_label=row["corporation__name"],
+                since=row["first"],
+            )
+        )
+    return items
+
+
+def collect_exit_flagged_join(user_ids=None) -> list[Item]:
+    """A pilot marked can't rejoin turned up in a tracked corporation."""
+    del user_ids  # a team rule collects for everyone
+
+    joins = list(
+        FlaggedJoin.objects.filter(
+            outcome="", removal_expected_at__isnull=True
+        )
+        .select_related("corporation")
+        .order_by("seen_at")
+    )
+    if not joins:
+        return []
+    names = dict(
+        EveCharacter.objects.filter(
+            character_id__in=[j.character_id for j in joins]
+        ).values_list("character_id", "character_name")
+    )
+    flags = {
+        flag.pk: flag
+        for flag in RejoinFlag.objects.filter(
+            pk__in={pk for j in joins for pk in j.flag_ids}
+        ).select_related("corporation", "set_by")
+    }
+    setters = primary_characters_for_users(
+        {f.set_by_id for f in flags.values() if f.set_by_id}
+    )
+    items = []
+    for join in joins:
+        corporation = join.corporation
+        name = names.get(join.character_id) or str(join.character_id)
+        newest = max(
+            (flags[pk] for pk in join.flag_ids if pk in flags),
+            key=lambda f: f.set_at,
+            default=None,
+        )
+        detail = ""
+        if newest is not None:
+            setter = setters.get(newest.set_by_id)
+            who = f"{setter.character_name} " if setter else ""
+            detail = (
+                f"{who}({newest.corporation.name}), "
+                f"{newest.set_at.day} {newest.set_at:%b}: \u201c{newest.note}\u201d"
+            )
+        items.append(
+            Item(
+                source_key=f"flagged_join:{join.pk}",
+                title=(
+                    f"{name} joined {corporation.name}. "
+                    "They're marked can't rejoin"
+                ),
+                detail=detail,
+                link_url=(
+                    f"/alliance/corporations/{corporation.corporation_id}/#departures"
+                ),
+                link_label="Answer",
+                team_kind=TeamKind.CORPORATION,
+                team_id=corporation.corporation_id,
+                team_role="ceo",
+                team_label=corporation.name,
+                since=join.seen_at,
             )
         )
     return items
@@ -755,6 +867,26 @@ RULES: dict[str, Rule] = {
             Weight.NEEDS_YOU,
             collect_corp_director_token,
             claim_expires_days=14,
+        ),
+        Rule(
+            "exit_departures",
+            "Say why pilots left",
+            "Opens when pilots have left a tracked corporation and its CEO "
+            "hasn't said why",
+            AUDIENCE_CEO,
+            Weight.NEEDS_YOU,
+            collect_exit_departures,
+            watch=(Departure,),
+        ),
+        Rule(
+            "exit_flagged_join",
+            "A flagged pilot joined",
+            "Opens when a pilot another alliance CEO marked can't rejoin turns "
+            "up in a tracked corporation",
+            AUDIENCE_CEO,
+            Weight.NEEDS_YOU,
+            collect_exit_flagged_join,
+            watch=(FlaggedJoin,),
         ),
         Rule(
             "corp_unlinked",

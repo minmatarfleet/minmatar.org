@@ -1,0 +1,37 @@
+---
+import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
+const { t } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import type { HistoryEntry } from '@dtypes/api.minmatar.org'
+import { get_member_history } from '@helpers/api.minmatar.org/exits'
+
+import ApplicationAllianceHistory from '@components/blocks/ApplicationAllianceHistory.astro'
+import EmptyState from '@components/blocks/EmptyState.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+
+// A member's alliance history, in the Members tab's History dialog (#3198).
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const params = Astro.url.searchParams
+const corporation_id = parseInt(params.get('corporation_id') ?? '')
+const character_id = parseInt(params.get('character_id') ?? '')
+if (!corporation_id || !character_id) return HTTP_403_Forbidden()
+
+let entries: HistoryEntry[] | null = null
+let fetch_error: Error | false = false
+try {
+    entries = await get_member_history(auth_token, corporation_id, character_id)
+} catch (error) {
+    fetch_error = error as Error
+}
+if (!entries && !fetch_error) return HTTP_403_Forbidden()
+---
+
+{fetch_error &&
+    <ErrorRefetch args={{ partial: Astro.url.pathname + Astro.url.search, error: fetch_error, delay: 0 }} />
+}
+{entries && entries.length > 0 && <ApplicationAllianceHistory entries={entries} />}
+{entries && entries.length === 0 && <EmptyState title={t('corporations.members.history_empty')} />}

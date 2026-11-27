@@ -3341,6 +3341,142 @@ export interface paths {
         patch: operations["eveonline_endpoints_characters_players_patch_current_patch_current_player"];
         trace?: never;
     };
+    "/api/exits/applications/{application_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An applicant's alliance history (the corporation's recruiters only) */
+        get: operations["exits_endpoints_get_application_history_get_application_history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exits/corporations/{corporation_id}/departures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pilots who left a tracked corporation (CEO only) */
+        get: operations["exits_endpoints_get_departures_get_departures"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exits/corporations/{corporation_id}/departures/answers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Say why pilots left, for one row or many (CEO only) */
+        post: operations["exits_endpoints_post_departure_answers_post_departure_answers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exits/corporations/{corporation_id}/flagged-joins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pilots marked can't rejoin who joined this corporation (CEO only) */
+        get: operations["exits_endpoints_get_flagged_joins_get_flagged_joins"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exits/corporations/{corporation_id}/members/{character_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A member's alliance history (the corporation's CEO and directors) */
+        get: operations["exits_endpoints_get_member_history_get_member_history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exits/flagged-joins/{join_id}/keep": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Keep a flagged pilot, with a note (CEO only) */
+        post: operations["exits_endpoints_post_flagged_join_keep_post_flagged_join_keep"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exits/flagged-joins/{join_id}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Say a flagged pilot will be removed in game (CEO only) */
+        post: operations["exits_endpoints_post_flagged_join_remove_post_flagged_join_remove"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exits/flags/{flag_id}/clear": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Clear a can't-rejoin flag (the setting corporation's CEO) */
+        post: operations["exits_endpoints_post_flag_clear_post_flag_clear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/feed/": {
         parameters: {
             query?: never;
@@ -9456,6 +9592,24 @@ export interface paths {
         get: operations["surveys_endpoints_member_get_active"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/surveys/exit/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An exit or alliance move survey, from its link (no login) */
+        get: operations["surveys_endpoints_get_exit_survey_get_exit_survey"];
+        put?: never;
+        /** Answer an exit or alliance move survey (no login, once) */
+        post: operations["surveys_endpoints_post_exit_survey_post_exit_survey"];
         delete?: never;
         options?: never;
         head?: never;
@@ -16233,6 +16387,11 @@ export interface components {
             /** Can View Characters */
             can_view_characters: boolean;
             /**
+             * Can View Departures
+             * @default false
+             */
+            can_view_departures?: boolean;
+            /**
              * Can View Graduation
              * @default false
              */
@@ -16275,6 +16434,11 @@ export interface components {
              * @default 0
              */
             fleets_90d?: number;
+            /**
+             * Has Alliance History
+             * @default false
+             */
+            has_alliance_history?: boolean;
             /**
              * Hidden Character Count
              * @default 0
@@ -17513,6 +17677,61 @@ export interface components {
             deleted: boolean;
             /** Message */
             message: string;
+        };
+        /** DepartureAnswerRequest */
+        DepartureAnswerRequest: {
+            /** Can Rejoin */
+            can_rejoin?: boolean | null;
+            /** Departure Ids */
+            departure_ids: number[];
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+            /** Reason */
+            reason: string;
+        };
+        /**
+         * DepartureGroupResponse
+         * @description One person who left: a character, with alts that left with them.
+         */
+        DepartureGroupResponse: {
+            /** Alt Names */
+            alt_names: string[];
+            /** Can Rejoin */
+            can_rejoin: boolean | null;
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /** Departure Ids */
+            departure_ids: number[];
+            /** Destination Corporation Id */
+            destination_corporation_id: number | null;
+            /** Destination Is Npc */
+            destination_is_npc: boolean;
+            /** Destination Name */
+            destination_name: string | null;
+            /**
+             * First Missing At
+             * Format: date-time
+             */
+            first_missing_at: string;
+            /** Flag Id */
+            flag_id: number | null;
+            /** Kind */
+            kind: string;
+            /** Months In Corporation */
+            months_in_corporation: number | null;
+            /** Note */
+            note: string;
+            /** Reason */
+            reason: string;
+            /** Registered */
+            registered: boolean;
+            /** Survey Sent At */
+            survey_sent_at: string | null;
         };
         /** DesktopSettingsPatchSchema */
         DesktopSettingsPatchSchema: {
@@ -19693,6 +19912,48 @@ export interface components {
          * @enum {string}
          */
         EventWhereKind: "voice" | "place";
+        /**
+         * ExitSurveyFormResponse
+         * @description The no-login exit or alliance move survey behind a mailed link (#3198).
+         */
+        ExitSurveyFormResponse: {
+            /** Blocks */
+            blocks: components["schemas"]["BlockSchema"][];
+            /** Character Name */
+            character_name: string;
+            /** Corporation Id */
+            corporation_id: number;
+            /** Corporation Name */
+            corporation_name: string;
+            /** Definition Key */
+            definition_key: string;
+            /** Kind */
+            kind: string;
+            /** Member From */
+            member_from?: string | null;
+            /**
+             * Member To
+             * Format: date-time
+             */
+            member_to: string;
+            /** New Corporation Name */
+            new_corporation_name?: string | null;
+            /** Title */
+            title: string;
+        };
+        /** ExitSurveySubmitRequest */
+        ExitSurveySubmitRequest: {
+            /**
+             * Answers
+             * @default []
+             */
+            answers?: components["schemas"]["AnswerInput"][];
+        };
+        /** ExitSurveySubmitResponse */
+        ExitSurveySubmitResponse: {
+            /** Ok */
+            ok: boolean;
+        };
         /** FacilityDetailSchema */
         FacilityDetailSchema: {
             cost_indices: components["schemas"]["CostIndicesSchema"];
@@ -20425,6 +20686,56 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /** FlagClearResponse */
+        FlagClearResponse: {
+            /** Cleared */
+            cleared: boolean;
+        };
+        /**
+         * FlaggedApplicantResponse
+         * @description 409 from accept: the applicant has can't-rejoin flags to confirm.
+         */
+        FlaggedApplicantResponse: {
+            /** Detail */
+            detail: string;
+            /** Flags */
+            flags: components["schemas"]["HistoryEntryResponse"][];
+        };
+        /** FlaggedJoinKeepRequest */
+        FlaggedJoinKeepRequest: {
+            /** Note */
+            note: string;
+        };
+        /**
+         * FlaggedJoinResponse
+         * @description A pilot marked can't rejoin who joined this corporation.
+         */
+        FlaggedJoinResponse: {
+            /** Character Id */
+            character_id: number;
+            /** Character Name */
+            character_name: string;
+            /** Flags */
+            flags: components["schemas"]["HistoryEntryResponse"][];
+            /** Id */
+            id: number;
+            /** Removal Expected */
+            removal_expected: boolean;
+            /**
+             * Seen At
+             * Format: date-time
+             */
+            seen_at: string;
+        };
+        /** FlaggedJoinResultResponse */
+        FlaggedJoinResultResponse: {
+            /** Id */
+            id: number;
+            /** Outcome */
+            outcome: string;
+            /** Removal Expected */
+            removal_expected: boolean;
         };
         /** FleetBattleActivity */
         FleetBattleActivity: {
@@ -22721,6 +23032,33 @@ export interface components {
             taken: boolean;
             /** Tribe Name */
             tribe_name: string;
+        };
+        /**
+         * HistoryEntryResponse
+         * @description What a CEO said when this pilot (or an alt) left their corporation.
+         */
+        HistoryEntryResponse: {
+            /** Answered By Name */
+            answered_by_name: string;
+            /** Can Rejoin */
+            can_rejoin: boolean | null;
+            /** Corporation Id */
+            corporation_id: number;
+            /** Corporation Name */
+            corporation_name: string;
+            /** Departure Id */
+            departure_id: number;
+            /** Flag Active */
+            flag_active: boolean;
+            /**
+             * Left At
+             * Format: date-time
+             */
+            left_at: string;
+            /** Note */
+            note: string;
+            /** Reason */
+            reason: string;
         };
         /** HoldingItem */
         HoldingItem: {
@@ -35756,7 +36094,9 @@ export interface operations {
     };
     applications_router_accept_corporation_application: {
         parameters: {
-            query?: never;
+            query?: {
+                confirm_flags?: boolean;
+            };
             header?: never;
             path: {
                 corporation_id: number;
@@ -35791,6 +36131,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlaggedApplicantResponse"];
                 };
             };
         };
@@ -43426,6 +43775,400 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    exits_endpoints_get_application_history_get_application_history: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                application_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryEntryResponse"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    exits_endpoints_get_departures_get_departures: {
+        parameters: {
+            query?: {
+                state?: string;
+            };
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartureGroupResponse"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    exits_endpoints_post_departure_answers_post_departure_answers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DepartureAnswerRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DepartureGroupResponse"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    exits_endpoints_get_flagged_joins_get_flagged_joins: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlaggedJoinResponse"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    exits_endpoints_get_member_history_get_member_history: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+                character_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryEntryResponse"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    exits_endpoints_post_flagged_join_keep_post_flagged_join_keep: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                join_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FlaggedJoinKeepRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlaggedJoinResultResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    exits_endpoints_post_flagged_join_remove_post_flagged_join_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                join_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlaggedJoinResultResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    exits_endpoints_post_flag_clear_post_flag_clear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                flag_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlagClearResponse"];
+                };
             };
             /** @description Forbidden */
             403: {
@@ -58252,6 +58995,99 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ActiveSurveySchema"];
+                };
+            };
+        };
+    };
+    surveys_endpoints_get_exit_survey_get_exit_survey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExitSurveyFormResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Gone */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    surveys_endpoints_post_exit_survey_post_exit_survey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExitSurveySubmitRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExitSurveySubmitResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Gone */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

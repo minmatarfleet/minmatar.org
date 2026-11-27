@@ -15,6 +15,13 @@ from eveonline.helpers.corporations.applications import (
 )
 from eveonline.models import EveCharacter, EveCorporation
 
+from exits.endpoints.schemas import FlaggedApplicantResponse
+from exits.tasks import alert_application
+from exits.helpers.acceptance import (
+    flagged_response,
+    flags_blocking,
+    record_acceptance,
+)
 from .l3arn import (
     is_l3arn_corporation,
     validate_application_description,
@@ -247,10 +254,14 @@ def get_corporation_application_by_id(
         200: CorporationApplicationResponse,
         400: ErrorResponse,
         403: ErrorResponse,
+        409: FlaggedApplicantResponse,
     },
 )
 def accept_corporation_application(
-    request, corporation_id: int, application_id: int
+    request,
+    corporation_id: int,
+    application_id: int,
+    confirm_flags: bool = False,
 ):
     if not _may_review(request.user, corporation_id):
         return 403, {
@@ -263,9 +274,16 @@ def accept_corporation_application(
         return 400, {
             "detail": f"This application is already {application.status}."
         }
+    # A pilot another alliance CEO marked can't rejoin needs a confirmation,
+    # and the confirmation is recorded (#3198).
+    flags = flags_blocking(application)
+    if flags and not confirm_flags:
+        return 409, flagged_response(application)
     application.status = "accepted"
     application.processed_by = request.user
     application.save()
+    if flags:
+        record_acceptance(application, flags, request.user)
 
     logger.info(
         "Application for %s accepted by %s",
@@ -367,6 +385,9 @@ def transfer_corporation_application(
     previous_corporation_id = application.corporation_id
     application.corporation_id = target_corporation_id
     application.save()
+    # A transfer is a new application for the receiving corporation's
+    # recruiters: they get their own alliance history alert (#3198).
+    transaction.on_commit(lambda: alert_application.delay(application.pk))
 
     transferred_by_username = request.user.username
     transaction.on_commit(

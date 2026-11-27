@@ -1,0 +1,45 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+/**
+ * The exit or alliance move survey behind the mailed link (#3198). No login
+ * and no site nav: the signed token in the URL is the only key (30 days,
+ * one answer). Not indexed, no analytics (the URL is the secret).
+ */
+import { get_exit_survey } from '@helpers/api.minmatar.org/exit_survey'
+import type { ExitSurveyForm as ExitSurveyFormData } from '@dtypes/api.minmatar.org'
+
+Astro.response.headers.set('Cache-Control', 'no-store')
+Astro.response.headers.set('Referrer-Policy', 'no-referrer')
+
+const token = Astro.params.token ?? ''
+let form: ExitSurveyFormData | null = null
+let failed = false
+try {
+    const outcome = await get_exit_survey(token)
+    if (outcome.ok) form = outcome.data
+} catch {
+    failed = true
+}
+const partial_url = translatePath('/partials/exit_survey_component/')
+
+import GuestsViewport from '@layouts/GuestsViewport.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+import ExitSurveyForm from '@components/blocks/exit_survey/ExitSurveyForm.astro'
+import ExitSurveyGone from '@components/blocks/exit_survey/ExitSurveyGone.astro'
+---
+
+<GuestsViewport
+    title={t('exit_survey.page_title')}
+    meta_description={t('exit_survey.meta_description')}
+    robots="noindex, nofollow"
+    analytics={false}
+>
+    <Wrapper max_width="var(--max-text-width)" padding_block="var(--space-xl)" padding_inline="var(--space-s)">
+        {form
+            ? <ExitSurveyForm form={form} token={token} partial_url={partial_url} />
+            : <ExitSurveyGone message={failed ? t('exit_survey.load_error') : undefined} />
+        }
+    </Wrapper>
+</GuestsViewport>

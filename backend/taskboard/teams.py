@@ -13,7 +13,10 @@ from functools import cached_property
 from typing import Optional
 
 from eveonline.helpers.corporations.applications import can_review_applications
-from eveonline.helpers.corporations.permissions import can_manage_corporation
+from eveonline.helpers.corporations.permissions import (
+    can_manage_corporation,
+    user_is_ceo,
+)
 from eveonline.models import EveCorporation
 from manage_hub.screens import reachable_screens
 from tribes.helpers.permissions import user_can_manage_group
@@ -61,6 +64,17 @@ class Membership:
         return False
 
     def _corporation(self, corporation_id: Optional[int], role: str) -> bool:
+        if role == "ceo":
+            # Only the CEO, superuser or not, and for any corporation, tracked
+            # ones outside the alliance included (#3198).
+            corporation = (
+                EveCorporation.objects.select_related("ceo__token")
+                .filter(corporation_id=corporation_id)
+                .first()
+            )
+            return corporation is not None and user_is_ceo(
+                self.user, corporation
+            )
         if self.user.is_superuser:
             # Admins pass every check below; their tasks are the
             # corporations they lead, like anyone else's.

@@ -1,0 +1,106 @@
+---
+import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { DepartureGroup, FlaggedJoin } from '@dtypes/api.minmatar.org'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { clear_rejoin_flag, get_departures, get_flagged_joins, keep_flagged_join, post_departure_answers, remove_flagged_join, type DepartureState } from '@helpers/api.minmatar.org/exits'
+import { parse_departure_answer } from '@helpers/corporations/departures'
+import { query_string } from '@helpers/string'
+
+import CorporationDepartures from '@components/blocks/CorporationDepartures.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+
+const STATES: DepartureState[] = ['open', 'answered', 'all']
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const params = Astro.url.searchParams
+const corporation_id = parseInt(params.get('corporation_id') ?? '')
+const corporation_name = params.get('corporation_name') ?? ''
+if (!corporation_id) return HTTP_403_Forbidden()
+const requested = params.get('state') as DepartureState
+const state: DepartureState = STATES.includes(requested) ? requested : 'open'
+
+const PARTIAL_URL = translatePath(`/partials/corporation_departures_component/?${query_string({
+    corporation_id: String(corporation_id),
+    corporation_name,
+})}`)
+
+let flash: { kind: 'success' | 'error', text: string } | null = null
+
+if (Astro.request.method === 'POST') {
+    const form = await Astro.request.formData()
+    const action = String(form.get('action') ?? '')
+    const join_id = parseInt(String(form.get('join_id') ?? ''))
+    const answer = action ? null : parse_departure_answer(form)
+    const flag_id = parseInt(String(form.get('flag_id') ?? ''))
+    if (action === 'clear_flag' && flag_id > 0) {
+        try {
+            await clear_rejoin_flag(auth_token, flag_id)
+            flash = { kind: 'success', text: t('corporations.departures.flag_cleared') }
+        } catch {
+            flash = { kind: 'error', text: t('corporations.departures.error_save') }
+        }
+    } else if ((action === 'keep' || action === 'remove') && join_id > 0) {
+        try {
+            if (action === 'keep')
+                await keep_flagged_join(auth_token, join_id, String(form.get('note') ?? '').trim())
+            else
+                await remove_flagged_join(auth_token, join_id)
+            flash = {
+                kind: 'success',
+                text: t(action === 'keep' ? 'corporations.departures.join_kept' : 'corporations.departures.join_marked_removal'),
+            }
+        } catch {
+            flash = { kind: 'error', text: t('corporations.departures.error_save') }
+        }
+    } else if (!answer) {
+        flash = { kind: 'error', text: t('corporations.departures.error_save') }
+    } else if (answer.departure_ids.length === 0) {
+        flash = { kind: 'error', text: t('corporations.departures.pick_rows') }
+    } else {
+        try {
+            await post_departure_answers(auth_token, corporation_id, answer)
+            flash = { kind: 'success', text: t('corporations.departures.saved') }
+        } catch {
+            flash = { kind: 'error', text: t('corporations.departures.error_save') }
+        }
+    }
+}
+
+let groups: DepartureGroup[] | null = null
+let flagged_joins: FlaggedJoin[] = []
+let fetch_error: Error | false = false
+try {
+    const joins_request = get_flagged_joins(auth_token, corporation_id)
+    groups = await get_departures(auth_token, corporation_id, 'all')
+    flagged_joins = (await joins_request) ?? []
+} catch (error) {
+    fetch_error = error as Error
+}
+if (!groups && !fetch_error) return HTTP_403_Forbidden()
+const delay = parseInt(params.get('delay') ?? '0')
+---
+
+{fetch_error &&
+    <ErrorRefetch
+        args={{
+            partial: `${PARTIAL_URL}&state=${state}`,
+            error: fetch_error,
+            delay: delay,
+        }}
+    />
+}
+{groups &&
+    <CorporationDepartures
+        groups={groups}
+        corporation_name={corporation_name}
+        state={state}
+        partial_url={PARTIAL_URL}
+        flash={flash}
+        flagged_joins={flagged_joins}
+    />
+}
