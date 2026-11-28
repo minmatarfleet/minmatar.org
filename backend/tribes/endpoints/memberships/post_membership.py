@@ -42,7 +42,11 @@ def _notify_chief_of_new_request(membership):
     # pylint: disable-next=import-outside-toplevel
     from tribes.helpers.chiefs import ChiefResolver
 
+    # pylint: disable-next=import-outside-toplevel
+    from tribes.helpers.invitations import members_page_url
+
     tg = membership.tribe_group
+    url = members_page_url(tg)
     for chief in ChiefResolver().for_group(tg).users:
         try:
             notify_user(
@@ -52,6 +56,7 @@ def _notify_chief_of_new_request(membership):
                     "group_name": tg.name,
                     "tribe_name": tg.tribe.name,
                     "applicant": membership.user.username,
+                    "url": url,
                 },
             )
         except Exception:  # pylint: disable=broad-except
