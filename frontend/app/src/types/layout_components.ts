@@ -281,6 +281,8 @@ export interface CorporationObject {
     open_application_corporation_name?: string;
     /** The viewer fails a required recruitment rule (they can still apply anyway). */
     requirements_blocked?: boolean;
+    /** The required rules the viewer doesn't meet, as shown on the Apply tab. */
+    requirements_unmet?: string[];
 }
 
 export interface CorporationBasic {

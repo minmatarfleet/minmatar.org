@@ -20,6 +20,8 @@ const {
 } = Astro.props
 
 const is_l3arn = isL3arnCorporation(corporation)
+const blocked = Boolean(corporation.requirements_blocked)
+const unmet = corporation.requirements_unmet ?? []
 
 const CORPORATION_REQUEST_STATUS_PARTIAL_URL = `${translatePath('/partials/corporation_slide_request_status_item/')}?corporation_id=${corporation.corporation_id}`
 
@@ -29,6 +31,7 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 
 import DialogButton from "@components/blocks/DialogButton.astro";
 import Button from '@components/blocks/Button.astro';
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro';
 import CorporationItem from '@components/blocks/CorporationItem.astro';
 import CorporationApplicationFormL3arn from '@components/blocks/CorporationApplicationFormL3arn.astro';
 import CorporationApplicationForm from '@components/blocks/CorporationApplicationForm.astro';
@@ -55,7 +58,7 @@ import CorporationApplicationForm from '@components/blocks/CorporationApplicatio
         x-data={is_l3arn
             ? l3arnApplicationAlpineState(false)
             : corporationApplicationAlpineState(false)}
-        x-on:submit="if (error) { $event.preventDefault() }"
+        x-on:submit="if (error || (typeof acknowledged !== 'undefined' && !acknowledged)) { $event.preventDefault() }"
         x-init={is_l3arn ? "initL3arnForm()" : "initCorpApplicationForm()"}
     >
         <Wrapper
@@ -80,32 +83,47 @@ import CorporationApplicationForm from '@components/blocks/CorporationApplicatio
                     )}
                 </Flexblock>
 
-                {corporation.requirements_blocked &&
-                    <>
-                        {/* The pilot fails a required rule: they apply anyway and the recruiter is told. */}
-                        <input type="hidden" name="override_requirements" value="1" />
-                        <small class="[ blocked-note ]">{t('corporations.requirements.apply_anyway_note')}</small>
-                    </>
-                }
+                <Flexblock gap="var(--space-l)" x-data={`{ acknowledged: ${!blocked} }`}>
+                    {blocked &&
+                        <section class="[ blocked ]" role="alert" aria-labelledby={`blocked-title-${corporation.corporation_id}`}>
+                            <h3 id={`blocked-title-${corporation.corporation_id}`}>{t('corporations.requirements.apply_anyway_title')}</h3>
+                            {unmet.length > 0 &&
+                                <ul role="list">
+                                    {unmet.map((text) => <li>{text}</li>)}
+                                </ul>
+                            }
+                            <p>{t('corporations.requirements.apply_anyway_body')}</p>
+                            <RadioCheckInput
+                                id={`apply-anyway-${corporation.corporation_id}`}
+                                type="checkbox"
+                                x-model="acknowledged"
+                            >
+                                {t('corporations.requirements.apply_anyway_confirm')}
+                            </RadioCheckInput>
+                            {/* Sent only once they tick the box; without it the API refuses a blocked application. */}
+                            <input type="hidden" name="override_requirements" value="1" x-bind:disabled="!acknowledged" />
+                        </section>
+                    }
 
-                <FlexInline justification='flex-end'>
-                    <Button
-                        size='sm'
-                        type="submit"
-                        color='green'
-                        x-bind:disabled="error"
-                    >
-                        {corporation.requirements_blocked ? t('corporations.requirements.apply_anyway') : t('apply')}
-                    </Button>
-                    <Button
-                        type="button"
-                        size='sm'
-                        color='transparent'
-                        x-on:click="close_dialog()"
-                    >
-                        {t('close')}
-                    </Button>
-                </FlexInline>
+                    <FlexInline justification='flex-end'>
+                        <Button
+                            size='sm'
+                            type="submit"
+                            color='green'
+                            x-bind:disabled="error || !acknowledged"
+                        >
+                            {blocked ? t('corporations.requirements.apply_anyway') : t('apply')}
+                        </Button>
+                        <Button
+                            type="button"
+                            size='sm'
+                            color='transparent'
+                            x-on:click="close_dialog()"
+                        >
+                            {t('close')}
+                        </Button>
+                    </FlexInline>
+                </Flexblock>
             </Flexblock>
         </Wrapper>
     </form>
@@ -116,8 +134,31 @@ import CorporationApplicationForm from '@components/blocks/CorporationApplicatio
         font-size: var(--step-2);
     }
 
-    .blocked-note {
-        align-self: flex-end;
-        color: var(--faded);
+    .blocked {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        padding: var(--space-m);
+        border: solid 1px var(--fleet-yellow);
+        border-inline-start-width: var(--space-3xs);
+        background: color-mix(in srgb, var(--fleet-yellow) var(--tint-soft), transparent);
+        color: var(--highlight);
+
+        h3 {
+            margin: 0;
+            font-size: var(--step-1);
+            color: var(--fleet-yellow);
+        }
+
+        ul {
+            margin: 0;
+            padding-inline-start: var(--space-m);
+            list-style: disc;
+            font-weight: 600;
+        }
+
+        p {
+            margin: 0;
+        }
     }
 </style>

@@ -14,6 +14,7 @@ import {
     get_my_open_application,
 } from '@helpers/api.minmatar.org/applications'
 import { corporations_with_open_application } from '@helpers/corporations/open_application'
+import { blocking_checks } from '@helpers/corporations/requirements'
 
 export const MINMATAR_EXTRACTION_COMPANY_ID = 98838663
 
@@ -133,7 +134,13 @@ export async function get_corporation_list_by_id_auth(access_token:string, corpo
     const corporation = await add_status_to_corporation(access_token, api_corporation, user_id, applications)
     const [annotated] = await annotate_open_application(access_token, [corporation], open_application)
     const mine = await requirements
-    return mine ? { ...annotated, requirements_blocked: !mine.can_apply } : annotated
+    return mine
+        ? {
+            ...annotated,
+            requirements_blocked: !mine.can_apply,
+            requirements_unmet: blocking_checks(mine.checks).map((check) => check.text),
+        }
+        : annotated
 }
 
 async function annotate_open_application<T extends {
