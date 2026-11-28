@@ -189,17 +189,22 @@ def blocked_detail(blockers: list) -> str:
 
 def stale_skill_characters(user_id: int) -> list[int]:
     """Pks of the user's characters whose skills haven't synced recently."""
-    cutoff = timezone.now() - SKILLS_STALE_AFTER
-    fresh = EveCharacterSyncState.objects.filter(
-        section=SKILLS, synced_at__gte=cutoff
-    ).values("character_id")
-    return list(
+    owned = set(
         EveCharacter.objects.filter(owned_by_q(user_id))
         .filter(esi_deleted=False, esi_suspended=False)
-        .exclude(pk__in=fresh)
         .values_list("pk", flat=True)
-        .distinct()
     )
+    if not owned:
+        return []
+    # Only this pilot's rows: the sync state table holds every character.
+    fresh = set(
+        EveCharacterSyncState.objects.filter(
+            character_id__in=owned,
+            section=SKILLS,
+            synced_at__gte=timezone.now() - SKILLS_STALE_AFTER,
+        ).values_list("character_id", flat=True)
+    )
+    return sorted(owned - fresh)
 
 
 def refresh_stale_skills(user_id: int) -> bool:
