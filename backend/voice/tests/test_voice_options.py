@@ -287,7 +287,7 @@ class VoiceChannelTest(FleetFormCase):
             .json()
         }
 
-    def test_lists_channels_people_can_join_in_discord_order(self):
+    def test_lists_every_channel_but_hidden_ones_in_discord_order(self):
         options = self.options()
         alliance = options["Minmatar Fleet Discord"]
         self.assertEqual(
@@ -295,12 +295,18 @@ class VoiceChannelTest(FleetFormCase):
                 (c["id"], c["name"], c["category"])
                 for c in alliance["channels"]
             ],
-            [("100", "Fleet 1", "Voice"), ("101", "Fleet 2", "Voice")],
+            # Members-only channels are listed; AFK is hidden in the admin.
+            [
+                ("110", "Officers", "Staff"),
+                ("100", "Fleet 1", "Voice"),
+                ("101", "Fleet 2", "Voice"),
+                ("103", "Leadership", "Voice"),
+            ],
         )
         self.assertEqual(alliance["default_channel_id"], "101")
         # No default set: the first channel.
         fw = options["Minmatar Faction Warfare Discord"]
-        self.assertEqual(fw["default_channel_id"], "100")
+        self.assertEqual(fw["default_channel_id"], "110")
         self.assertEqual(options["Mumble"]["channels"], [])
         # Cached: one Discord call per server.
         self.options()
@@ -320,7 +326,7 @@ class VoiceChannelTest(FleetFormCase):
         self.assertEqual(body["voice_channel_name"], "Fleet 1")
         fleet = EveFleet.objects.get(id=body["id"])
         self.assertEqual(fleet.voice_channel_name, "Fleet 1")
-        for unknown in ("102", "110", "999", "x"):
+        for unknown in ("102", "999", "x"):
             self.assertEqual(
                 self.create(voice_channel_id=unknown).status_code, 400, unknown
             )

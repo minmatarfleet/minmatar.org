@@ -6,9 +6,9 @@ starting on the option's ``discord_channel_id``, and the FC's pick is stored
 on the fleet (``voice_channel_id``, ``voice_channel_name``). The start ping
 and the MOTD link it.
 
-Channels come from Discord, cached for a few minutes per server. A channel
-@everyone can't see or join, and one an admin marked ``hide_from_fleets``
-on its DiscordChannel row, is left out.
+Channels come from Discord, cached for a few minutes per server. Every
+voice and stage channel is listed, whoever can join it, except one an admin
+marked ``hide_from_fleets`` on its DiscordChannel row (AFK, Leadership).
 """
 
 from __future__ import annotations
@@ -31,9 +31,6 @@ UNAVAILABLE_SECONDS = 60
 # Discord channel types: voice and stage.
 VOICE_TYPES = (2, 13)
 CATEGORY_TYPE = 4
-VIEW_CHANNEL = 1 << 10
-CONNECT = 1 << 20
-ROLE_OVERWRITE = 0
 
 
 @dataclass(frozen=True)
@@ -45,16 +42,6 @@ class VoiceChannel:
 
 def channel_url(guild_id: int, channel_id: int) -> str:
     return f"https://discord.com/channels/{guild_id}/{channel_id}"
-
-
-def _everyone_denied(channel: dict, guild_id: int) -> bool:
-    for overwrite in channel.get("permission_overwrites") or []:
-        if overwrite.get("type") != ROLE_OVERWRITE:
-            continue
-        if str(overwrite.get("id")) != str(guild_id):
-            continue
-        return bool(int(overwrite.get("deny") or 0) & (VIEW_CHANNEL | CONNECT))
-    return False
 
 
 def _fetch(guild_id: int) -> list[dict] | None:
@@ -80,15 +67,6 @@ def _fetch(guild_id: int) -> list[dict] | None:
         if channel.get("type") not in VOICE_TYPES:
             continue
         parent = categories.get(str(channel.get("parent_id")))
-        # A channel without its own @everyone rule follows its category's.
-        own_rule = any(
-            o.get("type") == ROLE_OVERWRITE
-            and str(o.get("id")) == str(guild_id)
-            for o in channel.get("permission_overwrites") or []
-        )
-        source = channel if own_rule or parent is None else parent
-        if _everyone_denied(source, guild_id):
-            continue
         rows.append(
             {
                 "id": int(channel["id"]),
