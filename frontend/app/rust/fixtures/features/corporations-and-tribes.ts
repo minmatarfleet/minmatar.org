@@ -23,6 +23,13 @@ export const a_rat: CorporationObject = {
     status: 'available',
 }
 
+/** a_rat for a pilot who fails two required recruitment checks. */
+export const a_rat_blocked: CorporationObject = {
+    ...a_rat,
+    requirements_blocked: true,
+    requirements_unmet: ['Fly our Cruisers doctrine', 'A character with 20M+ skill points'],
+}
+
 const other_corps: CorporationObject[] = [
     { corporation_id: 98685730, corporation_name: 'Minmatar Fleet Academy', alliance_id: EVE.alliance_id, alliance_name: EVE.alliance_name, active: true, trial: true, corporation_type: 'alliance', status: 'available' },
     { corporation_id: 98644291, corporation_name: 'Tribal Liberation Force', alliance_id: EVE.alliance_id, alliance_name: EVE.alliance_name, active: true, trial: false, corporation_type: 'alliance', status: 'pending' },
