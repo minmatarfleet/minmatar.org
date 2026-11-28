@@ -50,6 +50,9 @@ logger = logging.getLogger(__name__)
 
 ANSWER_WINDOW = timedelta(days=2)
 REMINDER_BEFORE = timedelta(hours=24)
+# A class can start this soon: mentors and pilots agree short-notice classes
+# on Discord. The margin only absorbs the time it takes to submit the form.
+BOOKING_LEAD = timedelta(minutes=5)
 FOLLOW_UP_AFTER = timedelta(hours=48)
 UNCONFIRMED_AFTER = timedelta(days=7)
 PORTRAIT_URL = "https://images.evetech.net/characters/{}/portrait?size=128"
@@ -492,8 +495,8 @@ def _bookable_start(starts_at: datetime) -> datetime:
     if timezone.is_naive(starts_at):
         starts_at = starts_at.replace(tzinfo=dt_timezone.utc)
     now = timezone.now()
-    if starts_at <= now + timedelta(hours=1):
-        raise MentorError("Pick a time at least an hour from now.")
+    if starts_at <= now + BOOKING_LEAD:
+        raise MentorError("Pick a time at least 5 minutes from now.")
     if starts_at > now + timedelta(days=30):
         raise MentorError("Pick a time in the next 30 days.")
     return starts_at

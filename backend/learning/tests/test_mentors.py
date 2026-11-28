@@ -332,12 +332,38 @@ class RequestFlowTestCase(TestCase):
             service.reschedule(req, self.pilot, starts + timedelta(days=1), "")
         with self.assertRaises(service.MentorError):
             service.reschedule(
-                req, self.orion, timezone.now() + timedelta(minutes=30), ""
+                req, self.orion, timezone.now() + timedelta(minutes=2), ""
             )
         req.refresh_from_db()
         self.assertEqual(
             int(starts.timestamp()), int(req.starts_at.timestamp())
         )
+
+    def test_mentor_can_move_a_class_to_short_notice(self, dm):
+        # The mentor and pilot agreed on Discord to meet in 15 minutes.
+        req = self._ask()
+        service.accept(req, self.orion, timezone.now() + timedelta(days=2))
+        req.refresh_from_db()
+        soon = timezone.now() + timedelta(minutes=15)
+        service.reschedule(req, self.orion, soon, "")
+        req.refresh_from_db()
+        self.assertEqual(int(soon.timestamp()), int(req.starts_at.timestamp()))
+
+    def test_mentor_can_accept_a_short_notice_class(self, dm):
+        req = self._ask()
+        soon = timezone.now() + timedelta(minutes=15)
+        service.accept(req, self.orion, soon)
+        req.refresh_from_db()
+        self.assertEqual(MentorRequest.STATUS_BOOKED, req.status)
+
+    def test_a_time_in_the_next_few_minutes_is_refused(self, dm):
+        req = self._ask()
+        with self.assertRaisesMessage(
+            service.MentorError, "at least 5 minutes from now"
+        ):
+            service.accept(
+                req, self.orion, timezone.now() + timedelta(minutes=4)
+            )
 
     def test_reminder_then_follow_up_then_done_completes_the_learning(
         self, dm
