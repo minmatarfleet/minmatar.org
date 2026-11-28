@@ -134,6 +134,9 @@ const page_text_partial = translatePath(`/partials/corporation_page_text_compone
 const requirements_partial = translatePath(`/partials/corporation_requirements_settings_component/?${new URLSearchParams({
     corporation_id: String(corporation_id),
 })}`)
+const refresh_partial = translatePath(`/partials/corporation_refresh_component/?${new URLSearchParams({
+    corporation_id: String(corporation_id),
+})}`)
 // The Settings tab: one section at a time (SettingsLayout). A return from
 // Reddit or Discord's bot install opens the section that reports it.
 const settings_href = (section: string) => `?section=${section}#settings`
@@ -157,6 +160,12 @@ const settings_groups: SettingsNavGroup[] = [
             { id: 'reddit', label: t('corporations.settings.reddit_section'), href: settings_href('reddit'), url: settings_partial },
             { id: 'forum', label: t('corporations.settings.forum_section'), href: settings_href('forum'), url: forum_post_partial },
             { id: 'discord', label: t('corporations.settings.discord_section'), href: settings_href('discord'), url: discord_partial },
+        ],
+    },
+    {
+        label: t('corporations.settings.group_data'),
+        items: [
+            { id: 'refresh', label: t('corporations.refresh.section'), href: settings_href('refresh'), url: refresh_partial },
         ],
     },
 ]

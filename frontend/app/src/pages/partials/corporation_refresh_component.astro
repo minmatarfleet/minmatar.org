@@ -1,0 +1,86 @@
+---
+// no-error-refetch: nothing is fetched to render; a failed refresh shows in the section it swaps back.
+import { i18n } from '@helpers/i18n'
+import { get_request_user } from '@helpers/request_user'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { refresh_corporation } from '@helpers/api.minmatar.org/corporations'
+import { query_string } from '@helpers/string'
+import type { ui } from '@i18n/ui'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+import SettingsGroup from '@components/blocks/SettingsGroup.astro'
+import SettingRow from '@components/blocks/SettingRow.astro'
+
+const ROOT_ID = 'corporation-refresh'
+
+const { auth_token } = get_request_user(Astro)
+if (!auth_token) return HTTP_403_Forbidden()
+
+const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id') ?? '')
+if (!corporation_id) return HTTP_403_Forbidden()
+
+const PARTIAL_URL = translatePath(`/partials/corporation_refresh_component/?${query_string({
+    corporation_id: String(corporation_id),
+})}`)
+
+let flash: { kind: 'success' | 'error', key: keyof typeof ui['en'] } | null = null
+
+if (Astro.request.method === 'POST') {
+    try {
+        await refresh_corporation(auth_token, corporation_id)
+        flash = { kind: 'success', key: 'corporations.refresh.queued' }
+    } catch {
+        flash = { kind: 'error', key: 'corporations.refresh.error' }
+    }
+}
+---
+
+<div id={ROOT_ID} class="[ corp-refresh ]">
+    <form
+        method="post"
+        action={PARTIAL_URL}
+        hx-post={PARTIAL_URL}
+        hx-target={`#${ROOT_ID}`}
+        hx-swap="outerHTML"
+    >
+        <Flexblock gap="var(--space-l)">
+            <FlexInline class="[ settings-head ]" justification="space-between" gap="var(--space-2xs) var(--space-s)">
+                <h2>{t('corporations.refresh.section')}</h2>
+            </FlexInline>
+
+            {flash &&
+                <p
+                    class:list={['[ corp-refresh__flash ]', { 'is-error': flash.kind === 'error' }]}
+                    role={flash.kind === 'error' ? 'alert' : 'status'}
+                >
+                    {t(flash.key)}
+                </p>
+            }
+
+            <SettingsGroup>
+                <SettingRow title={t('corporations.refresh.title')} description={t('corporations.refresh.help')}>
+                    <Button type="submit" size="sm" off_disable={true} disabled={flash?.kind === 'success'}>
+                        {t('corporations.refresh.button')}
+                    </Button>
+                </SettingRow>
+            </SettingsGroup>
+        </Flexblock>
+    </form>
+</div>
+
+<style lang="scss">
+    .corp-refresh__flash {
+        padding: var(--space-xs) var(--space-s);
+        border-left: solid var(--space-3xs) var(--green);
+        background-color: var(--component-background);
+        color: var(--highlight);
+
+        &.is-error {
+            border-left-color: var(--fleet-red);
+        }
+    }
+</style>

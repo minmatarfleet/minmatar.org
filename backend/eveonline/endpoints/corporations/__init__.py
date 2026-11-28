@@ -13,6 +13,7 @@ from eveonline.endpoints.corporations import (
     post_corporation_discord_members_exempt,
     post_corporation_discord_roles_refresh,
     post_corporation_discord_roles_strip_approve,
+    post_corporation_refresh,
     put_corporation_discord,
     put_corporation_discord_members,
     put_corporation_discord_roles,
@@ -114,5 +115,11 @@ for endpoint in (get_corporation_page_text, put_corporation_page_text):
         endpoint.PATH, **endpoint.ROUTE_SPEC
     )(view)
 router.add_router("", page_text_router)
+
+refresh_router = Router(tags=["Corporations"])
+getattr(refresh_router, post_corporation_refresh.METHOD)(
+    post_corporation_refresh.PATH, **post_corporation_refresh.ROUTE_SPEC
+)(post_corporation_refresh.post_corporation_refresh)
+router.add_router("", refresh_router)
 
 __all__ = ["router"]

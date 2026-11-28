@@ -644,3 +644,9 @@ class AcademyGraduationReviewRequest(Schema):
     decision: Literal["graduate", "keep", "release"]
     corporation_ids: list[int] = []
     note: str = ""
+
+
+class CorporationRefreshResponse(Schema):
+    """A refresh from ESI was queued; the page shows it in a few minutes."""
+
+    queued: bool

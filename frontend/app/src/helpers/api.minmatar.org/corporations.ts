@@ -1,4 +1,4 @@
-import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication, CorporationProjects, AcademyGraduationPipeline, AcademyGraduationReviewRequest, CorporationDiscordSettings, CorporationDiscordInvitePreview, CorporationMemberPromote, CorporationMemberStatus, CorporationMemberStatusAction, MemberInsights, CorporationPageText, CorporationPageTextUpdate, DiscordRoleMappingUpdate, DiscordMemberAccessUpdate } from '@dtypes/api.minmatar.org' // pragma: allowlist secret
+import type { Corporation, CorporationType, CorporationInfo, CorporationMemberDetails, CorporationOpenApplication, CorporationProjects, AcademyGraduationPipeline, AcademyGraduationReviewRequest, CorporationDiscordSettings, CorporationDiscordInvitePreview, CorporationRefresh, CorporationMemberPromote, CorporationMemberStatus, CorporationMemberStatusAction, MemberInsights, CorporationPageText, CorporationPageTextUpdate, DiscordRoleMappingUpdate, DiscordMemberAccessUpdate } from '@dtypes/api.minmatar.org' // pragma: allowlist secret
 import { api_request, api_response, type ApiToken } from '@helpers/api.minmatar.org/client'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/eveonline/corporations`
@@ -241,6 +241,16 @@ export async function save_corporation_discord_roles(
 }
 
 /** Queue a fresh read of the server's roles. The form keeps the roles it already has. */
+/** Queue a refresh of the corporation from ESI (CEO and directors). Throws when it isn't queued. */
+export async function refresh_corporation(access_token: string, corporation_id: number) {
+    const response = await api_response(
+        `${API_ENDPOINT}/corporations/${corporation_id}/refresh`,
+        { method: 'POST', token: access_token, allow: [403, 404] },
+    )
+    if (!response.ok) throw new Error(`Refresh not queued (${response.status})`)
+    return await response.json() as CorporationRefresh
+}
+
 export async function refresh_corporation_discord_roles(access_token: string, corporation_id: number) {
     const response = await api_response(
         `${API_ENDPOINT}/corporations/${corporation_id}/discord/roles/refresh`,
