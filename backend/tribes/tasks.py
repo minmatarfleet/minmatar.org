@@ -48,6 +48,7 @@ from tribes.helpers.invitations import (
     answered_dm,
     expire_due_invitations,
     invited_delivery_key,
+    members_page_url,
 )
 from tribes.helpers.showcase import refresh_group_showcase
 from tribes.models import (
@@ -86,7 +87,10 @@ def _build_reminder_message(tribe_group, memberships: list) -> str:
             lines.append(f"- {mention} → {tribe_group.name}")
         else:
             lines.append(f"- {m.user.username} → {tribe_group.name}")
-    lines.append("\nPlease review applications in the admin panel.")
+    lines.append(
+        "\nReview them on the group's members page: "
+        f"{members_page_url(tribe_group)}"
+    )
 
     mentions = []
     # Every timezone chief, else whoever stands in (tribe chief, then the

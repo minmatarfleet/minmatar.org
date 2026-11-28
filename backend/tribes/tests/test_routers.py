@@ -14,6 +14,7 @@ from notifications.models import (
     NotificationDelivery,
     NotificationPreference,
 )
+from tribes.helpers.invitations import members_page_url
 from tribes.models import (
     TribeGroupChief,
     Tribe,
@@ -160,13 +161,18 @@ class MembershipApplyTestCase(TestCase):
             user=chief, notification_type="tribes.membership_requested"
         )
         self.assertEqual(NotificationChannel.DISCORD, delivery.channel)
-        # Same words as the old plain DM.
+        members_url = members_page_url(self.tribe_group)
         self.assertEqual(
             "**New tribe membership application** for **Mining** "
-            "(Mining): miner has applied. Please review in the admin "
-            "panel.",
+            "(Mining): miner has applied. Review it on the group's "
+            "members page.",
             delivery.payload["discord_message"],
         )
+        # The DM links straight to the group's pending applications.
+        self.assertEqual(members_url, delivery.payload["url"])
+        button = delivery.payload["discord_components"][0]["components"][0]
+        self.assertEqual("Review", button["label"])
+        self.assertEqual(members_url, button["url"])
         for callback in callbacks:
             callback()
         deliver.delay.assert_called_once_with(delivery.id)

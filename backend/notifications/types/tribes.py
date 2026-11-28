@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from notifications.discord_buttons import link_button_components
 from notifications.discord_format import feature_color
 from notifications.models import NotificationChannel
 from notifications.registry import NotificationType, register
@@ -13,19 +14,28 @@ def render_membership_requested(ctx: dict) -> dict:
     group_name = ctx["group_name"]
     tribe_name = ctx["tribe_name"]
     applicant = ctx["applicant"]
+    url = ctx.get("url") or ""
     title = "New tribe membership application"
-    # Same wording as the plain DM chiefs got before this was a
-    # notification type.
+    # The Review button opens the group's members page, where the pending
+    # applications are listed. Without a url there is nowhere to link.
+    where = (
+        "Review it on the group's members page."
+        if url
+        else "Review it on the group's page on the website."
+    )
     discord_message = (
         f"**{title}** for **{group_name}** ({tribe_name}): "
-        f"{applicant} has applied. Please review in the admin panel."
+        f"{applicant} has applied. {where}"
     )
-    return {
+    payload = {
         "title": title,
         "body": f"{applicant} applied to {group_name} ({tribe_name}).",
-        "url": ctx.get("url") or "",
+        "url": url,
         "discord_message": discord_message,
     }
+    if url:
+        payload["discord_components"] = link_button_components("Review", url)
+    return payload
 
 
 TRIBE_MEMBERSHIP_REQUESTED = register(
@@ -199,8 +209,9 @@ def render_chief_volunteered(ctx: dict) -> dict:
         where = f"The {tribe_name} tribe has no chief."
     else:
         where = f"{seat} ({tribe_name}) has no chief."
-    if ctx.get("interim"):
-        where += f" {ctx['interim']} is interim."
+    interim = ctx.get("interim")
+    if interim:
+        where += f" {interim} is interim."
     body = where
     description = where
     if note:

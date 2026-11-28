@@ -52,13 +52,14 @@ class DiscordFormatTestCase(SimpleTestCase):
         self.assertEqual(payload["feature_label"], "Industry")
         self.assertIn("discord_message", payload)
 
-    def test_tribe_application_embed_keeps_old_wording_once(self):
+    def test_tribe_application_embed_says_it_once(self):
         payload = _render_payload(
             TRIBE_MEMBERSHIP_REQUESTED,
             {
                 "group_name": "Mining",
                 "tribe_name": "Industry",
                 "applicant": "miner",
+                "url": "https://example.com/alliance/tribes/1/2/members",
             },
         )
         embed = discord_embed_from_payload(payload)
@@ -66,8 +67,24 @@ class DiscordFormatTestCase(SimpleTestCase):
         self.assertEqual(
             embed["description"],
             "**New tribe membership application** for **Mining** "
-            "(Industry): miner has applied. Please review in the admin "
-            "panel.",
+            "(Industry): miner has applied. Review it on the group's "
+            "members page.",
         )
         # The bold first line already says it; no repeated embed title.
         self.assertNotIn("title", embed)
+        button = payload["discord_components"][0]["components"][0]
+        self.assertEqual(
+            "https://example.com/alliance/tribes/1/2/members", button["url"]
+        )
+
+    def test_tribe_application_without_url_has_no_button(self):
+        payload = _render_payload(
+            TRIBE_MEMBERSHIP_REQUESTED,
+            {
+                "group_name": "Mining",
+                "tribe_name": "Industry",
+                "applicant": "m",
+            },
+        )
+        self.assertNotIn("discord_components", payload)
+        self.assertNotIn("admin panel", payload["discord_message"])
