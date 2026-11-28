@@ -10,9 +10,11 @@ import { get_all_corporations, get_corporation_info, get_corporation_by_id } fro
 import {
     get_corporation_applications,
     get_corporation_applications_by_id,
+    get_my_corporation_requirements,
     get_my_open_application,
 } from '@helpers/api.minmatar.org/applications'
 import { corporations_with_open_application } from '@helpers/corporations/open_application'
+import { blocking_checks } from '@helpers/corporations/requirements'
 
 export const MINMATAR_EXTRACTION_COMPANY_ID = 98838663
 
@@ -121,6 +123,9 @@ export async function get_corporation_list_by_id_auth(access_token:string, corpo
     // start with the corporation call. Each keeps its own failure handling.
     const applications = get_corporation_applications(access_token, corporation_id)
     const open_application = get_my_open_application(access_token)
+    // Whether the viewer fails a required rule: the apply dialog then offers
+    // Apply anyway. A failed lookup leaves the dialog as it was.
+    const requirements = get_my_corporation_requirements(access_token, corporation_id).catch(() => null)
     applications.catch(() => null)
     open_application.catch(() => null)
 
@@ -128,7 +133,14 @@ export async function get_corporation_list_by_id_auth(access_token:string, corpo
 
     const corporation = await add_status_to_corporation(access_token, api_corporation, user_id, applications)
     const [annotated] = await annotate_open_application(access_token, [corporation], open_application)
-    return annotated
+    const mine = await requirements
+    return mine
+        ? {
+            ...annotated,
+            requirements_blocked: !mine.can_apply,
+            requirements_unmet: blocking_checks(mine.checks).map((check) => check.text),
+        }
+        : annotated
 }
 
 async function annotate_open_application<T extends {

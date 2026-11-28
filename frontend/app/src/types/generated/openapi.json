@@ -1234,6 +1234,11 @@
             "title": "Preferred Total",
             "type": "integer"
           },
+          "required_blocking": {
+            "default": 0,
+            "title": "Required Blocking",
+            "type": "integer"
+          },
           "required_met": {
             "title": "Required Met",
             "type": "integer"
@@ -9031,6 +9036,11 @@
           "description": {
             "title": "Description",
             "type": "string"
+          },
+          "override_requirements": {
+            "default": false,
+            "title": "Override Requirements",
+            "type": "boolean"
           }
         },
         "required": [

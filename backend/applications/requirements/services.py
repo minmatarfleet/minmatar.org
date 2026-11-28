@@ -2,9 +2,12 @@
 
 import hashlib
 import json
+import logging
+from datetime import timedelta
 
 from django.core.cache import cache
 from django.db import transaction
+from django.utils import timezone
 
 from applications.models import CorporationRequirement as Rule
 from applications.requirements import rules as R
@@ -13,10 +16,25 @@ from applications.requirements.evaluate import (
     evaluate,
     evaluate_user,
 )
+from eveonline.character_sync import SKILLS
+from eveonline.helpers.characters.identity import owned_by_q
 from eveonline.helpers.corporations.profile import split_requirements
-from eveonline.models import EveCorporation, EvePlayer
+from eveonline.models import (
+    EveCharacter,
+    EveCharacterSyncState,
+    EveCorporation,
+    EvePlayer,
+)
+
+logger = logging.getLogger(__name__)
 
 PASS_RATE_TTL = 6 * 60 * 60
+# An applicant blocked by a rule gets a skills sync for characters whose
+# skills are older than this; applicants outside the alliance are not on
+# the regular sync schedule, so theirs can be weeks old.
+SKILLS_STALE_AFTER = timedelta(hours=6)
+SKILLS_REFRESH_COOLDOWN = 60 * 60
+SKILLS_REFRESH_KEY = "applications:skills_refresh"
 MAX_TOPICS = 12
 MAX_TOPIC_LENGTH = 200
 
@@ -167,3 +185,52 @@ def apply_blockers(corporation: EveCorporation, user_id: int) -> list:
 def blocked_detail(blockers: list) -> str:
     listed = "; ".join(check.text for check in blockers)
     return f"You don't meet this corporation's requirements yet: {listed}."
+
+
+def stale_skill_characters(user_id: int) -> list[int]:
+    """Pks of the user's characters whose skills haven't synced recently."""
+    owned = set(
+        EveCharacter.objects.filter(owned_by_q(user_id))
+        .filter(esi_deleted=False, esi_suspended=False)
+        .values_list("pk", flat=True)
+    )
+    if not owned:
+        return []
+    # Only this pilot's rows: the sync state table holds every character.
+    fresh = set(
+        EveCharacterSyncState.objects.filter(
+            character_id__in=owned,
+            section=SKILLS,
+            synced_at__gte=timezone.now() - SKILLS_STALE_AFTER,
+        ).values_list("character_id", flat=True)
+    )
+    return sorted(owned - fresh)
+
+
+def refresh_stale_skills(user_id: int) -> bool:
+    """Queue a skills sync for the user's characters with stale skills.
+
+    At most once per user per SKILLS_REFRESH_COOLDOWN. True when a sync was
+    queued by this call; the checks pick up the new skills once the
+    capability engine re-rates the character (a minute or two).
+    """
+    key = f"{SKILLS_REFRESH_KEY}:{user_id}"
+    if cache.get(key) is not None:
+        return False
+    pks = stale_skill_characters(user_id)
+    if not pks:
+        return False
+    cache.set(key, 1, SKILLS_REFRESH_COOLDOWN)
+
+    # pylint: disable=import-outside-toplevel
+    from eveonline.tasks.character_sync import refresh_character_skills_now
+
+    def _queue():
+        for pk in pks:
+            try:
+                refresh_character_skills_now.delay(pk)
+            except Exception:  # pylint: disable=broad-exception-caught
+                logger.exception("Could not queue skills refresh for %s", pk)
+
+    transaction.on_commit(_queue)
+    return True

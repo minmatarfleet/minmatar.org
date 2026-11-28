@@ -31,6 +31,7 @@ if (Astro.request.method === "POST") {
         const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id') as string)
         corporation = await get_corporation_list_by_id_auth(auth_token, corporation_id, user.user_id)
         const data = await Astro.request.formData()
+        const override_requirements = data.get('override_requirements') === '1'
         let description: string
 
         if (isL3arnCorporation(corporation)) {
@@ -50,7 +51,7 @@ if (Astro.request.method === "POST") {
         if (!description)
             throw new Error(t('invalid_description'));
 
-        application = await create_corporation_application(auth_token, corporation.corporation_id, description)
+        application = await create_corporation_application(auth_token, corporation.corporation_id, description, override_requirements)
         corporation.status = application.status as CorporationStatusType
     } catch (error) {
         create_corporation_application_error = error.message

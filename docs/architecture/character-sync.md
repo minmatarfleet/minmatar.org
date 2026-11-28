@@ -24,7 +24,7 @@ Until November 2026, `update_alliance_characters` queued `update_character` for 
 | Industry jobs | 4 h | **1 h** for characters with an undelivered assignment on an open order, and their user's other characters | Replaces `sync_industry_jobs_for_order_assignees` in scheduled mode |
 | Killmails | 24 h | **15 min** while on an active fleet, plus 30 min after it ends | Fleet fights use the zKill feed, not this |
 | Mining ledger | 24 h | Tiered by how likely new rows are (below) | Fixed per-pilot slot instead of jitter |
-| Skills (+ readiness re-rate) | 24 h | — | The tribes refresh button refreshes on demand |
+| Skills (+ readiness re-rate) | 24 h | — | The tribes refresh button refreshes on demand; a corp application blocked by a requirement queues `refresh_character_skills_now` for characters whose skills are over 6 h old |
 | Clones and implants | 24 h | — | Fleets poll implants live separately |
 | Blueprints | 24 h | — | |
 | Planets | weekly | **72 h** for active members of the PI tribe group (`supply.planetary-interaction`) | |
@@ -77,7 +77,7 @@ A section's outcome comes from the ESI responses it saw. `eveonline.client.recor
 2. Skips during ESI downtime.
 3. Runs the due sections in order, and stamps each one as it returns.
 
-A character with no attempted rows is always forced. `update_character`, which is used by fanout mode, new characters and the tech router, runs every section with `force=True`. The tribes refresh button runs assets and skills inline with `lock=False`, because its response is built from the fresh data.
+A character with no attempted rows is always forced. `update_character`, which is used by fanout mode, new characters and the tech router, runs every section with `force=True`. The tribes refresh button runs assets and skills inline with `lock=False`, because its response is built from the fresh data. `refresh_character_skills_now` forces the skills section from Celery for one character (used by the corp Apply tab, at most once per pilot per hour).
 
 ### The scheduler
 `queue_due_character_syncs` runs every minute, in shadow and scheduled modes. (It ran every 5 minutes until November 2026; in production every queued sync then started in the first seconds of the tick, so ESI calls came in bursts.) Each tick:

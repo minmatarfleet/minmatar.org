@@ -21,13 +21,20 @@ export async function get_corporation_applications(access_token:string, corporat
     })
 }
 
-export async function create_corporation_application(access_token:string, corporation_id:number, description:string) {
+export async function create_corporation_application(
+    access_token: string,
+    corporation_id: number,
+    description: string,
+    override_requirements = false,
+) {
     try {
         return await api_request<CorporationApplication>(`${API_ENDPOINT}/${corporation_id}/applications`, {
             method: 'POST',
             token: access_token,
             body: {
                 'description': description,
+                // Apply although a required rule isn't met; the recruiter is warned.
+                ...(override_requirements ? { override_requirements: true } : {}),
             },
         })
     } catch (error) {

@@ -179,8 +179,8 @@ const open_note = acceptance_days
                     </div>
                 : state === 'blocked' ?
                     <div class="[ corp-apply__cta ]">
-                        <Button disabled={true}>
-                            {t('corporations.requirements.start_application')}
+                        <Button href={`#${CORPORATION_APPLY_ID}`} color="transparent" x-data x-on:click={open_header_apply}>
+                            {t('corporations.requirements.apply_anyway')}
                         </Button>
                         <a href={ask_recruiter_href} {...(corporation.discord_invite_url ? { target: '_blank', rel: 'noopener' } : {})}>
                             {t('corporations.requirements.ask_recruiter')}
