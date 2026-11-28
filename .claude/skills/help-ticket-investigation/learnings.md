@@ -25,6 +25,16 @@ After appending, **fold any new durable rule into [SKILL.md](SKILL.md)**
 (Known failure classes or the workflow). If the rule already lives there,
 do not duplicate it — one clarifying clause at most.
 
+## 2026-11-28 — Morning triage: "fix didn't work" before the fix merged
+
+**Category:** pulse.technology (four tickets)
+**Verdict:** clarify / auto-closed ×3
+**Discord:** one follow-up reply with the auto-close line; three tickets auto-closed after 24 hours with no reply
+**PR:** skill only
+**Symptom vs cause:** The LP buyback claim reporter claimed another order and saw no thread post again. The claim was made before the fix PR merged, so it was the same bug. The migration in that PR reposts the missing Awaiting LP post for orders still waiting on LP. Separately, the frozen-skills issue was closed by a change that re-syncs stale skills when a requirement check blocks a pilot and lets them apply anyway.
+**Durable rule:** Compare a "still broken" report with the fix PR's merge time before investigating again. Re-read a SKILL.md row that says "filed, do not re-file" when its issue is closed: the behaviour may have changed.
+**Skill update:** rewrote the frozen-skills row for the re-sync and Apply anyway; added the merged-vs-reported check under the Discord reply rules.
+
 ## 2026-11-27 — Morning triage: frozen skill points, two follow-ups
 
 **Category:** pulse.technology (three tickets)
