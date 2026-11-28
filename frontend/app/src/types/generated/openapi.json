@@ -11334,6 +11334,20 @@
         "title": "CorporationRedditPostUpdate",
         "type": "object"
       },
+      "CorporationRefreshResponse": {
+        "description": "A refresh from ESI was queued; the page shows it in a few minutes.",
+        "properties": {
+          "queued": {
+            "title": "Queued",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "queued"
+        ],
+        "title": "CorporationRefreshResponse",
+        "type": "object"
+      },
       "CorporationRequirements": {
         "properties": {
           "corporation_id": {
@@ -70595,6 +70609,64 @@
           }
         ],
         "summary": "Queue a projects sync from ESI (CEO and directors)",
+        "tags": [
+          "Corporations",
+          "Corporations"
+        ]
+      }
+    },
+    "/api/eveonline/corporations/corporations/{corporation_id}/refresh": {
+      "post": {
+        "operationId": "eveonline_endpoints_corporations_post_corporation_refresh_post_corporation_refresh",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corporation_id",
+            "required": true,
+            "schema": {
+              "title": "Corporation Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CorporationRefreshResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "AuthBearer": []
+          }
+        ],
+        "summary": "Refresh this corporation from ESI now (CEO and directors)",
         "tags": [
           "Corporations",
           "Corporations"

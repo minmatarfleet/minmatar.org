@@ -3286,6 +3286,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/eveonline/corporations/corporations/{corporation_id}/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Refresh this corporation from ESI now (CEO and directors) */
+        post: operations["eveonline_endpoints_corporations_post_corporation_refresh_post_corporation_refresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/eveonline/corporations/managed": {
         parameters: {
             query?: never;
@@ -16872,6 +16889,14 @@ export interface components {
             paused?: boolean | null;
             /** Title */
             title: string;
+        };
+        /**
+         * CorporationRefreshResponse
+         * @description A refresh from ESI was queued; the page shows it in a few minutes.
+         */
+        CorporationRefreshResponse: {
+            /** Queued */
+            queued: boolean;
         };
         /** CorporationRequirements */
         CorporationRequirements: {
@@ -43679,6 +43704,46 @@ export interface operations {
             };
             /** @description Too Many Requests */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    eveonline_endpoints_corporations_post_corporation_refresh_post_corporation_refresh: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                corporation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CorporationRefreshResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
